@@ -3,4 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-export const dotnetAcquisitionExtensionId = 'ms-vscode.dotnetacquisition';
+export enum EventType {
+    DotnetAcquisitionStart,
+    DotnetAcquisitionError,
+    DotnetAcquisitionCompleted,
+}

@@ -3,4 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-export const dotnetAcquisitionExtensionId = 'ms-vscode.dotnetacquisition';
+import { IEvent } from './IEvent';
+
+export interface IEventStreamObserver {
+    post(event: IEvent): void;
+}

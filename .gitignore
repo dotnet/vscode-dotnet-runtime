@@ -38,5 +38,5 @@ Microsoft.VisualStudio.RazorExtension.nuget.targets
 msbuild.binlog
 msbuild.log
 node_modules
-client/.vscode-test/**
-client/out/*
+.dotnet
+out/*

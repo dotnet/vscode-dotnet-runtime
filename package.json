@@ -3,6 +3,7 @@
 	"displayName": "DotnetAcquisition",
 	"description": "An extension to acquire tooling to develop .NET Core applications in Visual Studio Code.",
 	"version": "0.0.1",
+	"publisher": "ms-vscode",
 	"engines": {
 		"vscode": "^1.33.0"
 	},
