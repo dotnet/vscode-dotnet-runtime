@@ -57,4 +57,7 @@ export class DotnetAcquisitionScriptError extends DotnetAcquisitionError {
 
 export class DotnetAcquisitionCompleted implements IEvent {
     public readonly type = EventType.DotnetAcquisitionCompleted;
+
+    constructor(public readonly dotnetPath: string) {
+    }
 }

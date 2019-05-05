@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
-import { DotnetAcquisitionError } from './EventStreamEvents';
+import { DotnetAcquisitionCompleted, DotnetAcquisitionError } from './EventStreamEvents';
 import { EventType } from './EventType';
 import { IEvent } from './IEvent';
 import { IEventStreamObserver } from './IEventStreamObserver';
@@ -20,7 +20,9 @@ export class OutputChannelObserver implements IEventStreamObserver {
                 this.outputChannel.appendLine('');
                 break;
             case EventType.DotnetAcquisitionCompleted:
+                const acquisitionCompleted = event as DotnetAcquisitionCompleted;
                 this.outputChannel.appendLine('.NET Core tooling installed!');
+                this.outputChannel.appendLine(`dotnet executable path: ${acquisitionCompleted.dotnetPath}`);
                 break;
             case EventType.DotnetAcquisitionError:
                 const error = event as DotnetAcquisitionError;

@@ -100,7 +100,7 @@ export class DotnetAcquisitionWorker {
                         this.eventStream.post(new DotnetAcquisitionScriptError(stderr));
                         reject(stderr);
                     } else {
-                        this.eventStream.post(new DotnetAcquisitionCompleted());
+                        this.eventStream.post(new DotnetAcquisitionCompleted(this.dotnetPath));
                         resolve();
                     }
                 });
