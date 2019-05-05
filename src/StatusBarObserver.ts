@@ -11,7 +11,6 @@ import { IEventStreamObserver } from './IEventStreamObserver';
 enum StatusBarColors {
     Red = 'rgb(218,0,0)',
     Green = 'rgb(0,218,0)',
-    Yellow = 'rgb(218,218,0)',
 }
 
 export class StatusBarObserver implements IEventStreamObserver {
@@ -21,13 +20,13 @@ export class StatusBarObserver implements IEventStreamObserver {
     public post(event: IEvent): void {
         switch (event.type) {
             case EventType.DotnetAcquisitionStart:
-                this.setAndShowStatusBar('$(cloud-download) Downloading .NET Core tooling...', '', '', 'Downloading .NET Core tooling...');
+                this.setAndShowStatusBar('$(cloud-download) Downloading .NET Core tooling...', 'dotnet.showOutputChannel', '', 'Downloading .NET Core tooling...');
                 break;
             case EventType.DotnetAcquisitionCompleted:
                 this.resetAndHideStatusBar();
                 break;
             case EventType.DotnetAcquisitionError:
-                this.setAndShowStatusBar('$(alert) Error acquiring .NET Core tooling!', '', StatusBarColors.Red, 'Error acquiring .NET Core tooling');
+                this.setAndShowStatusBar('$(alert) Error acquiring .NET Core tooling!', 'dotnet.showOutputChannel', StatusBarColors.Red, 'Error acquiring .NET Core tooling');
                 break;
         }
     }

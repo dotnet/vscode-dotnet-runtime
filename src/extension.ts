@@ -18,10 +18,11 @@ export function activate(context: vscode.ExtensionContext) {
         throw new Error('Could not resolve dotnet acquisition extension location.');
     }
 
+    const outputChannel = vscode.window.createOutputChannel('.NET Core Tooling');
     const eventStreamObservers: IEventStreamObserver[] =
         [
             new StatusBarObserver(vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, Number.MIN_VALUE)),
-            new OutputChannelObserver(vscode.window.createOutputChannel('.NET Core Tooling')),
+            new OutputChannelObserver(outputChannel),
         ];
     const eventStream = new EventStream();
 
@@ -31,10 +32,12 @@ export function activate(context: vscode.ExtensionContext) {
 
     const acquisitionWorker = new DotnetAcquisitionWorker(extension.extensionPath, eventStream);
 
-    const dotnetAcquireRegistration = vscode.commands.registerCommand('dotnet.acquire', () => acquisitionWorker.acquire());
+    const dotnetAcquireRegistration = vscode.commands.registerCommand('dotnet.acquire', (version) => acquisitionWorker.acquire(version));
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand('dotnet.uninstallAll', () => acquisitionWorker.uninstallAll());
+    const showOutputChannelRegistration = vscode.commands.registerCommand('dotnet.showOutputChannel', () => outputChannel.show(/* preserveFocus */ false));
 
     context.subscriptions.push(
         dotnetAcquireRegistration,
-        dotnetUninstallAllRegistration);
+        dotnetUninstallAllRegistration,
+        showOutputChannelRegistration);
 }

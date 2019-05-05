@@ -21,10 +21,6 @@
 				"title": "Acquire .NET Core tooling"
 			},
 			{
-				"command": "dotnet.boot",
-				"title": "Boots a .NET Core application 'dotnet app.dll'."
-			},
-			{
 				"command": "dotnet.uninstallAll",
 				"title": "Uninstall all .NET Core tooling"
 			}

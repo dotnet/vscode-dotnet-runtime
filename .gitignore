@@ -40,3 +40,4 @@ msbuild.log
 node_modules
 .dotnet
 out/*
+install.*

@@ -17,9 +17,10 @@ export class OutputChannelObserver implements IEventStreamObserver {
         switch (event.type) {
             case EventType.DotnetAcquisitionStart:
                 this.outputChannel.appendLine('Downloading .NET Core tooling...');
+                this.outputChannel.appendLine('');
                 break;
             case EventType.DotnetAcquisitionCompleted:
-                this.outputChannel.appendLine('.NET Core tooling installed.');
+                this.outputChannel.appendLine('.NET Core tooling installed!');
                 break;
             case EventType.DotnetAcquisitionError:
                 const error = event as DotnetAcquisitionError;

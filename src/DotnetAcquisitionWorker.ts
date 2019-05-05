@@ -19,7 +19,10 @@ import {
 
 export class DotnetAcquisitionWorker {
     private readonly installDir: string;
+    private readonly dotnetPath: string;
     private readonly scriptPath: string;
+    private readonly lockFilePath: string;
+    private readonly beginFilePath: string;
     private acquirePromise: Promise<void> | undefined;
 
     constructor(
@@ -28,32 +31,49 @@ export class DotnetAcquisitionWorker {
         const script = os.platform() === 'win32' ? 'dotnet-install.cmd' : 'dotnet-install.sh';
         this.scriptPath = path.join(this.extensionPath, 'scripts', script);
         this.installDir = path.join(this.extensionPath, '.dotnet');
+        this.lockFilePath = path.join(this.extensionPath, 'install.lock');
+        this.beginFilePath = path.join(this.extensionPath, 'install.begin');
+        this.dotnetPath = path.join(this.installDir, 'dotnet');
     }
 
     public uninstallAll() {
         this.acquirePromise = undefined;
+
         rimraf.sync(this.installDir);
+
+        if (fs.existsSync(this.beginFilePath)) {
+            fs.unlinkSync(this.beginFilePath);
+        }
+
+        if (fs.existsSync(this.lockFilePath)) {
+            fs.unlinkSync(this.lockFilePath);
+        }
     }
 
-    public async acquire(): Promise<void> {
+    public async acquire(version: string | undefined): Promise<string> {
         if (this.acquirePromise) {
-            return this.acquirePromise;
-        }
-        const intermediateInstallDir = path.join(this.extensionPath, '.tempdotnet');
-        let resolvedInstallDir = intermediateInstallDir;
-
-        if (fs.existsSync(intermediateInstallDir)) {
-            // Previous installation must have failed, need to clear the intermediate install dir.
-            rimraf.sync(intermediateInstallDir);
+            await this.acquirePromise;
+            return this.dotnetPath;
         }
 
-        if (fs.existsSync(this.installDir)) {
-            // There has already been a dotnet installation that has succeded. The dotnet-install
-            // scripts are smart about adding to the dotnet install.
-            resolvedInstallDir = this.installDir;
+        const installDirExists = fs.existsSync(this.installDir);
+        if (installDirExists && !fs.existsSync(this.lockFilePath)) {
+            // Partial install, we never wrote the lock file, uninstall everything and then re-install.
+            this.uninstallAll();
         }
 
-        const args = ['-InstallDir', resolvedInstallDir];
+        const firstTimeInstall = fs.existsSync(this.installDir);
+        if (firstTimeInstall) {
+            // We render the begin lock file to indicate that we're starting the .NET Core installation.
+            fs.writeFileSync(this.beginFilePath, '');
+        }
+
+        const args = [ '-InstallDir', this.installDir ];
+
+        if (version) {
+            args.push('-Version', version);
+        }
+
         const installCommand = `${this.scriptPath} ${args.join(' ')}`;
 
         this.acquirePromise = this.installDotnet(installCommand);
@@ -61,7 +81,12 @@ export class DotnetAcquisitionWorker {
         this.eventStream.post(new DotnetAcquisitionStarted());
         await this.acquirePromise;
 
-        fs.renameSync(resolvedInstallDir, this.installDir);
+        if (firstTimeInstall) {
+            // If the acquisition fails this will never occurr.
+            fs.renameSync(this.beginFilePath, this.lockFilePath);
+        }
+
+        return this.dotnetPath;
     }
 
     private installDotnet(installCommand: string): Promise<void> {
