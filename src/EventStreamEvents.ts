@@ -9,28 +9,49 @@ import { IEvent } from './IEvent';
 
 // tslint:disable max-classes-per-file
 
-export class DotnetAcquisitionStart implements IEvent {
+export class DotnetAcquisitionStarted implements IEvent {
     public readonly type = EventType.DotnetAcquisitionStart;
 }
 
-export class DotnetAcquisitionUnexpectedError implements IEvent {
+export abstract class DotnetAcquisitionError implements IEvent {
     public readonly type = EventType.DotnetAcquisitionError;
 
-    constructor(public readonly error: any) {
+    public abstract getErrorMessage(): string;
+}
+
+export class DotnetAcquisitionUnexpectedError extends DotnetAcquisitionError {
+    constructor(private readonly error: any) {
+        super();
+    }
+
+    public getErrorMessage(): string {
+        if (this.error) {
+            return this.error.toString();
+        }
+
+        return '';
     }
 }
 
-export class DotnetAcquisitionInstallError implements IEvent {
-    public readonly type = EventType.DotnetAcquisitionError;
+export class DotnetAcquisitionInstallError extends DotnetAcquisitionError {
+    constructor(private readonly error: ExecException) {
+        super();
+    }
 
-    constructor(public readonly error: ExecException) {
+    public getErrorMessage(): string {
+        return `Exit code: ${this.error.code}
+Message: ${this.error.message}
+Stack: ${this.error.stack}`;
     }
 }
 
-export class DotnetAcquisitionScriptError implements IEvent {
-    public readonly type = EventType.DotnetAcquisitionError;
+export class DotnetAcquisitionScriptError extends DotnetAcquisitionError {
+    constructor(private readonly error: string) {
+        super();
+    }
 
-    constructor(public readonly error: string) {
+    public getErrorMessage(): string {
+        return this.error;
     }
 }
 

@@ -19,6 +19,14 @@
 			{
 				"command": "dotnet.acquire",
 				"title": "Acquire .NET Core tooling"
+			},
+			{
+				"command": "dotnet.boot",
+				"title": "Boots a .NET Core application 'dotnet app.dll'."
+			},
+			{
+				"command": "dotnet.uninstallAll",
+				"title": "Uninstall all .NET Core tooling"
 			}
 		]
 	},
@@ -29,11 +37,15 @@
 		"postinstall": "node ./node_modules/vscode/bin/install",
 		"test": "npm run compile && node ./node_modules/vscode/bin/test"
 	},
+	"dependencies": {
+		"rimraf": "2.6.3"
+	},
 	"devDependencies": {
 		"typescript": "^3.3.1",
 		"vscode": "^1.1.28",
 		"tslint": "^5.12.1",
 		"@types/node": "^10.12.21",
-		"@types/mocha": "^2.2.42"
+		"@types/mocha": "^2.2.42",
+		"@types/rimraf": "2.0.2"
 	}
 }

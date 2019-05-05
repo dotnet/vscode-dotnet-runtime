@@ -4,11 +4,12 @@
  * ------------------------------------------------------------------------------------------ */
 
 import * as vscode from 'vscode';
-import { DotnetAcquisitionStatusBarObserver } from './DotnetAcquisitionStatusBarObserver';
 import { DotnetAcquisitionWorker } from './DotnetAcquisitionWorker';
 import { dotnetAcquisitionExtensionId } from './DotnetAcquistionId';
 import { EventStream } from './EventStream';
 import { IEventStreamObserver } from './IEventStreamObserver';
+import { OutputChannelObserver } from './OutputChannelObserver';
+import { StatusBarObserver } from './StatusBarObserver';
 
 export function activate(context: vscode.ExtensionContext) {
     const extension = vscode.extensions.getExtension(dotnetAcquisitionExtensionId);
@@ -18,9 +19,10 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     const eventStreamObservers: IEventStreamObserver[] =
-    [
-        new DotnetAcquisitionStatusBarObserver(vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, Number.MIN_VALUE)),
-    ];
+        [
+            new StatusBarObserver(vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, Number.MIN_VALUE)),
+            new OutputChannelObserver(vscode.window.createOutputChannel('.NET Core Tooling')),
+        ];
     const eventStream = new EventStream();
 
     for (const observer of eventStreamObservers) {
@@ -29,7 +31,10 @@ export function activate(context: vscode.ExtensionContext) {
 
     const acquisitionWorker = new DotnetAcquisitionWorker(extension.extensionPath, eventStream);
 
-    const acquireDotnetRegistration = vscode.commands.registerCommand('dotnet.acquire', () => acquisitionWorker.acquire());
+    const dotnetAcquireRegistration = vscode.commands.registerCommand('dotnet.acquire', () => acquisitionWorker.acquire());
+    const dotnetUninstallAllRegistration = vscode.commands.registerCommand('dotnet.uninstallAll', () => acquisitionWorker.uninstallAll());
 
-    context.subscriptions.push(acquireDotnetRegistration);
+    context.subscriptions.push(
+        dotnetAcquireRegistration,
+        dotnetUninstallAllRegistration);
 }

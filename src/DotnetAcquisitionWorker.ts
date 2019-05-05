@@ -7,36 +7,61 @@ import * as cp from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import rimraf = require('rimraf');
 import { EventStream } from './EventStream';
-import { DotnetAcquisitionCompleted, DotnetAcquisitionInstallError, DotnetAcquisitionScriptError, DotnetAcquisitionUnexpectedError } from './EventStreamEvents';
+import {
+    DotnetAcquisitionCompleted,
+    DotnetAcquisitionInstallError,
+    DotnetAcquisitionScriptError,
+    DotnetAcquisitionStarted,
+    DotnetAcquisitionUnexpectedError,
+} from './EventStreamEvents';
 
 export class DotnetAcquisitionWorker {
+    private readonly installDir: string;
+    private readonly scriptPath: string;
     private acquirePromise: Promise<void> | undefined;
 
     constructor(
         private readonly extensionPath: string,
         private readonly eventStream: EventStream) {
+        const script = os.platform() === 'win32' ? 'dotnet-install.cmd' : 'dotnet-install.sh';
+        this.scriptPath = path.join(this.extensionPath, 'scripts', script);
+        this.installDir = path.join(this.extensionPath, '.dotnet');
+    }
+
+    public uninstallAll() {
+        this.acquirePromise = undefined;
+        rimraf.sync(this.installDir);
     }
 
     public async acquire(): Promise<void> {
         if (this.acquirePromise) {
             return this.acquirePromise;
         }
+        const intermediateInstallDir = path.join(this.extensionPath, '.tempdotnet');
+        let resolvedInstallDir = intermediateInstallDir;
 
-        const script = os.platform() === 'win32' ? 'dotnet-install.cmd' : 'dotnet-install.sh';
-        const scriptPath = path.join(this.extensionPath, 'scripts', script);
-        const installDir = path.join(this.extensionPath, '.dotnet');
-
-        if (fs.existsSync(installDir)) {
-            return;
+        if (fs.existsSync(intermediateInstallDir)) {
+            // Previous installation must have failed, need to clear the intermediate install dir.
+            rimraf.sync(intermediateInstallDir);
         }
 
-        const args = ['-InstallDir', installDir];
-        const installCommand = `${scriptPath} ${args.join(' ')}`;
+        if (fs.existsSync(this.installDir)) {
+            // There has already been a dotnet installation that has succeded. The dotnet-install
+            // scripts are smart about adding to the dotnet install.
+            resolvedInstallDir = this.installDir;
+        }
+
+        const args = ['-InstallDir', resolvedInstallDir];
+        const installCommand = `${this.scriptPath} ${args.join(' ')}`;
 
         this.acquirePromise = this.installDotnet(installCommand);
 
-        return this.acquirePromise;
+        this.eventStream.post(new DotnetAcquisitionStarted());
+        await this.acquirePromise;
+
+        fs.renameSync(resolvedInstallDir, this.installDir);
     }
 
     private installDotnet(installCommand: string): Promise<void> {
