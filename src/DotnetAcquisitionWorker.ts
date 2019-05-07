@@ -56,19 +56,26 @@ export class DotnetAcquisitionWorker {
             return this.dotnetPath;
         }
 
-        const installDirExists = fs.existsSync(this.installDir);
-        if (installDirExists && !fs.existsSync(this.lockFilePath)) {
+        if (fs.existsSync(this.beginFilePath)) {
             // Partial install, we never wrote the lock file, uninstall everything and then re-install.
             this.uninstallAll();
         }
 
-        const firstTimeInstall = fs.existsSync(this.installDir);
-        if (firstTimeInstall) {
-            // We render the begin lock file to indicate that we're starting the .NET Core installation.
-            fs.writeFileSync(this.beginFilePath, '');
+        let installedVersions: string[] = [];
+        if (fs.existsSync(this.lockFilePath)) {
+            const lockFileVersionsRaw = fs.readFileSync(this.lockFilePath);
+            installedVersions = lockFileVersionsRaw.toString().split('|');
         }
 
-        const args = [ '-InstallDir', this.installDir ];
+        if (version && installedVersions.indexOf(version) >= 0) {
+            // Version requested has already been installed.
+            return this.dotnetPath;
+        }
+
+        // We render the begin lock file to indicate that we're starting a .NET Core installation.
+        fs.writeFileSync(this.beginFilePath, version);
+
+        const args = ['-InstallDir', this.installDir, '-Runtime', 'dotnet'];
 
         if (version) {
             args.push('-Version', version);
@@ -81,10 +88,14 @@ export class DotnetAcquisitionWorker {
         this.eventStream.post(new DotnetAcquisitionStarted());
         await this.acquirePromise;
 
-        if (firstTimeInstall) {
-            // If the acquisition fails this will never occurr.
-            fs.renameSync(this.beginFilePath, this.lockFilePath);
+        // If the acquisition fails this will never occurr.
+        if (version) {
+            installedVersions.push(version);
         }
+
+        const installedVersionsString = installedVersions.join('|');
+        fs.writeFileSync(this.lockFilePath, installedVersionsString);
+        fs.unlinkSync(this.beginFilePath);
 
         return this.dotnetPath;
     }
