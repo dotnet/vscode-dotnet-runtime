@@ -32,7 +32,21 @@ export function activate(context: vscode.ExtensionContext) {
 
     const acquisitionWorker = new DotnetAcquisitionWorker(extension.extensionPath, eventStream);
 
-    const dotnetAcquireRegistration = vscode.commands.registerCommand('dotnet.acquire', (version) => acquisitionWorker.acquire(version));
+    const dotnetAcquireRegistration = vscode.commands.registerCommand('dotnet.acquire', async (version) => {
+        if (!version) {
+            version = await vscode.window.showInputBox({
+                placeHolder: '2.2.0',
+                value: '2.2.0',
+                prompt: '.NET Core version, i.e. 2.2.1',
+            });
+        }
+
+        if (!version || version === 'latest') {
+            vscode.window.showErrorMessage(`Cannot acquire .NET Core version "${version}". Please provide a valid version.`);
+            return;
+        }
+        acquisitionWorker.acquire(version);
+    });
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand('dotnet.uninstallAll', () => acquisitionWorker.uninstallAll());
     const showOutputChannelRegistration = vscode.commands.registerCommand('dotnet.showOutputChannel', () => outputChannel.show(/* preserveFocus */ false));
 
