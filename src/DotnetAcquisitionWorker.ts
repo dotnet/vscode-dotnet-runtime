@@ -23,7 +23,8 @@ export class DotnetAcquisitionWorker {
     private readonly scriptPath: string;
     private readonly lockFilePath: string;
     private readonly beginFilePath: string;
-    private acquirePromise: Promise<void> | undefined;
+    private latestAcquisitionPromise: Promise<string> | undefined;
+    private acquisitionPromises: { [version: string]: Promise<string> | undefined };
 
     constructor(
         private readonly extensionPath: string,
@@ -34,10 +35,12 @@ export class DotnetAcquisitionWorker {
         this.lockFilePath = path.join(this.extensionPath, 'install.lock');
         this.beginFilePath = path.join(this.extensionPath, 'install.begin');
         this.dotnetPath = path.join(this.installDir, 'dotnet');
+        this.acquisitionPromises = {};
     }
 
     public uninstallAll() {
-        this.acquirePromise = undefined;
+        this.acquisitionPromises = {};
+        this.latestAcquisitionPromise = undefined;
 
         rimraf.sync(this.installDir);
 
@@ -50,12 +53,39 @@ export class DotnetAcquisitionWorker {
         }
     }
 
-    public async acquire(version: string | undefined): Promise<string> {
-        if (this.acquirePromise) {
-            await this.acquirePromise;
-            return this.dotnetPath;
-        }
+    public acquire(version: string): Promise<string> {
+        const existingAcquisitionPromise = this.acquisitionPromises[version];
+        if (existingAcquisitionPromise) {
+            // This version of dotnet is already being acquired. Memoize the promise.
 
+            return existingAcquisitionPromise;
+        } else if (this.latestAcquisitionPromise) {
+            // There are other versions of dotnet being acquired. Wait for them to be finish
+            // then start the acquisition process.
+
+            const acquisitionPromise = this.latestAcquisitionPromise
+                .catch(/* swallow exceptions because listeners to this promise are unrelated. */ )
+                .finally(() => this.acquireCore(version));
+
+            // We're now the latest acquisition promise
+            this.latestAcquisitionPromise = acquisitionPromise;
+
+            this.acquisitionPromises[version] = acquisitionPromise;
+            return acquisitionPromise;
+        } else {
+            // We're the only version of dotnet being acquired, start the acquisition process.
+
+            const acquisitionPromise = this.acquireCore(version);
+
+            // We're now the latest acquisition promise
+            this.latestAcquisitionPromise = acquisitionPromise;
+
+            this.acquisitionPromises[version] = acquisitionPromise;
+            return acquisitionPromise;
+        }
+    }
+
+    private async acquireCore(version: string): Promise<string> {
         if (fs.existsSync(this.beginFilePath)) {
             // Partial install, we never wrote the lock file, uninstall everything and then re-install.
             this.uninstallAll();
@@ -75,27 +105,28 @@ export class DotnetAcquisitionWorker {
         // We render the begin lock file to indicate that we're starting a .NET Core installation.
         fs.writeFileSync(this.beginFilePath, version);
 
-        const args = ['-InstallDir', this.installDir, '-Runtime', 'dotnet'];
-
-        if (version) {
-            args.push('-Version', version);
-        }
+        const args = [
+            '-InstallDir', this.installDir,
+            '-Runtime', 'dotnet',
+            '-Version', version,
+        ];
 
         const installCommand = `${this.scriptPath} ${args.join(' ')}`;
 
-        this.acquirePromise = this.installDotnet(installCommand);
+        this.eventStream.post(new DotnetAcquisitionStarted(version));
+        await this.installDotnet(installCommand);
 
-        this.eventStream.post(new DotnetAcquisitionStarted());
-        await this.acquirePromise;
-
-        // If the acquisition fails this will never occurr.
         if (version) {
             installedVersions.push(version);
         }
 
         const installedVersionsString = installedVersions.join('|');
         fs.writeFileSync(this.lockFilePath, installedVersionsString);
-        fs.unlinkSync(this.beginFilePath);
+
+        if (fs.existsSync(this.beginFilePath)) {
+            // This should always exist unless the user mucked with the installation directory. We're just being extra safe here.
+            fs.unlinkSync(this.beginFilePath);
+        }
 
         return this.dotnetPath;
     }
