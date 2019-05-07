@@ -64,7 +64,7 @@ export class DotnetAcquisitionWorker {
             // then start the acquisition process.
 
             const acquisitionPromise = this.latestAcquisitionPromise
-                .catch(/* swallow exceptions because listeners to this promise are unrelated. */ )
+                .catch(/* swallow exceptions because listeners to this promise are unrelated. */)
                 .finally(() => this.acquireCore(version));
 
             // We're now the latest acquisition promise
@@ -91,8 +91,15 @@ export class DotnetAcquisitionWorker {
             this.uninstallAll();
         }
 
+        const lockFileExists = fs.existsSync(this.lockFilePath);
+        if (lockFileExists && !fs.existsSync(this.installDir)) {
+            // User nuked the .NET Core tooling install directory and didn't nuke the lock file. We need to clean up
+            // all of our informational assets to ensure we work properly.
+            this.uninstallAll();
+        }
+
         let installedVersions: string[] = [];
-        if (fs.existsSync(this.lockFilePath)) {
+        if (lockFileExists) {
             const lockFileVersionsRaw = fs.readFileSync(this.lockFilePath);
             installedVersions = lockFileVersionsRaw.toString().split('|');
         }
