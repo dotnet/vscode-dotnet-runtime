@@ -4,15 +4,15 @@
  * ------------------------------------------------------------------------------------------ */
 
 import * as vscode from 'vscode';
-import { DotnetAcquisitionWorker } from './DotnetAcquisitionWorker';
-import { dotnetAcquisitionExtensionId } from './DotnetAcquistionId';
+import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
+import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquistionId';
 import { EventStream } from './EventStream';
 import { IEventStreamObserver } from './IEventStreamObserver';
 import { OutputChannelObserver } from './OutputChannelObserver';
 import { StatusBarObserver } from './StatusBarObserver';
 
 export function activate(context: vscode.ExtensionContext) {
-    const extension = vscode.extensions.getExtension(dotnetAcquisitionExtensionId);
+    const extension = vscode.extensions.getExtension(dotnetCoreAcquisitionExtensionId);
 
     if (!extension) {
         throw new Error('Could not resolve dotnet acquisition extension location.');
@@ -30,7 +30,7 @@ export function activate(context: vscode.ExtensionContext) {
         eventStream.subscribe(event => observer.post(event));
     }
 
-    const acquisitionWorker = new DotnetAcquisitionWorker(extension.extensionPath, eventStream);
+    const acquisitionWorker = new DotnetCoreAcquisitionWorker(extension.extensionPath, eventStream);
 
     const dotnetAcquireRegistration = vscode.commands.registerCommand('dotnet.acquire', async (version) => {
         if (!version) {

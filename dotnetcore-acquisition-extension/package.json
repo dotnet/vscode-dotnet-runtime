@@ -1,6 +1,6 @@
 {
-	"name": "dotnetacquisition",
-	"displayName": "DotnetAcquisition",
+	"name": "dotnetcore-acquisition",
+	"displayName": "DotnetCoreAcquisition",
 	"description": "An extension to acquire .NET Core tooling to run .NET Core applications in Visual Studio Code extensions.",
 	"version": "0.0.1",
 	"publisher": "ms-vscode",
@@ -11,8 +11,8 @@
 		"Other"
 	],
 	"activationEvents": [
-        "onCommand:dotnet.acquire",
-        "onCommand:dotnet.uninstallAll"
+		"onCommand:dotnet.acquire",
+		"onCommand:dotnet.uninstallAll"
 	],
 	"main": "./out/extension.js",
 	"contributes": {

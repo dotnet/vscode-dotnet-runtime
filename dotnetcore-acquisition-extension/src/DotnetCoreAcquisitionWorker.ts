@@ -17,7 +17,7 @@ import {
     DotnetAcquisitionUnexpectedError,
 } from './EventStreamEvents';
 
-export class DotnetAcquisitionWorker {
+export class DotnetCoreAcquisitionWorker {
     private readonly installDir: string;
     private readonly dotnetPath: string;
     private readonly scriptPath: string;
