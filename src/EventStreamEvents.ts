@@ -11,6 +11,9 @@ import { IEvent } from './IEvent';
 
 export class DotnetAcquisitionStarted implements IEvent {
     public readonly type = EventType.DotnetAcquisitionStart;
+
+    constructor(public readonly version: string) {
+    }
 }
 
 export abstract class DotnetAcquisitionError implements IEvent {
@@ -40,8 +43,7 @@ export class DotnetAcquisitionInstallError extends DotnetAcquisitionError {
 
     public getErrorMessage(): string {
         return `Exit code: ${this.error.code}
-Message: ${this.error.message}
-Stack: ${this.error.stack}`;
+Message: ${this.error.message}`;
     }
 }
 
