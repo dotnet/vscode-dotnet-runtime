@@ -11,12 +11,19 @@
 		"Other"
 	],
 	"activationEvents": [
+		"onCommand:sample.helloworld",
 		"onCommand:sample.dotnet.acquire",
-		"onCommand:sample.dotnet.uninstallAll"
+		"onCommand:sample.dotnet.uninstallAll",
+		"onCommand:sample.dotnet.showAcquisitionLog"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
+			{
+				"command": "sample.helloworld",
+				"title": "Run a dynamically acquired .NET Core Hello World App",
+				"category": "Sample"
+			},
 			{
 				"command": "sample.dotnet.acquire",
 				"title": "Acquire .NET Core tooling",

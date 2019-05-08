@@ -30,11 +30,12 @@ export class DotnetCoreAcquisitionWorker {
         private readonly extensionPath: string,
         private readonly eventStream: EventStream) {
         const script = os.platform() === 'win32' ? 'dotnet-install.cmd' : 'dotnet-install.sh';
-        this.scriptPath = path.join(this.extensionPath, 'scripts', script);
+        this.scriptPath = path.join(this.extensionPath, 'node_modules', 'dotnetcore-acquisition-library', 'scripts', script);
         this.installDir = path.join(this.extensionPath, '.dotnet');
         this.lockFilePath = path.join(this.extensionPath, 'install.lock');
         this.beginFilePath = path.join(this.extensionPath, 'install.begin');
-        this.dotnetPath = path.join(this.installDir, 'dotnet');
+        const dotnetExtension = os.platform() === 'win32' ? '.exe' : '';
+        this.dotnetPath = path.join(this.installDir, `dotnet${dotnetExtension}`);
         this.acquisitionPromises = {};
     }
 

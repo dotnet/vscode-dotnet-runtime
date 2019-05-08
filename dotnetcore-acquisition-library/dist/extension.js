@@ -20,7 +20,7 @@ const StatusBarObserver_1 = require("./StatusBarObserver");
 function activate(context, parentExtensionId) {
     const extension = vscode.extensions.getExtension(parentExtensionId);
     if (!extension) {
-        throw new Error('Could not resolve dotnet acquisition extension location.');
+        throw new Error(`Could not resolve dotnet acquisition extension '${parentExtensionId}' location`);
     }
     const outputChannel = vscode.window.createOutputChannel('.NET Core Tooling');
     const eventStreamObservers = [
@@ -33,18 +33,10 @@ function activate(context, parentExtensionId) {
     }
     const acquisitionWorker = new DotnetCoreAcquisitionWorker_1.DotnetCoreAcquisitionWorker(extension.extensionPath, eventStream);
     const dotnetAcquireRegistration = vscode.commands.registerCommand('dotnet.acquire', (version) => __awaiter(this, void 0, void 0, function* () {
-        if (!version) {
-            version = yield vscode.window.showInputBox({
-                placeHolder: '2.2.0',
-                value: '2.2.0',
-                prompt: '.NET Core version, i.e. 2.2.1',
-            });
-        }
         if (!version || version === 'latest') {
-            vscode.window.showErrorMessage(`Cannot acquire .NET Core version "${version}". Please provide a valid version.`);
-            return;
+            throw new Error(`Cannot acquire .NET Core version "${version}". Please provide a valid version.`);
         }
-        acquisitionWorker.acquire(version);
+        return acquisitionWorker.acquire(version);
     }));
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand('dotnet.uninstallAll', () => acquisitionWorker.uninstallAll());
     const showOutputChannelRegistration = vscode.commands.registerCommand('dotnet.showAcquisitionLog', () => outputChannel.show(/* preserveFocus */ false));

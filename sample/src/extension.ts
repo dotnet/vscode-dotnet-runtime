@@ -3,7 +3,9 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
+import * as cp from 'child_process';
 import * as acquisitionLibrary from 'dotnetcore-acquisition-library';
+import * as path from 'path';
 import * as vscode from 'vscode';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -25,9 +27,34 @@ export function activate(context: vscode.ExtensionContext) {
 
     */
 
-    acquisitionLibrary.activate(context, 'ms-vscode.sample');
+    acquisitionLibrary.activate(context, 'ms-vscode.sample-extension');
 
     // --------------------------------------------------------------------------
+
+    const sampleHelloWorldRegistration = vscode.commands.registerCommand('sample.helloworld', async () => {
+        try {
+            await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
+
+            // Console app requires .NET Core 2.2.0
+            const dotnetPath = await vscode.commands.executeCommand<string>('dotnet.acquire', '2.2.0');
+            if (!dotnetPath) {
+                throw new Error('Couldn\'t resolve the dotnet path!');
+            }
+
+            const sampleExtension = vscode.extensions.getExtension('ms-vscode.sample-extension');
+            if (!sampleExtension) {
+                throw new Error('Could not find sample extension.');
+            }
+            const helloWorldLocation = path.join(sampleExtension.extensionPath, 'HelloWorldConsoleApp', 'HelloWorldConsoleApp.dll');
+
+            // const command = `${dotnetPath} ${helloWorldLocation}`;
+            const result = cp.spawnSync(dotnetPath, [helloWorldLocation]);
+            const appOutput = result.stdout.toString();
+            vscode.window.showInformationMessage(`.NET Core Output: ${appOutput}`);
+        } catch (error) {
+            vscode.window.showErrorMessage(error);
+        }
+    });
 
     const sampleAcquireRegistration = vscode.commands.registerCommand('sample.dotnet.acquire', async (version) => {
         if (!version) {
@@ -38,14 +65,32 @@ export function activate(context: vscode.ExtensionContext) {
             });
         }
 
-        await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
-        return vscode.commands.executeCommand('dotnet.acquire', version);
+        try {
+            await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
+            await vscode.commands.executeCommand('dotnet.acquire', version);
+        } catch (error) {
+            vscode.window.showErrorMessage(error);
+        }
     });
-    const dotnetUninstallAllRegistration = vscode.commands.registerCommand('sample.dotnet.uninstallAll', () => vscode.commands.executeCommand('dotnet.uninstallAll'));
-    const showOutputChannelRegistration = vscode.commands.registerCommand('sample.dotnet.showAcquisitionLog', () => vscode.commands.executeCommand('dotnet.showAcquisitionLog'));
+    const sampleDotnetUninstallAllRegistration = vscode.commands.registerCommand('sample.dotnet.uninstallAll', async () => {
+        try {
+            await vscode.commands.executeCommand('dotnet.uninstallAll');
+            vscode.window.showInformationMessage('.NET Core tooling uninstalled.');
+        } catch (error) {
+            vscode.window.showErrorMessage(error);
+        }
+    });
+    const sampleshowAcquisitionLogRegistration = vscode.commands.registerCommand('sample.dotnet.showAcquisitionLog', async () => {
+        try {
+            await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
+        } catch (error) {
+            vscode.window.showErrorMessage(error);
+        }
+    });
 
     context.subscriptions.push(
+        sampleHelloWorldRegistration,
         sampleAcquireRegistration,
-        dotnetUninstallAllRegistration,
-        showOutputChannelRegistration);
+        sampleDotnetUninstallAllRegistration,
+        sampleshowAcquisitionLogRegistration);
 }

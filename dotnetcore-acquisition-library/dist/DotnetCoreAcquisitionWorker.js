@@ -23,7 +23,7 @@ class DotnetCoreAcquisitionWorker {
         this.extensionPath = extensionPath;
         this.eventStream = eventStream;
         const script = os.platform() === 'win32' ? 'dotnet-install.cmd' : 'dotnet-install.sh';
-        this.scriptPath = path.join(this.extensionPath, 'scripts', script);
+        this.scriptPath = path.join(this.extensionPath, 'node_modules', 'dotnetcore-acquisition-library', 'scripts', script);
         this.installDir = path.join(this.extensionPath, '.dotnet');
         this.lockFilePath = path.join(this.extensionPath, 'install.lock');
         this.beginFilePath = path.join(this.extensionPath, 'install.begin');
