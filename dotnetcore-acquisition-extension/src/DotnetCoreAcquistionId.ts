@@ -3,4 +3,4 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-export const dotnetCoreAcquisitionExtensionId = 'ms-vscode.dotnetacquisition';
+export const dotnetCoreAcquisitionExtensionId = 'ms-vscode.dotnetcore-acquisition';

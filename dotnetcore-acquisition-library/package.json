@@ -1,0 +1,28 @@
+{
+	"name": "dotnetcore-acquisition-library",
+	"description": "A library to acquire .NET Core tooling.",
+	"version": "0.0.1",
+	"engines": {
+		"vscode": "^1.33.0"
+	},
+	"main": "./dist/extension.js",
+	"types": "./dist/extension.d.ts",
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
+		"postinstall": "node ./node_modules/vscode/bin/install",
+		"test": "npm run compile && node ./node_modules/vscode/bin/test"
+	},
+	"dependencies": {
+		"rimraf": "2.6.3"
+	},
+	"devDependencies": {
+		"typescript": "^3.3.1",
+		"vscode": "^1.1.28",
+		"tslint": "^5.12.1",
+		"@types/node": "^10.12.21",
+		"@types/mocha": "^2.2.42",
+		"@types/rimraf": "2.0.2"
+	}
+}

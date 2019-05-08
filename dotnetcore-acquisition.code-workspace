@@ -1,0 +1,14 @@
+{
+	"folders": [
+        {
+            "path": "dotnetcore-acquisition-extension"
+        },
+        {
+            "path": "sample"
+        },
+        {
+            "path": "dotnetcore-acquisition-library"
+        }
+    ],
+    "settings": {}
+}
