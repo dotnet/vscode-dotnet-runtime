@@ -38,4 +38,5 @@ msbuild.log
 node_modules
 .dotnet
 out
+dist
 install.*
