@@ -4,7 +4,7 @@ rm package-lock.json
 npm install
 npm run compile
 
-if [$? -neq 0];
+if [ $? -ne 0 ];
 then
     echo "Build failed!"
     exit 1
@@ -17,7 +17,7 @@ rm package-lock.json
 npm install
 npm run compile
 
-if [$? -neq 0];
+if [ $? -ne 0 ];
 then
     echo "Build failed!"
     exit 1
@@ -30,7 +30,7 @@ rm package-lock.json
 npm install
 npm run compile
 
-if [$? -neq 0];
+if [ $? -ne 0 ];
 then
     echo "Build failed!"
     exit 1
