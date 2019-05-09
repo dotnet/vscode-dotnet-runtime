@@ -3,8 +3,11 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
+import * as cp from 'child_process';
+import * as os from 'os';
 import * as vscode from 'vscode';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
+import { DotnetCoreDependencyInstaller } from './DotnetCoreDependencyInstaller';
 import { EventStream } from './EventStream';
 import { IEventStreamObserver } from './IEventStreamObserver';
 import { OutputChannelObserver } from './OutputChannelObserver';
@@ -39,9 +42,24 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
     });
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand('dotnet.uninstallAll', () => acquisitionWorker.uninstallAll());
     const showOutputChannelRegistration = vscode.commands.registerCommand('dotnet.showAcquisitionLog', () => outputChannel.show(/* preserveFocus */ false));
+    const testApplicationRegistration = vscode.commands.registerCommand('dotnet.ensureDotnetDependencies', async (app, args) => {
+        if (os.platform() !== 'linux') {
+            // We can't handle installing dependencies for anything other than Linux
+            return;
+        }
+
+        const result = cp.spawnSync(app, args);
+        const installer = new DotnetCoreDependencyInstaller();
+        if (installer.signalIndicatesMissingLinuxDependencies(result.signal)) {
+            await installer.promptLinuxDependencyInstall('Failed to run .NET tooling.');
+        }
+
+        // TODO: Handle cases where .NET failed for unknown reasons.
+    });
 
     context.subscriptions.push(
         dotnetAcquireRegistration,
         dotnetUninstallAllRegistration,
-        showOutputChannelRegistration);
+        showOutputChannelRegistration,
+        testApplicationRegistration);
 }

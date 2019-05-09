@@ -46,13 +46,23 @@ export function activate(context: vscode.ExtensionContext) {
                 throw new Error('Could not find sample extension.');
             }
             const helloWorldLocation = path.join(sampleExtension.extensionPath, 'HelloWorldConsoleApp', 'HelloWorldConsoleApp.dll');
+            const helloWorldArgs = [helloWorldLocation];
 
-            // const command = `${dotnetPath} ${helloWorldLocation}`;
-            const result = cp.spawnSync(dotnetPath, [helloWorldLocation]);
+            // This will install any missing Linux dependencies.
+            await vscode.commands.executeCommand('dotnet.ensureDotnetDependencies', dotnetPath, helloWorldArgs);
+
+            const result = cp.spawnSync(dotnetPath, helloWorldArgs);
+            const stderr = result.stderr.toString();
+            if (result.stderr.toString().length > 0) {
+                vscode.window.showErrorMessage(`Failed to run Hello World:
+${stderr}`);
+                return;
+            }
+
             const appOutput = result.stdout.toString();
             vscode.window.showInformationMessage(`.NET Core Output: ${appOutput}`);
         } catch (error) {
-            vscode.window.showErrorMessage(error);
+            vscode.window.showErrorMessage(error.toString());
         }
     });
 
@@ -69,7 +79,7 @@ export function activate(context: vscode.ExtensionContext) {
             await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
             await vscode.commands.executeCommand('dotnet.acquire', version);
         } catch (error) {
-            vscode.window.showErrorMessage(error);
+            vscode.window.showErrorMessage(error.toString());
         }
     });
     const sampleDotnetUninstallAllRegistration = vscode.commands.registerCommand('sample.dotnet.uninstallAll', async () => {
@@ -77,14 +87,14 @@ export function activate(context: vscode.ExtensionContext) {
             await vscode.commands.executeCommand('dotnet.uninstallAll');
             vscode.window.showInformationMessage('.NET Core tooling uninstalled.');
         } catch (error) {
-            vscode.window.showErrorMessage(error);
+            vscode.window.showErrorMessage(error.toString());
         }
     });
     const sampleshowAcquisitionLogRegistration = vscode.commands.registerCommand('sample.dotnet.showAcquisitionLog', async () => {
         try {
             await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
         } catch (error) {
-            vscode.window.showErrorMessage(error);
+            vscode.window.showErrorMessage(error.toString());
         }
     });
 

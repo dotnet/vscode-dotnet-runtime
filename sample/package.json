@@ -53,12 +53,12 @@
 		"dotnetcore-acquisition-library": "file:../dotnetcore-acquisition-library"
 	},
 	"devDependencies": {
-		"typescript": "^3.3.1",
-		"vscode": "^1.1.28",
-		"tslint": "^5.12.1",
-		"@types/node": "^10.12.21",
-		"@types/mocha": "^2.2.42",
-		"@types/rimraf": "2.0.2",
-		"rimraf": "2.6.3"
+		"rimraf": "2.6.3",
+		"typescript": "3.4.5",
+		"vscode": "1.1.34",
+		"tslint": "5.16.0",
+		"@types/node": "12.0.0",
+		"@types/mocha": "5.2.6",
+		"@types/rimraf": "2.0.2"
 	}
 }

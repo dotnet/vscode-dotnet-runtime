@@ -16,14 +16,16 @@
 		"clean": "rimraf dist"
 	},
 	"dependencies": {
-		"rimraf": "2.6.3"
+		"vscode": "1.1.34",
+		"rimraf": "2.6.3",
+		"shelljs": "0.8.3"
 	},
 	"devDependencies": {
-		"typescript": "^3.3.1",
-		"vscode": "^1.1.28",
-		"tslint": "^5.12.1",
-		"@types/node": "^10.12.21",
-		"@types/mocha": "^2.2.42",
-		"@types/rimraf": "2.0.2"
+		"typescript": "3.4.5",
+		"tslint": "5.16.0",
+		"@types/node": "12.0.0",
+		"@types/mocha": "5.2.6",
+		"@types/rimraf": "2.0.2",
+		"@types/shelljs": "0.8.3"
 	}
 }
