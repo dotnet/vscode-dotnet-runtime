@@ -4,6 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 
 import * as cp from 'child_process';
+import * as fs from 'fs';
 import * as os from 'os';
 import * as vscode from 'vscode';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
@@ -32,7 +33,14 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
         eventStream.subscribe(event => observer.post(event));
     }
 
-    const acquisitionWorker = new DotnetCoreAcquisitionWorker(extension.extensionPath, eventStream);
+    if (!fs.existsSync(context.globalStoragePath)) {
+        fs.mkdirSync(context.globalStoragePath);
+    }
+    const acquisitionWorker = new DotnetCoreAcquisitionWorker(
+        context.extensionPath,
+        context.globalStoragePath,
+        context.globalState,
+        eventStream);
 
     const dotnetAcquireRegistration = vscode.commands.registerCommand('dotnet.acquire', async (version) => {
         if (!version || version === 'latest') {

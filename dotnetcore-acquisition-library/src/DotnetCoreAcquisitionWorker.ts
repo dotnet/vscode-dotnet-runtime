@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import rimraf = require('rimraf');
+import { Memento } from 'vscode';
 import { EventStream } from './EventStream';
 import {
     DotnetAcquisitionCompleted,
@@ -18,40 +19,35 @@ import {
 } from './EventStreamEvents';
 
 export class DotnetCoreAcquisitionWorker {
+    private readonly installedVersionsKey = 'acquisitions';
+    private readonly installingKey = 'installing';
     private readonly installDir: string;
     private readonly dotnetPath: string;
     private readonly scriptPath: string;
-    private readonly lockFilePath: string;
-    private readonly beginFilePath: string;
     private latestAcquisitionPromise: Promise<string> | undefined;
     private acquisitionPromises: { [version: string]: Promise<string> | undefined };
 
     constructor(
-        private readonly extensionPath: string,
+        extensionPath: string,
+        private readonly storagePath: string,
+        private readonly extensionState: Memento,
         private readonly eventStream: EventStream) {
         const script = os.platform() === 'win32' ? 'dotnet-install.cmd' : 'dotnet-install.sh';
-        this.scriptPath = path.join(this.extensionPath, 'node_modules', 'dotnetcore-acquisition-library', 'scripts', script);
-        this.installDir = path.join(this.extensionPath, '.dotnet');
-        this.lockFilePath = path.join(this.extensionPath, 'install.lock');
-        this.beginFilePath = path.join(this.extensionPath, 'install.begin');
+        this.scriptPath = path.join(extensionPath, 'node_modules', 'dotnetcore-acquisition-library', 'scripts', script);
+        this.installDir = path.join(this.storagePath, '.dotnet');
         const dotnetExtension = os.platform() === 'win32' ? '.exe' : '';
         this.dotnetPath = path.join(this.installDir, `dotnet${dotnetExtension}`);
         this.acquisitionPromises = {};
     }
 
-    public uninstallAll() {
+    public async uninstallAll() {
         this.acquisitionPromises = {};
         this.latestAcquisitionPromise = undefined;
 
         rimraf.sync(this.installDir);
 
-        if (fs.existsSync(this.beginFilePath)) {
-            fs.unlinkSync(this.beginFilePath);
-        }
-
-        if (fs.existsSync(this.lockFilePath)) {
-            fs.unlinkSync(this.lockFilePath);
-        }
+        await this.extensionState.update(this.installingKey, false);
+        await this.extensionState.update(this.installedVersionsKey, []);
     }
 
     public acquire(version: string): Promise<string> {
@@ -87,22 +83,19 @@ export class DotnetCoreAcquisitionWorker {
     }
 
     private async acquireCore(version: string): Promise<string> {
-        if (fs.existsSync(this.beginFilePath)) {
-            // Partial install, we never wrote the lock file, uninstall everything and then re-install.
-            this.uninstallAll();
+        const partialInstall = this.extensionState.get(this.installingKey, false);
+        if (partialInstall) {
+            // Partial install, we never updated our extension to no longer be 'installing'.
+            // uninstall everything and then re-install.
+            await this.uninstallAll();
         }
 
-        const lockFileExists = fs.existsSync(this.lockFilePath);
-        if (lockFileExists && !fs.existsSync(this.installDir)) {
-            // User nuked the .NET Core tooling install directory and didn't nuke the lock file. We need to clean up
-            // all of our informational assets to ensure we work properly.
-            this.uninstallAll();
-        }
-
-        let installedVersions: string[] = [];
-        if (lockFileExists) {
-            const lockFileVersionsRaw = fs.readFileSync(this.lockFilePath);
-            installedVersions = lockFileVersionsRaw.toString().split('|');
+        const installedVersions = this.extensionState.get<string[]>(this.installedVersionsKey, []);
+        if (installedVersions.length > 0 && !fs.existsSync(this.installDir)) {
+            // User nuked the .NET Core tooling install directory manually. We need to clean up
+            // all of our state to ensure we work properly.
+            await this.uninstallAll();
+            installedVersions.length = 0;
         }
 
         if (version && installedVersions.indexOf(version) >= 0) {
@@ -110,11 +103,11 @@ export class DotnetCoreAcquisitionWorker {
             return this.dotnetPath;
         }
 
-        // We render the begin lock file to indicate that we're starting a .NET Core installation.
-        fs.writeFileSync(this.beginFilePath, version);
+        // We update the extension state to indicate we're starting a .NET Core installation.
+        await this.extensionState.update(this.installingKey, true);
 
         const args = [
-            '-InstallDir', this.installDir,
+            '-InstallDir', `"${this.installDir}"`,
             '-Runtime', 'dotnet',
             '-Version', version,
         ];
@@ -124,17 +117,10 @@ export class DotnetCoreAcquisitionWorker {
         this.eventStream.post(new DotnetAcquisitionStarted(version));
         await this.installDotnet(installCommand);
 
-        if (version) {
-            installedVersions.push(version);
-        }
+        installedVersions.push(version);
 
-        const installedVersionsString = installedVersions.join('|');
-        fs.writeFileSync(this.lockFilePath, installedVersionsString);
-
-        if (fs.existsSync(this.beginFilePath)) {
-            // This should always exist unless the user mucked with the installation directory. We're just being extra safe here.
-            fs.unlinkSync(this.beginFilePath);
-        }
+        await this.extensionState.update(this.installedVersionsKey, installedVersions);
+        await this.extensionState.update(this.installingKey, false);
 
         return this.dotnetPath;
     }
