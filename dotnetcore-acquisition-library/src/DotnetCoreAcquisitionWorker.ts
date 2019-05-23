@@ -24,6 +24,19 @@ export class DotnetCoreAcquisitionWorker {
     private readonly installDir: string;
     private readonly dotnetPath: string;
     private readonly scriptPath: string;
+
+    // TODO: Represent this in package.json OR utilize the channel argument in dotnet-install to dynamically acquire the
+    // latest for a specific channel. Concerns for using the dotnet-install channel mechanism:
+    //  1. Is the specified "latest" version available on the CDN yet?
+    //  2. Would need to build a mechanism to occasionally query latest so you don't pay the cost on every acquire.
+    private readonly latestVersionMap: { [version: string]: string | undefined } = {
+        '1.0': '1.0.16',
+        '1.1': '1.1.13',
+        '2.0': '2.0.9',
+        '2.1': '2.1.11',
+        '2.2': '2.2.5',
+    };
+
     private latestAcquisitionPromise: Promise<string> | undefined;
     private acquisitionPromises: { [version: string]: Promise<string> | undefined };
 
@@ -51,6 +64,11 @@ export class DotnetCoreAcquisitionWorker {
     }
 
     public acquire(version: string): Promise<string> {
+        const resolvedVersion = this.latestVersionMap[version];
+        if (resolvedVersion) {
+            version = resolvedVersion;
+        }
+
         const existingAcquisitionPromise = this.acquisitionPromises[version];
         if (existingAcquisitionPromise) {
             // This version of dotnet is already being acquired. Memoize the promise.
