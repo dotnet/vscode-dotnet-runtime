@@ -14,6 +14,7 @@
 		"onCommand:sample.helloworld",
 		"onCommand:sample.dotnet.acquire",
 		"onCommand:sample.dotnet.uninstallAll",
+		"onCommand:sample.dotnet.concurrentTest",
 		"onCommand:sample.dotnet.showAcquisitionLog"
 	],
 	"main": "./out/extension.js",
@@ -32,6 +33,11 @@
 			{
 				"command": "sample.dotnet.uninstallAll",
 				"title": "Uninstall all .NET Core tooling",
+				"category": "Sample"
+			},
+			{
+				"command": "sample.dotnet.concurrentTest",
+				"title": "Concurrently acquire all 2.X dotnets",
 				"category": "Sample"
 			},
 			{

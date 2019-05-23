@@ -10,7 +10,10 @@ import { IEvent } from './IEvent';
 import { IEventStreamObserver } from './IEventStreamObserver';
 
 export class OutputChannelObserver implements IEventStreamObserver {
+    private readonly inProgressDownloads: string[] = [];
     private downloadProgressInterval: NodeJS.Timeout | undefined;
+
+    // private inProgressDownloads: 
     constructor(private readonly outputChannel: vscode.OutputChannel) {
     }
 
@@ -18,22 +21,50 @@ export class OutputChannelObserver implements IEventStreamObserver {
         switch (event.type) {
             case EventType.DotnetAcquisitionStart:
                 const acquisitionStarted = event as DotnetAcquisitionStarted;
-                this.outputChannel.append(`Downloading .NET Core tooling '${acquisitionStarted.version}'...`);
-                this.startDownloadIndicator();
+                
+                this.inProgressDownloads.push(acquisitionStarted.version);
+
+                if (this.inProgressDownloads.length > 1) {
+                    // Already a download in progress
+                    this.outputChannel.appendLine(` -- Concurrent download of '${acquisitionStarted.version}' started!`);
+                    this.outputChannel.appendLine('');
+                } else {
+                    this.startDownloadIndicator();
+                }
+                
+                const versionString = this.inProgressDownloads.join(', ');
+                this.outputChannel.append(`Downloading .NET Core tooling version(s) ${versionString} ...`);
                 break;
             case EventType.DotnetAcquisitionCompleted:
                 const acquisitionCompleted = event as DotnetAcquisitionCompleted;
-                this.stopDownladIndicator();
                 this.outputChannel.appendLine(' Done!');
-                this.outputChannel.appendLine(`.NET Core executable path: ${acquisitionCompleted.dotnetPath}`);
+                this.outputChannel.appendLine(`.NET Core ${acquisitionCompleted.version} executable path: ${acquisitionCompleted.dotnetPath}`);
                 this.outputChannel.appendLine('');
+
+                this.inProgressVersionDone(acquisitionCompleted.version);
+
+                if (this.inProgressDownloads.length > 0) {
+                    const versionString = `'${this.inProgressDownloads.join('\', \'')}'`;
+                    this.outputChannel.append(`Still downloading .NET Core tooling version(s) ${versionString} ...`);
+                } else {
+                    this.stopDownladIndicator();
+                }
                 break;
             case EventType.DotnetAcquisitionError:
                 const error = event as DotnetAcquisitionError;
-                this.stopDownladIndicator();
                 this.outputChannel.appendLine(' Error!');
-                this.outputChannel.appendLine('Failed to download .NET Core tooling:');
+                this.outputChannel.appendLine(`Failed to download .NET Core tooling ${error.version}:`);
                 this.outputChannel.appendLine(error.getErrorMessage());
+                this.outputChannel.appendLine('');
+
+                this.inProgressVersionDone(error.version);
+
+                if (this.inProgressDownloads.length > 0) {
+                    const versionString = this.inProgressDownloads.join(', ');
+                    this.outputChannel.append(`Still downloading .NET Core tooling version(s) ${versionString} ...`);
+                } else {
+                    this.stopDownladIndicator();
+                }
                 break;
         }
     }
@@ -47,5 +78,10 @@ export class OutputChannelObserver implements IEventStreamObserver {
             clearTimeout(this.downloadProgressInterval);
             this.downloadProgressInterval = undefined;
         }
+    }
+
+    private inProgressVersionDone(version: string) {
+        const index = this.inProgressDownloads.indexOf(version);
+        this.inProgressDownloads.splice(index, 1);
     }
 }

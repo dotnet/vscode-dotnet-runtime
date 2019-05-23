@@ -19,11 +19,10 @@ import {
 } from './EventStreamEvents';
 
 export class DotnetCoreAcquisitionWorker {
-    private readonly installedVersionsKey = 'acquisitions';
-    private readonly installingKey = 'installing';
+    private readonly installingVersionsKey = 'installing';
     private readonly installDir: string;
-    private readonly dotnetPath: string;
     private readonly scriptPath: string;
+    private readonly dotnetExecutable: string;
 
     // TODO: Represent this in package.json OR utilize the channel argument in dotnet-install to dynamically acquire the
     // latest for a specific channel. Concerns for using the dotnet-install channel mechanism:
@@ -37,7 +36,6 @@ export class DotnetCoreAcquisitionWorker {
         '2.2': '2.2.5',
     };
 
-    private latestAcquisitionPromise: Promise<string> | undefined;
     private acquisitionPromises: { [version: string]: Promise<string> | undefined };
 
     constructor(
@@ -49,18 +47,16 @@ export class DotnetCoreAcquisitionWorker {
         this.scriptPath = path.join(extensionPath, 'node_modules', 'dotnetcore-acquisition-library', 'scripts', script);
         this.installDir = path.join(this.storagePath, '.dotnet');
         const dotnetExtension = os.platform() === 'win32' ? '.exe' : '';
-        this.dotnetPath = path.join(this.installDir, `dotnet${dotnetExtension}`);
+        this.dotnetExecutable = `dotnet${dotnetExtension}`;
         this.acquisitionPromises = {};
     }
 
     public async uninstallAll() {
         this.acquisitionPromises = {};
-        this.latestAcquisitionPromise = undefined;
 
         rimraf.sync(this.installDir);
 
-        await this.extensionState.update(this.installingKey, false);
-        await this.extensionState.update(this.installedVersionsKey, []);
+        await this.extensionState.update(this.installingVersionsKey, []);
     }
 
     public acquire(version: string): Promise<string> {
@@ -74,26 +70,13 @@ export class DotnetCoreAcquisitionWorker {
             // This version of dotnet is already being acquired. Memoize the promise.
 
             return existingAcquisitionPromise;
-        } else if (this.latestAcquisitionPromise) {
-            // There are other versions of dotnet being acquired. Wait for them to be finish
-            // then start the acquisition process.
-
-            const acquisitionPromise = this.latestAcquisitionPromise
-                .catch(/* swallow exceptions because listeners to this promise are unrelated. */)
-                .finally(() => this.acquireCore(version));
-
-            // We're now the latest acquisition promise
-            this.latestAcquisitionPromise = acquisitionPromise;
-
-            this.acquisitionPromises[version] = acquisitionPromise;
-            return acquisitionPromise;
         } else {
-            // We're the only version of dotnet being acquired, start the acquisition process.
+            // We're the only one acquiring this version of dotnet, start the acquisition process.
 
-            const acquisitionPromise = this.acquireCore(version);
-
-            // We're now the latest acquisition promise
-            this.latestAcquisitionPromise = acquisitionPromise;
+            const acquisitionPromise = this.acquireCore(version).catch(error => {
+                delete this.acquisitionPromises[version];
+                throw error;
+            });
 
             this.acquisitionPromises[version] = acquisitionPromise;
             return acquisitionPromise;
@@ -101,31 +84,28 @@ export class DotnetCoreAcquisitionWorker {
     }
 
     private async acquireCore(version: string): Promise<string> {
-        const partialInstall = this.extensionState.get(this.installingKey, false);
+        const installingVersions = this.extensionState.get<string[]>(this.installingVersionsKey, []);
+        const partialInstall = installingVersions.indexOf(version) >= 0;
         if (partialInstall) {
             // Partial install, we never updated our extension to no longer be 'installing'.
             // uninstall everything and then re-install.
             await this.uninstallAll();
         }
 
-        const installedVersions = this.extensionState.get<string[]>(this.installedVersionsKey, []);
-        if (installedVersions.length > 0 && !fs.existsSync(this.installDir)) {
-            // User nuked the .NET Core tooling install directory manually. We need to clean up
-            // all of our state to ensure we work properly.
-            await this.uninstallAll();
-            installedVersions.length = 0;
-        }
+        const dotnetInstallDir = path.join(this.installDir, version);
+        const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
 
-        if (version && installedVersions.indexOf(version) >= 0) {
+        if (fs.existsSync(dotnetPath)) {
             // Version requested has already been installed.
-            return this.dotnetPath;
+            return dotnetPath;
         }
 
         // We update the extension state to indicate we're starting a .NET Core installation.
-        await this.extensionState.update(this.installingKey, true);
+        installingVersions.push(version);
+        await this.extensionState.update(this.installingVersionsKey, installingVersions);
 
         const args = [
-            '-InstallDir', `"${this.installDir}"`,
+            '-InstallDir', `"${dotnetInstallDir}"`,
             '-Runtime', 'dotnet',
             '-Version', version,
         ];
@@ -133,33 +113,37 @@ export class DotnetCoreAcquisitionWorker {
         const installCommand = `${this.scriptPath} ${args.join(' ')}`;
 
         this.eventStream.post(new DotnetAcquisitionStarted(version));
-        await this.installDotnet(installCommand);
+        await this.installDotnet(installCommand, version, dotnetPath);
 
-        installedVersions.push(version);
+        // Need to re-query our installing versions because there may have been concurrent acquisitions that
+        // changed its value.
+        const latestInstallingVersions = this.extensionState.get<string[]>(this.installingVersionsKey, []);
+        const versionIndex = latestInstallingVersions.indexOf(version);
+        if (versionIndex >= 0) {
+            latestInstallingVersions.splice(versionIndex, 1);
+        }
+        await this.extensionState.update(this.installingVersionsKey, latestInstallingVersions);
 
-        await this.extensionState.update(this.installedVersionsKey, installedVersions);
-        await this.extensionState.update(this.installingKey, false);
-
-        return this.dotnetPath;
+        return dotnetPath;
     }
 
-    private installDotnet(installCommand: string): Promise<void> {
+    private installDotnet(installCommand: string, version: string, dotnetPath: string): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             try {
                 cp.exec(installCommand, { cwd: process.cwd(), maxBuffer: 500 * 1024 }, (error, stdout, stderr) => {
                     if (error) {
-                        this.eventStream.post(new DotnetAcquisitionInstallError(error));
+                        this.eventStream.post(new DotnetAcquisitionInstallError(error, version));
                         reject(error);
                     } else if (stderr && stderr.length > 0) {
-                        this.eventStream.post(new DotnetAcquisitionScriptError(stderr));
+                        this.eventStream.post(new DotnetAcquisitionScriptError(stderr, version));
                         reject(stderr);
                     } else {
-                        this.eventStream.post(new DotnetAcquisitionCompleted(this.dotnetPath));
+                        this.eventStream.post(new DotnetAcquisitionCompleted(version, dotnetPath));
                         resolve();
                     }
                 });
             } catch (error) {
-                this.eventStream.post(new DotnetAcquisitionUnexpectedError(error));
+                this.eventStream.post(new DotnetAcquisitionUnexpectedError(error, version));
                 reject(error);
             }
         });

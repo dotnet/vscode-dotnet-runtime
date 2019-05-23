@@ -19,12 +19,15 @@ export class DotnetAcquisitionStarted implements IEvent {
 export abstract class DotnetAcquisitionError implements IEvent {
     public readonly type = EventType.DotnetAcquisitionError;
 
+    constructor(public readonly version: string) {
+    }
+
     public abstract getErrorMessage(): string;
 }
 
 export class DotnetAcquisitionUnexpectedError extends DotnetAcquisitionError {
-    constructor(private readonly error: any) {
-        super();
+    constructor(private readonly error: any, version: string) {
+        super(version);
     }
 
     public getErrorMessage(): string {
@@ -37,8 +40,8 @@ export class DotnetAcquisitionUnexpectedError extends DotnetAcquisitionError {
 }
 
 export class DotnetAcquisitionInstallError extends DotnetAcquisitionError {
-    constructor(private readonly error: ExecException) {
-        super();
+    constructor(private readonly error: ExecException, version: string) {
+        super(version);
     }
 
     public getErrorMessage(): string {
@@ -48,8 +51,8 @@ Message: ${this.error.message}`;
 }
 
 export class DotnetAcquisitionScriptError extends DotnetAcquisitionError {
-    constructor(private readonly error: string) {
-        super();
+    constructor(private readonly error: string, version: string) {
+        super(version);
     }
 
     public getErrorMessage(): string {
@@ -60,6 +63,6 @@ export class DotnetAcquisitionScriptError extends DotnetAcquisitionError {
 export class DotnetAcquisitionCompleted implements IEvent {
     public readonly type = EventType.DotnetAcquisitionCompleted;
 
-    constructor(public readonly dotnetPath: string) {
+    constructor(public readonly version: string, public readonly dotnetPath: string) {
     }
 }

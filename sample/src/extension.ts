@@ -90,6 +90,22 @@ ${stderr}`);
             vscode.window.showErrorMessage(error.toString());
         }
     });
+    const sampleConcurrentTest = vscode.commands.registerCommand('sample.dotnet.concurrentTest', async () => {
+        try {
+            vscode.commands.executeCommand('dotnet.showAcquisitionLog');
+            const promises = [
+                vscode.commands.executeCommand('dotnet.acquire', '2.0'),
+                vscode.commands.executeCommand('dotnet.acquire', '2.1'),
+                vscode.commands.executeCommand('dotnet.acquire', '2.2')];
+
+            for (const promise of promises) {
+                // Await here so we can detect errors
+                await promise;
+            }
+        } catch (error) {
+            vscode.window.showErrorMessage(error.toString());
+        }
+    });
     const sampleshowAcquisitionLogRegistration = vscode.commands.registerCommand('sample.dotnet.showAcquisitionLog', async () => {
         try {
             await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
@@ -102,5 +118,6 @@ ${stderr}`);
         sampleHelloWorldRegistration,
         sampleAcquireRegistration,
         sampleDotnetUninstallAllRegistration,
+        sampleConcurrentTest,
         sampleshowAcquisitionLogRegistration);
 }
