@@ -89,10 +89,10 @@ export class DotnetCoreAcquisitionWorker {
         if (partialInstall) {
             // Partial install, we never updated our extension to no longer be 'installing'.
             // uninstall everything and then re-install.
-            await this.uninstallAll();
+            await this.uninstall(version);
         }
 
-        const dotnetInstallDir = path.join(this.installDir, version);
+        const dotnetInstallDir = this.getDotnetInstallDir(version);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
 
         if (fs.existsSync(dotnetPath)) {
@@ -121,10 +121,29 @@ export class DotnetCoreAcquisitionWorker {
         const versionIndex = latestInstallingVersions.indexOf(version);
         if (versionIndex >= 0) {
             latestInstallingVersions.splice(versionIndex, 1);
+            await this.extensionState.update(this.installingVersionsKey, latestInstallingVersions);
         }
-        await this.extensionState.update(this.installingVersionsKey, latestInstallingVersions);
 
         return dotnetPath;
+    }
+    
+    private async uninstall(version: string) {
+        delete this.acquisitionPromises[version];
+
+        const dotnetInstallDir = this.getDotnetInstallDir(version);
+        rimraf.sync(dotnetInstallDir);
+
+        const installingVersions = this.extensionState.get<string[]>(this.installingVersionsKey, []);
+        const versionIndex = installingVersions.indexOf(version);
+        if (versionIndex >= 0) {
+            installingVersions.splice(versionIndex, 1);
+            await this.extensionState.update(this.installingVersionsKey, installingVersions);
+        }
+    }
+
+    private getDotnetInstallDir(version: string) {
+        const dotnetInstallDir = path.join(this.installDir, version)
+        return dotnetInstallDir;
     }
 
     private installDotnet(installCommand: string, version: string, dotnetPath: string): Promise<void> {
