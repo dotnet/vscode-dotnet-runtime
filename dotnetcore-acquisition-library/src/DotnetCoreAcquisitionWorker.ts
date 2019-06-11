@@ -105,7 +105,7 @@ export class DotnetCoreAcquisitionWorker {
         await this.extensionState.update(this.installingVersionsKey, installingVersions);
 
         const args = [
-            '-InstallDir', `"${dotnetInstallDir}"`,
+            '-InstallDir', `'${dotnetInstallDir}'`, // Use single quotes instead of double quotes (see https://github.com/dotnet/cli/issues/11521)
             '-Runtime', 'dotnet',
             '-Version', version,
         ];
