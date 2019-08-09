@@ -2,6 +2,7 @@ echo ""
 echo "----------- Compiling dotnetcore-acquisition-library -----------"
 echo ""
 pushd dotnetcore-acquisition-library
+rm -rf node_modules
 npm install
 npm run compile
 
@@ -17,6 +18,7 @@ echo ""
 echo "----------- Compiling dotnetcore-acquisition-extension -----------"
 echo ""
 pushd dotnetcore-acquisition-extension
+rm -rf node_modules
 npm install
 npm run compile
 
@@ -32,6 +34,7 @@ echo ""
 echo "----------- Compiling sample -----------"
 echo ""
 pushd sample
+rm -rf node_modules
 npm install
 npm run compile
 

@@ -17,7 +17,8 @@
 	"activationEvents": [
 		"onCommand:dotnet.acquire",
 		"onCommand:dotnet.uninstallAll",
-		"onCommand:dotnet.showAcquisitionLog"
+		"onCommand:dotnet.showAcquisitionLog",
+		"onCommand:dotnet.ensureDotnetDependencies"
 	],
 	"main": "./out/extension.js",
 	"contributes": {},
