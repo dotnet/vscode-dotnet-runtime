@@ -1,4 +1,4 @@
-## General Purpose
+# General Purpose
 
 There are two top level use-cases for needing .NET Core in VSCode:
 
@@ -25,6 +25,10 @@ This repo attempts to solve the above issues.
 ## Acquiring .NET Core for users
 
 TBD
+
+-------------------------------------
+
+# Building the repo
 
 ## Requirements
 - Node.js + npm
