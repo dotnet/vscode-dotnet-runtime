@@ -1,4 +1,4 @@
-# General Purpose
+# Purpose
 
 There are two top level use-cases for needing .NET Core in VSCode:
 
@@ -26,17 +26,28 @@ This repo attempts to solve the above issues.
 
 TBD
 
--------------------------------------
 
-# Building the repo
+# Contributing to Repository 
 
-## Requirements
+Looking for something to work on? The list 
+of [up-for-grabs issues](https://github.com/dotnet/vscode-dotnetcore-acquisition-extension/labels/up-for-grabs) is a great place to start.
+
+Please read the following documents to get started.
+
+* [Contributing Guide](Documentation/contributing.md)
+
+This project has adopted the code of conduct defined by the [Contributor Covenant](http://contributor-covenant.org/) 
+to clarify expected behavior in our community. For more information, see the [.NET Foundation Code of Conduct](http://www.dotnetfoundation.org/code-of-conduct).
+
+## Building the repo
+
+### Requirements
 - Node.js + npm
 - VSCode
 
-## Running the sample
+### Running the sample
 1.  Run the build script at the root of the repo (`build.sh` or `build.cmd`).
-2. Open the repo's [workspace](https://github.com/NTaylorMullen/vscode-dotnetcore-acquisition-extension/blob/d1084c0f4e86c8cee8474f6a716cfbe633b57c37/dotnetcore-acquisition.code-workspace) in VSCode
+2. Open the repo's [workspace](dotnetcore-acquisition.code-workspace) in VSCode
 3. Run the `Run Sample Extension` configuration in VSCode
 4. In the launched experimental instance open the command pallete and run the `Sample: Run a dynamically acquired .NET Core Hello World App`.
 
