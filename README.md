@@ -22,10 +22,6 @@ Today, extensions either ship or do dynamic acquisition of .NET Core on first ac
 
 This repo attempts to solve the above issues.
 
-## Acquiring .NET Core for users
-
-TBD
-
 
 # Contributing to Repository 
 
@@ -50,6 +46,13 @@ to clarify expected behavior in our community. For more information, see the [.N
 2. Open the repo's [workspace](dotnetcore-acquisition.code-workspace) in VSCode
 3. Run the `Run Sample Extension` configuration in VSCode
 4. In the launched experimental instance open the command pallete and run the `Sample: Run a dynamically acquired .NET Core Hello World App`.
+
+## .NET Foundation
+
+.NET Core for VSCode is a [.NET Foundation](https://www.dotnetfoundation.org/projects) project.
+
+See the [.NET home repo](https://github.com/Microsoft/dotnet) to find other .NET-related projects.
+
 
 # License
 .NET Core (including this repo) is licensed under the MIT license.
