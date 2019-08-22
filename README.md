@@ -47,7 +47,7 @@ to clarify expected behavior in our community. For more information, see the [.N
 3. Run the `Run Sample Extension` configuration in VSCode
 4. In the launched experimental instance open the command pallete and run the `Sample: Run a dynamically acquired .NET Core Hello World App`.
 
-## .NET Foundation
+# .NET Foundation
 
 .NET Core for VSCode is a [.NET Foundation](https://www.dotnetfoundation.org/projects) project.
 
