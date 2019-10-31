@@ -1,4 +1,6 @@
 import * as assert from 'assert';
+import * as os from 'os';
+import * as path from 'path';
 import { DotnetCoreAcquisitionWorker } from '../DotnetCoreAcquisitionWorker';
 import { MockExtensionContext, MockEventStream } from './MockObjects';
 import { EventType } from '../EventType';
@@ -7,7 +9,7 @@ import { DotnetAcquisitionStarted, DotnetAcquisitionCompleted } from '../EventSt
 suite("DotnetCoreAcquisitionWorker: Acquire", function () {
     test("Acquire", async () => {
         const version = "1.0.16";
-        const expectedPath = ".dotnet\\1.0.16\\dotnet.exe";
+        const expectedPath = path.join(".dotnet", "1.0.16", os.platform() === 'win32' ? "dotnet.exe" : "dotnet");
 
         const context = new MockExtensionContext();
         const eventStream = new MockEventStream();
