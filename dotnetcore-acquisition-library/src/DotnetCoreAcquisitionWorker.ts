@@ -9,7 +9,7 @@ import * as os from 'os';
 import * as path from 'path';
 import rimraf = require('rimraf');
 import { Memento } from 'vscode';
-import { EventStream } from './EventStream';
+import { IEventStream } from './EventStream';
 import {
     DotnetAcquisitionCompleted,
     DotnetAcquisitionInstallError,
@@ -19,7 +19,7 @@ import {
 } from './EventStreamEvents';
 
 export class DotnetCoreAcquisitionWorker {
-    private readonly installingVersionsKey = 'installing';
+    public readonly installingVersionsKey = 'installing';
     private readonly installDir: string;
     private readonly scriptPath: string;
     private readonly dotnetExecutable: string;
@@ -42,9 +42,12 @@ export class DotnetCoreAcquisitionWorker {
         extensionPath: string,
         private readonly storagePath: string,
         private readonly extensionState: Memento,
-        private readonly eventStream: EventStream) {
+        private readonly eventStream: IEventStream,
+        localScriptPath?: string) {
         const script = os.platform() === 'win32' ? 'dotnet-install.cmd' : 'dotnet-install.sh';
-        this.scriptPath = path.join(extensionPath, 'node_modules', 'dotnetcore-acquisition-library', 'scripts', script);
+        this.scriptPath = localScriptPath === undefined ? 
+            path.join(extensionPath, 'node_modules', 'dotnetcore-acquisition-library', 'scripts', script) : 
+            path.join(localScriptPath, script);
         this.installDir = path.join(this.storagePath, '.dotnet');
         const dotnetExtension = os.platform() === 'win32' ? '.exe' : '';
         this.dotnetExecutable = `dotnet${dotnetExtension}`;

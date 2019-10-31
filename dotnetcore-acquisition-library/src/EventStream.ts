@@ -6,7 +6,11 @@
 import * as vscode from 'vscode';
 import { IEvent } from './IEvent';
 
-export class EventStream {
+export interface IEventStream {
+    post(event: IEvent): void;
+}
+
+export class EventStream implements IEventStream {
     private readonly subscribeEmitter: vscode.EventEmitter<IEvent>;
 
     constructor() {
@@ -18,4 +22,11 @@ export class EventStream {
     }
 
     public get subscribe() { return this.subscribeEmitter.event; }
+}
+
+export class MockEventStream implements IEventStream {
+    public events : IEvent[] = [];
+    public post(event: IEvent) {
+        this.events.concat(event);
+    }
 }
