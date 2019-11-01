@@ -19,7 +19,7 @@ import {
 } from './EventStreamEvents';
 
 export class DotnetCoreAcquisitionWorker {
-    public readonly installingVersionsKey = 'installing';
+    private readonly installingVersionsKey = 'installing';
     private readonly installDir: string;
     private readonly scriptPath: string;
     private readonly dotnetExecutable: string;
@@ -45,7 +45,7 @@ export class DotnetCoreAcquisitionWorker {
         private readonly eventStream: IEventStream,
         localScriptPath?: string) {
         const script = os.platform() === 'win32' ? 'dotnet-install.cmd' : 'dotnet-install.sh';
-        this.scriptPath = localScriptPath === undefined ? 
+        this.scriptPath = localScriptPath == undefined ?
             path.join(extensionPath, 'node_modules', 'dotnetcore-acquisition-library', 'scripts', script) : 
             path.join(localScriptPath, script);
         this.installDir = path.join(this.storagePath, '.dotnet');
