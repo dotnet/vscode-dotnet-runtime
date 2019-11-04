@@ -1,6 +1,6 @@
 import { Memento } from 'vscode';
-import { IEventStream } from '../EventStream';
-import { IEvent } from '../IEvent';
+import { IEventStream } from '../../EventStream';
+import { IEvent } from '../../IEvent';
 
 export class MockExtensionContext implements Memento {
     private values: { [n: string]: any; } = {};

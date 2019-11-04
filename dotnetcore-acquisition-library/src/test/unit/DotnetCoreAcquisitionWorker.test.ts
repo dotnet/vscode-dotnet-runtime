@@ -1,10 +1,10 @@
 import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs';
-import { DotnetCoreAcquisitionWorker } from '../DotnetCoreAcquisitionWorker';
+import { DotnetCoreAcquisitionWorker } from '../../DotnetCoreAcquisitionWorker';
 import { MockExtensionContext, MockEventStream } from './MockObjects';
-import { EventType } from '../EventType';
-import { DotnetAcquisitionStarted, DotnetAcquisitionCompleted } from '../EventStreamEvents';
+import { EventType } from '../../EventType';
+import { DotnetAcquisitionStarted, DotnetAcquisitionCompleted } from '../../EventStreamEvents';
 import rimraf = require('rimraf');
 var assert = require('chai').assert;
 
@@ -20,7 +20,7 @@ export module TestUtils {
             testStorage,
             context,
             eventStream, 
-            fakeScript ? __dirname + "/../../src/test/scripts" : __dirname + "/../../scripts/");
+            fakeScript ? __dirname + "/../../../src/test/scripts" : __dirname + "/../../../scripts/");
         return [ acquisitionWorker, eventStream, context ];
     }
     
@@ -49,7 +49,7 @@ export module TestUtils {
     }
 }
 
-suite("DotnetCoreAcquisitionWorker Unit Tests: Acquire", function () {
+suite("DotnetCoreAcquisitionWorker Unit Tests", function () {
     test("Acquire Specific Version", async () => {
         const version = "1.0.16";
 
@@ -67,9 +67,7 @@ suite("DotnetCoreAcquisitionWorker Unit Tests: Acquire", function () {
         const path = await acquisitionWorker.acquire(version[0]);
         await TestUtils.assertAcquisitionSucceeded(version[1], path, eventStream, context);
     });
-});
 
-suite("DotnetCoreAcquisitionWorker End To End Tests", function () {
     test("Acquire and UninstallAll Single Version", async () => {
         const version = "1.0.16";
 

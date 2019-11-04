@@ -11,15 +11,10 @@
 		"vscode:prepublish": "npm run compile",
 		"compile": "npm run clean && tsc -p ./",
 		"watch": "npm run clean && tsc -watch -p ./",
-		"postinstall": "node ./node_modules/vscode/bin/install",
-		"test": "npm run compile && mocha -u tdd -- dist/test/**.test.js",
+		"test": "npm run compile && npm run unit-test && npm run functional-test",
+		"functional-test": "node ./dist/test/functional/runTest.js",
+		"unit-test": "mocha -u tdd -- dist/test/unit/**.test.js",
 		"clean": "rimraf dist"
-	},
-	"dependencies": {
-		"chai": "^4.2.0",
-		"rimraf": "2.6.3",
-		"shelljs": "0.8.3",
-		"vscode": "1.1.34"
 	},
 	"devDependencies": {
 		"@types/chai": "^4.2.4",
@@ -27,7 +22,14 @@
 		"@types/node": "12.0.0",
 		"@types/rimraf": "2.0.2",
 		"@types/shelljs": "0.8.3",
+		"@types/vscode": "^1.33.0",
+		"chai": "^4.2.0",
+		"glob": "^7.1.5",
+		"mocha": "^4.1.0",
+		"rimraf": "2.6.3",
+		"shelljs": "0.8.3",
 		"tslint": "5.16.0",
-		"typescript": "3.4.5"
+		"typescript": "3.4.5",
+		"vscode-test": "^1.2.2"
 	}
 }
