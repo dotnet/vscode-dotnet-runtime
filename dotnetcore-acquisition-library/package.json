@@ -11,8 +11,7 @@
 		"vscode:prepublish": "npm run compile",
 		"compile": "npm run clean && tsc -p ./",
 		"watch": "npm run clean && tsc -watch -p ./",
-		"test": "npm run compile && npm run unit-test && npm run functional-test",
-		"functional-test": "node ./dist/test/functional/runTest.js",
+		"test": "npm run compile --silent && npm run unit-test",
 		"unit-test": "mocha -u tdd -- dist/test/unit/**.test.js",
 		"clean": "rimraf dist"
 	},

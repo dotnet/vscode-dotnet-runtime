@@ -8,7 +8,7 @@ suite('Extension End to End', () => {
     // const context: vscode.ExtensionContext = {
     //   subscriptions: [],
     // } as any;
-    // extension.activate(context, "");
+    // extension.activate(context);
     // assert.equals(context.subscriptions.length, 1);
   });
 });

@@ -97,7 +97,7 @@ suite("DotnetCoreAcquisitionWorker Unit Tests", function () {
         assert.isEmpty(fs.readdirSync(TestUtils.testStorage));
     }).timeout(20000);
 
-    after(function() {
+    this.afterAll(function() {
         // Clean up temp storage
         rimraf.sync(TestUtils.testStorage);
     });

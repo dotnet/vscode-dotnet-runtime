@@ -8,17 +8,17 @@
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "Acquisistion Worker Tests",
+			"name": "Acquisistion Worker Unit Tests",
 			"program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
 			"args": [
 				"-u",
 				"tdd",
 				"--no-timeout",
 				"--colors",
-				"${workspaceFolder}/dist/test/**.test.js"
+				"${workspaceFolder}/dist/test/unit/**.test.js"
 			],
 			"internalConsoleOptions": "openOnSessionStart",
-			"preLaunchTask": "compile"
+			"preLaunchTask": "npm: watch"
 		}
 	]
 }
