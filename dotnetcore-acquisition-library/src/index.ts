@@ -1,2 +1,2 @@
 export * from './extension'
-export * from './EventStream'
+export * from './test/unit/MockObjects'

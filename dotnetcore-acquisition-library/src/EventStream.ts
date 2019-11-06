@@ -23,10 +23,3 @@ export class EventStream implements IEventStream {
 
     public get subscribe() { return this.subscribeEmitter.event; }
 }
-
-export class MockEventStream implements IEventStream {
-    public events : IEvent[] = [];
-    public post(event: IEvent) {
-        this.events.concat(event);
-    }
-}
