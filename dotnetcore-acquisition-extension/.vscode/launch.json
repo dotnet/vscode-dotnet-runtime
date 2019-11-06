@@ -15,7 +15,7 @@
 			"outFiles": [
 				"${workspaceFolder}/out/**/*.js"
 			],
-			"preLaunchTask": "npm: watch"
+			"preLaunchTask": "watch-all"
 		},
 		{
 			"name": "Extension Acquisition Functional Tests",
@@ -30,7 +30,22 @@
 				"${workspaceFolder}/out/test/**/*.js"
 			],
 			"internalConsoleOptions": "openOnSessionStart",
-			"preLaunchTask": "npm: watch"
+			"preLaunchTask": "watch-all"
+		},
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "Acquisistion Worker Unit Tests",
+			"program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+			"args": [
+				"-u",
+				"tdd",
+				"--no-timeout",
+				"--colors",
+				"${workspaceFolder}/../dotnetcore-acquisition-library/dist/test/unit/**.test.js"
+			],
+			"internalConsoleOptions": "openOnSessionStart",
+			"preLaunchTask": "watch-all"
 		}
 	]
 }

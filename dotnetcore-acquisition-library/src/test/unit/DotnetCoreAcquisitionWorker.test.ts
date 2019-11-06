@@ -8,11 +8,11 @@ import { DotnetAcquisitionStarted, DotnetAcquisitionCompleted } from '../../Even
 import rimraf = require('rimraf');
 var assert = require('chai').assert;
 
-export module TestUtils {
+suite("DotnetCoreAcquisitionWorker Unit Tests", function () {
     const installingVersionsKey = 'installing';
-    export const testStorage = path.join(__dirname, "tmp");
+    const testStorage = path.join(__dirname, "tmp");
 
-    export function getTestAcquisitionWorker(fakeScript : boolean) : [ DotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext ] {
+    function getTestAcquisitionWorker(fakeScript : boolean) : [ DotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext ] {
         const context = new MockExtensionContext();
         const eventStream = new MockEventStream();
         const acquisitionWorker = new DotnetCoreAcquisitionWorker(
@@ -20,7 +20,8 @@ export module TestUtils {
             testStorage,
             context,
             eventStream, 
-            fakeScript ? __dirname + "/../../../src/test/scripts" : __dirname + "/../../../scripts/");
+            fakeScript ? __dirname + "/../../../src/test/scripts/mock-dotnet-install" : // Mock script
+                __dirname + "/../../../scripts/dotnet-install"); // Real script
         return [ acquisitionWorker, eventStream, context ];
     }
     
@@ -28,7 +29,7 @@ export module TestUtils {
         return path.join(__dirname, "tmp", ".dotnet", version, os.platform() === 'win32' ? "dotnet.exe" : "dotnet");
     }
     
-    export async function assertAcquisitionSucceeded(version: string,
+    async function assertAcquisitionSucceeded(version: string,
         path: string,
         eventStream : MockEventStream,
         context : MockExtensionContext) {
@@ -39,7 +40,7 @@ export module TestUtils {
             assert.isEmpty(context.get(installingVersionsKey));
     
             // No errors in event stream
-            assert.lengthOf(eventStream.events, 2);
+            assert.notExists(eventStream.events.find(event => event.type == EventType.DotnetAcquisitionError));
             var startEvent = eventStream.events.find(event => event.type == EventType.DotnetAcquisitionStart);
             var completeEvent = eventStream.events.find(event => event.type == EventType.DotnetAcquisitionCompleted);
             assert.isDefined(startEvent);
@@ -47,58 +48,58 @@ export module TestUtils {
             assert.deepEqual(startEvent, new DotnetAcquisitionStarted(version));
             assert.deepEqual(completeEvent, new DotnetAcquisitionCompleted(version, getExpectedPath(version)));
     }
-}
 
-suite("DotnetCoreAcquisitionWorker Unit Tests", function () {
     test("Acquire Specific Version", async () => {
         const version = "1.0.16";
 
-        const [acquisitionWorker, eventStream, context] = TestUtils.getTestAcquisitionWorker(true);
+        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(true);
 
         const path = await acquisitionWorker.acquire(version);
-        await TestUtils.assertAcquisitionSucceeded(version, path, eventStream, context);
+        await assertAcquisitionSucceeded(version, path, eventStream, context);
     });
 
     test("Acquire Major.Minor Version", async () => {
         const version = ["1.0", "1.0.16"]; // [band, most recent in band]
 
-        const [acquisitionWorker, eventStream, context] = TestUtils.getTestAcquisitionWorker(true);
+        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(true);
 
         const path = await acquisitionWorker.acquire(version[0]);
-        await TestUtils.assertAcquisitionSucceeded(version[1], path, eventStream, context);
+        await assertAcquisitionSucceeded(version[1], path, eventStream, context);
     });
 
     test("Acquire and UninstallAll Single Version", async () => {
         const version = "1.0.16";
 
-        const [acquisitionWorker, eventStream, context] = TestUtils.getTestAcquisitionWorker(false);
+        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(false);
 
         const path = await acquisitionWorker.acquire(version);
-        await TestUtils.assertAcquisitionSucceeded(version, path, eventStream, context);
+        await assertAcquisitionSucceeded(version, path, eventStream, context);
         assert.isTrue(fs.existsSync(path));
 
         await acquisitionWorker.uninstallAll();
-        assert.isEmpty(fs.readdirSync(TestUtils.testStorage));
+        assert.isEmpty(fs.readdirSync(testStorage));
     }).timeout(10000);
 
     test("Acquire and UninstallAll Multiple Versions", async () => {
         const versions = ['1.0.16', '1.1.13', '2.0.9'];
 
-        const [acquisitionWorker, eventStream, context] = TestUtils.getTestAcquisitionWorker(false);
+        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(false);
 
         for (const version of versions) {
             const path = await acquisitionWorker.acquire(version);
-            await TestUtils.assertAcquisitionSucceeded(version, path, eventStream, context);
+            await assertAcquisitionSucceeded(version, path, eventStream, context);
             assert.isTrue(fs.existsSync(path));
             eventStream.events = []; // clear events for next acquisition
         }
 
         await acquisitionWorker.uninstallAll();
-        assert.isEmpty(fs.readdirSync(TestUtils.testStorage));
+        assert.isEmpty(fs.readdirSync(testStorage));
     }).timeout(20000);
 
     this.afterAll(function() {
         // Clean up temp storage
-        rimraf.sync(TestUtils.testStorage);
+        rimraf.sync(testStorage);
     });
+
+    // TODO change this so the mock script makes the file we expect, just empty. 
 });

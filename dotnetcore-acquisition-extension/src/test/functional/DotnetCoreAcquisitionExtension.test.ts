@@ -8,7 +8,7 @@ var assert = require('chai').assert;
 
 suite('DotnetCoreAcquisitionExtension End to End', function () {
   const storagePath = path.join(__dirname, "tmp");
-  const mockState = new MockExtensionContext;
+  const mockState = new MockExtensionContext();
   const extensionPath = path.join(__dirname, "/../../..");
   let context: vscode.ExtensionContext;
 
@@ -27,13 +27,13 @@ suite('DotnetCoreAcquisitionExtension End to End', function () {
     rimraf.sync(storagePath);
   });
 
-  test('DotnetCoreAcquisitionExtension: Activate', async () => {
-    // 4 commands should now be registered
+  test('Activate', async () => {
+    // Commands should now be registered
     assert.exists(context);
-    assert.equal(context.subscriptions.length, 4);
+    assert.isAbove(context.subscriptions.length, 0);
   });
 
-  test('DotnetCoreAcquisitionExtension: Install Command', async () => {
+  test('Install Command', async () => {
     const version = '2.2'
     const dotnetPath = await vscode.commands.executeCommand<string>('dotnet.acquire', version);
     assert.exists(dotnetPath);
@@ -41,7 +41,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function () {
     assert.include(dotnetPath, version);
   }).timeout(20000);
 
-  test('DotnetCoreAcquisitionExtension: Uninstall Command', async () => {
+  test('Uninstall Command', async () => {
     const version = '2.1'
     const dotnetPath = await vscode.commands.executeCommand<string>('dotnet.acquire', version);
     assert.exists(dotnetPath);
@@ -50,9 +50,4 @@ suite('DotnetCoreAcquisitionExtension End to End', function () {
     await vscode.commands.executeCommand<string>('dotnet.uninstallAll', version);
     assert.isFalse(fs.existsSync(dotnetPath!));
   }).timeout(20000);
-
-  // TODO tests to add:
-  //    Installing/ uninstalling multiple versions
-  //    Commands besides install/uninstall
-  //    Check it doesn't re-download the same version twice
 });
