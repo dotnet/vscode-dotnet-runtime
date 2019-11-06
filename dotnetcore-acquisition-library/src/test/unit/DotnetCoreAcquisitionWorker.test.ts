@@ -2,7 +2,7 @@ import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs';
 import { DotnetCoreAcquisitionWorker } from '../../DotnetCoreAcquisitionWorker';
-import { MockExtensionContext, MockEventStream } from './MockObjects';
+import { MockExtensionContext, MockEventStream, NoInstallAcquisitionInvoker } from './MockObjects';
 import { EventType } from '../../EventType';
 import { DotnetAcquisitionStarted, DotnetAcquisitionCompleted } from '../../EventStreamEvents';
 import rimraf = require('rimraf');
@@ -12,16 +12,14 @@ suite("DotnetCoreAcquisitionWorker Unit Tests", function () {
     const installingVersionsKey = 'installing';
     const testStorage = path.join(__dirname, "tmp");
 
-    function getTestAcquisitionWorker(fakeScript : boolean) : [ DotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext ] {
+    function getTestAcquisitionWorker() : [ DotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext ] {
         const context = new MockExtensionContext();
         const eventStream = new MockEventStream();
         const acquisitionWorker = new DotnetCoreAcquisitionWorker(
-            "",
             testStorage,
             context,
-            eventStream, 
-            fakeScript ? __dirname + "/../../../src/test/scripts/mock-dotnet-install" : // Mock script
-                __dirname + "/../../../scripts/dotnet-install"); // Real script
+            eventStream,
+            new NoInstallAcquisitionInvoker(eventStream));
         return [ acquisitionWorker, eventStream, context ];
     }
     
@@ -52,7 +50,7 @@ suite("DotnetCoreAcquisitionWorker Unit Tests", function () {
     test("Acquire Specific Version", async () => {
         const version = "1.0.16";
 
-        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(true);
+        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker();
 
         const path = await acquisitionWorker.acquire(version);
         await assertAcquisitionSucceeded(version, path, eventStream, context);
@@ -61,7 +59,7 @@ suite("DotnetCoreAcquisitionWorker Unit Tests", function () {
     test("Acquire Major.Minor Version", async () => {
         const version = ["1.0", "1.0.16"]; // [band, most recent in band]
 
-        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(true);
+        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker();
 
         const path = await acquisitionWorker.acquire(version[0]);
         await assertAcquisitionSucceeded(version[1], path, eventStream, context);
@@ -70,7 +68,7 @@ suite("DotnetCoreAcquisitionWorker Unit Tests", function () {
     test("Acquire and UninstallAll Single Version", async () => {
         const version = "1.0.16";
 
-        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(false);
+        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker();
 
         const path = await acquisitionWorker.acquire(version);
         await assertAcquisitionSucceeded(version, path, eventStream, context);
@@ -78,12 +76,12 @@ suite("DotnetCoreAcquisitionWorker Unit Tests", function () {
 
         await acquisitionWorker.uninstallAll();
         assert.isEmpty(fs.readdirSync(testStorage));
-    }).timeout(10000);
+    });
 
     test("Acquire and UninstallAll Multiple Versions", async () => {
         const versions = ['1.0.16', '1.1.13', '2.0.9'];
 
-        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(false);
+        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker();
 
         for (const version of versions) {
             const path = await acquisitionWorker.acquire(version);
@@ -94,12 +92,10 @@ suite("DotnetCoreAcquisitionWorker Unit Tests", function () {
 
         await acquisitionWorker.uninstallAll();
         assert.isEmpty(fs.readdirSync(testStorage));
-    }).timeout(20000);
+    });
 
-    this.afterAll(function() {
+    this.afterEach(function() {
         // Clean up temp storage
         rimraf.sync(testStorage);
     });
-
-    // TODO change this so the mock script makes the file we expect, just empty. 
 });
