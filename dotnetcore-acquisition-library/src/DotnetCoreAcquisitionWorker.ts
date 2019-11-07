@@ -11,6 +11,7 @@ import { Memento } from 'vscode';
 import { IEventStream } from './EventStream';
 import { DotnetAcquisitionStarted } from './EventStreamEvents';
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';
+import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 
 export class DotnetCoreAcquisitionWorker {
     private readonly installingVersionsKey = 'installing';
@@ -94,8 +95,13 @@ export class DotnetCoreAcquisitionWorker {
         installingVersions.push(version);
         await this.extensionState.update(this.installingVersionsKey, installingVersions);
 
+        const installContext = {
+            installDir: dotnetInstallDir,
+            version: version,
+            dotnetPath: dotnetPath
+        } as IDotnetInstallationContext;
         this.eventStream.post(new DotnetAcquisitionStarted(version));
-        await this.acquisitionInvoker.installDotnet(dotnetInstallDir, version, dotnetPath);
+        await this.acquisitionInvoker.installDotnet(installContext);
 
         // Need to re-query our installing versions because there may have been concurrent acquisitions that
         // changed its value.

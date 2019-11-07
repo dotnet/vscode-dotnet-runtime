@@ -6,6 +6,8 @@ import { IEventStream } from '../../EventStream';
 import { IEvent } from '../../IEvent';
 import { IAcquisitionInvoker } from '../../IAcquisitionInvoker';
 import { DotnetAcquisitionCompleted } from '../../EventStreamEvents';
+import { IDotnetInstallationContext } from '../../IDotnetInstallationContext';
+import { EventType } from '../../EventType';
 
 export class MockExtensionContext implements Memento {
     private values: { [n: string]: any; } = {};
@@ -32,17 +34,17 @@ export class MockEventStream implements IEventStream {
 }
 
 export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker {
-    public installDotnet(dotnetInstallDir: string, version: string, dotnetPath: string): Promise<void> {
+    public installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             // Write a file to mock the download
             const fileToWrite = os.platform() === 'win32' ? "dotnet.exe" : "dotnet"
-            if (!fs.existsSync(dotnetInstallDir)) {
-                fs.mkdirSync(dotnetInstallDir, { recursive: true });
+            if (!fs.existsSync(installContext.installDir)) {
+                fs.mkdirSync(installContext.installDir, { recursive: true });
             }
             if (!fs.existsSync(fileToWrite)) {
-                fs.writeFileSync(path.join(dotnetInstallDir, fileToWrite), "");
+                fs.writeFileSync(path.join(installContext.installDir, fileToWrite), "");
             }
-            this.eventStream.post(new DotnetAcquisitionCompleted(version, dotnetPath));
+            this.eventStream.post(new DotnetAcquisitionCompleted(installContext.version, installContext.dotnetPath));
             resolve();
 
         });

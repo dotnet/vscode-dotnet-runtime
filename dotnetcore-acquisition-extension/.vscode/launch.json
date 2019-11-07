@@ -35,7 +35,7 @@
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "Acquisistion Worker Unit Tests",
+			"name": "Acquisition Library Unit Tests",
 			"program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
 			"args": [
 				"-u",
