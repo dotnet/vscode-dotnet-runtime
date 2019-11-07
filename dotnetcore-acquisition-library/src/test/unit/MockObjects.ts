@@ -5,7 +5,7 @@ import { Memento } from 'vscode';
 import { IEventStream } from '../../EventStream';
 import { IEvent } from '../../IEvent';
 import { IAcquisitionInvoker } from '../../IAcquisitionInvoker';
-import { DotnetAcquisitionCompleted } from '../../EventStreamEvents';
+import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStreamEvents';
 import { IDotnetInstallationContext } from '../../IDotnetInstallationContext';
 import { EventType } from '../../EventType';
 
@@ -36,14 +36,7 @@ export class MockEventStream implements IEventStream {
 export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker {
     public installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
         return new Promise<void>((resolve, reject) => {
-            // Write a file to mock the download
-            const fileToWrite = os.platform() === 'win32' ? "dotnet.exe" : "dotnet"
-            if (!fs.existsSync(installContext.installDir)) {
-                fs.mkdirSync(installContext.installDir, { recursive: true });
-            }
-            if (!fs.existsSync(fileToWrite)) {
-                fs.writeFileSync(path.join(installContext.installDir, fileToWrite), "");
-            }
+            this.eventStream.post(new TestAcquireCalled(installContext));
             this.eventStream.post(new DotnetAcquisitionCompleted(installContext.version, installContext.dotnetPath));
             resolve();
 

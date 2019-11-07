@@ -9,7 +9,7 @@ import * as path from 'path';
 import rimraf = require('rimraf');
 import { Memento } from 'vscode';
 import { IEventStream } from './EventStream';
-import { DotnetAcquisitionStarted } from './EventStreamEvents';
+import { DotnetAcquisitionStarted, DotnetUninstallAllStarted, DotnetUninstallAllCompleted } from './EventStreamEvents';
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 
@@ -43,11 +43,15 @@ export class DotnetCoreAcquisitionWorker {
     }
 
     public async uninstallAll() {
+        this.eventStream.post(new DotnetUninstallAllStarted());
+
         this.acquisitionPromises = {};
 
         rimraf.sync(this.installDir);
 
         await this.extensionState.update(this.installingVersionsKey, []);
+        
+        this.eventStream.post(new DotnetUninstallAllCompleted());
     }
 
     public acquire(version: string): Promise<string> {
