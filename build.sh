@@ -1,3 +1,7 @@
+RED=`tput setaf 1`
+GREEN=`tput setaf 2`
+NC=`tput sgr0`
+
 echo ""
 echo "----------- Compiling dotnetcore-acquisition-library -----------"
 echo ""
@@ -9,7 +13,7 @@ npm run compile
 if [ $? -ne 0 ];
 then
     echo ""
-    echo "Build failed!"
+    echo "${RED}Build failed!${NC}"
     exit 1
 fi
 popd
@@ -25,7 +29,7 @@ npm run compile
 if [ $? -ne 0 ];
 then
     echo ""
-    echo "Build failed!"
+    echo "${RED}Build failed!${NC}"
     exit 1
 fi
 popd
@@ -41,11 +45,11 @@ npm run compile
 if [ $? -ne 0 ];
 then
     echo ""
-    echo "Build failed!"
+    echo "${RED}Build failed!${NC}"
     exit 1
 fi
 popd
 
 echo ""
-echo "Build succeeded!"
+echo "${GREEN}Build succeeded!${NC}"
 exit 0

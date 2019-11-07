@@ -6,7 +6,11 @@
 import * as vscode from 'vscode';
 import { IEvent } from './IEvent';
 
-export class EventStream {
+export interface IEventStream {
+    post(event: IEvent): void;
+}
+
+export class EventStream implements IEventStream {
     private readonly subscribeEmitter: vscode.EventEmitter<IEvent>;
 
     constructor() {

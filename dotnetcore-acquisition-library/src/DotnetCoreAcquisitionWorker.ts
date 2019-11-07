@@ -3,25 +3,19 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-import * as cp from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import rimraf = require('rimraf');
 import { Memento } from 'vscode';
-import { EventStream } from './EventStream';
-import {
-    DotnetAcquisitionCompleted,
-    DotnetAcquisitionInstallError,
-    DotnetAcquisitionScriptError,
-    DotnetAcquisitionStarted,
-    DotnetAcquisitionUnexpectedError,
-} from './EventStreamEvents';
+import { IEventStream } from './EventStream';
+import { DotnetAcquisitionStarted, DotnetUninstallAllStarted, DotnetUninstallAllCompleted } from './EventStreamEvents';
+import { IAcquisitionInvoker } from './IAcquisitionInvoker';
+import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 
 export class DotnetCoreAcquisitionWorker {
     private readonly installingVersionsKey = 'installing';
     private readonly installDir: string;
-    private readonly scriptPath: string;
     private readonly dotnetExecutable: string;
 
     // TODO: Represent this in package.json OR utilize the channel argument in dotnet-install to dynamically acquire the
@@ -38,13 +32,10 @@ export class DotnetCoreAcquisitionWorker {
 
     private acquisitionPromises: { [version: string]: Promise<string> | undefined };
 
-    constructor(
-        extensionPath: string,
-        private readonly storagePath: string,
+    constructor(private readonly storagePath: string,
         private readonly extensionState: Memento,
-        private readonly eventStream: EventStream) {
-        const script = os.platform() === 'win32' ? 'dotnet-install.cmd' : 'dotnet-install.sh';
-        this.scriptPath = path.join(extensionPath, 'node_modules', 'dotnetcore-acquisition-library', 'scripts', script);
+        private readonly eventStream: IEventStream,
+        private readonly acquisitionInvoker: IAcquisitionInvoker) {
         this.installDir = path.join(this.storagePath, '.dotnet');
         const dotnetExtension = os.platform() === 'win32' ? '.exe' : '';
         this.dotnetExecutable = `dotnet${dotnetExtension}`;
@@ -52,11 +43,15 @@ export class DotnetCoreAcquisitionWorker {
     }
 
     public async uninstallAll() {
+        this.eventStream.post(new DotnetUninstallAllStarted());
+
         this.acquisitionPromises = {};
 
         rimraf.sync(this.installDir);
 
         await this.extensionState.update(this.installingVersionsKey, []);
+        
+        this.eventStream.post(new DotnetUninstallAllCompleted());
     }
 
     public acquire(version: string): Promise<string> {
@@ -104,16 +99,13 @@ export class DotnetCoreAcquisitionWorker {
         installingVersions.push(version);
         await this.extensionState.update(this.installingVersionsKey, installingVersions);
 
-        const args = [
-            '-InstallDir', `'${dotnetInstallDir}'`, // Use single quotes instead of double quotes (see https://github.com/dotnet/cli/issues/11521)
-            '-Runtime', 'dotnet',
-            '-Version', version,
-        ];
-
-        const installCommand = `${this.scriptPath} ${args.join(' ')}`;
-
+        const installContext = {
+            installDir: dotnetInstallDir,
+            version: version,
+            dotnetPath: dotnetPath
+        } as IDotnetInstallationContext;
         this.eventStream.post(new DotnetAcquisitionStarted(version));
-        await this.installDotnet(installCommand, version, dotnetPath);
+        await this.acquisitionInvoker.installDotnet(installContext);
 
         // Need to re-query our installing versions because there may have been concurrent acquisitions that
         // changed its value.
@@ -144,27 +136,5 @@ export class DotnetCoreAcquisitionWorker {
     private getDotnetInstallDir(version: string) {
         const dotnetInstallDir = path.join(this.installDir, version)
         return dotnetInstallDir;
-    }
-
-    private installDotnet(installCommand: string, version: string, dotnetPath: string): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
-            try {
-                cp.exec(installCommand, { cwd: process.cwd(), maxBuffer: 500 * 1024 }, (error, stdout, stderr) => {
-                    if (error) {
-                        this.eventStream.post(new DotnetAcquisitionInstallError(error, version));
-                        reject(error);
-                    } else if (stderr && stderr.length > 0) {
-                        this.eventStream.post(new DotnetAcquisitionScriptError(stderr, version));
-                        reject(stderr);
-                    } else {
-                        this.eventStream.post(new DotnetAcquisitionCompleted(version, dotnetPath));
-                        resolve();
-                    }
-                });
-            } catch (error) {
-                this.eventStream.post(new DotnetAcquisitionUnexpectedError(error, version));
-                reject(error);
-            }
-        });
     }
 }
