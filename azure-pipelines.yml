@@ -1,0 +1,79 @@
+trigger:
+  branches:
+      include:
+      - master
+      - azure-pipelines
+pr:
+- master
+
+strategy:
+  matrix:
+    linux:
+      imageName: 'ubuntu-16.04'
+    mac:
+      imageName: 'macos-10.13'
+    windows:
+      imageName: 'vs2017-win2016'
+
+pool:
+  vmImage: $(imageName)
+
+steps:
+
+- task: NodeTool@0
+  displayName: 'Install Node.js'
+
+##### Build #####
+- bash: |
+    npm install
+    npm run compile
+    npm run test
+  workingDirectory: 'dotnetcore-acquisition-library'
+  displayName: Build and Test dotnetcore-acquisition-library
+
+- bash: |
+    npm install
+    npm run compile
+    npm run test
+  workingDirectory: 'dotnetcore-acquisition-extension'
+  displayName: Build and Test dotnetcore-acquisition-extension
+  condition: and(succeeded(), ne(variables['Agent.OS'], 'Linux')) # TODO shouldn't need a special case here
+
+- bash: |
+    npm install
+    npm run compile
+  workingDirectory: 'dotnetcore-acquisition-extension'
+  displayName: Build and Test dotnetcore-acquisition-extension
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Linux')) # TODO shouldn't need this
+
+- bash: |
+    npm install
+    npm run compile
+  workingDirectory: 'sample'
+  displayName: Build Sample
+
+##### Package #####
+# only need to publish once-> do so on windows run
+- bash: |
+    npm install -g rimraf
+    npm install -g vsce
+    vsce package
+  displayName: Package Artifact
+  workingDirectory: 'dotnetcore-acquisition-extension'
+  condition: and(succeeded(), eq( variables['Agent.OS'], 'Windows_NT' )) 
+
+##### Publish #####
+- task: CopyFiles@2
+  displayName: 'Copy Artifact'
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)'
+    Contents: '**\*.vsix'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)\Extension'
+    flattenFolders: true
+  condition: and(succeeded(), eq( variables['Agent.OS'], 'Windows_NT' ))
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish Artifact'
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)\Extension'
+  condition: and(succeeded(), eq( variables['Agent.OS'], 'Windows_NT' ))
