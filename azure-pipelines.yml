@@ -2,7 +2,7 @@ trigger:
   branches:
       include:
       - master
-      - azure-pipelines
+      - azure-pipelines # TODO temporary
 pr:
 - master
 
@@ -43,7 +43,7 @@ steps:
     npm install
     npm run compile
   workingDirectory: 'dotnetcore-acquisition-extension'
-  displayName: Build and Test dotnetcore-acquisition-extension
+  displayName: Build dotnetcore-acquisition-extension
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Linux')) # TODO shouldn't need this
 
 - bash: |
