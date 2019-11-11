@@ -2,78 +2,107 @@ trigger:
   branches:
       include:
       - master
-      - azure-pipelines # TODO temporary
 pr:
 - master
 
-strategy:
-  matrix:
-    linux:
-      imageName: 'ubuntu-16.04'
-    mac:
-      imageName: 'macos-10.13'
-    windows:
-      imageName: 'vs2017-win2016'
+jobs:
+ ##### Build #####
+  - job: Build
+    displayName: 'Build and Test'
+    pool:
+      vmImage: $(imageName)
+    strategy:
+      matrix:
+        Linux:
+          imageName: 'ubuntu-16.04'
+        Mac:
+          imageName: 'macos-10.13'
+        Windows:
+          imageName: 'vs2017-win2016'
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '12.x'
+      displayName: 'Install Node.js'
+    - bash: |
+        /usr/bin/Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+        echo ">>> Started xvfb"
+      displayName: Start xvfb
+      condition: and(succeeded(), eq(variables['Agent.OS'], 'Linux'))
+    - bash: |
+        npm install
+        npm run compile
+        npm run test
+      workingDirectory: 'dotnetcore-acquisition-library'
+      displayName: Build and Test dotnetcore-acquisition-library
+    - bash: |
+        npm install
+        npm run compile
+        npm run test
+      workingDirectory: 'dotnetcore-acquisition-extension'
+      displayName: Build and Test dotnetcore-acquisition-extension
+      env:
+        DISPLAY: ':99.0'
+    - bash: |
+        npm install
+        npm run compile
+      workingDirectory: 'sample'
+      displayName: Build Sample
 
-pool:
-  vmImage: $(imageName)
+##### Code Static Checks #####
+  - job: Checks
+    displayName: 'Code Checks'
+    pool:
+      vmImage: 'vs2017-win2016'
+    steps:
+    - task: CredScan@2
+      inputs:
+        toolMajorVersion: 'V1'
+    - task: PoliCheck@1
+      inputs:
+        inputType: 'Basic'
+        targetType: 'F'
+        targetArgument: '$(Build.SourcesDirectory)'
+        result: 'PoliCheck.xml'
 
-steps:
-
-- task: NodeTool@0
-  displayName: 'Install Node.js'
-
-##### Build #####
-- bash: |
-    npm install
-    npm run compile
-    npm run test
-  workingDirectory: 'dotnetcore-acquisition-library'
-  displayName: Build and Test dotnetcore-acquisition-library
-
-- bash: |
-    npm install
-    npm run compile
-    npm run test
-  workingDirectory: 'dotnetcore-acquisition-extension'
-  displayName: Build and Test dotnetcore-acquisition-extension
-  condition: and(succeeded(), ne(variables['Agent.OS'], 'Linux')) # TODO shouldn't need a special case here
-
-- bash: |
-    npm install
-    npm run compile
-  workingDirectory: 'dotnetcore-acquisition-extension'
-  displayName: Build dotnetcore-acquisition-extension
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Linux')) # TODO shouldn't need this
-
-- bash: |
-    npm install
-    npm run compile
-  workingDirectory: 'sample'
-  displayName: Build Sample
-
-##### Package #####
-# only need to publish once-> do so on windows run
-- bash: |
-    npm install -g rimraf
-    npm install -g vsce
-    vsce package
-  displayName: Package Artifact
-  workingDirectory: 'dotnetcore-acquisition-extension'
-  condition: and(succeeded(), eq( variables['Agent.OS'], 'Windows_NT' )) 
-
-##### Publish #####
-- task: CopyFiles@2
-  displayName: 'Copy Artifact'
-  inputs:
-    SourceFolder: '$(Build.SourcesDirectory)'
-    Contents: '**\*.vsix'
-    TargetFolder: '$(Build.ArtifactStagingDirectory)\Extension'
-    flattenFolders: true
-  condition: and(succeeded(), eq( variables['Agent.OS'], 'Windows_NT' ))
-
-- task: PublishBuildArtifacts@1
-  displayName: 'Publish Artifact'
-  inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)\Extension'
-  condition: and(succeeded(), eq( variables['Agent.OS'], 'Windows_NT' ))
+##### Package and Publish #####
+  - job: Publish
+    displayName: 'Package and Publish'
+    dependsOn: 
+    - Checks
+    - Build
+    condition: succeeded()
+    pool:
+      vmImage: 'vs2017-win2016'
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '12.x'
+      displayName: 'Install Node.js'
+    - bash: |
+        npm install
+        npm run compile
+      workingDirectory: 'dotnetcore-acquisition-library'
+      displayName: Build dotnetcore-acquisition-library
+    - bash: |
+        npm install
+        npm run compile
+      workingDirectory: 'dotnetcore-acquisition-extension'
+      displayName: Build dotnetcore-acquisition-extension
+    - bash: |
+        npm install -g rimraf
+        npm install -g vsce
+        vsce package
+      displayName: Package Artifact
+      workingDirectory: 'dotnetcore-acquisition-extension'
+    - task: CopyFiles@2
+      displayName: 'Copy Artifact'
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)'
+        Contents: '**\*.vsix'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)'
+        flattenFolders: true
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifact'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
