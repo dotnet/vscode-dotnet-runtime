@@ -14,7 +14,6 @@ jobs:
  ##### Build #####
   - job: Build
     displayName: 'Build and Test'
-    condition: in(variables['Build.Reason'], 'PullRequest')
     pool:
       vmImage: $(imageName)
     strategy:
