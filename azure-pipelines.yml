@@ -1,14 +1,20 @@
 trigger:
+  batch: true
   branches:
-      include:
-      - master
+    include:
+    - master
+
 pr:
-- master
+  autoCancel: false
+  branches:
+    include:
+    - '*'
 
 jobs:
  ##### Build #####
   - job: Build
     displayName: 'Build and Test'
+    condition: in(variables['Build.Reason'], 'PullRequest')
     pool:
       vmImage: $(imageName)
     strategy:
@@ -52,6 +58,7 @@ jobs:
 ##### Code Static Checks #####
   - job: Checks
     displayName: 'Code Checks'
+    condition: in(variables['Build.Reason'], 'PullRequest')
     pool:
       vmImage: 'vs2017-win2016'
     steps:
@@ -71,7 +78,7 @@ jobs:
     dependsOn: 
     - Checks
     - Build
-    condition: succeeded()
+    condition: notin(variables['Build.Reason'], 'PullRequest')
     pool:
       vmImage: 'vs2017-win2016'
     steps:
