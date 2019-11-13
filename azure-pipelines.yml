@@ -1,0 +1,96 @@
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+
+pr:
+  autoCancel: false
+  branches:
+    include:
+    - '*'
+
+jobs:
+ ##### Build #####
+  - job: Build
+    displayName: 'Build and Test'
+    pool:
+      vmImage: $(imageName)
+    strategy:
+      matrix:
+        Linux:
+          imageName: 'ubuntu-16.04'
+        Mac:
+          imageName: 'macos-10.13'
+        Windows:
+          imageName: 'vs2017-win2016'
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '12.x'
+      displayName: 'Install Node.js'
+    - bash: |
+        /usr/bin/Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+        echo ">>> Started xvfb"
+      displayName: Start xvfb
+      condition: and(succeeded(), eq(variables['Agent.OS'], 'Linux'))
+    - bash: |
+        npm install
+        npm run compile
+        npm run test
+      workingDirectory: 'dotnetcore-acquisition-library'
+      displayName: Build and Test dotnetcore-acquisition-library
+    - bash: |
+        npm install
+        npm run compile
+        npm run test
+      workingDirectory: 'dotnetcore-acquisition-extension'
+      displayName: Build and Test dotnetcore-acquisition-extension
+      env:
+        DISPLAY: ':99.0'
+    - bash: |
+        npm install
+        npm run compile
+      workingDirectory: 'sample'
+      displayName: Build Sample
+
+##### Package and Publish #####
+  - job: Publish
+    displayName: 'Package and Publish'
+    dependsOn: 
+    - Build
+    condition: notin(variables['Build.Reason'], 'PullRequest')
+    pool:
+      vmImage: 'vs2017-win2016'
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '12.x'
+      displayName: 'Install Node.js'
+    - bash: |
+        npm install
+        npm run compile
+      workingDirectory: 'dotnetcore-acquisition-library'
+      displayName: Build dotnetcore-acquisition-library
+    - bash: |
+        npm install
+        npm run compile
+      workingDirectory: 'dotnetcore-acquisition-extension'
+      displayName: Build dotnetcore-acquisition-extension
+    - bash: |
+        npm install -g rimraf
+        npm install -g vsce
+        vsce package
+      displayName: Package Artifact
+      workingDirectory: 'dotnetcore-acquisition-extension'
+    - task: CopyFiles@2
+      displayName: 'Copy Artifact'
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)'
+        Contents: '**\*.vsix'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)'
+        flattenFolders: true
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifact'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'

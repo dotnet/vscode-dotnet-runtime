@@ -1,13 +1,14 @@
-import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
+/* --------------------------------------------------------------------------------------------
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See License.txt in the project root for license information.
+ * ------------------------------------------------------------------------------------------ */
+
 import { Memento } from 'vscode';
 import { IEventStream } from '../../EventStream';
 import { IEvent } from '../../IEvent';
 import { IAcquisitionInvoker } from '../../IAcquisitionInvoker';
 import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStreamEvents';
 import { IDotnetInstallationContext } from '../../IDotnetInstallationContext';
-import { EventType } from '../../EventType';
 
 export class MockExtensionContext implements Memento {
     private values: { [n: string]: any; } = {};
