@@ -54,28 +54,10 @@ jobs:
       workingDirectory: 'sample'
       displayName: Build Sample
 
-##### Code Static Checks #####
-  - job: Checks
-    displayName: 'Code Checks'
-    condition: in(variables['Build.Reason'], 'PullRequest')
-    pool:
-      vmImage: 'vs2017-win2016'
-    steps:
-    - task: CredScan@2
-      inputs:
-        toolMajorVersion: 'V1'
-    - task: PoliCheck@1
-      inputs:
-        inputType: 'Basic'
-        targetType: 'F'
-        targetArgument: '$(Build.SourcesDirectory)'
-        result: 'PoliCheck.xml'
-
 ##### Package and Publish #####
   - job: Publish
     displayName: 'Package and Publish'
     dependsOn: 
-    - Checks
     - Build
     condition: notin(variables['Build.Reason'], 'PullRequest')
     pool:
