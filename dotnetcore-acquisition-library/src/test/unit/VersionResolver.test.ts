@@ -22,9 +22,4 @@ suite("VersionResolver Unit Tests", function () {
     test("Error With Version Out of Range", async () => {
         return assert.isRejected(resolver.resolveVersion("0.0"), Error, 'Unable to resolve version');
     });
-
-    // TODO how to test this without making it impossible to maintain
-    test("Resolve 1.0", async () => {
-        return assert.becomes(resolver.resolveVersion("1.0"), "1.0.16");
-    });
 });

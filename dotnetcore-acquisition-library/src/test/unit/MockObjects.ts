@@ -3,6 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
+import * as path from 'path';
 import { Memento } from 'vscode';
 import { IEventStream } from '../../EventStream';
 import { IEvent } from '../../IEvent';
@@ -10,6 +11,7 @@ import { IAcquisitionInvoker } from '../../IAcquisitionInvoker';
 import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStreamEvents';
 import { IDotnetInstallationContext } from '../../IDotnetInstallationContext';
 import { IVersionResolver } from '../../IVersionResolver';
+import { AcquisitionInvoker } from '../../AcquisitionInvoker';
 
 export class MockExtensionContext implements Memento {
     private values: { [n: string]: any; } = {};
@@ -43,6 +45,14 @@ export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker {
             resolve();
 
         });
+    }
+}
+
+export class FakeScriptAcquisitionInvoker extends AcquisitionInvoker {
+    constructor(scriptPath: string, scriptName: string, eventStream: IEventStream) {
+        super('', eventStream);
+        // Overwrite the real script path with the path to the fake scripts
+        this.scriptPath = path.join(scriptPath, scriptName + this.getScriptEnding());
     }
 }
 
