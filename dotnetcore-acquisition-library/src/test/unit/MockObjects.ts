@@ -9,6 +9,7 @@ import { IEvent } from '../../IEvent';
 import { IAcquisitionInvoker } from '../../IAcquisitionInvoker';
 import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStreamEvents';
 import { IDotnetInstallationContext } from '../../IDotnetInstallationContext';
+import { IVersionResolver } from '../../IVersionResolver';
 
 export class MockExtensionContext implements Memento {
     private values: { [n: string]: any; } = {};
@@ -42,5 +43,25 @@ export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker {
             resolve();
 
         });
+    }
+}
+
+export const latestVersionMap: { [version: string]: string | undefined } = {
+    '1.0': '1.0.16',
+    '1.1': '1.1.13',
+    '2.0': '2.0.9',
+    '2.1': '2.1.11',
+    '2.2': '2.2.5',
+};
+
+export class MockVersionResolver extends IVersionResolver {
+    resolveVersion(version: string): Promise<string> {
+        this.validateVersionInput(version);
+
+        const resolvedVersion = latestVersionMap[version];
+        if (resolvedVersion) {
+            return Promise.resolve(resolvedVersion);
+        }
+        return Promise.reject('Unable to resolve version');
     }
 }

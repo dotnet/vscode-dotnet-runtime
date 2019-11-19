@@ -6,7 +6,7 @@
 import * as os from 'os';
 import * as path from 'path';
 import { DotnetCoreAcquisitionWorker } from '../../DotnetCoreAcquisitionWorker';
-import { MockExtensionContext, MockEventStream, NoInstallAcquisitionInvoker } from './MockObjects';
+import { MockExtensionContext, MockEventStream, NoInstallAcquisitionInvoker, MockVersionResolver, latestVersionMap } from './MockObjects';
 import { EventType } from '../../EventType';
 import { DotnetAcquisitionStarted, DotnetAcquisitionCompleted, TestAcquireCalled, DotnetUninstallAllStarted, DotnetUninstallAllCompleted } from '../../EventStreamEvents';
 var assert = require('chai').assert;
@@ -21,7 +21,8 @@ suite("DotnetCoreAcquisitionWorker Unit Tests", function () {
             "",
             context,
             eventStream,
-            new NoInstallAcquisitionInvoker(eventStream));
+            new NoInstallAcquisitionInvoker(eventStream), 
+            new MockVersionResolver());
         return [ acquisitionWorker, eventStream, context ];
     }
     
@@ -58,31 +59,20 @@ suite("DotnetCoreAcquisitionWorker Unit Tests", function () {
         assert.equal(acquireEvent!.context.version, version);
     }
 
-    test("Acquire Specific Version", async () => {
-        const version = "1.0.16";
-
+    test("Acquire Version", async () => {
+        const version = "1.0";
         const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker();
 
         const path = await acquisitionWorker.acquire(version);
-        await assertAcquisitionSucceeded(version, path, eventStream, context);
-    });
-
-    test("Acquire Major.Minor Version", async () => {
-        const version = ["1.0", "1.0.16"]; // [band, most recent in band]
-
-        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker();
-
-        const path = await acquisitionWorker.acquire(version[0]);
-        await assertAcquisitionSucceeded(version[1], path, eventStream, context);
+        await assertAcquisitionSucceeded(latestVersionMap[version]!, path, eventStream, context);
     });
 
     test("Acquire and UninstallAll", async () => {
-        const version = "1.0.16";
-
+        const version = "1.0";
         const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker();
 
         const path = await acquisitionWorker.acquire(version);
-        await assertAcquisitionSucceeded(version, path, eventStream, context);
+        await assertAcquisitionSucceeded(latestVersionMap[version]!, path, eventStream, context);
 
         await acquisitionWorker.uninstallAll();
         assert.exists(eventStream.events.find(event => event instanceof DotnetUninstallAllStarted));

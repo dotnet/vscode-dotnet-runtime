@@ -12,30 +12,20 @@ import { IEventStream } from './EventStream';
 import { DotnetAcquisitionStarted, DotnetUninstallAllStarted, DotnetUninstallAllCompleted } from './EventStreamEvents';
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
+import { IVersionResolver } from './IVersionResolver';
 
 export class DotnetCoreAcquisitionWorker {
     private readonly installingVersionsKey = 'installing';
     private readonly installDir: string;
     private readonly dotnetExecutable: string;
 
-    // TODO: Represent this in package.json OR utilize the channel argument in dotnet-install to dynamically acquire the
-    // latest for a specific channel. Concerns for using the dotnet-install channel mechanism:
-    //  1. Is the specified "latest" version available on the CDN yet?
-    //  2. Would need to build a mechanism to occasionally query latest so you don't pay the cost on every acquire.
-    private readonly latestVersionMap: { [version: string]: string | undefined } = {
-        '1.0': '1.0.16',
-        '1.1': '1.1.13',
-        '2.0': '2.0.9',
-        '2.1': '2.1.11',
-        '2.2': '2.2.5',
-    };
-
     private acquisitionPromises: { [version: string]: Promise<string> | undefined };
 
     constructor(private readonly storagePath: string,
         private readonly extensionState: Memento,
         private readonly eventStream: IEventStream,
-        private readonly acquisitionInvoker: IAcquisitionInvoker) {
+        private readonly acquisitionInvoker: IAcquisitionInvoker, 
+        private readonly versionResolver: IVersionResolver) {
         this.installDir = path.join(this.storagePath, '.dotnet');
         const dotnetExtension = os.platform() === 'win32' ? '.exe' : '';
         this.dotnetExecutable = `dotnet${dotnetExtension}`;
@@ -54,11 +44,8 @@ export class DotnetCoreAcquisitionWorker {
         this.eventStream.post(new DotnetUninstallAllCompleted());
     }
 
-    public acquire(version: string): Promise<string> {
-        const resolvedVersion = this.latestVersionMap[version];
-        if (resolvedVersion) {
-            version = resolvedVersion;
-        }
+    public async acquire(version: string): Promise<string> {
+        version = await this.versionResolver.resolveVersion(version);
 
         const existingAcquisitionPromise = this.acquisitionPromises[version];
         if (existingAcquisitionPromise) {
