@@ -21,7 +21,7 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
     
     constructor(scriptPath: string, eventStream: IEventStream) {
         super(eventStream);
-        this.scriptPath = path.join(scriptPath, 'node_modules', 'dotnetcore-acquisition-library', 'install scripts', "dotnet-install" + this.getScriptEnding());
+        this.scriptPath = path.join(scriptPath, 'node_modules', 'dotnetcore-acquisition-library', 'install scripts', 'dotnet-install' + this.getScriptEnding());
     }
 
     private getInstallCommand(version: string, dotnetInstallDir: string): string {

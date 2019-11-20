@@ -45,7 +45,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function () {
     assert.exists(dotnetPath);
     assert.isTrue(fs.existsSync(dotnetPath!));
     assert.include(dotnetPath, version);
-  }).timeout(10000);
+  }).timeout(20000);
 
   test('Uninstall Command', async () => {
     const version = '2.1'
@@ -55,7 +55,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function () {
     assert.include(dotnetPath, version);
     await vscode.commands.executeCommand<string>('dotnet.uninstallAll', version);
     assert.isFalse(fs.existsSync(dotnetPath!));
-  }).timeout(10000);
+  }).timeout(20000);
 
   test('Install and Uninstall Multiple Versions', async () => {
     const versions = ['1.1', '2.2', '1.0'];
@@ -72,8 +72,5 @@ suite('DotnetCoreAcquisitionExtension End to End', function () {
     for (let dotnetPath of dotnetPaths) {
       assert.isTrue(fs.existsSync(dotnetPath));
     }
-  }).timeout(30000);
-
-  // TODO: 'dotnet.showAcquisitionLog' 'dotnet.ensureDotnetDependencies'
-  // TODO: invalid versions?
+  }).timeout(40000);
 });

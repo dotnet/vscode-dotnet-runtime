@@ -55,9 +55,9 @@ export class DotnetCoreAcquisitionWorker {
         } else {
             // We're the only one acquiring this version of dotnet, start the acquisition process.
 
-            const acquisitionPromise = this.acquireCore(version).catch(error => {
+            const acquisitionPromise = this.acquireCore(version).catch((error: Error) => {
                 delete this.acquisitionPromises[version];
-                throw error;
+                throw new Error('Dotnet Core Acquisition Failed: ' + error.message);
             });
 
             this.acquisitionPromises[version] = acquisitionPromise;

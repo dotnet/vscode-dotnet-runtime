@@ -10,8 +10,8 @@ import { MockExtensionContext,
     MockEventStream,
     NoInstallAcquisitionInvoker,
     MockVersionResolver,
-    latestVersionMap,
-    FakeScriptAcquisitionInvoker
+    FakeScriptAcquisitionInvoker,
+    versionPairs
 } from './MockObjects';
 import { EventType } from '../../EventType';
 import { 
@@ -75,21 +75,19 @@ suite("DotnetCoreAcquisitionWorker Unit Tests", function () {
     }
 
     test("Acquire Version", async () => {
-        const version = "1.0";
         const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(false);
 
-        const path = await acquisitionWorker.acquire(version);
-        await assertAcquisitionSucceeded(latestVersionMap[version]!, path, eventStream, context);
+        const path = await acquisitionWorker.acquire(versionPairs[0][0]);
+        await assertAcquisitionSucceeded(versionPairs[0][1], path, eventStream, context);
     });
 
     test("Acquire Version Multiple Times", async () => {
-        const version = "1.0";
         const numAcquisitions = 3;
         const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(false);
 
         for (let i = 0; i < numAcquisitions; i++) {
-            const path = await acquisitionWorker.acquire(version);
-            await assertAcquisitionSucceeded(latestVersionMap[version]!, path, eventStream, context);
+            const path = await acquisitionWorker.acquire(versionPairs[0][0]);
+            await assertAcquisitionSucceeded(versionPairs[0][1], path, eventStream, context);
         }
 
         // AcquisitionInvoker was only called once
@@ -97,18 +95,16 @@ suite("DotnetCoreAcquisitionWorker Unit Tests", function () {
         assert.lengthOf(acquireEvents, 1);
     });
 
-    test('Acquire Version with Bad Network', async () => {
-        const version = '1.0'
+    test('Acquire Version Network Failure', async () => {
         const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(true);
-        return assert.isRejected(acquisitionWorker.acquire(version), Error, 'Command failed'); // TODO give better error here?
+        return assert.isRejected(acquisitionWorker.acquire(versionPairs[0][0]), Error, 'Dotnet Core Acquisition Failed');
     });
 
     test("Acquire Multiple Versions and UninstallAll", async () => {
-        const versions = ["1.0", "1.1", "2.2"];
         const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(false);
-        for (var version of versions) {
-            const path = await acquisitionWorker.acquire(version);
-            await assertAcquisitionSucceeded(latestVersionMap[version]!, path, eventStream, context);
+        for (var version of versionPairs) {
+            const path = await acquisitionWorker.acquire(version[0]);
+            await assertAcquisitionSucceeded(version[1], path, eventStream, context);
         }
         await acquisitionWorker.uninstallAll();
         assert.exists(eventStream.events.find(event => event instanceof DotnetUninstallAllStarted));
@@ -116,11 +112,10 @@ suite("DotnetCoreAcquisitionWorker Unit Tests", function () {
     });
 
     test("Acquire and UninstallAll", async () => {
-        const version = "1.0";
         const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(false);
 
-        const path = await acquisitionWorker.acquire(version);
-        await assertAcquisitionSucceeded(latestVersionMap[version]!, path, eventStream, context);
+        const path = await acquisitionWorker.acquire(versionPairs[0][0]);
+        await assertAcquisitionSucceeded(versionPairs[0][1], path, eventStream, context);
 
         await acquisitionWorker.uninstallAll();
         assert.exists(eventStream.events.find(event => event instanceof DotnetUninstallAllStarted));

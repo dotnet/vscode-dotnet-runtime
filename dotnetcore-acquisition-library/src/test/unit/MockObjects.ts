@@ -10,8 +10,9 @@ import { IEvent } from '../../IEvent';
 import { IAcquisitionInvoker } from '../../IAcquisitionInvoker';
 import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStreamEvents';
 import { IDotnetInstallationContext } from '../../IDotnetInstallationContext';
-import { IVersionResolver } from '../../IVersionResolver';
 import { AcquisitionInvoker } from '../../AcquisitionInvoker';
+import { VersionResolver } from '../../VersionResolver';
+import * as fs from 'fs';
 
 export class MockExtensionContext implements Memento {
     private values: { [n: string]: any; } = {};
@@ -56,22 +57,11 @@ export class FakeScriptAcquisitionInvoker extends AcquisitionInvoker {
     }
 }
 
-export const latestVersionMap: { [version: string]: string | undefined } = {
-    '1.0': '1.0.16',
-    '1.1': '1.1.13',
-    '2.0': '2.0.9',
-    '2.1': '2.1.11',
-    '2.2': '2.2.5',
-};
+// Major.Minor-> Major.Minor.Patch from mock releases.json
+export const versionPairs = [['1.0', '1.0.16'], ['1.1', '1.1.13'], ['2.0', '2.0.9'], ['2.1', '2.1.14'], ['2.2', '2.2.8']]; 
 
-export class MockVersionResolver extends IVersionResolver {
-    resolveVersion(version: string): Promise<string> {
-        this.validateVersionInput(version);
-
-        const resolvedVersion = latestVersionMap[version];
-        if (resolvedVersion) {
-            return Promise.resolve(resolvedVersion);
-        }
-        return Promise.reject('Unable to resolve version');
+export class MockVersionResolver extends VersionResolver {
+    protected async getReleasesJson(): Promise<string> {
+        return fs.readFileSync(path.join(__dirname, '../../..', 'src', 'test', 'mock scripts', 'mock-releases.json'), 'utf8');
     }
 }
