@@ -13,11 +13,14 @@ import { DotnetAcquisitionStarted, DotnetUninstallAllStarted, DotnetUninstallAll
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 import { IVersionResolver } from './IVersionResolver';
+import { ReleasesResult } from './ReleasesResult';
+import { isNullOrUndefined } from 'util';
 
 export class DotnetCoreAcquisitionWorker {
     private readonly installingVersionsKey = 'installing';
     private readonly installDir: string;
     private readonly dotnetExecutable: string;
+    private releasesVersions: ReleasesResult | undefined;
 
     private acquisitionPromises: { [version: string]: Promise<string> | undefined };
 
@@ -45,8 +48,14 @@ export class DotnetCoreAcquisitionWorker {
     }
 
     public async acquire(version: string): Promise<string> {
-        // TODO add caching here
-        version = await this.versionResolver.resolveVersion(version);
+        if (isNullOrUndefined(this.releasesVersions)) {
+            // Have to acquire release version information before continuing
+            this.releasesVersions = await this.versionResolver.getReleasesResult();
+        } else {
+            // Update releases without blocking
+            this.versionResolver.getReleasesResult().then((releasesResult) => this.releasesVersions = releasesResult);
+        }
+        version = this.versionResolver.resolveVersion(version, this.releasesVersions);
 
         const existingAcquisitionPromise = this.acquisitionPromises[version];
         if (existingAcquisitionPromise) {

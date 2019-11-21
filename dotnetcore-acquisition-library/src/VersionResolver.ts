@@ -9,18 +9,18 @@ import { IVersionResolver } from './IVersionResolver';
 import { ReleasesResult } from './ReleasesResult';
 
 export class VersionResolver implements IVersionResolver {
-    public async resolveVersion(version: string): Promise<string> {
+    public resolveVersion(version: string, releases: ReleasesResult): string {
         this.validateVersionInput(version);
 
-        const response = await this.getReleasesResult();
-
-        const resolvedVersion = this.resolveVersionFromJson(response, version);
-
-        return resolvedVersion;
+        const channel = releases.releases_index.filter((channel) => channel.channel_version === version);
+        if (isNullOrUndefined(channel) || channel.length != 1) {
+            throw new Error('Unable to resolve version: ' + version)
+        }
+        const runtimeVersion = channel[0].latest_runtime;
+        return runtimeVersion;
     }
 
-    // Protected for testing
-    protected async getReleasesResult(): Promise<ReleasesResult> {
+    public async getReleasesResult(): Promise<ReleasesResult> {
         var options = {
             uri: 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json'
         };
@@ -31,15 +31,6 @@ export class VersionResolver implements IVersionResolver {
         }).catch((error: Error) => {
             throw new Error("Unable to Resolve Version: " + error.message);
         });
-    }
-
-    private resolveVersionFromJson(releasesResult: ReleasesResult, version: string): string {
-        const channel = releasesResult.releases_index.filter((channel) => channel.channel_version === version);
-        if (isNullOrUndefined(channel) || channel.length != 1) {
-            throw new Error('Unable to resolve version: ' + version)
-        }
-        const runtimeVersion = channel[0].latest_runtime;
-        return runtimeVersion;
     }
 
     private validateVersionInput(version: string) {

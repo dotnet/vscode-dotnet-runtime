@@ -21,7 +21,10 @@ import {
     DotnetUninstallAllStarted,
     DotnetUninstallAllCompleted
 } from '../../EventStreamEvents';
-var assert = require('chai').assert;
+var chai = require('chai');
+var assert = chai.assert;
+var chaiAsPromised = require('chai-as-promised');
+chai.use(chaiAsPromised);
 
 suite("DotnetCoreAcquisitionWorker Unit Tests", function () {
     const installingVersionsKey = 'installing';
