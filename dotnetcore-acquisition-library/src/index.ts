@@ -4,4 +4,4 @@
  * ------------------------------------------------------------------------------------------ */
 
 export * from './extension'
-export * from './test/unit/MockObjects'
+export * from './test/mocks/MockObjects'

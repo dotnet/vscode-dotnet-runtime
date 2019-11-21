@@ -6,34 +6,43 @@ import * as request from 'request-promise-native';
 import * as semver from 'semver';
 import { isNullOrUndefined } from 'util';
 import { IVersionResolver } from './IVersionResolver';
+import { ReleasesResult } from './ReleasesResult';
 
 export class VersionResolver implements IVersionResolver {
     public async resolveVersion(version: string): Promise<string> {
         this.validateVersionInput(version);
 
-        const response = await this.getReleasesJson();
+        const response = await this.getReleasesResult();
 
-        return this.resolveVersionFromJson(response, version);
+        const resolvedVersion = this.resolveVersionFromJson(response, version);
+
+        return resolvedVersion;
     }
 
-    protected async getReleasesJson(): Promise<string> {
+    // Protected for testing
+    protected async getReleasesResult(): Promise<ReleasesResult> {
         var options = {
             uri: 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json'
         };
-        return await request.get(options);
+
+        return request.get(options).then(response => {
+            const releasesResult = new ReleasesResult(response);
+            return releasesResult;
+        }).catch((error: Error) => {
+            throw new Error("Unable to Resolve Version: " + error.message);
+        });
     }
 
-    protected resolveVersionFromJson(response: string, version: string): string {
-        const cleanJson = response.replace(/[-]/g, '_');
-        const resultArray = JSON.parse(cleanJson).releases_index;
-        const channel = resultArray.filter((channel: any) => channel.channel_version == version);
+    private resolveVersionFromJson(releasesResult: ReleasesResult, version: string): string {
+        const channel = releasesResult.releases_index.filter((channel) => channel.channel_version === version);
         if (isNullOrUndefined(channel) || channel.length != 1) {
             throw new Error('Unable to resolve version: ' + version)
         }
-        return channel[0].latest_runtime;
+        const runtimeVersion = channel[0].latest_runtime;
+        return runtimeVersion;
     }
 
-    protected validateVersionInput(version: string) {
+    private validateVersionInput(version: string) {
         const parsedVer = semver.coerce(version);
         if (version.split('.').length != 2 || isNullOrUndefined(parsedVer)) {
             throw new Error('Invalid version: ' + version);

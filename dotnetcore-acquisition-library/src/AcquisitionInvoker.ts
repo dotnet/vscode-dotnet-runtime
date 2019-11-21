@@ -17,7 +17,7 @@ import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 
 export class AcquisitionInvoker extends IAcquisitionInvoker {
-    protected scriptPath: string;
+    private scriptPath: string;
     
     constructor(scriptPath: string, eventStream: IEventStream) {
         super(eventStream);
@@ -33,7 +33,7 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
 
         return `"${this.scriptPath}" ${args.join(' ')}`;
     }
-    protected getScriptEnding(): string {
+    private getScriptEnding(): string {
         return os.platform() === 'win32' ? '.cmd' : '.sh';
     }
 

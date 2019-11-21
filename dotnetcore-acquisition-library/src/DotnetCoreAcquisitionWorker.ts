@@ -45,6 +45,7 @@ export class DotnetCoreAcquisitionWorker {
     }
 
     public async acquire(version: string): Promise<string> {
+        // TODO add caching here
         version = await this.versionResolver.resolveVersion(version);
 
         const existingAcquisitionPromise = this.acquisitionPromises[version];

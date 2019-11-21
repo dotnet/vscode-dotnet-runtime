@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-import { versionPairs, MockVersionResolver } from "./MockObjects";
+import { versionPairs, MockVersionResolver } from "../mocks/MockObjects";
 var chai = require('chai');
 var assert = chai.assert;
 var chaiAsPromised = require('chai-as-promised');

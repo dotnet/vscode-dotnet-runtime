@@ -10,9 +10,9 @@ import { MockExtensionContext,
     MockEventStream,
     NoInstallAcquisitionInvoker,
     MockVersionResolver,
-    FakeScriptAcquisitionInvoker,
+    ErrorAcquisitionInvoker,
     versionPairs
-} from './MockObjects';
+} from '../mocks/MockObjects';
 import { EventType } from '../../EventType';
 import { 
     DotnetAcquisitionStarted,
@@ -34,7 +34,7 @@ suite("DotnetCoreAcquisitionWorker Unit Tests", function () {
             context,
             eventStream,
             fakeScripts ? 
-                new FakeScriptAcquisitionInvoker(path.join(__dirname, '/../../..', 'src', 'test', 'mock scripts'), 'mock-install', eventStream) : 
+                new ErrorAcquisitionInvoker(eventStream) : 
                 new NoInstallAcquisitionInvoker(eventStream), 
             new MockVersionResolver());
         return [ acquisitionWorker, eventStream, context ];

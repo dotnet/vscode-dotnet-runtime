@@ -10,9 +10,9 @@ import { IEvent } from '../../IEvent';
 import { IAcquisitionInvoker } from '../../IAcquisitionInvoker';
 import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStreamEvents';
 import { IDotnetInstallationContext } from '../../IDotnetInstallationContext';
-import { AcquisitionInvoker } from '../../AcquisitionInvoker';
 import { VersionResolver } from '../../VersionResolver';
 import * as fs from 'fs';
+import { ReleasesResult } from '../../ReleasesResult';
 
 export class MockExtensionContext implements Memento {
     private values: { [n: string]: any; } = {};
@@ -49,11 +49,9 @@ export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker {
     }
 }
 
-export class FakeScriptAcquisitionInvoker extends AcquisitionInvoker {
-    constructor(scriptPath: string, scriptName: string, eventStream: IEventStream) {
-        super('', eventStream);
-        // Overwrite the real script path with the path to the fake scripts
-        this.scriptPath = path.join(scriptPath, scriptName + this.getScriptEnding());
+export class ErrorAcquisitionInvoker extends IAcquisitionInvoker {
+    installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
+        throw new Error("Command Failed");
     }
 }
 
@@ -61,7 +59,9 @@ export class FakeScriptAcquisitionInvoker extends AcquisitionInvoker {
 export const versionPairs = [['1.0', '1.0.16'], ['1.1', '1.1.13'], ['2.0', '2.0.9'], ['2.1', '2.1.14'], ['2.2', '2.2.8']]; 
 
 export class MockVersionResolver extends VersionResolver {
-    protected async getReleasesJson(): Promise<string> {
-        return fs.readFileSync(path.join(__dirname, '../../..', 'src', 'test', 'mock scripts', 'mock-releases.json'), 'utf8');
+    protected async getReleasesResult(): Promise<ReleasesResult> {
+        const jsonRes =  fs.readFileSync(path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-releases.json'), 'utf8');
+        const releasesResult = new ReleasesResult(jsonRes);
+        return releasesResult;
     }
 }
