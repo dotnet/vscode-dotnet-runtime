@@ -29,7 +29,7 @@
 		"watch": "npm run compile && tsc -watch -p ./",
 		"test": "npm run compile --silent && node ./out/test/functional/runTest.js",
 		"clean": "rimraf out",
-		"watch-all": "cd ../dotnetcore-acquisition-library && npm run watch && cd ../dotnetcore-acquisition-extension && npm run watch"
+		"compile-all": "cd ../dotnetcore-acquisition-library && npm install && npm run compile && cd ../dotnetcore-acquisition-extension && npm install && npm run compile"
 	},
 	"dependencies": {
 		"dotnetcore-acquisition-library": "file:../dotnetcore-acquisition-library"

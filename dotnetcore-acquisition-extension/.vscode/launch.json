@@ -15,7 +15,7 @@
 			"outFiles": [
 				"${workspaceFolder}/out/**/*.js"
 			],
-			"preLaunchTask": "watch-all"
+			"preLaunchTask": "compile-all"
 		},
 		{
 			"name": "Extension Acquisition Functional Tests",
@@ -30,7 +30,7 @@
 				"${workspaceFolder}/out/test/**/*.js"
 			],
 			"internalConsoleOptions": "openOnSessionStart",
-			"preLaunchTask": "watch-all"
+			"preLaunchTask": "compile-all"
 		},
 		{
 			"type": "node",
@@ -45,7 +45,7 @@
 				"${workspaceFolder}/../dotnetcore-acquisition-library/dist/test/unit/**.test.js"
 			],
 			"internalConsoleOptions": "openOnSessionStart",
-			"preLaunchTask": "watch-all"
+			"preLaunchTask": "compile-all"
 		}
 	]
 }

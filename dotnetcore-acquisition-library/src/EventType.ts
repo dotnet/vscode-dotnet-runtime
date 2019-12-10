@@ -9,5 +9,7 @@ export enum EventType {
     DotnetAcquisitionCompleted,
     DotnetUninstallAllStart,
     DotnetUninstallAllCompleted,
+    DotnetVersionResolutionCompleted,
+    DotnetVersionResolutionError,
     DotnetAcquisitionTest
 }

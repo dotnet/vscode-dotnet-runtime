@@ -12,9 +12,9 @@ import { MockExtensionContext } from 'dotnetcore-acquisition-library'
 var assert = require('chai').assert;
 
 suite('DotnetCoreAcquisitionExtension End to End', function () {
-  const storagePath = path.join(__dirname, "tmp");
+  const storagePath = path.join(__dirname, 'tmp');
   const mockState = new MockExtensionContext();
-  const extensionPath = path.join(__dirname, "/../../..");
+  const extensionPath = path.join(__dirname, '/../../..');
   let context: vscode.ExtensionContext;
 
   this.beforeAll(async function() {
@@ -27,8 +27,9 @@ suite('DotnetCoreAcquisitionExtension End to End', function () {
     extension.activate(context);
   });
 
-  this.afterEach(function() {
+  this.afterEach(async function() {
     // Tear down tmp storage for fresh run
+    await vscode.commands.executeCommand<string>('dotnet.uninstallAll');
     rimraf.sync(storagePath);
   });
 
@@ -55,4 +56,21 @@ suite('DotnetCoreAcquisitionExtension End to End', function () {
     await vscode.commands.executeCommand<string>('dotnet.uninstallAll', version);
     assert.isFalse(fs.existsSync(dotnetPath!));
   }).timeout(20000);
+
+  test('Install and Uninstall Multiple Versions', async () => {
+    const versions = ['1.1', '2.2', '1.0'];
+    let dotnetPaths: string[] = [];
+    for (var version of versions) {
+      const dotnetPath = await vscode.commands.executeCommand<string>('dotnet.acquire', version);
+      assert.exists(dotnetPath);
+      assert.include(dotnetPath, version);
+      if (dotnetPath) {
+        dotnetPaths = dotnetPaths.concat(dotnetPath);
+      }
+    }
+    // All versions are still there after all installs are completed
+    for (let dotnetPath of dotnetPaths) {
+      assert.isTrue(fs.existsSync(dotnetPath));
+    }
+  }).timeout(40000);
 });

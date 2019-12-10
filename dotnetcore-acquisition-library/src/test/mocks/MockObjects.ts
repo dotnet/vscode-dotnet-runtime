@@ -3,12 +3,16 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
+import * as path from 'path';
 import { Memento } from 'vscode';
 import { IEventStream } from '../../EventStream';
 import { IEvent } from '../../IEvent';
 import { IAcquisitionInvoker } from '../../IAcquisitionInvoker';
 import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStreamEvents';
 import { IDotnetInstallationContext } from '../../IDotnetInstallationContext';
+import { VersionResolver } from '../../VersionResolver';
+import * as fs from 'fs';
+import { ReleasesResult } from '../../ReleasesResult';
 
 export class MockExtensionContext implements Memento {
     private values: { [n: string]: any; } = {};
@@ -42,5 +46,22 @@ export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker {
             resolve();
 
         });
+    }
+}
+
+export class ErrorAcquisitionInvoker extends IAcquisitionInvoker {
+    installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
+        throw new Error("Command Failed");
+    }
+}
+
+// Major.Minor-> Major.Minor.Patch from mock releases.json
+export const versionPairs = [['1.0', '1.0.16'], ['1.1', '1.1.13'], ['2.0', '2.0.9'], ['2.1', '2.1.14'], ['2.2', '2.2.8']]; 
+
+export class MockVersionResolver extends VersionResolver {
+    protected async getReleasesResult(): Promise<ReleasesResult> {
+        const jsonRes =  fs.readFileSync(path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-releases.json'), 'utf8');
+        const releasesResult = new ReleasesResult(jsonRes);
+        return releasesResult;
     }
 }

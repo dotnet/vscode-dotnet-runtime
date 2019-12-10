@@ -3,5 +3,6 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-export * from './extension'
-export * from './test/mocks/MockObjects'
+export interface IVersionResolver {
+    getFullVersion(version: string): Promise<string>;
+}
