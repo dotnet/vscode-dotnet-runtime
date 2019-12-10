@@ -54,7 +54,7 @@ export class VersionResolver implements IVersionResolver {
         try {
             const response = await request.get(options);
             // Cache results
-            this.extensionState.update(this.releasesKey, response);
+            await this.extensionState.update(this.releasesKey, response);
             const releasesResult = new ReleasesResult(response);
             return releasesResult;
         } catch(error) {
