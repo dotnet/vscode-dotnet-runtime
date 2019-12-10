@@ -82,6 +82,16 @@ export class DotnetUninstallAllCompleted implements IEvent {
     }
 }
 
+export class DotnetVersionResolutionError implements IEvent {
+    public readonly type = EventType.DotnetVersionResolutionError;
+    
+    constructor(public readonly error: string) {}
+}
+
+export class DotnetVersionResolutionCompleted implements IEvent {
+    public readonly type = EventType.DotnetVersionResolutionCompleted;
+}
+
 export class TestAcquireCalled implements IEvent {
     public readonly type = EventType.DotnetAcquisitionTest;
 

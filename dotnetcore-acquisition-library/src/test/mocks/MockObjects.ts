@@ -59,7 +59,7 @@ export class ErrorAcquisitionInvoker extends IAcquisitionInvoker {
 export const versionPairs = [['1.0', '1.0.16'], ['1.1', '1.1.13'], ['2.0', '2.0.9'], ['2.1', '2.1.14'], ['2.2', '2.2.8']]; 
 
 export class MockVersionResolver extends VersionResolver {
-    public async getReleasesResult(): Promise<ReleasesResult> {
+    protected async getReleasesResult(): Promise<ReleasesResult> {
         const jsonRes =  fs.readFileSync(path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-releases.json'), 'utf8');
         const releasesResult = new ReleasesResult(jsonRes);
         return releasesResult;
