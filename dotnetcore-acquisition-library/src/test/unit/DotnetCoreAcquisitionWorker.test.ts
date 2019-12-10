@@ -39,7 +39,7 @@ suite("DotnetCoreAcquisitionWorker Unit Tests", function () {
             fakeScripts ? 
                 new ErrorAcquisitionInvoker(eventStream) : 
                 new NoInstallAcquisitionInvoker(eventStream), 
-            new MockVersionResolver('', eventStream));
+            new MockVersionResolver(context, eventStream));
         return [ acquisitionWorker, eventStream, context ];
     }
     

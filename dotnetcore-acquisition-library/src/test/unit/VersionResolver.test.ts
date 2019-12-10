@@ -3,14 +3,15 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-import { versionPairs, MockVersionResolver, MockEventStream } from "../mocks/MockObjects";
+import { versionPairs, MockVersionResolver, MockEventStream, MockExtensionContext } from "../mocks/MockObjects";
 var assert = require('chai').assert;
 
 suite("VersionResolver Unit Tests", function () {
     const eventStream = new MockEventStream();
+    const context = new MockExtensionContext();
     // MockVersionResolver is a VersionResolver that uses a fake releases.json 
     // (prevents us from making web requests in unit tests)
-    const resolver: MockVersionResolver = new MockVersionResolver('', eventStream);
+    const resolver: MockVersionResolver = new MockVersionResolver(context, eventStream);
 
     test("Error With Invalid Version", async () => {
         return assert.isRejected(resolver.getFullVersion("foo"), Error, 'Invalid version');

@@ -9,27 +9,24 @@ import { IVersionResolver } from './IVersionResolver';
 import { ReleasesResult } from './ReleasesResult';
 import { IEventStream } from './EventStream';
 import { DotnetVersionResolutionError, DotnetVersionResolutionCompleted } from './EventStreamEvents';
-import * as fs from 'fs';
-import * as path from 'path';
+import { Memento } from 'vscode';
 
 export class VersionResolver implements IVersionResolver {
     private releasesVersions: ReleasesResult | undefined;
-    protected releasesFile: string;
+    private readonly releasesKey = "releases";
 
-    constructor(releasesFileLocation: string, 
-                private readonly eventStream: IEventStream) {
-        this.releasesFile = path.join(releasesFileLocation, "releases.json");
-    }
+    constructor(private readonly extensionState: Memento, 
+                private readonly eventStream: IEventStream) {}
 
     public async getFullVersion(version: string): Promise<string> {
-        try {
-            const fileResult = fs.readFileSync(this.releasesFile, 'utf8');
-            // Update releases without blocking, continue with cached information
-            this.getReleasesResult().then((releasesResult) => this.releasesVersions = releasesResult);
-            this.releasesVersions = new ReleasesResult(fileResult);
-        } catch {
+        const cachedReleases = this.extensionState.get<string>(this.releasesKey);
+        if (isNullOrUndefined(cachedReleases)) {
             // Have to acquire release version information before continuing
             this.releasesVersions = await this.getReleasesResult();
+        } else {
+            // Update releases without blocking, continue with cached information
+            this.getReleasesResult().then((releasesResult) => this.releasesVersions = releasesResult);
+            this.releasesVersions = new ReleasesResult(cachedReleases);
         }
 
         const versionResult = this.resolveVersion(version, this.releasesVersions);
@@ -57,8 +54,7 @@ export class VersionResolver implements IVersionResolver {
         try {
             const response = await request.get(options);
             // Cache results
-            fs.mkdirSync(path.dirname(this.releasesFile), { recursive: true });
-            fs.writeFileSync(this.releasesFile, response);
+            this.extensionState.update(this.releasesKey, response);
             const releasesResult = new ReleasesResult(response);
             return releasesResult;
         } catch(error) {
