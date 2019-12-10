@@ -4,11 +4,9 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "watch-all",
+			"label": "compile-all",
 			"type": "npm",
-			"script": "watch-all",
-			"problemMatcher": "$tsc-watch",
-			"isBackground": true,
+			"script": "compile-all",
 			"presentation": {
 				"reveal": "never"
 			},

@@ -14,6 +14,7 @@ import { IEventStreamObserver } from './IEventStreamObserver';
 import { OutputChannelObserver } from './OutputChannelObserver';
 import { StatusBarObserver } from './StatusBarObserver';
 import { AcquisitionInvoker } from './AcquisitionInvoker';
+import { VersionResolver } from './VersionResolver';
 
 export function activate(context: vscode.ExtensionContext, parentExtensionId: string) {
     const extension = vscode.extensions.getExtension(parentExtensionId);
@@ -38,11 +39,13 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
         fs.mkdirSync(context.globalStoragePath);
     }
     const acquisitionInvoker = new AcquisitionInvoker(context.extensionPath, eventStream);
+    const versionResolver = new VersionResolver(context.globalState, eventStream);
     const acquisitionWorker = new DotnetCoreAcquisitionWorker(
         context.globalStoragePath,
         context.globalState,
         eventStream, 
-        acquisitionInvoker);
+        acquisitionInvoker, 
+        versionResolver);
 
     const dotnetAcquireRegistration = vscode.commands.registerCommand('dotnet.acquire', async (version) => {
         if (!version || version === 'latest') {
