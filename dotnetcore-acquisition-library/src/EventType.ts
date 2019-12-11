@@ -11,5 +11,6 @@ export enum EventType {
     DotnetUninstallAllCompleted,
     DotnetVersionResolutionCompleted,
     DotnetVersionResolutionError,
+    WebRequestError,
     DotnetAcquisitionTest,
 }

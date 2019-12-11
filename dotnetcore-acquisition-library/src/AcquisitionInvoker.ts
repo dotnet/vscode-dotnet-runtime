@@ -2,10 +2,8 @@
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
-
 import * as cp from 'child_process';
-import * as os from 'os';
-import * as path from 'path';
+import { Memento } from 'vscode';
 import { IEventStream } from './EventStream';
 import {
     DotnetAcquisitionCompleted,
@@ -15,17 +13,19 @@ import {
 } from './EventStreamEvents';
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
+import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
+import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker';
 
 export class AcquisitionInvoker extends IAcquisitionInvoker {
-    private scriptPath: string;
+    private readonly scriptWorker: IInstallScriptAcquisitionWorker;
 
-    constructor(scriptPath: string, eventStream: IEventStream) {
+    constructor(extensionState: Memento, eventStream: IEventStream) {
         super(eventStream);
-        this.scriptPath = path.join(scriptPath, 'node_modules', 'dotnetcore-acquisition-library', 'install scripts', `dotnet-install${this.getScriptEnding()}`);
+        this.scriptWorker = new InstallScriptAcquisitionWorker(extensionState, eventStream);
     }
 
-    public installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
-        const installCommand = this.getInstallCommand(installContext.version, installContext.installDir);
+    public async installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
+        const installCommand = await this.getInstallCommand(installContext.version, installContext.installDir);
         return new Promise<void>((resolve, reject) => {
             try {
                 cp.exec(installCommand, { cwd: process.cwd(), maxBuffer: 500 * 1024 }, (error, stdout, stderr) => {
@@ -47,17 +47,14 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
         });
     }
 
-    private getInstallCommand(version: string, dotnetInstallDir: string): string {
+    private async getInstallCommand(version: string, dotnetInstallDir: string): Promise<string> {
         const args = [
             '-InstallDir', `'${dotnetInstallDir}'`, // Use single quotes instead of double quotes (see https://github.com/dotnet/cli/issues/11521)
             '-Runtime', 'dotnet',
             '-Version', version,
-        ];
+        ]; // TODO add no-path option?
 
-        return `"${this.scriptPath}" ${args.join(' ')}`;
-    }
-
-    private getScriptEnding(): string {
-        return os.platform() === 'win32' ? '.cmd' : '.sh';
+        const scriptPath = await this.scriptWorker.getDotnetInstallScriptPath();
+        return `"${ scriptPath }" ${ args.join(' ') }`;
     }
 }

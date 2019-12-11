@@ -3,6 +3,20 @@ RED=`tput setaf 1`
 GREEN=`tput setaf 2`
 NC=`tput sgr0`
 
+npm install -g tslint
+tslint -c tslint.json 'dotnetcore-acquisition-library/src/**/*.ts' 'dotnetcore-acquisition-extension/src/**/*.ts'
+if [ $? -ne 0 ];
+then
+    echo ""
+    echo "${RED}TSLint Failed.${NC}"
+    echo ""
+    RESULT=1
+else
+    echo ""
+    echo "${GREEN}TSLint Succeeded.${NC}"
+    echo ""
+fi
+
 echo ""
 echo "----------- Testing dotnetcore-acquisition-library -----------"
 echo ""

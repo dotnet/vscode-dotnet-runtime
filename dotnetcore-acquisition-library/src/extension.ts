@@ -12,9 +12,11 @@ import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { DotnetCoreDependencyInstaller } from './DotnetCoreDependencyInstaller';
 import { EventStream } from './EventStream';
 import { IEventStreamObserver } from './IEventStreamObserver';
+import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker';
 import { OutputChannelObserver } from './OutputChannelObserver';
 import { StatusBarObserver } from './StatusBarObserver';
 import { VersionResolver } from './VersionResolver';
+import { WebRequestWorker } from './WebRequestWorker';
 
 export function activate(context: vscode.ExtensionContext, parentExtensionId: string) {
     const extension = vscode.extensions.getExtension(parentExtensionId);
@@ -38,7 +40,7 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
     if (!fs.existsSync(context.globalStoragePath)) {
         fs.mkdirSync(context.globalStoragePath);
     }
-    const acquisitionInvoker = new AcquisitionInvoker(context.extensionPath, eventStream);
+    const acquisitionInvoker = new AcquisitionInvoker(context.globalState, eventStream);
     const versionResolver = new VersionResolver(context.globalState, eventStream);
     const acquisitionWorker = new DotnetCoreAcquisitionWorker(
         context.globalStoragePath,

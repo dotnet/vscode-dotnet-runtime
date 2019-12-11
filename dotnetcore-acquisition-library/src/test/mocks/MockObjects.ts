@@ -5,14 +5,16 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { Memento } from 'vscode';
+import { extensions, Memento } from 'vscode';
 import { IEventStream } from '../../EventStream';
 import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStreamEvents';
 import { IAcquisitionInvoker } from '../../IAcquisitionInvoker';
 import { IDotnetInstallationContext } from '../../IDotnetInstallationContext';
 import { IEvent } from '../../IEvent';
+import { InstallScriptAcquisitionWorker } from '../../InstallScriptAcquisitionWorker';
 import { ReleasesResult } from '../../ReleasesResult';
 import { VersionResolver } from '../../VersionResolver';
+import { WebRequestWorker } from '../../WebRequestWorker';
 
 export class MockExtensionContext implements Memento {
     private values: { [n: string]: any; } = {};
@@ -58,10 +60,32 @@ export class ErrorAcquisitionInvoker extends IAcquisitionInvoker {
 // Major.Minor-> Major.Minor.Patch from mock releases.json
 export const versionPairs = [['1.0', '1.0.16'], ['1.1', '1.1.13'], ['2.0', '2.0.9'], ['2.1', '2.1.14'], ['2.2', '2.2.8']];
 
+export class MockWebRequestWorker extends WebRequestWorker {
+    constructor(extensionState: Memento, eventStream: IEventStream, uri: string, extensionStateKey: string,
+                private readonly mockFilePath: string) {
+        super(extensionState, eventStream, uri, extensionStateKey);
+    }
+
+    protected async makeWebRequest(): Promise<any> {
+        const result =  fs.readFileSync(this.mockFilePath, 'utf8');
+        return result;
+    }
+}
+
 export class MockVersionResolver extends VersionResolver {
-    protected async getReleasesResult(): Promise<ReleasesResult> {
-        const jsonRes =  fs.readFileSync(path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-releases.json'), 'utf8');
-        const releasesResult = new ReleasesResult(jsonRes);
-        return releasesResult;
+    private readonly filePath = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-releases.json');
+
+    constructor(extensionState: Memento, eventStream: IEventStream) {
+        super(extensionState, eventStream);
+        this.webWorker = new MockWebRequestWorker(extensionState, eventStream, '', 'releases', this.filePath);
+    }
+}
+
+export class MockInstallScriptAcquisitionWorker extends InstallScriptAcquisitionWorker { // TODO is this needed at all?
+    private readonly filePath = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'dotnet-install');
+
+    constructor(extensionState: Memento, eventStream: IEventStream) {
+        super(extensionState, eventStream);
+        this.webWorker = new MockWebRequestWorker(extensionState, eventStream, '', 'releases', this.filePath);
     }
 }
