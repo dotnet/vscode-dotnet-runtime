@@ -13,7 +13,7 @@ export class OutputChannelObserver implements IEventStreamObserver {
     private readonly inProgressDownloads: string[] = [];
     private downloadProgressInterval: NodeJS.Timeout | undefined;
 
-    // private inProgressDownloads: 
+    // private inProgressDownloads:
     constructor(private readonly outputChannel: vscode.OutputChannel) {
     }
 
@@ -21,7 +21,7 @@ export class OutputChannelObserver implements IEventStreamObserver {
         switch (event.type) {
             case EventType.DotnetAcquisitionStart:
                 const acquisitionStarted = event as DotnetAcquisitionStarted;
-                
+
                 this.inProgressDownloads.push(acquisitionStarted.version);
 
                 if (this.inProgressDownloads.length > 1) {
@@ -31,9 +31,9 @@ export class OutputChannelObserver implements IEventStreamObserver {
                 } else {
                     this.startDownloadIndicator();
                 }
-                
-                const versionString = this.inProgressDownloads.join(', ');
-                this.outputChannel.append(`Downloading .NET Core tooling version(s) ${versionString} ...`);
+
+                const startVersionString = this.inProgressDownloads.join(', ');
+                this.outputChannel.append(`Downloading .NET Core tooling version(s) ${startVersionString} ...`);
                 break;
             case EventType.DotnetAcquisitionCompleted:
                 const acquisitionCompleted = event as DotnetAcquisitionCompleted;
@@ -44,8 +44,8 @@ export class OutputChannelObserver implements IEventStreamObserver {
                 this.inProgressVersionDone(acquisitionCompleted.version);
 
                 if (this.inProgressDownloads.length > 0) {
-                    const versionString = `'${this.inProgressDownloads.join('\', \'')}'`;
-                    this.outputChannel.append(`Still downloading .NET Core tooling version(s) ${versionString} ...`);
+                    const completedVersionString = `'${this.inProgressDownloads.join('\', \'')}'`;
+                    this.outputChannel.append(`Still downloading .NET Core tooling version(s) ${completedVersionString} ...`);
                 } else {
                     this.stopDownladIndicator();
                 }
@@ -60,8 +60,8 @@ export class OutputChannelObserver implements IEventStreamObserver {
                 this.inProgressVersionDone(error.version);
 
                 if (this.inProgressDownloads.length > 0) {
-                    const versionString = this.inProgressDownloads.join(', ');
-                    this.outputChannel.append(`Still downloading .NET Core tooling version(s) ${versionString} ...`);
+                    const errorVersionString = this.inProgressDownloads.join(', ');
+                    this.outputChannel.append(`Still downloading .NET Core tooling version(s) ${errorVersionString} ...`);
                 } else {
                     this.stopDownladIndicator();
                 }

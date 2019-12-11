@@ -18,23 +18,10 @@ import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 
 export class AcquisitionInvoker extends IAcquisitionInvoker {
     private scriptPath: string;
-    
+
     constructor(scriptPath: string, eventStream: IEventStream) {
         super(eventStream);
-        this.scriptPath = path.join(scriptPath, 'node_modules', 'dotnetcore-acquisition-library', 'install scripts', 'dotnet-install' + this.getScriptEnding());
-    }
-
-    private getInstallCommand(version: string, dotnetInstallDir: string): string {
-        const args = [
-            '-InstallDir', `'${dotnetInstallDir}'`, // Use single quotes instead of double quotes (see https://github.com/dotnet/cli/issues/11521)
-            '-Runtime', 'dotnet',
-            '-Version', version,
-        ];
-
-        return `"${this.scriptPath}" ${args.join(' ')}`;
-    }
-    private getScriptEnding(): string {
-        return os.platform() === 'win32' ? '.cmd' : '.sh';
+        this.scriptPath = path.join(scriptPath, 'node_modules', 'dotnetcore-acquisition-library', 'install scripts', `dotnet-install${this.getScriptEnding()}`);
     }
 
     public installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
@@ -58,5 +45,19 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
                 reject(error);
             }
         });
+    }
+
+    private getInstallCommand(version: string, dotnetInstallDir: string): string {
+        const args = [
+            '-InstallDir', `'${dotnetInstallDir}'`, // Use single quotes instead of double quotes (see https://github.com/dotnet/cli/issues/11521)
+            '-Runtime', 'dotnet',
+            '-Version', version,
+        ];
+
+        return `"${this.scriptPath}" ${args.join(' ')}`;
+    }
+
+    private getScriptEnding(): string {
+        return os.platform() === 'win32' ? '.cmd' : '.sh';
     }
 }

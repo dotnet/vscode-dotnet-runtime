@@ -9,7 +9,11 @@ import * as path from 'path';
 import rimraf = require('rimraf');
 import { Memento } from 'vscode';
 import { IEventStream } from './EventStream';
-import { DotnetAcquisitionStarted, DotnetUninstallAllStarted, DotnetUninstallAllCompleted } from './EventStreamEvents';
+import {
+    DotnetAcquisitionStarted,
+    DotnetUninstallAllCompleted,
+    DotnetUninstallAllStarted,
+} from './EventStreamEvents';
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 import { IVersionResolver } from './IVersionResolver';
@@ -22,10 +26,10 @@ export class DotnetCoreAcquisitionWorker {
     private acquisitionPromises: { [version: string]: Promise<string> | undefined };
 
     constructor(private readonly storagePath: string,
-        private readonly extensionState: Memento,
-        private readonly eventStream: IEventStream,
-        private readonly acquisitionInvoker: IAcquisitionInvoker, 
-        private readonly versionResolver: IVersionResolver) {
+                private readonly extensionState: Memento,
+                private readonly eventStream: IEventStream,
+                private readonly acquisitionInvoker: IAcquisitionInvoker,
+                private readonly versionResolver: IVersionResolver) {
         this.installDir = path.join(this.storagePath, '.dotnet');
         const dotnetExtension = os.platform() === 'win32' ? '.exe' : '';
         this.dotnetExecutable = `dotnet${dotnetExtension}`;
@@ -40,12 +44,12 @@ export class DotnetCoreAcquisitionWorker {
         rimraf.sync(this.installDir);
 
         await this.extensionState.update(this.installingVersionsKey, []);
-        
+
         this.eventStream.post(new DotnetUninstallAllCompleted());
     }
 
     public async acquire(version: string): Promise<string> {
-        version = await this.versionResolver.getFullVersion(version); 
+        version = await this.versionResolver.getFullVersion(version);
 
         const existingAcquisitionPromise = this.acquisitionPromises[version];
         if (existingAcquisitionPromise) {
@@ -57,7 +61,7 @@ export class DotnetCoreAcquisitionWorker {
 
             const acquisitionPromise = this.acquireCore(version).catch((error: Error) => {
                 delete this.acquisitionPromises[version];
-                throw new Error('Dotnet Core Acquisition Failed: ' + error.message);
+                throw new Error(`Dotnet Core Acquisition Failed: ${error.message}`);
             });
 
             this.acquisitionPromises[version] = acquisitionPromise;
@@ -88,8 +92,8 @@ export class DotnetCoreAcquisitionWorker {
 
         const installContext = {
             installDir: dotnetInstallDir,
-            version: version,
-            dotnetPath: dotnetPath
+            version,
+            dotnetPath,
         } as IDotnetInstallationContext;
         this.eventStream.post(new DotnetAcquisitionStarted(version));
         await this.acquisitionInvoker.installDotnet(installContext);
@@ -105,7 +109,7 @@ export class DotnetCoreAcquisitionWorker {
 
         return dotnetPath;
     }
-    
+
     private async uninstall(version: string) {
         delete this.acquisitionPromises[version];
 
@@ -121,7 +125,7 @@ export class DotnetCoreAcquisitionWorker {
     }
 
     private getDotnetInstallDir(version: string) {
-        const dotnetInstallDir = path.join(this.installDir, version)
+        const dotnetInstallDir = path.join(this.installDir, version);
         return dotnetInstallDir;
     }
 }
