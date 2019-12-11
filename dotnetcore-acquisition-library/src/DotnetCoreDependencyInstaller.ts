@@ -2,16 +2,15 @@
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
-
-import * as vscode from 'vscode';
 import * as cp from 'child_process';
 import * as fs from 'fs';
-import { which } from 'shelljs';
 import * as path from 'path';
+import { which } from 'shelljs';
+import * as vscode from 'vscode';
 
 const moreInfoUrl = 'https://aka.ms/dotnet-linux-prereqs';
 
-export class DotnetCoreDependencyInstaller{
+export class DotnetCoreDependencyInstaller {
     private readonly platform = process.platform;
 
     public signalIndicatesMissingLinuxDependencies(signal: string): boolean {
@@ -34,35 +33,35 @@ export class DotnetCoreDependencyInstaller{
         return false;
     }
 
-    public async installLinuxDependencies(additionalLibs: any = {}, skipDotNetCore: boolean = false): Promise<Number> {
+    public async installLinuxDependencies(additionalLibs: any = {}, skipDotNetCore = false): Promise<number> {
         const scriptRoot = path.join(__dirname, '..', 'scripts');
         const shellCommand = this.getShellCommand();
 
         // Determine the distro
         const result = cp.spawnSync(shellCommand, [path.join(scriptRoot, 'determine-linux-distro.sh')]);
-        if(result.status !== 0) {
-            console.log('Failed to determine distro. Exit code: ' + result.status);
+        if (result.status !== 0) {
+            console.log(`Failed to determine distro. Exit code: ${result.status}`);
             return result.status;
         }
         const distro = result.stdout.toString().trim();
-        console.log('Found distro ' + distro);
+        console.log(`Found distro ${distro}`);
         const additionalLibsKey = distro.toLowerCase(); // Always use lower case for this
 
         // Run the installer for the distro passing in any additional libs for it
-        return await this.executeCommandInTerminal(
-            'Linux dependency installer (.NET Core)', 
-            shellCommand, 
+        return this.executeCommandInTerminal(
+            'Linux dependency installer (.NET Core)',
+            shellCommand,
             [path.join(scriptRoot, 'install-linux-prereqs.sh'),
-                distro, 
+                distro,
                 (additionalLibs[additionalLibsKey] ? `"${additionalLibs[additionalLibsKey]}"` : ''),
-                skipDotNetCore.toString(), 
+                skipDotNetCore.toString(),
                 moreInfoUrl]);
     }
 
-    public async promptLinuxDependencyInstall(message: string, additionalLibs: any = {}, skipDotNetCore: boolean = false): Promise<boolean> {
+    public async promptLinuxDependencyInstall(message: string, additionalLibs: any = {}, skipDotNetCore = false): Promise<boolean> {
         while (true) {
             const response = await vscode.window.showErrorMessage(
-                message + ' You may be missing key Linux libraries. Install them now?',
+                `${message} You may be missing key Linux libraries. Install them now?`,
                 'More Info',
                 'Install',
                 'Cancel');
@@ -74,12 +73,12 @@ export class DotnetCoreDependencyInstaller{
                 const exitCode = await this.installLinuxDependencies(additionalLibs, skipDotNetCore);
 
                 if (exitCode !== 0) {
-                    const msg = (exitCode === 4 ? 
+                    const msg = (exitCode === 4 ?
                             'Your Linux distribution is not supported by the automated installer' :
                             'The dependency installer failed.');
                     // Terminal will pause for input on error so this is just an info message with a more info button
                     const failResponse = await vscode.window.showErrorMessage(
-                        msg + ' Try installing dependencies manually.',
+                        `${msg} Try installing dependencies manually.`,
                         'More Info');
                     if (failResponse === 'More Info') {
                         vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(moreInfoUrl));
@@ -102,20 +101,10 @@ export class DotnetCoreDependencyInstaller{
         }
     }
 
-    private getShellCommand(): string {
-        if (this.platform === 'win32') {
-            return which('cmd').toString();
-        }
-        // Test for existence of bash which won't exist on the base Alpine Linux container, use sh instead there
-        const shellCommand = which('bash');
-        // shellCommand will be null if bash is not found
-        return shellCommand ? shellCommand.toString() : which('sh').toString();
-    }
-
-    public async executeCommandInTerminal(name: string, command: string, args: string[] = [], promptAfterRun: boolean = false): Promise<number> {
-        return await new Promise<number>((resolve, reject) => {
-            const fullCommand = `"${command}" ${(args.length > 0 ? ' "' + args.join('" "') + '"' : '')}`;
-            const exitCodeFile = path.join(__dirname, '..', 'terminal-exit-code-' + Math.floor(Math.random() * 1000000));
+    public async executeCommandInTerminal(name: string, command: string, args: string[] = [], promptAfterRun = false): Promise<number> {
+        return new Promise<number>((resolve, reject) => {
+            const fullCommand = `"${command}" ${(args.length > 0 ? ` "${args.join('" "')}"` : '')}`;
+            const exitCodeFile = path.join(__dirname, '..', `terminal-exit-code-${Math.floor(Math.random() * 1000000)}`);
             const commandList = new Array<string>();
             if (this.platform === 'win32') {
                 // Note that "|| echo %ERRORLEVEL% >"" in this command sequence is a hack to get the exit code
@@ -123,7 +112,7 @@ export class DotnetCoreDependencyInstaller{
                 commandList.push(
                     'cls',
                     `echo 0 > "${exitCodeFile}"`,
-                    `${fullCommand} || echo %ERRORLEVEL% > "${exitCodeFile}"`
+                    `${fullCommand} || echo %ERRORLEVEL% > "${exitCodeFile}"`,
                 );
                 if (promptAfterRun) {
                     commandList.push('pause');
@@ -134,13 +123,13 @@ export class DotnetCoreDependencyInstaller{
                 commandList.push(
                     'clear',
                     `echo 0 > "${exitCodeFile}"`,
-                    `${fullCommand} || echo $? > "${exitCodeFile}"`
+                    `${fullCommand} || echo $? > "${exitCodeFile}"`,
                 );
                 if (promptAfterRun) {
                     commandList.push(
                         'echo "Press enter to close the terminal window."',
                         'sync',
-                        'read'
+                        'read',
                     );
                 }
             }
@@ -161,6 +150,7 @@ export class DotnetCoreDependencyInstaller{
                             if (exitFile) {
                                 const exitCode = parseInt(exitFile, 10);
                                 if (exitCode === 0) {
+                                    // Expected exit code
                                 } else {
                                     // Possible that this is an expected exit code, so just a warning
                                     console.log('Non-zero exit code detected.');
@@ -181,5 +171,14 @@ export class DotnetCoreDependencyInstaller{
             });
         });
     }
-}
 
+    private getShellCommand(): string {
+        if (this.platform === 'win32') {
+            return which('cmd').toString();
+        }
+        // Test for existence of bash which won't exist on the base Alpine Linux container, use sh instead there
+        const shellCommand = which('bash');
+        // shellCommand will be null if bash is not found
+        return shellCommand ? shellCommand.toString() : which('sh').toString();
+    }
+}

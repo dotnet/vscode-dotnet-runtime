@@ -7,13 +7,13 @@ import * as cp from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as vscode from 'vscode';
+import { AcquisitionInvoker } from './AcquisitionInvoker';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { DotnetCoreDependencyInstaller } from './DotnetCoreDependencyInstaller';
 import { EventStream } from './EventStream';
 import { IEventStreamObserver } from './IEventStreamObserver';
 import { OutputChannelObserver } from './OutputChannelObserver';
 import { StatusBarObserver } from './StatusBarObserver';
-import { AcquisitionInvoker } from './AcquisitionInvoker';
 import { VersionResolver } from './VersionResolver';
 
 export function activate(context: vscode.ExtensionContext, parentExtensionId: string) {
@@ -43,8 +43,8 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
     const acquisitionWorker = new DotnetCoreAcquisitionWorker(
         context.globalStoragePath,
         context.globalState,
-        eventStream, 
-        acquisitionInvoker, 
+        eventStream,
+        acquisitionInvoker,
         versionResolver);
 
     const dotnetAcquireRegistration = vscode.commands.registerCommand('dotnet.acquire', async (version) => {

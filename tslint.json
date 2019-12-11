@@ -11,6 +11,7 @@
         "prefer-template": true,
         "quotemark": [true, "single"],
         "variable-name": [true, "check-format"],
+        "max-classes-per-file": false,
         "max-line-length": {
             "options": {
                 "limit": 200

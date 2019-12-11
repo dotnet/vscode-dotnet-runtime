@@ -54,6 +54,21 @@ jobs:
       workingDirectory: 'sample'
       displayName: Build Sample
 
+##### TSLint #####
+  - job: TSLint
+    displayName: 'TSLint'
+    pool:
+      vmImage: 'vs2017-win2016'
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '12.x'
+      displayName: 'Install Node.js'
+    - bash: |
+        npm install -g tslint
+        tslint -c tslint.json 'dotnetcore-acquisition-library/src/**/*.ts' 'dotnetcore-acquisition-extension/src/**/*.ts'
+      displayName: Run Lint
+
 ##### Package and Publish #####
   - job: Publish
     displayName: 'Package and Publish'

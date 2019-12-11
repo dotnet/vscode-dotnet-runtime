@@ -5,17 +5,17 @@
 import * as request from 'request-promise-native';
 import * as semver from 'semver';
 import { isNullOrUndefined } from 'util';
+import { Memento } from 'vscode';
+import { IEventStream } from './EventStream';
+import { DotnetVersionResolutionCompleted, DotnetVersionResolutionError } from './EventStreamEvents';
 import { IVersionResolver } from './IVersionResolver';
 import { ReleasesResult } from './ReleasesResult';
-import { IEventStream } from './EventStream';
-import { DotnetVersionResolutionError, DotnetVersionResolutionCompleted } from './EventStreamEvents';
-import { Memento } from 'vscode';
 
 export class VersionResolver implements IVersionResolver {
     private releasesVersions: ReleasesResult | undefined;
-    private readonly releasesKey = "releases";
+    private readonly releasesKey = 'releases';
 
-    constructor(private readonly extensionState: Memento, 
+    constructor(private readonly extensionState: Memento,
                 private readonly eventStream: IEventStream) {}
 
     public async getFullVersion(version: string): Promise<string> {
@@ -34,21 +34,10 @@ export class VersionResolver implements IVersionResolver {
         return versionResult;
     }
 
-    private resolveVersion(version: string, releases: ReleasesResult): string {
-        this.validateVersionInput(version);
-
-        const channel = releases.releases_index.filter((channel) => channel.channel_version === version);
-        if (isNullOrUndefined(channel) || channel.length != 1) {
-            throw new Error('Unable to resolve version: ' + version)
-        }
-        const runtimeVersion = channel[0].latest_runtime;
-        return runtimeVersion;
-    }
-
     // Protected for ease of testing
     protected async getReleasesResult(): Promise<ReleasesResult> {
-        var options = {
-            uri: 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json'
+        const options = {
+            uri: 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json',
         };
 
         try {
@@ -57,16 +46,27 @@ export class VersionResolver implements IVersionResolver {
             await this.extensionState.update(this.releasesKey, response);
             const releasesResult = new ReleasesResult(response);
             return releasesResult;
-        } catch(error) {
-            this.eventStream.post(new DotnetVersionResolutionError("Version resolution failed: " + error.message));
-            throw new Error("Unable to Resolve Version: " + error.message);
-        };
+        } catch (error) {
+            this.eventStream.post(new DotnetVersionResolutionError(`Version resolution failed: ${error.message}`));
+            throw new Error(`Unable to Resolve Version: ${error.message}`);
+        }
+    }
+
+    private resolveVersion(version: string, releases: ReleasesResult): string {
+        this.validateVersionInput(version);
+
+        const channel = releases.releasesIndex.filter((channelVal) => channelVal.channelVersion === version);
+        if (isNullOrUndefined(channel) || channel.length !== 1) {
+            throw new Error(`Unable to resolve version: ${version}`);
+        }
+        const runtimeVersion = channel[0].latestRuntime;
+        return runtimeVersion;
     }
 
     private validateVersionInput(version: string) {
         const parsedVer = semver.coerce(version);
-        if (version.split('.').length != 2 || isNullOrUndefined(parsedVer)) {
-            throw new Error('Invalid version: ' + version);
+        if (version.split('.').length !== 2 || isNullOrUndefined(parsedVer)) {
+            throw new Error(`Invalid version: ${version}`);
         }
     }
 }

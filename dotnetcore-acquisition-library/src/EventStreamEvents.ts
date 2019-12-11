@@ -5,8 +5,8 @@
 
 import { ExecException } from 'child_process';
 import { EventType } from './EventType';
-import { IEvent } from './IEvent';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
+import { IEvent } from './IEvent';
 
 // tslint:disable max-classes-per-file
 
@@ -70,21 +70,15 @@ export class DotnetAcquisitionCompleted implements IEvent {
 
 export class DotnetUninstallAllStarted implements IEvent {
     public readonly type = EventType.DotnetUninstallAllStart;
-
-    constructor() {
-    }
 }
 
 export class DotnetUninstallAllCompleted implements IEvent {
     public readonly type = EventType.DotnetUninstallAllCompleted;
-
-    constructor() {
-    }
 }
 
 export class DotnetVersionResolutionError implements IEvent {
     public readonly type = EventType.DotnetVersionResolutionError;
-    
+
     constructor(public readonly error: string) {}
 }
 
@@ -95,6 +89,5 @@ export class DotnetVersionResolutionCompleted implements IEvent {
 export class TestAcquireCalled implements IEvent {
     public readonly type = EventType.DotnetAcquisitionTest;
 
-    constructor(public readonly context: IDotnetInstallationContext) {
-    }
+    constructor(public readonly context: IDotnetInstallationContext) {}
 }
