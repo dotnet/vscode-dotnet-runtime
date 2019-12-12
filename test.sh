@@ -3,8 +3,9 @@ RED=`tput setaf 1`
 GREEN=`tput setaf 2`
 NC=`tput sgr0`
 
-npm install -g tslint
-tslint -c tslint.json 'dotnetcore-acquisition-library/src/**/*.ts' 'dotnetcore-acquisition-extension/src/**/*.ts'
+pushd dotnetcore-acquisition-extension
+npm run lint
+popd
 if [ $? -ne 0 ];
 then
     echo ""

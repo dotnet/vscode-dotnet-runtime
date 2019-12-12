@@ -12,11 +12,9 @@ import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { DotnetCoreDependencyInstaller } from './DotnetCoreDependencyInstaller';
 import { EventStream } from './EventStream';
 import { IEventStreamObserver } from './IEventStreamObserver';
-import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker';
 import { OutputChannelObserver } from './OutputChannelObserver';
 import { StatusBarObserver } from './StatusBarObserver';
 import { VersionResolver } from './VersionResolver';
-import { WebRequestWorker } from './WebRequestWorker';
 
 export function activate(context: vscode.ExtensionContext, parentExtensionId: string) {
     const extension = vscode.extensions.getExtension(parentExtensionId);

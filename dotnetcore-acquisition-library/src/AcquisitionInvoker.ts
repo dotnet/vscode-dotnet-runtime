@@ -3,6 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as cp from 'child_process';
+import * as os from 'os';
 import { Memento } from 'vscode';
 import { IEventStream } from './EventStream';
 import {
@@ -25,10 +26,13 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
     }
 
     public async installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
+        const winOS = os.platform() === 'win32';
         const installCommand = await this.getInstallCommand(installContext.version, installContext.installDir);
         return new Promise<void>((resolve, reject) => {
             try {
-                cp.exec(installCommand, { cwd: process.cwd(), maxBuffer: 500 * 1024 }, (error, stdout, stderr) => {
+                cp.exec(winOS ? `powershell.exe -File ${installCommand}` : installCommand,
+                        { cwd: process.cwd(), maxBuffer: 500 * 1024 },
+                        (error, stdout, stderr) => {
                     if (error) {
                         this.eventStream.post(new DotnetAcquisitionInstallError(error, installContext.version));
                         reject(error);
@@ -49,10 +53,10 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
 
     private async getInstallCommand(version: string, dotnetInstallDir: string): Promise<string> {
         const args = [
-            '-InstallDir', `'${dotnetInstallDir}'`, // Use single quotes instead of double quotes (see https://github.com/dotnet/cli/issues/11521)
+            '-InstallDir', `"${dotnetInstallDir}"`,
             '-Runtime', 'dotnet',
             '-Version', version,
-        ]; // TODO add no-path option?
+        ];
 
         const scriptPath = await this.scriptWorker.getDotnetInstallScriptPath();
         return `"${ scriptPath }" ${ args.join(' ') }`;

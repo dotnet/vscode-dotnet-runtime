@@ -6,6 +6,7 @@ import * as chai from 'chai';
 import { MockExtensionContext } from 'dotnetcore-acquisition-library';
 import * as fs from 'fs';
 import * as path from 'path';
+import { performance } from 'perf_hooks';
 import * as rimraf from 'rimraf';
 import * as vscode from 'vscode';
 import * as extension from '../../extension';
@@ -30,6 +31,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   this.afterEach(async () => {
     // Tear down tmp storage for fresh run
     await vscode.commands.executeCommand<string>('dotnet.uninstallAll');
+    mockState.clear();
     rimraf.sync(storagePath);
   });
 
@@ -73,4 +75,16 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       assert.isTrue(fs.existsSync(dotnetPath));
     }
   }).timeout(40000);
+
+  test('Repeated Install Performance', async () => {
+    const version = '2.1';
+    // We should only actually acquire once
+    const timeLimits = [10000, 10, 10];
+    for (const timeLimit of timeLimits) {
+      const start = performance.now();
+      await vscode.commands.executeCommand<string>('dotnet.acquire', version);
+      const duration = performance.now() - start;
+      assert.isBelow(duration, timeLimit);
+    }
+  }).timeout(20000);
 });

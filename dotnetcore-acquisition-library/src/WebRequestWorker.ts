@@ -28,11 +28,10 @@ export class WebRequestWorker {
         return this.cachedData;
     }
 
-    // Protected for ease of testing TODO add tests
+    // Protected for ease of testing
     protected async makeWebRequest(): Promise<any> {
         const options = {
             uri: this.uri,
-            responseType: 'blob',
         };
 
         try {

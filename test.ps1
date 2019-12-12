@@ -2,8 +2,9 @@ $result = 0
 $errorColor = "Red"
 $successColor = "Green"
 
-npm install -g tslint
-tslint -c tslint.json 'dotnetcore-acquisition-library/src/**/*.ts' 'dotnetcore-acquisition-extension/src/**/*.ts'
+pushd dotnetcore-acquisition-extension
+npm run lint
+popd
 if (! $?)
 {
     Write-Host "`nTSLint Failed.`n" -ForegroundColor $errorColor

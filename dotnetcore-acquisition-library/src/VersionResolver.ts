@@ -11,7 +11,7 @@ import { IVersionResolver } from './IVersionResolver';
 import { ReleasesResult } from './ReleasesResult';
 import { WebRequestWorker } from './WebRequestWorker';
 
-export class VersionResolver implements IVersionResolver { // tODO add tests for caching?
+export class VersionResolver implements IVersionResolver {
     protected webWorker: WebRequestWorker;
     private readonly releasesKey = 'releases';
     private readonly releasesUrl = 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json';
@@ -21,7 +21,7 @@ export class VersionResolver implements IVersionResolver { // tODO add tests for
         this.webWorker = new WebRequestWorker(extensionState, eventStream, this.releasesUrl, this.releasesKey);
     }
 
-    public async getFullVersion(version: string): Promise<string> { // TODO add test where the response can't be deserialized to releasesResult
+    public async getFullVersion(version: string): Promise<string> {
         try {
             const response = await this.webWorker.getCachedData();
             const releasesVersions = new ReleasesResult(response);

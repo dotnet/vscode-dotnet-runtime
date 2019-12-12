@@ -2,17 +2,14 @@
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
-
 import * as fs from 'fs';
 import * as path from 'path';
-import { extensions, Memento } from 'vscode';
+import { Memento } from 'vscode';
 import { IEventStream } from '../../EventStream';
 import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStreamEvents';
 import { IAcquisitionInvoker } from '../../IAcquisitionInvoker';
 import { IDotnetInstallationContext } from '../../IDotnetInstallationContext';
 import { IEvent } from '../../IEvent';
-import { InstallScriptAcquisitionWorker } from '../../InstallScriptAcquisitionWorker';
-import { ReleasesResult } from '../../ReleasesResult';
 import { VersionResolver } from '../../VersionResolver';
 import { WebRequestWorker } from '../../WebRequestWorker';
 
@@ -30,6 +27,9 @@ export class MockExtensionContext implements Memento {
     }
     public update(key: string, value: any): Thenable<void> {
         return this.values[key] = value;
+    }
+    public clear() {
+        this.values = {};
     }
 }
 
@@ -74,15 +74,6 @@ export class MockWebRequestWorker extends WebRequestWorker {
 
 export class MockVersionResolver extends VersionResolver {
     private readonly filePath = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-releases.json');
-
-    constructor(extensionState: Memento, eventStream: IEventStream) {
-        super(extensionState, eventStream);
-        this.webWorker = new MockWebRequestWorker(extensionState, eventStream, '', 'releases', this.filePath);
-    }
-}
-
-export class MockInstallScriptAcquisitionWorker extends InstallScriptAcquisitionWorker { // TODO is this needed at all?
-    private readonly filePath = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'dotnet-install');
 
     constructor(extensionState: Memento, eventStream: IEventStream) {
         super(extensionState, eventStream);
