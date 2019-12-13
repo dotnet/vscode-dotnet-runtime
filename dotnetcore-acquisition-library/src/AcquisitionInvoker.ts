@@ -30,7 +30,7 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
         const installCommand = await this.getInstallCommand(installContext.version, installContext.installDir);
         return new Promise<void>((resolve, reject) => {
             try {
-                cp.exec(winOS ? `powershell.exe -File ${installCommand}` : installCommand,
+                cp.exec(winOS ? `powershell.exe -ExecutionPolicy unrestricted -File ${installCommand}` : installCommand,
                         { cwd: process.cwd(), maxBuffer: 500 * 1024 },
                         (error, stdout, stderr) => {
                     if (error) {
