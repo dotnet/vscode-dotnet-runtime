@@ -75,16 +75,4 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       assert.isTrue(fs.existsSync(dotnetPath));
     }
   }).timeout(40000);
-
-  test('Repeated Install Performance', async () => {
-    const version = '2.1';
-    // We should only actually acquire once
-    const timeLimits = [10000, 10, 10];
-    for (const timeLimit of timeLimits) {
-      const start = performance.now();
-      await vscode.commands.executeCommand<string>('dotnet.acquire', version);
-      const duration = performance.now() - start;
-      assert.isBelow(duration, timeLimit);
-    }
-  }).timeout(20000);
 });

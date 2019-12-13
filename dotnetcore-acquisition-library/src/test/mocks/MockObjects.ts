@@ -10,6 +10,7 @@ import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStream
 import { IAcquisitionInvoker } from '../../IAcquisitionInvoker';
 import { IDotnetInstallationContext } from '../../IDotnetInstallationContext';
 import { IEvent } from '../../IEvent';
+import { InstallScriptAcquisitionWorker } from '../../InstallScriptAcquisitionWorker';
 import { VersionResolver } from '../../VersionResolver';
 import { WebRequestWorker } from '../../WebRequestWorker';
 
@@ -60,7 +61,7 @@ export class ErrorAcquisitionInvoker extends IAcquisitionInvoker {
 // Major.Minor-> Major.Minor.Patch from mock releases.json
 export const versionPairs = [['1.0', '1.0.16'], ['1.1', '1.1.13'], ['2.0', '2.0.9'], ['2.1', '2.1.14'], ['2.2', '2.2.8']];
 
-export class MockWebRequestWorker extends WebRequestWorker {
+export class FileWebRequestWorker extends WebRequestWorker {
     constructor(extensionState: Memento, eventStream: IEventStream, uri: string, extensionStateKey: string,
                 private readonly mockFilePath: string) {
         super(extensionState, eventStream, uri, extensionStateKey);
@@ -72,11 +73,43 @@ export class MockWebRequestWorker extends WebRequestWorker {
     }
 }
 
+export class FailingWebRequestWorker extends WebRequestWorker {
+    constructor(extensionState: Memento, eventStream: IEventStream, uri: string, extensionStateKey: string) {
+        super(extensionState, eventStream, '', extensionStateKey); // Empty string as uri
+    }
+}
+
+export class MockWebRequestWorker extends WebRequestWorker {
+    protected async makeWebRequest(): Promise<any> {
+        return '';
+    }
+}
+
 export class MockVersionResolver extends VersionResolver {
     private readonly filePath = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-releases.json');
 
     constructor(extensionState: Memento, eventStream: IEventStream) {
         super(extensionState, eventStream);
-        this.webWorker = new MockWebRequestWorker(extensionState, eventStream, '', 'releases', this.filePath);
+        this.webWorker = new FileWebRequestWorker(extensionState, eventStream, '', 'releases', this.filePath);
+    }
+}
+
+export class MockInstallScriptWorker extends InstallScriptAcquisitionWorker {
+    constructor(extensionState: Memento, eventStream: IEventStream, failing: boolean) {
+        super(extensionState, eventStream);
+        this.webWorker = failing ?
+            new FailingWebRequestWorker(extensionState, eventStream, '', '') :
+            new MockWebRequestWorker(extensionState, eventStream, '', '');
+    }
+}
+
+export class FailingInstallScriptWorker extends InstallScriptAcquisitionWorker {
+    constructor(extensionState: Memento, eventStream: IEventStream) {
+        super(extensionState, eventStream);
+        this.webWorker = new MockWebRequestWorker(extensionState, eventStream, '', '');
+    }
+
+    protected writeScriptAsFile(scriptContent: string, filePath: string) {
+        throw new Error('Failed to write file');
     }
 }

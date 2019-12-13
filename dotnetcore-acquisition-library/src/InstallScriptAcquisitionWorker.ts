@@ -7,6 +7,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { Memento } from 'vscode';
 import { IEventStream } from './EventStream';
+import { DotnetInstallScriptAcquisitionCompleted, DotnetInstallScriptAcquisitionError } from './EventStreamEvents';
 import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
 import { WebRequestWorker } from './WebRequestWorker';
 
@@ -15,7 +16,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
     private readonly scriptAcquisitionUrl: string = 'https://dot.net/v1/dotnet-install';
     private readonly scriptFilePath: string;
 
-    constructor(extensionState: Memento, eventStream: IEventStream) {
+    constructor(extensionState: Memento, private readonly eventStream: IEventStream) {
         const scriptFileEnding = os.platform() === 'win32' ? '.ps1' : '.sh';
         const scriptFileName = 'dotnet-install';
         this.scriptFilePath = path.join(__dirname, 'install scripts', scriptFileName + scriptFileEnding);
@@ -23,12 +24,22 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
     }
 
     public async getDotnetInstallScriptPath(): Promise<string> {
-        const script = await this.webWorker.getCachedData();
-        if (!fs.existsSync(path.dirname(this.scriptFilePath))) {
-            fs.mkdirSync(path.dirname(this.scriptFilePath), { recursive: true });
+        try {
+            const script = await this.webWorker.getCachedData();
+            this.writeScriptAsFile(script, this.scriptFilePath);
+            this.eventStream.post(new DotnetInstallScriptAcquisitionCompleted());
+            return this.scriptFilePath;
+        } catch (error) {
+            this.eventStream.post(new DotnetInstallScriptAcquisitionError(error));
+            throw new Error(`Failed to Acquire Dotnet Install Script: ${error}`);
         }
-        fs.writeFileSync(this.scriptFilePath, script);
-        fs.chmodSync(this.scriptFilePath, 0o777);
-        return this.scriptFilePath;
+    }
+
+    protected writeScriptAsFile(scriptContent: string, filePath: string) {
+        if (!fs.existsSync(path.dirname(filePath))) {
+            fs.mkdirSync(path.dirname(filePath), { recursive: true });
+        }
+        fs.writeFileSync(filePath, scriptContent);
+        fs.chmodSync(filePath, 0o777);
     }
 }
