@@ -2,7 +2,6 @@
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
-import * as request from 'request-promise-native';
 import * as semver from 'semver';
 import { isNullOrUndefined } from 'util';
 import { Memento } from 'vscode';
@@ -10,45 +9,29 @@ import { IEventStream } from './EventStream';
 import { DotnetVersionResolutionCompleted, DotnetVersionResolutionError } from './EventStreamEvents';
 import { IVersionResolver } from './IVersionResolver';
 import { ReleasesResult } from './ReleasesResult';
+import { WebRequestWorker } from './WebRequestWorker';
 
 export class VersionResolver implements IVersionResolver {
-    private releasesVersions: ReleasesResult | undefined;
+    protected webWorker: WebRequestWorker;
     private readonly releasesKey = 'releases';
+    private readonly releasesUrl = 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json';
 
-    constructor(private readonly extensionState: Memento,
-                private readonly eventStream: IEventStream) {}
-
-    public async getFullVersion(version: string): Promise<string> {
-        const cachedReleases = this.extensionState.get<string>(this.releasesKey);
-        if (isNullOrUndefined(cachedReleases)) {
-            // Have to acquire release version information before continuing
-            this.releasesVersions = await this.getReleasesResult();
-        } else {
-            // Update releases without blocking, continue with cached information
-            this.getReleasesResult().then((releasesResult) => this.releasesVersions = releasesResult);
-            this.releasesVersions = new ReleasesResult(cachedReleases);
-        }
-
-        const versionResult = this.resolveVersion(version, this.releasesVersions);
-        this.eventStream.post(new DotnetVersionResolutionCompleted());
-        return versionResult;
+    constructor(extensionState: Memento,
+                private readonly eventStream: IEventStream) {
+        this.webWorker = new WebRequestWorker(extensionState, eventStream, this.releasesUrl, this.releasesKey);
     }
 
-    // Protected for ease of testing
-    protected async getReleasesResult(): Promise<ReleasesResult> {
-        const options = {
-            uri: 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json',
-        };
-
+    public async getFullVersion(version: string): Promise<string> {
         try {
-            const response = await request.get(options);
-            // Cache results
-            await this.extensionState.update(this.releasesKey, response);
-            const releasesResult = new ReleasesResult(response);
-            return releasesResult;
+            const response = await this.webWorker.getCachedData();
+            const releasesVersions = new ReleasesResult(response);
+
+            const versionResult = this.resolveVersion(version, releasesVersions);
+            this.eventStream.post(new DotnetVersionResolutionCompleted());
+            return versionResult;
         } catch (error) {
-            this.eventStream.post(new DotnetVersionResolutionError(`Version resolution failed: ${error.message}`));
-            throw new Error(`Unable to Resolve Version: ${error.message}`);
+            this.eventStream.post(new DotnetVersionResolutionError(error));
+            throw error;
         }
     }
 

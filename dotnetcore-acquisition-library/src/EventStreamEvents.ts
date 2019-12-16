@@ -86,6 +86,22 @@ export class DotnetVersionResolutionCompleted implements IEvent {
     public readonly type = EventType.DotnetVersionResolutionCompleted;
 }
 
+export class DotnetInstallScriptAcquisitionError implements IEvent {
+    public readonly type = EventType.DotnetInstallScriptAcquisitionError;
+
+    constructor(public readonly error: string) {}
+}
+
+export class DotnetInstallScriptAcquisitionCompleted implements IEvent {
+    public readonly type = EventType.DotnetInstallScriptAcquisitionCompleted;
+}
+
+export class WebRequestError implements IEvent {
+    public readonly type = EventType.WebRequestError;
+
+    constructor(public readonly error: string) {}
+}
+
 export class TestAcquireCalled implements IEvent {
     public readonly type = EventType.DotnetAcquisitionTest;
 

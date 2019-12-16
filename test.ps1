@@ -2,6 +2,19 @@ $result = 0
 $errorColor = "Red"
 $successColor = "Green"
 
+pushd dotnetcore-acquisition-extension
+npm run lint
+popd
+if (! $?)
+{
+    Write-Host "`nTSLint Failed.`n" -ForegroundColor $errorColor
+    $result = 1
+}
+else 
+{
+    Write-Host "`nTSLint Succeeded.`n" -ForegroundColor $successColor
+}
+
 pushd dotnetcore-acquisition-library
 if (Test-Path node_modules) { rm -r -force node_modules }
 npm install --silent

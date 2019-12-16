@@ -29,7 +29,8 @@
 		"watch": "npm run compile && tsc -watch -p ./",
 		"test": "npm run compile --silent && node ./out/test/functional/runTest.js",
 		"clean": "rimraf out",
-		"compile-all": "cd ../dotnetcore-acquisition-library && npm install && npm run compile && cd ../dotnetcore-acquisition-extension && npm install && npm run compile"
+		"compile-all": "cd ../dotnetcore-acquisition-library && npm install && npm run compile && cd ../dotnetcore-acquisition-extension && npm install && npm run compile",
+		"lint": "tslint -c ../tslint.json '../dotnetcore-acquisition-library/src/**/*.ts' '../dotnetcore-acquisition-extension/src/**/*.ts'"
 	},
 	"dependencies": {
 		"dotnetcore-acquisition-library": "file:../dotnetcore-acquisition-library"

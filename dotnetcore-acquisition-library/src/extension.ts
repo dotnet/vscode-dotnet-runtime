@@ -38,7 +38,7 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
     if (!fs.existsSync(context.globalStoragePath)) {
         fs.mkdirSync(context.globalStoragePath);
     }
-    const acquisitionInvoker = new AcquisitionInvoker(context.extensionPath, eventStream);
+    const acquisitionInvoker = new AcquisitionInvoker(context.globalState, eventStream);
     const versionResolver = new VersionResolver(context.globalState, eventStream);
     const acquisitionWorker = new DotnetCoreAcquisitionWorker(
         context.globalStoragePath,

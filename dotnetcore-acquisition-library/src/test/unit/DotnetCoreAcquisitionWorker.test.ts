@@ -16,7 +16,6 @@ import {
 } from '../../EventStreamEvents';
 import { EventType } from '../../EventType';
 import {
-    ErrorAcquisitionInvoker,
     MockEventStream,
     MockExtensionContext,
     MockVersionResolver,
@@ -29,16 +28,14 @@ chai.use(chaiAsPromised);
 suite('DotnetCoreAcquisitionWorker Unit Tests', () => {
     const installingVersionsKey = 'installing';
 
-    function getTestAcquisitionWorker(fakeScripts: boolean): [ DotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext ] {
+    function getTestAcquisitionWorker(): [ DotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext ] {
         const context = new MockExtensionContext();
         const eventStream = new MockEventStream();
         const acquisitionWorker = new DotnetCoreAcquisitionWorker(
             '',
             context,
             eventStream,
-            fakeScripts ?
-                new ErrorAcquisitionInvoker(eventStream) :
-                new NoInstallAcquisitionInvoker(eventStream),
+            new NoInstallAcquisitionInvoker(eventStream),
             new MockVersionResolver(context, eventStream));
         return [ acquisitionWorker, eventStream, context ];
     }
@@ -78,7 +75,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', () => {
     }
 
     test('Acquire Version', async () => {
-        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(false);
+        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker();
 
         const pathResult = await acquisitionWorker.acquire(versionPairs[0][0]);
         await assertAcquisitionSucceeded(versionPairs[0][1], pathResult, eventStream, context);
@@ -86,7 +83,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', () => {
 
     test('Acquire Version Multiple Times', async () => {
         const numAcquisitions = 3;
-        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(false);
+        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker();
 
         for (let i = 0; i < numAcquisitions; i++) {
             const pathResult = await acquisitionWorker.acquire(versionPairs[0][0]);
@@ -98,13 +95,8 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', () => {
         assert.lengthOf(acquireEvents, 1);
     });
 
-    test('Acquire Version Network Failure', async () => {
-        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(true);
-        return assert.isRejected(acquisitionWorker.acquire(versionPairs[0][0]), Error, 'Dotnet Core Acquisition Failed');
-    });
-
     test('Acquire Multiple Versions and UninstallAll', async () => {
-        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(false);
+        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker();
         for (const version of versionPairs) {
             const pathRes = await acquisitionWorker.acquire(version[0]);
             await assertAcquisitionSucceeded(version[1], pathRes, eventStream, context);
@@ -115,7 +107,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', () => {
     });
 
     test('Acquire and UninstallAll', async () => {
-        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(false);
+        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker();
 
         const pathRes = await acquisitionWorker.acquire(versionPairs[0][0]);
         await assertAcquisitionSucceeded(versionPairs[0][1], pathRes, eventStream, context);
@@ -124,4 +116,14 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', () => {
         assert.exists(eventStream.events.find(event => event instanceof DotnetUninstallAllStarted));
         assert.exists(eventStream.events.find(event => event instanceof DotnetUninstallAllCompleted));
     });
+
+    test('Repeated Acquisition', async () => {
+        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker();
+        for (let i = 0; i < 3; i ++) {
+            await acquisitionWorker.acquire(versionPairs[0][0]);
+        }
+        // We should only actually acquire once
+        const events = eventStream.events.filter(event => event instanceof DotnetAcquisitionStarted);
+        assert.equal(events.length, 1);
+      });
 });
