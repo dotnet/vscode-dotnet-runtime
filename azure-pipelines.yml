@@ -3,12 +3,18 @@ trigger:
   branches:
     include:
     - master
-
+  tags:
+    include:
+    - v*
 pr:
   autoCancel: false
   branches:
     include:
     - '*'
+
+variables:
+  is-release: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/v')]
+  package-name: 'dotnetcore-acquisition'
 
 jobs:
  ##### Build #####
@@ -70,11 +76,12 @@ jobs:
       displayName: Run Lint
 
 ##### Package and Publish #####
-  - job: Publish
+  - job: Package
     displayName: 'Package and Publish'
     dependsOn: 
     - Build
-    condition: notin(variables['Build.Reason'], 'PullRequest')
+    - TSLint
+    condition: and(succeeded(), notin(variables['Build.Reason'], 'PullRequest'))
     pool:
       vmImage: 'vs2017-win2016'
     steps:
@@ -93,9 +100,21 @@ jobs:
       workingDirectory: 'dotnetcore-acquisition-extension'
       displayName: Build dotnetcore-acquisition-extension
     - bash: |
+        if [ $(is-release) = 'True' ]; then
+          VERSION=`node -p "require('./package.json').version"`
+        else
+          VERSION_NUM=`node -p "require('./package.json').version"`
+          VERSION="$VERSION_NUM-aplha-$(Build.BuildId)"
+        fi
+        npm version $VERSION --allow-same-version
+        echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
+      name: GetVersion
+      displayName: 'Get Version'
+      workingDirectory: 'dotnetcore-acquisition-extension'
+    - bash: |
         npm install -g rimraf
         npm install -g vsce
-        vsce package
+        vsce package -o $(package-name)-$(GetVersion.version).vsix
       displayName: Package Artifact
       workingDirectory: 'dotnetcore-acquisition-extension'
     - task: CopyFiles@2
@@ -109,3 +128,61 @@ jobs:
       displayName: 'Publish Artifact'
       inputs:
         PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+
+##### Create release on GitHub #####
+  - job: Release
+    displayName: 'Create GitHub Release'
+    dependsOn: 
+    - Package
+    - Build
+    - TSLint
+    condition: and(succeeded(), eq(variables['is-release'], 'true'))
+    pool:
+      vmImage: 'vs2017-win2016'
+    variables:
+      version: $[ dependencies.Package.outputs['GetVersion.version'] ]
+    steps:
+    - task: DownloadBuildArtifacts@0
+      displayName: 'Download Packaged Extension'
+      inputs:
+        downloadType: 'specific'
+    - task: GitHubRelease@1
+      inputs:
+        gitHubConnection: 'github.com_sfoslund' # TODO replace
+        repositoryName: '$(Build.Repository.Name)'
+        action: 'create'
+        target: '$(Build.SourceVersion)'
+        tagSource: 'gitTag' # Use the tag associated with this commit
+        isDraft: true # TODO remove when finished with testing(?)
+        releaseNotesFilePath: 'CHANGELOG.md'
+        addChangeLog: false
+        assets: $(System.ArtifactsDirectory)/**/*.vsix
+
+##### Publish to marketplace #####
+  - job: Publish
+    displayName: 'Publish to Marketplace'
+    dependsOn: 
+    - Package
+    - Build
+    - TSLint
+    - Release
+    condition: and(succeeded(), eq(variables['is-release'], 'true'))
+    pool:
+      vmImage: 'vs2017-win2016'
+    variables:
+      version: $[ dependencies.Package.outputs['GetVersion.version'] ]
+    steps:
+    - checkout: none # Skip checking out repo
+    - task: DownloadBuildArtifacts@0
+      displayName: 'Download Packaged Extension'
+      inputs:
+        downloadType: 'specific'
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '12.x'
+      displayName: 'Install Node.js'
+    - bash: |
+        npm install -g vsce
+        vsce publish --packagePath $(package-name)-$(version).vsix -p $(VSCODE_MARKETPLACE_TOKEN)
+      displayName: 'Publish to Marketplace'
+      workingDirectory: '$(System.ArtifactsDirectory)/drop'
