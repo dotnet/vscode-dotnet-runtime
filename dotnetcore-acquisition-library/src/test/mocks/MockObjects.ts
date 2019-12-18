@@ -11,6 +11,7 @@ import { IAcquisitionInvoker } from '../../IAcquisitionInvoker';
 import { IDotnetInstallationContext } from '../../IDotnetInstallationContext';
 import { IEvent } from '../../IEvent';
 import { InstallScriptAcquisitionWorker } from '../../InstallScriptAcquisitionWorker';
+import { ITelemetryReporter } from '../../TelemetryObserver';
 import { VersionResolver } from '../../VersionResolver';
 import { WebRequestWorker } from '../../WebRequestWorker';
 
@@ -111,5 +112,21 @@ export class FailingInstallScriptWorker extends InstallScriptAcquisitionWorker {
 
     protected writeScriptAsFile(scriptContent: string, filePath: string) {
         throw new Error('Failed to write file');
+    }
+}
+
+export class MockTelemetryReporter implements ITelemetryReporter {
+    public static telemetryEvents: Array<{
+        eventName: string;
+        properties?: {
+            [key: string]: string;
+        } | undefined;
+        measures?: {
+            [key: string]: number;
+        } | undefined;
+    }> = [];
+
+    public sendTelemetryEvent(eventName: string, properties?: { [key: string]: string; } | undefined, measures?: { [key: string]: number; } | undefined): void {
+        MockTelemetryReporter.telemetryEvents = MockTelemetryReporter.telemetryEvents.concat({eventName, properties, measures});
     }
 }

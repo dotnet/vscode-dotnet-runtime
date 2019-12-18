@@ -14,6 +14,7 @@ import { EventStream } from './EventStream';
 import { IEventStreamObserver } from './IEventStreamObserver';
 import { OutputChannelObserver } from './OutputChannelObserver';
 import { StatusBarObserver } from './StatusBarObserver';
+import { TelemetryObserver } from './TelemetryObserver';
 import { VersionResolver } from './VersionResolver';
 
 export function activate(context: vscode.ExtensionContext, parentExtensionId: string) {
@@ -28,6 +29,7 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
         [
             new StatusBarObserver(vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, Number.MIN_VALUE)),
             new OutputChannelObserver(outputChannel),
+            TelemetryObserver.getInstance(extension, context),
         ];
     const eventStream = new EventStream();
 

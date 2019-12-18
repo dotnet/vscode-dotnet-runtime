@@ -12,6 +12,7 @@
 	},
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
+	"appInsightsKey": "",
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
 		"compile": "npm run clean && tsc -p ./",
@@ -40,6 +41,7 @@
 		"shelljs": "0.8.3",
 		"tslint": "5.16.0",
 		"typescript": "3.4.5",
+		"vscode-extension-telemetry": "^0.1.2",
 		"vscode-test": "^1.2.2"
 	}
 }
