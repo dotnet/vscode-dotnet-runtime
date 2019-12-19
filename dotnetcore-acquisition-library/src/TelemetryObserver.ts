@@ -5,7 +5,12 @@
 import { isNullOrUndefined } from 'util';
 import * as vscode from 'vscode';
 import TelemetryReporter from 'vscode-extension-telemetry';
-import { DotnetAcquisitionCompleted, DotnetAcquisitionError, DotnetAcquisitionStarted } from './EventStreamEvents';
+import {
+    DotnetAcquisitionCompleted,
+    DotnetAcquisitionError,
+    DotnetAcquisitionStarted,
+    DotnetError,
+} from './EventStreamEvents';
 import { EventType } from './EventType';
 import { IEvent } from './IEvent';
 import { IEventStreamObserver } from './IEventStreamObserver';
@@ -54,7 +59,7 @@ export class TelemetryObserver implements IEventStreamObserver {
                     return {ErrorMessage : (event as DotnetAcquisitionError).error,
                             AcquisitionErrorVersion : (event as DotnetAcquisitionError).version};
                 } else {
-                    return {ErrorMessage : (event as DotnetAcquisitionError).error};
+                    return {ErrorMessage : (event as DotnetError).error};
                 }
             default:
                 // The rest of the events have no properties

@@ -2,7 +2,6 @@
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
-
 import * as cp from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -12,6 +11,7 @@ import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { DotnetCoreDependencyInstaller } from './DotnetCoreDependencyInstaller';
 import { EventStream } from './EventStream';
 import { IEventStreamObserver } from './IEventStreamObserver';
+import { LoggingObserver } from './LoggingObserver';
 import { OutputChannelObserver } from './OutputChannelObserver';
 import { StatusBarObserver } from './StatusBarObserver';
 import { TelemetryObserver } from './TelemetryObserver';
@@ -30,6 +30,7 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
             new StatusBarObserver(vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, Number.MIN_VALUE)),
             new OutputChannelObserver(outputChannel),
             TelemetryObserver.getInstance(extension, context),
+            new LoggingObserver(context.logPath, `DotNetAcquisition${ new Date().getTime() }.txt`),
         ];
     const eventStream = new EventStream();
 
