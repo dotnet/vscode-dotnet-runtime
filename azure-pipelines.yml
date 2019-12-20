@@ -16,8 +16,11 @@ variables:
   is-release: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/v')]
   package-name: 'dotnetcore-acquisition'
 
-jobs:
- ##### Build #####
+stages:
+##### Test and Build #####
+- stage: Build
+  jobs:
+  ##### Build #####
   - job: Build
     displayName: 'Build and Test'
     pool:
@@ -59,8 +62,7 @@ jobs:
         npm run compile
       workingDirectory: 'sample'
       displayName: Build Sample
-
-##### TSLint #####
+  ##### TSLint #####
   - job: TSLint
     displayName: 'TSLint'
     pool:
@@ -74,8 +76,7 @@ jobs:
         npm install -g tslint
         tslint -c tslint.json 'dotnetcore-acquisition-library/src/**/*.ts' 'dotnetcore-acquisition-extension/src/**/*.ts'
       displayName: Run Lint
-
-##### Package and Publish #####
+  ##### Package and Publish #####
   - job: Package
     displayName: 'Package and Publish'
     dependsOn: 
@@ -124,28 +125,33 @@ jobs:
         Contents: '**\*.vsix'
         TargetFolder: '$(Build.ArtifactStagingDirectory)'
         flattenFolders: true
-    - task: PublishBuildArtifacts@1
-      displayName: 'Publish Artifact'
+    - task: PublishPipelineArtifact@0
       inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        targetPath: '$(Build.ArtifactStagingDirectory)'
 
-##### Create release on GitHub #####
+##### Deploy and Release #####
+- stage: DeployAndRelease
+  dependsOn: Build
+  condition: and(succeeded(), eq(variables['is-release'], 'true'))
+  jobs:
+  ##### Deploy to our release environment #####
+  # Note: This step requires approval, allows for manual smoke testing the artifact before release
+  - deployment: Deploy
+    pool:
+      vmImage: 'vs2017-win2016'
+    environment: 'Releases'
+  ##### Create release on GitHub #####
   - job: Release
     displayName: 'Create GitHub Release'
     dependsOn: 
-    - Package
-    - Build
-    - TSLint
-    condition: and(succeeded(), eq(variables['is-release'], 'true'))
+    - Deploy
     pool:
       vmImage: 'vs2017-win2016'
-    variables:
-      version: $[ dependencies.Package.outputs['GetVersion.version'] ]
     steps:
-    - task: DownloadBuildArtifacts@0
+    - task: DownloadPipelineArtifact@2
       displayName: 'Download Packaged Extension'
       inputs:
-        downloadType: 'specific'
+        path: '$(System.ArtifactsDirectory)'
     - task: GitHubRelease@1
       inputs:
         gitHubConnection: 'github.com_sfoslund' # TODO replace
@@ -153,30 +159,43 @@ jobs:
         action: 'create'
         target: '$(Build.SourceVersion)'
         tagSource: 'gitTag' # Use the tag associated with this commit
-        isDraft: true # TODO remove when finished with testing(?)
+        isDraft: true
         releaseNotesFilePath: 'CHANGELOG.md'
         addChangeLog: false
         assets: $(System.ArtifactsDirectory)/**/*.vsix
-
-##### Publish to marketplace #####
+  ##### Determine version to publish #####
+  - job: GetVersion
+    displayName: 'Get Version'
+    pool:
+      vmImage: 'vs2017-win2016'
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '12.x'
+      displayName: 'Install Node.js'
+    - bash: |
+        VERSION=`node -p "require('./package.json').version"`
+        echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
+      name: GetVersion
+      displayName: 'Get Version'
+      workingDirectory: 'dotnetcore-acquisition-extension'
+  ##### Publish to marketplace #####
   - job: Publish
     displayName: 'Publish to Marketplace'
     dependsOn: 
-    - Package
-    - Build
-    - TSLint
+    - Deploy
     - Release
-    condition: and(succeeded(), eq(variables['is-release'], 'true'))
+    - GetVersion
     pool:
       vmImage: 'vs2017-win2016'
     variables:
-      version: $[ dependencies.Package.outputs['GetVersion.version'] ]
+      version: $[ dependencies.GetVersion.outputs['GetVersion.version'] ]
     steps:
     - checkout: none # Skip checking out repo
-    - task: DownloadBuildArtifacts@0
+    - task: DownloadPipelineArtifact@2
       displayName: 'Download Packaged Extension'
       inputs:
-        downloadType: 'specific'
+        path: '$(System.ArtifactsDirectory)'
     - task: NodeTool@0
       inputs:
         versionSpec: '12.x'
