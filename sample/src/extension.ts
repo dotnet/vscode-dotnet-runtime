@@ -36,7 +36,7 @@ export function activate(context: vscode.ExtensionContext) {
             await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
 
             // Console app requires .NET Core 2.2.0
-            const dotnetPath = await vscode.commands.executeCommand<string>('dotnet.acquire', '2.2.0');
+            const dotnetPath = await vscode.commands.executeCommand<string>('dotnet.acquire', '2.2');
             if (!dotnetPath) {
                 throw new Error('Couldn\'t resolve the dotnet path!');
             }
@@ -69,9 +69,9 @@ ${stderr}`);
     const sampleAcquireRegistration = vscode.commands.registerCommand('sample.dotnet.acquire', async (version) => {
         if (!version) {
             version = await vscode.window.showInputBox({
-                placeHolder: '2.2.0',
-                value: '2.2.0',
-                prompt: '.NET Core version, i.e. 2.2.1',
+                placeHolder: '2.2',
+                value: '2.2',
+                prompt: '.NET Core version, i.e. 2.2',
             });
         }
 

@@ -25,10 +25,14 @@ export class StatusBarObserver implements IEventStreamObserver {
             case EventType.DotnetAcquisitionCompleted:
                 this.resetAndHideStatusBar();
                 break;
-            case EventType.DotnetError:
+            case EventType.DotnetAcquisitionError:
                 this.setAndShowStatusBar('$(alert) Error acquiring .NET Core tooling!', 'dotnet.showAcquisitionLog', StatusBarColors.Red, 'Error acquiring .NET Core tooling');
                 break;
         }
+    }
+
+    public dispose(): void {
+        // Nothing to dispose
     }
 
     public setAndShowStatusBar(text: string, command: string, color?: string, tooltip?: string) {

@@ -116,6 +116,7 @@ export class FailingInstallScriptWorker extends InstallScriptAcquisitionWorker {
 }
 
 export class MockTelemetryReporter implements ITelemetryReporter {
+
     public static telemetryEvents: Array<{
         eventName: string;
         properties?: {
@@ -125,6 +126,10 @@ export class MockTelemetryReporter implements ITelemetryReporter {
             [key: string]: number;
         } | undefined;
     }> = [];
+
+    public async dispose(): Promise<any> {
+        // Nothing to dispose
+    }
 
     public sendTelemetryEvent(eventName: string, properties?: { [key: string]: string; } | undefined, measures?: { [key: string]: number; } | undefined): void {
         MockTelemetryReporter.telemetryEvents = MockTelemetryReporter.telemetryEvents.concat({eventName, properties, measures});

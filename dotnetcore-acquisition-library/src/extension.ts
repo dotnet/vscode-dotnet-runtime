@@ -5,11 +5,13 @@
 import * as cp from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { AcquisitionInvoker } from './AcquisitionInvoker';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { DotnetCoreDependencyInstaller } from './DotnetCoreDependencyInstaller';
 import { EventStream } from './EventStream';
+import { DotnetAcquisitionMissingLinuxDependencies } from './EventStreamEvents';
 import { IEventStreamObserver } from './IEventStreamObserver';
 import { LoggingObserver } from './LoggingObserver';
 import { OutputChannelObserver } from './OutputChannelObserver';
@@ -25,12 +27,14 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
     }
 
     const outputChannel = vscode.window.createOutputChannel('.NET Core Tooling');
+    fs.mkdirSync(context.logPath);
+    const logFile = path.join(context.logPath, `DotNetAcquisition${ new Date().getTime() }.txt`);
     const eventStreamObservers: IEventStreamObserver[] =
         [
             new StatusBarObserver(vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, Number.MIN_VALUE)),
             new OutputChannelObserver(outputChannel),
-            TelemetryObserver.getInstance(extension, context),
-            new LoggingObserver(context.logPath, `DotNetAcquisition${ new Date().getTime() }.txt`),
+            TelemetryObserver.getInstance(context),
+            new LoggingObserver(logFile),
         ];
     const eventStream = new EventStream();
 
@@ -67,6 +71,7 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
         const result = cp.spawnSync(app, args);
         const installer = new DotnetCoreDependencyInstaller();
         if (installer.signalIndicatesMissingLinuxDependencies(result.signal)) {
+            eventStream.post(new DotnetAcquisitionMissingLinuxDependencies());
             await installer.promptLinuxDependencyInstall('Failed to run .NET tooling.');
         }
 
@@ -78,4 +83,12 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
         dotnetUninstallAllRegistration,
         showOutputChannelRegistration,
         testApplicationRegistration);
+
+    context.subscriptions.push({
+        dispose: () => {
+            for (const observer of eventStreamObservers) {
+                observer.dispose();
+            }
+        },
+    });
 }

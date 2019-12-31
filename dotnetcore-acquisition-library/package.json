@@ -12,7 +12,6 @@
 	},
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
-	"appInsightsKey": "",
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
 		"compile": "npm run clean && tsc -p ./",

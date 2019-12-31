@@ -7,7 +7,7 @@ import {
     DotnetAcquisitionCompleted,
     DotnetAcquisitionError,
     DotnetAcquisitionStarted,
-    DotnetError,
+    DotnetAcquisitionVersionError,
 } from './EventStreamEvents';
 import { EventType } from './EventType';
 import { IEvent } from './IEvent';
@@ -54,16 +54,16 @@ export class OutputChannelObserver implements IEventStreamObserver {
                     this.stopDownloadIndicator();
                 }
                 break;
-            case EventType.DotnetError:
-                const error = event as DotnetError;
+            case EventType.DotnetAcquisitionError:
+                const error = event as DotnetAcquisitionError;
                 this.outputChannel.appendLine(' Error!');
-                if (error instanceof DotnetAcquisitionError) {
+                if (error instanceof DotnetAcquisitionVersionError) {
                     this.outputChannel.appendLine(`Failed to download .NET Core tooling ${error.version}:`);
                 }
                 this.outputChannel.appendLine(error.error);
                 this.outputChannel.appendLine('');
 
-                if (error instanceof DotnetAcquisitionError) {
+                if (error instanceof DotnetAcquisitionVersionError) {
                     this.inProgressVersionDone(error.version);
                 }
 
@@ -75,6 +75,10 @@ export class OutputChannelObserver implements IEventStreamObserver {
                 }
                 break;
         }
+    }
+
+    public dispose(): void {
+        // Nothing to dispose
     }
 
     private startDownloadIndicator() {

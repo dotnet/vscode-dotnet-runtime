@@ -5,7 +5,6 @@ NC=`tput sgr0`
 
 pushd dotnetcore-acquisition-extension
 npm run lint
-popd
 if [ $? -ne 0 ];
 then
     echo ""
@@ -17,6 +16,7 @@ else
     echo "${GREEN}TSLint Succeeded.${NC}"
     echo ""
 fi
+popd
 
 echo ""
 echo "----------- Testing dotnetcore-acquisition-library -----------"

@@ -9,6 +9,10 @@ import rimraf = require('rimraf');
 import { Memento } from 'vscode';
 import { IEventStream } from './EventStream';
 import {
+    DotnetAcquisitionAlreadyInstalled,
+    DotnetAcquisitionDeletion,
+    DotnetAcquisitionInProgress,
+    DotnetAcquisitionPartialInstallation,
     DotnetAcquisitionStarted,
     DotnetUninstallAllCompleted,
     DotnetUninstallAllStarted,
@@ -40,7 +44,7 @@ export class DotnetCoreAcquisitionWorker {
 
         this.acquisitionPromises = {};
 
-        rimraf.sync(this.installDir);
+        this.removeFolderRecursively(this.installDir);
 
         await this.extensionState.update(this.installingVersionsKey, []);
 
@@ -53,7 +57,7 @@ export class DotnetCoreAcquisitionWorker {
         const existingAcquisitionPromise = this.acquisitionPromises[version];
         if (existingAcquisitionPromise) {
             // This version of dotnet is already being acquired. Memoize the promise.
-
+            this.eventStream.post(new DotnetAcquisitionInProgress(version));
             return existingAcquisitionPromise;
         } else {
             // We're the only one acquiring this version of dotnet, start the acquisition process.
@@ -74,6 +78,7 @@ export class DotnetCoreAcquisitionWorker {
         if (partialInstall) {
             // Partial install, we never updated our extension to no longer be 'installing'.
             // uninstall everything and then re-install.
+            this.eventStream.post(new DotnetAcquisitionPartialInstallation(version));
             await this.uninstall(version);
         }
 
@@ -82,6 +87,7 @@ export class DotnetCoreAcquisitionWorker {
 
         if (fs.existsSync(dotnetPath)) {
             // Version requested has already been installed.
+            this.eventStream.post(new DotnetAcquisitionAlreadyInstalled(version));
             return dotnetPath;
         }
 
@@ -113,7 +119,7 @@ export class DotnetCoreAcquisitionWorker {
         delete this.acquisitionPromises[version];
 
         const dotnetInstallDir = this.getDotnetInstallDir(version);
-        rimraf.sync(dotnetInstallDir);
+        this.removeFolderRecursively(dotnetInstallDir);
 
         const installingVersions = this.extensionState.get<string[]>(this.installingVersionsKey, []);
         const versionIndex = installingVersions.indexOf(version);
@@ -126,5 +132,10 @@ export class DotnetCoreAcquisitionWorker {
     private getDotnetInstallDir(version: string) {
         const dotnetInstallDir = path.join(this.installDir, version);
         return dotnetInstallDir;
+    }
+
+    private removeFolderRecursively(folderPath: string) {
+        this.eventStream.post(new DotnetAcquisitionDeletion(folderPath));
+        rimraf.sync(folderPath);
     }
 }

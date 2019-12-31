@@ -10,6 +10,7 @@ import {
     DotnetAcquisitionCompleted,
     DotnetAcquisitionInstallError,
     DotnetAcquisitionScriptError,
+    DotnetAcquisitionScriptOuput,
     DotnetAcquisitionUnexpectedError,
 } from './EventStreamEvents';
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';
@@ -33,6 +34,13 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
                 cp.exec(winOS ? `powershell.exe -ExecutionPolicy unrestricted -File ${installCommand}` : installCommand,
                         { cwd: process.cwd(), maxBuffer: 500 * 1024 },
                         (error, stdout, stderr) => {
+                    if (stdout) {
+                        this.eventStream.post(new DotnetAcquisitionScriptOuput(installContext.version, stdout));
+                    }
+                    if (stderr) {
+                        this.eventStream.post(new DotnetAcquisitionScriptOuput(installContext.version, `STDERR: ${stderr}`));
+                    }
+
                     if (error) {
                         this.eventStream.post(new DotnetAcquisitionInstallError(error, installContext.version));
                         reject(error);

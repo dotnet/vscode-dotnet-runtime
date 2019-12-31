@@ -57,7 +57,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', () => {
         assert.isEmpty(context.get(installingVersionsKey));
 
         //  No errors in event stream
-        assert.notExists(eventStream.events.find(event => event.type === EventType.DotnetError));
+        assert.notExists(eventStream.events.find(event => event.type === EventType.DotnetAcquisitionError));
         const startEvent = eventStream.events
             .find(event => event instanceof DotnetAcquisitionStarted && (event as DotnetAcquisitionStarted).version === version);
         assert.exists(startEvent);
