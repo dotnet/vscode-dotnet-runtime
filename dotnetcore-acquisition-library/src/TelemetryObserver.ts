@@ -3,11 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import { isNullOrUndefined } from 'util';
-import * as vscode from 'vscode';
 import TelemetryReporter from 'vscode-extension-telemetry';
 import { IEvent } from './IEvent';
 import { IEventStreamObserver } from './IEventStreamObserver';
-import { MockExtensionContext, MockTelemetryReporter } from './test/mocks/MockObjects';
 // tslint:disable no-var-requires
 const packageJson = require('../../dotnetcore-acquisition-extension/package.json');
 
@@ -17,23 +15,21 @@ export interface ITelemetryReporter {
 }
 
 export class TelemetryObserver implements IEventStreamObserver {
-    public static getInstance(context: vscode.ExtensionContext): TelemetryObserver {
-        if (context.globalState instanceof MockExtensionContext) {
-            // This is a test, use the mock reporter
-            return new TelemetryObserver(new MockTelemetryReporter());
-        } else {
+    private readonly telemetryReporter: ITelemetryReporter;
+
+    constructor(telemetryReporter?: ITelemetryReporter) {
+        if (telemetryReporter === undefined) {
             const extensionVersion = packageJson.version;
             const appInsightsKey = packageJson.appInsightsKey;
             const extensionId = packageJson.name;
-
-            return new TelemetryObserver(new TelemetryReporter(extensionId, extensionVersion, appInsightsKey));
+            this.telemetryReporter = new TelemetryReporter(extensionId, extensionVersion, appInsightsKey);
+        } else {
+            this.telemetryReporter = telemetryReporter;
         }
     }
 
-    private constructor(private readonly telemetryReporter: ITelemetryReporter) {}
-
     public post(event: IEvent): void {
-        const properties = event.getProperties();
+        const properties = event.getProperties(true); // Get properties that don't contain personally identifiable data
         if (isNullOrUndefined(properties)) {
             this.telemetryReporter.sendTelemetryEvent(event.constructor.name);
         } else {

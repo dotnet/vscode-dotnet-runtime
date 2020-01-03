@@ -24,9 +24,14 @@ export class DotnetAcquisitionCompleted implements IEvent {
 
     constructor(public readonly version: string, public readonly dotnetPath: string) { }
 
-    public getProperties() {
-        return {AcquisitionCompletedVersion : this.version,
-            AcquisitionCompletedDotnetPath : this.dotnetPath};
+    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+        if (telemetry) {
+            return {AcquisitionCompletedVersion : this.version};
+        } else {
+            return {AcquisitionCompletedVersion : this.version,
+                AcquisitionCompletedDotnetPath : this.dotnetPath};
+        }
+
     }
 }
 
@@ -35,17 +40,21 @@ export abstract class DotnetAcquisitionError implements IEvent {
 
     constructor(public readonly error: string) {}
 
-    public getProperties() {
-        return {ErrorMessage : this.error};
+    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+        return telemetry ? undefined : {ErrorMessage : this.error};
     }
 }
 
 export class DotnetVersionResolutionError extends DotnetAcquisitionError {
     constructor(error: string, private readonly version: string) { super(error); }
 
-    public getProperties() {
-        return {ErrorMessage : this.error,
+    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+        if (telemetry) {
+            return {RequestedVersion : this.version};
+        } else {
+            return {ErrorMessage : this.error,
                 RequestedVersion : this.version};
+        }
     }
 }
 
@@ -58,9 +67,13 @@ export abstract class DotnetAcquisitionVersionError extends DotnetAcquisitionErr
         super(error);
     }
 
-    public getProperties() {
-        return {ErrorMessage : this.error,
+    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+        if (telemetry) {
+            return {AcquisitionErrorVersion : this.version};
+        } else {
+            return {ErrorMessage : this.error,
                 AcquisitionErrorVersion : this.version};
+        }
     }
 }
 
@@ -117,8 +130,8 @@ export abstract class DotnetAcquisitionMessage implements IEvent {
 export class DotnetAcquisitionDeletion extends DotnetAcquisitionMessage {
     constructor(public readonly folderPath: string) { super(); }
 
-    public getProperties() {
-        return {DeletedFolderPath : this.folderPath};
+    public getProperties(telemetry = false) {
+        return telemetry ? undefined : {DeletedFolderPath : this.folderPath};
     }
 }
 
@@ -151,9 +164,14 @@ export class DotnetAcquisitionMissingLinuxDependencies extends DotnetAcquisition
 export class DotnetAcquisitionScriptOuput extends DotnetAcquisitionMessage {
     constructor(public readonly version: string, public readonly output: string) { super(); }
 
-    public getProperties() {
-        return {AcquisitionVersion : this.version,
+    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+
+        if (telemetry) {
+            return {AcquisitionVersion : this.version};
+        } else {
+            return {AcquisitionVersion : this.version,
                 ScriptOutput: this.output};
+        }
     }
 }
 

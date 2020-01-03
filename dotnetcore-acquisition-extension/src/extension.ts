@@ -4,9 +4,10 @@
  * ------------------------------------------------------------------------------------------ */
 
 import * as acquisitionLibrary from 'dotnetcore-acquisition-library';
+import { IExtensionContext } from 'dotnetcore-acquisition-library';
 import * as vscode from 'vscode';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquistionId';
 
-export function activate(context: vscode.ExtensionContext) {
-    acquisitionLibrary.activate(context, dotnetCoreAcquisitionExtensionId);
+export function activate(context: vscode.ExtensionContext, extensionContext?: IExtensionContext) {
+    acquisitionLibrary.activate(context, dotnetCoreAcquisitionExtensionId, extensionContext);
 }

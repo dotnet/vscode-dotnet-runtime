@@ -13,13 +13,14 @@ import { DotnetCoreDependencyInstaller } from './DotnetCoreDependencyInstaller';
 import { EventStream } from './EventStream';
 import { DotnetAcquisitionMissingLinuxDependencies } from './EventStreamEvents';
 import { IEventStreamObserver } from './IEventStreamObserver';
+import { IExtensionContext } from './IExtensionContext';
 import { LoggingObserver } from './LoggingObserver';
 import { OutputChannelObserver } from './OutputChannelObserver';
 import { StatusBarObserver } from './StatusBarObserver';
 import { TelemetryObserver } from './TelemetryObserver';
 import { VersionResolver } from './VersionResolver';
 
-export function activate(context: vscode.ExtensionContext, parentExtensionId: string) {
+export function activate(context: vscode.ExtensionContext, parentExtensionId: string, extensionContext?: IExtensionContext) {
     const extension = vscode.extensions.getExtension(parentExtensionId);
 
     if (!extension) {
@@ -29,13 +30,15 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
     const outputChannel = vscode.window.createOutputChannel('.NET Core Tooling');
     fs.mkdirSync(context.logPath);
     const logFile = path.join(context.logPath, `DotNetAcquisition${ new Date().getTime() }.txt`);
-    const eventStreamObservers: IEventStreamObserver[] =
+    let eventStreamObservers: IEventStreamObserver[] =
         [
             new StatusBarObserver(vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, Number.MIN_VALUE)),
             new OutputChannelObserver(outputChannel),
-            TelemetryObserver.getInstance(context),
             new LoggingObserver(logFile),
         ];
+    if (enableTelemetry()) {
+        eventStreamObservers = eventStreamObservers.concat(new TelemetryObserver(extensionContext ? extensionContext.telemetryReporter : undefined));
+    }
     const eventStream = new EventStream();
 
     for (const observer of eventStreamObservers) {
@@ -91,4 +94,12 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
             }
         },
     });
+}
+
+function enableTelemetry(): boolean {
+    const extensionTelemetry: boolean | undefined = vscode.workspace.getConfiguration('dotnetAcquisitionExtension').get('enableTelemetry');
+    const vscodeTelemetry: boolean | undefined = vscode.workspace.getConfiguration('telemetry').get('enableTelemetry');
+    const enableDotnetTelemetry = extensionTelemetry === undefined ? true : extensionTelemetry;
+    const enableVSCodeTelemetry = vscodeTelemetry === undefined ? true : vscodeTelemetry;
+    return enableVSCodeTelemetry && enableDotnetTelemetry;
 }

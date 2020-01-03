@@ -29,7 +29,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       extensionPath,
       logPath,
     } as any;
-    extension.activate(context);
+    extension.activate(context, {telemetryReporter: new MockTelemetryReporter()});
   });
 
   this.afterEach(async () => {
@@ -93,7 +93,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     const completedEvent = MockTelemetryReporter.telemetryEvents.find((event: any) => event.eventName === 'DotnetAcquisitionCompleted');
     assert.exists(completedEvent);
     assert.include(completedEvent!.properties!.AcquisitionCompletedVersion, '2.2');
-    assert.equal(completedEvent!.properties!.AcquisitionCompletedDotnetPath, dotnetPath);
 
     await vscode.commands.executeCommand<string>('dotnet.uninstallAll', version);
     assert.isFalse(fs.existsSync(dotnetPath!));
@@ -114,7 +113,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     } catch (error) {
       const versionError = MockTelemetryReporter.telemetryEvents.find((event: any) => event.eventName === 'DotnetVersionResolutionError');
       assert.exists(versionError);
-      assert.equal(versionError!.properties!.ErrorMessage, error);
     }
   }).timeout(1000);
 });
