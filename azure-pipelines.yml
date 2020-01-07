@@ -154,13 +154,13 @@ stages:
         path: '$(System.ArtifactsDirectory)'
     - task: GitHubRelease@1
       inputs:
-        gitHubConnection: 'github.com_sfoslund' # TODO replace
+        gitHubConnection: 'VSCode-dotnet-GitHub-connection'
         repositoryName: '$(Build.Repository.Name)'
         action: 'create'
         target: '$(Build.SourceVersion)'
         tagSource: 'gitTag' # Use the tag associated with this commit
         isDraft: true
-        releaseNotesFilePath: 'CHANGELOG.md'
+        releaseNotesFilePath: 'RELEASENOTES.md'
         addChangeLog: false
         assets: $(System.ArtifactsDirectory)/**/*.vsix
   ##### Determine version to publish #####
