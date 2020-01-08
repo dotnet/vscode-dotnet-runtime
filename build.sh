@@ -2,6 +2,7 @@ RED=`tput setaf 1`
 GREEN=`tput setaf 2`
 NC=`tput sgr0`
 
+echo "testing CI trigger: Do not merge"
 echo ""
 echo "----------- Compiling dotnetcore-acquisition-library -----------"
 echo ""
