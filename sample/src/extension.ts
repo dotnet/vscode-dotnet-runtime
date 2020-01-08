@@ -13,7 +13,7 @@ export function activate(context: vscode.ExtensionContext) {
     // --------------------------------------------------------------------------
 
     /*
-
+    Testing the PR trigger again.
     NOTE: This sample should technically have the following in its package.json:
 
     "extensionDependencies": [
