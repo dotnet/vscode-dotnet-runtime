@@ -6,7 +6,6 @@
 		"url": "https://github.com/dotnet/vscode-dotnetcore.git"
 	},
 	"license": "MIT",
-	"version": "0.0.1",
 	"engines": {
 		"vscode": "^1.33.0"
 	},
