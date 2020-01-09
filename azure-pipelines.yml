@@ -139,30 +139,7 @@ stages:
   - deployment: Deploy
     pool:
       vmImage: 'vs2017-win2016'
-    environment: 'Releases'
-  ##### Create release on GitHub #####
-  - job: Release
-    displayName: 'Create GitHub Release'
-    dependsOn: 
-    - Deploy
-    pool:
-      vmImage: 'vs2017-win2016'
-    steps:
-    - task: DownloadPipelineArtifact@2
-      displayName: 'Download Packaged Extension'
-      inputs:
-        path: '$(System.ArtifactsDirectory)'
-    - task: GitHubRelease@1
-      inputs:
-        gitHubConnection: 'VSCode-dotnet-GitHub-connection'
-        repositoryName: '$(Build.Repository.Name)'
-        action: 'create'
-        target: '$(Build.SourceVersion)'
-        tagSource: 'gitTag' # Use the tag associated with this commit
-        isDraft: true
-        releaseNotesFilePath: 'RELEASENOTES.md'
-        addChangeLog: false
-        assets: $(System.ArtifactsDirectory)/**/*.vsix
+    environment: 'vscode-dotnetcore-extension-releases'
   ##### Determine version to publish #####
   - job: GetVersion
     displayName: 'Get Version'
@@ -184,7 +161,6 @@ stages:
     displayName: 'Publish to Marketplace'
     dependsOn: 
     - Deploy
-    - Release
     - GetVersion
     pool:
       vmImage: 'vs2017-win2016'
