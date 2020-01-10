@@ -8,7 +8,7 @@
 	},
 	"license": "MIT",
 	"version": "0.0.1",
-	"publisher": "ms-vscode",
+	"publisher": "ms-azuretools",
 	"engines": {
 		"vscode": "^1.33.0"
 	},
