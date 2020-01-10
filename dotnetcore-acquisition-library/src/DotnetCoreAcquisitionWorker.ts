@@ -6,8 +6,6 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import rimraf = require('rimraf');
-import { Memento } from 'vscode';
-import { IEventStream } from './EventStream';
 import {
     DotnetAcquisitionAlreadyInstalled,
     DotnetAcquisitionDeletion,
@@ -17,9 +15,8 @@ import {
     DotnetUninstallAllCompleted,
     DotnetUninstallAllStarted,
 } from './EventStreamEvents';
-import { IAcquisitionInvoker } from './IAcquisitionInvoker';
+import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
-import { IVersionResolver } from './IVersionResolver';
 
 export class DotnetCoreAcquisitionWorker {
     private readonly installingVersionsKey = 'installing';
@@ -28,36 +25,32 @@ export class DotnetCoreAcquisitionWorker {
 
     private acquisitionPromises: { [version: string]: Promise<string> | undefined };
 
-    constructor(private readonly storagePath: string,
-                private readonly extensionState: Memento,
-                private readonly eventStream: IEventStream,
-                private readonly acquisitionInvoker: IAcquisitionInvoker,
-                private readonly versionResolver: IVersionResolver) {
-        this.installDir = path.join(this.storagePath, '.dotnet');
+    constructor(private readonly context: IAcquisitionWorkerContext) {
+        this.installDir = path.join(this.context.storagePath, '.dotnet');
         const dotnetExtension = os.platform() === 'win32' ? '.exe' : '';
         this.dotnetExecutable = `dotnet${dotnetExtension}`;
         this.acquisitionPromises = {};
     }
 
     public async uninstallAll() {
-        this.eventStream.post(new DotnetUninstallAllStarted());
+        this.context.eventStream.post(new DotnetUninstallAllStarted());
 
         this.acquisitionPromises = {};
 
         this.removeFolderRecursively(this.installDir);
 
-        await this.extensionState.update(this.installingVersionsKey, []);
+        await this.context.extensionState.update(this.installingVersionsKey, []);
 
-        this.eventStream.post(new DotnetUninstallAllCompleted());
+        this.context.eventStream.post(new DotnetUninstallAllCompleted());
     }
 
     public async acquire(version: string): Promise<string> {
-        version = await this.versionResolver.getFullVersion(version);
+        version = await this.context.versionResolver.getFullVersion(version);
 
         const existingAcquisitionPromise = this.acquisitionPromises[version];
         if (existingAcquisitionPromise) {
             // This version of dotnet is already being acquired. Memoize the promise.
-            this.eventStream.post(new DotnetAcquisitionInProgress(version));
+            this.context.eventStream.post(new DotnetAcquisitionInProgress(version));
             return existingAcquisitionPromise;
         } else {
             // We're the only one acquiring this version of dotnet, start the acquisition process.
@@ -73,12 +66,12 @@ export class DotnetCoreAcquisitionWorker {
     }
 
     private async acquireCore(version: string): Promise<string> {
-        const installingVersions = this.extensionState.get<string[]>(this.installingVersionsKey, []);
+        const installingVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
         const partialInstall = installingVersions.indexOf(version) >= 0;
         if (partialInstall) {
             // Partial install, we never updated our extension to no longer be 'installing'.
             // uninstall everything and then re-install.
-            this.eventStream.post(new DotnetAcquisitionPartialInstallation(version));
+            this.context.eventStream.post(new DotnetAcquisitionPartialInstallation(version));
             await this.uninstall(version);
         }
 
@@ -87,29 +80,31 @@ export class DotnetCoreAcquisitionWorker {
 
         if (fs.existsSync(dotnetPath)) {
             // Version requested has already been installed.
-            this.eventStream.post(new DotnetAcquisitionAlreadyInstalled(version));
+            this.context.installationValidator.validateDotnetInstall(version, dotnetPath);
+            this.context.eventStream.post(new DotnetAcquisitionAlreadyInstalled(version));
             return dotnetPath;
         }
 
         // We update the extension state to indicate we're starting a .NET Core installation.
         installingVersions.push(version);
-        await this.extensionState.update(this.installingVersionsKey, installingVersions);
+        await this.context.extensionState.update(this.installingVersionsKey, installingVersions);
 
         const installContext = {
             installDir: dotnetInstallDir,
             version,
             dotnetPath,
         } as IDotnetInstallationContext;
-        this.eventStream.post(new DotnetAcquisitionStarted(version));
-        await this.acquisitionInvoker.installDotnet(installContext);
+        this.context.eventStream.post(new DotnetAcquisitionStarted(version));
+        await this.context.acquisitionInvoker.installDotnet(installContext);
+        this.context.installationValidator.validateDotnetInstall(version, dotnetPath);
 
         // Need to re-query our installing versions because there may have been concurrent acquisitions that
         // changed its value.
-        const latestInstallingVersions = this.extensionState.get<string[]>(this.installingVersionsKey, []);
+        const latestInstallingVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
         const versionIndex = latestInstallingVersions.indexOf(version);
         if (versionIndex >= 0) {
             latestInstallingVersions.splice(versionIndex, 1);
-            await this.extensionState.update(this.installingVersionsKey, latestInstallingVersions);
+            await this.context.extensionState.update(this.installingVersionsKey, latestInstallingVersions);
         }
 
         return dotnetPath;
@@ -121,11 +116,11 @@ export class DotnetCoreAcquisitionWorker {
         const dotnetInstallDir = this.getDotnetInstallDir(version);
         this.removeFolderRecursively(dotnetInstallDir);
 
-        const installingVersions = this.extensionState.get<string[]>(this.installingVersionsKey, []);
+        const installingVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
         const versionIndex = installingVersions.indexOf(version);
         if (versionIndex >= 0) {
             installingVersions.splice(versionIndex, 1);
-            await this.extensionState.update(this.installingVersionsKey, installingVersions);
+            await this.context.extensionState.update(this.installingVersionsKey, installingVersions);
         }
     }
 
@@ -135,7 +130,7 @@ export class DotnetCoreAcquisitionWorker {
     }
 
     private removeFolderRecursively(folderPath: string) {
-        this.eventStream.post(new DotnetAcquisitionDeletion(folderPath));
+        this.context.eventStream.post(new DotnetAcquisitionDeletion(folderPath));
         rimraf.sync(folderPath);
     }
 }

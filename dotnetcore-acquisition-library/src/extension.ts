@@ -14,6 +14,7 @@ import { EventStream } from './EventStream';
 import { DotnetAcquisitionMissingLinuxDependencies } from './EventStreamEvents';
 import { IEventStreamObserver } from './IEventStreamObserver';
 import { IExtensionContext } from './IExtensionContext';
+import { InstallationValidator } from './InstallationValidator';
 import { LoggingObserver } from './LoggingObserver';
 import { OutputChannelObserver } from './OutputChannelObserver';
 import { StatusBarObserver } from './StatusBarObserver';
@@ -48,14 +49,14 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
     if (!fs.existsSync(context.globalStoragePath)) {
         fs.mkdirSync(context.globalStoragePath);
     }
-    const acquisitionInvoker = new AcquisitionInvoker(context.globalState, eventStream);
-    const versionResolver = new VersionResolver(context.globalState, eventStream);
-    const acquisitionWorker = new DotnetCoreAcquisitionWorker(
-        context.globalStoragePath,
-        context.globalState,
+    const acquisitionWorker = new DotnetCoreAcquisitionWorker({
+        storagePath: context.globalStoragePath,
+        extensionState: context.globalState,
         eventStream,
-        acquisitionInvoker,
-        versionResolver);
+        acquisitionInvoker: new AcquisitionInvoker(context.globalState, eventStream),
+        versionResolver: new VersionResolver(context.globalState, eventStream),
+        installationValidator: new InstallationValidator(eventStream),
+    });
 
     const dotnetAcquireRegistration = vscode.commands.registerCommand('dotnet.acquire', async (version) => {
         if (!version || version === 'latest') {

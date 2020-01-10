@@ -45,7 +45,7 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
                         this.eventStream.post(new DotnetAcquisitionInstallError(error, installContext.version));
                         reject(error);
                     } else if (stderr && stderr.length > 0) {
-                        this.eventStream.post(new DotnetAcquisitionScriptError(stderr, installContext.version));
+                        this.eventStream.post(new DotnetAcquisitionScriptError(new Error(stderr), installContext.version));
                         reject(stderr);
                     } else {
                         this.eventStream.post(new DotnetAcquisitionCompleted(installContext.version, installContext.dotnetPath));

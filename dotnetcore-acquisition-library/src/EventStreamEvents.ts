@@ -2,7 +2,8 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { ExecException } from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
 import { EventType } from './EventType';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 import { IEvent } from './IEvent';
@@ -29,7 +30,7 @@ export class DotnetAcquisitionCompleted implements IEvent {
             return {AcquisitionCompletedVersion : this.version};
         } else {
             return {AcquisitionCompletedVersion : this.version,
-                AcquisitionCompletedDotnetPath : this.dotnetPath};
+                    AcquisitionCompletedDotnetPath : this.dotnetPath};
         }
 
     }
@@ -38,22 +39,33 @@ export class DotnetAcquisitionCompleted implements IEvent {
 export abstract class DotnetAcquisitionError implements IEvent {
     public readonly type = EventType.DotnetAcquisitionError;
 
-    constructor(public readonly error: string) {}
+    constructor(public readonly error: Error) {}
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
-        return telemetry ? undefined : {ErrorMessage : this.error};
+        if (telemetry) {
+            return {ErrorName : this.error.name,
+                    StackTrace : this.error.stack ? this.error.stack : ''};
+        } else {
+            return {ErrorMessage : this.error.message,
+                    ErrorName : this.error.name,
+                    StackTrace : this.error.stack ? this.error.stack : ''};
+        }
     }
 }
 
 export class DotnetVersionResolutionError extends DotnetAcquisitionError {
-    constructor(error: string, private readonly version: string) { super(error); }
+    constructor(error: Error, private readonly version: string) { super(error); }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
         if (telemetry) {
-            return {RequestedVersion : this.version};
+            return {RequestedVersion : this.version,
+                    ErrorName : this.error.name,
+                    StackTrace : this.error.stack ? this.error.stack : ''};
         } else {
-            return {ErrorMessage : this.error,
-                RequestedVersion : this.version};
+            return {ErrorMessage : this.error.message,
+                    RequestedVersion : this.version,
+                    ErrorName : this.error.name,
+                    StackTrace : this.error.stack ? this.error.stack : ''};
         }
     }
 }
@@ -63,38 +75,71 @@ export class DotnetInstallScriptAcquisitionError extends DotnetAcquisitionError 
 export class WebRequestError extends DotnetAcquisitionError {}
 
 export abstract class DotnetAcquisitionVersionError extends DotnetAcquisitionError {
-    constructor(error: string, public readonly version: string) {
+    constructor(error: Error, public readonly version: string) {
         super(error);
     }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
         if (telemetry) {
-            return {AcquisitionErrorVersion : this.version};
+            return {AcquisitionErrorVersion : this.version,
+                    ErrorName : this.error.name,
+                    StackTrace : this.error.stack ? this.error.stack : ''};
         } else {
-            return {ErrorMessage : this.error,
-                AcquisitionErrorVersion : this.version};
+            return {ErrorMessage : this.error.message,
+                AcquisitionErrorVersion : this.version,
+                ErrorName : this.error.name,
+                StackTrace : this.error.stack ? this.error.stack : ''};
         }
     }
 }
 
-export class DotnetAcquisitionUnexpectedError extends DotnetAcquisitionVersionError {
-    constructor(error: any, version: string) {
-        if (error) {
-            super(error.toString(), version);
-        } else {
-            super('', version);
-        }
-    }
-}
+export class DotnetAcquisitionUnexpectedError extends DotnetAcquisitionVersionError {}
 
-export class DotnetAcquisitionInstallError extends DotnetAcquisitionVersionError {
-    constructor(error: ExecException, version: string) {
-        const errorMsg = `Exit code: ${error.code}\nMessage: ${error.message}`;
-        super(errorMsg, version);
-    }
-}
+export class DotnetAcquisitionInstallError extends DotnetAcquisitionVersionError {}
 
 export class DotnetAcquisitionScriptError extends DotnetAcquisitionVersionError {}
+
+export class DotnetInstallationValidationError extends DotnetAcquisitionVersionError {
+    public readonly fileStructure: string;
+    constructor(error: Error, version: string, public readonly dotnetPath: string) { 
+        super(error, version);
+        this.fileStructure = this.getFileStructure(); 
+    }
+
+    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+        if (telemetry) {
+            return {AcquisitionErrorVersion : this.version,
+                    ErrorName : this.error.name,
+                    StackTrace : this.error.stack ? this.error.stack : '',
+                    FileStructure : this.fileStructure};
+        } else {
+            return {ErrorMessage : this.error.message,
+                AcquisitionErrorVersion : this.version,
+                ErrorName : this.error.name,
+                StackTrace : this.error.stack ? this.error.stack : '',
+                FileStructure : this.fileStructure};
+        }
+    }
+
+    private getFileStructure(): string {
+        if (!fs.existsSync(this.dotnetPath)) {
+            return `Dotnet Path (${ this.dotnetPath }) does not exist`;
+        }
+        // Get 2 levels worth of content of the folder
+        let files = fs.readdirSync(this.dotnetPath).map(file => path.join(this.dotnetPath, file));
+        for (const file of files) {
+            if (fs.statSync(file).isDirectory()) {
+                files = files.concat(fs.readdirSync(file).map(fileName => path.join(file, fileName)));
+            }
+        }
+        const relativeFiles: string[] = [];
+        for (const file of files) {
+            relativeFiles.push(path.relative(this.dotnetPath, file));
+        }
+
+        return relativeFiles.join('\n');
+    }
+}
 
 export abstract class DotnetAcquisitionSuccessEvent implements IEvent {
     public readonly type = EventType.DotnetAcquisitionSuccessEvent;
@@ -165,13 +210,20 @@ export class DotnetAcquisitionScriptOuput extends DotnetAcquisitionMessage {
     constructor(public readonly version: string, public readonly output: string) { super(); }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
-
         if (telemetry) {
             return {AcquisitionVersion : this.version};
         } else {
             return {AcquisitionVersion : this.version,
                 ScriptOutput: this.output};
         }
+    }
+}
+
+export class DotnetInstallationValidated extends DotnetAcquisitionMessage {
+    constructor(public readonly version: string) { super(); }
+
+    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+        return {ValidatedVersion : this.version};
     }
 }
 

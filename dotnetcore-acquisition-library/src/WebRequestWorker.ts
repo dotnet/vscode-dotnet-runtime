@@ -40,7 +40,7 @@ export class WebRequestWorker {
             await this.extensionState.update(this.extensionStateKey, response);
             return response;
         } catch (error) {
-            this.eventStream.post(new WebRequestError(`Request to ${this.uri} Failed: ${error.message}`));
+            this.eventStream.post(new WebRequestError(error));
             throw new Error(`Request to ${this.uri} Failed: ${error.message}`);
         }
     }

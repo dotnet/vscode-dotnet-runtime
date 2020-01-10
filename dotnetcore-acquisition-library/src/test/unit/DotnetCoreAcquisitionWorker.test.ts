@@ -18,6 +18,7 @@ import { EventType } from '../../EventType';
 import {
     MockEventStream,
     MockExtensionContext,
+    MockInstallationValidator,
     MockVersionResolver,
     NoInstallAcquisitionInvoker,
     versionPairs,
@@ -31,12 +32,14 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', () => {
     function getTestAcquisitionWorker(): [ DotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext ] {
         const context = new MockExtensionContext();
         const eventStream = new MockEventStream();
-        const acquisitionWorker = new DotnetCoreAcquisitionWorker(
-            '',
-            context,
+        const acquisitionWorker = new DotnetCoreAcquisitionWorker({
+            storagePath: '',
+            extensionState: context,
             eventStream,
-            new NoInstallAcquisitionInvoker(eventStream),
-            new MockVersionResolver(context, eventStream));
+            acquisitionInvoker: new NoInstallAcquisitionInvoker(eventStream),
+            versionResolver: new MockVersionResolver(context, eventStream),
+            installationValidator: new MockInstallationValidator(eventStream),
+        });
         return [ acquisitionWorker, eventStream, context ];
     }
 

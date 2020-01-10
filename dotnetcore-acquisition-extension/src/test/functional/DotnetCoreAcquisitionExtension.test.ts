@@ -3,6 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
+import * as cp from 'child_process';
 import {
   MockExtensionContext,
   MockTelemetryReporter,

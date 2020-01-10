@@ -34,6 +34,7 @@
 		"lint": "tslint -c ../tslint.json '../dotnetcore-acquisition-library/src/**/*.ts' '../dotnetcore-acquisition-extension/src/**/*.ts'"
 	},
 	"dependencies": {
+		"child_process": "^1.0.2",
 		"dotnetcore-acquisition-library": "file:../dotnetcore-acquisition-library"
 	},
 	"devDependencies": {

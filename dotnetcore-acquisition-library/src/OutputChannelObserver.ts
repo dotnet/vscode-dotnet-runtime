@@ -60,7 +60,7 @@ export class OutputChannelObserver implements IEventStreamObserver {
                 if (error instanceof DotnetAcquisitionVersionError) {
                     this.outputChannel.appendLine(`Failed to download .NET Core tooling ${error.version}:`);
                 }
-                this.outputChannel.appendLine(error.error);
+                this.outputChannel.appendLine(error.error.message);
                 this.outputChannel.appendLine('');
 
                 if (error instanceof DotnetAcquisitionVersionError) {

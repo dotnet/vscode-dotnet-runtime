@@ -10,6 +10,7 @@ import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStream
 import { IAcquisitionInvoker } from '../../IAcquisitionInvoker';
 import { IDotnetInstallationContext } from '../../IDotnetInstallationContext';
 import { IEvent } from '../../IEvent';
+import { IInstallationValidator } from '../../IInstallationValidator';
 import { InstallScriptAcquisitionWorker } from '../../InstallScriptAcquisitionWorker';
 import { ITelemetryReporter } from '../../TelemetryObserver';
 import { VersionResolver } from '../../VersionResolver';
@@ -133,5 +134,11 @@ export class MockTelemetryReporter implements ITelemetryReporter {
 
     public sendTelemetryEvent(eventName: string, properties?: { [key: string]: string; } | undefined, measures?: { [key: string]: number; } | undefined): void {
         MockTelemetryReporter.telemetryEvents = MockTelemetryReporter.telemetryEvents.concat({eventName, properties, measures});
+    }
+}
+
+export class MockInstallationValidator extends IInstallationValidator {
+    public validateDotnetInstall(version: string, dotnetPath: string): void {
+        // Always validate
     }
 }
