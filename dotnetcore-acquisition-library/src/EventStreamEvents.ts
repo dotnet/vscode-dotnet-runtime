@@ -42,14 +42,9 @@ export abstract class DotnetAcquisitionError implements IEvent {
     constructor(public readonly error: Error) {}
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
-        if (telemetry) {
-            return {ErrorName : this.error.name,
-                    StackTrace : this.error.stack ? this.error.stack : ''};
-        } else {
-            return {ErrorMessage : this.error.message,
-                    ErrorName : this.error.name,
-                    StackTrace : this.error.stack ? this.error.stack : ''};
-        }
+        return {ErrorName : this.error.name,
+                ErrorMessage : this.error.message,
+                StackTrace : this.error.stack ? this.error.stack : ''};
     }
 }
 
@@ -57,16 +52,10 @@ export class DotnetVersionResolutionError extends DotnetAcquisitionError {
     constructor(error: Error, private readonly version: string) { super(error); }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
-        if (telemetry) {
-            return {RequestedVersion : this.version,
-                    ErrorName : this.error.name,
-                    StackTrace : this.error.stack ? this.error.stack : ''};
-        } else {
-            return {ErrorMessage : this.error.message,
-                    RequestedVersion : this.version,
-                    ErrorName : this.error.name,
-                    StackTrace : this.error.stack ? this.error.stack : ''};
-        }
+        return {ErrorMessage : this.error.message,
+                RequestedVersion : this.version,
+                ErrorName : this.error.name,
+                StackTrace : this.error.stack ? this.error.stack : ''};
     }
 }
 
@@ -80,16 +69,10 @@ export abstract class DotnetAcquisitionVersionError extends DotnetAcquisitionErr
     }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
-        if (telemetry) {
-            return {AcquisitionErrorVersion : this.version,
-                    ErrorName : this.error.name,
-                    StackTrace : this.error.stack ? this.error.stack : ''};
-        } else {
-            return {ErrorMessage : this.error.message,
-                AcquisitionErrorVersion : this.version,
-                ErrorName : this.error.name,
-                StackTrace : this.error.stack ? this.error.stack : ''};
-        }
+        return {ErrorMessage : this.error.message,
+            AcquisitionErrorVersion : this.version,
+            ErrorName : this.error.name,
+            StackTrace : this.error.stack ? this.error.stack : ''};
     }
 }
 
@@ -101,24 +84,17 @@ export class DotnetAcquisitionScriptError extends DotnetAcquisitionVersionError 
 
 export class DotnetInstallationValidationError extends DotnetAcquisitionVersionError {
     public readonly fileStructure: string;
-    constructor(error: Error, version: string, public readonly dotnetPath: string) { 
+    constructor(error: Error, version: string, public readonly dotnetPath: string) {
         super(error, version);
-        this.fileStructure = this.getFileStructure(); 
+        this.fileStructure = this.getFileStructure();
     }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
-        if (telemetry) {
-            return {AcquisitionErrorVersion : this.version,
-                    ErrorName : this.error.name,
-                    StackTrace : this.error.stack ? this.error.stack : '',
-                    FileStructure : this.fileStructure};
-        } else {
-            return {ErrorMessage : this.error.message,
-                AcquisitionErrorVersion : this.version,
-                ErrorName : this.error.name,
-                StackTrace : this.error.stack ? this.error.stack : '',
-                FileStructure : this.fileStructure};
-        }
+        return {ErrorMessage : this.error.message,
+            AcquisitionErrorVersion : this.version,
+            ErrorName : this.error.name,
+            StackTrace : this.error.stack ? this.error.stack : '',
+            FileStructure : this.fileStructure};
     }
 
     private getFileStructure(): string {
