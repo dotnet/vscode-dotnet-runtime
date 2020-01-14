@@ -17,7 +17,7 @@ export function activate(context: vscode.ExtensionContext) {
     NOTE: This sample should technically have the following in its package.json:
 
     "extensionDependencies": [
-        "ms-vscode.dotnetcore-acquisition"
+        "ms-azuretools.dotnetcore-acquisition"
     ]
 
     This would enable the sample to require the dotnetcore-acquisition extension
@@ -27,7 +27,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     */
 
-    acquisitionLibrary.activate(context, 'ms-vscode.sample-extension');
+    acquisitionLibrary.activate(context, 'ms-azuretools.sample-extension');
 
     // --------------------------------------------------------------------------
 
@@ -41,7 +41,7 @@ export function activate(context: vscode.ExtensionContext) {
                 throw new Error('Couldn\'t resolve the dotnet path!');
             }
 
-            const sampleExtension = vscode.extensions.getExtension('ms-vscode.sample-extension');
+            const sampleExtension = vscode.extensions.getExtension('ms-azuretools.sample-extension');
             if (!sampleExtension) {
                 throw new Error('Could not find sample extension.');
             }
