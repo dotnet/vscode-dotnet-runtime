@@ -7,7 +7,7 @@ import TelemetryReporter from 'vscode-extension-telemetry';
 import { IEvent } from './IEvent';
 import { IEventStreamObserver } from './IEventStreamObserver';
 // tslint:disable no-var-requires
-const packageJson = require('../package.json');
+const packageJson = require('../../package.json');
 
 export interface ITelemetryReporter {
     sendTelemetryEvent(eventName: string, properties?: { [key: string]: string }, measures?: { [key: string]: number }): void;

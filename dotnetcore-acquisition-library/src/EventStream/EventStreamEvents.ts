@@ -4,8 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 import * as fs from 'fs';
 import * as path from 'path';
+import { IDotnetInstallationContext } from '../Acquisition/IDotnetInstallationContext';
 import { EventType } from './EventType';
-import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 import { IEvent } from './IEvent';
 
 // tslint:disable max-classes-per-file

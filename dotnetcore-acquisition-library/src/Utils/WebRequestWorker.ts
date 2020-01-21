@@ -5,8 +5,8 @@
 import * as request from 'request-promise-native';
 import { isNullOrUndefined } from 'util';
 import { Memento } from 'vscode';
-import { IEventStream } from './EventStream';
-import { WebRequestError } from './EventStreamEvents';
+import { IEventStream } from '../EventStream/EventStream';
+import { WebRequestError } from '../EventStream/EventStreamEvents';
 
 export class WebRequestWorker {
     private cachedData: any;

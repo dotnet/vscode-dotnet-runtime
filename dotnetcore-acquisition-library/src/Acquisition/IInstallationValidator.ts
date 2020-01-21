@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-import { IEventStream } from './EventStream';
+import { IEventStream } from '../EventStream/EventStream';
 
 export abstract class IInstallationValidator {
     constructor(protected readonly eventStream: IEventStream) {}

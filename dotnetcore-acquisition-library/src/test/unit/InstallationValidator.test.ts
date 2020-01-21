@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
-import { InstallationValidator } from '../../InstallationValidator';
+import { InstallationValidator } from '../../Acquisition/InstallationValidator';
 import { MockEventStream } from '../mocks/MockObjects';
 const assert = chai.assert;
 

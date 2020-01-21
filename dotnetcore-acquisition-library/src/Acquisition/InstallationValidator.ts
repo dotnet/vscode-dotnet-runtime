@@ -7,7 +7,7 @@ import * as path from 'path';
 import {
     DotnetInstallationValidated,
     DotnetInstallationValidationError,
-} from './EventStreamEvents';
+} from '../EventStream/EventStreamEvents';
 import { IInstallationValidator } from './IInstallationValidator';
 
 export class InstallationValidator extends IInstallationValidator {

@@ -4,9 +4,9 @@
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import { DotnetCoreAcquisitionWorker } from '../../DotnetCoreAcquisitionWorker';
-import { DotnetInstallScriptAcquisitionError } from '../../EventStreamEvents';
-import { IInstallScriptAcquisitionWorker } from '../../IInstallScriptAcquisitionWorker';
+import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
+import { IInstallScriptAcquisitionWorker } from '../../Acquisition/IInstallScriptAcquisitionWorker';
+import { DotnetInstallScriptAcquisitionError } from '../../EventStream/EventStreamEvents';
 import {
     ErrorAcquisitionInvoker,
     MockEventStream,
@@ -28,6 +28,7 @@ suite('WebRequestWorker Unit Tests', () => {
 
     test('Acquire Version Network Failure', async () => {
         const [eventStream, context] = getTestContext();
+
         const acquisitionWorker = new DotnetCoreAcquisitionWorker({
             storagePath: '',
             extensionState: context,

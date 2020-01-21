@@ -5,14 +5,14 @@
 import * as cp from 'child_process';
 import * as os from 'os';
 import { Memento } from 'vscode';
-import { IEventStream } from './EventStream';
+import { IEventStream } from '../EventStream/EventStream';
 import {
     DotnetAcquisitionCompleted,
     DotnetAcquisitionInstallError,
     DotnetAcquisitionScriptError,
     DotnetAcquisitionScriptOuput,
     DotnetAcquisitionUnexpectedError,
-} from './EventStreamEvents';
+} from '../EventStream/EventStreamEvents';
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';

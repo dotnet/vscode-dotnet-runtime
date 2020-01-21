@@ -6,10 +6,10 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { Memento } from 'vscode';
-import { IEventStream } from './EventStream';
-import { DotnetInstallScriptAcquisitionCompleted, DotnetInstallScriptAcquisitionError } from './EventStreamEvents';
+import { IEventStream } from '../EventStream/EventStream';
+import { DotnetInstallScriptAcquisitionCompleted, DotnetInstallScriptAcquisitionError } from '../EventStream/EventStreamEvents';
+import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
-import { WebRequestWorker } from './WebRequestWorker';
 
 export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisitionWorker {
     protected webWorker: WebRequestWorker;

@@ -5,11 +5,11 @@
 import * as semver from 'semver';
 import { isNullOrUndefined } from 'util';
 import { Memento } from 'vscode';
-import { IEventStream } from './EventStream';
-import { DotnetVersionResolutionCompleted, DotnetVersionResolutionError } from './EventStreamEvents';
+import { IEventStream } from '../EventStream/EventStream';
+import { DotnetVersionResolutionCompleted, DotnetVersionResolutionError } from '../EventStream/EventStreamEvents';
+import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { IVersionResolver } from './IVersionResolver';
 import { ReleasesResult } from './ReleasesResult';
-import { WebRequestWorker } from './WebRequestWorker';
 
 export class VersionResolver implements IVersionResolver {
     protected webWorker: WebRequestWorker;

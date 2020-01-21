@@ -5,16 +5,16 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { Memento } from 'vscode';
-import { IEventStream } from '../../EventStream';
-import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStreamEvents';
-import { IAcquisitionInvoker } from '../../IAcquisitionInvoker';
-import { IDotnetInstallationContext } from '../../IDotnetInstallationContext';
-import { IEvent } from '../../IEvent';
-import { IInstallationValidator } from '../../IInstallationValidator';
-import { InstallScriptAcquisitionWorker } from '../../InstallScriptAcquisitionWorker';
-import { ITelemetryReporter } from '../../TelemetryObserver';
-import { VersionResolver } from '../../VersionResolver';
-import { WebRequestWorker } from '../../WebRequestWorker';
+import { IAcquisitionInvoker } from '../../Acquisition/IAcquisitionInvoker';
+import { IDotnetInstallationContext } from '../../Acquisition/IDotnetInstallationContext';
+import { IInstallationValidator } from '../../Acquisition/IInstallationValidator';
+import { InstallScriptAcquisitionWorker } from '../../Acquisition/InstallScriptAcquisitionWorker';
+import { VersionResolver } from '../../Acquisition/VersionResolver';
+import { IEventStream } from '../../EventStream/EventStream';
+import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStream/EventStreamEvents';
+import { IEvent } from '../../EventStream/IEvent';
+import { ITelemetryReporter } from '../../EventStream/TelemetryObserver';
+import { WebRequestWorker } from '../../Utils/WebRequestWorker';
 
 export class MockExtensionContext implements Memento {
     private values: { [n: string]: any; } = {};

@@ -14,7 +14,7 @@ import {
     DotnetAcquisitionStarted,
     DotnetUninstallAllCompleted,
     DotnetUninstallAllStarted,
-} from './EventStreamEvents';
+} from '../EventStream/EventStreamEvents';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 
@@ -72,6 +72,7 @@ export class DotnetCoreAcquisitionWorker {
             // Partial install, we never updated our extension to no longer be 'installing'.
             // uninstall everything and then re-install.
             this.context.eventStream.post(new DotnetAcquisitionPartialInstallation(version));
+
             await this.uninstall(version);
         }
 
