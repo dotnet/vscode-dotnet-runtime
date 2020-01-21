@@ -41,14 +41,14 @@
 		"@types/mocha": "5.2.6",
 		"@types/node": "12.0.0",
 		"@types/rimraf": "2.0.2",
-		"@types/vscode": "^1.33.0",
+		"@types/vscode": "^1.41.0",
 		"chai": "^4.2.0",
 		"glob": "^7.1.5",
 		"mocha": "^4.1.0",
 		"rimraf": "2.6.3",
 		"shelljs": "^0.8.3",
-		"tslint": "^5.16.0",
+		"tslint": "^5.20.1",
 		"typescript": "3.4.5",
-		"vscode-test": "^1.2.2"
+		"vscode-test": "^1.3.0"
 	}
 }

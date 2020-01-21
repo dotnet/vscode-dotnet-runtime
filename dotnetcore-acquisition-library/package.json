@@ -22,7 +22,7 @@
 		"clean": "rimraf dist"
 	},
 	"devDependencies": {
-		"@types/chai": "^4.2.4",
+		"@types/chai": "^4.2.7",
 		"@types/chai-as-promised": "^7.1.2",
 		"@types/mocha": "5.2.6",
 		"@types/node": "12.0.0",
@@ -30,14 +30,15 @@
 		"@types/rimraf": "2.0.2",
 		"@types/semver": "^6.2.0",
 		"@types/shelljs": "0.8.3",
-		"@types/vscode": "^1.33.0",
+		"@types/vscode": "^1.41.0",
 		"chai": "^4.2.0",
 		"chai-as-promised": "^7.1.1",
+		"diff": ">=3.5.0",
 		"glob": "^7.1.5",
 		"mocha": "^4.1.0",
 		"tslint": "5.16.0",
 		"typescript": "3.4.5",
-		"vscode-test": "^1.2.2"
+		"vscode-test": "^1.3.0"
 	},
 	"dependencies": {
 		"request-promise-native": "^1.0.8",
