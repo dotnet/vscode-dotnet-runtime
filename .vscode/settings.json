@@ -1,0 +1,4 @@
+// Ensure that we don't send telemetry when using the sample extension in this workspace
+{
+    "dotnetAcquisitionExtension.enableTelemetry": false
+}

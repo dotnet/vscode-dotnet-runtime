@@ -7,6 +7,7 @@
 	},
 	"license": "MIT",
 	"version": "1.0.0",
+	"appInsightsKey": "02dc18e0-7494-43b2-b2a3-18ada5fcb522",
 	"engines": {
 		"vscode": "^1.33.0"
 	},
@@ -34,12 +35,15 @@
 		"chai-as-promised": "^7.1.1",
 		"glob": "^7.1.5",
 		"mocha": "^4.1.0",
-		"request": "^2.88.0",
-		"request-promise-native": "^1.0.8",
-		"rimraf": "2.6.3",
-		"shelljs": "0.8.3",
 		"tslint": "5.16.0",
 		"typescript": "3.4.5",
 		"vscode-test": "^1.2.2"
+	},
+	"dependencies": {
+		"request-promise-native": "^1.0.8",
+		"request": "^2.88.0",
+		"rimraf": "2.6.3",
+		"shelljs": "0.8.3",
+		"vscode-extension-telemetry": "^0.1.2"
 	}
 }

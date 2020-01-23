@@ -31,6 +31,10 @@ export class StatusBarObserver implements IEventStreamObserver {
         }
     }
 
+    public dispose(): void {
+        // Nothing to dispose
+    }
+
     public setAndShowStatusBar(text: string, command: string, color?: string, tooltip?: string) {
         this.statusBarItem.text = text;
         this.statusBarItem.command = command;

@@ -2,9 +2,13 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-
 import * as vscode from 'vscode';
-import { DotnetAcquisitionCompleted, DotnetAcquisitionError, DotnetAcquisitionStarted } from './EventStreamEvents';
+import {
+    DotnetAcquisitionCompleted,
+    DotnetAcquisitionError,
+    DotnetAcquisitionStarted,
+    DotnetAcquisitionVersionError,
+} from './EventStreamEvents';
 import { EventType } from './EventType';
 import { IEvent } from './IEvent';
 import { IEventStreamObserver } from './IEventStreamObserver';
@@ -47,33 +51,41 @@ export class OutputChannelObserver implements IEventStreamObserver {
                     const completedVersionString = `'${this.inProgressDownloads.join('\', \'')}'`;
                     this.outputChannel.append(`Still downloading .NET Core tooling version(s) ${completedVersionString} ...`);
                 } else {
-                    this.stopDownladIndicator();
+                    this.stopDownloadIndicator();
                 }
                 break;
             case EventType.DotnetAcquisitionError:
                 const error = event as DotnetAcquisitionError;
                 this.outputChannel.appendLine(' Error!');
-                this.outputChannel.appendLine(`Failed to download .NET Core tooling ${error.version}:`);
-                this.outputChannel.appendLine(error.getErrorMessage());
+                if (error instanceof DotnetAcquisitionVersionError) {
+                    this.outputChannel.appendLine(`Failed to download .NET Core tooling ${error.version}:`);
+                }
+                this.outputChannel.appendLine(error.error.message);
                 this.outputChannel.appendLine('');
 
-                this.inProgressVersionDone(error.version);
+                if (error instanceof DotnetAcquisitionVersionError) {
+                    this.inProgressVersionDone(error.version);
+                }
 
                 if (this.inProgressDownloads.length > 0) {
                     const errorVersionString = this.inProgressDownloads.join(', ');
                     this.outputChannel.append(`Still downloading .NET Core tooling version(s) ${errorVersionString} ...`);
                 } else {
-                    this.stopDownladIndicator();
+                    this.stopDownloadIndicator();
                 }
                 break;
         }
+    }
+
+    public dispose(): void {
+        // Nothing to dispose
     }
 
     private startDownloadIndicator() {
         this.downloadProgressInterval = setInterval(() => this.outputChannel.append('.'), 1000);
     }
 
-    private stopDownladIndicator() {
+    private stopDownloadIndicator() {
         if (this.downloadProgressInterval) {
             clearTimeout(this.downloadProgressInterval);
             this.downloadProgressInterval = undefined;

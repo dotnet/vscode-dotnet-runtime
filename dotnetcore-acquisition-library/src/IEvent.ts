@@ -7,4 +7,5 @@ import { EventType } from './EventType';
 
 export interface IEvent {
     type: EventType;
+    getProperties(telemetry?: boolean): { [key: string]: string } | undefined;
 }

@@ -10,7 +10,9 @@ import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStream
 import { IAcquisitionInvoker } from '../../IAcquisitionInvoker';
 import { IDotnetInstallationContext } from '../../IDotnetInstallationContext';
 import { IEvent } from '../../IEvent';
+import { IInstallationValidator } from '../../IInstallationValidator';
 import { InstallScriptAcquisitionWorker } from '../../InstallScriptAcquisitionWorker';
+import { ITelemetryReporter } from '../../TelemetryObserver';
 import { VersionResolver } from '../../VersionResolver';
 import { WebRequestWorker } from '../../WebRequestWorker';
 
@@ -111,5 +113,32 @@ export class FailingInstallScriptWorker extends InstallScriptAcquisitionWorker {
 
     protected writeScriptAsFile(scriptContent: string, filePath: string) {
         throw new Error('Failed to write file');
+    }
+}
+
+export class MockTelemetryReporter implements ITelemetryReporter {
+
+    public static telemetryEvents: {
+        eventName: string;
+        properties?: {
+            [key: string]: string;
+        } | undefined;
+        measures?: {
+            [key: string]: number;
+        } | undefined;
+    }[] = [];
+
+    public async dispose(): Promise<any> {
+        // Nothing to dispose
+    }
+
+    public sendTelemetryEvent(eventName: string, properties?: { [key: string]: string; } | undefined, measures?: { [key: string]: number; } | undefined): void {
+        MockTelemetryReporter.telemetryEvents = MockTelemetryReporter.telemetryEvents.concat({eventName, properties, measures});
+    }
+}
+
+export class MockInstallationValidator extends IInstallationValidator {
+    public validateDotnetInstall(version: string, dotnetPath: string): void {
+        // Always validate
     }
 }

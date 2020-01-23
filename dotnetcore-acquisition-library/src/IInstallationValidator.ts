@@ -3,6 +3,10 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-export * from './extension';
-export * from './test/mocks/MockObjects';
-export * from './IExtensionContext';
+import { IEventStream } from './EventStream';
+
+export abstract class IInstallationValidator {
+    constructor(protected readonly eventStream: IEventStream) {}
+
+    public abstract validateDotnetInstall(version: string, dotnetPath: string): void;
+}

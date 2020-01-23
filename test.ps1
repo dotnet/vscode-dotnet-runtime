@@ -4,8 +4,7 @@ $successColor = "Green"
 
 pushd dotnetcore-acquisition-extension
 npm run lint
-popd
-if (! $?)
+if ($LASTEXITCODE -ne 0)
 {
     Write-Host "`nTSLint Failed.`n" -ForegroundColor $errorColor
     $result = 1
@@ -14,13 +13,13 @@ else
 {
     Write-Host "`nTSLint Succeeded.`n" -ForegroundColor $successColor
 }
+popd
 
 pushd dotnetcore-acquisition-library
 if (Test-Path node_modules) { rm -r -force node_modules }
 npm install --silent
 npm run test
-
-if (! $?)
+if ($LASTEXITCODE -ne 0)
 {
     Write-Host "`nAcquisition Library Tests Failed.`n" -ForegroundColor $errorColor
     $result = 1
@@ -35,8 +34,7 @@ pushd dotnetcore-acquisition-extension
 if (Test-Path node_modules) { rm -r -force node_modules }
 npm install --silent
 npm run test
-
-if (! $?)
+if ($LASTEXITCODE -ne 0)
 {
     Write-Host "`nAcquisition Extension Tests Failed.`n" -ForegroundColor $errorColor
     $result = 1

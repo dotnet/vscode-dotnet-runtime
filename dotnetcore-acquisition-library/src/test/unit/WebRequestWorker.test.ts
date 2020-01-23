@@ -5,12 +5,13 @@
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { DotnetCoreAcquisitionWorker } from '../../DotnetCoreAcquisitionWorker';
-import { DotnetAcquisitionError, DotnetInstallScriptAcquisitionError } from '../../EventStreamEvents';
+import { DotnetInstallScriptAcquisitionError } from '../../EventStreamEvents';
 import { IInstallScriptAcquisitionWorker } from '../../IInstallScriptAcquisitionWorker';
 import {
     ErrorAcquisitionInvoker,
     MockEventStream,
     MockExtensionContext,
+    MockInstallationValidator,
     MockInstallScriptWorker,
     MockVersionResolver,
     versionPairs,
@@ -27,8 +28,14 @@ suite('WebRequestWorker Unit Tests', () => {
 
     test('Acquire Version Network Failure', async () => {
         const [eventStream, context] = getTestContext();
-        const acquisitionWorker = new DotnetCoreAcquisitionWorker('', context, eventStream,
-            new ErrorAcquisitionInvoker(eventStream), new MockVersionResolver(context, eventStream));
+        const acquisitionWorker = new DotnetCoreAcquisitionWorker({
+            storagePath: '',
+            extensionState: context,
+            eventStream,
+            acquisitionInvoker: new ErrorAcquisitionInvoker(eventStream),
+            versionResolver: new MockVersionResolver(context, eventStream),
+            installationValidator: new MockInstallationValidator(eventStream),
+        });
         return assert.isRejected(acquisitionWorker.acquire(versionPairs[0][0]), Error, 'Dotnet Core Acquisition Failed');
     });
 

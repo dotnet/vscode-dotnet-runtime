@@ -27,10 +27,10 @@ export class VersionResolver implements IVersionResolver {
             const releasesVersions = new ReleasesResult(response);
 
             const versionResult = this.resolveVersion(version, releasesVersions);
-            this.eventStream.post(new DotnetVersionResolutionCompleted());
+            this.eventStream.post(new DotnetVersionResolutionCompleted(version, versionResult));
             return versionResult;
         } catch (error) {
-            this.eventStream.post(new DotnetVersionResolutionError(error));
+            this.eventStream.post(new DotnetVersionResolutionError(error, version));
             throw error;
         }
     }

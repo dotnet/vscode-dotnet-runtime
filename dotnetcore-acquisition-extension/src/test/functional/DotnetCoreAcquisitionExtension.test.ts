@@ -3,10 +3,13 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
-import { MockExtensionContext } from 'dotnetcore-acquisition-library';
+import * as cp from 'child_process';
+import {
+  MockExtensionContext,
+  MockTelemetryReporter,
+} from 'dotnetcore-acquisition-library';
 import * as fs from 'fs';
 import * as path from 'path';
-import { performance } from 'perf_hooks';
 import * as rimraf from 'rimraf';
 import * as vscode from 'vscode';
 import * as extension from '../../extension';
@@ -16,6 +19,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   const storagePath = path.join(__dirname, 'tmp');
   const mockState = new MockExtensionContext();
   const extensionPath = path.join(__dirname, '/../../..');
+  const logPath = path.join(__dirname, 'tmp');
   let context: vscode.ExtensionContext;
 
   this.beforeAll(async () => {
@@ -24,14 +28,16 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       globalStoragePath: storagePath,
       globalState: mockState,
       extensionPath,
+      logPath,
     } as any;
-    extension.activate(context);
+    extension.activate(context, {telemetryReporter: new MockTelemetryReporter()});
   });
 
   this.afterEach(async () => {
     // Tear down tmp storage for fresh run
     await vscode.commands.executeCommand<string>('dotnet.uninstallAll');
     mockState.clear();
+    MockTelemetryReporter.telemetryEvents = [];
     rimraf.sync(storagePath);
   });
 
@@ -75,4 +81,39 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       assert.isTrue(fs.existsSync(dotnetPath));
     }
   }).timeout(40000);
+
+  test('Telemetry Sent During Install and Uninstall', async () => {
+    const version = '2.2';
+    const dotnetPath = await vscode.commands.executeCommand<string>('dotnet.acquire', version);
+    assert.exists(dotnetPath);
+    assert.include(dotnetPath, version);
+    // Check that we got the expected telemetry
+    const startedEvent = MockTelemetryReporter.telemetryEvents.find((event: any) => event.eventName === 'DotnetAcquisitionStarted');
+    assert.exists(startedEvent);
+    assert.include(startedEvent!.properties!.AcquisitionStartVersion, '2.2');
+    const completedEvent = MockTelemetryReporter.telemetryEvents.find((event: any) => event.eventName === 'DotnetAcquisitionCompleted');
+    assert.exists(completedEvent);
+    assert.include(completedEvent!.properties!.AcquisitionCompletedVersion, '2.2');
+
+    await vscode.commands.executeCommand<string>('dotnet.uninstallAll', version);
+    assert.isFalse(fs.existsSync(dotnetPath!));
+    const uninstallStartedEvent = MockTelemetryReporter.telemetryEvents.find((event: any) => event.eventName === 'DotnetUninstallAllStarted');
+    assert.exists(uninstallStartedEvent);
+    const uninstallCompletedEvent = MockTelemetryReporter.telemetryEvents.find((event: any) => event.eventName === 'DotnetUninstallAllCompleted');
+    assert.exists(uninstallCompletedEvent);
+    // Check that no errors were reported
+    const errors = MockTelemetryReporter.telemetryEvents.filter((event: any) => event.eventName.includes('Error'));
+    assert.isEmpty(errors);
+  }).timeout(20000);
+
+  test('Telemetry Sent on Error', async () => {
+    const version = 'foo';
+    try {
+      await vscode.commands.executeCommand<string>('dotnet.acquire', version);
+      assert(false); // An error should have been thrown
+    } catch (error) {
+      const versionError = MockTelemetryReporter.telemetryEvents.find((event: any) => event.eventName === 'DotnetVersionResolutionError');
+      assert.exists(versionError);
+    }
+  }).timeout(1000);
 });
