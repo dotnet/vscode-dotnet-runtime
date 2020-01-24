@@ -17,10 +17,10 @@ export function activate(context: vscode.ExtensionContext) {
     NOTE: This sample should technically have the following in its package.json:
 
     "extensionDependencies": [
-        "ms-azuretools.dotnetcore-acquisition"
+        "ms-azuretools.vscode-dotnet-runtime"
     ]
 
-    This would enable the sample to require the dotnetcore-acquisition extension
+    This would enable the sample to require the vscode-dotnet-runtime extension
     at which point VSCode would ensure that extension dependencies were satisfied
     on install and it would take care of activating it. Since we can't make that
     work fluently at dev time we manually activate it here.

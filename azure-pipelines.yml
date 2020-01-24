@@ -14,7 +14,7 @@ pr:
 
 variables:
   is-release: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/v')]
-  package-name: 'dotnetcore-acquisition'
+  package-name: 'vscode-dotnet-runtime'
 
 stages:
 ##### Test and Build #####
