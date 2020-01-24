@@ -3,14 +3,14 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
-import {
-  MockExtensionContext,
-  MockTelemetryReporter,
-} from 'dotnetcore-acquisition-library';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as rimraf from 'rimraf';
 import * as vscode from 'vscode';
+import {
+  MockExtensionContext,
+  MockTelemetryReporter,
+} from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 const assert = chai.assert;
 

@@ -2,7 +2,7 @@ $result = 0
 $errorColor = "Red"
 $successColor = "Green"
 
-pushd dotnetcore-acquisition-extension
+pushd vscode-dotnet-runtime-extension
 npm run lint
 if ($LASTEXITCODE -ne 0)
 {
@@ -15,7 +15,7 @@ else
 }
 popd
 
-pushd dotnetcore-acquisition-library
+pushd vscode-dotnet-runtime-library
 if (Test-Path node_modules) { rm -r -force node_modules }
 npm install --silent
 npm run test
@@ -30,7 +30,7 @@ else
 }
 popd
 
-pushd dotnetcore-acquisition-extension
+pushd vscode-dotnet-runtime-extension
 if (Test-Path node_modules) { rm -r -force node_modules }
 npm install --silent
 npm run test

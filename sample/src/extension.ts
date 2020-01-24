@@ -4,7 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 
 import * as cp from 'child_process';
-import * as acquisitionLibrary from 'dotnetcore-acquisition-library';
+import * as acquisitionLibrary from 'vscode-dotnet-runtime-library';
 import * as path from 'path';
 import * as vscode from 'vscode';
 

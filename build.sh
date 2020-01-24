@@ -3,9 +3,9 @@ GREEN=`tput setaf 2`
 NC=`tput sgr0`
 
 echo ""
-echo "----------- Compiling dotnetcore-acquisition-library -----------"
+echo "----------- Compiling vscode-dotnet-runtime-library -----------"
 echo ""
-pushd dotnetcore-acquisition-library
+pushd vscode-dotnet-runtime-library
 rm -rf node_modules
 npm install
 npm run compile
@@ -19,9 +19,9 @@ fi
 popd
 
 echo ""
-echo "----------- Compiling dotnetcore-acquisition-extension -----------"
+echo "----------- Compiling vscode-dotnet-runtime-extension -----------"
 echo ""
-pushd dotnetcore-acquisition-extension
+pushd vscode-dotnet-runtime-extension
 rm -rf node_modules
 npm install
 npm run compile

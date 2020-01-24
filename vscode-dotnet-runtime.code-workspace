@@ -1,13 +1,13 @@
 {
 	"folders": [
         {
-            "path": "dotnetcore-acquisition-extension"
+            "path": "vscode-dotnet-runtime-extension"
         },
         {
             "path": "sample"
         },
         {
-            "path": "dotnetcore-acquisition-library"
+            "path": "vscode-dotnet-runtime-library"
         }
     ],
     "settings": {}

@@ -3,7 +3,7 @@ RED=`tput setaf 1`
 GREEN=`tput setaf 2`
 NC=`tput sgr0`
 
-pushd dotnetcore-acquisition-extension
+pushd vscode-dotnet-runtime-extension
 npm run lint
 if [ $? -ne 0 ];
 then
@@ -19,9 +19,9 @@ fi
 popd
 
 echo ""
-echo "----------- Testing dotnetcore-acquisition-library -----------"
+echo "----------- Testing vscode-dotnet-runtime-library -----------"
 echo ""
-pushd dotnetcore-acquisition-library
+pushd vscode-dotnet-runtime-library
 rm -rf node_modules
 npm install
 npm run test
@@ -40,9 +40,9 @@ fi
 popd
 
 echo ""
-echo "----------- Testing dotnetcore-acquisition-extension -----------"
+echo "----------- Testing vscode-dotnet-runtime-extension -----------"
 echo ""
-pushd dotnetcore-acquisition-extension
+pushd vscode-dotnet-runtime-extension
 rm -rf node_modules
 npm install
 npm run test

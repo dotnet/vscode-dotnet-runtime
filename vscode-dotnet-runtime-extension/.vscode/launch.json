@@ -42,7 +42,7 @@
 				"tdd",
 				"--no-timeout",
 				"--colors",
-				"${workspaceFolder}/../dotnetcore-acquisition-library/dist/test/unit/**.test.js"
+				"${workspaceFolder}/../vscode-dotnet-runtime-library/dist/test/unit/**.test.js"
 			],
 			"internalConsoleOptions": "openOnSessionStart",
 			"preLaunchTask": "compile-all"

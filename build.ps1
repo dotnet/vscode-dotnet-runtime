@@ -1,7 +1,7 @@
 $errorColor = "Red"
 $successColor = "Green"
 
-pushd dotnetcore-acquisition-library
+pushd vscode-dotnet-runtime-library
 if (Test-Path node_modules) { rm -r -force node_modules }
 npm install
 npm run compile
@@ -13,7 +13,7 @@ if (! $?)
 }
 popd
 
-pushd dotnetcore-acquisition-extension
+pushd vscode-dotnet-runtime-extension
 if (Test-Path node_modules) { rm -r -force node_modules }
 npm install
 npm run compile

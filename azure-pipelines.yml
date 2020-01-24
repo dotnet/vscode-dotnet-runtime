@@ -47,14 +47,14 @@ stages:
         npm install
         npm run compile
         npm run test
-      workingDirectory: 'dotnetcore-acquisition-library'
-      displayName: Build and Test dotnetcore-acquisition-library
+      workingDirectory: 'vscode-dotnet-runtime-library'
+      displayName: Build and Test vscode-dotnet-runtime-library
     - bash: |
         npm install
         npm run compile
         npm run test
-      workingDirectory: 'dotnetcore-acquisition-extension'
-      displayName: Build and Test dotnetcore-acquisition-extension
+      workingDirectory: 'vscode-dotnet-runtime-extension'
+      displayName: Build and Test vscode-dotnet-runtime-extension
       env:
         DISPLAY: ':99.0'
     - bash: |
@@ -74,7 +74,7 @@ stages:
       displayName: 'Install Node.js'
     - bash: |
         npm install -g tslint
-        tslint -c tslint.json 'dotnetcore-acquisition-library/src/**/*.ts' 'dotnetcore-acquisition-extension/src/**/*.ts'
+        tslint -c tslint.json 'vscode-dotnet-runtime-library/src/**/*.ts' 'vscode-dotnet-runtime-extension/src/**/*.ts'
       displayName: Run Lint
   ##### Package and Publish #####
   - job: Package
@@ -93,13 +93,13 @@ stages:
     - bash: |
         npm install
         npm run compile
-      workingDirectory: 'dotnetcore-acquisition-library'
-      displayName: Build dotnetcore-acquisition-library
+      workingDirectory: 'vscode-dotnet-runtime-library'
+      displayName: Build vscode-dotnet-runtime-library
     - bash: |
         npm install
         npm run compile
-      workingDirectory: 'dotnetcore-acquisition-extension'
-      displayName: Build dotnetcore-acquisition-extension
+      workingDirectory: 'vscode-dotnet-runtime-extension'
+      displayName: Build vscode-dotnet-runtime-extension
     - bash: |
         if [ $(is-release) = 'True' ]; then
           VERSION=`node -p "require('./package.json').version"`
@@ -111,13 +111,13 @@ stages:
         echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
       name: GetVersion
       displayName: 'Get Version'
-      workingDirectory: 'dotnetcore-acquisition-extension'
+      workingDirectory: 'vscode-dotnet-runtime-extension'
     - bash: |
         npm install -g rimraf
         npm install -g vsce
         vsce package -o $(package-name)-$(GetVersion.version).vsix
       displayName: Package Artifact
-      workingDirectory: 'dotnetcore-acquisition-extension'
+      workingDirectory: 'vscode-dotnet-runtime-extension'
     - task: CopyFiles@2
       displayName: 'Copy Artifact'
       inputs:
@@ -155,7 +155,7 @@ stages:
         echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
       name: GetVersion
       displayName: 'Get Version'
-      workingDirectory: 'dotnetcore-acquisition-extension'
+      workingDirectory: 'vscode-dotnet-runtime-extension'
   ##### Publish to marketplace #####
   - job: Publish
     displayName: 'Publish to Marketplace'

@@ -1,5 +1,5 @@
 {
-	"name": "dotnetcore-acquisition-library",
+	"name": "vscode-dotnet-runtime-library",
 	"description": "A library to acquire .NET Core tooling.",
 	"repository": {
 		"type": "git",

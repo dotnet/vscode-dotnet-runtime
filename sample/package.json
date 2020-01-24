@@ -60,7 +60,7 @@
 		"clean": "rimraf out"
 	},
 	"dependencies": {
-		"dotnetcore-acquisition-library": "file:../dotnetcore-acquisition-library"
+		"vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library"
 	},
 	"devDependencies": {
 		"@types/mocha": "5.2.6",

@@ -29,12 +29,12 @@
 		"watch": "npm run compile && tsc -watch -p ./",
 		"test": "npm run compile --silent && node ./out/test/functional/runTest.js",
 		"clean": "rimraf out",
-		"compile-all": "cd ../dotnetcore-acquisition-library && npm install && npm run compile && cd ../dotnetcore-acquisition-extension && npm install && npm run compile",
-		"lint": "tslint -c ../tslint.json '../dotnetcore-acquisition-library/src/**/*.ts' '../dotnetcore-acquisition-extension/src/**/*.ts'"
+		"compile-all": "cd ../vscode-dotnet-runtime-library && npm install && npm run compile && cd ../vscode-dotnet-runtime-extension && npm install && npm run compile",
+		"lint": "tslint -c ../tslint.json '../vscode-dotnet-runtime-library/src/**/*.ts' '../vscode-dotnet-runtime-extension/src/**/*.ts'"
 	},
 	"dependencies": {
 		"child_process": "^1.0.2",
-		"dotnetcore-acquisition-library": "file:../dotnetcore-acquisition-library"
+		"vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library"
 	},
 	"devDependencies": {
 		"@types/chai": "^4.2.7",

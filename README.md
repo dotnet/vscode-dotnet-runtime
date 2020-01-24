@@ -26,7 +26,7 @@ This repo attempts to solve the above issues.
 # Contributing to Repository 
 
 Looking for something to work on? The list 
-of [up-for-grabs issues](https://github.com/dotnet/vscode-dotnetcore-acquisition-extension/labels/up-for-grabs) is a great place to start.
+of [up-for-grabs issues](https://github.com/dotnet/vscode-dotnet-runtime/labels/up-for-grabs) is a great place to start.
 
 Please read the following documents to get started.
 
@@ -43,7 +43,7 @@ to clarify expected behavior in our community. For more information, see the [.N
 
 ### Running the sample
 1.  Run the build script at the root of the repo (`build.sh` or `build.cmd`).
-2. Open the repo's [workspace](dotnetcore-acquisition.code-workspace) in VSCode
+2. Open the repo's [workspace](vscode-dotnet-runtime.code-workspace) in VSCode
 3. Run the `Run Sample Extension` configuration in VSCode
 4. In the launched experimental instance open the command pallete and run the `Sample: Run a dynamically acquired .NET Core Hello World App`.
 
