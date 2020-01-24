@@ -1,0 +1,14 @@
+{
+	"folders": [
+        {
+            "path": "vscode-dotnet-runtime-extension"
+        },
+        {
+            "path": "sample"
+        },
+        {
+            "path": "vscode-dotnet-runtime-library"
+        }
+    ],
+    "settings": {}
+}

@@ -1,16 +1,16 @@
 {
 	"name": "sample-extension",
 	"displayName": "Sample",
-	"description": "A sample extension to show how the dotnetcore-acquisition extension is used.",
+	"description": "A sample extension to show how the vscode-dotnet-runtime extension is used.",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/dotnet/vscode-dotnetcore.git"
+		"url": "https://github.com/dotnet/vscode-dotnet-runtime.git"
 	},
 	"license": "MIT",
 	"version": "0.0.1",
 	"publisher": "ms-azuretools",
 	"engines": {
-		"vscode": "^1.33.0"
+		"vscode": "^1.41.0"
 	},
 	"categories": [
 		"Other"
@@ -60,15 +60,16 @@
 		"clean": "rimraf out"
 	},
 	"dependencies": {
-		"dotnetcore-acquisition-library": "file:../dotnetcore-acquisition-library"
+		"vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library"
 	},
 	"devDependencies": {
-		"rimraf": "2.6.3",
-		"typescript": "3.4.5",
-		"tslint": "5.16.0",
-		"@types/node": "12.0.0",
 		"@types/mocha": "5.2.6",
+		"@types/node": "12.0.0",
 		"@types/rimraf": "2.0.2",
-		"@types/vscode": "^1.33.0"
+		"@types/vscode": "^1.41.0",
+		"rimraf": "2.6.3",
+		"tslint": "5.16.0",
+		"typescript": "3.4.5",
+		"mocha": "^7.0.0"
 	}
 }

@@ -1,0 +1,50 @@
+{
+	"name": "vscode-dotnet-runtime-library",
+	"description": "A library to acquire .NET Core tooling.",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/dotnet/vscode-dotnet-runtime.git"
+	},
+	"license": "MIT",
+	"version": "1.0.0",
+	"appInsightsKey": "02dc18e0-7494-43b2-b2a3-18ada5fcb522",
+	"engines": {
+		"vscode": "^1.41.0"
+	},
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "npm run clean && tsc -p ./",
+		"watch": "npm run clean && tsc -watch -p ./",
+		"test": "npm run compile --silent && npm run unit-test",
+		"unit-test": "mocha -u tdd -- dist/test/unit/**.test.js",
+		"clean": "rimraf dist"
+	},
+	"devDependencies": {
+		"@types/chai": "^4.2.7",
+		"@types/node": "12.0.0",
+		"glob": "^7.1.5"
+	},
+	"dependencies": {
+		"@types/chai-as-promised": "^7.1.2",
+		"@types/mocha": "5.2.6",
+		"@types/request-promise-native": "^1.0.17",
+		"@types/rimraf": "2.0.2",
+		"@types/semver": "^6.2.0",
+		"@types/shelljs": "0.8.3",
+		"@types/vscode": "^1.41.0",
+		"chai": "^4.2.0",
+		"chai-as-promised": "^7.1.1",
+		"diff": ">=3.5.0",
+		"mocha": "^7.0.0",
+		"request": "^2.88.0",
+		"request-promise-native": "^1.0.8",
+		"rimraf": "2.6.3",
+		"shelljs": "0.8.3",
+		"tslint": "5.16.0",
+		"typescript": "3.4.5",
+		"vscode-extension-telemetry": "^0.1.2",
+		"vscode-test": "^1.3.0"
+	}
+}
