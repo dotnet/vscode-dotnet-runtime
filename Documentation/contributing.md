@@ -13,8 +13,8 @@ Up for Grabs
 
 The team marks the most straightforward issues as "up for grabs". This set of issues is the place to start if you are interested in contributing but new to the codebase.
 
-- [dotnet/vscode-vscode-dotnet-runtime-extension - "up for grabs"](https://github.com/dotnet/vscode-vscode-dotnet-runtime-extension/labels/up-for-grabs)
-- [dotnet/vscode-vscode-dotnet-runtime-extension - "up for grabs"](https://github.com/dotnet/vscode-vscode-dotnet-runtime-extension/labels/up-for-grabs)
+- [dotnet/vscode-vscode-dotnet-runtime-extension - "up for grabs"](https://github.com/dotnet/vscode-dotnet-runtime/labels/up-for-grabs)
+- [dotnet/vscode-vscode-dotnet-runtime-extension - "up for grabs"](https://github.com/dotnet/vscode-dotnet-runtime/labels/up-for-grabs)
 
 Contribution "Bar"
 ------------------
@@ -99,7 +99,7 @@ The following file header is the used for .NET Core. Please use it for new files
  *--------------------------------------------------------------------------------------------*/
 ```
 
-- See [DotnetCoreAcquisitionWorker.ts](../vscode-dotnet-runtime-library/src/DotnetCoreAcquisitionWorker.ts) for an example of the header in a TypeScript file.
+- See [extension.ts](../vscode-dotnet-runtime-library/src/extension.ts) for an example of the header in a TypeScript file.
 
 Copying Files from Other Projects
 ---------------------------------

@@ -1,9 +1,9 @@
 # Change Log
 
-All notable changes to the "dotnetacquisition" extension will be documented in this file.
+## 0.1.0
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+### Added
 
-## [Unreleased]
-
-- Initial release
+- Acquire .NET Core runtimes.
+- Uninstall all .NET Core runtimes that have been acquired by this extension.
+- Check for dependency requirements being met on linux.

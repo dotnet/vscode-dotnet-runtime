@@ -4,6 +4,9 @@
 		"type": "git",
 		"url": "https://github.com/dotnet/vscode-dotnet-runtime.git"
 	},
+	"bugs": {
+		"url": "https://github.com/dotnet/vscode-dotnet-runtime/issues"
+	},
 	"license": "MIT",
 	"displayName": ".NET Authoring Tool for Extensions",
 	"description": "Allows acquisition of the .NET runtime specifically for VSCode extension authors.",
@@ -14,6 +17,11 @@
 	},
 	"categories": [
 		"Other"
+	],
+	"keywords": [
+		".NET",
+		".NET Core",
+		"dotnet"
 	],
 	"activationEvents": [
 		"onCommand:dotnet.acquire",
