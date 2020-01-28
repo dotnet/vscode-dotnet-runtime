@@ -1,0 +1,49 @@
+{
+	"name": "vscode-dotnet-runtime",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/dotnet/vscode-dotnet-runtime.git"
+	},
+	"bugs": {
+		"url": "https://github.com/dotnet/vscode-dotnet-runtime/issues"
+	},
+	"license": "MIT",
+	"preview": true,
+	"author": "Microsoft Corporation",
+	"displayName": ".NET Authoring Tool for Extensions",
+	"description": "Allows acquisition of the .NET runtime specifically for VSCode extension authors.",
+	"version": "0.1.0",
+	"publisher": "ms-azuretools",
+	"engines": {
+		"vscode": "^1.41.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"keywords": [
+		".NET",
+		".NET Core",
+		"dotnet"
+	],
+	"activationEvents": [
+		"onCommand:dotnet.acquire",
+		"onCommand:dotnet.uninstallAll",
+		"onCommand:dotnet.showAcquisitionLog",
+		"onCommand:dotnet.ensureDotnetDependencies"
+	],
+	"main": "./dist/extension.js",
+	"contributes": {},
+	"scripts": {
+		"vscode:prepublish": "npm run compile-all && npm install && webpack --mode production",
+		"compile-all": "cd vscode-dotnet-runtime-library && npm install &&  npm run compile && cd .. && cd vscode-dotnet-runtime-extension && npm install &&  npm run compile && cd .."
+	},
+	"dependencies": {
+		"vscode-dotnet-runtime-extension": "file:./vscode-dotnet-runtime-extension"
+	},
+	"devDependencies": {
+		"ts-loader": "^6.2.1",
+		"typescript": "3.4.5",
+		"webpack": "^4.41.5",
+		"webpack-cli": "^3.3.10"
+	}
+}

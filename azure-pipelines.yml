@@ -91,16 +91,6 @@ stages:
         versionSpec: '12.x'
       displayName: 'Install Node.js'
     - bash: |
-        npm install
-        npm run compile
-      workingDirectory: 'vscode-dotnet-runtime-library'
-      displayName: Build vscode-dotnet-runtime-library
-    - bash: |
-        npm install
-        npm run compile
-      workingDirectory: 'vscode-dotnet-runtime-extension'
-      displayName: Build vscode-dotnet-runtime-extension
-    - bash: |
         if [ $(is-release) = 'True' ]; then
           VERSION=`node -p "require('./package.json').version"`
         else
@@ -111,13 +101,11 @@ stages:
         echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
       name: GetVersion
       displayName: 'Get Version'
-      workingDirectory: 'vscode-dotnet-runtime-extension'
     - bash: |
         npm install -g rimraf
         npm install -g vsce
         vsce package -o $(package-name)-$(GetVersion.version).vsix
       displayName: Package Artifact
-      workingDirectory: 'vscode-dotnet-runtime-extension'
     - task: CopyFiles@2
       displayName: 'Copy Artifact'
       inputs:
@@ -155,7 +143,6 @@ stages:
         echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
       name: GetVersion
       displayName: 'Get Version'
-      workingDirectory: 'vscode-dotnet-runtime-extension'
   ##### Publish to marketplace #####
   - job: Publish
     displayName: 'Publish to Marketplace'

@@ -4,25 +4,13 @@
 		"type": "git",
 		"url": "https://github.com/dotnet/vscode-dotnet-runtime.git"
 	},
-	"bugs": {
-		"url": "https://github.com/dotnet/vscode-dotnet-runtime/issues"
-	},
 	"license": "MIT",
-	"displayName": ".NET Authoring Tool for Extensions",
 	"description": "Allows acquisition of the .NET runtime specifically for VSCode extension authors.",
-	"version": "0.1.0",
-	"publisher": "ms-azuretools",
 	"engines": {
 		"vscode": "^1.41.0"
 	},
-	"categories": [
-		"Other"
-	],
-	"keywords": [
-		".NET",
-		".NET Core",
-		"dotnet"
-	],
+	"version": "0.1.0",
+	"publisher": "ms-azuretools",
 	"activationEvents": [
 		"onCommand:dotnet.acquire",
 		"onCommand:dotnet.uninstallAll",
@@ -30,7 +18,6 @@
 		"onCommand:dotnet.ensureDotnetDependencies"
 	],
 	"main": "./out/extension.js",
-	"contributes": {},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
 		"compile": "npm run clean && tsc -p ./",
@@ -38,13 +25,12 @@
 		"test": "npm run compile --silent && node ./out/test/functional/runTest.js",
 		"clean": "rimraf out",
 		"compile-all": "cd ../vscode-dotnet-runtime-library && npm install && npm run compile && cd ../vscode-dotnet-runtime-extension && npm install && npm run compile",
-		"lint": "tslint -c ../tslint.json '../vscode-dotnet-runtime-library/src/**/*.ts' '../vscode-dotnet-runtime-extension/src/**/*.ts'"
+		"lint": "tslint -c ../tslint.json '../vscode-dotnet-runtime-library/src/**/*.ts' '../vscode-dotnet-runtime-extension/src/**/*.ts'",
+		"webpack": "webpack --mode development"
 	},
 	"dependencies": {
 		"child_process": "^1.0.2",
-		"vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library"
-	},
-	"devDependencies": {
+		"vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library",
 		"@types/chai": "^4.2.7",
 		"@types/mocha": "5.2.6",
 		"@types/node": "12.0.0",
@@ -57,7 +43,10 @@
 		"rimraf": "2.6.3",
 		"shelljs": "^0.8.3",
 		"tslint": "^5.20.1",
+		"ts-loader": "^6.2.1",
 		"typescript": "3.4.5",
-		"vscode-test": "^1.3.0"
+		"vscode-test": "^1.3.0",
+		"webpack": "^4.41.5",
+		"webpack-cli": "^3.3.10"
 	}
 }

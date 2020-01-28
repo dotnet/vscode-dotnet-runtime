@@ -6,7 +6,6 @@
 		"url": "https://github.com/dotnet/vscode-dotnet-runtime.git"
 	},
 	"license": "MIT",
-	"version": "1.0.0",
 	"appInsightsKey": "02dc18e0-7494-43b2-b2a3-18ada5fcb522",
 	"engines": {
 		"vscode": "^1.41.0"
@@ -23,12 +22,12 @@
 	},
 	"devDependencies": {
 		"@types/chai": "^4.2.7",
-		"@types/node": "12.0.0",
 		"glob": "^7.1.5"
 	},
 	"dependencies": {
 		"@types/chai-as-promised": "^7.1.2",
 		"@types/mocha": "5.2.6",
+		"@types/node": "12.0.0",
 		"@types/request-promise-native": "^1.0.17",
 		"@types/rimraf": "2.0.2",
 		"@types/semver": "^6.2.0",
