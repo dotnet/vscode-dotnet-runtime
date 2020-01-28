@@ -15,6 +15,7 @@ import {
     DotnetUninstallAllCompleted,
     DotnetUninstallAllStarted,
 } from '../EventStream/EventStreamEvents';
+import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 
@@ -44,14 +45,14 @@ export class DotnetCoreAcquisitionWorker {
         this.context.eventStream.post(new DotnetUninstallAllCompleted());
     }
 
-    public async acquire(version: string): Promise<string> {
+    public async acquire(version: string): Promise<IDotnetAcquireResult> {
         version = await this.context.versionResolver.getFullVersion(version);
 
         const existingAcquisitionPromise = this.acquisitionPromises[version];
         if (existingAcquisitionPromise) {
             // This version of dotnet is already being acquired. Memoize the promise.
             this.context.eventStream.post(new DotnetAcquisitionInProgress(version));
-            return existingAcquisitionPromise;
+            return existingAcquisitionPromise.then((res) => ({ dotnetPath: res }));
         } else {
             // We're the only one acquiring this version of dotnet, start the acquisition process.
 
@@ -61,7 +62,7 @@ export class DotnetCoreAcquisitionWorker {
             });
 
             this.acquisitionPromises[version] = acquisitionPromise;
-            return acquisitionPromise;
+            return acquisitionPromise.then((res) => ({ dotnetPath: res }));
         }
     }
 

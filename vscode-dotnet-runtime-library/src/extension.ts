@@ -19,6 +19,8 @@ import { LoggingObserver } from './EventStream/LoggingObserver';
 import { OutputChannelObserver } from './EventStream/OutputChannelObserver';
 import { StatusBarObserver } from './EventStream/StatusBarObserver';
 import { TelemetryObserver } from './EventStream/TelemetryObserver';
+import { IDotnetAcquireContext } from './IDotnetAcquireContext';
+import { IDotnetEnsureDependenciesContext } from './IDotnetEnsureDependenciesContext';
 import { IExtensionContext } from './IExtensionContext';
 
 export function activate(context: vscode.ExtensionContext, parentExtensionId: string, extensionContext?: IExtensionContext) {
@@ -58,21 +60,21 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
         installationValidator: new InstallationValidator(eventStream),
     });
 
-    const dotnetAcquireRegistration = vscode.commands.registerCommand('dotnet.acquire', async (version) => {
-        if (!version || version === 'latest') {
-            throw new Error(`Cannot acquire .NET Core version "${version}". Please provide a valid version.`);
+    const dotnetAcquireRegistration = vscode.commands.registerCommand('dotnet.acquire', async (commandContext: IDotnetAcquireContext) => {
+        if (!commandContext.version || commandContext.version === 'latest') {
+            throw new Error(`Cannot acquire .NET Core version "${commandContext.version}". Please provide a valid version.`);
         }
-        return acquisitionWorker.acquire(version);
+        return acquisitionWorker.acquire(commandContext.version);
     });
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand('dotnet.uninstallAll', () => acquisitionWorker.uninstallAll());
     const showOutputChannelRegistration = vscode.commands.registerCommand('dotnet.showAcquisitionLog', () => outputChannel.show(/* preserveFocus */ false));
-    const testApplicationRegistration = vscode.commands.registerCommand('dotnet.ensureDotnetDependencies', async (app, args) => {
+    const testApplicationRegistration = vscode.commands.registerCommand('dotnet.ensureDotnetDependencies', async (commandContext: IDotnetEnsureDependenciesContext) => {
         if (os.platform() !== 'linux') {
             // We can't handle installing dependencies for anything other than Linux
             return;
         }
 
-        const result = cp.spawnSync(app, args);
+        const result = cp.spawnSync(commandContext.command, commandContext.arguments);
         const installer = new DotnetCoreDependencyInstaller();
         if (installer.signalIndicatesMissingLinuxDependencies(result.signal)) {
             eventStream.post(new DotnetAcquisitionMissingLinuxDependencies());

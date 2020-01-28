@@ -8,6 +8,8 @@ import * as path from 'path';
 import * as rimraf from 'rimraf';
 import * as vscode from 'vscode';
 import {
+  IDotnetAcquireContext,
+  IDotnetAcquireResult,
   MockExtensionContext,
   MockTelemetryReporter,
 } from 'vscode-dotnet-runtime-library';
@@ -19,17 +21,17 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   const mockState = new MockExtensionContext();
   const extensionPath = path.join(__dirname, '/../../..');
   const logPath = path.join(__dirname, 'tmp');
-  let context: vscode.ExtensionContext;
+  let extensionContext: vscode.ExtensionContext;
 
   this.beforeAll(async () => {
-    context = {
+    extensionContext = {
       subscriptions: [],
       globalStoragePath: storagePath,
       globalState: mockState,
       extensionPath,
       logPath,
     } as any;
-    extension.activate(context, {telemetryReporter: new MockTelemetryReporter()});
+    extension.activate(extensionContext, {telemetryReporter: new MockTelemetryReporter()});
   });
 
   this.afterEach(async () => {
@@ -42,37 +44,40 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
 
   test('Activate', async () => {
     // Commands should now be registered
-    assert.exists(context);
-    assert.isAbove(context.subscriptions.length, 0);
+    assert.exists(extensionContext);
+    assert.isAbove(extensionContext.subscriptions.length, 0);
   });
 
   test('Install Command', async () => {
-    const version = '2.2';
-    const dotnetPath = await vscode.commands.executeCommand<string>('dotnet.acquire', version);
-    assert.exists(dotnetPath);
-    assert.isTrue(fs.existsSync(dotnetPath!));
-    assert.include(dotnetPath, version);
+    const context: IDotnetAcquireContext = { version: '2.2' };
+    const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
+    assert.exists(result);
+    assert.exists(result!.dotnetPath);
+    assert.isTrue(fs.existsSync(result!.dotnetPath));
+    assert.include(result!.dotnetPath, context.version);
   }).timeout(20000);
 
   test('Uninstall Command', async () => {
-    const version = '2.1';
-    const dotnetPath = await vscode.commands.executeCommand<string>('dotnet.acquire', version);
-    assert.exists(dotnetPath);
-    assert.isTrue(fs.existsSync(dotnetPath!));
-    assert.include(dotnetPath, version);
-    await vscode.commands.executeCommand<string>('dotnet.uninstallAll', version);
-    assert.isFalse(fs.existsSync(dotnetPath!));
+    const context: IDotnetAcquireContext = { version: '2.1' };
+    const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
+    assert.exists(result);
+    assert.exists(result!.dotnetPath);
+    assert.isTrue(fs.existsSync(result!.dotnetPath!));
+    assert.include(result!.dotnetPath, context.version);
+    await vscode.commands.executeCommand<string>('dotnet.uninstallAll', context.version);
+    assert.isFalse(fs.existsSync(result!.dotnetPath));
   }).timeout(20000);
 
   test('Install and Uninstall Multiple Versions', async () => {
     const versions = ['1.1', '2.2', '1.0'];
     let dotnetPaths: string[] = [];
     for (const version of versions) {
-      const dotnetPath = await vscode.commands.executeCommand<string>('dotnet.acquire', version);
-      assert.exists(dotnetPath);
-      assert.include(dotnetPath, version);
-      if (dotnetPath) {
-        dotnetPaths = dotnetPaths.concat(dotnetPath);
+      const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', { version });
+      assert.exists(result);
+      assert.exists(result!.dotnetPath);
+      assert.include(result!.dotnetPath, version);
+      if (result!.dotnetPath) {
+        dotnetPaths = dotnetPaths.concat(result!.dotnetPath);
       }
     }
     // All versions are still there after all installs are completed
@@ -82,10 +87,11 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   }).timeout(40000);
 
   test('Telemetry Sent During Install and Uninstall', async () => {
-    const version = '2.2';
-    const dotnetPath = await vscode.commands.executeCommand<string>('dotnet.acquire', version);
-    assert.exists(dotnetPath);
-    assert.include(dotnetPath, version);
+    const context: IDotnetAcquireContext = { version: '2.2' };
+    const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
+    assert.exists(result);
+    assert.exists(result!.dotnetPath);
+    assert.include(result!.dotnetPath, context.version);
     // Check that we got the expected telemetry
     const startedEvent = MockTelemetryReporter.telemetryEvents.find((event: any) => event.eventName === 'DotnetAcquisitionStarted');
     assert.exists(startedEvent);
@@ -94,8 +100,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.exists(completedEvent);
     assert.include(completedEvent!.properties!.AcquisitionCompletedVersion, '2.2');
 
-    await vscode.commands.executeCommand<string>('dotnet.uninstallAll', version);
-    assert.isFalse(fs.existsSync(dotnetPath!));
+    await vscode.commands.executeCommand<string>('dotnet.uninstallAll');
+    assert.isFalse(fs.existsSync(result!.dotnetPath));
     const uninstallStartedEvent = MockTelemetryReporter.telemetryEvents.find((event: any) => event.eventName === 'DotnetUninstallAllStarted');
     assert.exists(uninstallStartedEvent);
     const uninstallCompletedEvent = MockTelemetryReporter.telemetryEvents.find((event: any) => event.eventName === 'DotnetUninstallAllCompleted');
@@ -106,9 +112,9 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   }).timeout(20000);
 
   test('Telemetry Sent on Error', async () => {
-    const version = 'foo';
+    const context: IDotnetAcquireContext = { version: 'foo' };
     try {
-      await vscode.commands.executeCommand<string>('dotnet.acquire', version);
+      await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
       assert(false); // An error should have been thrown
     } catch (error) {
       const versionError = MockTelemetryReporter.telemetryEvents.find((event: any) => event.eventName === 'DotnetVersionResolutionError');
