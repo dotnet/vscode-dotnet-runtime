@@ -23,7 +23,8 @@
 	"keywords": [
 		".NET",
 		".NET Core",
-		"dotnet"
+		"dotnet", 
+		"Extension Authoring"
 	],
 	"activationEvents": [
 		"onCommand:dotnet.acquire",
