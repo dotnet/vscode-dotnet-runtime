@@ -13,7 +13,7 @@ Extension authors do not know if the .NET core runtime is installed on the targe
 3. **Servicing and floating versions**: It is difficult to ensure that extensions will use the latest releases, particuarly without re-shipping.
 4. **Corrupted installations**: Corrupted installations can arise when VS Code is shut down mid-download or unzip.
 5. **Network security policies**: Alternative installation methods may result in errors due to blocking from network security policies.
-6. **Locked down envs**: Downloading a VSIX from the marketplace allows developers who are unable to freely install software to install extensions manually.
+6. **Locked down environments**: Some developers are unable to freely install software, requiring the ability to install extensions manually via a VSIX.
 7. **Missing dependencies**: Users may run into situations where .NET Core cannot run as-is, requiring the installation of missing pieces.
 
 This extension attempts to solve the above issues.
