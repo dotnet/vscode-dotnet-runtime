@@ -12,6 +12,7 @@
 	"author": "Microsoft Corporation",
 	"displayName": ".NET Authoring Tool for Extensions",
 	"description": "Allows acquisition of the .NET runtime specifically for VSCode extension authors.",
+	"icon": "images/dotnetIcon.png",
 	"version": "0.1.0",
 	"publisher": "ms-azuretools",
 	"engines": {
@@ -23,7 +24,7 @@
 	"keywords": [
 		".NET",
 		".NET Core",
-		"dotnet", 
+		"dotnet",
 		"Extension Authoring"
 	],
 	"activationEvents": [
