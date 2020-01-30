@@ -2,10 +2,9 @@
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
+import * as cp from 'child_process';
 
-export * from './extension';
-export * from './test/mocks/MockObjects';
-export * from './IExtensionContext';
-export * from './IDotnetAcquireContext';
-export * from './IDotnetAcquireResult';
-export * from './IDotnetEnsureDependenciesContext';
+export interface IDotnetEnsureDependenciesContext {
+    command: string;
+    arguments: cp.SpawnSyncOptionsWithStringEncoding | undefined;
+}

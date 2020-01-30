@@ -81,8 +81,8 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', () => {
     test('Acquire Version', async () => {
         const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker();
 
-        const pathResult = await acquisitionWorker.acquire(versionPairs[0][0]);
-        await assertAcquisitionSucceeded(versionPairs[0][1], pathResult, eventStream, context);
+        const result = await acquisitionWorker.acquire(versionPairs[0][0]);
+        await assertAcquisitionSucceeded(versionPairs[0][1], result.dotnetPath, eventStream, context);
     });
 
     test('Acquire Version Multiple Times', async () => {
@@ -91,7 +91,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', () => {
 
         for (let i = 0; i < numAcquisitions; i++) {
             const pathResult = await acquisitionWorker.acquire(versionPairs[0][0]);
-            await assertAcquisitionSucceeded(versionPairs[0][1], pathResult, eventStream, context);
+            await assertAcquisitionSucceeded(versionPairs[0][1], pathResult.dotnetPath, eventStream, context);
         }
 
         // AcquisitionInvoker was only called once
@@ -102,8 +102,8 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', () => {
     test('Acquire Multiple Versions and UninstallAll', async () => {
         const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker();
         for (const version of versionPairs) {
-            const pathRes = await acquisitionWorker.acquire(version[0]);
-            await assertAcquisitionSucceeded(version[1], pathRes, eventStream, context);
+            const res = await acquisitionWorker.acquire(version[0]);
+            await assertAcquisitionSucceeded(version[1], res.dotnetPath, eventStream, context);
         }
         await acquisitionWorker.uninstallAll();
         assert.exists(eventStream.events.find(event => event instanceof DotnetUninstallAllStarted));
@@ -113,8 +113,8 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', () => {
     test('Acquire and UninstallAll', async () => {
         const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker();
 
-        const pathRes = await acquisitionWorker.acquire(versionPairs[0][0]);
-        await assertAcquisitionSucceeded(versionPairs[0][1], pathRes, eventStream, context);
+        const res = await acquisitionWorker.acquire(versionPairs[0][0]);
+        await assertAcquisitionSucceeded(versionPairs[0][1], res.dotnetPath, eventStream, context);
 
         await acquisitionWorker.uninstallAll();
         assert.exists(eventStream.events.find(event => event instanceof DotnetUninstallAllStarted));

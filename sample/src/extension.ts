@@ -7,6 +7,7 @@ import * as cp from 'child_process';
 import * as acquisitionLibrary from 'vscode-dotnet-runtime-library';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { IDotnetAcquireResult } from 'vscode-dotnet-runtime-library';
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -36,7 +37,8 @@ export function activate(context: vscode.ExtensionContext) {
             await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
 
             // Console app requires .NET Core 2.2.0
-            const dotnetPath = await vscode.commands.executeCommand<string>('dotnet.acquire', '2.2');
+            const commandRes = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', { version: '2.2' });
+            const dotnetPath = commandRes!.dotnetPath;
             if (!dotnetPath) {
                 throw new Error('Couldn\'t resolve the dotnet path!');
             }
@@ -49,7 +51,7 @@ export function activate(context: vscode.ExtensionContext) {
             const helloWorldArgs = [helloWorldLocation];
 
             // This will install any missing Linux dependencies.
-            await vscode.commands.executeCommand('dotnet.ensureDotnetDependencies', dotnetPath, helloWorldArgs);
+            await vscode.commands.executeCommand('dotnet.ensureDotnetDependencies', { command: dotnetPath, arguments: helloWorldArgs });
 
             const result = cp.spawnSync(dotnetPath, helloWorldArgs);
             const stderr = result.stderr.toString();
@@ -77,7 +79,7 @@ ${stderr}`);
 
         try {
             await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
-            await vscode.commands.executeCommand('dotnet.acquire', version);
+            await vscode.commands.executeCommand('dotnet.acquire', { version });
         } catch (error) {
             vscode.window.showErrorMessage(error.toString());
         }
@@ -94,9 +96,9 @@ ${stderr}`);
         try {
             vscode.commands.executeCommand('dotnet.showAcquisitionLog');
             const promises = [
-                vscode.commands.executeCommand('dotnet.acquire', '2.0'),
-                vscode.commands.executeCommand('dotnet.acquire', '2.1'),
-                vscode.commands.executeCommand('dotnet.acquire', '2.2')];
+                vscode.commands.executeCommand('dotnet.acquire', { version: '2.0' }),
+                vscode.commands.executeCommand('dotnet.acquire', { version: '2.1' }),
+                vscode.commands.executeCommand('dotnet.acquire', { version: '2.2' })];
 
             for (const promise of promises) {
                 // Await here so we can detect errors
