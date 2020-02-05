@@ -14,6 +14,7 @@ import {
     MockInstallationValidator,
     MockInstallScriptWorker,
     MockVersionResolver,
+    MockWebRequestWorker,
     versionPairs,
 } from '../mocks/MockObjects';
 const assert = chai.assert;
@@ -54,5 +55,21 @@ suite('WebRequestWorker Unit Tests', () => {
         return assert.isRejected(installScriptWorker.getDotnetInstallScriptPath(), Error, 'Failed to Acquire Dotnet Install Script').then(() => {
             assert.exists(eventStream.events.find(event => event instanceof DotnetInstallScriptAcquisitionError));
         });
+    });
+
+    test('Web Requests Memoized on Repeated Installs', async () => {
+        const [eventStream, context] = getTestContext();
+        const webWorker = new MockWebRequestWorker(context, eventStream, '', 'MockKey');
+        // Make a request to cache the data
+        await webWorker.getCachedData();
+        const requests = [];
+        for (let i = 0; i < 10; i++) {
+            requests.push(webWorker.getCachedData());
+        }
+        for (const request of requests) {
+            assert.equal(await request, 'Mock Web Request Result');
+        }
+        const requestCount = webWorker.getRequestCount();
+        assert.isBelow(requestCount, requests.length);
     });
 });

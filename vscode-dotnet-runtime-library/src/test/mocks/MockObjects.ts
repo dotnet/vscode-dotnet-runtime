@@ -82,8 +82,17 @@ export class FailingWebRequestWorker extends WebRequestWorker {
 }
 
 export class MockWebRequestWorker extends WebRequestWorker {
+    private requestCount = 0;
+    private readonly response = 'Mock Web Request Result';
+
+    public getRequestCount() {
+        return this.requestCount;
+    }
+
     protected async makeWebRequest(): Promise<any> {
-        return '';
+        this.requestCount++;
+        this.cacheResults(this.response);
+        return this.response;
     }
 }
 
