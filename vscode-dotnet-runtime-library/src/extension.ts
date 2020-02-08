@@ -20,8 +20,10 @@ import { OutputChannelObserver } from './EventStream/OutputChannelObserver';
 import { StatusBarObserver } from './EventStream/StatusBarObserver';
 import { TelemetryObserver } from './EventStream/TelemetryObserver';
 import { IDotnetAcquireContext } from './IDotnetAcquireContext';
+import { IDotnetAcquireResult } from './IDotnetAcquireResult';
 import { IDotnetEnsureDependenciesContext } from './IDotnetEnsureDependenciesContext';
 import { IExtensionContext } from './IExtensionContext';
+import { callWithErrorHandling } from './Utils/ErrorHandler';
 
 export function activate(context: vscode.ExtensionContext, parentExtensionId: string, extensionContext?: IExtensionContext) {
     const extension = vscode.extensions.getExtension(parentExtensionId);
@@ -33,11 +35,12 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
     const outputChannel = vscode.window.createOutputChannel('.NET Core Tooling');
     fs.mkdirSync(context.logPath);
     const logFile = path.join(context.logPath, `DotNetAcquisition${ new Date().getTime() }.txt`);
+    const loggingObserver = new LoggingObserver(logFile);
     let eventStreamObservers: IEventStreamObserver[] =
         [
             new StatusBarObserver(vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, Number.MIN_VALUE)),
             new OutputChannelObserver(outputChannel),
-            new LoggingObserver(logFile),
+            loggingObserver,
         ];
     if (enableTelemetry()) {
         eventStreamObservers = eventStreamObservers.concat(new TelemetryObserver(extensionContext ? extensionContext.telemetryReporter : undefined));
@@ -47,6 +50,8 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
     for (const observer of eventStreamObservers) {
         eventStream.subscribe(event => observer.post(event));
     }
+
+    const issueContext = { logger: loggingObserver };
 
     if (!fs.existsSync(context.globalStoragePath)) {
         fs.mkdirSync(context.globalStoragePath);
@@ -61,27 +66,31 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
     });
 
     const dotnetAcquireRegistration = vscode.commands.registerCommand('dotnet.acquire', async (commandContext: IDotnetAcquireContext) => {
-        if (!commandContext.version || commandContext.version === 'latest') {
-            throw new Error(`Cannot acquire .NET Core version "${commandContext.version}". Please provide a valid version.`);
-        }
-        return acquisitionWorker.acquire(commandContext.version);
+        return callWithErrorHandling<Promise<IDotnetAcquireResult>>(() => {
+            if (!commandContext.version || commandContext.version === 'latest') {
+                throw new Error(`Cannot acquire .NET Core version "${commandContext.version}". Please provide a valid version.`);
+            }
+            return acquisitionWorker.acquire(commandContext.version);
+        }, issueContext);
     });
-    const dotnetUninstallAllRegistration = vscode.commands.registerCommand('dotnet.uninstallAll', () => acquisitionWorker.uninstallAll());
+    const dotnetUninstallAllRegistration = vscode.commands.registerCommand('dotnet.uninstallAll', async () => {
+        await callWithErrorHandling(() => acquisitionWorker.uninstallAll(), issueContext);
+    });
     const showOutputChannelRegistration = vscode.commands.registerCommand('dotnet.showAcquisitionLog', () => outputChannel.show(/* preserveFocus */ false));
     const testApplicationRegistration = vscode.commands.registerCommand('dotnet.ensureDotnetDependencies', async (commandContext: IDotnetEnsureDependenciesContext) => {
-        if (os.platform() !== 'linux') {
-            // We can't handle installing dependencies for anything other than Linux
-            return;
-        }
+        await callWithErrorHandling(async () => {
+            if (os.platform() !== 'linux') {
+                // We can't handle installing dependencies for anything other than Linux
+                return;
+            }
 
-        const result = cp.spawnSync(commandContext.command, commandContext.arguments);
-        const installer = new DotnetCoreDependencyInstaller();
-        if (installer.signalIndicatesMissingLinuxDependencies(result.signal)) {
-            eventStream.post(new DotnetAcquisitionMissingLinuxDependencies());
-            await installer.promptLinuxDependencyInstall('Failed to run .NET tooling.');
-        }
-
-        // TODO: Handle cases where .NET failed for unknown reasons.
+            const result = cp.spawnSync(commandContext.command, commandContext.arguments);
+            const installer = new DotnetCoreDependencyInstaller();
+            if (installer.signalIndicatesMissingLinuxDependencies(result.signal)) {
+                eventStream.post(new DotnetAcquisitionMissingLinuxDependencies());
+                await installer.promptLinuxDependencyInstall('Failed to run .NET tooling.');
+            }
+        }, issueContext);
     });
 
     context.subscriptions.push(

@@ -13,6 +13,7 @@ import { VersionResolver } from '../../Acquisition/VersionResolver';
 import { IEventStream } from '../../EventStream/EventStream';
 import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStream/EventStreamEvents';
 import { IEvent } from '../../EventStream/IEvent';
+import { ILoggingObserver } from '../../EventStream/ILoggingObserver';
 import { ITelemetryReporter } from '../../EventStream/TelemetryObserver';
 import { WebRequestWorker } from '../../Utils/WebRequestWorker';
 
@@ -149,5 +150,19 @@ export class MockTelemetryReporter implements ITelemetryReporter {
 export class MockInstallationValidator extends IInstallationValidator {
     public validateDotnetInstall(version: string, dotnetPath: string): void {
         // Always validate
+    }
+}
+
+export class MockLoggingObserver implements ILoggingObserver {
+    public post(event: IEvent): void {
+        // Nothing to post
+    }
+
+    public dispose(): void {
+        // Nothing to dispose
+    }
+
+    public getFileLocation(): string {
+        return 'Mock file location';
     }
 }
