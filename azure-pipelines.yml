@@ -95,7 +95,7 @@ stages:
           VERSION=`node -p "require('./package.json').version"`
         else
           VERSION_NUM=`node -p "require('./package.json').version"`
-          VERSION="$VERSION_NUM-aplha-$(Build.BuildId)"
+          VERSION="$VERSION_NUM-alpha-$(Build.BuildId)"
         fi
         npm version $VERSION --allow-same-version
         echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
