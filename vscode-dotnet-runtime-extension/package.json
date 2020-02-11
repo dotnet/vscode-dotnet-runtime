@@ -10,7 +10,7 @@
 		"vscode": "^1.41.0"
 	},
 	"version": "0.1.0",
-	"publisher": "ms-azuretools",
+	"publisher": "ms-dotnettools",
 	"activationEvents": [
 		"onCommand:dotnet.acquire",
 		"onCommand:dotnet.uninstallAll",

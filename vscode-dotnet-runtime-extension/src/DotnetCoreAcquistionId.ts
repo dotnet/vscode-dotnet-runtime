@@ -3,4 +3,4 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-export const dotnetCoreAcquisitionExtensionId = 'ms-azuretools.vscode-dotnet-runtime';
+export const dotnetCoreAcquisitionExtensionId = 'ms-dotnettools.vscode-dotnet-runtime';
