@@ -6,7 +6,7 @@ import { IIssueContext } from './IIssueContext';
 
 const issuesUrl = `https://github.com/dotnet/vscode-dotnet-runtime/issues`;
 
-export function formatIssueUrl(error: Error, context: IIssueContext): string {
+export function formatIssueUrl(error: Error | undefined, context: IIssueContext): [ string, string ] {
     context.logger.dispose(); // Ensure log file is up to date
     const issueBody = `<!-- IMPORTANT: Please be sure to remove any private information before submitting and attach the log file located at ${ context.logger.getFileLocation() }. -->
 
@@ -14,8 +14,9 @@ export function formatIssueUrl(error: Error, context: IIssueContext): string {
 
 1.
 
-**Error:** ${ error.stack }`;
+${ error === undefined ? '' : `**Error:** ${ error!.stack }` }`;
 
-    const url = `${issuesUrl}/new?body=${encodeURIComponent(issueBody)}`;
-    return url;
+    const issueMessage = 'The issue text was copied to the clipboard.  Please paste it into this window.';
+    const url = `${issuesUrl}/new?body=${encodeURIComponent(issueMessage)}`;
+    return [url, issueBody];
 }

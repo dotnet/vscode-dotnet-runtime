@@ -11,7 +11,7 @@
 ### First Acquisition
 
 - Resolve version by fetching release.json
-  - If we are offline, we will fail here.
+  - If we are offline, we will fail here because the user also will not be able to download a runtime offline.
 - Check if version has been installed previously or is currently being installed
 - Fetch dotnet-install script
 - Install runtime via script

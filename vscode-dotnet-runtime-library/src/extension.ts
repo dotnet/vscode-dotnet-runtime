@@ -4,6 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 import * as cp from 'child_process';
 import * as fs from 'fs';
+import open = require('open');
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
@@ -24,6 +25,7 @@ import { IDotnetAcquireResult } from './IDotnetAcquireResult';
 import { IDotnetEnsureDependenciesContext } from './IDotnetEnsureDependenciesContext';
 import { IExtensionContext } from './IExtensionContext';
 import { callWithErrorHandling } from './Utils/ErrorHandler';
+import { formatIssueUrl } from './Utils/IssueReporter';
 
 export function activate(context: vscode.ExtensionContext, parentExtensionId: string, extensionContext?: IExtensionContext) {
     const extension = vscode.extensions.getExtension(parentExtensionId);
@@ -92,12 +94,18 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
             }
         }, issueContext);
     });
+    const reportIssueRegistration = vscode.commands.registerCommand('dotnet.reportIssue', async () => {
+        const [url, issueBody] = formatIssueUrl(undefined, issueContext);
+        await vscode.env.clipboard.writeText(issueBody);
+        open(url);
+    });
 
     context.subscriptions.push(
         dotnetAcquireRegistration,
         dotnetUninstallAllRegistration,
         showOutputChannelRegistration,
-        testApplicationRegistration);
+        testApplicationRegistration,
+        reportIssueRegistration);
 
     context.subscriptions.push({
         dispose: () => {

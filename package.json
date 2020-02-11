@@ -31,10 +31,19 @@
 		"onCommand:dotnet.acquire",
 		"onCommand:dotnet.uninstallAll",
 		"onCommand:dotnet.showAcquisitionLog",
-		"onCommand:dotnet.ensureDotnetDependencies"
+		"onCommand:dotnet.ensureDotnetDependencies",
+		"onCommand:dotnet.reportIssue"
 	],
 	"main": "./dist/extension.js",
-	"contributes": {},
+	"contributes": {
+		"commands": [
+			{
+				"command": "dotnet.reportIssue",
+				"title": "Report an issue with the .NET Install Tool for Extension Authors.",
+				"category": ".NET Install Tool"
+			}
+		]
+	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile-all && npm install && webpack --mode production",
 		"compile-all": "cd vscode-dotnet-runtime-library && npm install &&  npm run compile && cd .. && cd vscode-dotnet-runtime-extension && npm install &&  npm run compile && cd .."
