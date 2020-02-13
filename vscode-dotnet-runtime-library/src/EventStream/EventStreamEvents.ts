@@ -10,20 +10,24 @@ import { IEvent } from './IEvent';
 
 // tslint:disable max-classes-per-file
 
-export class DotnetAcquisitionStarted implements IEvent {
+export class DotnetAcquisitionStarted extends IEvent {
     public readonly type = EventType.DotnetAcquisitionStart;
 
-    constructor(public readonly version: string) {}
+    constructor(public readonly version: string) {
+        super();
+    }
 
     public getProperties() {
         return {AcquisitionStartVersion : this.version};
     }
 }
 
-export class DotnetAcquisitionCompleted implements IEvent {
+export class DotnetAcquisitionCompleted extends IEvent {
     public readonly type = EventType.DotnetAcquisitionCompleted;
 
-    constructor(public readonly version: string, public readonly dotnetPath: string) { }
+    constructor(public readonly version: string, public readonly dotnetPath: string) {
+        super();
+    }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
         if (telemetry) {
@@ -36,10 +40,12 @@ export class DotnetAcquisitionCompleted implements IEvent {
     }
 }
 
-export abstract class DotnetAcquisitionError implements IEvent {
+export abstract class DotnetAcquisitionError extends IEvent {
     public readonly type = EventType.DotnetAcquisitionError;
 
-    constructor(public readonly error: Error) {}
+    constructor(public readonly error: Error) {
+        super();
+    }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
         return {ErrorName : this.error.name,
@@ -117,7 +123,7 @@ export class DotnetInstallationValidationError extends DotnetAcquisitionVersionE
     }
 }
 
-export abstract class DotnetAcquisitionSuccessEvent implements IEvent {
+export abstract class DotnetAcquisitionSuccessEvent extends IEvent {
     public readonly type = EventType.DotnetAcquisitionSuccessEvent;
 
     public getProperties(): { [key: string]: string } | undefined {
@@ -140,7 +146,7 @@ export class DotnetVersionResolutionCompleted extends DotnetAcquisitionSuccessEv
 
 export class DotnetInstallScriptAcquisitionCompleted extends DotnetAcquisitionSuccessEvent {}
 
-export abstract class DotnetAcquisitionMessage implements IEvent {
+export abstract class DotnetAcquisitionMessage extends IEvent {
     public readonly type = EventType.DotnetAcquisitionMessage;
 
     public getProperties(): { [key: string]: string } | undefined {
@@ -203,10 +209,12 @@ export class DotnetInstallationValidated extends DotnetAcquisitionMessage {
     }
 }
 
-export class TestAcquireCalled implements IEvent {
+export class TestAcquireCalled extends IEvent {
     public readonly type = EventType.DotnetAcquisitionTest;
 
-    constructor(public readonly context: IDotnetInstallationContext) {}
+    constructor(public readonly context: IDotnetInstallationContext) {
+        super();
+    }
 
     public getProperties() {
         return undefined;

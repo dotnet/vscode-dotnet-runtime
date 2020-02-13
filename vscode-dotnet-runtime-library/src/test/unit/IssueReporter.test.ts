@@ -11,12 +11,12 @@ suite('IssueReporter Unit Tests', () => {
     test('Issue url is properly formed', async () => {
         const [url, issueBody] = formatIssueUrl(new Error(), { logger: new MockLoggingObserver() });
 
-        const expectedBodyContent = ['Mock file location'];
+        const expectedBodyContent = ['Error', 'Repro steps'];
         for (const expected of expectedBodyContent) {
             assert.include(issueBody, expected);
         }
 
-        const expectedUrlContent = ['The issue text was copied to the clipboard'].map((s) => encodeURIComponent(s));
+        const expectedUrlContent = ['The issue text was copied to the clipboard', 'Privacy Alert', 'Mock file location'].map((s) => encodeURIComponent(s));
         for (const expected of expectedUrlContent) {
             assert.include(url, expected);
         }
