@@ -13,7 +13,7 @@ export class LoggingObserver implements ILoggingObserver {
     constructor(private readonly logFilePath: string) {}
 
     public post(event: IEvent): void {
-        this.writeLine(`${ new Date().toLocaleString() } ${ event.constructor.name }`);
+        this.writeLine(`${ new Date().toLocaleString() } ${ event.eventName }`);
         const properties = event.getProperties();
         if (!isNullOrUndefined(properties)) {
             for (const property of Object.values(properties)) {
