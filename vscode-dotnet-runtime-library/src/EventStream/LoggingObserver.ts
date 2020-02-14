@@ -5,9 +5,9 @@
 import * as fs from 'fs';
 import { isNullOrUndefined } from 'util';
 import { IEvent } from './IEvent';
-import { IEventStreamObserver } from './IEventStreamObserver';
+import { ILoggingObserver } from './ILoggingObserver';
 
-export class LoggingObserver implements IEventStreamObserver {
+export class LoggingObserver implements ILoggingObserver {
     private log = '';
 
     constructor(private readonly logFilePath: string) {}
@@ -25,6 +25,10 @@ export class LoggingObserver implements IEventStreamObserver {
 
     public dispose(): void {
         fs.writeFileSync(this.logFilePath, this.log);
+    }
+
+    public getFileLocation(): string {
+        return this.logFilePath;
     }
 
     private writeLine(line: string) {

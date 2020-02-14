@@ -10,6 +10,7 @@ import { WebRequestError } from '../EventStream/EventStreamEvents';
 
 export class WebRequestWorker {
     private cachedData: any;
+    private currentRequest: Promise<any> | undefined;
 
     constructor(private readonly extensionState: Memento,
                 private readonly eventStream: IEventStream,
@@ -21,9 +22,13 @@ export class WebRequestWorker {
         if (isNullOrUndefined(this.cachedData)) {
             // Have to acquire data before continuing
             this.cachedData = await this.makeWebRequest();
-        } else {
+        } else if (isNullOrUndefined(this.currentRequest)) {
             // Update without blocking, continue with cached information
-            this.makeWebRequest().then((result) => this.cachedData = result);
+            this.currentRequest = this.makeWebRequest();
+            this.currentRequest.then((result) => {
+                this.cachedData = result;
+                this.currentRequest = undefined;
+            });
         }
         return this.cachedData;
     }
@@ -36,12 +41,15 @@ export class WebRequestWorker {
 
         try {
             const response = await request.get(options);
-            // Cache results
-            await this.extensionState.update(this.extensionStateKey, response);
+            this.cacheResults(response);
             return response;
         } catch (error) {
             this.eventStream.post(new WebRequestError(error));
             throw new Error(`Request to ${this.uri} Failed: ${error.message}`);
         }
+    }
+
+    protected async cacheResults(response: string) {
+        await this.extensionState.update(this.extensionStateKey, response);
     }
 }

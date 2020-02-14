@@ -13,6 +13,7 @@ import { VersionResolver } from '../../Acquisition/VersionResolver';
 import { IEventStream } from '../../EventStream/EventStream';
 import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStream/EventStreamEvents';
 import { IEvent } from '../../EventStream/IEvent';
+import { ILoggingObserver } from '../../EventStream/ILoggingObserver';
 import { ITelemetryReporter } from '../../EventStream/TelemetryObserver';
 import { WebRequestWorker } from '../../Utils/WebRequestWorker';
 
@@ -82,8 +83,17 @@ export class FailingWebRequestWorker extends WebRequestWorker {
 }
 
 export class MockWebRequestWorker extends WebRequestWorker {
+    private requestCount = 0;
+    private readonly response = 'Mock Web Request Result';
+
+    public getRequestCount() {
+        return this.requestCount;
+    }
+
     protected async makeWebRequest(): Promise<any> {
-        return '';
+        this.requestCount++;
+        this.cacheResults(this.response);
+        return this.response;
     }
 }
 
@@ -140,5 +150,19 @@ export class MockTelemetryReporter implements ITelemetryReporter {
 export class MockInstallationValidator extends IInstallationValidator {
     public validateDotnetInstall(version: string, dotnetPath: string): void {
         // Always validate
+    }
+}
+
+export class MockLoggingObserver implements ILoggingObserver {
+    public post(event: IEvent): void {
+        // Nothing to post
+    }
+
+    public dispose(): void {
+        // Nothing to dispose
+    }
+
+    public getFileLocation(): string {
+        return 'Mock file location';
     }
 }
