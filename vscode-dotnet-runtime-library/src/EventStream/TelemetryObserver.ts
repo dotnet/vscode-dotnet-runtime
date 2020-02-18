@@ -29,11 +29,11 @@ export class TelemetryObserver implements IEventStreamObserver {
     }
 
     public post(event: IEvent): void {
-        const properties = event.getProperties(true); // Get properties that don't contain personally identifiable data
+        const properties = event.getSanitizedProperties(); // Get properties that don't contain personally identifiable data
         if (isNullOrUndefined(properties)) {
-            this.telemetryReporter.sendTelemetryEvent(event.constructor.name);
+            this.telemetryReporter.sendTelemetryEvent(event.eventName);
         } else {
-            this.telemetryReporter.sendTelemetryEvent(event.constructor.name, properties);
+            this.telemetryReporter.sendTelemetryEvent(event.eventName, properties);
         }
     }
 

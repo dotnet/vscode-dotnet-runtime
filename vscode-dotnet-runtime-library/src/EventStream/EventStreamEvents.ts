@@ -10,20 +10,26 @@ import { IEvent } from './IEvent';
 
 // tslint:disable max-classes-per-file
 
-export class DotnetAcquisitionStarted implements IEvent {
+export class DotnetAcquisitionStarted extends IEvent {
+    public readonly eventName = 'DotnetAcquisitionStarted';
     public readonly type = EventType.DotnetAcquisitionStart;
 
-    constructor(public readonly version: string) {}
+    constructor(public readonly version: string) {
+        super();
+    }
 
     public getProperties() {
         return {AcquisitionStartVersion : this.version};
     }
 }
 
-export class DotnetAcquisitionCompleted implements IEvent {
+export class DotnetAcquisitionCompleted extends IEvent {
+    public readonly eventName = 'DotnetAcquisitionCompleted';
     public readonly type = EventType.DotnetAcquisitionCompleted;
 
-    constructor(public readonly version: string, public readonly dotnetPath: string) { }
+    constructor(public readonly version: string, public readonly dotnetPath: string) {
+        super();
+    }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
         if (telemetry) {
@@ -36,10 +42,12 @@ export class DotnetAcquisitionCompleted implements IEvent {
     }
 }
 
-export abstract class DotnetAcquisitionError implements IEvent {
+export abstract class DotnetAcquisitionError extends IEvent {
     public readonly type = EventType.DotnetAcquisitionError;
 
-    constructor(public readonly error: Error) {}
+    constructor(public readonly error: Error) {
+        super();
+    }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
         return {ErrorName : this.error.name,
@@ -49,6 +57,8 @@ export abstract class DotnetAcquisitionError implements IEvent {
 }
 
 export class DotnetVersionResolutionError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetVersionResolutionError';
+
     constructor(error: Error, private readonly version: string) { super(error); }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
@@ -59,9 +69,13 @@ export class DotnetVersionResolutionError extends DotnetAcquisitionError {
     }
 }
 
-export class DotnetInstallScriptAcquisitionError extends DotnetAcquisitionError {}
+export class DotnetInstallScriptAcquisitionError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetInstallScriptAcquisitionError';
+}
 
-export class WebRequestError extends DotnetAcquisitionError {}
+export class WebRequestError extends DotnetAcquisitionError {
+    public readonly eventName = 'WebRequestError';
+}
 
 export abstract class DotnetAcquisitionVersionError extends DotnetAcquisitionError {
     constructor(error: Error, public readonly version: string) {
@@ -76,13 +90,20 @@ export abstract class DotnetAcquisitionVersionError extends DotnetAcquisitionErr
     }
 }
 
-export class DotnetAcquisitionUnexpectedError extends DotnetAcquisitionVersionError {}
+export class DotnetAcquisitionUnexpectedError extends DotnetAcquisitionVersionError {
+    public readonly eventName = 'DotnetAcquisitionUnexpectedError';
+}
 
-export class DotnetAcquisitionInstallError extends DotnetAcquisitionVersionError {}
+export class DotnetAcquisitionInstallError extends DotnetAcquisitionVersionError {
+    public readonly eventName = 'DotnetAcquisitionInstallError';
+}
 
-export class DotnetAcquisitionScriptError extends DotnetAcquisitionVersionError {}
+export class DotnetAcquisitionScriptError extends DotnetAcquisitionVersionError {
+    public readonly eventName = 'DotnetAcquisitionScriptError';
+}
 
 export class DotnetInstallationValidationError extends DotnetAcquisitionVersionError {
+    public readonly eventName = 'DotnetInstallationValidationError';
     public readonly fileStructure: string;
     constructor(error: Error, version: string, public readonly dotnetPath: string) {
         super(error, version);
@@ -117,7 +138,7 @@ export class DotnetInstallationValidationError extends DotnetAcquisitionVersionE
     }
 }
 
-export abstract class DotnetAcquisitionSuccessEvent implements IEvent {
+export abstract class DotnetAcquisitionSuccessEvent extends IEvent {
     public readonly type = EventType.DotnetAcquisitionSuccessEvent;
 
     public getProperties(): { [key: string]: string } | undefined {
@@ -125,11 +146,17 @@ export abstract class DotnetAcquisitionSuccessEvent implements IEvent {
     }
 }
 
-export class DotnetUninstallAllStarted extends DotnetAcquisitionSuccessEvent {}
+export class DotnetUninstallAllStarted extends DotnetAcquisitionSuccessEvent {
+    public readonly eventName = 'DotnetUninstallAllStarted';
+}
 
-export class DotnetUninstallAllCompleted extends DotnetAcquisitionSuccessEvent {}
+export class DotnetUninstallAllCompleted extends DotnetAcquisitionSuccessEvent {
+    public readonly eventName = 'DotnetUninstallAllCompleted';
+}
 
 export class DotnetVersionResolutionCompleted extends DotnetAcquisitionSuccessEvent {
+    public readonly eventName = 'DotnetVersionResolutionCompleted';
+
     constructor(public readonly requestedVerion: string, public readonly resolvedVersion: string) { super(); }
 
     public getProperties() {
@@ -138,9 +165,11 @@ export class DotnetVersionResolutionCompleted extends DotnetAcquisitionSuccessEv
     }
 }
 
-export class DotnetInstallScriptAcquisitionCompleted extends DotnetAcquisitionSuccessEvent {}
+export class DotnetInstallScriptAcquisitionCompleted extends DotnetAcquisitionSuccessEvent {
+    public readonly eventName = 'DotnetInstallScriptAcquisitionCompleted';
+}
 
-export abstract class DotnetAcquisitionMessage implements IEvent {
+export abstract class DotnetAcquisitionMessage extends IEvent {
     public readonly type = EventType.DotnetAcquisitionMessage;
 
     public getProperties(): { [key: string]: string } | undefined {
@@ -149,6 +178,7 @@ export abstract class DotnetAcquisitionMessage implements IEvent {
 }
 
 export class DotnetAcquisitionDeletion extends DotnetAcquisitionMessage {
+    public readonly eventName = 'DotnetAcquisitionDeletion';
     constructor(public readonly folderPath: string) { super(); }
 
     public getProperties(telemetry = false) {
@@ -157,6 +187,7 @@ export class DotnetAcquisitionDeletion extends DotnetAcquisitionMessage {
 }
 
 export class DotnetAcquisitionPartialInstallation extends DotnetAcquisitionMessage {
+    public readonly eventName = 'DotnetAcquisitionPartialInstallation';
     constructor(public readonly version: string) { super(); }
 
     public getProperties() {
@@ -165,6 +196,7 @@ export class DotnetAcquisitionPartialInstallation extends DotnetAcquisitionMessa
 }
 
 export class DotnetAcquisitionInProgress extends DotnetAcquisitionMessage {
+    public readonly eventName = 'DotnetAcquisitionInProgress';
     constructor(public readonly version: string) { super(); }
 
     public getProperties() {
@@ -173,6 +205,7 @@ export class DotnetAcquisitionInProgress extends DotnetAcquisitionMessage {
 }
 
 export class DotnetAcquisitionAlreadyInstalled extends DotnetAcquisitionMessage {
+    public readonly eventName = 'DotnetAcquisitionAlreadyInstalled';
     constructor(public readonly version: string) { super(); }
 
     public getProperties() {
@@ -180,9 +213,12 @@ export class DotnetAcquisitionAlreadyInstalled extends DotnetAcquisitionMessage 
     }
 }
 
-export class DotnetAcquisitionMissingLinuxDependencies extends DotnetAcquisitionMessage {}
+export class DotnetAcquisitionMissingLinuxDependencies extends DotnetAcquisitionMessage {
+    public readonly eventName = 'DotnetAcquisitionMissingLinuxDependencies';
+}
 
 export class DotnetAcquisitionScriptOuput extends DotnetAcquisitionMessage {
+    public readonly eventName = 'DotnetAcquisitionScriptOuput';
     constructor(public readonly version: string, public readonly output: string) { super(); }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
@@ -196,6 +232,7 @@ export class DotnetAcquisitionScriptOuput extends DotnetAcquisitionMessage {
 }
 
 export class DotnetInstallationValidated extends DotnetAcquisitionMessage {
+    public readonly eventName = 'DotnetInstallationValidated';
     constructor(public readonly version: string) { super(); }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
@@ -203,10 +240,13 @@ export class DotnetInstallationValidated extends DotnetAcquisitionMessage {
     }
 }
 
-export class TestAcquireCalled implements IEvent {
+export class TestAcquireCalled extends IEvent {
+    public readonly eventName = 'TestAcquireCalled';
     public readonly type = EventType.DotnetAcquisitionTest;
 
-    constructor(public readonly context: IDotnetInstallationContext) {}
+    constructor(public readonly context: IDotnetInstallationContext) {
+        super();
+    }
 
     public getProperties() {
         return undefined;

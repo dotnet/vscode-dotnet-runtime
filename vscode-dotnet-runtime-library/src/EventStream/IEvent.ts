@@ -3,9 +3,17 @@
 *  Licensed under the MIT License. See License.txt in the project root for license information.
 *--------------------------------------------------------------------------------------------*/
 
+import { sanitizeProperties } from '../Utils/ContentSantizer';
 import { EventType } from './EventType';
 
-export interface IEvent {
-    type: EventType;
-    getProperties(telemetry?: boolean): { [key: string]: string } | undefined;
+export abstract class IEvent {
+    public abstract type: EventType;
+
+    public abstract readonly eventName: string;
+
+    public abstract getProperties(telemetry?: boolean): { [key: string]: string } | undefined;
+
+    public getSanitizedProperties(): { [key: string]: string } | undefined {
+        return sanitizeProperties(this.getProperties(true));
+    }
 }
