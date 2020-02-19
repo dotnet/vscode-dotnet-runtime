@@ -18,7 +18,7 @@ export function activate(context: vscode.ExtensionContext) {
     NOTE: This sample should technically have the following in its package.json:
 
     "extensionDependencies": [
-        "ms-azuretools.vscode-dotnet-runtime"
+        "ms-dotnettools.vscode-dotnet-runtime"
     ]
 
     This would enable the sample to require the vscode-dotnet-runtime extension
@@ -28,7 +28,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     */
 
-    acquisitionLibrary.activate(context, 'ms-azuretools.sample-extension');
+    acquisitionLibrary.activate(context, 'ms-dotnettools.sample-extension');
 
     // --------------------------------------------------------------------------
 
@@ -43,7 +43,7 @@ export function activate(context: vscode.ExtensionContext) {
                 throw new Error('Couldn\'t resolve the dotnet path!');
             }
 
-            const sampleExtension = vscode.extensions.getExtension('ms-azuretools.sample-extension');
+            const sampleExtension = vscode.extensions.getExtension('ms-dotnettools.sample-extension');
             if (!sampleExtension) {
                 throw new Error('Could not find sample extension.');
             }
