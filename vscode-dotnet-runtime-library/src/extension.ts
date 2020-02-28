@@ -35,7 +35,9 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
     }
 
     const outputChannel = vscode.window.createOutputChannel('.NET Core Tooling');
-    fs.mkdirSync(context.logPath);
+    if (!fs.existsSync(context.logPath)) {
+        fs.mkdirSync(context.logPath);
+    }
     const logFile = path.join(context.logPath, `DotNetAcquisition${ new Date().getTime() }.txt`);
     const loggingObserver = new LoggingObserver(logFile);
     let eventStreamObservers: IEventStreamObserver[] =
