@@ -41,4 +41,4 @@ out
 dist
 install.*
 .vscode-test/
-package-lock.json
+*.vsix
