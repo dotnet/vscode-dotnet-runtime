@@ -80,7 +80,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function() {
     }
 
     this.beforeAll(async () => {
-        process.env.VSCODE_DOTNET_INSTALL_FOLDER = dotnetFolderName;
+        process.env._VSCODE_DOTNET_INSTALL_FOLDER = dotnetFolderName;
     });
 
     test('Acquire Version', async () => {
