@@ -27,7 +27,8 @@ export class DotnetCoreAcquisitionWorker {
     private acquisitionPromises: { [version: string]: Promise<string> | undefined };
 
     constructor(private readonly context: IAcquisitionWorkerContext) {
-        this.installDir = path.join(this.context.storagePath, '.dotnet');
+        const installFolderName = process.env.VSCODE_DOTNET_INSTALL_FOLDER || '.dotnet';
+        this.installDir = path.join(this.context.storagePath, installFolderName);
         const dotnetExtension = os.platform() === 'win32' ? '.exe' : '';
         this.dotnetExecutable = `dotnet${dotnetExtension}`;
         this.acquisitionPromises = {};

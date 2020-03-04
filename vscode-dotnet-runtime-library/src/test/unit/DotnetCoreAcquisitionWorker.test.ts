@@ -26,8 +26,9 @@ import {
 const assert = chai.assert;
 chai.use(chaiAsPromised);
 
-suite('DotnetCoreAcquisitionWorker Unit Tests', () => {
+suite('DotnetCoreAcquisitionWorker Unit Tests', function() {
     const installingVersionsKey = 'installing';
+    const dotnetFolderName = `.dotnet O'Hare O'Donald`;
 
     function getTestAcquisitionWorker(): [ DotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext ] {
         const context = new MockExtensionContext();
@@ -45,7 +46,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', () => {
     }
 
     function getExpectedPath(version: string): string {
-        return path.join('.dotnet', version, os.platform() === 'win32' ? 'dotnet.exe' : 'dotnet');
+        return path.join(dotnetFolderName, version, os.platform() === 'win32' ? 'dotnet.exe' : 'dotnet');
     }
 
     async function assertAcquisitionSucceeded(version: string,
@@ -75,8 +76,12 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', () => {
             event instanceof TestAcquireCalled && (event as TestAcquireCalled).context.version === version) as TestAcquireCalled;
         assert.exists(acquireEvent);
         assert.equal(acquireEvent!.context.dotnetPath, expectedPath);
-        assert.equal(acquireEvent!.context.installDir, path.join('.dotnet', version));
+        assert.equal(acquireEvent!.context.installDir, path.join(dotnetFolderName, version));
     }
+
+    this.beforeAll(async () => {
+        process.env.VSCODE_DOTNET_INSTALL_FOLDER = dotnetFolderName;
+    });
 
     test('Acquire Version', async () => {
         const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker();
