@@ -60,8 +60,19 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
     }
 
     private async getInstallCommand(version: string, dotnetInstallDir: string): Promise<string> {
+        let dotnetInstallDirEscaped: string;
+        if (os.platform() === 'win32') {
+            // Need to escape apostrophes with two apostrophes
+            dotnetInstallDirEscaped = dotnetInstallDir.replace(/'/g, `''`);
+
+            // Surround with single quotes instead of double quotes (see https://github.com/dotnet/cli/issues/11521)
+            dotnetInstallDirEscaped = `"${dotnetInstallDirEscaped}"`;
+        } else {
+            dotnetInstallDirEscaped = `"${dotnetInstallDir}"`;
+        }
+
         const args = [
-            '-InstallDir', `"${dotnetInstallDir}"`,
+            '-InstallDir', dotnetInstallDirEscaped,
             '-Runtime', 'dotnet',
             '-Version', version,
         ];
