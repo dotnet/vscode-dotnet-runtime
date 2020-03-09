@@ -20,7 +20,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   const storagePath = path.join(__dirname, 'tmp');
   const mockState = new MockExtensionContext();
   const extensionPath = path.join(__dirname, '/../../..');
-  const logPath = path.join(__dirname, 'tmp');
+  const logPath = path.join(__dirname, 'logs');
   let extensionContext: vscode.ExtensionContext;
 
   this.beforeAll(async () => {

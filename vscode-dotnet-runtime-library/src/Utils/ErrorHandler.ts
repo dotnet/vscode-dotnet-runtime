@@ -28,5 +28,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
             });
         }
         return undefined;
+    } finally {
+        context.logger.dispose();
     }
 }

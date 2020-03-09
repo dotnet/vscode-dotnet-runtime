@@ -57,6 +57,12 @@ stages:
       displayName: Build and Test vscode-dotnet-runtime-extension
       env:
         DISPLAY: ':99.0'
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathtoPublish: '$(Build.SourcesDirectory)/vscode-dotnet-runtime-extension/out/test/functional/logs'
+        artifactName: 'logs'
+      displayName: Publish Logs
+      condition: always()
     - bash: |
         npm install
         npm run compile
