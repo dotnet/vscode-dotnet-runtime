@@ -70,12 +70,13 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
     });
 
     const dotnetAcquireRegistration = vscode.commands.registerCommand('dotnet.acquire', async (commandContext: IDotnetAcquireContext) => {
-        return callWithErrorHandling<Promise<IDotnetAcquireResult>>(() => {
+        const dotnetPath = await callWithErrorHandling<Promise<IDotnetAcquireResult>>(async () => {
             if (!commandContext.version || commandContext.version === 'latest') {
                 throw new Error(`Cannot acquire .NET Core version "${commandContext.version}". Please provide a valid version.`);
             }
             return acquisitionWorker.acquire(commandContext.version);
         }, issueContext);
+        return dotnetPath;
     });
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand('dotnet.uninstallAll', async () => {
         await callWithErrorHandling(() => acquisitionWorker.uninstallAll(), issueContext);

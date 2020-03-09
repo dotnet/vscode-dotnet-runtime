@@ -12,9 +12,9 @@ const reportOption = 'Report an issue';
 const hideOption = 'Don\'t show again';
 let showMessage = true;
 
-export async function callWithErrorHandling<T>(callback: () => T, context: IIssueContext): Promise<T | undefined> {
+export function callWithErrorHandling<T>(callback: () => T, context: IIssueContext): T | undefined {
     try {
-        return await callback();
+        return callback();
     } catch (error) {
         if (error.constructor.name !== 'UserCancelledError' && showMessage) {
             window.showErrorMessage(`${errorMessage}: ${ error.message }`, reportOption, hideOption).then(async (response: string | undefined) => {
