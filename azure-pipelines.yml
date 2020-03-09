@@ -28,11 +28,11 @@ stages:
     strategy:
       matrix:
         Linux:
-          imageName: 'ubuntu-16.04'
+          imageName: 'ubuntu-latest'
         Mac:
-          imageName: 'macos-10.13'
+          imageName: 'macOS-latest'
         Windows:
-          imageName: 'vs2017-win2016'
+          imageName: 'windows-latest'
     steps:
     - task: NodeTool@0
       inputs:

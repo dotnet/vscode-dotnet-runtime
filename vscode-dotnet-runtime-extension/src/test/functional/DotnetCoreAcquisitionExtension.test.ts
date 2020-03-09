@@ -69,7 +69,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   }).timeout(20000);
 
   test('Install and Uninstall Multiple Versions', async () => {
-    const versions = ['1.1', '2.2', '1.0'];
+    const versions = ['2.2', '3.0', '3.1'];
     let dotnetPaths: string[] = [];
     for (const version of versions) {
       const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', { version });
