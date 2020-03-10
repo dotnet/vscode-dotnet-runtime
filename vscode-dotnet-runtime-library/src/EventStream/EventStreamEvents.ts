@@ -119,11 +119,12 @@ export class DotnetInstallationValidationError extends DotnetAcquisitionVersionE
     }
 
     private getFileStructure(): string {
-        if (!fs.existsSync(this.dotnetPath)) {
-            return `Dotnet Path (${ this.dotnetPath }) does not exist`;
+        const folderPath = path.dirname(this.dotnetPath);
+        if (!fs.existsSync(folderPath)) {
+            return `Dotnet Path (${ path.basename(folderPath) }) does not exist`;
         }
         // Get 2 levels worth of content of the folder
-        let files = fs.readdirSync(this.dotnetPath).map(file => path.join(this.dotnetPath, file));
+        let files = fs.readdirSync(folderPath).map(file => path.join(folderPath, file));
         for (const file of files) {
             if (fs.statSync(file).isDirectory()) {
                 files = files.concat(fs.readdirSync(file).map(fileName => path.join(file, fileName)));
@@ -131,7 +132,7 @@ export class DotnetInstallationValidationError extends DotnetAcquisitionVersionE
         }
         const relativeFiles: string[] = [];
         for (const file of files) {
-            relativeFiles.push(path.relative(this.dotnetPath, file));
+            relativeFiles.push(path.relative(path.dirname(folderPath), file));
         }
 
         return relativeFiles.join('\n');
