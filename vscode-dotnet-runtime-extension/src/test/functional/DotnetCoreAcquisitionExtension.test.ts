@@ -20,7 +20,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   const storagePath = path.join(__dirname, 'tmp');
   const mockState = new MockExtensionContext();
   const extensionPath = path.join(__dirname, '/../../..');
-  const logPath = path.join(__dirname, 'tmp');
+  const logPath = path.join(__dirname, 'logs');
   let extensionContext: vscode.ExtensionContext;
 
   this.beforeAll(async () => {
@@ -69,7 +69,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   }).timeout(20000);
 
   test('Install and Uninstall Multiple Versions', async () => {
-    const versions = ['1.1', '2.2', '1.0'];
+    const versions = ['2.2', '3.0', '3.1'];
     let dotnetPaths: string[] = [];
     for (const version of versions) {
       const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', { version });
