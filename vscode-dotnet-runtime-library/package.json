@@ -36,6 +36,7 @@
 		"chai": "^4.2.0",
 		"chai-as-promised": "^7.1.1",
 		"diff": ">=3.5.0",
+		"is-online": "^8.2.1",
 		"mocha": "^7.0.0",
 		"open": "^7.0.2",
 		"request": "^2.88.0",

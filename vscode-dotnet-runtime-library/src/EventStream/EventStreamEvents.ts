@@ -102,6 +102,10 @@ export class DotnetAcquisitionScriptError extends DotnetAcquisitionVersionError 
     public readonly eventName = 'DotnetAcquisitionScriptError';
 }
 
+export class DotnetOfflineFailure extends DotnetAcquisitionVersionError {
+    public readonly eventName = 'DotnetOfflineFailure';
+}
+
 export class DotnetInstallationValidationError extends DotnetAcquisitionVersionError {
     public readonly eventName = 'DotnetInstallationValidationError';
     public readonly fileStructure: string;
