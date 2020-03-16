@@ -21,12 +21,14 @@ export class WebRequestWorker {
         this.cachedData = this.extensionState.get<string>(this.extensionStateKey);
         if (isNullOrUndefined(this.cachedData)) {
             // Have to acquire data before continuing
-            this.cachedData = await this.makeWebRequest();
+            this.cachedData = await this.makeWebRequest(true);
         } else if (isNullOrUndefined(this.currentRequest)) {
             // Update without blocking, continue with cached information
-            this.currentRequest = this.makeWebRequest();
+            this.currentRequest = this.makeWebRequest(false);
             this.currentRequest.then((result) => {
-                this.cachedData = result;
+                if (!isNullOrUndefined(result)) {
+                    this.cachedData = result;
+                }
                 this.currentRequest = undefined;
             });
         }
@@ -34,7 +36,7 @@ export class WebRequestWorker {
     }
 
     // Protected for ease of testing
-    protected async makeWebRequest(): Promise<any> {
+    protected async makeWebRequest(throwOnError: boolean): Promise<any> {
         const options = {
             uri: this.uri,
         };
@@ -44,8 +46,12 @@ export class WebRequestWorker {
             this.cacheResults(response);
             return response;
         } catch (error) {
-            this.eventStream.post(new WebRequestError(error));
-            throw new Error(`Request to ${this.uri} Failed: ${error.message}`);
+            if (throwOnError) {
+                const formattedError = new Error(`Please ensure that you are online: Request to ${this.uri} Failed: ${error.message}`);
+                this.eventStream.post(new WebRequestError(formattedError));
+                throw formattedError;
+            }
+            return undefined;
         }
     }
 

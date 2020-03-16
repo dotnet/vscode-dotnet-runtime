@@ -3,6 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as cp from 'child_process';
+import * as isOnline from 'is-online';
 import * as os from 'os';
 import { Memento } from 'vscode';
 import { IEventStream } from '../EventStream/EventStream';
@@ -12,6 +13,7 @@ import {
     DotnetAcquisitionScriptError,
     DotnetAcquisitionScriptOuput,
     DotnetAcquisitionUnexpectedError,
+    DotnetOfflineFailure,
 } from '../EventStream/EventStreamEvents';
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
@@ -32,8 +34,8 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
         return new Promise<void>((resolve, reject) => {
             try {
                 cp.exec(winOS ? `powershell.exe -ExecutionPolicy unrestricted -File ${installCommand}` : installCommand,
-                        { cwd: process.cwd(), maxBuffer: 500 * 1024 },
-                        (error, stdout, stderr) => {
+                        { cwd: process.cwd(), maxBuffer: 500 * 1024, timeout: 30000, killSignal: 'SIGKILL' },
+                        async (error, stdout, stderr) => {
                     if (stdout) {
                         this.eventStream.post(new DotnetAcquisitionScriptOuput(installContext.version, stdout));
                     }
@@ -42,8 +44,15 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
                     }
 
                     if (error) {
-                        this.eventStream.post(new DotnetAcquisitionInstallError(error, installContext.version));
-                        reject(error);
+                        const online = await isOnline();
+                        if (!online) {
+                            const offlineError = new Error('No internet connection: Cannot install .NET');
+                            this.eventStream.post(new DotnetOfflineFailure(offlineError, installContext.version));
+                            reject(offlineError);
+                        } else {
+                            this.eventStream.post(new DotnetAcquisitionInstallError(error, installContext.version));
+                            reject(error);
+                        }
                     } else if (stderr && stderr.length > 0) {
                         this.eventStream.post(new DotnetAcquisitionScriptError(new Error(stderr), installContext.version));
                         reject(stderr);
