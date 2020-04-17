@@ -33,7 +33,8 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
         const installCommand = await this.getInstallCommand(installContext.version, installContext.installDir);
         return new Promise<void>((resolve, reject) => {
             try {
-                cp.exec(winOS ? `powershell.exe -ExecutionPolicy unrestricted -File ${installCommand}` : installCommand,
+                const windowsFullCommand = `powershell.exe -ExecutionPolicy unrestricted -Command "& { [Net.ServicePointManager]::SecurityProtocol = 'Tls12, Tls13' ; & ${installCommand} }`;
+                cp.exec(winOS ? windowsFullCommand : installCommand,
                         { cwd: process.cwd(), maxBuffer: 500 * 1024, timeout: 30000, killSignal: 'SIGKILL' },
                         async (error, stdout, stderr) => {
                     if (stdout) {
@@ -69,24 +70,25 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
     }
 
     private async getInstallCommand(version: string, dotnetInstallDir: string): Promise<string> {
-        let dotnetInstallDirEscaped: string;
-        if (os.platform() === 'win32') {
-            // Need to escape apostrophes with two apostrophes
-            dotnetInstallDirEscaped = dotnetInstallDir.replace(/'/g, `''`);
-
-            // Surround with single quotes instead of double quotes (see https://github.com/dotnet/cli/issues/11521)
-            dotnetInstallDirEscaped = `"${dotnetInstallDirEscaped}"`;
-        } else {
-            dotnetInstallDirEscaped = `"${dotnetInstallDir}"`;
-        }
-
         const args = [
-            '-InstallDir', dotnetInstallDirEscaped,
+            '-InstallDir', this.escapeFilePath(dotnetInstallDir),
             '-Runtime', 'dotnet',
             '-Version', version,
         ];
 
         const scriptPath = await this.scriptWorker.getDotnetInstallScriptPath();
-        return `"${ scriptPath }" ${ args.join(' ') }`;
+        return `${ this.escapeFilePath(scriptPath) } ${ args.join(' ') }`;
+    }
+
+    private escapeFilePath(path: string): string {
+        if (os.platform() === 'win32') {
+            // Need to escape apostrophes with two apostrophes
+            const dotnetInstallDirEscaped = path.replace(/'/g, `''`);
+
+            // Surround with single quotes instead of double quotes (see https://github.com/dotnet/cli/issues/11521)
+            return`'${dotnetInstallDirEscaped}'`;
+        } else {
+            return `"${path}"`;
+        }
     }
 }
