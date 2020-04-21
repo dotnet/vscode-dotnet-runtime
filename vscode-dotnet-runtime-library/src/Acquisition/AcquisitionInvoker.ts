@@ -86,7 +86,7 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
             const dotnetInstallDirEscaped = path.replace(/'/g, `''`);
 
             // Surround with single quotes instead of double quotes (see https://github.com/dotnet/cli/issues/11521)
-            return`'${dotnetInstallDirEscaped}'`;
+            return `'${dotnetInstallDirEscaped}'`;
         } else {
             return `"${path}"`;
         }
