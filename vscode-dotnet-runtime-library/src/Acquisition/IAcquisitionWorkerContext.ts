@@ -15,4 +15,5 @@ export interface IAcquisitionWorkerContext {
     acquisitionInvoker: IAcquisitionInvoker;
     versionResolver: IVersionResolver;
     installationValidator: IInstallationValidator;
+    timeoutValue: number;
 }

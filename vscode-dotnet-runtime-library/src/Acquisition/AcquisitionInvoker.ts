@@ -35,7 +35,7 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
             try {
                 const windowsFullCommand = `powershell.exe -ExecutionPolicy unrestricted -Command "& { [System.Net.ServicePointManager]::SecurityProtocol=[System.Net.SecurityProtocolType]::Tls12+[System.Net.SecurityProtocolType]::Tls13 ; & ${installCommand} }`;
                 cp.exec(winOS ? windowsFullCommand : installCommand,
-                        { cwd: process.cwd(), maxBuffer: 500 * 1024, timeout: 30000, killSignal: 'SIGKILL' },
+                        { cwd: process.cwd(), maxBuffer: 500 * 1024, timeout: 1000 * installContext.timeoutValue, killSignal: 'SIGKILL' },
                         async (error, stdout, stderr) => {
                     if (stdout) {
                         this.eventStream.post(new DotnetAcquisitionScriptOuput(installContext.version, stdout));
@@ -51,6 +51,7 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
                             this.eventStream.post(new DotnetOfflineFailure(offlineError, installContext.version));
                             reject(offlineError);
                         } else {
+                            error.message = `Installation failed, possibly due to a timeout: ${error.message}`;
                             this.eventStream.post(new DotnetAcquisitionInstallError(error, installContext.version));
                             reject(error);
                         }

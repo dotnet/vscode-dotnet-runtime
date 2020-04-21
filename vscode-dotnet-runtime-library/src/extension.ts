@@ -24,10 +24,17 @@ import { IDotnetAcquireContext } from './IDotnetAcquireContext';
 import { IDotnetAcquireResult } from './IDotnetAcquireResult';
 import { IDotnetEnsureDependenciesContext } from './IDotnetEnsureDependenciesContext';
 import { IExtensionContext } from './IExtensionContext';
+import {
+    commandKeys,
+    commandPrefix,
+    configKeys,
+    configPrefix,
+} from './Utils/Configuration';
 import { callWithErrorHandling } from './Utils/ErrorHandler';
 import { formatIssueUrl } from './Utils/IssueReporter';
 
 export function activate(context: vscode.ExtensionContext, parentExtensionId: string, extensionContext?: IExtensionContext) {
+    const extensionConfiguration = vscode.workspace.getConfiguration(configPrefix);
     const extension = vscode.extensions.getExtension(parentExtensionId);
 
     if (!extension) {
@@ -46,7 +53,7 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
             new OutputChannelObserver(outputChannel),
             loggingObserver,
         ];
-    if (enableTelemetry()) {
+    if (enableTelemetry(extensionConfiguration)) {
         eventStreamObservers = eventStreamObservers.concat(new TelemetryObserver(extensionContext ? extensionContext.telemetryReporter : undefined));
     }
     const eventStream = new EventStream();
@@ -56,7 +63,7 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
     }
 
     const issueContext = { logger: loggingObserver };
-
+    const timeoutValue = extensionConfiguration.get<number>(configKeys.installTimeoutValue);
     if (!fs.existsSync(context.globalStoragePath)) {
         fs.mkdirSync(context.globalStoragePath);
     }
@@ -67,9 +74,10 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
         acquisitionInvoker: new AcquisitionInvoker(context.globalState, eventStream),
         versionResolver: new VersionResolver(context.globalState, eventStream),
         installationValidator: new InstallationValidator(eventStream),
+        timeoutValue: timeoutValue === undefined ? 120 : timeoutValue,
     });
 
-    const dotnetAcquireRegistration = vscode.commands.registerCommand('dotnet.acquire', async (commandContext: IDotnetAcquireContext) => {
+    const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) => {
         const dotnetPath = await callWithErrorHandling<Promise<IDotnetAcquireResult>>(async () => {
             if (!commandContext.version || commandContext.version === 'latest') {
                 throw new Error(`Cannot acquire .NET Core version "${commandContext.version}". Please provide a valid version.`);
@@ -78,11 +86,11 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
         }, issueContext);
         return dotnetPath;
     });
-    const dotnetUninstallAllRegistration = vscode.commands.registerCommand('dotnet.uninstallAll', async () => {
+    const dotnetUninstallAllRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallAll}`, async () => {
         await callWithErrorHandling(() => acquisitionWorker.uninstallAll(), issueContext);
     });
-    const showOutputChannelRegistration = vscode.commands.registerCommand('dotnet.showAcquisitionLog', () => outputChannel.show(/* preserveFocus */ false));
-    const testApplicationRegistration = vscode.commands.registerCommand('dotnet.ensureDotnetDependencies', async (commandContext: IDotnetEnsureDependenciesContext) => {
+    const showOutputChannelRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.showAcquisitionLog}`, () => outputChannel.show(/* preserveFocus */ false));
+    const testApplicationRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.ensureDotnetDependencies}`, async (commandContext: IDotnetEnsureDependenciesContext) => {
         await callWithErrorHandling(async () => {
             if (os.platform() !== 'linux') {
                 // We can't handle installing dependencies for anything other than Linux
@@ -97,7 +105,7 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
             }
         }, issueContext);
     });
-    const reportIssueRegistration = vscode.commands.registerCommand('dotnet.reportIssue', async () => {
+    const reportIssueRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.reportIssue}`, async () => {
         const [url, issueBody] = formatIssueUrl(undefined, issueContext);
         await vscode.env.clipboard.writeText(issueBody);
         open(url);
@@ -119,9 +127,9 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
     });
 }
 
-function enableTelemetry(): boolean {
-    const extensionTelemetry: boolean | undefined = vscode.workspace.getConfiguration('dotnetAcquisitionExtension').get('enableTelemetry');
-    const vscodeTelemetry: boolean | undefined = vscode.workspace.getConfiguration('telemetry').get('enableTelemetry');
+function enableTelemetry(extensionConfiguration: vscode.WorkspaceConfiguration): boolean {
+    const extensionTelemetry: boolean | undefined = extensionConfiguration.get(configKeys.enableTelemetry);
+    const vscodeTelemetry: boolean | undefined = vscode.workspace.getConfiguration('telemetry').get(configKeys.enableTelemetry);
     const enableDotnetTelemetry = extensionTelemetry === undefined ? true : extensionTelemetry;
     const enableVSCodeTelemetry = vscodeTelemetry === undefined ? true : vscodeTelemetry;
     return enableVSCodeTelemetry && enableDotnetTelemetry;

@@ -23,6 +23,7 @@ export class DotnetCoreAcquisitionWorker {
     private readonly installingVersionsKey = 'installing';
     private readonly installDir: string;
     private readonly dotnetExecutable: string;
+    private readonly timeoutValue: number;
 
     private acquisitionPromises: { [version: string]: Promise<string> | undefined };
 
@@ -31,6 +32,7 @@ export class DotnetCoreAcquisitionWorker {
         this.installDir = path.join(this.context.storagePath, installFolderName);
         const dotnetExtension = os.platform() === 'win32' ? '.exe' : '';
         this.dotnetExecutable = `dotnet${dotnetExtension}`;
+        this.timeoutValue = context.timeoutValue;
         this.acquisitionPromises = {};
     }
 
@@ -96,6 +98,7 @@ export class DotnetCoreAcquisitionWorker {
             installDir: dotnetInstallDir,
             version,
             dotnetPath,
+            timeoutValue: this.timeoutValue,
         } as IDotnetInstallationContext;
         this.context.eventStream.post(new DotnetAcquisitionStarted(version));
         await this.context.acquisitionInvoker.installDotnet(installContext);
