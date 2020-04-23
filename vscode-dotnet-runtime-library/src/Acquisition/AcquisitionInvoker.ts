@@ -12,6 +12,7 @@ import {
     DotnetAcquisitionInstallError,
     DotnetAcquisitionScriptError,
     DotnetAcquisitionScriptOuput,
+    DotnetAcquisitionTimeoutError,
     DotnetAcquisitionUnexpectedError,
     DotnetOfflineFailure,
 } from '../EventStream/EventStreamEvents';
@@ -50,8 +51,11 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
                             const offlineError = new Error('No internet connection: Cannot install .NET');
                             this.eventStream.post(new DotnetOfflineFailure(offlineError, installContext.version));
                             reject(offlineError);
+                        } else if (error.signal === 'SIGKILL') {
+                            error.message = `.NET installation timed out.`;
+                            this.eventStream.post(new DotnetAcquisitionTimeoutError(error, installContext.timeoutValue));
+                            reject(error);
                         } else {
-                            error.message = `Installation failed, possibly due to a timeout: ${error.message}`;
                             this.eventStream.post(new DotnetAcquisitionInstallError(error, installContext.version));
                             reject(error);
                         }
