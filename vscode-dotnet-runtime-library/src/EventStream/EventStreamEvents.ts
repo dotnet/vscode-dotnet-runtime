@@ -106,6 +106,21 @@ export class DotnetOfflineFailure extends DotnetAcquisitionVersionError {
     public readonly eventName = 'DotnetOfflineFailure';
 }
 
+export class DotnetAcquisitionTimeoutError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetAcquisitionTimeoutError';
+
+    constructor(error: Error, public readonly timeoutValue: number) {
+        super(error);
+    }
+
+    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+        return {ErrorMessage : this.error.message,
+            TimeoutValue : this.timeoutValue.toString(),
+            ErrorName : this.error.name,
+            StackTrace : this.error.stack ? this.error.stack : ''};
+    }
+}
+
 export class DotnetInstallationValidationError extends DotnetAcquisitionVersionError {
     public readonly eventName = 'DotnetInstallationValidationError';
     public readonly fileStructure: string;

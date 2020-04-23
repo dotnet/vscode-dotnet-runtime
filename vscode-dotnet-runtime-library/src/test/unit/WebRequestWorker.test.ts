@@ -37,6 +37,7 @@ suite('WebRequestWorker Unit Tests', () => {
             acquisitionInvoker: new ErrorAcquisitionInvoker(eventStream),
             versionResolver: new MockVersionResolver(context, eventStream),
             installationValidator: new MockInstallationValidator(eventStream),
+            timeoutValue: 10,
         });
         return assert.isRejected(acquisitionWorker.acquire(versionPairs[0][0]), Error, 'Dotnet Core Acquisition Failed');
     });

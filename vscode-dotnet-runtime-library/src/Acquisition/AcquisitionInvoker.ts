@@ -12,6 +12,7 @@ import {
     DotnetAcquisitionInstallError,
     DotnetAcquisitionScriptError,
     DotnetAcquisitionScriptOuput,
+    DotnetAcquisitionTimeoutError,
     DotnetAcquisitionUnexpectedError,
     DotnetOfflineFailure,
 } from '../EventStream/EventStreamEvents';
@@ -35,7 +36,7 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
             try {
                 const windowsFullCommand = `powershell.exe -ExecutionPolicy unrestricted -Command "& { [System.Net.ServicePointManager]::SecurityProtocol=[System.Net.SecurityProtocolType]::Tls12+[System.Net.SecurityProtocolType]::Tls13 ; & ${installCommand} }`;
                 cp.exec(winOS ? windowsFullCommand : installCommand,
-                        { cwd: process.cwd(), maxBuffer: 500 * 1024, timeout: 30000, killSignal: 'SIGKILL' },
+                        { cwd: process.cwd(), maxBuffer: 500 * 1024, timeout: 1000 * installContext.timeoutValue, killSignal: 'SIGKILL' },
                         async (error, stdout, stderr) => {
                     if (stdout) {
                         this.eventStream.post(new DotnetAcquisitionScriptOuput(installContext.version, stdout));
@@ -50,6 +51,10 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
                             const offlineError = new Error('No internet connection: Cannot install .NET');
                             this.eventStream.post(new DotnetOfflineFailure(offlineError, installContext.version));
                             reject(offlineError);
+                        } else if (error.signal === 'SIGKILL') {
+                            error.message = `.NET installation timed out.`;
+                            this.eventStream.post(new DotnetAcquisitionTimeoutError(error, installContext.timeoutValue));
+                            reject(error);
                         } else {
                             this.eventStream.post(new DotnetAcquisitionInstallError(error, installContext.version));
                             reject(error);

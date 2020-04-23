@@ -37,10 +37,10 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function() {
             storagePath: '',
             extensionState: context,
             eventStream,
-
             acquisitionInvoker: new NoInstallAcquisitionInvoker(eventStream),
             versionResolver: new MockVersionResolver(context, eventStream),
             installationValidator: new MockInstallationValidator(eventStream),
+            timeoutValue: 10,
         });
         return [ acquisitionWorker, eventStream, context ];
     }

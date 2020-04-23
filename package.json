@@ -42,7 +42,22 @@
 				"title": "Report an issue with the .NET Install Tool for Extension Authors.",
 				"category": ".NET Install Tool"
 			}
-		]
+		],
+		"configuration": {
+			"title": ".NET Install Tool",
+			"properties": {
+				"dotnetAcquisitionExtension.enableTelemetry": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable Telemetry for the .NET install tool."
+				},
+				"dotnetAcquisitionExtension.installTimeoutValue": {
+					"type": "number",
+					"default": 120,
+					"description": "Timeout for installing .NET in seconds."
+				}
+			}
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile-all && npm install && webpack --mode production",
