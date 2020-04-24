@@ -55,7 +55,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.exists(result!.dotnetPath);
     assert.isTrue(fs.existsSync(result!.dotnetPath));
     assert.include(result!.dotnetPath, context.version);
-  }).timeout(20000);
+  }).timeout(40000);
 
   test('Uninstall Command', async () => {
     const context: IDotnetAcquireContext = { version: '2.1' };
@@ -66,7 +66,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.include(result!.dotnetPath, context.version);
     await vscode.commands.executeCommand<string>('dotnet.uninstallAll', context.version);
     assert.isFalse(fs.existsSync(result!.dotnetPath));
-  }).timeout(20000);
+  }).timeout(40000);
 
   test('Install and Uninstall Multiple Versions', async () => {
     const versions = ['2.2', '3.0', '3.1'];
@@ -84,7 +84,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     for (const dotnetPath of dotnetPaths) {
       assert.isTrue(fs.existsSync(dotnetPath));
     }
-  }).timeout(40000);
+  }).timeout(60000);
 
   test('Telemetry Sent During Install and Uninstall', async () => {
     const context: IDotnetAcquireContext = { version: '2.2' };
@@ -109,7 +109,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     // Check that no errors were reported
     const errors = MockTelemetryReporter.telemetryEvents.filter((event: any) => event.eventName.includes('Error'));
     assert.isEmpty(errors);
-  }).timeout(20000);
+  }).timeout(40000);
 
   test('Telemetry Sent on Error', async () => {
     const context: IDotnetAcquireContext = { version: 'foo' };
@@ -120,5 +120,5 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       const versionError = MockTelemetryReporter.telemetryEvents.find((event: any) => event.eventName === 'DotnetVersionResolutionError');
       assert.exists(versionError);
     }
-  }).timeout(1000);
+  }).timeout(2000);
 });
