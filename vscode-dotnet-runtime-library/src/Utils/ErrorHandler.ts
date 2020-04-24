@@ -4,23 +4,27 @@
  * ------------------------------------------------------------------------------------------ */
 import * as open from 'open';
 import { env, window } from 'vscode';
+import { errorConstants, timeoutConstants } from './Constants';
 import { IIssueContext } from './IIssueContext';
 import { formatIssueUrl } from './IssueReporter';
 
-const errorMessage = 'An error occurred while installing .NET';
-const reportOption = 'Report an issue';
-const hideOption = 'Don\'t show again';
 let showMessage = true;
 
-export function callWithErrorHandling<T>(callback: () => T, context: IIssueContext): T | undefined {
+export async function callWithErrorHandling<T>(callback: () => T, context: IIssueContext): Promise<T | undefined> {
     try {
-        return callback();
+        return await callback();
     } catch (error) {
-        if (error.constructor.name !== 'UserCancelledError' && showMessage) {
-            window.showErrorMessage(`${errorMessage}: ${ error.message }`, reportOption, hideOption).then(async (response: string | undefined) => {
-                if (response === hideOption) {
+        if ((error.message as string).includes(timeoutConstants.timeoutMessage)) {
+            window.showErrorMessage(`${errorConstants.errorMessage}: ${ error.message }`, timeoutConstants.moreInfoOption).then(async (response: string | undefined) => {
+                if (response === timeoutConstants.moreInfoOption) {
+                    open(timeoutConstants.timeoutInfoUrl);
+                }
+            });
+        } else if (error.constructor.name !== 'UserCancelledError' && showMessage) {
+            window.showErrorMessage(`${errorConstants.errorMessage}: ${ error.message }`, errorConstants.reportOption, errorConstants.hideOption).then(async (response: string | undefined) => {
+                if (response === errorConstants.hideOption) {
                     showMessage = false;
-                } else if (response === reportOption) {
+                } else if (response === errorConstants.reportOption) {
                     const [url, issueBody] = formatIssueUrl(error, context);
                     await env.clipboard.writeText(issueBody);
                     open(url);

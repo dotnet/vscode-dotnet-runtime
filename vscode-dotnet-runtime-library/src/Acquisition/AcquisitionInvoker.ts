@@ -16,6 +16,7 @@ import {
     DotnetAcquisitionUnexpectedError,
     DotnetOfflineFailure,
 } from '../EventStream/EventStreamEvents';
+import { timeoutConstants } from '../Utils/Constants';
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
@@ -52,7 +53,7 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
                             this.eventStream.post(new DotnetOfflineFailure(offlineError, installContext.version));
                             reject(offlineError);
                         } else if (error.signal === 'SIGKILL') {
-                            error.message = `.NET installation timed out.`;
+                            error.message = timeoutConstants.timeoutMessage;
                             this.eventStream.post(new DotnetAcquisitionTimeoutError(error, installContext.timeoutValue));
                             reject(error);
                         } else {

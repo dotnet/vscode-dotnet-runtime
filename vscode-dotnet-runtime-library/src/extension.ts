@@ -29,7 +29,7 @@ import {
     commandPrefix,
     configKeys,
     configPrefix,
-} from './Utils/Configuration';
+} from './Utils/Constants';
 import { callWithErrorHandling } from './Utils/ErrorHandler';
 import { formatIssueUrl } from './Utils/IssueReporter';
 
