@@ -23,12 +23,14 @@ import { TelemetryObserver } from './EventStream/TelemetryObserver';
 import { IDotnetAcquireContext } from './IDotnetAcquireContext';
 import { IDotnetAcquireResult } from './IDotnetAcquireResult';
 import { IDotnetEnsureDependenciesContext } from './IDotnetEnsureDependenciesContext';
+import { IDotnetUninstallContext } from './IDotnetUninstallContext';
 import { IExtensionContext } from './IExtensionContext';
 import {
     commandKeys,
     commandPrefix,
     configKeys,
     configPrefix,
+    ErrorConfiguration,
 } from './Utils/Constants';
 import { callWithErrorHandling } from './Utils/ErrorHandler';
 import { formatIssueUrl } from './Utils/IssueReporter';
@@ -62,7 +64,12 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
         eventStream.subscribe(event => observer.post(event));
     }
 
-    const issueContext = { logger: loggingObserver };
+    const issueContext = (errorConfiguration: ErrorConfiguration | undefined) => {
+        return {
+            logger: loggingObserver,
+            errorConfiguration: errorConfiguration || ErrorConfiguration.DisplayAllErrorPopups,
+        };
+    };
     const timeoutValue = extensionConfiguration.get<number>(configKeys.installTimeoutValue);
     if (!fs.existsSync(context.globalStoragePath)) {
         fs.mkdirSync(context.globalStoragePath);
@@ -83,14 +90,14 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
                 throw new Error(`Cannot acquire .NET Core version "${commandContext.version}". Please provide a valid version.`);
             }
             return acquisitionWorker.acquire(commandContext.version);
-        }, issueContext);
+        }, issueContext(commandContext.errorConfiguration));
         return dotnetPath;
     });
-    const dotnetUninstallAllRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallAll}`, async () => {
-        await callWithErrorHandling(() => acquisitionWorker.uninstallAll(), issueContext);
+    const dotnetUninstallAllRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallAll}`, async (commandContext: IDotnetUninstallContext | undefined) => {
+        await callWithErrorHandling(() => acquisitionWorker.uninstallAll(), issueContext(commandContext ? commandContext.errorConfiguration : undefined));
     });
     const showOutputChannelRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.showAcquisitionLog}`, () => outputChannel.show(/* preserveFocus */ false));
-    const testApplicationRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.ensureDotnetDependencies}`, async (commandContext: IDotnetEnsureDependenciesContext) => {
+    const ensureDependenciesRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.ensureDotnetDependencies}`, async (commandContext: IDotnetEnsureDependenciesContext) => {
         await callWithErrorHandling(async () => {
             if (os.platform() !== 'linux') {
                 // We can't handle installing dependencies for anything other than Linux
@@ -103,10 +110,10 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
                 eventStream.post(new DotnetAcquisitionMissingLinuxDependencies());
                 await installer.promptLinuxDependencyInstall('Failed to run .NET tooling.');
             }
-        }, issueContext);
+        }, issueContext(commandContext.errorConfiguration));
     });
     const reportIssueRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.reportIssue}`, async () => {
-        const [url, issueBody] = formatIssueUrl(undefined, issueContext);
+        const [url, issueBody] = formatIssueUrl(undefined, issueContext(ErrorConfiguration.DisableErrorPopups));
         await vscode.env.clipboard.writeText(issueBody);
         open(url);
     });
@@ -115,7 +122,7 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
         dotnetAcquireRegistration,
         dotnetUninstallAllRegistration,
         showOutputChannelRegistration,
-        testApplicationRegistration,
+        ensureDependenciesRegistration,
         reportIssueRegistration);
 
     context.subscriptions.push({

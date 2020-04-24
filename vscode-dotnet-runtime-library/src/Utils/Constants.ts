@@ -21,6 +21,11 @@ export namespace configKeys {
     export const enableTelemetry = 'enableTelemetry';
 }
 
+export enum ErrorConfiguration {
+    DisplayAllErrorPopups, // Default
+    DisableErrorPopups,
+}
+
 // String Constants
 export namespace errorConstants {
     export const errorMessage = 'An error occurred while installing .NET';
