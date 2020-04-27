@@ -34,7 +34,7 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
         const installCommand = await this.getInstallCommand(installContext.version, installContext.installDir);
         return new Promise<void>((resolve, reject) => {
             try {
-                const windowsFullCommand = `powershell.exe -ExecutionPolicy unrestricted -Command "& { [System.Net.ServicePointManager]::SecurityProtocol=[System.Net.SecurityProtocolType]::Tls12+[System.Net.SecurityProtocolType]::Tls13 ; & ${installCommand} }`;
+                const windowsFullCommand = `powershell.exe -ExecutionPolicy unrestricted -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 ; & ${installCommand} }`;
                 cp.exec(winOS ? windowsFullCommand : installCommand,
                         { cwd: process.cwd(), maxBuffer: 500 * 1024, timeout: 1000 * installContext.timeoutValue, killSignal: 'SIGKILL' },
                         async (error, stdout, stderr) => {
