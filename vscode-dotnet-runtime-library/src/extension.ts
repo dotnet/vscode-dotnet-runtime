@@ -20,6 +20,7 @@ import { LoggingObserver } from './EventStream/LoggingObserver';
 import { OutputChannelObserver } from './EventStream/OutputChannelObserver';
 import { StatusBarObserver } from './EventStream/StatusBarObserver';
 import { TelemetryObserver } from './EventStream/TelemetryObserver';
+import { WindowDisplayWorker } from './EventStream/WindowDisplayWorker';
 import { IDotnetAcquireContext } from './IDotnetAcquireContext';
 import { IDotnetAcquireResult } from './IDotnetAcquireResult';
 import { IDotnetEnsureDependenciesContext } from './IDotnetEnsureDependenciesContext';
@@ -33,6 +34,7 @@ import {
     ErrorConfiguration,
 } from './Utils/Constants';
 import { callWithErrorHandling } from './Utils/ErrorHandler';
+import { IIssueContext } from './Utils/IIssueContext';
 import { formatIssueUrl } from './Utils/IssueReporter';
 
 export function activate(context: vscode.ExtensionContext, parentExtensionId: string, extensionContext?: IExtensionContext) {
@@ -68,7 +70,8 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
         return {
             logger: loggingObserver,
             errorConfiguration: errorConfiguration || ErrorConfiguration.DisplayAllErrorPopups,
-        };
+            displayWorker: new WindowDisplayWorker(),
+        } as IIssueContext;
     };
     const timeoutValue = extensionConfiguration.get<number>(configKeys.installTimeoutValue);
     if (!fs.existsSync(context.globalStoragePath)) {

@@ -6,11 +6,18 @@ import * as chai from 'chai';
 import { ErrorConfiguration } from '../../Utils/Constants';
 import { formatIssueUrl } from '../../Utils/IssueReporter';
 import { MockLoggingObserver } from '../mocks/MockObjects';
+import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
 const assert = chai.assert;
 
 suite('IssueReporter Unit Tests', () => {
     test('Issue url is properly formed', async () => {
-        const [url, issueBody] = formatIssueUrl(new Error(), { logger: new MockLoggingObserver(), errorConfiguration: ErrorConfiguration.DisableErrorPopups });
+        const [url, issueBody] = formatIssueUrl(
+            new Error(),
+            {
+                logger: new MockLoggingObserver(),
+                errorConfiguration: ErrorConfiguration.DisableErrorPopups,
+                displayWorker: new MockWindowDisplayWorker(),
+            });
 
         const expectedBodyContent = ['Error', 'Repro steps'];
         for (const expected of expectedBodyContent) {

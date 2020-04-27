@@ -17,6 +17,7 @@ import * as extension from '../../extension';
 const assert = chai.assert;
 
 suite('DotnetCoreAcquisitionExtension End to End', function() {
+  this.retries(3);
   const storagePath = path.join(__dirname, 'tmp');
   const mockState = new MockExtensionContext();
   const extensionPath = path.join(__dirname, '/../../..');
