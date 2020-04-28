@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as open from 'open';
-import { ErrorConfiguration, errorConstants, timeoutConstants } from './Constants';
+import { AcquireErrorConfiguration, errorConstants, timeoutConstants } from './ErrorConstants';
 import { IIssueContext } from './IIssueContext';
 import { formatIssueUrl } from './IssueReporter';
 
@@ -13,7 +13,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
     try {
         return await callback();
     } catch (error) {
-        if (context.errorConfiguration === ErrorConfiguration.DisplayAllErrorPopups) {
+        if (context.errorConfiguration === AcquireErrorConfiguration.DisplayAllErrorPopups) {
             if ((error.message as string).includes(timeoutConstants.timeoutMessage)) {
                 context.displayWorker.showErrorMessage(`${errorConstants.errorMessage}: ${ error.message }`, async (response: string | undefined) => {
                     if (response === timeoutConstants.moreInfoOption) {

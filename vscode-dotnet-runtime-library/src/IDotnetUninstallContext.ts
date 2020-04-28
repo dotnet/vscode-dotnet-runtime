@@ -3,8 +3,8 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-import { ErrorConfiguration } from './Utils/Constants';
+import { UninstallErrorConfiguration } from './Utils/ErrorConstants';
 
 export interface IDotnetUninstallContext {
-    errorConfiguration?: ErrorConfiguration;
+    errorConfiguration?: UninstallErrorConfiguration;
 }

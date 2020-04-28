@@ -3,30 +3,23 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-// Extension Configuration
-export const commandPrefix = 'dotnet'; // Prefix for commands
-
-export namespace commandKeys {
-    export const acquire = 'acquire';
-    export const uninstallAll = 'uninstallAll';
-    export const showAcquisitionLog = 'showAcquisitionLog';
-    export const ensureDotnetDependencies = 'ensureDotnetDependencies';
-    export const reportIssue = 'reportIssue';
+export enum AcquireErrorConfiguration {
+    DisplayAllErrorPopups = 0,
+    DisableErrorPopups = 1,
 }
 
-export const configPrefix = 'dotnetAcquisitionExtension'; // Prefix for user settings
-
-export namespace configKeys {
-    export const installTimeoutValue = 'installTimeoutValue';
-    export const enableTelemetry = 'enableTelemetry';
+export enum UninstallErrorConfiguration {
+    DisplayAllErrorPopups = 0,
+    DisableErrorPopups = 1,
 }
 
-export enum ErrorConfiguration {
-    DisplayAllErrorPopups, // Default
-    DisableErrorPopups,
+export enum EnsureDependenciesErrorConfiguration {
+    DisplayAllErrorPopups = 0,
+    DisableErrorPopups = 1,
 }
 
-// String Constants
+export type ErrorConfiguration = AcquireErrorConfiguration | UninstallErrorConfiguration | EnsureDependenciesErrorConfiguration;
+
 export namespace errorConstants {
     export const errorMessage = 'An error occurred while installing .NET';
     export const reportOption = 'Report an issue';

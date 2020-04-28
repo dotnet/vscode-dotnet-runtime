@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
-import { ErrorConfiguration, errorConstants, timeoutConstants } from '../../Utils/Constants';
+import { AcquireErrorConfiguration, errorConstants, timeoutConstants, UninstallErrorConfiguration } from '../../Utils/ErrorConstants';
 import { callWithErrorHandling } from '../../Utils/ErrorHandler';
 import { IIssueContext } from '../../Utils/IIssueContext';
 import { MockLoggingObserver } from '../mocks/MockObjects';
@@ -14,7 +14,7 @@ suite('ErrorHandler Unit Tests', () => {
     const issueContext = (displayWorker: MockWindowDisplayWorker) => {
         return {
             logger: new MockLoggingObserver(),
-            errorConfiguration: ErrorConfiguration.DisplayAllErrorPopups,
+            errorConfiguration: UninstallErrorConfiguration.DisplayAllErrorPopups,
             displayWorker,
         } as IIssueContext;
     };

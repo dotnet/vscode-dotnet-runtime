@@ -4,7 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 import { ILoggingObserver } from '../EventStream/ILoggingObserver';
 import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
-import { ErrorConfiguration } from './Constants';
+import { ErrorConfiguration } from './ErrorConstants';
 
 export interface IIssueContext {
     logger: ILoggingObserver;

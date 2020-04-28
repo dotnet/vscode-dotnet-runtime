@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
-import { ErrorConfiguration } from '../../Utils/Constants';
+import { AcquireErrorConfiguration } from '../../Utils/ErrorConstants';
 import { formatIssueUrl } from '../../Utils/IssueReporter';
 import { MockLoggingObserver } from '../mocks/MockObjects';
 import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
@@ -15,7 +15,7 @@ suite('IssueReporter Unit Tests', () => {
             new Error(),
             {
                 logger: new MockLoggingObserver(),
-                errorConfiguration: ErrorConfiguration.DisableErrorPopups,
+                errorConfiguration: AcquireErrorConfiguration.DisableErrorPopups,
                 displayWorker: new MockWindowDisplayWorker(),
             });
 

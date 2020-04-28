@@ -31,8 +31,11 @@ import {
     commandPrefix,
     configKeys,
     configPrefix,
+} from './Utils/Configuration';
+import {
+    AcquireErrorConfiguration,
     ErrorConfiguration,
-} from './Utils/Constants';
+} from './Utils/ErrorConstants';
 import { callWithErrorHandling } from './Utils/ErrorHandler';
 import { IIssueContext } from './Utils/IIssueContext';
 import { formatIssueUrl } from './Utils/IssueReporter';
@@ -69,7 +72,7 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
     const issueContext = (errorConfiguration: ErrorConfiguration | undefined) => {
         return {
             logger: loggingObserver,
-            errorConfiguration: errorConfiguration || ErrorConfiguration.DisplayAllErrorPopups,
+            errorConfiguration: errorConfiguration || AcquireErrorConfiguration.DisplayAllErrorPopups,
             displayWorker: new WindowDisplayWorker(),
         } as IIssueContext;
     };
@@ -116,7 +119,7 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
         }, issueContext(commandContext.errorConfiguration));
     });
     const reportIssueRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.reportIssue}`, async () => {
-        const [url, issueBody] = formatIssueUrl(undefined, issueContext(ErrorConfiguration.DisableErrorPopups));
+        const [url, issueBody] = formatIssueUrl(undefined, issueContext(AcquireErrorConfiguration.DisableErrorPopups));
         await vscode.env.clipboard.writeText(issueBody);
         open(url);
     });
