@@ -3,29 +3,62 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as open from 'open';
-import { env, window } from 'vscode';
 import { IIssueContext } from './IIssueContext';
 import { formatIssueUrl } from './IssueReporter';
 
-const errorMessage = 'An error occurred while installing .NET';
-const reportOption = 'Report an issue';
-const hideOption = 'Don\'t show again';
+export enum AcquireErrorConfiguration {
+    DisplayAllErrorPopups = 0,
+    DisableErrorPopups = 1,
+}
+
+export enum UninstallErrorConfiguration {
+    DisplayAllErrorPopups = 0,
+    DisableErrorPopups = 1,
+}
+
+export enum EnsureDependenciesErrorConfiguration {
+    DisplayAllErrorPopups = 0,
+    DisableErrorPopups = 1,
+}
+
+export type ErrorConfiguration = AcquireErrorConfiguration | UninstallErrorConfiguration | EnsureDependenciesErrorConfiguration;
+
+export namespace errorConstants {
+    export const errorMessage = 'An error occurred while installing .NET';
+    export const reportOption = 'Report an issue';
+    export const hideOption = 'Don\'t show again';
+}
+
+export namespace timeoutConstants {
+    export const timeoutMessage = '.NET installation timed out.';
+    export const moreInfoOption = 'More information';
+    export const timeoutInfoUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/master/Documentation/troubleshooting.md#install-script-timeouts';
+}
+
 let showMessage = true;
 
-export function callWithErrorHandling<T>(callback: () => T, context: IIssueContext): T | undefined {
+export async function callWithErrorHandling<T>(callback: () => T, context: IIssueContext): Promise<T | undefined> {
     try {
-        return callback();
+        return await callback();
     } catch (error) {
-        if (error.constructor.name !== 'UserCancelledError' && showMessage) {
-            window.showErrorMessage(`${errorMessage}: ${ error.message }`, reportOption, hideOption).then(async (response: string | undefined) => {
-                if (response === hideOption) {
-                    showMessage = false;
-                } else if (response === reportOption) {
-                    const [url, issueBody] = formatIssueUrl(error, context);
-                    await env.clipboard.writeText(issueBody);
-                    open(url);
-                }
-            });
+        if (context.errorConfiguration === AcquireErrorConfiguration.DisplayAllErrorPopups) {
+            if ((error.message as string).includes(timeoutConstants.timeoutMessage)) {
+                context.displayWorker.showErrorMessage(`${errorConstants.errorMessage}: ${ error.message }`, async (response: string | undefined) => {
+                    if (response === timeoutConstants.moreInfoOption) {
+                        open(timeoutConstants.timeoutInfoUrl);
+                    }
+                }, timeoutConstants.moreInfoOption);
+            } else if (error.constructor.name !== 'UserCancelledError' && showMessage) {
+                context.displayWorker.showErrorMessage(`${errorConstants.errorMessage}: ${ error.message }`, async (response: string | undefined) => {
+                    if (response === errorConstants.hideOption) {
+                        showMessage = false;
+                    } else if (response === errorConstants.reportOption) {
+                        const [url, issueBody] = formatIssueUrl(error, context);
+                        context.displayWorker.copyToUserClipboard(issueBody);
+                        open(url);
+                    }
+                }, errorConstants.reportOption, errorConstants.hideOption);
+            }
         }
         return undefined;
     } finally {
