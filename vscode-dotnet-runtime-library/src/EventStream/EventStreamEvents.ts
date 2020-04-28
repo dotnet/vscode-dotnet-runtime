@@ -44,6 +44,7 @@ export class DotnetAcquisitionCompleted extends IEvent {
 
 export abstract class DotnetAcquisitionError extends IEvent {
     public readonly type = EventType.DotnetAcquisitionError;
+    public isError = true;
 
     constructor(public readonly error: Error) {
         super();

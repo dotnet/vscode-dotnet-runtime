@@ -11,6 +11,7 @@ const packageJson = require('../../package.json');
 
 export interface ITelemetryReporter {
     sendTelemetryEvent(eventName: string, properties?: { [key: string]: string }, measures?: { [key: string]: number }): void;
+    sendTelemetryErrorEvent(eventName: string, properties?: { [key: string]: string }, measurements?: { [key: string]: number }, errorProps?: string[]): void;
     dispose(): Promise<any>;
 }
 
@@ -32,6 +33,8 @@ export class TelemetryObserver implements IEventStreamObserver {
         const properties = event.getSanitizedProperties(); // Get properties that don't contain personally identifiable data
         if (isNullOrUndefined(properties)) {
             this.telemetryReporter.sendTelemetryEvent(event.eventName);
+        } else if (event.isError) {
+            this.telemetryReporter.sendTelemetryErrorEvent(event.eventName, properties);
         } else {
             this.telemetryReporter.sendTelemetryEvent(event.eventName, properties);
         }
