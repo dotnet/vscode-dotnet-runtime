@@ -1,5 +1,16 @@
 # Change Log
 
+## 0.1.1
+
+### Added
+
+- `dotnetAcquisitionExtension.installTimeoutValue` setting. ( #62 )
+- Added window display on timeout. ( #63 )
+
+### Fixed
+
+- Set TLS before calling install script. ( #60, #66 )
+
 ## 0.1.0
 
 ### Added
