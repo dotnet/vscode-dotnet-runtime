@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
-import { AcquireErrorConfiguration } from '../../Utils/ErrorConstants';
+import { AcquireErrorConfiguration } from '../../Utils/ErrorHandler';
 import { formatIssueUrl } from '../../Utils/IssueReporter';
 import { MockLoggingObserver } from '../mocks/MockObjects';
 import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';

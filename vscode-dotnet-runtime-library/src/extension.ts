@@ -27,18 +27,29 @@ import { IDotnetEnsureDependenciesContext } from './IDotnetEnsureDependenciesCon
 import { IDotnetUninstallContext } from './IDotnetUninstallContext';
 import { IExtensionContext } from './IExtensionContext';
 import {
-    commandKeys,
-    commandPrefix,
-    configKeys,
-    configPrefix,
-} from './Utils/Configuration';
-import {
     AcquireErrorConfiguration,
     ErrorConfiguration,
-} from './Utils/ErrorConstants';
+} from './Utils/ErrorHandler';
 import { callWithErrorHandling } from './Utils/ErrorHandler';
 import { IIssueContext } from './Utils/IIssueContext';
 import { formatIssueUrl } from './Utils/IssueReporter';
+
+export const commandPrefix = 'dotnet'; // Prefix for commands
+
+export namespace commandKeys {
+    export const acquire = 'acquire';
+    export const uninstallAll = 'uninstallAll';
+    export const showAcquisitionLog = 'showAcquisitionLog';
+    export const ensureDotnetDependencies = 'ensureDotnetDependencies';
+    export const reportIssue = 'reportIssue';
+}
+
+export const configPrefix = 'dotnetAcquisitionExtension'; // Prefix for user settings
+
+export namespace configKeys {
+    export const installTimeoutValue = 'installTimeoutValue';
+    export const enableTelemetry = 'enableTelemetry';
+}
 
 export function activate(context: vscode.ExtensionContext, parentExtensionId: string, extensionContext?: IExtensionContext) {
     const extensionConfiguration = vscode.workspace.getConfiguration(configPrefix);
@@ -60,7 +71,7 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
             new OutputChannelObserver(outputChannel),
             loggingObserver,
         ];
-    if (enableTelemetry(extensionConfiguration)) {
+    if (enableExtensionTelemetry(extensionConfiguration)) {
         eventStreamObservers = eventStreamObservers.concat(new TelemetryObserver(extensionContext ? extensionContext.telemetryReporter : undefined));
     }
     const eventStream = new EventStream();
@@ -140,7 +151,7 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
     });
 }
 
-function enableTelemetry(extensionConfiguration: vscode.WorkspaceConfiguration): boolean {
+function enableExtensionTelemetry(extensionConfiguration: vscode.WorkspaceConfiguration): boolean {
     const extensionTelemetry: boolean | undefined = extensionConfiguration.get(configKeys.enableTelemetry);
     const vscodeTelemetry: boolean | undefined = vscode.workspace.getConfiguration('telemetry').get(configKeys.enableTelemetry);
     const enableDotnetTelemetry = extensionTelemetry === undefined ? true : extensionTelemetry;

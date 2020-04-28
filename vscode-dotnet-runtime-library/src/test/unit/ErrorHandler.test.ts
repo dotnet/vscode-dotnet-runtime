@@ -3,7 +3,11 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
-import { AcquireErrorConfiguration, errorConstants, timeoutConstants, UninstallErrorConfiguration } from '../../Utils/ErrorConstants';
+import {
+    errorConstants,
+    timeoutConstants,
+    UninstallErrorConfiguration,
+} from '../../Utils/ErrorHandler';
 import { callWithErrorHandling } from '../../Utils/ErrorHandler';
 import { IIssueContext } from '../../Utils/IIssueContext';
 import { MockLoggingObserver } from '../mocks/MockObjects';

@@ -16,7 +16,7 @@ import {
     DotnetAcquisitionUnexpectedError,
     DotnetOfflineFailure,
 } from '../EventStream/EventStreamEvents';
-import { timeoutConstants } from '../Utils/ErrorConstants';
+import { timeoutConstants } from '../Utils/ErrorHandler';
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
