@@ -57,18 +57,6 @@ export abstract class DotnetAcquisitionError extends IEvent {
     }
 }
 
-export class DotnetVersionResolutionError extends DotnetAcquisitionError {
-    public readonly eventName = 'DotnetVersionResolutionError';
-
-    constructor(error: Error, private readonly version: string) { super(error); }
-
-    public getProperties(telemetry = false): { [key: string]: string } | undefined {
-        return {ErrorMessage : this.error.message,
-                RequestedVersion : this.version,
-                ErrorName : this.error.name,
-                StackTrace : this.error.stack ? this.error.stack : ''};
-    }
-}
 
 export class DotnetInstallScriptAcquisitionError extends DotnetAcquisitionError {
     public readonly eventName = 'DotnetInstallScriptAcquisitionError';
@@ -107,19 +95,24 @@ export class DotnetOfflineFailure extends DotnetAcquisitionVersionError {
     public readonly eventName = 'DotnetOfflineFailure';
 }
 
-export class DotnetAcquisitionTimeoutError extends DotnetAcquisitionError {
+export class DotnetAcquisitionTimeoutError extends DotnetAcquisitionVersionError {
     public readonly eventName = 'DotnetAcquisitionTimeoutError';
 
-    constructor(error: Error, public readonly timeoutValue: number) {
-        super(error);
+    constructor(error: Error, version: string, public readonly timeoutValue: number) {
+        super(error, version);
     }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
         return {ErrorMessage : this.error.message,
             TimeoutValue : this.timeoutValue.toString(),
+            Version : this.version,
             ErrorName : this.error.name,
             StackTrace : this.error.stack ? this.error.stack : ''};
     }
+}
+
+export class DotnetVersionResolutionError extends DotnetAcquisitionVersionError {
+    public readonly eventName = 'DotnetVersionResolutionError';
 }
 
 export class DotnetInstallationValidationError extends DotnetAcquisitionVersionError {
