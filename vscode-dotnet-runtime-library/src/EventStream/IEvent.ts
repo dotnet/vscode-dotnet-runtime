@@ -11,6 +11,8 @@ export abstract class IEvent {
 
     public abstract readonly eventName: string;
 
+    public isError = false;
+
     public abstract getProperties(telemetry?: boolean): { [key: string]: string } | undefined;
 
     public getSanitizedProperties(): { [key: string]: string } | undefined {

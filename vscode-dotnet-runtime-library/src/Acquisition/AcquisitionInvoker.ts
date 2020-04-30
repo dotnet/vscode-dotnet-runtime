@@ -54,7 +54,7 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
                             reject(offlineError);
                         } else if (error.signal === 'SIGKILL') {
                             error.message = timeoutConstants.timeoutMessage;
-                            this.eventStream.post(new DotnetAcquisitionTimeoutError(error, installContext.timeoutValue));
+                            this.eventStream.post(new DotnetAcquisitionTimeoutError(error, installContext.version, installContext.timeoutValue));
                             reject(error);
                         } else {
                             this.eventStream.post(new DotnetAcquisitionInstallError(error, installContext.version));

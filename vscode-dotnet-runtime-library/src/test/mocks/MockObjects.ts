@@ -145,6 +145,11 @@ export class MockTelemetryReporter implements ITelemetryReporter {
     public sendTelemetryEvent(eventName: string, properties?: { [key: string]: string; } | undefined, measures?: { [key: string]: number; } | undefined): void {
         MockTelemetryReporter.telemetryEvents = MockTelemetryReporter.telemetryEvents.concat({eventName, properties, measures});
     }
+
+    public sendTelemetryErrorEvent(eventName: string, properties?: { [key: string]: string }, measures?: { [key: string]: number }, errorProps?: string[]): void {
+        eventName = `[ERROR]:${eventName}`;
+        MockTelemetryReporter.telemetryEvents = MockTelemetryReporter.telemetryEvents.concat({eventName, properties, measures});
+    }
 }
 
 export class MockInstallationValidator extends IInstallationValidator {

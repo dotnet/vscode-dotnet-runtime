@@ -118,7 +118,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
       assert(false); // An error should have been thrown
     } catch (error) {
-      const versionError = MockTelemetryReporter.telemetryEvents.find((event: any) => event.eventName === 'DotnetVersionResolutionError');
+      const versionError = MockTelemetryReporter.telemetryEvents.find((event: any) => event.eventName === '[ERROR]:DotnetVersionResolutionError');
       assert.exists(versionError);
     }
   }).timeout(2000);
