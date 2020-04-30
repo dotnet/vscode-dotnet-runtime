@@ -57,7 +57,6 @@ export abstract class DotnetAcquisitionError extends IEvent {
     }
 }
 
-
 export class DotnetInstallScriptAcquisitionError extends DotnetAcquisitionError {
     public readonly eventName = 'DotnetInstallScriptAcquisitionError';
 }

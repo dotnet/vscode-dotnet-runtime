@@ -5,6 +5,8 @@
 import { isNullOrUndefined } from 'util';
 import { sanitize } from './ContentSantizer';
 import { IIssueContext } from './IIssueContext';
+// tslint:disable no-var-requires
+const packageJson = require('../../package.json');
 
 const issuesUrl = `https://github.com/dotnet/vscode-dotnet-runtime/issues`;
 
@@ -19,6 +21,7 @@ export function formatIssueUrl(error: Error | undefined, context: IIssueContext)
 
 1.
 
+**Extension Version:** ${ packageJson.version }
 ${ errorMessage }`;
 
     const issueMessage = `The issue text was copied to the clipboard.  Please paste it into this window.
