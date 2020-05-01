@@ -14,14 +14,14 @@ export class WebRequestWorker {
 
     constructor(private readonly extensionState: Memento,
                 private readonly eventStream: IEventStream,
-                private readonly uri: string,
+                private readonly url: string,
                 private readonly extensionStateKey: string) {}
 
     public async getCachedData(): Promise<string> {
         this.cachedData = this.extensionState.get<string>(this.extensionStateKey);
         if (isNullOrUndefined(this.cachedData)) {
             // Have to acquire data before continuing
-            this.cachedData = await this.makeWebRequest(true);
+            this.cachedData = await this.makeWebRequestWithRetries(true, 2);
         } else if (isNullOrUndefined(this.currentRequest)) {
             // Update without blocking, continue with cached information
             this.currentRequest = this.makeWebRequest(false);
@@ -38,7 +38,9 @@ export class WebRequestWorker {
     // Protected for ease of testing
     protected async makeWebRequest(throwOnError: boolean): Promise<any> {
         const options = {
-            uri: this.uri,
+            url: this.url,
+            strictSSL: false,
+            Connection: 'keep-alive',
         };
 
         try {
@@ -47,7 +49,12 @@ export class WebRequestWorker {
             return response;
         } catch (error) {
             if (throwOnError) {
-                const formattedError = new Error(`Please ensure that you are online: Request to ${this.uri} Failed: ${error.message}`);
+                let formattedError = error;
+                if ((error.message as string).toLowerCase().includes('block')) {
+                    formattedError = new Error(`Software restriction policy is blocking .NET installation: Request to ${this.url} Failed: ${error.message}`);
+                } else {
+                    formattedError = new Error(`Please ensure that you are online: Request to ${this.url} Failed: ${error.message}`);
+                }
                 this.eventStream.post(new WebRequestError(formattedError));
                 throw formattedError;
             }
@@ -57,5 +64,17 @@ export class WebRequestWorker {
 
     protected async cacheResults(response: string) {
         await this.extensionState.update(this.extensionStateKey, response);
+    }
+
+    private async makeWebRequestWithRetries(throwOnError: boolean, retriesCount: number): Promise<any> {
+        for (let i = 0; i < retriesCount; i++) {
+            try {
+                return await this.makeWebRequest(throwOnError);
+            } catch {
+                // Retry
+            }
+        }
+        // Final try, allow errors to be thrown
+        return this.makeWebRequest(throwOnError);
     }
 }

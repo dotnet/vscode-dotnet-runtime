@@ -73,4 +73,13 @@ suite('WebRequestWorker Unit Tests', () => {
         const requestCount = webWorker.getRequestCount();
         assert.isBelow(requestCount, requests.length);
     });
+
+    test('Web Requests are retried', async () => {
+        const [eventStream, context] = getTestContext();
+        const webWorker = new MockWebRequestWorker(context, eventStream, '', 'MockKey', false);
+
+        await assert.isRejected(webWorker.getCachedData());
+        const requestCount = webWorker.getRequestCount();
+        assert.equal(requestCount, 3);
+    });
 });
