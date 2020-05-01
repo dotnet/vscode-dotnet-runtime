@@ -55,7 +55,7 @@ export function activate(context: vscode.ExtensionContext) {
 
             const result = cp.spawnSync(dotnetPath, helloWorldArgs);
             const stderr = result.stderr.toString();
-            if (result.stderr.toString().length > 0) {
+            if (stderr.length > 0) {
                 vscode.window.showErrorMessage(`Failed to run Hello World:
 ${stderr}`);
                 return;
