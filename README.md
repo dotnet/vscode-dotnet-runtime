@@ -1,5 +1,7 @@
 # .NET Install Tool for Extension Authors (Preview)
 
+[![Version](https://vsmarketplacebadge.apphb.com/version/ms-dotnettools.vscode-dotnet-runtime.svg)](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.vscode-dotnet-runtime) [![Installs](https://vsmarketplacebadge.apphb.com/installs-short/ms-dotnettools.vscode-dotnet-runtime.svg)](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.vscode-dotnet-runtime)
+
 This extension allows acquisition of the .NET Core runtime specifically for VSCode extension authors. This tool is intended to be leveraged in extensions that are written in .NET and require .NET to boot pieces of the extension (e.g. a language server). The extension is not intended to be used directly by users to install .NET for development.
 
 **This is a very early release of this tool. If you want to test it, reach out on [GitHub](https://github.com/dotnet/vscode-dotnet-runtime/issues) to discuss being in our early beta.**
