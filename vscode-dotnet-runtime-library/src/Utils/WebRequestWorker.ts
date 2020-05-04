@@ -9,15 +9,15 @@ import { IEventStream } from '../EventStream/EventStream';
 import { WebRequestError } from '../EventStream/EventStreamEvents';
 
 export class WebRequestWorker {
-    private cachedData: any;
-    private currentRequest: Promise<any> | undefined;
+    private cachedData: string | undefined;
+    private currentRequest: Promise<string | undefined> | undefined;
 
     constructor(private readonly extensionState: Memento,
                 private readonly eventStream: IEventStream,
                 private readonly uri: string,
                 private readonly extensionStateKey: string) {}
 
-    public async getCachedData(): Promise<string> {
+    public async getCachedData(): Promise<string | undefined> {
         this.cachedData = this.extensionState.get<string>(this.extensionStateKey);
         if (isNullOrUndefined(this.cachedData)) {
             // Have to acquire data before continuing
@@ -36,7 +36,7 @@ export class WebRequestWorker {
     }
 
     // Protected for ease of testing
-    protected async makeWebRequest(throwOnError: boolean): Promise<any> {
+    protected async makeWebRequest(throwOnError: boolean): Promise<string | undefined> {
         const options = {
             uri: this.uri,
         };

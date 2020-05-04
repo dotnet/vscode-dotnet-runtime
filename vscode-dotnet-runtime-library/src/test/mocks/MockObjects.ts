@@ -70,7 +70,7 @@ export class FileWebRequestWorker extends WebRequestWorker {
         super(extensionState, eventStream, uri, extensionStateKey);
     }
 
-    protected async makeWebRequest(): Promise<any> {
+    protected async makeWebRequest(): Promise<string | undefined> {
         const result =  fs.readFileSync(this.mockFilePath, 'utf8');
         return result;
     }
@@ -90,7 +90,7 @@ export class MockWebRequestWorker extends WebRequestWorker {
         return this.requestCount;
     }
 
-    protected async makeWebRequest(): Promise<any> {
+    protected async makeWebRequest(): Promise<string | undefined> {
         this.requestCount++;
         this.cacheResults(this.response);
         return this.response;
@@ -126,19 +126,23 @@ export class FailingInstallScriptWorker extends InstallScriptAcquisitionWorker {
     }
 }
 
+export interface ITelemetryEvent {
+    eventName: string;
+    properties?: {
+        [key: string]: string;
+    } | undefined;
+    measures?: {
+        [key: string]: number;
+    } | undefined;
+}
+
+export type TelemetryEvents = ITelemetryEvent[];
+
 export class MockTelemetryReporter implements ITelemetryReporter {
 
-    public static telemetryEvents: {
-        eventName: string;
-        properties?: {
-            [key: string]: string;
-        } | undefined;
-        measures?: {
-            [key: string]: number;
-        } | undefined;
-    }[] = [];
+    public static telemetryEvents: TelemetryEvents = [];
 
-    public async dispose(): Promise<any> {
+    public async dispose(): Promise<void> {
         // Nothing to dispose
     }
 
