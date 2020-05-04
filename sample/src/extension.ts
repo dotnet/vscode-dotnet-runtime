@@ -40,7 +40,7 @@ export function activate(context: vscode.ExtensionContext) {
             const commandRes = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', { version: '2.2' });
             const dotnetPath = commandRes!.dotnetPath;
             if (!dotnetPath) {
-                throw new Error('Couldn\'t resolve the dotnet path!');
+                throw new Error('Could not resolve the dotnet path!');
             }
 
             const sampleExtension = vscode.extensions.getExtension('ms-dotnettools.sample-extension');
