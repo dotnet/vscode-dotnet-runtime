@@ -19,7 +19,7 @@ export class ReleasesResult {
    public releasesIndex: ReleasesChannel[];
 
    constructor(json: string) {
-      const releasesJson = JSON.parse(json)['releases-index'];
+      const releasesJson = JSON.parse(json)['releases-index'] as ReleaseChannels;
       if (isNullOrUndefined(releasesJson)) {
          throw new Error('Unable to resolve version: invalid releases data');
       }
@@ -42,3 +42,5 @@ interface IReleasesChannel {
    ['channel-version']: string;
    ['latest-runtime']: string;
 }
+
+type ReleaseChannels = IReleasesChannel[];
