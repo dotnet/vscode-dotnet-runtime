@@ -31,6 +31,10 @@ Note: It is OK for your PR to include a large number of commits. Once your chang
 
 Note: It is OK to create your PR as "[WIP]" on the upstream repo before the implementation is done. This can be useful if you'd like to start the feedback process concurrent with your implementation. State that this is the case in the initial PR comment.
 
+## Building and Testing Locally
+
+Before making a pull request, be sure to build and test your changes locally with the build script ([windows](https://github.com/dotnet/vscode-dotnet-runtime/blob/master/build.cmd), [mac](https://github.com/dotnet/vscode-dotnet-runtime/blob/master/build.sh)) and test script ([windows](https://github.com/dotnet/vscode-dotnet-runtime/blob/master/test.cmd), [mac](https://github.com/dotnet/vscode-dotnet-runtime/blob/master/test.sh)).
+
 ## PR - CI Process
 
 The [dotnet continuous integration](https://dev.azure.com/dnceng/public/) (CI) system will automatically perform the required builds and run tests (including the ones you are expected to run) for PRs. Builds and test runs must be clean.
