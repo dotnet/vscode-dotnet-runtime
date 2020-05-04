@@ -80,6 +80,10 @@ export class FailingWebRequestWorker extends WebRequestWorker {
     constructor(extensionState: Memento, eventStream: IEventStream, uri: string, extensionStateKey: string) {
         super(extensionState, eventStream, '', extensionStateKey); // Empty string as uri
     }
+
+    public async getCachedData(): Promise<string> {
+        return super.getCachedData(0); // Don't retry
+    }
 }
 
 export class MockWebRequestWorker extends WebRequestWorker {

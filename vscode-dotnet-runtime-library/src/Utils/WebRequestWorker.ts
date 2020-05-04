@@ -2,6 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
+import * as retry from 'p-retry';
 import * as request from 'request-promise-native';
 import { isNullOrUndefined } from 'util';
 import { Memento } from 'vscode';
@@ -17,11 +18,11 @@ export class WebRequestWorker {
                 private readonly url: string,
                 private readonly extensionStateKey: string) {}
 
-    public async getCachedData(): Promise<string> {
+    public async getCachedData(retriesCount = 2): Promise<string> {
         this.cachedData = this.extensionState.get<string>(this.extensionStateKey);
         if (isNullOrUndefined(this.cachedData)) {
             // Have to acquire data before continuing
-            this.cachedData = await this.makeWebRequestWithRetries(true, 2);
+            this.cachedData = await this.makeWebRequestWithRetries(true, retriesCount);
         } else if (isNullOrUndefined(this.currentRequest)) {
             // Update without blocking, continue with cached information
             this.currentRequest = this.makeWebRequest(false);
@@ -67,14 +68,14 @@ export class WebRequestWorker {
     }
 
     private async makeWebRequestWithRetries(throwOnError: boolean, retriesCount: number): Promise<any> {
-        for (let i = 0; i < retriesCount; i++) {
-            try {
-                return await this.makeWebRequest(throwOnError);
-            } catch {
-                // Retry
-            }
-        }
-        // Final try, allow errors to be thrown
-        return this.makeWebRequest(throwOnError);
+        return retry(async () => {
+            return this.makeWebRequest(throwOnError);
+        }, { retries: retriesCount, onFailedAttempt: async (error) => {
+            await this.delay(Math.pow(2, error.attemptNumber));
+        }});
+    }
+
+    private delay(ms: number) {
+        return new Promise( resolve => setTimeout(resolve, ms) );
     }
 }
