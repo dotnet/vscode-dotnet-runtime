@@ -40,7 +40,7 @@ export function activate(context: vscode.ExtensionContext) {
             const commandRes = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', { version: '2.2' });
             const dotnetPath = commandRes!.dotnetPath;
             if (!dotnetPath) {
-                throw new Error('Couldn\'t resolve the dotnet path!');
+                throw new Error('Could not resolve the dotnet path!');
             }
 
             const sampleExtension = vscode.extensions.getExtension('ms-dotnettools.sample-extension');
@@ -55,7 +55,7 @@ export function activate(context: vscode.ExtensionContext) {
 
             const result = cp.spawnSync(dotnetPath, helloWorldArgs);
             const stderr = result.stderr.toString();
-            if (result.stderr.toString().length > 0) {
+            if (stderr.length > 0) {
                 vscode.window.showErrorMessage(`Failed to run Hello World:
 ${stderr}`);
                 return;
