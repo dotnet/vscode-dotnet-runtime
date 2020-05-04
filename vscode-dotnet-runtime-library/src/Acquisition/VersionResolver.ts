@@ -24,7 +24,7 @@ export class VersionResolver implements IVersionResolver {
     public async getFullVersion(version: string): Promise<string> {
         try {
             const response = await this.webWorker.getCachedData();
-            const releasesVersions = new ReleasesResult(response);
+            const releasesVersions = new ReleasesResult(response!);
 
             const versionResult = this.resolveVersion(version, releasesVersions);
             this.eventStream.post(new DotnetVersionResolutionCompleted(version, versionResult));
