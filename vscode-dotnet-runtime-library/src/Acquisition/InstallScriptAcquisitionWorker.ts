@@ -26,6 +26,10 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
     public async getDotnetInstallScriptPath(): Promise<string> {
         try {
             const script = await this.webWorker.getCachedData();
+            if (!script) {
+                throw new Error('Unable to get script path.');
+            }
+
             this.writeScriptAsFile(script, this.scriptFilePath);
             this.eventStream.post(new DotnetInstallScriptAcquisitionCompleted());
             return this.scriptFilePath;

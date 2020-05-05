@@ -19,20 +19,28 @@ export class ReleasesResult {
    public releasesIndex: ReleasesChannel[];
 
    constructor(json: string) {
-      this.releasesIndex = JSON.parse(json)['releases-index'];
-      if (isNullOrUndefined(this.releasesIndex)) {
+      const releasesJson = JSON.parse(json)['releases-index'] as ReleaseChannels;
+      if (isNullOrUndefined(releasesJson)) {
          throw new Error('Unable to resolve version: invalid releases data');
       }
-      this.releasesIndex = this.releasesIndex.map((channel: any) => {
-         if (isNullOrUndefined(channel['channel-version']) || isNullOrUndefined(channel['latest-runtime'])) {
+      this.releasesIndex = releasesJson.map((channel: IReleasesChannel) => {
+         const [ channelVersion, latestRuntime ] = [ channel['channel-version'], channel['latest-runtime'] ];
+         if (isNullOrUndefined(channelVersion) || isNullOrUndefined(latestRuntime)) {
             throw new Error('Unable to resolve version: invalid releases data');
          }
-         return new ReleasesChannel(channel['channel-version'], channel['latest-runtime']);
+         return new ReleasesChannel(channelVersion, latestRuntime);
       });
    }
 }
 
 export class ReleasesChannel {
    constructor(public channelVersion: string,
-               public latestRuntime: string) {}
+               public latestRuntime: string) { }
 }
+
+interface IReleasesChannel {
+   ['channel-version']: string;
+   ['latest-runtime']: string;
+}
+
+type ReleaseChannels = IReleasesChannel[];

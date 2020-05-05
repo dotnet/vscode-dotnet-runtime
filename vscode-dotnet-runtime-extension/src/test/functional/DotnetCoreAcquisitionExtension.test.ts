@@ -10,6 +10,7 @@ import * as vscode from 'vscode';
 import {
   IDotnetAcquireContext,
   IDotnetAcquireResult,
+  ITelemetryEvent,
   MockExtensionContext,
   MockTelemetryReporter,
 } from 'vscode-dotnet-runtime-library';
@@ -95,21 +96,21 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.exists(result!.dotnetPath);
     assert.include(result!.dotnetPath, context.version);
     // Check that we got the expected telemetry
-    const startedEvent = MockTelemetryReporter.telemetryEvents.find((event: any) => event.eventName === 'DotnetAcquisitionStarted');
+    const startedEvent = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === 'DotnetAcquisitionStarted');
     assert.exists(startedEvent);
     assert.include(startedEvent!.properties!.AcquisitionStartVersion, '2.2');
-    const completedEvent = MockTelemetryReporter.telemetryEvents.find((event: any) => event.eventName === 'DotnetAcquisitionCompleted');
+    const completedEvent = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === 'DotnetAcquisitionCompleted');
     assert.exists(completedEvent);
     assert.include(completedEvent!.properties!.AcquisitionCompletedVersion, '2.2');
 
     await vscode.commands.executeCommand<string>('dotnet.uninstallAll');
     assert.isFalse(fs.existsSync(result!.dotnetPath));
-    const uninstallStartedEvent = MockTelemetryReporter.telemetryEvents.find((event: any) => event.eventName === 'DotnetUninstallAllStarted');
+    const uninstallStartedEvent = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === 'DotnetUninstallAllStarted');
     assert.exists(uninstallStartedEvent);
-    const uninstallCompletedEvent = MockTelemetryReporter.telemetryEvents.find((event: any) => event.eventName === 'DotnetUninstallAllCompleted');
+    const uninstallCompletedEvent = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === 'DotnetUninstallAllCompleted');
     assert.exists(uninstallCompletedEvent);
     // Check that no errors were reported
-    const errors = MockTelemetryReporter.telemetryEvents.filter((event: any) => event.eventName.includes('Error'));
+    const errors = MockTelemetryReporter.telemetryEvents.filter((event: ITelemetryEvent) => event.eventName.includes('Error'));
     assert.isEmpty(errors);
   }).timeout(40000);
 
@@ -119,7 +120,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
       assert(false); // An error should have been thrown
     } catch (error) {
-      const versionError = MockTelemetryReporter.telemetryEvents.find((event: any) => event.eventName === '[ERROR]:DotnetVersionResolutionError');
+      const versionError = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === '[ERROR]:DotnetVersionResolutionError');
       assert.exists(versionError);
     }
   }).timeout(2000);
