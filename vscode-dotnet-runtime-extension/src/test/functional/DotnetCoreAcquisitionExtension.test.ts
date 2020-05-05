@@ -16,6 +16,7 @@ import {
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 const assert = chai.assert;
+/* tslint:disable:no-any */
 
 suite('DotnetCoreAcquisitionExtension End to End', function() {
   this.retries(3);

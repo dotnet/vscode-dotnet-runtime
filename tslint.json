@@ -18,6 +18,7 @@
             "options": {
                 "limit": 200
             }
-        }
+        }, 
+        "no-any": true
     }
 }

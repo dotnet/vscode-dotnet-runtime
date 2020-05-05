@@ -16,6 +16,7 @@ import { IEvent } from '../../EventStream/IEvent';
 import { ILoggingObserver } from '../../EventStream/ILoggingObserver';
 import { ITelemetryReporter } from '../../EventStream/TelemetryObserver';
 import { WebRequestWorker } from '../../Utils/WebRequestWorker';
+/* tslint:disable:no-any */
 
 export class MockExtensionContext implements Memento {
     private values: { [n: string]: any; } = {};
