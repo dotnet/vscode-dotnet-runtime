@@ -16,6 +16,7 @@ import {
     DotnetUninstallAllStarted,
 } from '../EventStream/EventStreamEvents';
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
+import { IExistingPath } from '../IExtensionContext';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 
@@ -46,6 +47,15 @@ export class DotnetCoreAcquisitionWorker {
         await this.context.extensionState.update(this.installingVersionsKey, []);
 
         this.context.eventStream.post(new DotnetUninstallAllCompleted());
+    }
+
+    public resolveExistingPath(existingPaths: IExistingPath[] | undefined, version: string): IDotnetAcquireResult | undefined {
+        if (existingPaths) {
+            const versionPath = existingPaths.filter((pair) => pair.version === version || pair.version.toLowerCase() === 'all');
+            if (versionPath && versionPath.length > 0) {
+                return { dotnetPath: versionPath![0].path };
+            }
+        }
     }
 
     public async acquire(version: string): Promise<IDotnetAcquireResult> {

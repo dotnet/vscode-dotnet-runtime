@@ -14,7 +14,10 @@ import { DotnetCoreDependencyInstaller } from './Acquisition/DotnetCoreDependenc
 import { InstallationValidator } from './Acquisition/InstallationValidator';
 import { VersionResolver } from './Acquisition/VersionResolver';
 import { EventStream } from './EventStream/EventStream';
-import { DotnetAcquisitionMissingLinuxDependencies } from './EventStream/EventStreamEvents';
+import {
+    DotnetAcquisitionMissingLinuxDependencies,
+    DotnetExistingPathResolutionCompleted,
+} from './EventStream/EventStreamEvents';
 import { IEventStreamObserver } from './EventStream/IEventStreamObserver';
 import { LoggingObserver } from './EventStream/LoggingObserver';
 import { OutputChannelObserver } from './EventStream/OutputChannelObserver';
@@ -25,7 +28,7 @@ import { IDotnetAcquireContext } from './IDotnetAcquireContext';
 import { IDotnetAcquireResult } from './IDotnetAcquireResult';
 import { IDotnetEnsureDependenciesContext } from './IDotnetEnsureDependenciesContext';
 import { IDotnetUninstallContext } from './IDotnetUninstallContext';
-import { IExtensionContext } from './IExtensionContext';
+import { IExistingPath, IExtensionConfiguration, IExtensionContext } from './IExtensionContext';
 import {
     AcquireErrorConfiguration,
     ErrorConfiguration,
@@ -49,10 +52,13 @@ export const configPrefix = 'dotnetAcquisitionExtension'; // Prefix for user set
 export namespace configKeys {
     export const installTimeoutValue = 'installTimeoutValue';
     export const enableTelemetry = 'enableTelemetry';
+    export const existingPath = 'existingDotnetPath';
 }
 
 export function activate(context: vscode.ExtensionContext, parentExtensionId: string, extensionContext?: IExtensionContext) {
-    const extensionConfiguration = vscode.workspace.getConfiguration(configPrefix);
+    const extensionConfiguration = extensionContext !== undefined && extensionContext.extensionConfiguration ?
+        extensionContext.extensionConfiguration :
+        vscode.workspace.getConfiguration(configPrefix);
     const extension = vscode.extensions.getExtension(parentExtensionId);
 
     if (!extension) {
@@ -106,6 +112,15 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
             if (!commandContext.version || commandContext.version === 'latest') {
                 throw new Error(`Cannot acquire .NET Core version "${commandContext.version}". Please provide a valid version.`);
             }
+
+            const existingPath = acquisitionWorker.resolveExistingPath(extensionConfiguration.get<IExistingPath[]>(configKeys.existingPath), commandContext.version);
+            if (existingPath) {
+                eventStream.post(new DotnetExistingPathResolutionCompleted(existingPath.dotnetPath));
+                return new Promise((resolve) => {
+                    resolve(existingPath);
+                });
+            }
+
             return acquisitionWorker.acquire(commandContext.version);
         }, issueContext(commandContext.errorConfiguration));
         return dotnetPath;
@@ -151,7 +166,7 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
     });
 }
 
-function enableExtensionTelemetry(extensionConfiguration: vscode.WorkspaceConfiguration): boolean {
+function enableExtensionTelemetry(extensionConfiguration: IExtensionConfiguration): boolean {
     const extensionTelemetry: boolean | undefined = extensionConfiguration.get(configKeys.enableTelemetry);
     const vscodeTelemetry: boolean | undefined = vscode.workspace.getConfiguration('telemetry').get(configKeys.enableTelemetry);
     const enableDotnetTelemetry = extensionTelemetry === undefined ? true : extensionTelemetry;

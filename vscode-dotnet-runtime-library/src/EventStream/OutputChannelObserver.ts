@@ -8,6 +8,7 @@ import {
     DotnetAcquisitionError,
     DotnetAcquisitionStarted,
     DotnetAcquisitionVersionError,
+    DotnetExistingPathResolutionCompleted,
 } from './EventStreamEvents';
 import { EventType } from './EventType';
 import { IEvent } from './IEvent';
@@ -52,6 +53,11 @@ export class OutputChannelObserver implements IEventStreamObserver {
                     this.outputChannel.append(`Still downloading .NET Core tooling version(s) ${completedVersionString} ...`);
                 } else {
                     this.stopDownloadIndicator();
+                }
+                break;
+            case EventType.DotnetAcquisitionSuccessEvent:
+                if (event instanceof DotnetExistingPathResolutionCompleted) {
+                    this.outputChannel.append(`Using configured .NET path: ${ (event as DotnetExistingPathResolutionCompleted).resolvedPath }\n`);
                 }
                 break;
             case EventType.DotnetAcquisitionError:

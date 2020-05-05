@@ -11,6 +11,7 @@ import {
   IDotnetAcquireContext,
   IDotnetAcquireResult,
   ITelemetryEvent,
+  MockExtensionConfiguration,
   MockExtensionContext,
   MockTelemetryReporter,
 } from 'vscode-dotnet-runtime-library';
@@ -34,7 +35,10 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       extensionPath,
       logPath,
     } as any;
-    extension.activate(extensionContext, {telemetryReporter: new MockTelemetryReporter()});
+    extension.activate(extensionContext, {
+      telemetryReporter: new MockTelemetryReporter(),
+      extensionConfiguration: new MockExtensionConfiguration([{version: '0.1', path: 'foo'}], true),
+    });
   });
 
   this.afterEach(async () => {
@@ -124,4 +128,12 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       assert.exists(versionError);
     }
   }).timeout(2000);
+
+  test('Install Command With Path Config Defined', async () => {
+    const context: IDotnetAcquireContext = { version: '0.1' };
+    const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
+    assert.exists(result);
+    assert.exists(result!.dotnetPath);
+    assert.equal(result!.dotnetPath, 'foo');
+  });
 });
