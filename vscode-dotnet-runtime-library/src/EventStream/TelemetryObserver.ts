@@ -12,7 +12,7 @@ const packageJson = require('../../package.json');
 export interface ITelemetryReporter {
     sendTelemetryEvent(eventName: string, properties?: { [key: string]: string }, measures?: { [key: string]: number }): void;
     sendTelemetryErrorEvent(eventName: string, properties?: { [key: string]: string }, measurements?: { [key: string]: number }, errorProps?: string[]): void;
-    dispose(): Promise<any>;
+    dispose(): Promise<void>;
 }
 
 export class TelemetryObserver implements IEventStreamObserver {
