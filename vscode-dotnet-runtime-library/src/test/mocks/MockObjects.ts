@@ -82,7 +82,7 @@ export class FailingWebRequestWorker extends WebRequestWorker {
         super(extensionState, eventStream, '', extensionStateKey); // Empty string as uri
     }
 
-    public async getCachedData(): Promise<string> {
+    public async getCachedData(): Promise<string | undefined> {
         return super.getCachedData(0); // Don't retry
     }
 }

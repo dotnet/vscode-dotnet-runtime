@@ -66,7 +66,7 @@ export class WebRequestWorker {
         await this.extensionState.update(this.extensionStateKey, response);
     }
 
-    private async makeWebRequestWithRetries(throwOnError: boolean, retriesCount: number): Promise<any> {
+    private async makeWebRequestWithRetries(throwOnError: boolean, retriesCount: number): Promise<string | undefined> {
         return retry(async () => {
             return this.makeWebRequest(throwOnError);
         }, { retries: retriesCount, onFailedAttempt: async (error) => {
