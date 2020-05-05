@@ -10,6 +10,10 @@ import * as vscode from 'vscode';
 
 const moreInfoUrl = 'https://aka.ms/dotnet-linux-prereqs';
 
+export interface IAdditionalLibs {
+    [key: string]: string;
+}
+
 export class DotnetCoreDependencyInstaller {
     private readonly platform = process.platform;
 
@@ -33,7 +37,7 @@ export class DotnetCoreDependencyInstaller {
         return false;
     }
 
-    public async installLinuxDependencies(additionalLibs: any = {}, skipDotNetCore = false): Promise<number> {
+    public async installLinuxDependencies(additionalLibs: IAdditionalLibs = {}, skipDotNetCore = false): Promise<number> {
         const scriptRoot = path.join(__dirname, '..', 'scripts');
         const shellCommand = this.getShellCommand();
 
@@ -58,7 +62,7 @@ export class DotnetCoreDependencyInstaller {
                 moreInfoUrl]);
     }
 
-    public async promptLinuxDependencyInstall(message: string, additionalLibs: any = {}, skipDotNetCore = false): Promise<boolean> {
+    public async promptLinuxDependencyInstall(message: string, additionalLibs: IAdditionalLibs = {}, skipDotNetCore = false): Promise<boolean> {
         while (true) {
             const response = await vscode.window.showErrorMessage(
                 `${message} You may be missing key Linux libraries. Install them now?`,

@@ -14,7 +14,6 @@ Up for Grabs
 The team marks the most straightforward issues as "up for grabs". This set of issues is the place to start if you are interested in contributing but new to the codebase.
 
 - [dotnet/vscode-vscode-dotnet-runtime-extension - "up for grabs"](https://github.com/dotnet/vscode-dotnet-runtime/labels/up-for-grabs)
-- [dotnet/vscode-vscode-dotnet-runtime-extension - "up for grabs"](https://github.com/dotnet/vscode-dotnet-runtime/labels/up-for-grabs)
 
 Contribution "Bar"
 ------------------
