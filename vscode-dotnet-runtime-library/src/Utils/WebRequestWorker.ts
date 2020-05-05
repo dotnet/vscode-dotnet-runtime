@@ -40,7 +40,6 @@ export class WebRequestWorker {
     protected async makeWebRequest(throwOnError: boolean): Promise<any> {
         const options = {
             url: this.url,
-            strictSSL: false,
             Connection: 'keep-alive',
         };
 
