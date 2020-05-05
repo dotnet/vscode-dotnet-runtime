@@ -81,11 +81,20 @@ export class FailingWebRequestWorker extends WebRequestWorker {
     constructor(extensionState: Memento, eventStream: IEventStream, uri: string, extensionStateKey: string) {
         super(extensionState, eventStream, '', extensionStateKey); // Empty string as uri
     }
+
+    public async getCachedData(): Promise<string | undefined> {
+        return super.getCachedData(0); // Don't retry
+    }
 }
 
 export class MockWebRequestWorker extends WebRequestWorker {
+    public readonly errorMessage = 'Web Request Failed';
     private requestCount = 0;
     private readonly response = 'Mock Web Request Result';
+
+    constructor(extensionState: Memento, eventStream: IEventStream, url: string, extensionStateKey: string, private readonly succeed = true) {
+        super(extensionState, eventStream, url, extensionStateKey);
+    }
 
     public getRequestCount() {
         return this.requestCount;
@@ -93,8 +102,12 @@ export class MockWebRequestWorker extends WebRequestWorker {
 
     protected async makeWebRequest(): Promise<string | undefined> {
         this.requestCount++;
-        this.cacheResults(this.response);
-        return this.response;
+        if (this.succeed) {
+            this.cacheResults(this.response);
+            return this.response;
+        } else {
+            throw new Error(this.errorMessage);
+        }
     }
 }
 

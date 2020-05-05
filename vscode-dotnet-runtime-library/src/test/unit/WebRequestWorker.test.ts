@@ -62,10 +62,10 @@ suite('WebRequestWorker Unit Tests', () => {
         const [eventStream, context] = getTestContext();
         const webWorker = new MockWebRequestWorker(context, eventStream, '', 'MockKey');
         // Make a request to cache the data
-        await webWorker.getCachedData();
+        await webWorker.getCachedData(0);
         const requests = [];
         for (let i = 0; i < 10; i++) {
-            requests.push(webWorker.getCachedData());
+            requests.push(webWorker.getCachedData(0));
         }
         for (const request of requests) {
             assert.equal(await request, 'Mock Web Request Result');
@@ -73,4 +73,14 @@ suite('WebRequestWorker Unit Tests', () => {
         const requestCount = webWorker.getRequestCount();
         assert.isBelow(requestCount, requests.length);
     });
+
+    test('Web Requests are retried', async () => {
+        const [eventStream, context] = getTestContext();
+        const webWorker = new MockWebRequestWorker(context, eventStream, '', 'MockKey', false);
+
+        const retryCount = 1;
+        await assert.isRejected(webWorker.getCachedData(retryCount));
+        const requestCount = webWorker.getRequestCount();
+        assert.equal(requestCount, retryCount + 1);
+    }).timeout(3000);
 });

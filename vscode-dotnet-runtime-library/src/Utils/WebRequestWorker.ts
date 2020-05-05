@@ -2,6 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
+import * as retry from 'p-retry';
 import * as request from 'request-promise-native';
 import { isNullOrUndefined } from 'util';
 import { Memento } from 'vscode';
@@ -14,14 +15,14 @@ export class WebRequestWorker {
 
     constructor(private readonly extensionState: Memento,
                 private readonly eventStream: IEventStream,
-                private readonly uri: string,
+                private readonly url: string,
                 private readonly extensionStateKey: string) {}
 
-    public async getCachedData(): Promise<string | undefined> {
+    public async getCachedData(retriesCount = 2): Promise<string | undefined> {
         this.cachedData = this.extensionState.get<string>(this.extensionStateKey);
         if (isNullOrUndefined(this.cachedData)) {
             // Have to acquire data before continuing
-            this.cachedData = await this.makeWebRequest(true);
+            this.cachedData = await this.makeWebRequestWithRetries(true, retriesCount);
         } else if (isNullOrUndefined(this.currentRequest)) {
             // Update without blocking, continue with cached information
             this.currentRequest = this.makeWebRequest(false);
@@ -38,7 +39,8 @@ export class WebRequestWorker {
     // Protected for ease of testing
     protected async makeWebRequest(throwOnError: boolean): Promise<string | undefined> {
         const options = {
-            uri: this.uri,
+            url: this.url,
+            Connection: 'keep-alive',
         };
 
         try {
@@ -47,7 +49,12 @@ export class WebRequestWorker {
             return response;
         } catch (error) {
             if (throwOnError) {
-                const formattedError = new Error(`Please ensure that you are online: Request to ${this.uri} Failed: ${error.message}`);
+                let formattedError = error;
+                if ((error.message as string).toLowerCase().includes('block')) {
+                    formattedError = new Error(`Software restriction policy is blocking .NET installation: Request to ${this.url} Failed: ${error.message}`);
+                } else {
+                    formattedError = new Error(`Please ensure that you are online: Request to ${this.url} Failed: ${error.message}`);
+                }
                 this.eventStream.post(new WebRequestError(formattedError));
                 throw formattedError;
             }
@@ -57,5 +64,17 @@ export class WebRequestWorker {
 
     protected async cacheResults(response: string) {
         await this.extensionState.update(this.extensionStateKey, response);
+    }
+
+    private async makeWebRequestWithRetries(throwOnError: boolean, retriesCount: number): Promise<string | undefined> {
+        return retry(async () => {
+            return this.makeWebRequest(throwOnError);
+        }, { retries: retriesCount, onFailedAttempt: async (error) => {
+            await this.delay(Math.pow(2, error.attemptNumber));
+        }});
+    }
+
+    private delay(ms: number) {
+        return new Promise( resolve => setTimeout(resolve, ms) );
     }
 }

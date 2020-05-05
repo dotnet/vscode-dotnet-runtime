@@ -64,6 +64,7 @@
 		"compile-all": "cd vscode-dotnet-runtime-library && npm install &&  npm run compile && cd .. && cd vscode-dotnet-runtime-extension && npm install &&  npm run compile && cd .."
 	},
 	"dependencies": {
+		"p-retry": "^4.2.0",
 		"vscode-dotnet-runtime-extension": "file:./vscode-dotnet-runtime-extension"
 	},
 	"devDependencies": {

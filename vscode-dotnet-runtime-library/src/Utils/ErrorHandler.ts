@@ -27,6 +27,8 @@ export namespace errorConstants {
     export const errorMessage = 'An error occurred while installing .NET';
     export const reportOption = 'Report an issue';
     export const hideOption = 'Don\'t show again';
+    export const moreInfoOption = 'More information';
+    export const moreInfoUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/master/Documentation/troubleshooting.md';
 }
 
 export namespace timeoutConstants {
@@ -50,14 +52,16 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
                 }, timeoutConstants.moreInfoOption);
             } else if (error.constructor.name !== 'UserCancelledError' && showMessage) {
                 context.displayWorker.showErrorMessage(`${errorConstants.errorMessage}: ${ error.message }`, async (response: string | undefined) => {
-                    if (response === errorConstants.hideOption) {
+                    if (response === errorConstants.moreInfoOption) {
+                        open(errorConstants.moreInfoUrl);
+                    } else if (response === errorConstants.hideOption) {
                         showMessage = false;
                     } else if (response === errorConstants.reportOption) {
                         const [url, issueBody] = formatIssueUrl(error, context);
                         context.displayWorker.copyToUserClipboard(issueBody);
                         open(url);
                     }
-                }, errorConstants.reportOption, errorConstants.hideOption);
+                }, errorConstants.reportOption, errorConstants.hideOption, errorConstants.moreInfoOption);
             }
         }
         return undefined;
