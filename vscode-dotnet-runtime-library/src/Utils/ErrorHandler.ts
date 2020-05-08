@@ -3,6 +3,10 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as open from 'open';
+import {
+    DotnetCommandFailed,
+    DotnetCommandSucceeded,
+} from '../EventStream/EventStreamEvents';
 import { IIssueContext } from './IIssueContext';
 import { formatIssueUrl } from './IssueReporter';
 
@@ -41,8 +45,11 @@ let showMessage = true;
 
 export async function callWithErrorHandling<T>(callback: () => T, context: IIssueContext): Promise<T | undefined> {
     try {
-        return await callback();
+        const result = await callback();
+        context.eventStream.post(new DotnetCommandSucceeded(context.commandName));
+        return result;
     } catch (error) {
+        context.eventStream.post(new DotnetCommandFailed(error, context.commandName));
         if (context.errorConfiguration === AcquireErrorConfiguration.DisplayAllErrorPopups) {
             if ((error.message as string).includes(timeoutConstants.timeoutMessage)) {
                 context.displayWorker.showErrorMessage(`${errorConstants.errorMessage}: ${ error.message }`, async (response: string | undefined) => {
