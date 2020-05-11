@@ -3,6 +3,7 @@
 'use strict';
 
 const path = require('path');
+const CopyPlugin = require('copy-webpack-plugin');
 
 /**@type {import('webpack').Configuration}*/
 const config = {
@@ -40,6 +41,11 @@ const config = {
         ]
       }
     ]
-  }
+  },
+  plugins: [
+    new CopyPlugin([
+      { from: path.resolve(__dirname, './vscode-dotnet-runtime-library/install scripts'), to: path.resolve(__dirname, 'dist', 'install scripts') }
+  ]),
+  ]
 };
 module.exports = config;
