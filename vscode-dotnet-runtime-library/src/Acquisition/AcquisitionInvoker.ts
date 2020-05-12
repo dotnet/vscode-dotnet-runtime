@@ -39,14 +39,14 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
                 cp.exec(winOS ? windowsFullCommand : installCommand,
                         { cwd: process.cwd(), maxBuffer: 500 * 1024, timeout: 1000 * installContext.timeoutValue, killSignal: 'SIGKILL' },
                         async (error, stdout, stderr) => {
-                    if (stdout) {
-                        this.eventStream.post(new DotnetAcquisitionScriptOuput(installContext.version, stdout));
-                    }
-                    if (stderr) {
-                        this.eventStream.post(new DotnetAcquisitionScriptOuput(installContext.version, `STDERR: ${stderr}`));
-                    }
-
                     if (error) {
+                        if (stdout) {
+                            this.eventStream.post(new DotnetAcquisitionScriptOuput(installContext.version, stdout));
+                        }
+                        if (stderr) {
+                            this.eventStream.post(new DotnetAcquisitionScriptOuput(installContext.version, `STDERR: ${stderr}`));
+                        }
+
                         const online = await isOnline();
                         if (!online) {
                             const offlineError = new Error('No internet connection: Cannot install .NET');

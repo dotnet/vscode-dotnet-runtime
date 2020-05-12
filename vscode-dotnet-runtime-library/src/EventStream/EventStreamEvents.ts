@@ -65,6 +65,21 @@ export class WebRequestError extends DotnetAcquisitionError {
     public readonly eventName = 'WebRequestError';
 }
 
+export class DotnetCommandFailed extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetCommandFailed';
+
+    constructor(error: Error, public readonly command: string) {
+        super(error);
+    }
+
+    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+        return {ErrorMessage : this.error.message,
+            CommandName : this.command,
+            ErrorName : this.error.name,
+            StackTrace : this.error.stack ? this.error.stack : ''};
+    }
+}
+
 export abstract class DotnetAcquisitionVersionError extends DotnetAcquisitionError {
     constructor(error: Error, public readonly version: string) {
         super(error);
@@ -159,6 +174,16 @@ export abstract class DotnetAcquisitionSuccessEvent extends IEvent {
     }
 }
 
+export class DotnetCommandSucceeded extends DotnetAcquisitionSuccessEvent {
+    public readonly eventName = 'DotnetCommandSucceeded';
+
+    constructor(public readonly commandName: string) { super(); }
+
+    public getProperties() {
+        return {CommandName : this.commandName};
+    }
+}
+
 export class DotnetUninstallAllStarted extends DotnetAcquisitionSuccessEvent {
     public readonly eventName = 'DotnetUninstallAllStarted';
 }
@@ -236,15 +261,12 @@ export class DotnetAcquisitionMissingLinuxDependencies extends DotnetAcquisition
 
 export class DotnetAcquisitionScriptOuput extends DotnetAcquisitionMessage {
     public readonly eventName = 'DotnetAcquisitionScriptOuput';
+    public isError = true;
     constructor(public readonly version: string, public readonly output: string) { super(); }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
-        if (telemetry) {
-            return {AcquisitionVersion : this.version};
-        } else {
-            return {AcquisitionVersion : this.version,
+        return {AcquisitionVersion : this.version,
                 ScriptOutput: this.output};
-        }
     }
 }
 

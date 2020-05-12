@@ -80,11 +80,13 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
         eventStream.subscribe(event => observer.post(event));
     }
 
-    const issueContext = (errorConfiguration: ErrorConfiguration | undefined) => {
+    const issueContext = (errorConfiguration: ErrorConfiguration | undefined, commandName: string) => {
         return {
             logger: loggingObserver,
             errorConfiguration: errorConfiguration || AcquireErrorConfiguration.DisplayAllErrorPopups,
             displayWorker: new WindowDisplayWorker(),
+            eventStream,
+            commandName,
         } as IIssueContext;
     };
     const timeoutValue = extensionConfiguration.get<number>(configKeys.installTimeoutValue);
@@ -107,11 +109,11 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
                 throw new Error(`Cannot acquire .NET Core version "${commandContext.version}". Please provide a valid version.`);
             }
             return acquisitionWorker.acquire(commandContext.version);
-        }, issueContext(commandContext.errorConfiguration));
+        }, issueContext(commandContext.errorConfiguration, 'acquire'));
         return dotnetPath;
     });
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallAll}`, async (commandContext: IDotnetUninstallContext | undefined) => {
-        await callWithErrorHandling(() => acquisitionWorker.uninstallAll(), issueContext(commandContext ? commandContext.errorConfiguration : undefined));
+        await callWithErrorHandling(() => acquisitionWorker.uninstallAll(), issueContext(commandContext ? commandContext.errorConfiguration : undefined, 'uninstallAll'));
     });
     const showOutputChannelRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.showAcquisitionLog}`, () => outputChannel.show(/* preserveFocus */ false));
     const ensureDependenciesRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.ensureDotnetDependencies}`, async (commandContext: IDotnetEnsureDependenciesContext) => {
@@ -127,10 +129,10 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
                 eventStream.post(new DotnetAcquisitionMissingLinuxDependencies());
                 await installer.promptLinuxDependencyInstall('Failed to run .NET tooling.');
             }
-        }, issueContext(commandContext.errorConfiguration));
+        }, issueContext(commandContext.errorConfiguration, 'ensureDependencies'));
     });
     const reportIssueRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.reportIssue}`, async () => {
-        const [url, issueBody] = formatIssueUrl(undefined, issueContext(AcquireErrorConfiguration.DisableErrorPopups));
+        const [url, issueBody] = formatIssueUrl(undefined, issueContext(AcquireErrorConfiguration.DisableErrorPopups, 'reportIssue'));
         await vscode.env.clipboard.writeText(issueBody);
         open(url);
     });
