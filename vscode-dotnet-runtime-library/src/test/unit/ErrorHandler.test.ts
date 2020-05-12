@@ -3,6 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
+import { DotnetCommandFailed, DotnetCommandSucceeded } from '../../EventStream/EventStreamEvents';
 import {
     errorConstants,
     timeoutConstants,
@@ -10,16 +11,18 @@ import {
 } from '../../Utils/ErrorHandler';
 import { callWithErrorHandling } from '../../Utils/ErrorHandler';
 import { IIssueContext } from '../../Utils/IIssueContext';
-import { MockLoggingObserver } from '../mocks/MockObjects';
+import { MockEventStream, MockLoggingObserver } from '../mocks/MockObjects';
 import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
 const assert = chai.assert;
 
 suite('ErrorHandler Unit Tests', () => {
-    const issueContext = (displayWorker: MockWindowDisplayWorker) => {
+    const issueContext = (displayWorker: MockWindowDisplayWorker, eventStream: MockEventStream) => {
         return {
             logger: new MockLoggingObserver(),
             errorConfiguration: UninstallErrorConfiguration.DisplayAllErrorPopups,
             displayWorker,
+            eventStream,
+            commandName: 'test',
         } as IIssueContext;
     };
 
@@ -27,7 +30,7 @@ suite('ErrorHandler Unit Tests', () => {
         const displayWorker = new MockWindowDisplayWorker();
         const res = await callWithErrorHandling<string>(() => {
             return '';
-        }, issueContext(displayWorker));
+        }, issueContext(displayWorker, new MockEventStream()));
 
         assert.equal(displayWorker.errorMessage, '');
         assert.equal(displayWorker.clipboardText, '');
@@ -39,7 +42,7 @@ suite('ErrorHandler Unit Tests', () => {
         const res = await callWithErrorHandling<string>(() => {
             displayWorker.copyToUserClipboard(errorString);
             throw new Error(errorString);
-        }, issueContext(displayWorker));
+        }, issueContext(displayWorker, new MockEventStream()));
 
         assert.include(displayWorker.errorMessage, errorString);
         assert.include(displayWorker.clipboardText, errorString);
@@ -50,10 +53,30 @@ suite('ErrorHandler Unit Tests', () => {
         const displayWorker = new MockWindowDisplayWorker();
         const res = await callWithErrorHandling<string>(() => {
             throw new Error(timeoutConstants.timeoutMessage);
-        }, issueContext(displayWorker));
+        }, issueContext(displayWorker, new MockEventStream()));
 
         assert.include(displayWorker.errorMessage, timeoutConstants.timeoutMessage);
         assert.equal(displayWorker.clipboardText, '');
         assert.includeMembers(displayWorker.options, [timeoutConstants.moreInfoOption]);
+    });
+
+    test('Successful command events are reported', async () => {
+        const displayWorker = new MockWindowDisplayWorker();
+        const eventStream = new MockEventStream();
+        const res = await callWithErrorHandling<string>(() => {
+            return '';
+        }, issueContext(displayWorker, eventStream));
+
+        assert.exists(eventStream.events.find(event => event instanceof DotnetCommandSucceeded));
+    });
+
+    test('Failed command events are reported', async () => {
+        const displayWorker = new MockWindowDisplayWorker();
+        const eventStream = new MockEventStream();
+        const res = await callWithErrorHandling<string>(() => {
+            throw new Error(timeoutConstants.timeoutMessage);
+        }, issueContext(displayWorker, eventStream));
+
+        assert.exists(eventStream.events.find(event => event instanceof DotnetCommandFailed));
     });
 });
