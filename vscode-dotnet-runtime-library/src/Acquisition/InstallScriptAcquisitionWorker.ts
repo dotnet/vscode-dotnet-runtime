@@ -51,6 +51,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
         }
     }
 
+    // Protected for testing purposes
     protected writeScriptAsFile(scriptContent: string, filePath: string) {
         if (!fs.existsSync(path.dirname(filePath))) {
             fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -59,6 +60,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
         fs.chmodSync(filePath, 0o777);
     }
 
+    // Protected for testing purposes
     protected getFallbackScriptPath(): string {
         return this.scriptFilePath;
     }
