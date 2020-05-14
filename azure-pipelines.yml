@@ -38,36 +38,30 @@ stages:
       inputs:
         versionSpec: '12.x'
       displayName: 'Install Node.js'
+    - script: build.cmd
+      displayName: Build Windows
+      condition: eq(variables['Agent.OS'], 'Windows_NT')
+    - script: test.cmd
+      displayName: Test Windows
+      condition: eq(variables['Agent.OS'], 'Windows_NT')
     - bash: |
         /usr/bin/Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
         echo ">>> Started xvfb"
       displayName: Start xvfb
       condition: and(succeeded(), eq(variables['Agent.OS'], 'Linux'))
-    - bash: |
-        npm install
-        npm run compile
-        npm run test
-      workingDirectory: 'vscode-dotnet-runtime-library'
-      displayName: Build and Test vscode-dotnet-runtime-library
-    - bash: |
-        npm install
-        npm run compile
-        npm run test
-      workingDirectory: 'vscode-dotnet-runtime-extension'
-      displayName: Build and Test vscode-dotnet-runtime-extension
-      env:
-        DISPLAY: ':99.0'
+    - script: ./build.sh
+      displayName: Build Mac and Linux
+      condition: or(eq(variables['Agent.OS'], 'Darwin'), eq(variables['Agent.OS'], 'Linux'))
+    - script: ./test.sh
+      displayName: Test Mac and Linux
+      env: { DISPLAY: ':99.0' }
+      condition: or(eq(variables['Agent.OS'], 'Darwin'), eq(variables['Agent.OS'], 'Linux'))
     - task: PublishBuildArtifacts@1
       inputs:
         pathtoPublish: '$(Build.SourcesDirectory)/vscode-dotnet-runtime-extension/out/test/functional/logs'
         artifactName: 'logs'
       displayName: Publish Logs
       condition: always()
-    - bash: |
-        npm install
-        npm run compile
-      workingDirectory: 'sample'
-      displayName: Build Sample
   ##### TSLint #####
   - job: TSLint
     displayName: 'TSLint'

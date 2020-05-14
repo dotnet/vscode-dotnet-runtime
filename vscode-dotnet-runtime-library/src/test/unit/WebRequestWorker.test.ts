@@ -4,9 +4,15 @@
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
 import { IInstallScriptAcquisitionWorker } from '../../Acquisition/IInstallScriptAcquisitionWorker';
-import { DotnetInstallScriptAcquisitionError } from '../../EventStream/EventStreamEvents';
+import {
+    DotnetFallbackInstallScriptUsed,
+    DotnetInstallScriptAcquisitionError,
+} from '../../EventStream/EventStreamEvents';
 import {
     ErrorAcquisitionInvoker,
     MockEventStream,
@@ -48,6 +54,15 @@ suite('WebRequestWorker Unit Tests', () => {
         return assert.isRejected(installScriptWorker.getDotnetInstallScriptPath(), Error, 'Failed to Acquire Dotnet Install Script').then(() => {
             assert.exists(eventStream.events.find(event => event instanceof DotnetInstallScriptAcquisitionError));
         });
+    });
+
+    test('Install Script Request Failure With Fallback Install Script', async () => {
+        const [eventStream, context] = getTestContext();
+        const installScriptWorker: IInstallScriptAcquisitionWorker = new MockInstallScriptWorker(context, eventStream, true, true);
+        const scriptPath = await installScriptWorker.getDotnetInstallScriptPath();
+        assert.equal(scriptPath, path.join(__dirname, '..'));
+        assert.exists(eventStream.events.find(event => event instanceof DotnetInstallScriptAcquisitionError));
+        assert.exists(eventStream.events.find(event => event instanceof DotnetFallbackInstallScriptUsed));
     });
 
     test('Install Script File Manipulation Failure', async () => {

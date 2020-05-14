@@ -224,6 +224,10 @@ export class DotnetAcquisitionDeletion extends DotnetAcquisitionMessage {
     }
 }
 
+export class DotnetFallbackInstallScriptUsed extends DotnetAcquisitionMessage {
+    public readonly eventName = 'DotnetFallbackInstallScriptUsed';
+}
+
 export class DotnetAcquisitionPartialInstallation extends DotnetAcquisitionMessage {
     public readonly eventName = 'DotnetAcquisitionPartialInstallation';
     constructor(public readonly version: string) { super(); }

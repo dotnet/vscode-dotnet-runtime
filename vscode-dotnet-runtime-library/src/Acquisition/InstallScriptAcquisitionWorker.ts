@@ -7,7 +7,11 @@ import * as os from 'os';
 import * as path from 'path';
 import { Memento } from 'vscode';
 import { IEventStream } from '../EventStream/EventStream';
-import { DotnetInstallScriptAcquisitionCompleted, DotnetInstallScriptAcquisitionError } from '../EventStream/EventStreamEvents';
+import {
+    DotnetFallbackInstallScriptUsed,
+    DotnetInstallScriptAcquisitionCompleted,
+    DotnetInstallScriptAcquisitionError,
+} from '../EventStream/EventStreamEvents';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
 
@@ -35,15 +39,29 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
             return this.scriptFilePath;
         } catch (error) {
             this.eventStream.post(new DotnetInstallScriptAcquisitionError(error));
+
+            // Try to use fallback install script
+            const fallbackPath = this.getFallbackScriptPath();
+            if (fs.existsSync(fallbackPath)) {
+                this.eventStream.post(new DotnetFallbackInstallScriptUsed());
+                return fallbackPath;
+            }
+
             throw new Error(`Failed to Acquire Dotnet Install Script: ${error}`);
         }
     }
 
+    // Protected for testing purposes
     protected writeScriptAsFile(scriptContent: string, filePath: string) {
         if (!fs.existsSync(path.dirname(filePath))) {
             fs.mkdirSync(path.dirname(filePath), { recursive: true });
         }
         fs.writeFileSync(filePath, scriptContent);
         fs.chmodSync(filePath, 0o777);
+    }
+
+    // Protected for testing purposes
+    protected getFallbackScriptPath(): string {
+        return this.scriptFilePath;
     }
 }

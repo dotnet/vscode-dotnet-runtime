@@ -42,3 +42,4 @@ dist
 install.*
 .vscode-test/
 *.vsix
+vscode-dotnet-runtime-library/install scripts/dotnet-install.*
