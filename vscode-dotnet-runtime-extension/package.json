@@ -9,7 +9,7 @@
 	"engines": {
 		"vscode": "^1.41.0"
 	},
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"publisher": "ms-dotnettools",
 	"activationEvents": [
 		"onCommand:dotnet.acquire",

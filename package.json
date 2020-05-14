@@ -13,7 +13,7 @@
 	"displayName": ".NET Install Tool for Extension Authors",
 	"description": "Allows acquisition of the .NET Core runtime specifically for VSCode extension authors.",
 	"icon": "images/dotnetIcon.png",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"publisher": "ms-dotnettools",
 	"engines": {
 		"vscode": "^1.41.0"
