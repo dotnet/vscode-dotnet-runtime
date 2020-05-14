@@ -87,7 +87,7 @@ ${stderr}`);
     const sampleDotnetUninstallAllRegistration = vscode.commands.registerCommand('sample.dotnet.uninstallAll', async () => {
         try {
             await vscode.commands.executeCommand('dotnet.uninstallAll');
-            vscode.window.showInformationMessage('.NET Core tooling uninstalled.');
+            vscode.window.showInformationMessage('.NET Core runtimes uninstalled.');
         } catch (error) {
             vscode.window.showErrorMessage(error.toString());
         }

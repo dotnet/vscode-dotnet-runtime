@@ -1,6 +1,6 @@
 {
 	"name": "vscode-dotnet-runtime-library",
-	"description": "A library to acquire .NET Core tooling.",
+	"description": "A library to acquire .NET Core runtimes.",
 	"version": "0.1.2",
 	"repository": {
 		"type": "git",
