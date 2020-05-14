@@ -59,7 +59,7 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
         throw new Error(`Could not resolve dotnet acquisition extension '${parentExtensionId}' location`);
     }
 
-    const outputChannel = vscode.window.createOutputChannel('.NET Core Tooling');
+    const outputChannel = vscode.window.createOutputChannel('.NET Core Runtime');
     if (!fs.existsSync(context.logPath)) {
         fs.mkdirSync(context.logPath);
     }
@@ -127,7 +127,7 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
             const installer = new DotnetCoreDependencyInstaller();
             if (installer.signalIndicatesMissingLinuxDependencies(result.signal)) {
                 eventStream.post(new DotnetAcquisitionMissingLinuxDependencies());
-                await installer.promptLinuxDependencyInstall('Failed to run .NET tooling.');
+                await installer.promptLinuxDependencyInstall('Failed to run .NET runtime.');
             }
         }, issueContext(commandContext.errorConfiguration, 'ensureDependencies'));
     });
