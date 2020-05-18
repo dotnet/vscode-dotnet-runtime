@@ -61,10 +61,6 @@
 						"version": "string",
 						"path": "string"
 					},
-					"default": {
-						"version": "all",
-						"path": "C:\\Program Files\\dotnet"
-					},
 					"description": "File Path to an existing installation of .NET."
 				}
 			}

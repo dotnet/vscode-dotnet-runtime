@@ -86,13 +86,15 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
         eventStream.subscribe(event => observer.post(event));
     }
 
-    const issueContext = (errorConfiguration: ErrorConfiguration | undefined, commandName: string) => {
+    const issueContext = (errorConfiguration: ErrorConfiguration | undefined, commandName: string, version?: string) => {
         return {
             logger: loggingObserver,
             errorConfiguration: errorConfiguration || AcquireErrorConfiguration.DisplayAllErrorPopups,
             displayWorker: new WindowDisplayWorker(),
             eventStream,
             commandName,
+            version,
+
         } as IIssueContext;
     };
     const timeoutValue = extensionConfiguration.get<number>(configKeys.installTimeoutValue);
@@ -124,7 +126,7 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
             }
 
             return acquisitionWorker.acquire(commandContext.version);
-        }, issueContext(commandContext.errorConfiguration, 'acquire'));
+        }, issueContext(commandContext.errorConfiguration, 'acquire', commandContext.version));
         return dotnetPath;
     });
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallAll}`, async (commandContext: IDotnetUninstallContext | undefined) => {

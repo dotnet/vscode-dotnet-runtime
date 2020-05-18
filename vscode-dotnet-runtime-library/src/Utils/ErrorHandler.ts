@@ -52,13 +52,15 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
         context.eventStream.post(new DotnetCommandFailed(error, context.commandName));
         if (context.errorConfiguration === AcquireErrorConfiguration.DisplayAllErrorPopups) {
             if ((error.message as string).includes(timeoutConstants.timeoutMessage)) {
-                context.displayWorker.showErrorMessage(`${errorConstants.errorMessage}: ${ error.message }`, async (response: string | undefined) => {
+                context.displayWorker.showErrorMessage(`${errorConstants.errorMessage}${ context.version ? ` (${context.version})` : '' }: ${ error.message }`,
+                                                        async (response: string | undefined) => {
                     if (response === timeoutConstants.moreInfoOption) {
                         open(timeoutConstants.timeoutInfoUrl);
                     }
                 }, timeoutConstants.moreInfoOption);
             } else if (error.constructor.name !== 'UserCancelledError' && showMessage) {
-                context.displayWorker.showErrorMessage(`${errorConstants.errorMessage}: ${ error.message }`, async (response: string | undefined) => {
+                context.displayWorker.showErrorMessage(`${errorConstants.errorMessage}${ context.version ? ` (${context.version})` : '' }: ${ error.message }`,
+                                                        async (response: string | undefined) => {
                     if (response === errorConstants.moreInfoOption) {
                         open(errorConstants.moreInfoUrl);
                     } else if (response === errorConstants.hideOption) {

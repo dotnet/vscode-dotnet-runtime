@@ -23,6 +23,7 @@ suite('ErrorHandler Unit Tests', () => {
             displayWorker,
             eventStream,
             commandName: 'test',
+            version: 'testVersion',
         } as IIssueContext;
     };
 
@@ -45,6 +46,7 @@ suite('ErrorHandler Unit Tests', () => {
         }, issueContext(displayWorker, new MockEventStream()));
 
         assert.include(displayWorker.errorMessage, errorString);
+        assert.include(displayWorker.errorMessage, 'testVersion');
         assert.include(displayWorker.clipboardText, errorString);
         assert.includeMembers(displayWorker.options, [errorConstants.reportOption, errorConstants.hideOption]);
     });
@@ -56,6 +58,7 @@ suite('ErrorHandler Unit Tests', () => {
         }, issueContext(displayWorker, new MockEventStream()));
 
         assert.include(displayWorker.errorMessage, timeoutConstants.timeoutMessage);
+        assert.include(displayWorker.errorMessage, 'testVersion');
         assert.equal(displayWorker.clipboardText, '');
         assert.includeMembers(displayWorker.options, [timeoutConstants.moreInfoOption]);
     });
