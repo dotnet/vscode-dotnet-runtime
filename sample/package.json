@@ -32,12 +32,12 @@
 			},
 			{
 				"command": "sample.dotnet.acquire",
-				"title": "Acquire .NET Core tooling",
+				"title": "Acquire .NET Core runtime",
 				"category": "Sample"
 			},
 			{
 				"command": "sample.dotnet.uninstallAll",
-				"title": "Uninstall all .NET Core tooling",
+				"title": "Uninstall all .NET Core runtimes",
 				"category": "Sample"
 			},
 			{
@@ -47,7 +47,7 @@
 			},
 			{
 				"command": "sample.dotnet.showAcquisitionLog",
-				"title": "Show .NET Core tooling acquisition log",
+				"title": "Show .NET Core runtime acquisition log",
 				"category": "Sample"
 			}
 		]

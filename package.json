@@ -13,7 +13,7 @@
 	"displayName": ".NET Install Tool for Extension Authors",
 	"description": "Allows acquisition of the .NET Core runtime specifically for VSCode extension authors.",
 	"icon": "images/dotnetIcon.png",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"publisher": "ms-dotnettools",
 	"engines": {
 		"vscode": "^1.41.0"
@@ -72,13 +72,14 @@
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile-all && npm install && webpack --mode production",
-		"compile-all": "cd vscode-dotnet-runtime-library && npm install &&  npm run compile && cd .. && cd vscode-dotnet-runtime-extension && npm install &&  npm run compile && cd .."
+		"compile-all": "build.cmd"
 	},
 	"dependencies": {
 		"p-retry": "^4.2.0",
 		"vscode-dotnet-runtime-extension": "file:./vscode-dotnet-runtime-extension"
 	},
 	"devDependencies": {
+		"copy-webpack-plugin": "^5.1.1",
 		"ts-loader": "^6.2.1",
 		"typescript": "3.4.5",
 		"webpack": "^4.41.5",

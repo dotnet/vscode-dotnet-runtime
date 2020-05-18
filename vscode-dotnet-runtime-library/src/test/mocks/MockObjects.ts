@@ -122,11 +122,19 @@ export class MockVersionResolver extends VersionResolver {
 }
 
 export class MockInstallScriptWorker extends InstallScriptAcquisitionWorker {
-    constructor(extensionState: Memento, eventStream: IEventStream, failing: boolean) {
+    constructor(extensionState: Memento, eventStream: IEventStream, failing: boolean, private fallback = false) {
         super(extensionState, eventStream);
         this.webWorker = failing ?
             new FailingWebRequestWorker(extensionState, eventStream, '', '') :
             new MockWebRequestWorker(extensionState, eventStream, '', '');
+    }
+
+    protected getFallbackScriptPath(): string {
+        if (this.fallback) {
+            return path.join(__dirname, '..');
+        } else {
+            return super.getFallbackScriptPath();
+        }
     }
 }
 

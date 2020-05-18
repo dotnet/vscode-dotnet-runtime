@@ -2,18 +2,20 @@ $result = 0
 $errorColor = "Red"
 $successColor = "Green"
 
-pushd vscode-dotnet-runtime-extension
-npm run lint
-if ($LASTEXITCODE -ne 0)
-{
-    Write-Host "`nTSLint Failed.`n" -ForegroundColor $errorColor
-    $result = 1
+if ($args[1] -eq '--tslint') {
+    pushd vscode-dotnet-runtime-extension
+    npm run lint
+    if ($LASTEXITCODE -ne 0)
+    {
+        Write-Host "`nTSLint Failed.`n" -ForegroundColor $errorColor
+        $result = 1
+    }
+    else 
+    {
+        Write-Host "`nTSLint Succeeded.`n" -ForegroundColor $successColor
+    }
+    popd
 }
-else 
-{
-    Write-Host "`nTSLint Succeeded.`n" -ForegroundColor $successColor
-}
-popd
 
 pushd vscode-dotnet-runtime-library
 if (Test-Path node_modules) { rm -r -force node_modules }

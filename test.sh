@@ -3,20 +3,23 @@ RED=`tput setaf 1`
 GREEN=`tput setaf 2`
 NC=`tput sgr0`
 
-pushd vscode-dotnet-runtime-extension
-npm run lint
-if [ $? -ne 0 ];
+if [ "$1" = "--tslint" ];
 then
-    echo ""
-    echo "${RED}TSLint Failed.${NC}"
-    echo ""
-    RESULT=1
-else
-    echo ""
-    echo "${GREEN}TSLint Succeeded.${NC}"
-    echo ""
+    pushd vscode-dotnet-runtime-extension
+    npm run lint
+    if [ $? -ne 0 ];
+    then
+        echo ""
+        echo "${RED}TSLint Failed.${NC}"
+        echo ""
+        RESULT=1
+    else
+        echo ""
+        echo "${GREEN}TSLint Succeeded.${NC}"
+        echo ""
+    fi
+    popd
 fi
-popd
 
 echo ""
 echo "----------- Testing vscode-dotnet-runtime-library -----------"

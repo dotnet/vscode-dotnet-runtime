@@ -33,7 +33,7 @@ Note: It is OK to create your PR as "[WIP]" on the upstream repo before the impl
 
 ## Building and Testing Locally
 
-Before making a pull request, be sure to build and test your changes locally with the build script ([windows](https://github.com/dotnet/vscode-dotnet-runtime/blob/master/build.cmd), [mac](https://github.com/dotnet/vscode-dotnet-runtime/blob/master/build.sh)) and test script ([windows](https://github.com/dotnet/vscode-dotnet-runtime/blob/master/test.cmd), [mac](https://github.com/dotnet/vscode-dotnet-runtime/blob/master/test.sh)).
+Before making a pull request, be sure to build and test your changes locally with the build script ([windows](https://github.com/dotnet/vscode-dotnet-runtime/blob/master/build.cmd), [mac](https://github.com/dotnet/vscode-dotnet-runtime/blob/master/build.sh)) and test script ([windows](https://github.com/dotnet/vscode-dotnet-runtime/blob/master/test.cmd), [mac](https://github.com/dotnet/vscode-dotnet-runtime/blob/master/test.sh)). To lint your changes, run the test script with the parameter `--tslint`
 
 ## PR - CI Process
 

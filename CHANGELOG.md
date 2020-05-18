@@ -1,5 +1,12 @@
 # Change Log
 
+## 0.1.2
+
+### Added
+
+- Added documentation for known Windows 7 bug. ( #68 )
+- Added retries for web requests. ( #72 )
+
 ## 0.1.1
 
 ### Added
