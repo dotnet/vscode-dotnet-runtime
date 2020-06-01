@@ -62,7 +62,7 @@ ${stderr}`);
             }
 
             const appOutput = result.stdout.toString();
-            vscode.window.showInformationMessage(`.NET Core Output: ${appOutput}`);
+            vscode.window.showInformationMessage(`.NET Output: ${appOutput}`);
         } catch (error) {
             vscode.window.showErrorMessage(error.toString());
         }
@@ -71,9 +71,9 @@ ${stderr}`);
     const sampleAcquireRegistration = vscode.commands.registerCommand('sample.dotnet.acquire', async (version) => {
         if (!version) {
             version = await vscode.window.showInputBox({
-                placeHolder: '2.2',
-                value: '2.2',
-                prompt: '.NET Core version, i.e. 2.2',
+                placeHolder: '3.1',
+                value: '3.1',
+                prompt: '.NET version, i.e. 3.1',
             });
         }
 
@@ -87,7 +87,7 @@ ${stderr}`);
     const sampleDotnetUninstallAllRegistration = vscode.commands.registerCommand('sample.dotnet.uninstallAll', async () => {
         try {
             await vscode.commands.executeCommand('dotnet.uninstallAll');
-            vscode.window.showInformationMessage('.NET Core runtimes uninstalled.');
+            vscode.window.showInformationMessage('.NET runtimes uninstalled.');
         } catch (error) {
             vscode.window.showErrorMessage(error.toString());
         }

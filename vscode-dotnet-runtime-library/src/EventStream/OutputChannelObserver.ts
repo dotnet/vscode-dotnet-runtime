@@ -37,19 +37,19 @@ export class OutputChannelObserver implements IEventStreamObserver {
                 }
 
                 const startVersionString = this.inProgressDownloads.join(', ');
-                this.outputChannel.append(`Downloading .NET Core runtime version(s) ${startVersionString} ...`);
+                this.outputChannel.append(`Downloading .NET runtime version(s) ${startVersionString} ...`);
                 break;
             case EventType.DotnetAcquisitionCompleted:
                 const acquisitionCompleted = event as DotnetAcquisitionCompleted;
                 this.outputChannel.appendLine(' Done!');
-                this.outputChannel.appendLine(`.NET Core ${acquisitionCompleted.version} executable path: ${acquisitionCompleted.dotnetPath}`);
+                this.outputChannel.appendLine(`.NET ${acquisitionCompleted.version} executable path: ${acquisitionCompleted.dotnetPath}`);
                 this.outputChannel.appendLine('');
 
                 this.inProgressVersionDone(acquisitionCompleted.version);
 
                 if (this.inProgressDownloads.length > 0) {
                     const completedVersionString = `'${this.inProgressDownloads.join('\', \'')}'`;
-                    this.outputChannel.append(`Still downloading .NET Core runtime version(s) ${completedVersionString} ...`);
+                    this.outputChannel.append(`Still downloading .NET runtime version(s) ${completedVersionString} ...`);
                 } else {
                     this.stopDownloadIndicator();
                 }
@@ -58,7 +58,7 @@ export class OutputChannelObserver implements IEventStreamObserver {
                 const error = event as DotnetAcquisitionError;
                 this.outputChannel.appendLine(' Error!');
                 if (error instanceof DotnetAcquisitionVersionError) {
-                    this.outputChannel.appendLine(`Failed to download .NET Core runtime ${error.version}:`);
+                    this.outputChannel.appendLine(`Failed to download .NET runtime ${error.version}:`);
                 }
                 this.outputChannel.appendLine(error.error.message);
                 this.outputChannel.appendLine('');
@@ -69,7 +69,7 @@ export class OutputChannelObserver implements IEventStreamObserver {
 
                 if (this.inProgressDownloads.length > 0) {
                     const errorVersionString = this.inProgressDownloads.join(', ');
-                    this.outputChannel.append(`Still downloading .NET Core runtime version(s) ${errorVersionString} ...`);
+                    this.outputChannel.append(`Still downloading .NET runtime version(s) ${errorVersionString} ...`);
                 } else {
                     this.stopDownloadIndicator();
                 }

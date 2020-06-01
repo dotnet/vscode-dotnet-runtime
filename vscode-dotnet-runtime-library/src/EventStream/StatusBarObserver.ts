@@ -20,13 +20,13 @@ export class StatusBarObserver implements IEventStreamObserver {
     public post(event: IEvent): void {
         switch (event.type) {
             case EventType.DotnetAcquisitionStart:
-                this.setAndShowStatusBar('$(cloud-download) Downloading .NET Core runtime...', 'dotnet.showAcquisitionLog', '', 'Downloading .NET Core runtime...');
+                this.setAndShowStatusBar('$(cloud-download) Downloading .NET runtime...', 'dotnet.showAcquisitionLog', '', 'Downloading .NET runtime...');
                 break;
             case EventType.DotnetAcquisitionCompleted:
                 this.resetAndHideStatusBar();
                 break;
             case EventType.DotnetAcquisitionError:
-                this.setAndShowStatusBar('$(alert) Error acquiring .NET Core runtime!', 'dotnet.showAcquisitionLog', StatusBarColors.Red, 'Error acquiring .NET Core runtime');
+                this.setAndShowStatusBar('$(alert) Error acquiring .NET runtime!', 'dotnet.showAcquisitionLog', StatusBarColors.Red, 'Error acquiring .NET runtime');
                 break;
         }
     }
