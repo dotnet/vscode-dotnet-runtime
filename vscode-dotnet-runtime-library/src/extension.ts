@@ -59,7 +59,7 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
         throw new Error(`Could not resolve dotnet acquisition extension '${parentExtensionId}' location`);
     }
 
-    const outputChannel = vscode.window.createOutputChannel('.NET Core Runtime');
+    const outputChannel = vscode.window.createOutputChannel('.NET Runtime');
     if (!fs.existsSync(context.logPath)) {
         fs.mkdirSync(context.logPath);
     }
@@ -106,7 +106,7 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) => {
         const dotnetPath = await callWithErrorHandling<Promise<IDotnetAcquireResult>>(async () => {
             if (!commandContext.version || commandContext.version === 'latest') {
-                throw new Error(`Cannot acquire .NET Core version "${commandContext.version}". Please provide a valid version.`);
+                throw new Error(`Cannot acquire .NET version "${commandContext.version}". Please provide a valid version.`);
             }
             return acquisitionWorker.acquire(commandContext.version);
         }, issueContext(commandContext.errorConfiguration, 'acquire'));

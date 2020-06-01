@@ -45,7 +45,7 @@ suite('WebRequestWorker Unit Tests', () => {
             installationValidator: new MockInstallationValidator(eventStream),
             timeoutValue: 10,
         });
-        return assert.isRejected(acquisitionWorker.acquire(versionPairs[0][0]), Error, 'Dotnet Core Acquisition Failed');
+        return assert.isRejected(acquisitionWorker.acquire(versionPairs[0][0]), Error, '.NET Acquisition Failed');
     });
 
     test('Install Script Request Failure', async () => {

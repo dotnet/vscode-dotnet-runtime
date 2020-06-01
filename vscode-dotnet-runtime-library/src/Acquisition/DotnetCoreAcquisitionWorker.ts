@@ -61,7 +61,7 @@ export class DotnetCoreAcquisitionWorker {
 
             const acquisitionPromise = this.acquireCore(version).catch((error: Error) => {
                 delete this.acquisitionPromises[version];
-                throw new Error(`Dotnet Core Acquisition Failed: ${error.message}`);
+                throw new Error(`.NET Acquisition Failed: ${error.message}`);
             });
 
             this.acquisitionPromises[version] = acquisitionPromise;

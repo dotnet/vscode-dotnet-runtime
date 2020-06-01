@@ -53,7 +53,7 @@ export class DotnetCoreDependencyInstaller {
 
         // Run the installer for the distro passing in any additional libs for it
         return this.executeCommandInTerminal(
-            'Linux dependency installer (.NET Core)',
+            'Linux dependency installer (.NET)',
             shellCommand,
             [path.join(scriptRoot, 'install-linux-prereqs.sh'),
                 distro,
