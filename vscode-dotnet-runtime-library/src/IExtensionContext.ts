@@ -2,11 +2,13 @@
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
+import { IWindowDisplayWorker } from './EventStream/IWindowDisplayWorker';
 import { ITelemetryReporter } from './EventStream/TelemetryObserver';
 
 export interface IExtensionContext {
     telemetryReporter: ITelemetryReporter | undefined;
     extensionConfiguration: IExtensionConfiguration;
+    displayWorker: IWindowDisplayWorker;
 }
 
 export interface IExtensionConfiguration {
@@ -14,6 +16,6 @@ export interface IExtensionConfiguration {
 }
 
 export interface IExistingPath {
-    ['version']: string;
+    ['extensionId']: string;
     ['path']: string;
 }

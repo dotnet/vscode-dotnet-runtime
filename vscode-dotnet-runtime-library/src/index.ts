@@ -5,6 +5,7 @@
 
 export * from './extension';
 export * from './test/mocks/MockObjects';
+export * from './test/mocks/MockWindowDisplayWorker';
 export * from './IExtensionContext';
 export * from './IDotnetAcquireContext';
 export * from './IDotnetAcquireResult';

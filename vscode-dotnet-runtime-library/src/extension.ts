@@ -55,14 +55,14 @@ export namespace configKeys {
     export const existingPath = 'existingDotnetPath';
 }
 
-export function activate(context: vscode.ExtensionContext, parentExtensionId: string, extensionContext?: IExtensionContext) {
+export function activate(context: vscode.ExtensionContext, extensionId: string, extensionContext?: IExtensionContext) {
     const extensionConfiguration = extensionContext !== undefined && extensionContext.extensionConfiguration ?
         extensionContext.extensionConfiguration :
         vscode.workspace.getConfiguration(configPrefix);
-    const extension = vscode.extensions.getExtension(parentExtensionId);
+    const extension = vscode.extensions.getExtension(extensionId);
 
     if (!extension) {
-        throw new Error(`Could not resolve dotnet acquisition extension '${parentExtensionId}' location`);
+        throw new Error(`Could not resolve dotnet acquisition extension '${extensionId}' location`);
     }
 
     const outputChannel = vscode.window.createOutputChannel('.NET Core Runtime');
@@ -86,11 +86,12 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
         eventStream.subscribe(event => observer.post(event));
     }
 
+    const displayWorker = extensionContext ? extensionContext.displayWorker : new WindowDisplayWorker();
     const issueContext = (errorConfiguration: ErrorConfiguration | undefined, commandName: string, version?: string) => {
         return {
             logger: loggingObserver,
             errorConfiguration: errorConfiguration || AcquireErrorConfiguration.DisplayAllErrorPopups,
-            displayWorker: new WindowDisplayWorker(),
+            displayWorker,
             eventStream,
             commandName,
             version,
@@ -117,7 +118,7 @@ export function activate(context: vscode.ExtensionContext, parentExtensionId: st
                 throw new Error(`Cannot acquire .NET Core version "${commandContext.version}". Please provide a valid version.`);
             }
 
-            const existingPath = acquisitionWorker.resolveExistingPath(extensionConfiguration.get<IExistingPath[]>(configKeys.existingPath), commandContext.version);
+            const existingPath = acquisitionWorker.resolveExistingPath(extensionConfiguration.get<IExistingPath[]>(configKeys.existingPath), commandContext.requestingExtensionId, displayWorker);
             if (existingPath) {
                 eventStream.post(new DotnetExistingPathResolutionCompleted(existingPath.dotnetPath));
                 return new Promise((resolve) => {

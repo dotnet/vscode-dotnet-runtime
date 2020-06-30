@@ -6,11 +6,17 @@ import { IWindowDisplayWorker } from '../../EventStream/IWindowDisplayWorker';
 
 export class MockWindowDisplayWorker implements IWindowDisplayWorker {
     public errorMessage = '';
+    public warningMessage = '';
     public clipboardText = '';
     public options: string[] = [];
 
     public showErrorMessage(message: string, callback: (response: string| undefined) => void, ...items: string[]): void {
         this.errorMessage = message;
+        this.options = items;
+    }
+
+    public showWarningMessage(message: string, callback: (response: string| undefined) => void, ...items: string[]): void {
+        this.warningMessage = message;
         this.options = items;
     }
 

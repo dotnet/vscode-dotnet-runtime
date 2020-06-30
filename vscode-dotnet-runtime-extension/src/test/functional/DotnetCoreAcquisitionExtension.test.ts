@@ -14,6 +14,7 @@ import {
   MockExtensionConfiguration,
   MockExtensionContext,
   MockTelemetryReporter,
+  MockWindowDisplayWorker,
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 const assert = chai.assert;
@@ -25,6 +26,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   const mockState = new MockExtensionContext();
   const extensionPath = path.join(__dirname, '/../../..');
   const logPath = path.join(__dirname, 'logs');
+  const requestingExtensionId = 'fake.extension';
+  const mockDisplayWorker = new MockWindowDisplayWorker();
   let extensionContext: vscode.ExtensionContext;
 
   this.beforeAll(async () => {
@@ -37,7 +40,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     } as any;
     extension.activate(extensionContext, {
       telemetryReporter: new MockTelemetryReporter(),
-      extensionConfiguration: new MockExtensionConfiguration([{version: '0.1', path: 'foo'}], true),
+      extensionConfiguration: new MockExtensionConfiguration([{extensionId: 'alternative.extension', path: 'foo'}], true),
+      displayWorker: mockDisplayWorker,
     });
   });
 
@@ -56,7 +60,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   });
 
   test('Install Command', async () => {
-    const context: IDotnetAcquireContext = { version: '2.2' };
+    const context: IDotnetAcquireContext = { version: '2.2', requestingExtensionId };
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
     assert.exists(result);
     assert.exists(result!.dotnetPath);
@@ -65,7 +69,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   }).timeout(40000);
 
   test('Uninstall Command', async () => {
-    const context: IDotnetAcquireContext = { version: '2.1' };
+    const context: IDotnetAcquireContext = { version: '2.1', requestingExtensionId };
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
     assert.exists(result);
     assert.exists(result!.dotnetPath);
@@ -79,7 +83,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     const versions = ['2.2', '3.0', '3.1'];
     let dotnetPaths: string[] = [];
     for (const version of versions) {
-      const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', { version });
+      const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', { version, requestingExtensionId });
       assert.exists(result);
       assert.exists(result!.dotnetPath);
       assert.include(result!.dotnetPath, version);
@@ -94,7 +98,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   }).timeout(60000);
 
   test('Telemetry Sent During Install and Uninstall', async () => {
-    const context: IDotnetAcquireContext = { version: '2.2' };
+    const context: IDotnetAcquireContext = { version: '2.2', requestingExtensionId };
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
     assert.exists(result);
     assert.exists(result!.dotnetPath);
@@ -119,7 +123,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   }).timeout(40000);
 
   test('Telemetry Sent on Error', async () => {
-    const context: IDotnetAcquireContext = { version: 'foo' };
+    const context: IDotnetAcquireContext = { version: 'foo', requestingExtensionId };
     try {
       await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
       assert(false); // An error should have been thrown
@@ -129,8 +133,17 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     }
   }).timeout(2000);
 
+  test('Install Command Passes With Warning With No RequestingExtensionId', async () => {
+    const context: IDotnetAcquireContext = { version: '3.1' };
+    const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
+    assert.exists(result);
+    assert.exists(result!.dotnetPath);
+    assert.include(result!.dotnetPath, context.version);
+    assert.include(mockDisplayWorker.warningMessage, 'Ignoring existing .NET paths');
+  }).timeout(40000);
+
   test('Install Command With Path Config Defined', async () => {
-    const context: IDotnetAcquireContext = { version: '0.1' };
+    const context: IDotnetAcquireContext = { version: '0.1', requestingExtensionId: 'alternative.extension' };
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
     assert.exists(result);
     assert.exists(result!.dotnetPath);

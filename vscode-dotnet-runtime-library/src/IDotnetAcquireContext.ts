@@ -7,5 +7,6 @@ import { AcquireErrorConfiguration } from './Utils/ErrorHandler';
 
 export interface IDotnetAcquireContext {
     version: string;
+    requestingExtensionId?: string;
     errorConfiguration?: AcquireErrorConfiguration;
 }

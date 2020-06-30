@@ -15,6 +15,7 @@ import {
     DotnetUninstallAllCompleted,
     DotnetUninstallAllStarted,
 } from '../EventStream/EventStreamEvents';
+import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
 import { IExistingPath } from '../IExtensionContext';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
@@ -49,11 +50,18 @@ export class DotnetCoreAcquisitionWorker {
         this.context.eventStream.post(new DotnetUninstallAllCompleted());
     }
 
-    public resolveExistingPath(existingPaths: IExistingPath[] | undefined, version: string): IDotnetAcquireResult | undefined {
+    public resolveExistingPath(existingPaths: IExistingPath[] | undefined, extensionId: string | undefined, windowDisplayWorker: IWindowDisplayWorker): IDotnetAcquireResult | undefined {
         if (existingPaths) {
-            const versionPath = existingPaths.filter((pair) => pair.version === version || pair.version.toLowerCase() === 'all');
-            if (versionPath && versionPath.length > 0) {
-                return { dotnetPath: versionPath![0].path };
+            if (!extensionId) {
+                windowDisplayWorker.showWarningMessage(
+                    'Ignoring existing .NET paths defined in settings.json because requesting extension does not define its extension ID. Please file a bug against the requesting extension.',
+                    () => { /* No callback */ },
+                );
+                return;
+            }
+            const existingPath = existingPaths.filter((pair) => pair.extensionId === extensionId);
+            if (existingPath && existingPath.length > 0) {
+                return { dotnetPath: existingPath![0].path };
             }
         }
     }

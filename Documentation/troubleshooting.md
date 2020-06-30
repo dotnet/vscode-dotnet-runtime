@@ -18,12 +18,20 @@ The .NET Install Tool for Extension Authors requires TLS 1.2 to be enabled in or
 
 ## Manually Installing .NET
 
-If .NET installation is failing or you want to reuse an existing installation of .NET, you can use the `dotnetAcquisitionExtension.existingDotnetPath` setting. .NET can be manually installed from [the .NET website](https://aka.ms/dotnet-core-download). To direct this extension to that installation, update your settings with the version and the path as illustrated below. Note that if the version is marked as `all` then this location will be used for any version of .NET requested.
+If .NET installation is failing or you want to reuse an existing installation of .NET, you can use the `dotnetAcquisitionExtension.existingDotnetPath` setting. .NET can be manually installed from [the .NET website](https://aka.ms/dotnet-core-download). To direct this extension to that installation, update your settings with the extension ID and the path as illustrated below.
+
+#### Windows
 
 ```json
     "dotnetAcquisitionExtension.existingDotnetPath": [
-        {"version": "3.1", "path": "C:\\Program Files\\dotnet"},
-        {"version": "all", "path": "C:\\local\\installation\\location"}
+        {"extensionId": "msazurermtools.azurerm-vscode-tools", "path": "C:\Program Files\dotnet\dotnet.exe"}
+    ]
+```
+
+#### Mac
+```json
+    "dotnetAcquisitionExtension.existingDotnetPath": [
+        {"extensionId": "msazurermtools.azurerm-vscode-tools", "path": "/usr/local/share/dotnet/dotnet"}
     ]
 ```
 
