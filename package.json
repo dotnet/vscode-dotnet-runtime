@@ -72,6 +72,7 @@
 		"ts-loader": "^6.2.1",
 		"typescript": "3.4.5",
 		"webpack": "^4.41.5",
-		"webpack-cli": "^3.3.10"
+		"webpack-cli": "^3.3.10",
+		"yargs-parser": "^20.2.0"
 	}
 }
