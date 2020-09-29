@@ -5,6 +5,7 @@
 import * as chai from 'chai';
 import { AcquireErrorConfiguration } from '../../Utils/ErrorHandler';
 import { formatIssueUrl } from '../../Utils/IssueReporter';
+import { MockExtensionConfigurationWorker } from '../mocks/MockExtensionConfigurationWorker';
 import { MockEventStream, MockLoggingObserver } from '../mocks/MockObjects';
 import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
 const assert = chai.assert;
@@ -17,6 +18,7 @@ suite('IssueReporter Unit Tests', () => {
                 logger: new MockLoggingObserver(),
                 errorConfiguration: AcquireErrorConfiguration.DisableErrorPopups,
                 displayWorker: new MockWindowDisplayWorker(),
+                extensionConfigWorker: new MockExtensionConfigurationWorker(),
                 commandName: 'test',
                 eventStream: new MockEventStream(),
                 version: '',

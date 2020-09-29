@@ -2,11 +2,13 @@
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
+import * as fs from 'fs';
 import * as open from 'open';
 import {
     DotnetCommandFailed,
     DotnetCommandSucceeded,
 } from '../EventStream/EventStreamEvents';
+import { ExistingPathKeys, IExistingPath } from '../IExtensionContext';
 import { IIssueContext } from './IIssueContext';
 import { formatIssueUrl } from './IssueReporter';
 
@@ -32,6 +34,7 @@ export namespace errorConstants {
     export const reportOption = 'Report an issue';
     export const hideOption = 'Don\'t show again';
     export const moreInfoOption = 'More information';
+    export const configureManuallyOption = 'Configure manually';
     export const moreInfoUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/master/Documentation/troubleshooting.md';
 }
 
@@ -43,7 +46,7 @@ export namespace timeoutConstants {
 
 let showMessage = true;
 
-export async function callWithErrorHandling<T>(callback: () => T, context: IIssueContext): Promise<T | undefined> {
+export async function callWithErrorHandling<T>(callback: () => T, context: IIssueContext, requestingExtensionId?: string): Promise<T | undefined> {
     try {
         const result = await callback();
         context.eventStream.post(new DotnetCommandSucceeded(context.commandName));
@@ -59,6 +62,11 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
                     }
                 }, timeoutConstants.moreInfoOption);
             } else if (error.constructor.name !== 'UserCancelledError' && showMessage) {
+                let errorOptions = [errorConstants.reportOption, errorConstants.hideOption, errorConstants.moreInfoOption];
+                if (requestingExtensionId) {
+                    errorOptions = errorOptions.concat(errorConstants.configureManuallyOption);
+                }
+
                 context.displayWorker.showErrorMessage(`${errorConstants.errorMessage}${ context.version ? ` (${context.version})` : '' }: ${ error.message }`,
                                                         async (response: string | undefined) => {
                     if (response === errorConstants.moreInfoOption) {
@@ -69,12 +77,29 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
                         const [url, issueBody] = formatIssueUrl(error, context);
                         context.displayWorker.copyToUserClipboard(issueBody);
                         open(url);
+                    } else if (response === errorConstants.configureManuallyOption && requestingExtensionId) {
+                        await configureManualInstall(context, requestingExtensionId);
                     }
-                }, errorConstants.reportOption, errorConstants.hideOption, errorConstants.moreInfoOption);
+                }, ...errorOptions);
             }
         }
         return undefined;
     } finally {
         context.logger.dispose();
+    }
+}
+
+async function configureManualInstall(context: IIssueContext, requestingExtensionId: string): Promise<void> {
+    const manualPath = await context.displayWorker.displayPathConfigPopUp();
+    if (manualPath && fs.existsSync(manualPath)) {
+        let configVal: IExistingPath[] = [{ [ExistingPathKeys.extensionIdKey]: requestingExtensionId, [ExistingPathKeys.pathKey] : manualPath}];
+        const existingConfigVal = context.extensionConfigWorker.getPathConfigurationValue();
+        if (existingConfigVal) {
+            configVal = configVal.concat(existingConfigVal);
+        }
+        await context.extensionConfigWorker.setPathConfigurationValue(configVal);
+        context.displayWorker.showInformationMessage(`Set .NET path to ${manualPath}. Please reload VSCode to apply settings.`, () => { /* No callback needed */});
+    } else {
+        context.displayWorker.showWarningMessage('Manually configured path was not valid.', () => { /* No callback needed */ });
     }
 }

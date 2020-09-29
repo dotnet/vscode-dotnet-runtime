@@ -28,12 +28,13 @@ import { IDotnetAcquireContext } from './IDotnetAcquireContext';
 import { IDotnetAcquireResult } from './IDotnetAcquireResult';
 import { IDotnetEnsureDependenciesContext } from './IDotnetEnsureDependenciesContext';
 import { IDotnetUninstallContext } from './IDotnetUninstallContext';
-import { IExistingPath, IExtensionConfiguration, IExtensionContext } from './IExtensionContext';
+import { IExtensionConfiguration, IExtensionContext } from './IExtensionContext';
 import {
     AcquireErrorConfiguration,
     ErrorConfiguration,
 } from './Utils/ErrorHandler';
 import { callWithErrorHandling } from './Utils/ErrorHandler';
+import { ExtensionConfigurationWorker } from './Utils/ExtensionConfigurationWorker';
 import { IIssueContext } from './Utils/IIssueContext';
 import { formatIssueUrl } from './Utils/IssueReporter';
 
@@ -56,7 +57,7 @@ export namespace configKeys {
 }
 
 export function activate(context: vscode.ExtensionContext, extensionId: string, extensionContext?: IExtensionContext) {
-    const extensionConfiguration = extensionContext !== undefined && extensionContext.extensionConfiguration ?
+    const extensionConfiguration: IExtensionConfiguration = extensionContext !== undefined && extensionContext.extensionConfiguration ?
         extensionContext.extensionConfiguration :
         vscode.workspace.getConfiguration(configPrefix);
     const extension = vscode.extensions.getExtension(extensionId);
@@ -87,11 +88,13 @@ export function activate(context: vscode.ExtensionContext, extensionId: string, 
     }
 
     const displayWorker = extensionContext ? extensionContext.displayWorker : new WindowDisplayWorker();
+    const extensionConfigWorker = new ExtensionConfigurationWorker(extensionConfiguration, configKeys.existingPath);
     const issueContext = (errorConfiguration: ErrorConfiguration | undefined, commandName: string, version?: string) => {
         return {
             logger: loggingObserver,
             errorConfiguration: errorConfiguration || AcquireErrorConfiguration.DisplayAllErrorPopups,
             displayWorker,
+            extensionConfigWorker,
             eventStream,
             commandName,
             version,
@@ -118,7 +121,7 @@ export function activate(context: vscode.ExtensionContext, extensionId: string, 
                 throw new Error(`Cannot acquire .NET version "${commandContext.version}". Please provide a valid version.`);
             }
 
-            const existingPath = acquisitionWorker.resolveExistingPath(extensionConfiguration.get<IExistingPath[]>(configKeys.existingPath), commandContext.requestingExtensionId, displayWorker);
+            const existingPath = acquisitionWorker.resolveExistingPath(extensionConfigWorker.getPathConfigurationValue(), commandContext.requestingExtensionId, displayWorker);
             if (existingPath) {
                 eventStream.post(new DotnetExistingPathResolutionCompleted(existingPath.dotnetPath));
                 return new Promise((resolve) => {
@@ -127,7 +130,7 @@ export function activate(context: vscode.ExtensionContext, extensionId: string, 
             }
 
             return acquisitionWorker.acquire(commandContext.version);
-        }, issueContext(commandContext.errorConfiguration, 'acquire', commandContext.version));
+        }, issueContext(commandContext.errorConfiguration, 'acquire', commandContext.version), commandContext.requestingExtensionId);
         return dotnetPath;
     });
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallAll}`, async (commandContext: IDotnetUninstallContext | undefined) => {

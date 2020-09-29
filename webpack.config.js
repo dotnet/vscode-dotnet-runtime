@@ -43,9 +43,9 @@ const config = {
     ]
   },
   plugins: [
-    new CopyPlugin([
+    new CopyPlugin({ patterns: [
       { from: path.resolve(__dirname, './vscode-dotnet-runtime-library/install scripts'), to: path.resolve(__dirname, 'dist', 'install scripts') }
-  ]),
+  ]}),
   ]
 };
 module.exports = config;
