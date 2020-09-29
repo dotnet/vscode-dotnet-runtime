@@ -5,5 +5,6 @@
 
 export interface IWindowDisplayWorker {
     showErrorMessage(message: string, callback: (response: string| undefined) => void, ...items: string[]): void;
+    showWarningMessage(message: string, callback: (response: string| undefined) => void, ...items: string[]): void;
     copyToUserClipboard(text: string): Promise<void>;
 }

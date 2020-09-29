@@ -19,6 +19,7 @@ suite('IssueReporter Unit Tests', () => {
                 displayWorker: new MockWindowDisplayWorker(),
                 commandName: 'test',
                 eventStream: new MockEventStream(),
+                version: '',
             });
 
         const expectedBodyContent = ['Error', 'Repro steps'];

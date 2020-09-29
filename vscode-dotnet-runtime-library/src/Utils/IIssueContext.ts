@@ -13,4 +13,5 @@ export interface IIssueContext {
     displayWorker: IWindowDisplayWorker;
     eventStream: IEventStream;
     commandName: string;
+    version: string | undefined;
 }

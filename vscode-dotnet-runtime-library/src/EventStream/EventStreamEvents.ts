@@ -207,6 +207,16 @@ export class DotnetInstallScriptAcquisitionCompleted extends DotnetAcquisitionSu
     public readonly eventName = 'DotnetInstallScriptAcquisitionCompleted';
 }
 
+export class DotnetExistingPathResolutionCompleted extends DotnetAcquisitionSuccessEvent {
+    public readonly eventName = 'DotnetExistingPathResolutionCompleted';
+
+    constructor(public readonly resolvedPath: string) { super(); }
+
+    public getProperties(telemetry = false) {
+        return telemetry ? undefined : { ConfiguredPath : this.resolvedPath};
+    }
+}
+
 export abstract class DotnetAcquisitionMessage extends IEvent {
     public readonly type = EventType.DotnetAcquisitionMessage;
 

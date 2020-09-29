@@ -10,6 +10,10 @@ export class WindowDisplayWorker implements IWindowDisplayWorker {
         window.showErrorMessage(message, ...items).then(async (response: string | undefined) => callback(response) );
     }
 
+    public showWarningMessage(message: string, callback: (response: string| undefined) => void, ...items: string[]): void {
+        window.showWarningMessage(message, ...items).then(async (response: string | undefined) => callback(response) );
+    }
+
     public async copyToUserClipboard(text: string): Promise<void> {
         await env.clipboard.writeText(text);
     }

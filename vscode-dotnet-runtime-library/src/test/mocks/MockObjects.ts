@@ -15,6 +15,7 @@ import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStream
 import { IEvent } from '../../EventStream/IEvent';
 import { ILoggingObserver } from '../../EventStream/ILoggingObserver';
 import { ITelemetryReporter } from '../../EventStream/TelemetryObserver';
+import { IExistingPath, IExtensionConfiguration } from '../../IExtensionContext';
 import { WebRequestWorker } from '../../Utils/WebRequestWorker';
 /* tslint:disable:no-any */
 
@@ -195,5 +196,19 @@ export class MockLoggingObserver implements ILoggingObserver {
 
     public getFileLocation(): string {
         return 'Mock file location';
+    }
+}
+
+export class MockExtensionConfiguration implements IExtensionConfiguration {
+    constructor(private readonly existingPaths: IExistingPath[], private readonly enableTelemetry: boolean) { }
+
+    public get<T>(name: string): T | undefined {
+        if (name === 'existingDotnetPath') {
+            return this.existingPaths as unknown as T;
+        } else if (name === 'enableTelemetry') {
+            return this.enableTelemetry as unknown as T;
+        } else {
+            return undefined;
+        }
     }
 }
