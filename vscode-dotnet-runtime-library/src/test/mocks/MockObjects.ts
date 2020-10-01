@@ -202,6 +202,11 @@ export class MockLoggingObserver implements ILoggingObserver {
 export class MockExtensionConfiguration implements IExtensionConfiguration {
     constructor(private readonly existingPaths: IExistingPath[], private readonly enableTelemetry: boolean) { }
 
+    public update<T>(section: string, value: T): Thenable<void> {
+        // Not used, stubbed to implement interface
+        return new Promise((resolve) => resolve());
+    }
+
     public get<T>(name: string): T | undefined {
         if (name === 'existingDotnetPath') {
             return this.existingPaths as unknown as T;

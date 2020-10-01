@@ -13,9 +13,15 @@ export interface IExtensionContext {
 
 export interface IExtensionConfiguration {
     get<T>(name: string): T | undefined;
+    update<T>(section: string, value: T): Thenable<void>;
+}
+
+export namespace ExistingPathKeys {
+    export const extensionIdKey = 'extensionId';
+    export const pathKey = 'path';
 }
 
 export interface IExistingPath {
-    ['extensionId']: string;
-    ['path']: string;
+    [ExistingPathKeys.extensionIdKey]: string;
+    [ExistingPathKeys.pathKey]: string;
 }
