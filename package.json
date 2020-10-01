@@ -71,6 +71,7 @@
 		"compile-all": "build.cmd"
 	},
 	"dependencies": {
+		"es-abstract": "^1.18.0-next.1",
 		"p-retry": "^4.2.0",
 		"vscode-dotnet-runtime-extension": "file:./vscode-dotnet-runtime-extension"
 	},
