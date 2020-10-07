@@ -71,11 +71,13 @@
 		"compile-all": "build.cmd"
 	},
 	"dependencies": {
+		"es-abstract": "^1.18.0-next.1",
 		"p-retry": "^4.2.0",
 		"vscode-dotnet-runtime-extension": "file:./vscode-dotnet-runtime-extension"
 	},
 	"devDependencies": {
 		"copy-webpack-plugin": "^6.1.1",
+		"eol": "^0.9.1",
 		"ts-loader": "^6.2.1",
 		"typescript": "3.4.5",
 		"webpack": "^4.41.5",
