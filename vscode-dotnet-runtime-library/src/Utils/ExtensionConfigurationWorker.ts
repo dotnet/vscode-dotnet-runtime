@@ -14,6 +14,6 @@ export class ExtensionConfigurationWorker implements IExtensionConfigurationWork
     }
 
     public async setPathConfigurationValue(configValue: IExistingPath[]): Promise<void> {
-        await this.extensionConfiguration.update<IExistingPath[]>(this.pathConfigValueName, configValue);
+        await this.extensionConfiguration.update<IExistingPath[]>(this.pathConfigValueName, configValue, true);
     }
 }
