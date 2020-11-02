@@ -1,5 +1,16 @@
 # Change Log
 
+## 0.2.0
+
+### Added
+
+- Bundling backup install scripts on build ( #84 )
+- Added ability to manually configure .NET path ( #80, #125 )
+
+### Fixed
+
+- Added -NoProfile switch for running powershell script ( #121 )
+
 ## 0.1.2
 
 ### Added
