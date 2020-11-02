@@ -92,13 +92,17 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
 async function configureManualInstall(context: IIssueContext, requestingExtensionId: string): Promise<void> {
     const manualPath = await context.displayWorker.displayPathConfigPopUp();
     if (manualPath && fs.existsSync(manualPath)) {
-        let configVal: IExistingPath[] = [{ [ExistingPathKeys.extensionIdKey]: requestingExtensionId, [ExistingPathKeys.pathKey] : manualPath}];
-        const existingConfigVal = context.extensionConfigWorker.getPathConfigurationValue();
-        if (existingConfigVal) {
-            configVal = configVal.concat(existingConfigVal);
+        try {
+            let configVal: IExistingPath[] = [{ [ExistingPathKeys.extensionIdKey]: requestingExtensionId, [ExistingPathKeys.pathKey] : manualPath}];
+            const existingConfigVal = context.extensionConfigWorker.getPathConfigurationValue();
+            if (existingConfigVal) {
+                configVal = configVal.concat(existingConfigVal);
+            }
+            await context.extensionConfigWorker.setPathConfigurationValue(configVal);
+            context.displayWorker.showInformationMessage(`Set .NET path to ${manualPath}. Please reload VSCode to apply settings.`, () => { /* No callback needed */});
+        } catch (e) {
+            context.displayWorker.showWarningMessage(`Failed to configure the path: ${e.toString()}`, () => { /* No callback needed */ });
         }
-        await context.extensionConfigWorker.setPathConfigurationValue(configVal);
-        context.displayWorker.showInformationMessage(`Set .NET path to ${manualPath}. Please reload VSCode to apply settings.`, () => { /* No callback needed */});
     } else {
         context.displayWorker.showWarningMessage('Manually configured path was not valid.', () => { /* No callback needed */ });
     }

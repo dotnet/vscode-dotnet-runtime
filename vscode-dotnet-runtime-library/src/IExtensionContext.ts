@@ -13,7 +13,7 @@ export interface IExtensionContext {
 
 export interface IExtensionConfiguration {
     get<T>(name: string): T | undefined;
-    update<T>(section: string, value: T): Thenable<void>;
+    update<T>(section: string, value: T, globalSettings: boolean): Thenable<void>;
 }
 
 export namespace ExistingPathKeys {
