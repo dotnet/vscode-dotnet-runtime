@@ -57,6 +57,14 @@ export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker {
     }
 }
 
+export class RejectingAcquisitionInvoker extends IAcquisitionInvoker {
+    public installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            reject('Rejecting message');
+        });
+    }
+}
+
 export class ErrorAcquisitionInvoker extends IAcquisitionInvoker {
     public installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
         throw new Error('Command Failed');

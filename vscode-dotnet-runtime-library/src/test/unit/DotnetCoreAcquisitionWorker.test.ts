@@ -21,6 +21,7 @@ import {
     MockInstallationValidator,
     MockVersionResolver,
     NoInstallAcquisitionInvoker,
+    RejectingAcquisitionInvoker,
     versionPairs,
 } from '../mocks/MockObjects';
 const assert = chai.assert;
@@ -134,5 +135,21 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function() {
         // We should only actually acquire once
         const events = eventStream.events.filter(event => event instanceof DotnetAcquisitionStarted);
         assert.equal(events.length, 1);
-      });
+    });
+
+    test('Error is Redirected on Acquisition Failure', async () => {
+        const context = new MockExtensionContext();
+        const eventStream = new MockEventStream();
+        const acquisitionWorker = new DotnetCoreAcquisitionWorker({
+            storagePath: '',
+            extensionState: context,
+            eventStream,
+            acquisitionInvoker: new RejectingAcquisitionInvoker(eventStream),
+            versionResolver: new MockVersionResolver(context, eventStream),
+            installationValidator: new MockInstallationValidator(eventStream),
+            timeoutValue: 10,
+        });
+
+        return assert.isRejected(acquisitionWorker.acquire(versionPairs[0][0]), '.NET Acquisition Failed: Installation failed: Rejecting message');
+    });
 });
