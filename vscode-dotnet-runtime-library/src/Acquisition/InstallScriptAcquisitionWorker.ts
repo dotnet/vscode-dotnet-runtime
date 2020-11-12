@@ -18,13 +18,13 @@ import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWork
 
 export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisitionWorker {
     protected webWorker: WebRequestWorker;
-    private readonly scriptAcquisitionUrl: string = 'https://dot.net/v1/dotnet-install';
+    private readonly scriptAcquisitionUrl: string = 'https://aka.ms/dotnet-install-script-';
     private readonly scriptFilePath: string;
 
     constructor(extensionState: Memento, private readonly eventStream: IEventStream) {
-        const scriptFileEnding = os.platform() === 'win32' ? '.ps1' : '.sh';
+        const scriptFileEnding = os.platform() === 'win32' ? 'ps1' : 'sh';
         const scriptFileName = 'dotnet-install';
-        this.scriptFilePath = path.join(__dirname, 'install scripts', scriptFileName + scriptFileEnding);
+        this.scriptFilePath = path.join(__dirname, 'install scripts', `${scriptFileName}.${scriptFileEnding}`);
         this.webWorker = new WebRequestWorker(extensionState, eventStream, this.scriptAcquisitionUrl + scriptFileEnding, scriptFileName);
     }
 

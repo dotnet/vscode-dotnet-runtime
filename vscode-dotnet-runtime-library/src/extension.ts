@@ -16,6 +16,7 @@ import { VersionResolver } from './Acquisition/VersionResolver';
 import { EventStream } from './EventStream/EventStream';
 import {
     DotnetAcquisitionMissingLinuxDependencies,
+    DotnetAcquisitionRequested,
     DotnetExistingPathResolutionCompleted,
 } from './EventStream/EventStreamEvents';
 import { IEventStreamObserver } from './EventStream/IEventStreamObserver';
@@ -117,6 +118,8 @@ export function activate(context: vscode.ExtensionContext, extensionId: string, 
 
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) => {
         const dotnetPath = await callWithErrorHandling<Promise<IDotnetAcquireResult>>(async () => {
+            eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
+
             if (!commandContext.version || commandContext.version === 'latest') {
                 throw new Error(`Cannot acquire .NET version "${commandContext.version}". Please provide a valid version.`);
             }

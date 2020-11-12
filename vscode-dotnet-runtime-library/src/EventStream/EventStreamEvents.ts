@@ -289,6 +289,20 @@ export class DotnetInstallationValidated extends DotnetAcquisitionMessage {
     }
 }
 
+export class DotnetAcquisitionRequested extends DotnetAcquisitionMessage {
+    public readonly eventName = 'DotnetAcquisitionRequested';
+
+    constructor(public readonly version: string,
+                public readonly requestingId = '') {
+        super();
+    }
+
+    public getProperties() {
+        return {AcquisitionStartVersion : this.version,
+                RequestingExtensionId: this.requestingId};
+    }
+}
+
 export class TestAcquireCalled extends IEvent {
     public readonly eventName = 'TestAcquireCalled';
     public readonly type = EventType.DotnetAcquisitionTest;

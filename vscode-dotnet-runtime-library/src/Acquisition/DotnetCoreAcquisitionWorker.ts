@@ -119,7 +119,9 @@ export class DotnetCoreAcquisitionWorker {
             timeoutValue: this.timeoutValue,
         } as IDotnetInstallationContext;
         this.context.eventStream.post(new DotnetAcquisitionStarted(version));
-        await this.context.acquisitionInvoker.installDotnet(installContext);
+        await this.context.acquisitionInvoker.installDotnet(installContext).catch((reason) => {
+            throw Error(`Installation failed: ${reason}`);
+        });
         this.context.installationValidator.validateDotnetInstall(version, dotnetPath);
 
         // Need to re-query our installing versions because there may have been concurrent acquisitions that
