@@ -57,10 +57,7 @@
 					"description": "Timeout for installing .NET in seconds."
 				},
 				"dotnetAcquisitionExtension.existingDotnetPath": {
-					"type": {
-						"version": "string",
-						"path": "string"
-					},
+					"type": "array",
 					"description": "File Path to an existing installation of .NET."
 				}
 			}
