@@ -303,6 +303,18 @@ export class DotnetAcquisitionRequested extends DotnetAcquisitionMessage {
     }
 }
 
+export class WebRequestSent extends DotnetAcquisitionMessage {
+    public readonly eventName = 'WebRequestSent';
+
+    constructor(public readonly url: string) {
+        super();
+    }
+
+    public getProperties() {
+        return {WebRequestUri : this.url};
+    }
+}
+
 export class TestAcquireCalled extends IEvent {
     public readonly eventName = 'TestAcquireCalled';
     public readonly type = EventType.DotnetAcquisitionTest;
