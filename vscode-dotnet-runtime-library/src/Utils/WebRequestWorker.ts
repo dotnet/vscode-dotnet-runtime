@@ -7,7 +7,7 @@ import * as request from 'request-promise-native';
 import { isNullOrUndefined } from 'util';
 import { Memento } from 'vscode';
 import { IEventStream } from '../EventStream/EventStream';
-import { WebRequestError } from '../EventStream/EventStreamEvents';
+import { WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
 
 export class WebRequestWorker {
     private cachedData: string | undefined;
@@ -44,6 +44,7 @@ export class WebRequestWorker {
         };
 
         try {
+            this.eventStream.post(new WebRequestSent(this.url));
             const response = await request.get(options);
             this.cacheResults(response);
             return response;
