@@ -1,5 +1,12 @@
 # Change Log
 
+## 1.0.0
+
+### Fixed
+
+- Correct type checking for configuration values ( #139 )
+- Display script errors in extension error popup ( #137 )
+
 ## 0.2.0
 
 ### Added

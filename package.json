@@ -8,12 +8,11 @@
 		"url": "https://github.com/dotnet/vscode-dotnet-runtime/issues"
 	},
 	"license": "MIT",
-	"preview": true,
 	"author": "Microsoft Corporation",
 	"displayName": ".NET Install Tool for Extension Authors",
-	"description": "Allows acquisition of the .NET Core runtime specifically for VSCode extension authors.",
+	"description": "Allows acquisition of the .NET Core runtime specifically for VS Code extension authors.",
 	"icon": "images/dotnetIcon.png",
-	"version": "0.2.0",
+	"version": "1.0.0",
 	"publisher": "ms-dotnettools",
 	"engines": {
 		"vscode": "^1.41.0"
