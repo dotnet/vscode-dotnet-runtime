@@ -7,10 +7,9 @@ List sorted by last name and the fields are Name (N), GitHub user account (G),
 Description (D).
 
 Note: If you don't find the area in the below list, or you have a general 
-question, send a message to Livar Cunha (@livarcocc) and N. Taylor Mullen
-(@NTaylorMullen). They can ensure that the question gets forwarded to the
-right person or answer it themselves.  
+question, send a message to Sarah Oslund (@sfoslund) or Marc Paine (@marcpopMSFT). 
+They can ensure that the question gets forwarded to theright person or answer it themselves.  
 
-N: N. Taylor Mullen
-G: NTaylorMullen
+N: Sarah Oslund
+G: sfoslund
 D: Everything

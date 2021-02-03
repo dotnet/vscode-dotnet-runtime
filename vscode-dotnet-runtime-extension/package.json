@@ -4,26 +4,70 @@
 		"type": "git",
 		"url": "https://github.com/dotnet/vscode-dotnet-runtime.git"
 	},
+	"bugs": {
+		"url": "https://github.com/dotnet/vscode-dotnet-runtime/issues"
+	},
 	"license": "MIT",
-	"description": "Allows acquisition of the .NET runtime specifically for VSCode extension authors.",
+	"author": "Microsoft Corporation",
+	"displayName": ".NET Install Tool for Extension Authors",
+	"description": "Allows acquisition of the .NET runtime specifically for VS Code extension authors.",
+	"icon": "images/dotnetIcon.png",
+	"version": "1.0.0",
+	"publisher": "ms-dotnettools",
 	"engines": {
 		"vscode": "^1.41.0"
 	},
-	"version": "1.0.0",
-	"publisher": "ms-dotnettools",
+	"categories": [
+		"Other"
+	],
+	"keywords": [
+		".NET",
+		".NET Core",
+		"dotnet",
+		"Extension Authoring"
+	],
 	"activationEvents": [
 		"onCommand:dotnet.acquire",
 		"onCommand:dotnet.uninstallAll",
 		"onCommand:dotnet.showAcquisitionLog",
-		"onCommand:dotnet.ensureDotnetDependencies"
+		"onCommand:dotnet.ensureDotnetDependencies",
+		"onCommand:dotnet.reportIssue"
 	],
-	"main": "./out/extension.js",
+	"main": "./dist/extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "dotnet.reportIssue",
+				"title": "Report an issue with the .NET Install Tool for Extension Authors.",
+				"category": ".NET Install Tool"
+			}
+		],
+		"configuration": {
+			"title": ".NET Install Tool",
+			"properties": {
+				"dotnetAcquisitionExtension.enableTelemetry": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable Telemetry for the .NET install tool."
+				},
+				"dotnetAcquisitionExtension.installTimeoutValue": {
+					"type": "number",
+					"default": 120,
+					"description": "Timeout for installing .NET in seconds."
+				},
+				"dotnetAcquisitionExtension.existingDotnetPath": {
+					"type": "array",
+					"description": "File Path to an existing installation of .NET."
+				}
+			}
+		}
+	},
 	"scripts": {
-		"vscode:prepublish": "npm run compile",
+		"vscode:prepublish": "npm run compile-all && npm install && webpack --mode production",
 		"compile": "npm run clean && tsc -p ./",
 		"watch": "npm run compile && tsc -watch -p ./",
-		"test": "npm run compile --silent && node ./out/test/functional/runTest.js",
-		"clean": "rimraf out",
+		"test": "npm run compile --silent && node ./dist/test/functional/runTest.js",
+		"clean": "rimraf dist",
 		"compile-all": "cd ../vscode-dotnet-runtime-library && npm install && npm run compile && cd ../vscode-dotnet-runtime-extension && npm install && npm run compile",
 		"lint": "tslint -c ../tslint.json '../vscode-dotnet-runtime-library/src/**/*.ts' '../vscode-dotnet-runtime-extension/src/**/*.ts'",
 		"webpack": "webpack --mode development"
@@ -48,7 +92,10 @@
 		"tslint": "^5.20.1",
 		"typescript": "3.4.5",
 		"vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library",
-		"vscode-test": "^1.3.0",
+		"vscode-test": "^1.3.0"
+	},
+	"devDependencies": {
+		"copy-webpack-plugin": "^6.1.1",
 		"webpack": "^4.41.5",
 		"webpack-cli": "^3.3.10"
 	}

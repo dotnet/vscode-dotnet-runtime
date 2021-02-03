@@ -58,7 +58,7 @@ stages:
       condition: or(eq(variables['Agent.OS'], 'Darwin'), eq(variables['Agent.OS'], 'Linux'))
     - task: PublishBuildArtifacts@1
       inputs:
-        pathtoPublish: '$(Build.SourcesDirectory)/vscode-dotnet-runtime-extension/out/test/functional/logs'
+        pathtoPublish: '$(Build.SourcesDirectory)/vscode-dotnet-runtime-extension/dist/test/functional/logs'
         artifactName: 'logs'
       displayName: Publish Logs
       condition: always()
@@ -74,7 +74,7 @@ stages:
       displayName: 'Install Node.js'
     - bash: |
         npm install -g tslint
-        tslint -c tslint.json 'vscode-dotnet-runtime-library/src/**/*.ts' 'vscode-dotnet-runtime-extension/src/**/*.ts'
+        npm run lint
       displayName: Run Lint
   ##### Package and Publish #####
   - job: Package
@@ -101,11 +101,13 @@ stages:
         echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
       name: GetVersion
       displayName: 'Get Version'
+      workingDirectory: vscode-dotnet-runtime-extension
     - bash: |
         npm install -g rimraf
         npm install -g vsce
         vsce package -o $(package-name)-$(GetVersion.version).vsix
       displayName: Package Artifact
+      workingDirectory: vscode-dotnet-runtime-extension
     - task: CopyFiles@2
       displayName: 'Copy Artifact'
       inputs:

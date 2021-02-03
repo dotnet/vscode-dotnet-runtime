@@ -1,0 +1,8 @@
+.vscode/**
+.vscode-test/**
+.devcontainer/**
+node_modules/**
+dist/test/**
+src/**
+tslint.json
+*.vsix
