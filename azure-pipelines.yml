@@ -105,7 +105,7 @@ stages:
     - bash: |
         npm install -g rimraf
         npm install -g vsce
-        vsce package -o $(package-name)-$(GetVersion.version).vsix
+        vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore
       displayName: Package Artifact
       workingDirectory: vscode-dotnet-runtime-extension
     - task: CopyFiles@2
