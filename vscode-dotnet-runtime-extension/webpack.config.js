@@ -9,7 +9,7 @@ const CopyPlugin = require('copy-webpack-plugin');
 const config = {
   target: 'node', // vscode extensions run in a Node.js-context 📖 -> https://webpack.js.org/configuration/node/
 
-  entry: './vscode-dotnet-runtime-extension/src/extension.ts', // the entry point of this extension, 📖 -> https://webpack.js.org/configuration/entry-context/
+  entry: './/src/extension.ts', // the entry point of this extension, 📖 -> https://webpack.js.org/configuration/entry-context/
   output: {
     // the bundle is stored in the 'dist' folder (check package.json), 📖 -> https://webpack.js.org/configuration/output/
     path: path.resolve(__dirname, 'dist'),
@@ -44,7 +44,8 @@ const config = {
   },
   plugins: [
     new CopyPlugin({ patterns: [
-      { from: path.resolve(__dirname, './vscode-dotnet-runtime-library/install scripts'), to: path.resolve(__dirname, 'dist', 'install scripts') }
+      { from: path.resolve(__dirname, '../vscode-dotnet-runtime-library/install scripts'), to: path.resolve(__dirname, 'dist', 'install scripts') },
+      { from: path.resolve(__dirname, '../images'), to: path.resolve(__dirname, 'images') }
   ]}),
   ]
 };
