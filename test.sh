@@ -5,7 +5,6 @@ NC=`tput sgr0`
 
 if [ "$1" = "--tslint" ];
 then
-    pushd vscode-dotnet-runtime-extension
     npm run lint
     if [ $? -ne 0 ];
     then
@@ -18,7 +17,6 @@ then
         echo "${GREEN}TSLint Succeeded.${NC}"
         echo ""
     fi
-    popd
 fi
 
 echo ""
@@ -53,12 +51,33 @@ npm run test
 if [ $? -ne 0 ];
 then
     echo ""
-    echo "${RED}Acquisition Extension Tests Failed.${NC}"
+    echo "${RED}.NET Runtime Acquisition Extension Tests Failed.${NC}"
     echo ""
     RESULT=1
 else
     echo ""
-    echo "${GREEN}Acquisition Extension Tests Succeeded.${NC}"
+    echo "${GREEN}.NET Runtime Acquisition Extension Tests Succeeded.${NC}"
+    echo ""
+fi
+popd
+
+echo ""
+echo "----------- Testing vscode-dotnet-sdk-extension -----------"
+echo ""
+pushd vscode-dotnet-sdk-extension
+rm -rf node_modules
+npm install
+npm run test
+
+if [ $? -ne 0 ];
+then
+    echo ""
+    echo "${RED}.NET SDK Acquisition Extension Tests Failed.${NC}"
+    echo ""
+    RESULT=1
+else
+    echo ""
+    echo "${GREEN}.NET SDK Acquisition Extension Tests Succeeded.${NC}"
     echo ""
 fi
 popd

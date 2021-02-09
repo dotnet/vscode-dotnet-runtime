@@ -1,6 +1,8 @@
 $errorColor = "Red"
 $successColor = "Green"
 
+
+#################### Download backup install scripts ####################
 function DownloadInstallScripts() {
     Invoke-WebRequest https://dot.net/v1/dotnet-install.ps1 -OutFile "./vscode-dotnet-runtime-library/install scripts/dotnet-install.ps1"
     Invoke-WebRequest https://dot.net/v1/dotnet-install.sh -OutFile "./vscode-dotnet-runtime-library/install scripts/dotnet-install.sh"
@@ -24,6 +26,7 @@ if ($?) {
 icacls "./vscode-dotnet-runtime-library/install scripts/dotnet-install.ps1" /grant:r "users:(RX)" /C
 icacls "./vscode-dotnet-runtime-library/install scripts/dotnet-install.sh" /grant:r "users:(RX)" /C
 
+#################### Compile library ####################
 pushd vscode-dotnet-runtime-library
 if (Test-Path node_modules) { rm -r -force node_modules }
 npm install
@@ -36,6 +39,7 @@ if (! $?)
 }
 popd
 
+#################### Compile runtime extension ####################
 pushd vscode-dotnet-runtime-extension
 if (Test-Path node_modules) { rm -r -force node_modules }
 npm install
@@ -48,6 +52,20 @@ if (! $?)
 }
 popd
 
+#################### Compile SDK extension ####################
+pushd vscode-dotnet-sdk-extension
+if (Test-Path node_modules) { rm -r -force node_modules }
+npm install
+npm run compile
+
+if (! $?)
+{
+    Write-Host "`nBuild failed!" -ForegroundColor $errorColor
+    exit 1
+}
+popd
+
+#################### Compile sample extension ####################
 pushd sample
 if (Test-Path node_modules) { rm -r -force node_modules }
 npm install

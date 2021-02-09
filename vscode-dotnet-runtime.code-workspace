@@ -4,6 +4,9 @@
             "path": "vscode-dotnet-runtime-extension"
         },
         {
+            "path": "vscode-dotnet-sdk-extension"
+        },
+        {
             "path": "sample"
         },
         {

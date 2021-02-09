@@ -1,0 +1,32 @@
+{
+	"version": "0.2.0",
+	"configurations": [{
+			"name": "Run .NET SDK Acquisition Extension",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}"
+			],
+			"outFiles": [
+				"${workspaceFolder}/out/**/*.js"
+			],
+			"preLaunchTask": "compile-all"
+		},
+		{
+			"name": ".NET SDK Extension Functional Tests",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}",
+				"--extensionTestsPath=${workspaceFolder}/out/test/functional"
+			],
+			"outFiles": [
+				"${workspaceFolder}/out/test/**/*.js"
+			],
+			"internalConsoleOptions": "openOnSessionStart",
+			"preLaunchTask": "compile-all"
+		}
+	]
+}
