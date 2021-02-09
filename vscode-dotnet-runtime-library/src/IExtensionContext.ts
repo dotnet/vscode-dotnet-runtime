@@ -12,6 +12,7 @@ export interface IExtensionContext {
     displayChannelName: string;
     defaultTimeoutValue: number;
     commandProvider: ICommandProvider;
+    storagePath?: string;
     telemetryReporter?: ITelemetryReporter;
     extensionConfiguration?: IExtensionConfiguration;
     displayWorker?: IWindowDisplayWorker;

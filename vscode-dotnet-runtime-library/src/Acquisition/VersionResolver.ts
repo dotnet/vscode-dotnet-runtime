@@ -6,7 +6,10 @@ import * as semver from 'semver';
 import { isNullOrUndefined } from 'util';
 import { Memento } from 'vscode';
 import { IEventStream } from '../EventStream/EventStream';
-import { DotnetVersionResolutionCompleted, DotnetVersionResolutionError } from '../EventStream/EventStreamEvents';
+import {
+    DotnetVersionResolutionCompleted,
+    DotnetVersionResolutionError,
+} from '../EventStream/EventStreamEvents';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { IVersionResolver } from './IVersionResolver';
 import { ReleasesResult } from './ReleasesResult';
@@ -21,15 +24,18 @@ export class VersionResolver implements IVersionResolver {
         this.webWorker = new WebRequestWorker(extensionState, eventStream, this.releasesUrl, this.releasesKey);
     }
 
-    public async getFullVersion(version: string): Promise<string> {
-        try {
-            const response = await this.webWorker.getCachedData();
-            if (!response) {
-                throw new Error('Unable to get the full version.');
-            }
+    public async getFullRuntimeVersion(version: string): Promise<string> {
+        return this.getFullVersion(version, true);
+    }
 
-            const releasesVersions = new ReleasesResult(response);
-            const versionResult = this.resolveVersion(version, releasesVersions);
+    public async getFullSDKVersion(version: string): Promise<string> {
+        return this.getFullVersion(version, false);
+    }
+
+    private async getFullVersion(version: string, runtimeVersion: boolean): Promise<string> {
+        try {
+            const releasesVersions = await this.getReleasesInfo();
+            const versionResult = this.resolveVersion(version, releasesVersions, runtimeVersion);
             this.eventStream.post(new DotnetVersionResolutionCompleted(version, versionResult));
             return versionResult;
         } catch (error) {
@@ -38,15 +44,15 @@ export class VersionResolver implements IVersionResolver {
         }
     }
 
-    private resolveVersion(version: string, releases: ReleasesResult): string {
+    private resolveVersion(version: string, releases: ReleasesResult, runtimeVersion: boolean): string {
         this.validateVersionInput(version);
 
         const channel = releases.releasesIndex.filter((channelVal) => channelVal.channelVersion === version);
         if (isNullOrUndefined(channel) || channel.length !== 1) {
             throw new Error(`Unable to resolve version: ${version}`);
         }
-        const runtimeVersion = channel[0].latestRuntime;
-        return runtimeVersion;
+        const versionRes =  runtimeVersion ? channel[0].latestRuntime : channel[0].latestSDK;
+        return versionRes;
     }
 
     private validateVersionInput(version: string) {
@@ -54,5 +60,15 @@ export class VersionResolver implements IVersionResolver {
         if (version.split('.').length !== 2 || isNullOrUndefined(parsedVer)) {
             throw new Error(`Invalid version: ${version}`);
         }
+    }
+
+    private async getReleasesInfo(): Promise<ReleasesResult> {
+        const response = await this.webWorker.getCachedData();
+        if (!response) {
+            throw new Error('Unable to get the full version.');
+        }
+
+        const releasesVersions = new ReleasesResult(response);
+        return releasesVersions;
     }
 }

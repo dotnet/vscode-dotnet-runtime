@@ -26,15 +26,55 @@
 		"dotnet",
 		".NET SDK"
 	],
+	"activationEvents": [
+		"onCommand:dotnet-sdk.acquire",
+		"onCommand:dotnet-sdk.uninstallAll",
+		"onCommand:dotnet-sdk.showAcquisitionLog",
+		"onCommand:dotnet-sdk.reportIssue"
+	],
 	"main": "./dist/extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "dotnet-sdk.reportIssue",
+				"title": "Report an issue with the .NET SDK Install Tool.",
+				"category": ".NET SDK Install Tool"
+			},
+			{
+				"command": "dotnet-sdk.acquire",
+				"title": "Install the .NET SDK.",
+				"category": ".NET SDK Install Tool"
+			},
+			{
+				"command": "dotnet-sdk.uninstallAll",
+				"title": "Uninstall all VS Code copies of .NET SDK.",
+				"category": ".NET SDK Install Tool"
+			}
+		],
+		"configuration": {
+			"title": ".NET SDK Install Tool",
+			"properties": {
+				"dotnetSDKAcquisitionExtension.enableTelemetry": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable Telemetry for the .NET SDK install tool."
+				},
+				"dotnetSDKAcquisitionExtension.installTimeoutValue": {
+					"type": "number",
+					"default": 120,
+					"description": "Timeout for installing .NET SDK in seconds."
+				}
+			}
+		}
+	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile-all && npm install && webpack --mode production",
 		"compile": "npm run clean && tsc -p ./",
 		"watch": "npm run compile && tsc -watch -p ./",
 		"test": "npm run compile --silent && node ./dist/test/functional/runTest.js",
 		"clean": "rimraf dist",
-		"compile-all": "cd ../vscode-dotnet-runtime-library && npm install && npm run compile && cd ../vscode-dotnet-runtime-extension && npm install && npm run compile",
-		"lint": "tslint -c ../tslint.json '../vscode-dotnet-runtime-library/src/**/*.ts' '../vscode-dotnet-runtime-extension/src/**/*.ts'",
+		"compile-all": "cd ../vscode-dotnet-runtime-library && npm install && npm run compile && cd ../vscode-dotnet-sdk-extension && npm install && npm run compile",
+		"lint": "tslint -c ../tslint.json '../vscode-dotnet-runtime-library/src/**/*.ts' '../vscode-dotnet-sdk-extension/src/**/*.ts'",
 		"webpack": "webpack --mode development"
 	},
 	"dependencies": {

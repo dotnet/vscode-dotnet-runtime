@@ -3,6 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import { IDotnetCoreAcquisitionWorker } from '../Acquisition/IDotnetCoreAcquisitionWorker';
+import { IVersionResolver } from '../Acquisition/IVersionResolver';
 import { EventStream } from '../EventStream/EventStream';
 import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
 import { ErrorConfiguration } from '../Utils/ErrorHandler';
@@ -25,10 +26,15 @@ export namespace commandKeys {
     export const reportIssue = 'reportIssue';
 }
 
+export interface IExtensionCommandContext {
+    acquisitionWorker: IDotnetCoreAcquisitionWorker;
+    extensionConfigWorker: IExtensionConfigurationWorker;
+    displayWorker: IWindowDisplayWorker;
+    versionResolver: IVersionResolver;
+    eventStream: EventStream;
+    issueContext: IssueContextCallback;
+}
+
 export interface ICommandProvider {
-    GetExtensionCommands(acquisitionWorker: IDotnetCoreAcquisitionWorker,
-                         extensionConfigWorker: IExtensionConfigurationWorker,
-                         displayWorker: IWindowDisplayWorker,
-                         eventStream: EventStream,
-                         issueContext: IssueContextCallback): ICommand[];
+    GetExtensionCommands(context: IExtensionCommandContext): ICommand[];
 }

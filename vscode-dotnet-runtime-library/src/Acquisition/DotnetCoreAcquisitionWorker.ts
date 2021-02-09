@@ -67,9 +67,15 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         }
     }
 
-    public async acquire(version: string): Promise<IDotnetAcquireResult> {
-        version = await this.context.versionResolver.getFullVersion(version);
+    public async acquireSDK(version: string): Promise<IDotnetAcquireResult> {
+        return this.acquire(version, false);
+    }
 
+    public async acquireRuntime(version: string): Promise<IDotnetAcquireResult> {
+        return this.acquire(version, true);
+    }
+
+    public async acquire(version: string, installRuntime: boolean): Promise<IDotnetAcquireResult> {
         const existingAcquisitionPromise = this.acquisitionPromises[version];
         if (existingAcquisitionPromise) {
             // This version of dotnet is already being acquired. Memoize the promise.
@@ -77,7 +83,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             return existingAcquisitionPromise.then((res) => ({ dotnetPath: res }));
         } else {
             // We're the only one acquiring this version of dotnet, start the acquisition process.
-            const acquisitionPromise = this.acquireCore(version).catch((error: Error) => {
+            const acquisitionPromise = this.acquireCore(version, installRuntime).catch((error: Error) => {
                 delete this.acquisitionPromises[version];
                 throw new Error(`.NET Acquisition Failed: ${error.message}`);
             });
@@ -87,7 +93,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         }
     }
 
-    private async acquireCore(version: string): Promise<string> {
+    private async acquireCore(version: string, installRuntime: boolean): Promise<string> {
         const installingVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
         const partialInstall = installingVersions.indexOf(version) >= 0;
         if (partialInstall) {
@@ -117,6 +123,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             version,
             dotnetPath,
             timeoutValue: this.timeoutValue,
+            installRuntime,
         } as IDotnetInstallationContext;
         this.context.eventStream.post(new DotnetAcquisitionStarted(version));
         await this.context.acquisitionInvoker.installDotnet(installContext).catch((reason) => {

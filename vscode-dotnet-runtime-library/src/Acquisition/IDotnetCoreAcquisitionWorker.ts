@@ -12,5 +12,7 @@ export interface IDotnetCoreAcquisitionWorker {
 
     resolveExistingPath(existingPaths: IExistingPath[] | undefined, extensionId: string | undefined, windowDisplayWorker: IWindowDisplayWorker): IDotnetAcquireResult | undefined;
 
-    acquire(version: string): Promise<IDotnetAcquireResult>;
+    acquireRuntime(version: string): Promise<IDotnetAcquireResult>;
+
+    acquireSDK(version: string): Promise<IDotnetAcquireResult>;
 }

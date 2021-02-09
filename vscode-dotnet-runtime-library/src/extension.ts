@@ -9,7 +9,7 @@ import { AcquisitionInvoker } from './Acquisition/AcquisitionInvoker';
 import { DotnetCoreAcquisitionWorker } from './Acquisition/DotnetCoreAcquisitionWorker';
 import { InstallationValidator } from './Acquisition/InstallationValidator';
 import { VersionResolver } from './Acquisition/VersionResolver';
-import { commandKeys } from './Commands/ICommandProvider';
+import { commandKeys, IExtensionCommandContext } from './Commands/ICommandProvider';
 import { EventStream } from './EventStream/EventStream';
 import { IEventStreamObserver } from './EventStream/IEventStreamObserver';
 import { LoggingObserver } from './EventStream/LoggingObserver';
@@ -76,15 +76,15 @@ export function activate(context: vscode.ExtensionContext, extensionId: string, 
         } as IIssueContext;
     };
     const timeoutValue = extensionConfiguration.get<number>(configKeys.installTimeoutValue);
-    if (!fs.existsSync(context.globalStoragePath)) {
-        fs.mkdirSync(context.globalStoragePath);
+    const storagePath = extensionContext.storagePath ? extensionContext.storagePath : context.globalStoragePath;
+    if (!fs.existsSync(storagePath)) {
+        fs.mkdirSync(storagePath);
     }
     const acquisitionWorker = new DotnetCoreAcquisitionWorker({
-        storagePath: context.globalStoragePath,
+        storagePath,
         extensionState: context.globalState,
         eventStream,
         acquisitionInvoker: new AcquisitionInvoker(context.globalState, eventStream),
-        versionResolver: new VersionResolver(context.globalState, eventStream), // TODO or sdk version resolver
         installationValidator: new InstallationValidator(eventStream),
         timeoutValue: timeoutValue === undefined ? extensionContext.defaultTimeoutValue : timeoutValue,
     });
@@ -92,7 +92,15 @@ export function activate(context: vscode.ExtensionContext, extensionId: string, 
     const showOutputChannelRegistration = vscode.commands.registerCommand(`${extensionContext.commandPrefix}.${commandKeys.showAcquisitionLog}`, () => outputChannel.show(/* preserveFocus */ false));
     context.subscriptions.push(showOutputChannelRegistration);
 
-    const commands = extensionContext.commandProvider.GetExtensionCommands(acquisitionWorker, extensionConfigWorker, displayWorker, eventStream, issueContext);
+    const commandContext = {
+        acquisitionWorker,
+        extensionConfigWorker,
+        displayWorker,
+        versionResolver: new VersionResolver(context.globalState, eventStream),
+        eventStream,
+        issueContext,
+    } as IExtensionCommandContext;
+    const commands = extensionContext.commandProvider.GetExtensionCommands(commandContext);
     for (const command of commands) {
         const registration = vscode.commands.registerCommand(`${extensionContext.commandPrefix}.${command.name}`, command.callback);
         context.subscriptions.push(registration);
