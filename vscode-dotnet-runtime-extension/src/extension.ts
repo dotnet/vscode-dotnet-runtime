@@ -5,9 +5,9 @@
 
 import * as vscode from 'vscode';
 import * as acquisitionLibrary from 'vscode-dotnet-runtime-library';
-import { IExtensionContext } from 'vscode-dotnet-runtime-library';
+import { defaultRuntimeContext, IExtensionContext } from 'vscode-dotnet-runtime-library';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquistionId';
 
 export function activate(context: vscode.ExtensionContext, extensionContext?: IExtensionContext) {
-    acquisitionLibrary.activate(context, dotnetCoreAcquisitionExtensionId, extensionContext);
+    acquisitionLibrary.activate(context, dotnetCoreAcquisitionExtensionId, extensionContext ? extensionContext : defaultRuntimeContext);
 }

@@ -5,7 +5,7 @@
 import * as chai from 'chai';
 const assert = chai.assert;
 
-suite('DotnetCoreAcquisitionExtension End to End', function() {
+suite('DotnetCoreAcquisitionExtension End to End', () => {
   test('Test', async () => {
     assert.isTrue(true);
   });

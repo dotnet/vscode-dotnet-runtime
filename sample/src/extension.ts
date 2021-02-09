@@ -7,7 +7,7 @@ import * as cp from 'child_process';
 import * as acquisitionLibrary from 'vscode-dotnet-runtime-library';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { IDotnetAcquireResult } from 'vscode-dotnet-runtime-library';
+import { defaultRuntimeContext, IDotnetAcquireResult } from 'vscode-dotnet-runtime-library';
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -29,7 +29,7 @@ export function activate(context: vscode.ExtensionContext) {
     */
 
     const requestingExtensionId = 'ms-dotnettools.sample-extension';
-    acquisitionLibrary.activate(context, requestingExtensionId);
+    acquisitionLibrary.activate(context, requestingExtensionId, defaultRuntimeContext);
 
     // --------------------------------------------------------------------------
 

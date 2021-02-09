@@ -4,8 +4,11 @@
  * ------------------------------------------------------------------------------------------ */
 
 import * as vscode from 'vscode';
+import * as acquisitionLibrary from 'vscode-dotnet-runtime-library';
 import { IExtensionContext } from 'vscode-dotnet-runtime-library';
+import { defaultSDKContext } from '../../vscode-dotnet-runtime-library/dist';
+import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquistionId';
 
 export function activate(context: vscode.ExtensionContext, extensionContext?: IExtensionContext) {
-    // Activate extension
+    acquisitionLibrary.activate(context, dotnetCoreAcquisitionExtensionId, extensionContext ? extensionContext : defaultSDKContext);
 }

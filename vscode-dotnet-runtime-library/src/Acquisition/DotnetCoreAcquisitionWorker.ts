@@ -19,9 +19,10 @@ import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
 import { IExistingPath } from '../IExtensionContext';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { IDotnetCoreAcquisitionWorker } from './IDotnetCoreAcquisitionWorker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 
-export class DotnetCoreAcquisitionWorker {
+export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker {
     private readonly installingVersionsKey = 'installing';
     private readonly installDir: string;
     private readonly dotnetExecutable: string;
@@ -76,7 +77,6 @@ export class DotnetCoreAcquisitionWorker {
             return existingAcquisitionPromise.then((res) => ({ dotnetPath: res }));
         } else {
             // We're the only one acquiring this version of dotnet, start the acquisition process.
-
             const acquisitionPromise = this.acquireCore(version).catch((error: Error) => {
                 delete this.acquisitionPromises[version];
                 throw new Error(`.NET Acquisition Failed: ${error.message}`);

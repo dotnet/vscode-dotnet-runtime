@@ -10,3 +10,4 @@ export * from './IExtensionContext';
 export * from './IDotnetAcquireContext';
 export * from './IDotnetAcquireResult';
 export * from './IDotnetEnsureDependenciesContext';
+export * from './DefaultExtensionConfig';
