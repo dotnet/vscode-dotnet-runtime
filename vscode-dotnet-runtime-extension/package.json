@@ -34,7 +34,7 @@
 		"onCommand:dotnet.reportIssue"
 	],
 	"main": "./dist/extension.js",
-	"types": "./index.d.ts",
+	"types": "./dist/extension.d.ts",
 	"contributes": {
 		"commands": [
 			{

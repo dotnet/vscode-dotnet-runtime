@@ -41,7 +41,7 @@ namespace configKeys {
     export const enableTelemetry = 'enableTelemetry';
     export const existingPath = 'existingDotnetPath';
 }
-export namespace commandKeys {
+namespace commandKeys {
     export const acquire = 'acquire';
     export const uninstallAll = 'uninstallAll';
     export const showAcquisitionLog = 'showAcquisitionLog';

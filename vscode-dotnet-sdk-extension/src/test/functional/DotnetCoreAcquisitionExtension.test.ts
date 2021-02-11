@@ -44,12 +44,13 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   });
 
   this.afterEach(async () => {
+    this.timeout(20000);
     // Tear down tmp storage for fresh run
     await vscode.commands.executeCommand<string>('dotnet-sdk.uninstallAll');
     mockState.clear();
     MockTelemetryReporter.telemetryEvents = [];
     rimraf.sync(storagePath);
-  }).timeout(20000);
+  });
 
   test('Activate', async () => {
     // Commands should now be registered
@@ -76,4 +77,22 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
     assert.isFalse(fs.existsSync(result!.dotnetPath));
   }).timeout(100000);
+
+  test('Install Multiple Versions', async () => {
+    const versions = ['3.1', '5.0'];
+    let dotnetPaths: string[] = [];
+    for (const version of versions) {
+      const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', { version });
+      assert.exists(result);
+      assert.exists(result!.dotnetPath);
+      assert.include(result!.dotnetPath, version);
+      if (result!.dotnetPath) {
+        dotnetPaths = dotnetPaths.concat(result!.dotnetPath);
+      }
+    }
+    // All versions are still there after all installs are completed
+    for (const dotnetPath of dotnetPaths) {
+      assert.isTrue(fs.existsSync(dotnetPath));
+    }
+  }).timeout(600000);
 });
