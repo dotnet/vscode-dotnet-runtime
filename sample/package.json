@@ -60,7 +60,8 @@
 		"clean": "rimraf out"
 	},
 	"dependencies": {
-		"vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library"
+		"vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library",
+		"vscode-dotnet-runtime": "file:../vscode-dotnet-runtime-extension"
 	},
 	"devDependencies": {
 		"@types/mocha": "^8.0.3",

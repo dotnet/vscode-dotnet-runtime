@@ -17,6 +17,7 @@
 	"engines": {
 		"vscode": "^1.41.0"
 	},
+	"preview": true,
 	"categories": [
 		"Other"
 	],
@@ -61,7 +62,7 @@
 				},
 				"dotnetSDKAcquisitionExtension.installTimeoutValue": {
 					"type": "number",
-					"default": 120,
+					"default": 240,
 					"description": "Timeout for installing .NET SDK in seconds."
 				}
 			}

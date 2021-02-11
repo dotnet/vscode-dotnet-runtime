@@ -5,7 +5,6 @@
 import * as cp from 'child_process';
 import * as isOnline from 'is-online';
 import * as os from 'os';
-import { Memento } from 'vscode';
 import { IEventStream } from '../EventStream/EventStream';
 import {
     DotnetAcquisitionCompleted,
@@ -16,6 +15,7 @@ import {
     DotnetAcquisitionUnexpectedError,
     DotnetOfflineFailure,
 } from '../EventStream/EventStreamEvents';
+import { IExtensionState } from '../IExtensionState';
 import { timeoutConstants } from '../Utils/ErrorHandler';
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
@@ -25,7 +25,7 @@ import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker
 export class AcquisitionInvoker extends IAcquisitionInvoker {
     private readonly scriptWorker: IInstallScriptAcquisitionWorker;
 
-    constructor(extensionState: Memento, eventStream: IEventStream) {
+    constructor(extensionState: IExtensionState, eventStream: IEventStream) {
         super(eventStream);
         this.scriptWorker = new InstallScriptAcquisitionWorker(extensionState, eventStream);
     }

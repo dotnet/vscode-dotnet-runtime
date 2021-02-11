@@ -8,7 +8,6 @@ import * as path from 'path';
 import * as rimraf from 'rimraf';
 import * as vscode from 'vscode';
 import {
-  defaultRuntimeContext,
   IDotnetAcquireContext,
   IDotnetAcquireResult,
   ITelemetryEvent,
@@ -39,11 +38,11 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       extensionPath,
       logPath,
     } as any;
-    const context = defaultRuntimeContext;
-    context.displayWorker = mockDisplayWorker;
-    context.telemetryReporter = new MockTelemetryReporter();
-    context.extensionConfiguration = new MockExtensionConfiguration([{extensionId: 'alternative.extension', path: 'foo'}], true);
-    extension.activate(extensionContext, context);
+    extension.activate(extensionContext, {
+      telemetryReporter: new MockTelemetryReporter(),
+      extensionConfiguration: new MockExtensionConfiguration([{extensionId: 'alternative.extension', path: 'foo'}], true),
+      displayWorker: mockDisplayWorker,
+    });
   });
 
   this.afterEach(async () => {

@@ -75,7 +75,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         return this.acquire(version, true);
     }
 
-    public async acquire(version: string, installRuntime: boolean): Promise<IDotnetAcquireResult> {
+    private async acquire(version: string, installRuntime: boolean): Promise<IDotnetAcquireResult> {
         const existingAcquisitionPromise = this.acquisitionPromises[version];
         if (existingAcquisitionPromise) {
             // This version of dotnet is already being acquired. Memoize the promise.

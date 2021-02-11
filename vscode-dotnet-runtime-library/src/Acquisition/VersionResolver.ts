@@ -4,12 +4,12 @@
  * ------------------------------------------------------------------------------------------ */
 import * as semver from 'semver';
 import { isNullOrUndefined } from 'util';
-import { Memento } from 'vscode';
 import { IEventStream } from '../EventStream/EventStream';
 import {
     DotnetVersionResolutionCompleted,
     DotnetVersionResolutionError,
 } from '../EventStream/EventStreamEvents';
+import { IExtensionState } from '../IExtensionState';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { IVersionResolver } from './IVersionResolver';
 import { ReleasesResult } from './ReleasesResult';
@@ -19,7 +19,7 @@ export class VersionResolver implements IVersionResolver {
     private readonly releasesKey = 'releases';
     private readonly releasesUrl = 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json';
 
-    constructor(extensionState: Memento,
+    constructor(extensionState: IExtensionState,
                 private readonly eventStream: IEventStream) {
         this.webWorker = new WebRequestWorker(extensionState, eventStream, this.releasesUrl, this.releasesKey);
     }

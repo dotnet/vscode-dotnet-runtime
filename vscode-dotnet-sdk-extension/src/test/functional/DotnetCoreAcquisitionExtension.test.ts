@@ -8,7 +8,6 @@ import * as path from 'path';
 import * as rimraf from 'rimraf';
 import * as vscode from 'vscode';
 import {
-  defaultSDKContext,
   IDotnetAcquireContext,
   IDotnetAcquireResult,
   MockExtensionConfiguration,
@@ -37,20 +36,20 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       extensionPath,
       logPath,
     } as any;
-    const context = defaultSDKContext;
-    context.displayWorker = mockDisplayWorker;
-    context.telemetryReporter = new MockTelemetryReporter();
-    context.extensionConfiguration = new MockExtensionConfiguration([], true);
-    extension.activate(extensionContext, context);
+    extension.activate(extensionContext, {
+      telemetryReporter: new MockTelemetryReporter(),
+      extensionConfiguration: new MockExtensionConfiguration([{extensionId: 'alternative.extension', path: 'foo'}], true),
+      displayWorker: mockDisplayWorker,
+    });
   });
 
   this.afterEach(async () => {
     // Tear down tmp storage for fresh run
-    await vscode.commands.executeCommand<string>(`${defaultSDKContext.commandPrefix}.uninstallAll`);
+    await vscode.commands.executeCommand<string>('dotnet-sdk.uninstallAll');
     mockState.clear();
     MockTelemetryReporter.telemetryEvents = [];
     rimraf.sync(storagePath);
-  });
+  }).timeout(20000);
 
   test('Activate', async () => {
     // Commands should now be registered
@@ -60,7 +59,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
 
   test('Install Command', async () => {
     const context: IDotnetAcquireContext = { version: '5.0' };
-    const result = await vscode.commands.executeCommand<IDotnetAcquireResult>(`${defaultSDKContext.commandPrefix}.acquire`, context);
+    const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context);
     assert.exists(result);
     assert.exists(result!.dotnetPath);
     assert.include(result!.dotnetPath, context.version);
@@ -69,12 +68,12 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
 
   test('Uninstall Command', async () => {
     const context: IDotnetAcquireContext = { version: '3.1' };
-    const result = await vscode.commands.executeCommand<IDotnetAcquireResult>(`${defaultSDKContext.commandPrefix}.acquire`, context);
+    const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context);
     assert.exists(result);
     assert.exists(result!.dotnetPath);
     assert.include(result!.dotnetPath, context.version);
     assert.isTrue(fs.existsSync(result!.dotnetPath!));
-    await vscode.commands.executeCommand(`${defaultSDKContext.commandPrefix}.uninstallAll`);
+    await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
     assert.isFalse(fs.existsSync(result!.dotnetPath));
   }).timeout(100000);
 });
