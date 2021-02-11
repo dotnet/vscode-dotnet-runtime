@@ -13,8 +13,8 @@ pr:
     - '*'
 
 variables:
-  is-release: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/v')]
-  package-name: 'vscode-dotnet-runtime'
+  is-runtime-release: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/Runtime-v')]
+  is-sdk-release: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/SDK-v')]
 
 stages:
 ##### Test and Build #####
@@ -85,6 +85,14 @@ stages:
     condition: and(succeeded(), notin(variables['Build.Reason'], 'PullRequest'))
     pool:
       vmImage: 'vs2017-win2016'
+    strategy:
+      matrix:
+        Runtime:
+          dir-name: 'vscode-dotnet-runtime-extension'
+          package-name: 'vscode-dotnet-runtime'
+        SDK:
+          dir-name: 'vscode-dotnet-sdk-extension'
+          package-name: 'vscode-dotnet-sdk'
     steps:
     - task: NodeTool@0
       inputs:
@@ -101,13 +109,13 @@ stages:
         echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
       name: GetVersion
       displayName: 'Get Version'
-      workingDirectory: vscode-dotnet-runtime-extension
+      workingDirectory: $(dir-name)
     - bash: |
         npm install -g rimraf
         npm install -g vsce
         vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore
       displayName: Package Artifact
-      workingDirectory: vscode-dotnet-runtime-extension
+      workingDirectory: $(dir-name)
     - task: CopyFiles@2
       displayName: 'Copy Artifact'
       inputs:
@@ -118,11 +126,12 @@ stages:
     - task: PublishPipelineArtifact@0
       inputs:
         targetPath: '$(Build.ArtifactStagingDirectory)'
+        artifactName: '$(dir-name)'
 
-##### Deploy and Release #####
-- stage: DeployAndRelease
+##### Deploy and Release Runtime Extension #####
+- stage: DeployAndReleaseRuntime
   dependsOn: Build
-  condition: and(succeeded(), eq(variables['is-release'], 'true'))
+  condition: and(succeeded(), eq(variables['is-runtime-release'], 'true'))
   jobs:
   ##### Deploy to our release environment #####
   # Note: This step requires approval, allows for manual smoke testing the artifact before release
@@ -144,6 +153,7 @@ stages:
         VERSION=`node -p "require('./package.json').version"`
         echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
       name: GetVersion
+      workingDirectory: 'vscode-dotnet-runtime-extension'
       displayName: 'Get Version'
   ##### Publish to marketplace #####
   - job: Publish
@@ -167,6 +177,59 @@ stages:
       displayName: 'Install Node.js'
     - bash: |
         npm install -g vsce
-        vsce publish --packagePath $(package-name)-$(version).vsix -p $(VSCODE_MARKETPLACE_TOKEN)
+        vsce publish --packagePath vscode-dotnet-runtime-$(version).vsix -p $(VSCODE_MARKETPLACE_TOKEN)
       displayName: 'Publish to Marketplace'
-      workingDirectory: '$(System.ArtifactsDirectory)/drop'
+      workingDirectory: '$(System.ArtifactsDirectory)/vscode-dotnet-runtime-extension'
+
+##### Deploy and Release SDK Extension #####
+- stage: DeployAndReleaseSDK
+  dependsOn: Build
+  condition: and(succeeded(), eq(variables['is-sdk-release'], 'true'))
+  jobs:
+  ##### Deploy to our release environment #####
+  # Note: This step requires approval, allows for manual smoke testing the artifact before release
+  - deployment: Deploy
+    pool:
+      vmImage: 'vs2017-win2016'
+    environment: 'vscode-dotnetcore-extension-releases'
+  ##### Determine version to publish #####
+  - job: GetVersion
+    displayName: 'Get Version'
+    pool:
+      vmImage: 'vs2017-win2016'
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '12.x'
+      displayName: 'Install Node.js'
+    - bash: |
+        VERSION=`node -p "require('./package.json').version"`
+        echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
+      name: GetVersion
+      workingDirectory: 'vscode-dotnet-sdk-extension'
+      displayName: 'Get Version'
+  ##### Publish to marketplace #####
+  - job: Publish
+    displayName: 'Publish to Marketplace'
+    dependsOn: 
+    - Deploy
+    - GetVersion
+    pool:
+      vmImage: 'vs2017-win2016'
+    variables:
+      version: $[ dependencies.GetVersion.outputs['GetVersion.version'] ]
+    steps:
+    - checkout: none # Skip checking out repo
+    - task: DownloadPipelineArtifact@2
+      displayName: 'Download Packaged Extension'
+      inputs:
+        path: '$(System.ArtifactsDirectory)'
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '12.x'
+      displayName: 'Install Node.js'
+    - bash: |
+        npm install -g vsce
+        vsce publish --packagePath vscode-dotnet-sdk-$(version).vsix -p $(VSCODE_MARKETPLACE_TOKEN)
+      displayName: 'Publish to Marketplace'
+      workingDirectory: '$(System.ArtifactsDirectory)/vscode-dotnet-sdk-extension'
