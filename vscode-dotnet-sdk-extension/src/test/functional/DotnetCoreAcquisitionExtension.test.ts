@@ -43,15 +43,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     });
   });
 
-  this.afterEach(async () => {
-    this.timeout(20000);
-    // Tear down tmp storage for fresh run
-    await vscode.commands.executeCommand<string>('dotnet-sdk.uninstallAll');
-    mockState.clear();
-    MockTelemetryReporter.telemetryEvents = [];
-    rimraf.sync(storagePath);
-  });
-
   test('Activate', async () => {
     // Commands should now be registered
     assert.exists(extensionContext);
@@ -65,6 +56,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.exists(result!.dotnetPath);
     assert.include(result!.dotnetPath, context.version);
     assert.isTrue(fs.existsSync(result!.dotnetPath));
+    // Clean up storage
+    await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
   }).timeout(100000);
 
   test('Uninstall Command', async () => {
@@ -94,5 +87,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     for (const dotnetPath of dotnetPaths) {
       assert.isTrue(fs.existsSync(dotnetPath));
     }
+    // Clean up storage
+    await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
   }).timeout(600000);
 });

@@ -36,7 +36,7 @@ stages:
     steps:
     - task: NodeTool@0
       inputs:
-        versionSpec: '12.x'
+        versionSpec: '15.x'
       displayName: 'Install Node.js'
     - script: build.cmd
       displayName: Build Windows
@@ -70,7 +70,7 @@ stages:
     steps:
     - task: NodeTool@0
       inputs:
-        versionSpec: '12.x'
+        versionSpec: '15.x'
       displayName: 'Install Node.js'
     - bash: |
         npm install -g tslint
@@ -96,7 +96,7 @@ stages:
     steps:
     - task: NodeTool@0
       inputs:
-        versionSpec: '12.x'
+        versionSpec: '15.x'
       displayName: 'Install Node.js'
     - bash: |
         if [ $(is-release) = 'True' ]; then
@@ -113,7 +113,7 @@ stages:
     - bash: |
         npm install -g rimraf
         npm install -g vsce
-        vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore
+        vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
       displayName: Package Artifact
       workingDirectory: $(dir-name)
     - task: CopyFiles@2
@@ -147,7 +147,7 @@ stages:
     steps:
     - task: NodeTool@0
       inputs:
-        versionSpec: '12.x'
+        versionSpec: '15.x'
       displayName: 'Install Node.js'
     - bash: |
         VERSION=`node -p "require('./package.json').version"`
@@ -173,7 +173,7 @@ stages:
         path: '$(System.ArtifactsDirectory)'
     - task: NodeTool@0
       inputs:
-        versionSpec: '12.x'
+        versionSpec: '15.x'
       displayName: 'Install Node.js'
     - bash: |
         npm install -g vsce
@@ -200,7 +200,7 @@ stages:
     steps:
     - task: NodeTool@0
       inputs:
-        versionSpec: '12.x'
+        versionSpec: '15.x'
       displayName: 'Install Node.js'
     - bash: |
         VERSION=`node -p "require('./package.json').version"`
@@ -226,7 +226,7 @@ stages:
         path: '$(System.ArtifactsDirectory)'
     - task: NodeTool@0
       inputs:
-        versionSpec: '12.x'
+        versionSpec: '15.x'
       displayName: 'Install Node.js'
     - bash: |
         npm install -g vsce
