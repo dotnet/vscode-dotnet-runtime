@@ -35,6 +35,22 @@ fi
 popd
 
 echo ""
+echo "----------- Compiling vscode-dotnet-uninstall-library -----------"
+echo ""
+pushd vscode-dotnet-uninstall-library
+rm -rf node_modules
+npm install
+npm run compile
+
+if [ $? -ne 0 ];
+then
+    echo ""
+    echo "${RED}Build failed!${NC}"
+    exit 1
+fi
+popd
+
+echo ""
 echo "----------- Compiling vscode-dotnet-runtime-extension -----------"
 echo ""
 pushd vscode-dotnet-runtime-extension

@@ -45,7 +45,8 @@ const config = {
   plugins: [
     new CopyPlugin({ patterns: [
       { from: path.resolve(__dirname, '../vscode-dotnet-runtime-library/install scripts'), to: path.resolve(__dirname, 'dist', 'install scripts') },
-      { from: path.resolve(__dirname, '../images'), to: path.resolve(__dirname, 'images') }
+      { from: path.resolve(__dirname, '../images'), to: path.resolve(__dirname, 'images') },
+      { from: path.resolve(__dirname, '../vscode-dotnet-uninstall-library/dist'), to: path.resolve(__dirname, 'dist') }
   ]}),
   ]
 };

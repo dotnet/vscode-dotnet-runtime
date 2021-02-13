@@ -5,6 +5,7 @@
 
 import * as fs from 'fs';
 import open = require('open');
+import * as os from 'os';
 import * as vscode from 'vscode';
 import {
     AcquireErrorConfiguration,
@@ -33,7 +34,7 @@ namespace configKeys {
     export const installTimeoutValue = 'installTimeoutValue';
     export const enableTelemetry = 'enableTelemetry';
 }
-export namespace commandKeys {
+namespace commandKeys {
     export const acquire = 'acquire';
     export const uninstallAll = 'uninstallAll';
     export const showAcquisitionLog = 'showAcquisitionLog';
@@ -77,11 +78,18 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         } as IIssueContext;
     };
     const timeoutValue = extensionConfiguration.get<number>(configKeys.installTimeoutValue);
-    if (!fs.existsSync(context.globalStoragePath)) {
-        fs.mkdirSync(context.globalStoragePath);
+    let storagePath: string;
+    if (os.platform() === 'win32') {
+        storagePath = process.env.APPDATA ? process.env.APPDATA : context.globalStoragePath;
+    } else {
+        storagePath = context.globalStoragePath;
+        if (!fs.existsSync(storagePath)) {
+            fs.mkdirSync(storagePath);
+        }
     }
+
     const acquisitionWorker = new DotnetCoreAcquisitionWorker({
-        storagePath: context.globalStoragePath,
+        storagePath,
         extensionState: context.globalState,
         eventStream,
         acquisitionInvoker: new AcquisitionInvoker(context.globalState, eventStream),
@@ -91,7 +99,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     const versionResolver = new VersionResolver(context.globalState, eventStream);
 
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) => {
-        const path = callWithErrorHandling(async () => {
+        const pathResult = callWithErrorHandling(async () => {
             let version: string | undefined = commandContext ? commandContext.version : undefined;
             if (!version) {
                 version = await vscode.window.showInputBox({
@@ -112,7 +120,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             // TODO add to PATH?
             return dotnetPath;
         }, issueContext(undefined, 'acquireSDK'));
-        return path;
+        return pathResult;
     });
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallAll}`, async (commandContext: IDotnetUninstallContext | undefined) => {
         await callWithErrorHandling(async () => {

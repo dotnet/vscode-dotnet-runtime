@@ -4,8 +4,8 @@
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
-import * as rimraf from 'rimraf';
 import * as vscode from 'vscode';
 import {
   IDotnetAcquireContext,
@@ -15,6 +15,9 @@ import {
   MockTelemetryReporter,
   MockWindowDisplayWorker,
 } from 'vscode-dotnet-runtime-library';
+import {
+  uninstallSDKExtension,
+} from 'vscode-dotnet-uninstall-library';
 import * as extension from '../../extension';
 const assert = chai.assert;
 /* tslint:disable:no-any */
@@ -54,7 +57,11 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context);
     assert.exists(result);
     assert.exists(result!.dotnetPath);
+    assert.include(result!.dotnetPath, '.dotnet');
     assert.include(result!.dotnetPath, context.version);
+    if (os.platform() === 'win32') {
+      assert.include(result!.dotnetPath, process.env.APPDATA!);
+    }
     assert.isTrue(fs.existsSync(result!.dotnetPath));
     // Clean up storage
     await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
@@ -90,4 +97,15 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     // Clean up storage
     await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
   }).timeout(600000);
+
+  test('Extension Uninstall Removes SDKs on Windows', async () => {
+    if (os.platform() === 'win32') {
+      const context: IDotnetAcquireContext = { version: '5.0' };
+      const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context);
+      assert.exists(result);
+      assert.exists(result!.dotnetPath);
+      uninstallSDKExtension();
+      assert.isFalse(fs.existsSync(result!.dotnetPath));
+    }
+  }).timeout(100000);
 });

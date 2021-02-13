@@ -69,7 +69,8 @@
 		}
 	},
 	"scripts": {
-		"vscode:prepublish": "npm run compile-all && npm install && webpack --mode production",
+		"vscode:prepublish": "npm run compile-all && npm install && cd ../vscode-dotnet-uninstall-library && webpack --mode production && cd ../vscode-dotnet-sdk-extension && webpack --mode production",
+		"vscode:uninstall": "node ./dist/ExtensionUninstall",
 		"compile": "npm run clean && tsc -p ./",
 		"watch": "npm run compile && tsc -watch -p ./",
 		"test": "npm run compile --silent && node ./dist/test/functional/runTest.js",
@@ -98,6 +99,7 @@
 		"tslint": "^5.20.1",
 		"typescript": "3.4.5",
 		"vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library",
+		"vscode-dotnet-uninstall-library": "file:../vscode-dotnet-uninstall-library",
 		"vscode-test": "^1.3.0"
 	},
 	"devDependencies": {
