@@ -20,6 +20,7 @@ export interface IEventStreamContext {
     extensionId: string;
     enableTelemetry: boolean;
     telemetryReporter: ITelemetryReporter | undefined;
+    showLogCommand: string;
 }
 
 export function registerEventStream(context: IEventStreamContext): [EventStream, vscode.OutputChannel, LoggingObserver, IEventStreamObserver[]] {
@@ -31,7 +32,7 @@ export function registerEventStream(context: IEventStreamContext): [EventStream,
     const loggingObserver = new LoggingObserver(logFile);
     let eventStreamObservers: IEventStreamObserver[] =
         [
-            new StatusBarObserver(vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, Number.MIN_VALUE)),
+            new StatusBarObserver(vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, Number.MIN_VALUE), context.showLogCommand),
             new OutputChannelObserver(outputChannel),
             loggingObserver,
         ];

@@ -24,6 +24,14 @@ export class OutputChannelObserver implements IEventStreamObserver {
 
     public post(event: IEvent): void {
         switch (event.type) {
+            case EventType.DotnetRuntimeAcquisitionStart:
+                this.outputChannel.append('Downloading the .NET Runtime.');
+                this.outputChannel.appendLine('');
+                break;
+            case EventType.DotnetSDKAcquisitionStart:
+                this.outputChannel.append('Downloading the .NET SDK.');
+                this.outputChannel.appendLine('');
+                break;
             case EventType.DotnetAcquisitionStart:
                 const acquisitionStarted = event as DotnetAcquisitionStarted;
 

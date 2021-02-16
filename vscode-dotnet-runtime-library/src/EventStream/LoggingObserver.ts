@@ -8,7 +8,7 @@ import { IEvent } from './IEvent';
 import { ILoggingObserver } from './ILoggingObserver';
 
 export class LoggingObserver implements ILoggingObserver {
-    private log = '';
+    private log: string[] = [];
 
     constructor(private readonly logFilePath: string) {}
 
@@ -24,7 +24,7 @@ export class LoggingObserver implements ILoggingObserver {
     }
 
     public dispose(): void {
-        fs.writeFileSync(this.logFilePath, this.log);
+        fs.writeFileSync(this.logFilePath, this.log.join('\n'));
     }
 
     public getFileLocation(): string {
@@ -32,6 +32,6 @@ export class LoggingObserver implements ILoggingObserver {
     }
 
     private writeLine(line: string) {
-        this.log = this.log.concat(`\n${line}`);
+        this.log.concat(line);
     }
 }

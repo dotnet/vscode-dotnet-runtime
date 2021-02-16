@@ -13,6 +13,7 @@ import {
     callWithErrorHandling,
     DotnetAcquisitionRequested,
     DotnetCoreAcquisitionWorker,
+    DotnetSDKAcquisitionStarted,
     enableExtensionTelemetry,
     ErrorConfiguration,
     ExtensionConfigurationWorker,
@@ -61,6 +62,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         extensionId: dotnetCoreAcquisitionExtensionId,
         enableTelemetry: enableExtensionTelemetry(extensionConfiguration, configKeys.enableTelemetry),
         telemetryReporter: extensionContext ? extensionContext.telemetryReporter : undefined,
+        showLogCommand: `${commandPrefix}.${commandKeys.showAcquisitionLog}`,
     } as IEventStreamContext;
     const [eventStream, outputChannel, loggingObserver, eventStreamObservers] = registerEventStream(eventStreamContext);
 
@@ -80,6 +82,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     const timeoutValue = extensionConfiguration.get<number>(configKeys.installTimeoutValue);
     let storagePath: string;
     if (os.platform() === 'win32') {
+        // Install to %AppData% on windows to avoid running into long path errors
         storagePath = process.env.APPDATA ? process.env.APPDATA : context.globalStoragePath;
     } else {
         storagePath = context.globalStoragePath;
@@ -100,6 +103,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) => {
         const pathResult = callWithErrorHandling(async () => {
+            eventStream.post(new DotnetSDKAcquisitionStarted());
+
             let version: string | undefined = commandContext ? commandContext.version : undefined;
             if (!version) {
                 version = await vscode.window.showInputBox({
@@ -141,10 +146,6 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         showOutputChannelRegistration,
         reportIssueRegistration);
     context.subscriptions.push({
-        dispose: () => {
-            for (const observer of eventStreamObservers) {
-                observer.dispose();
-            }
-        },
+        dispose: () => vscode.Disposable.from(...eventStreamObservers).dispose(),
     });
 }

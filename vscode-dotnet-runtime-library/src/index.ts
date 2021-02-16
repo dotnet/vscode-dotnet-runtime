@@ -23,3 +23,4 @@ export * from './Acquisition/InstallationValidator';
 export * from './Acquisition/VersionResolver';
 export * from './Acquisition/DotnetCoreDependencyInstaller';
 export * from './Utils/ExtensionConfigurationWorker';
+export * from './Acquisition/ExistingPathResolver';
