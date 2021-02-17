@@ -65,6 +65,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.exists(result);
     assert.exists(result!.dotnetPath);
     assert.isTrue(fs.existsSync(result!.dotnetPath));
+    assert.include(result!.dotnetPath, '.dotnet');
     assert.include(result!.dotnetPath, context.version);
   }).timeout(40000);
 

@@ -6,13 +6,13 @@ import * as eol from 'eol';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { Memento } from 'vscode';
 import { IEventStream } from '../EventStream/EventStream';
 import {
     DotnetFallbackInstallScriptUsed,
     DotnetInstallScriptAcquisitionCompleted,
     DotnetInstallScriptAcquisitionError,
 } from '../EventStream/EventStreamEvents';
+import { IExtensionState } from '../IExtensionState';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
 
@@ -21,7 +21,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
     private readonly scriptAcquisitionUrl: string = 'https://aka.ms/dotnet-install-script-';
     private readonly scriptFilePath: string;
 
-    constructor(extensionState: Memento, private readonly eventStream: IEventStream) {
+    constructor(extensionState: IExtensionState, private readonly eventStream: IEventStream) {
         const scriptFileEnding = os.platform() === 'win32' ? 'ps1' : 'sh';
         const scriptFileName = 'dotnet-install';
         this.scriptFilePath = path.join(__dirname, 'install scripts', `${scriptFileName}.${scriptFileEnding}`);

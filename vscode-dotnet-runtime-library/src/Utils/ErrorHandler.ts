@@ -35,13 +35,11 @@ export namespace errorConstants {
     export const hideOption = 'Don\'t show again';
     export const moreInfoOption = 'More information';
     export const configureManuallyOption = 'Configure manually';
-    export const moreInfoUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/master/Documentation/troubleshooting.md';
 }
 
 export namespace timeoutConstants {
     export const timeoutMessage = '.NET installation timed out.';
     export const moreInfoOption = 'More information';
-    export const timeoutInfoUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/master/Documentation/troubleshooting.md#install-script-timeouts';
 }
 
 let showMessage = true;
@@ -58,7 +56,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
                 context.displayWorker.showErrorMessage(`${errorConstants.errorMessage}${ context.version ? ` (${context.version})` : '' }: ${ error.message }`,
                                                         async (response: string | undefined) => {
                     if (response === timeoutConstants.moreInfoOption) {
-                        open(timeoutConstants.timeoutInfoUrl);
+                        open(context.timeoutInfoUrl);
                     }
                 }, timeoutConstants.moreInfoOption);
             } else if (error.constructor.name !== 'UserCancelledError' && showMessage) {
@@ -70,7 +68,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
                 context.displayWorker.showErrorMessage(`${errorConstants.errorMessage}${ context.version ? ` (${context.version})` : '' }: ${ error.message }`,
                                                         async (response: string | undefined) => {
                     if (response === errorConstants.moreInfoOption) {
-                        open(errorConstants.moreInfoUrl);
+                        open(context.moreInfoUrl);
                     } else if (response === errorConstants.hideOption) {
                         showMessage = false;
                     } else if (response === errorConstants.reportOption) {

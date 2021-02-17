@@ -27,6 +27,8 @@ suite('ErrorHandler Unit Tests', () => {
             eventStream,
             commandName: 'test',
             version: 'testVersion',
+            timeoutInfoUrl: '',
+            moreInfoUrl: '',
         } as IIssueContext;
     };
 

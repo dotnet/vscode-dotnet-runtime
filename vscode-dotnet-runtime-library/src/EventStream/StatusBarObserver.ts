@@ -14,19 +14,19 @@ enum StatusBarColors {
 }
 
 export class StatusBarObserver implements IEventStreamObserver {
-    constructor(private readonly statusBarItem: vscode.StatusBarItem) {
+    constructor(private readonly statusBarItem: vscode.StatusBarItem, private readonly showLogCommand: string) {
     }
 
     public post(event: IEvent): void {
         switch (event.type) {
             case EventType.DotnetAcquisitionStart:
-                this.setAndShowStatusBar('$(cloud-download) Downloading .NET runtime...', 'dotnet.showAcquisitionLog', '', 'Downloading .NET runtime...');
+                this.setAndShowStatusBar('$(cloud-download) Downloading .NET...', this.showLogCommand, '', 'Downloading .NET...');
                 break;
             case EventType.DotnetAcquisitionCompleted:
                 this.resetAndHideStatusBar();
                 break;
             case EventType.DotnetAcquisitionError:
-                this.setAndShowStatusBar('$(alert) Error acquiring .NET runtime!', 'dotnet.showAcquisitionLog', StatusBarColors.Red, 'Error acquiring .NET runtime');
+                this.setAndShowStatusBar('$(alert) Error acquiring .NET!', this.showLogCommand, StatusBarColors.Red, 'Error acquiring .NET');
                 break;
         }
     }

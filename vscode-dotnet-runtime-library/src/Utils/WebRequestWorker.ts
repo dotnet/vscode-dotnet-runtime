@@ -5,15 +5,15 @@
 import * as retry from 'p-retry';
 import * as request from 'request-promise-native';
 import { isNullOrUndefined } from 'util';
-import { Memento } from 'vscode';
 import { IEventStream } from '../EventStream/EventStream';
 import { WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
+import { IExtensionState } from '../IExtensionState';
 
 export class WebRequestWorker {
     private cachedData: string | undefined;
     private currentRequest: Promise<string | undefined> | undefined;
 
-    constructor(private readonly extensionState: Memento,
+    constructor(private readonly extensionState: IExtensionState,
                 private readonly eventStream: IEventStream,
                 private readonly url: string,
                 private readonly extensionStateKey: string) {}

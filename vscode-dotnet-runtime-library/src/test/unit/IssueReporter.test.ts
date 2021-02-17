@@ -22,6 +22,8 @@ suite('IssueReporter Unit Tests', () => {
                 commandName: 'test',
                 eventStream: new MockEventStream(),
                 version: '',
+                moreInfoUrl: '',
+                timeoutInfoUrl: '',
             });
 
         const expectedBodyContent = ['Error', 'Repro steps'];

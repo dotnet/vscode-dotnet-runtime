@@ -5,6 +5,8 @@
 
 export enum EventType {
     DotnetAcquisitionStart,
+    DotnetSDKAcquisitionStart,
+    DotnetRuntimeAcquisitionStart,
     DotnetAcquisitionCompleted,
     DotnetAcquisitionError,
     DotnetAcquisitionSuccessEvent,

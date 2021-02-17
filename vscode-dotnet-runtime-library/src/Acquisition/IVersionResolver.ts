@@ -4,5 +4,6 @@
  * ------------------------------------------------------------------------------------------ */
 
 export interface IVersionResolver {
-    getFullVersion(version: string): Promise<string>;
+    getFullRuntimeVersion(version: string): Promise<string>;
+    getFullSDKVersion(version: string): Promise<string>;
 }
