@@ -3,7 +3,6 @@ $errorColor = "Red"
 $successColor = "Green"
 
 if ($args[1] -eq '--tslint') {
-    pushd vscode-dotnet-runtime-extension
     npm run lint
     if ($LASTEXITCODE -ne 0)
     {
@@ -14,7 +13,6 @@ if ($args[1] -eq '--tslint') {
     {
         Write-Host "`nTSLint Succeeded.`n" -ForegroundColor $successColor
     }
-    popd
 }
 
 pushd vscode-dotnet-runtime-library
@@ -38,12 +36,27 @@ npm install --silent
 npm run test
 if ($LASTEXITCODE -ne 0)
 {
-    Write-Host "`nAcquisition Extension Tests Failed.`n" -ForegroundColor $errorColor
+    Write-Host "`n.NET Runtime Acquisition Extension Tests Failed.`n" -ForegroundColor $errorColor
     $result = 1
 }
 else 
 {
-    Write-Host "`nAcquisition Extension Tests Succeeded.`n" -ForegroundColor $successColor
+    Write-Host "`n.NET Runtime Acquisition Extension Tests Succeeded.`n" -ForegroundColor $successColor
+}
+popd
+
+pushd vscode-dotnet-sdk-extension
+if (Test-Path node_modules) { rm -r -force node_modules }
+npm install --silent
+npm run test
+if ($LASTEXITCODE -ne 0)
+{
+    Write-Host "`n.NET SDK Acquisition Extension Tests Failed.`n" -ForegroundColor $errorColor
+    $result = 1
+}
+else 
+{
+    Write-Host "`n.NET SDK Acquisition Extension Tests Succeeded.`n" -ForegroundColor $successColor
 }
 popd
 

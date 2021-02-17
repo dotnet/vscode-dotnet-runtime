@@ -8,4 +8,5 @@ export interface IDotnetInstallationContext {
     version: string;
     dotnetPath: string;
     timeoutValue: number;
+    installRuntime: boolean;
 }

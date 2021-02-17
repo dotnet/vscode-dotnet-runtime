@@ -3,9 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import * as vscode from 'vscode';
 import { IEvent } from './IEvent';
 
-export interface IEventStreamObserver {
+export interface IEventStreamObserver extends vscode.Disposable {
     post(event: IEvent): void;
     dispose(): void;
 }

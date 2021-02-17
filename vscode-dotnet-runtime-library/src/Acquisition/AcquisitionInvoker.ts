@@ -5,7 +5,6 @@
 import * as cp from 'child_process';
 import * as isOnline from 'is-online';
 import * as os from 'os';
-import { Memento } from 'vscode';
 import { IEventStream } from '../EventStream/EventStream';
 import {
     DotnetAcquisitionCompleted,
@@ -16,6 +15,7 @@ import {
     DotnetAcquisitionUnexpectedError,
     DotnetOfflineFailure,
 } from '../EventStream/EventStreamEvents';
+import { IExtensionState } from '../IExtensionState';
 import { timeoutConstants } from '../Utils/ErrorHandler';
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
@@ -25,14 +25,14 @@ import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker
 export class AcquisitionInvoker extends IAcquisitionInvoker {
     private readonly scriptWorker: IInstallScriptAcquisitionWorker;
 
-    constructor(extensionState: Memento, eventStream: IEventStream) {
+    constructor(extensionState: IExtensionState, eventStream: IEventStream) {
         super(eventStream);
         this.scriptWorker = new InstallScriptAcquisitionWorker(extensionState, eventStream);
     }
 
     public async installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
         const winOS = os.platform() === 'win32';
-        const installCommand = await this.getInstallCommand(installContext.version, installContext.installDir);
+        const installCommand = await this.getInstallCommand(installContext.version, installContext.installDir, installContext.installRuntime);
         return new Promise<void>((resolve, reject) => {
             try {
                 const windowsFullCommand = `powershell.exe -NoProfile -ExecutionPolicy unrestricted -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 ; & ${installCommand} }`;
@@ -75,12 +75,14 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
         });
     }
 
-    private async getInstallCommand(version: string, dotnetInstallDir: string): Promise<string> {
-        const args = [
+    private async getInstallCommand(version: string, dotnetInstallDir: string, installRuntime: boolean): Promise<string> {
+        let args = [
             '-InstallDir', this.escapeFilePath(dotnetInstallDir),
-            '-Runtime', 'dotnet',
             '-Version', version,
         ];
+        if (installRuntime) {
+            args = args.concat('-Runtime', 'dotnet');
+        }
 
         const scriptPath = await this.scriptWorker.getDotnetInstallScriptPath();
         return `${ this.escapeFilePath(scriptPath) } ${ args.join(' ') }`;

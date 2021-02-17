@@ -15,13 +15,12 @@ import {
     DotnetUninstallAllCompleted,
     DotnetUninstallAllStarted,
 } from '../EventStream/EventStreamEvents';
-import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
-import { IExistingPath } from '../IExtensionContext';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { IDotnetCoreAcquisitionWorker } from './IDotnetCoreAcquisitionWorker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 
-export class DotnetCoreAcquisitionWorker {
+export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker {
     private readonly installingVersionsKey = 'installing';
     private readonly installDir: string;
     private readonly dotnetExecutable: string;
@@ -50,25 +49,15 @@ export class DotnetCoreAcquisitionWorker {
         this.context.eventStream.post(new DotnetUninstallAllCompleted());
     }
 
-    public resolveExistingPath(existingPaths: IExistingPath[] | undefined, extensionId: string | undefined, windowDisplayWorker: IWindowDisplayWorker): IDotnetAcquireResult | undefined {
-        if (existingPaths) {
-            if (!extensionId) {
-                windowDisplayWorker.showWarningMessage(
-                    'Ignoring existing .NET paths defined in settings.json because requesting extension does not define its extension ID. Please file a bug against the requesting extension.',
-                    () => { /* No callback */ },
-                );
-                return;
-            }
-            const existingPath = existingPaths.filter((pair) => pair.extensionId === extensionId);
-            if (existingPath && existingPath.length > 0) {
-                return { dotnetPath: existingPath![0].path };
-            }
-        }
+    public async acquireSDK(version: string): Promise<IDotnetAcquireResult> {
+        return this.acquire(version, false);
     }
 
-    public async acquire(version: string): Promise<IDotnetAcquireResult> {
-        version = await this.context.versionResolver.getFullVersion(version);
+    public async acquireRuntime(version: string): Promise<IDotnetAcquireResult> {
+        return this.acquire(version, true);
+    }
 
+    private async acquire(version: string, installRuntime: boolean): Promise<IDotnetAcquireResult> {
         const existingAcquisitionPromise = this.acquisitionPromises[version];
         if (existingAcquisitionPromise) {
             // This version of dotnet is already being acquired. Memoize the promise.
@@ -76,8 +65,7 @@ export class DotnetCoreAcquisitionWorker {
             return existingAcquisitionPromise.then((res) => ({ dotnetPath: res }));
         } else {
             // We're the only one acquiring this version of dotnet, start the acquisition process.
-
-            const acquisitionPromise = this.acquireCore(version).catch((error: Error) => {
+            const acquisitionPromise = this.acquireCore(version, installRuntime).catch((error: Error) => {
                 delete this.acquisitionPromises[version];
                 throw new Error(`.NET Acquisition Failed: ${error.message}`);
             });
@@ -87,7 +75,7 @@ export class DotnetCoreAcquisitionWorker {
         }
     }
 
-    private async acquireCore(version: string): Promise<string> {
+    private async acquireCore(version: string, installRuntime: boolean): Promise<string> {
         const installingVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
         const partialInstall = installingVersions.indexOf(version) >= 0;
         if (partialInstall) {
@@ -117,6 +105,7 @@ export class DotnetCoreAcquisitionWorker {
             version,
             dotnetPath,
             timeoutValue: this.timeoutValue,
+            installRuntime,
         } as IDotnetInstallationContext;
         this.context.eventStream.post(new DotnetAcquisitionStarted(version));
         await this.context.acquisitionInvoker.installDotnet(installContext).catch((reason) => {

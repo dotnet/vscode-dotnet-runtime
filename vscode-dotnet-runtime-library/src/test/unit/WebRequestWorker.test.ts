@@ -4,8 +4,6 @@
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
 import { IInstallScriptAcquisitionWorker } from '../../Acquisition/IInstallScriptAcquisitionWorker';
@@ -19,9 +17,7 @@ import {
     MockExtensionContext,
     MockInstallationValidator,
     MockInstallScriptWorker,
-    MockVersionResolver,
     MockWebRequestWorker,
-    versionPairs,
 } from '../mocks/MockObjects';
 const assert = chai.assert;
 chai.use(chaiAsPromised);
@@ -41,11 +37,10 @@ suite('WebRequestWorker Unit Tests', () => {
             extensionState: context,
             eventStream,
             acquisitionInvoker: new ErrorAcquisitionInvoker(eventStream),
-            versionResolver: new MockVersionResolver(context, eventStream),
             installationValidator: new MockInstallationValidator(eventStream),
             timeoutValue: 10,
         });
-        return assert.isRejected(acquisitionWorker.acquire(versionPairs[0][0]), Error, '.NET Acquisition Failed');
+        return assert.isRejected(acquisitionWorker.acquireRuntime('1.0'), Error, '.NET Acquisition Failed');
     });
 
     test('Install Script Request Failure', async () => {

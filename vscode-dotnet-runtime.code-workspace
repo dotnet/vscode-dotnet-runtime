@@ -4,10 +4,16 @@
             "path": "vscode-dotnet-runtime-extension"
         },
         {
+            "path": "vscode-dotnet-sdk-extension"
+        },
+        {
             "path": "sample"
         },
         {
             "path": "vscode-dotnet-runtime-library"
+        },
+        {
+            "path": "vscode-dotnet-uninstall-library"
         }
     ],
     "settings": {}

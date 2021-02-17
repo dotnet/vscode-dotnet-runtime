@@ -60,6 +60,7 @@
 		"clean": "rimraf out"
 	},
 	"dependencies": {
+		"vscode-dotnet-runtime": "file:../vscode-dotnet-runtime-extension",
 		"vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library"
 	},
 	"devDependencies": {

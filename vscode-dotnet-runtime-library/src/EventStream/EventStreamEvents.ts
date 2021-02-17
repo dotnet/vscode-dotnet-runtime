@@ -23,6 +23,24 @@ export class DotnetAcquisitionStarted extends IEvent {
     }
 }
 
+export class DotnetRuntimeAcquisitionStarted extends IEvent {
+    public readonly eventName = 'DotnetRuntimeAcquisitionStarted';
+    public readonly type = EventType.DotnetRuntimeAcquisitionStart;
+
+    public getProperties() {
+        return undefined;
+    }
+}
+
+export class DotnetSDKAcquisitionStarted extends IEvent {
+    public readonly eventName = 'DotnetSDKAcquisitionStarted';
+    public readonly type = EventType.DotnetSDKAcquisitionStart;
+
+    public getProperties() {
+        return undefined;
+    }
+}
+
 export class DotnetAcquisitionCompleted extends IEvent {
     public readonly eventName = 'DotnetAcquisitionCompleted';
     public readonly type = EventType.DotnetAcquisitionCompleted;

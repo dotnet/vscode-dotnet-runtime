@@ -16,4 +16,6 @@ export interface IIssueContext {
     eventStream: IEventStream;
     commandName: string;
     version: string | undefined;
+    timeoutInfoUrl: string;
+    moreInfoUrl: string;
 }

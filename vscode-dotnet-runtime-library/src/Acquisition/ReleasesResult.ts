@@ -11,6 +11,7 @@ import { isNullOrUndefined } from 'util';
 //        {
 //           "channel-version": "X.X", --> Major.Minor version this channel represents
 //           "latest-runtime": "X.X.X", --> Most recently released full version of the runtime
+//           "latest-sdk": "X.X.X", --> Most recently released full version of the SDK
 //           ...
 //        },
 //        ...
@@ -24,23 +25,25 @@ export class ReleasesResult {
          throw new Error('Unable to resolve version: invalid releases data');
       }
       this.releasesIndex = releasesJson.map((channel: IReleasesChannel) => {
-         const [ channelVersion, latestRuntime ] = [ channel['channel-version'], channel['latest-runtime'] ];
+         const [ channelVersion, latestRuntime, latestSDK ] = [ channel['channel-version'], channel['latest-runtime'], channel['latest-sdk'] ];
          if (isNullOrUndefined(channelVersion) || isNullOrUndefined(latestRuntime)) {
             throw new Error('Unable to resolve version: invalid releases data');
          }
-         return new ReleasesChannel(channelVersion, latestRuntime);
+         return new ReleasesChannel(channelVersion, latestRuntime, latestSDK);
       });
    }
 }
 
 export class ReleasesChannel {
    constructor(public channelVersion: string,
-               public latestRuntime: string) { }
+               public latestRuntime: string,
+               public latestSDK: string) { }
 }
 
 interface IReleasesChannel {
    ['channel-version']: string;
    ['latest-runtime']: string;
+   ['latest-sdk']: string;
 }
 
 type ReleaseChannels = IReleasesChannel[];
