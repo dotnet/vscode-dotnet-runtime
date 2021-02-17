@@ -54,6 +54,7 @@ const commandPrefix = 'dotnet';
 const configPrefix = 'dotnetAcquisitionExtension';
 const displayChannelName = '.NET Runtime';
 const defaultTimeoutValue = 120;
+const moreInfoUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/master/Documentation/troubleshooting-runtime.md';
 
 export function activate(context: vscode.ExtensionContext, extensionContext?: IExtensionContext) {
     const extensionConfiguration = extensionContext !== undefined && extensionContext.extensionConfiguration ?
@@ -86,6 +87,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             eventStream,
             commandName,
             version,
+            moreInfoUrl,
+            timeoutInfoUrl: `${moreInfoUrl}#install-script-timeouts`,
         } as IIssueContext;
     };
     const timeoutValue = extensionConfiguration.get<number>(configKeys.installTimeoutValue);
@@ -155,12 +158,6 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         dotnetUninstallAllRegistration,
         showOutputChannelRegistration,
         ensureDependenciesRegistration,
-        reportIssueRegistration);
-    context.subscriptions.push({
-        dispose: () => {
-            for (const observer of eventStreamObservers) {
-                observer.dispose();
-            }
-        },
-    });
+        reportIssueRegistration,
+        ...eventStreamObservers);
 }

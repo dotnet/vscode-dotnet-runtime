@@ -3,11 +3,11 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-import * as fs from 'fs';
 import * as cp from 'child_process';
-import * as path from 'path';
+import * as fs from 'fs';
 import open = require('open');
 import * as os from 'os';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import {
     AcquireErrorConfiguration,
@@ -30,6 +30,7 @@ import {
     VersionResolver,
     WindowDisplayWorker,
 } from 'vscode-dotnet-runtime-library';
+import { IWindowDisplayWorker } from 'vscode-dotnet-runtime-library/dist/EventStream/IWindowDisplayWorker';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquistionId';
 
 // Extension constants
@@ -47,6 +48,8 @@ const commandPrefix = 'dotnet-sdk';
 const configPrefix = 'dotnetSDKAcquisitionExtension';
 const displayChannelName = '.NET SDK';
 const defaultTimeoutValue = 240;
+const pathTroubleshootingOption = 'Troubleshoot';
+const troubleshootingUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/master/Documentation/troubleshooting-sdk.md';
 
 export function activate(context: vscode.ExtensionContext, extensionContext?: IExtensionContext) {
     const extensionConfiguration = extensionContext !== undefined && extensionContext.extensionConfiguration ?
@@ -79,6 +82,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             eventStream,
             commandName,
             version,
+            timeoutInfoUrl: `${troubleshootingUrl}#install-script-timeouts`,
+            moreInfoUrl: troubleshootingUrl,
         } as IIssueContext;
     };
     const timeoutValue = extensionConfiguration.get<number>(configKeys.installTimeoutValue);
@@ -124,7 +129,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             const resolvedVersion = await versionResolver.getFullSDKVersion(version!);
             const dotnetPath = await acquisitionWorker.acquireSDK(resolvedVersion);
             displayWorker.showInformationMessage(`.NET SDK ${version} installed to ${dotnetPath.dotnetPath}`, () => { /* No callback needed */ });
-            setPathEnvVar(path.dirname(dotnetPath.dotnetPath));
+            const pathEnvVar = path.dirname(dotnetPath.dotnetPath);
+            setPathEnvVar(pathEnvVar, displayWorker);
             return dotnetPath;
         }, issueContext(undefined, 'acquireSDK'));
         return pathResult;
@@ -146,22 +152,25 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         dotnetAcquireRegistration,
         dotnetUninstallAllRegistration,
         showOutputChannelRegistration,
-        reportIssueRegistration);
-    context.subscriptions.push({
-        dispose: () => vscode.Disposable.from(...eventStreamObservers).dispose(),
-    });
+        reportIssueRegistration,
+        ...eventStreamObservers);
 }
 
-function setPathEnvVar(pathAddition: string) {
+function setPathEnvVar(pathAddition: string, displayWorker: IWindowDisplayWorker) {
     let pathCommand: string;
     if (os.platform() === 'win32') {
         pathCommand = `setx PATH "${pathAddition};%PATH%"`;
     } else {
         pathCommand = `export PATH="${pathAddition};$PATH"`;
     }
-    try{
+    try {
         cp.execSync(pathCommand);
     } catch (error) {
-        throw new Error(`Unable to add SDK to the PATH: ${error}`);
+        displayWorker.showWarningMessage(`Unable to add SDK to the PATH: ${error}`,
+            async (response: string | undefined) => {
+                if (response === pathTroubleshootingOption) {
+                    open(`${troubleshootingUrl}#unable-to-add-to-path`);
+                }
+            }, pathTroubleshootingOption);
     }
 }

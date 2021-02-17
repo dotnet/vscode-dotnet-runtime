@@ -8,7 +8,7 @@ import { IEvent } from './IEvent';
 import { ILoggingObserver } from './ILoggingObserver';
 
 export class LoggingObserver implements ILoggingObserver {
-    private log: string[] = [];
+    private readonly log: string[] = [];
 
     constructor(private readonly logFilePath: string) {}
 
