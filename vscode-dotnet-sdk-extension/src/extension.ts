@@ -157,11 +157,18 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 }
 
 function setPathEnvVar(pathAddition: string, displayWorker: IWindowDisplayWorker) {
+    if (process.env.PATH && process.env.PATH.includes(pathAddition)) {
+        // No need to add to PATH again
+        return;
+    }
+
     let pathCommand: string;
     if (os.platform() === 'win32') {
-        pathCommand = `setx PATH "${pathAddition};%PATH%"`;
+        pathCommand = `for /F "skip=2 tokens=1,2*" %A in ('%SystemRoot%\\System32\\reg.exe query "HKCU\\Environment" /v "Path" 2^>nul') do ` +
+                      `(%SystemRoot%\\System32\\reg.exe ADD "HKCU\\Environment" /v Path /t REG_SZ /f /d "${pathAddition};%C")`;
     } else {
-        pathCommand = `export PATH="${pathAddition};$PATH"`;
+        // Adding to the user path is only supported on windows right now
+        return;
     }
     try {
         cp.execSync(pathCommand);
