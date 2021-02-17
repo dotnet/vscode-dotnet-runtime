@@ -1,6 +1,6 @@
 # .NET Runtime and SDK Installation Tools
 
-This repo contains two VS Code extensions, [vscode-dotnet-runtime](vscode-dotnet-runtime-extension/README.md) and [vscode-dotnet-sdk](vscode-dotnet-sdk-extension/README.md). The [vscode-dotnet-runtime](vscode-dotnet-runtime-extension/README.md) can be used to install the .NET runtime and is meant to be leveraged by other extensions which depend on the runtime. The.[vscode-dotnet-sdk](vscode-dotnet-sdk-extension/README.md) is a special install for internal features and not designed to be used by other extensions because it will conflict with existing SDK installations on the users machine. 
+This repo contains two VS Code extensions, [vscode-dotnet-runtime](vscode-dotnet-runtime-extension/README.md) and [vscode-dotnet-sdk](vscode-dotnet-sdk-extension/README.md). The [vscode-dotnet-runtime](vscode-dotnet-runtime-extension/README.md) can be used to install the .NET runtime and is meant to be leveraged by other extensions which depend on the runtime. The [vscode-dotnet-sdk](vscode-dotnet-sdk-extension/README.md) is a special install for internal features and not designed to be used by other extensions because it will conflict with existing SDK installations on the users machine.
 
 ## Contributing to Repository
 
