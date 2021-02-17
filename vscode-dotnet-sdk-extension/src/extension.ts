@@ -4,6 +4,8 @@
  * ------------------------------------------------------------------------------------------ */
 
 import * as fs from 'fs';
+import * as cp from 'child_process';
+import * as path from 'path';
 import open = require('open');
 import * as os from 'os';
 import * as vscode from 'vscode';
@@ -122,7 +124,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             const resolvedVersion = await versionResolver.getFullSDKVersion(version!);
             const dotnetPath = await acquisitionWorker.acquireSDK(resolvedVersion);
             displayWorker.showInformationMessage(`.NET SDK ${version} installed to ${dotnetPath.dotnetPath}`, () => { /* No callback needed */ });
-            // TODO add to PATH?
+            setPathEnvVar(path.dirname(dotnetPath.dotnetPath));
             return dotnetPath;
         }, issueContext(undefined, 'acquireSDK'));
         return pathResult;
@@ -148,4 +150,18 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     context.subscriptions.push({
         dispose: () => vscode.Disposable.from(...eventStreamObservers).dispose(),
     });
+}
+
+function setPathEnvVar(pathAddition: string) {
+    let pathCommand: string;
+    if (os.platform() === 'win32') {
+        pathCommand = `setx PATH "${pathAddition};%PATH%"`;
+    } else {
+        pathCommand = `export PATH="${pathAddition};$PATH"`;
+    }
+    try{
+        cp.execSync(pathCommand);
+    } catch (error) {
+        throw new Error(`Unable to add SDK to the PATH: ${error}`);
+    }
 }
