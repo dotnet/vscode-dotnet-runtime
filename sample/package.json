@@ -20,34 +20,52 @@
 		"onCommand:sample.dotnet.acquire",
 		"onCommand:sample.dotnet.uninstallAll",
 		"onCommand:sample.dotnet.concurrentTest",
-		"onCommand:sample.dotnet.showAcquisitionLog"
+		"onCommand:sample.dotnet.showAcquisitionLog",
+		"onCommand:sample.dotnet-sdk.acquire",
+		"onCommand:sample.dotnet-sdk.uninstallAll",
+		"onCommand:sample.dotnet-sdk.showAcquisitionLog"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
 			{
 				"command": "sample.helloworld",
-				"title": "Run a dynamically acquired .NET Core Hello World App",
+				"title": "Run a dynamically acquired .NET Hello World App",
 				"category": "Sample"
 			},
 			{
 				"command": "sample.dotnet.acquire",
-				"title": "Acquire .NET Core runtime",
+				"title": "Acquire .NET runtime",
 				"category": "Sample"
 			},
 			{
 				"command": "sample.dotnet.uninstallAll",
-				"title": "Uninstall all .NET Core runtimes",
+				"title": "Uninstall all .NET runtimes",
 				"category": "Sample"
 			},
 			{
 				"command": "sample.dotnet.concurrentTest",
-				"title": "Concurrently acquire all 2.X dotnets",
+				"title": "Concurrently acquire all 2.X .NET Core runtimes",
 				"category": "Sample"
 			},
 			{
 				"command": "sample.dotnet.showAcquisitionLog",
-				"title": "Show .NET Core runtime acquisition log",
+				"title": "Show .NET runtime acquisition log",
+				"category": "Sample"
+			},
+			{
+				"command": "sample.dotnet-sdk.acquire",
+				"title": "Acquire .NET SDK",
+				"category": "Sample"
+			},
+			{
+				"command": "sample.dotnet-sdk.uninstallAll",
+				"title": "Uninstall all .NET SDKs",
+				"category": "Sample"
+			},
+			{
+				"command": "sample.dotnet-sdk.showAcquisitionLog",
+				"title": "Show .NET SDK acquisition log",
 				"category": "Sample"
 			}
 		]
@@ -61,7 +79,8 @@
 	},
 	"dependencies": {
 		"vscode-dotnet-runtime": "file:../vscode-dotnet-runtime-extension",
-		"vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library"
+		"vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library",
+		"vscode-dotnet-sdk": "file:../vscode-dotnet-sdk-extension"
 	},
 	"devDependencies": {
 		"@types/mocha": "^8.0.3",

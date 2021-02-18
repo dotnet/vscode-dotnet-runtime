@@ -7,7 +7,8 @@ import * as cp from 'child_process';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { IDotnetAcquireResult } from 'vscode-dotnet-runtime-library';
-import * as extension from 'vscode-dotnet-runtime';
+import * as runtimeExtension from 'vscode-dotnet-runtime';
+import * as sdkExtension from 'vscode-dotnet-sdk';
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -18,7 +19,8 @@ export function activate(context: vscode.ExtensionContext) {
     NOTE: This sample should technically have the following in its package.json:
 
     "extensionDependencies": [
-        "ms-dotnettools.vscode-dotnet-runtime"
+        "ms-dotnettools.vscode-dotnet-runtime",
+        "ms-dotnettools.vscode-dotnet-sdk"
     ]
 
     This would enable the sample to require the vscode-dotnet-runtime extension
@@ -29,9 +31,12 @@ export function activate(context: vscode.ExtensionContext) {
     */
 
     const requestingExtensionId = 'ms-dotnettools.sample-extension';
-    extension.activate(context);
+    runtimeExtension.activate(context);
+    sdkExtension.activate(context);
 
     // --------------------------------------------------------------------------
+
+    // -------------------runtime extension registrations------------------------
 
     const sampleHelloWorldRegistration = vscode.commands.registerCommand('sample.helloworld', async () => {
         try {
@@ -109,7 +114,7 @@ ${stderr}`);
             vscode.window.showErrorMessage(error.toString());
         }
     });
-    const sampleshowAcquisitionLogRegistration = vscode.commands.registerCommand('sample.dotnet.showAcquisitionLog', async () => {
+    const sampleShowAcquisitionLogRegistration = vscode.commands.registerCommand('sample.dotnet.showAcquisitionLog', async () => {
         try {
             await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
         } catch (error) {
@@ -122,5 +127,46 @@ ${stderr}`);
         sampleAcquireRegistration,
         sampleDotnetUninstallAllRegistration,
         sampleConcurrentTest,
-        sampleshowAcquisitionLogRegistration);
+        sampleShowAcquisitionLogRegistration);
+
+    // --------------------------------------------------------------------------
+
+    // ---------------------sdk extension registrations--------------------------
+
+    const sampleSDKAcquireRegistration = vscode.commands.registerCommand('sample.dotnet-sdk.acquire', async (version) => {
+        if (!version) {
+            version = await vscode.window.showInputBox({
+                placeHolder: '5.0',
+                value: '5.0',
+                prompt: '.NET SDK version, i.e. 5.0',
+            });
+        }
+
+        try {
+            await vscode.commands.executeCommand('dotnet-sdk.showAcquisitionLog');
+            await vscode.commands.executeCommand('dotnet-sdk.acquire', { version, requestingExtensionId });
+        } catch (error) {
+            vscode.window.showErrorMessage(error.toString());
+        }
+    });
+    const sampleSDKDotnetUninstallAllRegistration = vscode.commands.registerCommand('sample.dotnet-sdk.uninstallAll', async () => {
+        try {
+            await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
+            vscode.window.showInformationMessage('.NET SDKs uninstalled.');
+        } catch (error) {
+            vscode.window.showErrorMessage(error.toString());
+        }
+    });
+    const sampleSDKShowAcquisitionLogRegistration = vscode.commands.registerCommand('sample.dotnet-sdk.showAcquisitionLog', async () => {
+        try {
+            await vscode.commands.executeCommand('dotnet-sdk.showAcquisitionLog');
+        } catch (error) {
+            vscode.window.showErrorMessage(error.toString());
+        }
+    });
+
+    context.subscriptions.push(
+        sampleSDKAcquireRegistration,
+        sampleSDKDotnetUninstallAllRegistration,
+        sampleSDKShowAcquisitionLogRegistration);
 }
