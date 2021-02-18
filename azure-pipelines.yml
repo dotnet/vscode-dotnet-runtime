@@ -100,7 +100,7 @@ stages:
         versionSpec: '15.x'
       displayName: 'Install Node.js'
     - bash: |
-        if [ $(is-release) = 'True' ]; then
+        if ([ $(is-sdk-release) = 'True' ] && [ $(package-name) = 'vscode-dotnet-sdk' ]) || ([ $(is-runtime-release) = 'True' ] && [ $(package-name) = 'vscode-dotnet-runtime' ]); then
           VERSION=`node -p "require('./package.json').version"`
         else
           VERSION_NUM=`node -p "require('./package.json').version"`
