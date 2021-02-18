@@ -5,7 +5,8 @@ trigger:
     - master
   tags:
     include:
-    - v*
+    - SDK-v*
+    - Runtime-v*
 pr:
   autoCancel: false
   branches:
