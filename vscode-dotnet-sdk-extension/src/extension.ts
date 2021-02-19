@@ -157,19 +157,24 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 }
 
 function setPathEnvVar(pathAddition: string, displayWorker: IWindowDisplayWorker) {
-    if (process.env.PATH && process.env.PATH.includes(pathAddition)) {
-        // No need to add to PATH again
-        return;
-    }
-
     let pathCommand: string;
     if (os.platform() === 'win32') {
+        if (process.env.PATH && process.env.PATH.includes(pathAddition)) {
+            // No need to add to PATH again
+            return;
+        }
         pathCommand = `for /F "skip=2 tokens=1,2*" %A in ('%SystemRoot%\\System32\\reg.exe query "HKCU\\Environment" /v "Path" 2^>nul') do ` +
-                      `(%SystemRoot%\\System32\\reg.exe ADD "HKCU\\Environment" /v Path /t REG_SZ /f /d "${pathAddition};%C")`;
+            `(%SystemRoot%\\System32\\reg.exe ADD "HKCU\\Environment" /v Path /t REG_SZ /f /d "${pathAddition};%C")`;
+
     } else {
-        // Adding to the user path is only supported on windows right now
-        return;
+        const profileFile = os.platform() === 'darwin' ? path.join(os.homedir(), '.zshrc') : path.join(os.homedir(), '.profile');
+        if (fs.existsSync(profileFile) && fs.readFileSync(profileFile).toString().includes(pathAddition)) {
+            // No need to add to PATH again
+            return;
+        }
+        pathCommand = `echo 'export PATH="${pathAddition}:$PATH"' >> ${profileFile}`;
     }
+
     try {
         cp.execSync(pathCommand);
     } catch (error) {

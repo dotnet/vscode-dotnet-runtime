@@ -3,6 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
+import * as cp from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -63,6 +64,27 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       assert.include(result!.dotnetPath, process.env.APPDATA!);
     }
     assert.isTrue(fs.existsSync(result!.dotnetPath));
+    // Clean up storage
+    await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
+  }).timeout(100000);
+
+  test('Install Command Sets the PATH', async () => {
+    const context: IDotnetAcquireContext = { version: '5.0' };
+    const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context);
+    assert.exists(result);
+    assert.exists(result!.dotnetPath);
+
+    let pathResult: string;
+    if (os.platform() === 'win32') {
+      pathResult = cp.execSync(`%SystemRoot%\\System32\\reg.exe query "HKCU\\Environment" /v "Path"`).toString();
+    } else if (os.platform() === 'darwin') {
+      pathResult = fs.readFileSync(path.join(os.homedir(), '.zshrc')).toString();
+    } else {
+      pathResult = fs.readFileSync(path.join(os.homedir(), '.profile')).toString();
+    }
+    const expectedPath = path.dirname(result!.dotnetPath);
+    assert.include(pathResult, expectedPath);
+
     // Clean up storage
     await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
   }).timeout(100000);
