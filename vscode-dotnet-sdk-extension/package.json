@@ -12,7 +12,7 @@
 	"displayName": ".NET Education Bundle SDK Install Tool",
 	"description": "Allows acquisition of the .NET SDK.",
 	"icon": "images/dotnetIcon.png",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"publisher": "ms-dotnettools",
 	"engines": {
 		"vscode": "^1.41.0"
