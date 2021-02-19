@@ -14,6 +14,12 @@ import { OutputChannelObserver } from './OutputChannelObserver';
 import { StatusBarObserver } from './StatusBarObserver';
 import { ITelemetryReporter, TelemetryObserver } from './TelemetryObserver';
 
+export interface IPackageJson {
+    version: string;
+    appInsightsKey: string;
+    name: string;
+}
+
 export interface IEventStreamContext {
     displayChannelName: string;
     logPath: string;
@@ -21,6 +27,7 @@ export interface IEventStreamContext {
     enableTelemetry: boolean;
     telemetryReporter: ITelemetryReporter | undefined;
     showLogCommand: string;
+    packageJson: IPackageJson;
 }
 
 export function registerEventStream(context: IEventStreamContext): [EventStream, vscode.OutputChannel, LoggingObserver, IEventStreamObserver[]] {
@@ -37,7 +44,7 @@ export function registerEventStream(context: IEventStreamContext): [EventStream,
             loggingObserver,
         ];
     if (context.enableTelemetry) {
-        eventStreamObservers = eventStreamObservers.concat(new TelemetryObserver(context.telemetryReporter));
+        eventStreamObservers = eventStreamObservers.concat(new TelemetryObserver(context.packageJson, context.telemetryReporter));
     }
     const eventStream = new EventStream();
 

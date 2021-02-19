@@ -32,6 +32,8 @@ import {
 } from 'vscode-dotnet-runtime-library';
 import { IWindowDisplayWorker } from 'vscode-dotnet-runtime-library/dist/EventStream/IWindowDisplayWorker';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquistionId';
+// tslint:disable no-var-requires
+const packageJson = require('../package.json');
 
 // Extension constants
 namespace configKeys {
@@ -63,6 +65,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         enableTelemetry: enableExtensionTelemetry(extensionConfiguration, configKeys.enableTelemetry),
         telemetryReporter: extensionContext ? extensionContext.telemetryReporter : undefined,
         showLogCommand: `${commandPrefix}.${commandKeys.showAcquisitionLog}`,
+        packageJson,
     } as IEventStreamContext;
     const [eventStream, outputChannel, loggingObserver, eventStreamObservers] = registerEventStream(eventStreamContext);
 
