@@ -4,10 +4,9 @@
  *--------------------------------------------------------------------------------------------*/
 import { isNullOrUndefined } from 'util';
 import TelemetryReporter from 'vscode-extension-telemetry';
+import { IPackageJson } from './EventStreamRegistration';
 import { IEvent } from './IEvent';
 import { IEventStreamObserver } from './IEventStreamObserver';
-// tslint:disable no-var-requires
-const packageJson = require('../../package.json');
 
 export interface ITelemetryReporter {
     sendTelemetryEvent(eventName: string, properties?: { [key: string]: string }, measures?: { [key: string]: number }): void;
@@ -18,7 +17,7 @@ export interface ITelemetryReporter {
 export class TelemetryObserver implements IEventStreamObserver {
     private readonly telemetryReporter: ITelemetryReporter;
 
-    constructor(telemetryReporter?: ITelemetryReporter) {
+    constructor(packageJson: IPackageJson, telemetryReporter?: ITelemetryReporter) {
         if (telemetryReporter === undefined) {
             const extensionVersion = packageJson.version;
             const appInsightsKey = packageJson.appInsightsKey;

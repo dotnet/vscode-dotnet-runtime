@@ -11,6 +11,7 @@
 	"author": "Microsoft Corporation",
 	"displayName": ".NET Education Bundle SDK Install Tool",
 	"description": "Allows acquisition of the .NET SDK.",
+	"appInsightsKey": "02dc18e0-7494-43b2-b2a3-18ada5fcb522",
 	"icon": "images/dotnetIcon.png",
 	"version": "0.0.2",
 	"publisher": "ms-dotnettools",
