@@ -6,7 +6,7 @@ const path = require('path');
 const CopyPlugin = require('copy-webpack-plugin');
 
 /**@type {import('webpack').Configuration}*/
-const config = {
+const extensionConfig = {
   target: 'node', // vscode extensions run in a Node.js-context 📖 -> https://webpack.js.org/configuration/node/
 
   entry: './/src/extension.ts', // the entry point of this extension, 📖 -> https://webpack.js.org/configuration/entry-context/
@@ -45,9 +45,31 @@ const config = {
   plugins: [
     new CopyPlugin({ patterns: [
       { from: path.resolve(__dirname, '../vscode-dotnet-runtime-library/install scripts'), to: path.resolve(__dirname, 'dist', 'install scripts') },
-      { from: path.resolve(__dirname, '../images'), to: path.resolve(__dirname, 'images') },
-      { from: path.resolve(__dirname, '../vscode-dotnet-uninstall-library/dist'), to: path.resolve(__dirname, 'dist') }
+      { from: path.resolve(__dirname, '../images'), to: path.resolve(__dirname, 'images') }
   ]}),
   ]
 };
-module.exports = config;
+const uninstallConfig = {
+  entry: './src/ExtensionUninstall.ts',
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        use: 'ts-loader',
+        exclude: /node_modules/,
+      },
+    ],
+  },
+  resolve: {
+    extensions: ['.ts', '.js'],
+  },
+  output: {
+    filename: 'ExtensionUninstall.js',
+    path: path.resolve(__dirname, 'dist'),
+  },
+  target: 'node',
+};
+module.exports = [
+  extensionConfig, 
+  uninstallConfig
+];
