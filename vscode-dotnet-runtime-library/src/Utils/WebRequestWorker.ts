@@ -4,7 +4,6 @@
  *--------------------------------------------------------------------------------------------*/
 import * as retry from 'p-retry';
 import * as request from 'request-promise-native';
-import { isNullOrUndefined } from 'util';
 import { IEventStream } from '../EventStream/EventStream';
 import { WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
 import { IExtensionState } from '../IExtensionState';
@@ -20,14 +19,14 @@ export class WebRequestWorker {
 
     public async getCachedData(retriesCount = 2): Promise<string | undefined> {
         this.cachedData = this.extensionState.get<string>(this.extensionStateKey);
-        if (isNullOrUndefined(this.cachedData)) {
+        if (!this.cachedData) {
             // Have to acquire data before continuing
             this.cachedData = await this.makeWebRequestWithRetries(true, retriesCount);
-        } else if (isNullOrUndefined(this.currentRequest)) {
+        } else if (!this.currentRequest) {
             // Update without blocking, continue with cached information
             this.currentRequest = this.makeWebRequest(false);
             this.currentRequest.then((result) => {
-                if (!isNullOrUndefined(result)) {
+                if (result) {
                     this.cachedData = result;
                 }
                 this.currentRequest = undefined;

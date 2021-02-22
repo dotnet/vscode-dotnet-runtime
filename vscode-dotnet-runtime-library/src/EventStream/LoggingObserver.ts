@@ -3,7 +3,6 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as fs from 'fs';
-import { isNullOrUndefined } from 'util';
 import { IEvent } from './IEvent';
 import { ILoggingObserver } from './ILoggingObserver';
 
@@ -15,7 +14,7 @@ export class LoggingObserver implements ILoggingObserver {
     public post(event: IEvent): void {
         this.writeLine(`${ new Date().toLocaleString() } ${ event.eventName }`);
         const properties = event.getProperties();
-        if (!isNullOrUndefined(properties)) {
+        if (properties) {
             for (const property of Object.values(properties)) {
                 this.writeLine(property);
             }
