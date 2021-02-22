@@ -39,19 +39,6 @@ if (! $?)
 }
 popd
 
-#################### Compile uninstall library ####################
-pushd vscode-dotnet-uninstall-library
-if (Test-Path node_modules) { rm -r -force node_modules }
-npm install
-npm run compile
-
-if (! $?)
-{
-    Write-Host "`nBuild failed!" -ForegroundColor $errorColor
-    exit 1
-}
-popd
-
 #################### Compile runtime extension ####################
 pushd vscode-dotnet-runtime-extension
 if (Test-Path node_modules) { rm -r -force node_modules }

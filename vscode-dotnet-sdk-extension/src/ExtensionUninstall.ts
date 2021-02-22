@@ -3,9 +3,9 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as fs from 'fs';
-import rimraf = require('rimraf');
-import * as path from 'path';
 import * as os from 'os';
+import * as path from 'path';
+import rimraf = require('rimraf');
 
 export function uninstallSDKExtension() {
     if (os.platform() === 'win32' && process.env.APPDATA) {

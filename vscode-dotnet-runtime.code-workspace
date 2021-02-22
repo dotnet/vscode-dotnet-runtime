@@ -11,9 +11,6 @@
         },
         {
             "path": "vscode-dotnet-runtime-library"
-        },
-        {
-            "path": "vscode-dotnet-uninstall-library"
         }
     ],
     "settings": {}

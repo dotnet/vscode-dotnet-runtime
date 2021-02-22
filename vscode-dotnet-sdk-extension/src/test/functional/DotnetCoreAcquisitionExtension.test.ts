@@ -16,10 +16,8 @@ import {
   MockTelemetryReporter,
   MockWindowDisplayWorker,
 } from 'vscode-dotnet-runtime-library';
-import {
-  uninstallSDKExtension,
-} from 'vscode-dotnet-uninstall-library';
 import * as extension from '../../extension';
+import { uninstallSDKExtension } from '../../ExtensionUninstall';
 const assert = chai.assert;
 /* tslint:disable:no-any */
 
