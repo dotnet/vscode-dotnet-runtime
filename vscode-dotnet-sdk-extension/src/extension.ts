@@ -32,6 +32,8 @@ import {
 } from 'vscode-dotnet-runtime-library';
 import { IWindowDisplayWorker } from 'vscode-dotnet-runtime-library/dist/EventStream/IWindowDisplayWorker';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquistionId';
+// tslint:disable no-var-requires
+const packageJson = require('../package.json');
 
 // Extension constants
 namespace configKeys {
@@ -55,11 +57,6 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     const extensionConfiguration = extensionContext !== undefined && extensionContext.extensionConfiguration ?
         extensionContext.extensionConfiguration :
         vscode.workspace.getConfiguration(configPrefix);
-    const extension = vscode.extensions.getExtension(dotnetCoreAcquisitionExtensionId);
-
-    if (!extension) {
-        throw new Error(`Could not resolve dotnet acquisition extension '${dotnetCoreAcquisitionExtensionId}' location`);
-    }
 
     const eventStreamContext = {
         displayChannelName,
@@ -68,6 +65,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         enableTelemetry: enableExtensionTelemetry(extensionConfiguration, configKeys.enableTelemetry),
         telemetryReporter: extensionContext ? extensionContext.telemetryReporter : undefined,
         showLogCommand: `${commandPrefix}.${commandKeys.showAcquisitionLog}`,
+        packageJson,
     } as IEventStreamContext;
     const [eventStream, outputChannel, loggingObserver, eventStreamObservers] = registerEventStream(eventStreamContext);
 
@@ -112,27 +110,14 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         const pathResult = callWithErrorHandling(async () => {
             eventStream.post(new DotnetSDKAcquisitionStarted());
 
-            let version: string | undefined = commandContext ? commandContext.version : undefined;
-            if (!version) {
-                version = await vscode.window.showInputBox({
-                    placeHolder: '5.0',
-                    value: '5.0',
-                    prompt: '.NET version, i.e. 5.0',
-                });
-            }
-            if (!version) {
-                displayWorker.showErrorMessage('No .NET SDK version provided', () => { /* No callback needed */ });
-                return undefined;
-            }
-
-            eventStream.post(new DotnetAcquisitionRequested(version!));
-            const resolvedVersion = await versionResolver.getFullSDKVersion(version!);
+            eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
+            const resolvedVersion = await versionResolver.getFullSDKVersion(commandContext.version);
             const dotnetPath = await acquisitionWorker.acquireSDK(resolvedVersion);
-            displayWorker.showInformationMessage(`.NET SDK ${version} installed to ${dotnetPath.dotnetPath}`, () => { /* No callback needed */ });
+            displayWorker.showInformationMessage(`.NET SDK ${commandContext.version} installed to ${dotnetPath.dotnetPath}`, () => { /* No callback needed */ });
             const pathEnvVar = path.dirname(dotnetPath.dotnetPath);
             setPathEnvVar(pathEnvVar, displayWorker);
             return dotnetPath;
-        }, issueContext(undefined, 'acquireSDK'));
+        }, issueContext(commandContext.errorConfiguration, 'acquireSDK'));
         return pathResult;
     });
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallAll}`, async (commandContext: IDotnetUninstallContext | undefined) => {

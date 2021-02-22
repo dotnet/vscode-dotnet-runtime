@@ -7,7 +7,6 @@
 		"url": "https://github.com/dotnet/vscode-dotnet-runtime.git"
 	},
 	"license": "MIT",
-	"appInsightsKey": "02dc18e0-7494-43b2-b2a3-18ada5fcb522",
 	"engines": {
 		"vscode": "^1.41.0"
 	},

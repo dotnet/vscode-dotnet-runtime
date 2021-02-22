@@ -36,6 +36,8 @@ import {
     WindowDisplayWorker,
 } from 'vscode-dotnet-runtime-library';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquistionId';
+// tslint:disable no-var-requires
+const packageJson = require('../package.json');
 
 // Extension constants
 namespace configKeys {
@@ -60,11 +62,6 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     const extensionConfiguration = extensionContext !== undefined && extensionContext.extensionConfiguration ?
         extensionContext.extensionConfiguration :
         vscode.workspace.getConfiguration(configPrefix);
-    const extension = vscode.extensions.getExtension(dotnetCoreAcquisitionExtensionId);
-
-    if (!extension) {
-        throw new Error(`Could not resolve dotnet acquisition extension '${dotnetCoreAcquisitionExtensionId}' location`);
-    }
 
     const eventStreamContext = {
         displayChannelName,
@@ -73,6 +70,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         enableTelemetry: enableExtensionTelemetry(extensionConfiguration, configKeys.enableTelemetry),
         telemetryReporter: extensionContext ? extensionContext.telemetryReporter : undefined,
         showLogCommand: `${commandPrefix}.${commandKeys.showAcquisitionLog}`,
+        packageJson,
     } as IEventStreamContext;
     const [eventStream, outputChannel, loggingObserver, eventStreamObservers] = registerEventStream(eventStreamContext);
 

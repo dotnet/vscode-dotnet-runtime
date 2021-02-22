@@ -9,10 +9,11 @@
 	},
 	"license": "MIT",
 	"author": "Microsoft Corporation",
-	"displayName": ".NET SDK Install Tool",
+	"displayName": ".NET Education Bundle SDK Install Tool",
 	"description": "Allows acquisition of the .NET SDK.",
+	"appInsightsKey": "02dc18e0-7494-43b2-b2a3-18ada5fcb522",
 	"icon": "images/dotnetIcon.png",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"publisher": "ms-dotnettools",
 	"engines": {
 		"vscode": "^1.41.0"
@@ -38,27 +39,17 @@
 		"commands": [
 			{
 				"command": "dotnet-sdk.reportIssue",
-				"title": "Report an issue with the .NET SDK Install Tool.",
-				"category": ".NET SDK Install Tool"
-			},
-			{
-				"command": "dotnet-sdk.acquire",
-				"title": "Install the .NET SDK.",
-				"category": ".NET SDK Install Tool"
-			},
-			{
-				"command": "dotnet-sdk.uninstallAll",
-				"title": "Uninstall all VS Code copies of .NET SDK.",
-				"category": ".NET SDK Install Tool"
+				"title": "Report an issue with the .NET Education Bundle SDK Install Tool.",
+				"category": ".NET Education Bundle SDK Install Tool"
 			}
 		],
 		"configuration": {
-			"title": ".NET SDK Install Tool",
+			"title": ".NET Education Bundle SDK Install Tool",
 			"properties": {
 				"dotnetSDKAcquisitionExtension.enableTelemetry": {
 					"type": "boolean",
 					"default": true,
-					"description": "Enable Telemetry for the .NET SDK install tool."
+					"description": "Enable Telemetry for the .NET Education Bundle SDK Install Tool."
 				},
 				"dotnetSDKAcquisitionExtension.installTimeoutValue": {
 					"type": "number",
@@ -75,7 +66,7 @@
 		"watch": "npm run compile && tsc -watch -p ./",
 		"test": "npm run compile --silent && node ./dist/test/functional/runTest.js",
 		"clean": "rimraf dist",
-		"compile-all": "cd ../vscode-dotnet-runtime-library && npm install && npm run compile && cd ../vscode-dotnet-sdk-extension && npm install && npm run compile",
+		"compile-all": "cd ../vscode-dotnet-runtime-library && npm install && npm run compile && cd ../vscode-dotnet-sdk-extension && cd ../vscode-dotnet-uninstall-library && npm install && npm run compile && cd ../vscode-dotnet-sdk-extension && npm install && npm run compile",
 		"lint": "tslint -c ../tslint.json '../vscode-dotnet-runtime-library/src/**/*.ts' '../vscode-dotnet-sdk-extension/src/**/*.ts'",
 		"webpack": "webpack --mode development"
 	},
