@@ -142,19 +142,37 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 }
 
 function setPathEnvVar(pathAddition: string, displayWorker: IWindowDisplayWorker) {
-    if (process.env.PATH && process.env.PATH.includes(pathAddition)) {
-        // No need to add to PATH again
-        return;
+    let pathCommand: string | undefined;
+    if (os.platform() === 'win32') {
+        pathCommand = getWindowsPathCommand(pathAddition);
+    } else {
+        pathCommand = getLinuxPathCommand(pathAddition);
     }
 
-    let pathCommand: string;
-    if (os.platform() === 'win32') {
-        pathCommand = `for /F "skip=2 tokens=1,2*" %A in ('%SystemRoot%\\System32\\reg.exe query "HKCU\\Environment" /v "Path" 2^>nul') do ` +
-                      `(%SystemRoot%\\System32\\reg.exe ADD "HKCU\\Environment" /v Path /t REG_SZ /f /d "${pathAddition};%C")`;
-    } else {
-        // Adding to the user path is only supported on windows right now
-        return;
+    if (pathCommand !== undefined) {
+        runPathCommand(pathCommand, displayWorker);
     }
+}
+
+function getLinuxPathCommand(pathAddition: string): string | undefined {
+    const profileFile = os.platform() === 'darwin' ? path.join(os.homedir(), '.zshrc') : path.join(os.homedir(), '.profile');
+    if (fs.existsSync(profileFile) && fs.readFileSync(profileFile).toString().includes(pathAddition)) {
+        // No need to add to PATH again
+        return undefined;
+    }
+    return `echo 'export PATH="${pathAddition}:$PATH"' >> ${profileFile}`;
+}
+
+function getWindowsPathCommand(pathAddition: string): string | undefined {
+    if (process.env.PATH && process.env.PATH.includes(pathAddition)) {
+        // No need to add to PATH again
+        return undefined;
+    }
+    return `for /F "skip=2 tokens=1,2*" %A in ('%SystemRoot%\\System32\\reg.exe query "HKCU\\Environment" /v "Path" 2^>nul') do ` +
+        `(%SystemRoot%\\System32\\reg.exe ADD "HKCU\\Environment" /v Path /t REG_SZ /f /d "${pathAddition};%C")`;
+}
+
+function runPathCommand(pathCommand: string, displayWorker: IWindowDisplayWorker) {
     try {
         cp.execSync(pathCommand);
     } catch (error) {
