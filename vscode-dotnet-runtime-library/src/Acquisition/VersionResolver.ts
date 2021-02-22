@@ -3,7 +3,6 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as semver from 'semver';
-import { isNullOrUndefined } from 'util';
 import { IEventStream } from '../EventStream/EventStream';
 import {
     DotnetVersionResolutionCompleted,
@@ -48,7 +47,7 @@ export class VersionResolver implements IVersionResolver {
         this.validateVersionInput(version);
 
         const channel = releases.releasesIndex.filter((channelVal) => channelVal.channelVersion === version);
-        if (isNullOrUndefined(channel) || channel.length !== 1) {
+        if (!channel || channel.length !== 1) {
             throw new Error(`Unable to resolve version: ${version}`);
         }
         const versionRes =  runtimeVersion ? channel[0].latestRuntime : channel[0].latestSDK;
@@ -57,7 +56,7 @@ export class VersionResolver implements IVersionResolver {
 
     private validateVersionInput(version: string) {
         const parsedVer = semver.coerce(version);
-        if (version.split('.').length !== 2 || isNullOrUndefined(parsedVer)) {
+        if (version.split('.').length !== 2 || !parsedVer) {
             throw new Error(`Invalid version: ${version}`);
         }
     }

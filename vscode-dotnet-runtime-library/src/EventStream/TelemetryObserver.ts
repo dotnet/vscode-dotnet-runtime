@@ -2,7 +2,6 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { isNullOrUndefined } from 'util';
 import TelemetryReporter from 'vscode-extension-telemetry';
 import { IPackageJson } from './EventStreamRegistration';
 import { IEvent } from './IEvent';
@@ -30,7 +29,7 @@ export class TelemetryObserver implements IEventStreamObserver {
 
     public post(event: IEvent): void {
         const properties = event.getSanitizedProperties(); // Get properties that don't contain personally identifiable data
-        if (isNullOrUndefined(properties)) {
+        if (!properties) {
             this.telemetryReporter.sendTelemetryEvent(event.eventName);
         } else if (event.isError) {
             this.telemetryReporter.sendTelemetryErrorEvent(event.eventName, properties);
