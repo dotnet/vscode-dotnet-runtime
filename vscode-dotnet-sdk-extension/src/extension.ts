@@ -90,7 +90,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         // Install to %AppData% on windows to avoid running into long path errors
         storagePath = process.env.APPDATA ? process.env.APPDATA : context.globalStoragePath;
     } else {
-        storagePath = context.globalStoragePath;
+        storagePath = path.join(os.homedir(), '.vscode-dotnet-sdk');
         if (!fs.existsSync(storagePath)) {
             fs.mkdirSync(storagePath);
         }
