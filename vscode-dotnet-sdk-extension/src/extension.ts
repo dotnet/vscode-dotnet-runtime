@@ -113,7 +113,6 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
             const resolvedVersion = await versionResolver.getFullSDKVersion(commandContext.version);
             const dotnetPath = await acquisitionWorker.acquireSDK(resolvedVersion);
-            displayWorker.showInformationMessage(`.NET SDK ${commandContext.version} installed to ${dotnetPath.dotnetPath}`, () => { /* No callback needed */ });
             const pathEnvVar = path.dirname(dotnetPath.dotnetPath);
             setPathEnvVar(pathEnvVar, displayWorker);
             return dotnetPath;
@@ -123,7 +122,6 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallAll}`, async (commandContext: IDotnetUninstallContext | undefined) => {
         await callWithErrorHandling(async () => {
             await acquisitionWorker.uninstallAll();
-            displayWorker.showInformationMessage('All VS Code copies of the .NET SDK uninstalled.', () => { /* No callback needed */ });
         }, issueContext(commandContext ? commandContext.errorConfiguration : undefined, 'uninstallAll'));
     });
     const showOutputChannelRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.showAcquisitionLog}`, () => outputChannel.show(/* preserveFocus */ false));
