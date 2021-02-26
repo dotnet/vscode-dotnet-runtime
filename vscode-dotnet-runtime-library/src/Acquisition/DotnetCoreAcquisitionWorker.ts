@@ -78,18 +78,21 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     private async acquireCore(version: string, installRuntime: boolean): Promise<string> {
         const installingVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
         const partialInstall = installingVersions.indexOf(version) >= 0;
-        if (partialInstall) {
+        if (partialInstall && installRuntime) {
             // Partial install, we never updated our extension to no longer be 'installing'.
             // uninstall everything and then re-install.
             this.context.eventStream.post(new DotnetAcquisitionPartialInstallation(version));
 
-            await this.uninstall(version);
+            await this.uninstallRuntime(version);
+        } else if (partialInstall) {
+            this.context.eventStream.post(new DotnetAcquisitionPartialInstallation(version));
+            await this.uninstallAll();
         }
 
-        const dotnetInstallDir = this.getDotnetInstallDir(version);
+        const dotnetInstallDir = this.getDotnetInstallDir(version, installRuntime);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
 
-        if (fs.existsSync(dotnetPath)) {
+        if (installRuntime ? this.isRuntimeInstalled(dotnetPath) : this.isSdkInstalled(dotnetPath, version)) {
             // Version requested has already been installed.
             this.context.installationValidator.validateDotnetInstall(version, dotnetPath);
             this.context.eventStream.post(new DotnetAcquisitionAlreadyInstalled(version));
@@ -125,10 +128,10 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         return dotnetPath;
     }
 
-    private async uninstall(version: string) {
+    private async uninstallRuntime(version: string) {
         delete this.acquisitionPromises[version];
 
-        const dotnetInstallDir = this.getDotnetInstallDir(version);
+        const dotnetInstallDir = this.getDotnetInstallDir(version, true);
         this.removeFolderRecursively(dotnetInstallDir);
 
         const installingVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
@@ -139,13 +142,26 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         }
     }
 
-    private getDotnetInstallDir(version: string) {
-        const dotnetInstallDir = path.join(this.installDir, version);
-        return dotnetInstallDir;
+    private getDotnetInstallDir(version: string, isRuntimeInstall: boolean) {
+        if (isRuntimeInstall) {
+            const dotnetInstallDir = path.join(this.installDir, version);
+            return dotnetInstallDir;
+        } else {
+            return this.installDir;
+        }
     }
 
     private removeFolderRecursively(folderPath: string) {
         this.context.eventStream.post(new DotnetAcquisitionDeletion(folderPath));
         rimraf.sync(folderPath);
+    }
+
+    private isRuntimeInstalled(dotnetPath: string): boolean {
+        return fs.existsSync(dotnetPath);
+    }
+
+    private isSdkInstalled(dotnetPath: string, version: string): boolean {
+        const installingVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
+        return installingVersions.includes(version) && fs.existsSync(dotnetPath);
     }
 }
