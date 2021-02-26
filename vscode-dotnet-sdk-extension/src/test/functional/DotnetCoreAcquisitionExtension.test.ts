@@ -118,14 +118,12 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
   }).timeout(600000);
 
-  test('Extension Uninstall Removes SDKs on Windows', async () => {
-    if (os.platform() === 'win32') {
-      const context: IDotnetAcquireContext = { version: '5.0' };
-      const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context);
-      assert.exists(result);
-      assert.exists(result!.dotnetPath);
-      uninstallSDKExtension();
-      assert.isFalse(fs.existsSync(result!.dotnetPath));
-    }
+  test('Extension Uninstall Removes SDKs', async () => {
+    const context: IDotnetAcquireContext = { version: '5.0' };
+    const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context);
+    assert.exists(result);
+    assert.exists(result!.dotnetPath);
+    uninstallSDKExtension();
+    assert.isFalse(fs.existsSync(result!.dotnetPath));
   }).timeout(100000);
 });
