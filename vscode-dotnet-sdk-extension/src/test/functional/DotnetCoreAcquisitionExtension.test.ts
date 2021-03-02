@@ -11,6 +11,7 @@ import * as vscode from 'vscode';
 import {
   IDotnetAcquireContext,
   IDotnetAcquireResult,
+  MockEnvironmentVariableCollection,
   MockExtensionConfiguration,
   MockExtensionContext,
   MockTelemetryReporter,
@@ -28,6 +29,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   const extensionPath = path.join(__dirname, '/../../..');
   const logPath = path.join(__dirname, 'logs');
   const mockDisplayWorker = new MockWindowDisplayWorker();
+  const environmentVariableCollection = new MockEnvironmentVariableCollection();
   let extensionContext: vscode.ExtensionContext;
 
   this.beforeAll(async () => {
@@ -37,6 +39,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       globalState: mockState,
       extensionPath,
       logPath,
+      environmentVariableCollection,
     } as any;
     extension.activate(extensionContext, {
       telemetryReporter: new MockTelemetryReporter(),
@@ -73,6 +76,10 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.exists(result);
     assert.exists(result!.dotnetPath);
 
+    const expectedPath = path.dirname(result!.dotnetPath);
+    const pathVar = environmentVariableCollection.variables.PATH;
+    assert.include(pathVar, expectedPath);
+
     let pathResult: string;
     if (os.platform() === 'win32') {
       pathResult = cp.execSync(`%SystemRoot%\\System32\\reg.exe query "HKCU\\Environment" /v "Path"`).toString();
@@ -81,7 +88,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     } else {
       pathResult = fs.readFileSync(path.join(os.homedir(), '.profile')).toString();
     }
-    const expectedPath = path.dirname(result!.dotnetPath);
     assert.include(pathResult, expectedPath);
 
     // Clean up storage
