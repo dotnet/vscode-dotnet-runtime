@@ -114,7 +114,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             const resolvedVersion = await versionResolver.getFullSDKVersion(commandContext.version);
             const dotnetPath = await acquisitionWorker.acquireSDK(resolvedVersion);
             const pathEnvVar = path.dirname(dotnetPath.dotnetPath);
-            setPathEnvVar(pathEnvVar, displayWorker);
+            setPathEnvVar(pathEnvVar, displayWorker, context.environmentVariableCollection);
             return dotnetPath;
         }, issueContext(commandContext.errorConfiguration, 'acquireSDK'));
         return pathResult;
@@ -139,7 +139,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         ...eventStreamObservers);
 }
 
-function setPathEnvVar(pathAddition: string, displayWorker: IWindowDisplayWorker) {
+function setPathEnvVar(pathAddition: string, displayWorker: IWindowDisplayWorker, environmentVariables: vscode.EnvironmentVariableCollection) {
+    // Set user PATH variable
     let pathCommand: string | undefined;
     if (os.platform() === 'win32') {
         pathCommand = getWindowsPathCommand(pathAddition);
@@ -149,6 +150,12 @@ function setPathEnvVar(pathAddition: string, displayWorker: IWindowDisplayWorker
 
     if (pathCommand !== undefined) {
         runPathCommand(pathCommand, displayWorker);
+    }
+
+    // Set PATH for VSCode terminal instances
+    if (!process.env.PATH!.includes(pathAddition)) {
+        environmentVariables.append('PATH', path.delimiter + pathAddition);
+        process.env.PATH += path.delimiter + pathAddition;
     }
 }
 
