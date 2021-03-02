@@ -140,11 +140,6 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 }
 
 function setPathEnvVar(pathAddition: string, displayWorker: IWindowDisplayWorker, environmentVariables: vscode.EnvironmentVariableCollection) {
-    // Set PATH for VSCode terminal instances
-    if (!process.env.PATH!.includes(pathAddition)) {
-        environmentVariables.append('PATH', path.delimiter + pathAddition);
-    }
-
     // Set user PATH variable
     let pathCommand: string | undefined;
     if (os.platform() === 'win32') {
@@ -155,6 +150,12 @@ function setPathEnvVar(pathAddition: string, displayWorker: IWindowDisplayWorker
 
     if (pathCommand !== undefined) {
         runPathCommand(pathCommand, displayWorker);
+    }
+
+    // Set PATH for VSCode terminal instances
+    if (!process.env.PATH!.includes(pathAddition)) {
+        environmentVariables.append('PATH', path.delimiter + pathAddition);
+        process.env.PATH += path.delimiter + pathAddition;
     }
 }
 
