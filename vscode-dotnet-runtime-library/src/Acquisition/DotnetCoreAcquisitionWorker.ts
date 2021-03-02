@@ -2,7 +2,6 @@
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
-import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import rimraf = require('rimraf');
@@ -89,10 +88,10 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             await this.uninstallAll();
         }
 
-        const dotnetInstallDir = this.getDotnetInstallDir(version, installRuntime);
+        const dotnetInstallDir = this.context.installDirectoryProvider.getDotnetInstallDir(version, this.installDir);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
 
-        if (installRuntime ? this.isRuntimeInstalled(dotnetPath) : this.isSdkInstalled(dotnetPath, version)) {
+        if (this.context.installDirectoryProvider.isBundleInstalled(dotnetPath, version, this.context.extensionState, this.installingVersionsKey)) {
             // Version requested has already been installed.
             this.context.installationValidator.validateDotnetInstall(version, dotnetPath);
             this.context.eventStream.post(new DotnetAcquisitionAlreadyInstalled(version));
@@ -131,7 +130,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     private async uninstallRuntime(version: string) {
         delete this.acquisitionPromises[version];
 
-        const dotnetInstallDir = this.getDotnetInstallDir(version, true);
+        const dotnetInstallDir = this.context.installDirectoryProvider.getDotnetInstallDir(version, this.installDir);
         this.removeFolderRecursively(dotnetInstallDir);
 
         const installingVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
@@ -142,26 +141,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         }
     }
 
-    private getDotnetInstallDir(version: string, isRuntimeInstall: boolean) {
-        if (isRuntimeInstall) {
-            const dotnetInstallDir = path.join(this.installDir, version);
-            return dotnetInstallDir;
-        } else {
-            return this.installDir;
-        }
-    }
-
     private removeFolderRecursively(folderPath: string) {
         this.context.eventStream.post(new DotnetAcquisitionDeletion(folderPath));
         rimraf.sync(folderPath);
-    }
-
-    private isRuntimeInstalled(dotnetPath: string): boolean {
-        return fs.existsSync(dotnetPath);
-    }
-
-    private isSdkInstalled(dotnetPath: string, version: string): boolean {
-        const installingVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
-        return installingVersions.includes(version) && fs.existsSync(dotnetPath);
     }
 }

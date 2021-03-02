@@ -27,6 +27,7 @@ import {
     IIssueContext,
     InstallationValidator,
     registerEventStream,
+    SdkInstallationDirectoryProvider,
     VersionResolver,
     WindowDisplayWorker,
 } from 'vscode-dotnet-runtime-library';
@@ -103,6 +104,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         acquisitionInvoker: new AcquisitionInvoker(context.globalState, eventStream),
         installationValidator: new InstallationValidator(eventStream),
         timeoutValue: timeoutValue === undefined ? defaultTimeoutValue : timeoutValue,
+        installDirectoryProvider: new SdkInstallationDirectoryProvider(),
     });
     const versionResolver = new VersionResolver(context.globalState, eventStream);
 

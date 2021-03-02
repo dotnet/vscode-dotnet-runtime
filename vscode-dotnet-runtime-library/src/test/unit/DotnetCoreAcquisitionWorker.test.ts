@@ -7,6 +7,8 @@ import * as chaiAsPromised from 'chai-as-promised';
 import * as os from 'os';
 import * as path from 'path';
 import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
+import { RuntimeInstallationDirectoryProvider } from '../../Acquisition/RuntimeInstallationDirectoryProvider';
+import { SdkInstallationDirectoryProvider } from '../../Acquisition/SdkInstallationDirectoryProvider';
 import {
     DotnetAcquisitionAlreadyInstalled,
     DotnetAcquisitionCompleted,
@@ -30,7 +32,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function() {
     const installingVersionsKey = 'installing';
     const dotnetFolderName = `.dotnet O'Hare O'Donald`;
 
-    function getTestAcquisitionWorker(): [ DotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext ] {
+    function getTestAcquisitionWorker(runtimeInstall: boolean): [ DotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext ] {
         const context = new MockExtensionContext();
         const eventStream = new MockEventStream();
         const acquisitionWorker = new DotnetCoreAcquisitionWorker({
@@ -40,6 +42,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function() {
             acquisitionInvoker: new NoInstallAcquisitionInvoker(eventStream),
             installationValidator: new MockInstallationValidator(eventStream),
             timeoutValue: 10,
+            installDirectoryProvider: runtimeInstall ? new RuntimeInstallationDirectoryProvider() : new SdkInstallationDirectoryProvider(),
         });
         return [ acquisitionWorker, eventStream, context ];
     }
@@ -86,14 +89,14 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function() {
     });
 
     test('Acquire Runtime Version', async () => {
-        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker();
+        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(true);
 
         const result = await acquisitionWorker.acquireRuntime('1.0');
         await assertAcquisitionSucceeded('1.0', result.dotnetPath, eventStream, context);
     });
 
     test('Acquire SDK Version', async () => {
-        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker();
+        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(false);
 
         const result = await acquisitionWorker.acquireSDK('5.0');
         await assertAcquisitionSucceeded('5.0', result.dotnetPath, eventStream, context, false);
@@ -101,7 +104,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function() {
 
     test('Acquire Runtime Version Multiple Times', async () => {
         const numAcquisitions = 3;
-        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker();
+        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(true);
 
         for (let i = 0; i < numAcquisitions; i++) {
             const pathResult = await acquisitionWorker.acquireRuntime('1.0');
@@ -114,7 +117,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function() {
     });
 
     test('Acquire Multiple Versions and UninstallAll', async () => {
-        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker();
+        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(true);
         const versions = [ '1.0', '1.1', '2.0', '2.1', '2.2' ];
         for (const version of versions) {
             const res = await acquisitionWorker.acquireRuntime(version);
@@ -126,7 +129,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function() {
     });
 
     test('Acquire Runtime and UninstallAll', async () => {
-        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker();
+        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(true);
 
         const res = await acquisitionWorker.acquireRuntime('1.0');
         await assertAcquisitionSucceeded('1.0', res.dotnetPath, eventStream, context);
@@ -137,7 +140,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function() {
     });
 
     test('Repeated Acquisition', async () => {
-        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker();
+        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(true);
         for (let i = 0; i < 3; i ++) {
             await acquisitionWorker.acquireRuntime('1.0');
         }
@@ -156,13 +159,14 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function() {
             acquisitionInvoker: new RejectingAcquisitionInvoker(eventStream),
             installationValidator: new MockInstallationValidator(eventStream),
             timeoutValue: 10,
+            installDirectoryProvider: new RuntimeInstallationDirectoryProvider(),
         });
 
         return assert.isRejected(acquisitionWorker.acquireRuntime('1.0'), '.NET Acquisition Failed: Installation failed: Rejecting message');
     });
 
     test('Repeated SDK Acquisition', async () => {
-        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker();
+        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(false);
         for (let i = 0; i < 3; i ++) {
             await acquisitionWorker.acquireSDK('5.0');
         }
