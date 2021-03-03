@@ -321,6 +321,44 @@ export class DotnetAcquisitionRequested extends DotnetAcquisitionMessage {
     }
 }
 
+export class DotnetAcquisitionStatusRequested extends DotnetAcquisitionMessage {
+    public readonly eventName = 'DotnetAcquisitionStatusRequested';
+
+    constructor(public readonly version: string,
+                public readonly requestingId = '') {
+        super();
+    }
+
+    public getProperties() {
+        return {AcquisitionStartVersion : this.version,
+                RequestingExtensionId: this.requestingId};
+    }
+}
+
+export class DotnetAcquisitionStatusUndefined extends DotnetAcquisitionMessage {
+    public readonly eventName = 'DotnetAcquisitionStatusUndefined';
+
+    constructor(public readonly version: string) {
+        super();
+    }
+
+    public getProperties() {
+        return {AcquisitionStatusVersion : this.version};
+    }
+}
+
+export class DotnetAcquisitionStatusResolved extends DotnetAcquisitionMessage {
+    public readonly eventName = 'DotnetAcquisitionStatusResolved';
+
+    constructor(public readonly version: string) {
+        super();
+    }
+
+    public getProperties() {
+        return {AcquisitionStatusVersion : this.version};
+    }
+}
+
 export class WebRequestSent extends DotnetAcquisitionMessage {
     public readonly eventName = 'WebRequestSent';
 

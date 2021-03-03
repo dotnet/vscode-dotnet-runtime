@@ -12,6 +12,8 @@ import {
     DotnetAcquisitionInProgress,
     DotnetAcquisitionPartialInstallation,
     DotnetAcquisitionStarted,
+    DotnetAcquisitionStatusResolved,
+    DotnetAcquisitionStatusUndefined,
     DotnetUninstallAllCompleted,
     DotnetUninstallAllStarted,
 } from '../EventStream/EventStreamEvents';
@@ -54,6 +56,28 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         return this.acquire(version, true);
     }
 
+    public async acquireSDKStatus(version: string): Promise<IDotnetAcquireResult | undefined> {
+        const existingAcquisitionPromise = this.acquisitionPromises[version];
+        if (existingAcquisitionPromise) {
+            // Requested version is being acquired
+            this.context.eventStream.post(new DotnetAcquisitionStatusResolved(version));
+            return existingAcquisitionPromise.then((res) => ({ dotnetPath: res }));
+        }
+
+        const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(version);
+        const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
+        const installedVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
+        if (installedVersions.includes(version) && fs.existsSync(dotnetPath)) {
+            // Requested version has already been installed.
+            this.context.eventStream.post(new DotnetAcquisitionStatusResolved(version));
+            return { dotnetPath };
+        }
+
+        // Version is not installed
+        this.context.eventStream.post(new DotnetAcquisitionStatusUndefined(version));
+        return undefined;
+    }
+
     private async acquire(version: string, installRuntime: boolean): Promise<IDotnetAcquireResult> {
         const existingAcquisitionPromise = this.acquisitionPromises[version];
         if (existingAcquisitionPromise) {
@@ -73,8 +97,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     }
 
     private async acquireCore(version: string, installRuntime: boolean): Promise<string> {
-        const installingVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
-        const partialInstall = installingVersions.indexOf(version) >= 0;
+        const installedVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
+        const partialInstall = installedVersions.indexOf(version) >= 0;
         if (partialInstall && installRuntime) {
             // Partial install, we never updated our extension to no longer be 'installing'.
             // uninstall everything and then re-install.
@@ -89,7 +113,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(version);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
 
-        if (installingVersions.includes(version) && fs.existsSync(dotnetPath)) {
+        if (installedVersions.includes(version) && fs.existsSync(dotnetPath)) {
             // Version requested has already been installed.
             this.context.installationValidator.validateDotnetInstall(version, dotnetPath);
             this.context.eventStream.post(new DotnetAcquisitionAlreadyInstalled(version));
@@ -97,8 +121,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         }
 
         // We update the extension state to indicate we're starting a .NET Core installation.
-        installingVersions.push(version);
-        await this.context.extensionState.update(this.installingVersionsKey, installingVersions);
+        installedVersions.push(version);
+        await this.context.extensionState.update(this.installingVersionsKey, installedVersions);
 
         const installContext = {
             installDir: dotnetInstallDir,

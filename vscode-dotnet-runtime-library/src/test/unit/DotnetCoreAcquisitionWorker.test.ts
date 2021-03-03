@@ -13,6 +13,8 @@ import {
     DotnetAcquisitionAlreadyInstalled,
     DotnetAcquisitionCompleted,
     DotnetAcquisitionStarted,
+    DotnetAcquisitionStatusResolved,
+    DotnetAcquisitionStatusUndefined,
     DotnetUninstallAllCompleted,
     DotnetUninstallAllStarted,
     TestAcquireCalled,
@@ -100,6 +102,21 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function() {
 
         const result = await acquisitionWorker.acquireSDK('5.0');
         await assertAcquisitionSucceeded('5.0', result.dotnetPath, eventStream, context, false);
+    });
+
+    test('Acquire SDK Status', async () => {
+        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(false);
+        const version = '5.0';
+        let result = await acquisitionWorker.acquireSDKStatus(version);
+        assert.isUndefined(result);
+        const undefinedEvent = eventStream.events.find(event => event instanceof DotnetAcquisitionStatusUndefined);
+        assert.exists(undefinedEvent);
+
+        await acquisitionWorker.acquireSDK(version);
+        result = await acquisitionWorker.acquireSDKStatus(version);
+        await assertAcquisitionSucceeded(version, result!.dotnetPath, eventStream, context, false);
+        const resolvedEvent = eventStream.events.find(event => event instanceof DotnetAcquisitionStatusResolved);
+        assert.exists(resolvedEvent);
     });
 
     test('Acquire Runtime Version Multiple Times', async () => {
