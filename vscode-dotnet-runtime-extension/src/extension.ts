@@ -32,6 +32,7 @@ import {
     IIssueContext,
     InstallationValidator,
     registerEventStream,
+    RuntimeInstallationDirectoryProvider,
     VersionResolver,
     WindowDisplayWorker,
 } from 'vscode-dotnet-runtime-library';
@@ -100,6 +101,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         acquisitionInvoker: new AcquisitionInvoker(context.globalState, eventStream),
         installationValidator: new InstallationValidator(eventStream),
         timeoutValue: timeoutValue === undefined ? defaultTimeoutValue : timeoutValue,
+        installDirectoryProvider: new RuntimeInstallationDirectoryProvider(context.globalStoragePath),
     });
     const existingPathResolver = new ExistingPathResolver();
     const versionResolver = new VersionResolver(context.globalState, eventStream);

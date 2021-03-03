@@ -25,3 +25,5 @@ export * from './Acquisition/VersionResolver';
 export * from './Acquisition/DotnetCoreDependencyInstaller';
 export * from './Utils/ExtensionConfigurationWorker';
 export * from './Acquisition/ExistingPathResolver';
+export * from './Acquisition/SdkInstallationDirectoryProvider';
+export * from './Acquisition/RuntimeInstallationDirectoryProvider';

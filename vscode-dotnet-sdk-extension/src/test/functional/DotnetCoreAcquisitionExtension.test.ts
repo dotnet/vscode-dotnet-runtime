@@ -60,7 +60,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.exists(result);
     assert.exists(result!.dotnetPath);
     assert.include(result!.dotnetPath, '.dotnet');
-    assert.include(result!.dotnetPath, context.version);
+    const sdkDir = fs.readdirSync(path.join(path.dirname(result!.dotnetPath), 'sdk'))[0];
+    assert.include(sdkDir, context.version);
     if (os.platform() === 'win32') {
       assert.include(result!.dotnetPath, process.env.APPDATA!);
     }
@@ -98,28 +99,35 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context);
     assert.exists(result);
     assert.exists(result!.dotnetPath);
-    assert.include(result!.dotnetPath, context.version);
+    const sdkDir = fs.readdirSync(path.join(path.dirname(result!.dotnetPath), 'sdk'))[0];
+    assert.include(sdkDir, context.version);
     assert.isTrue(fs.existsSync(result!.dotnetPath!));
     await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
     assert.isFalse(fs.existsSync(result!.dotnetPath));
   }).timeout(100000);
 
   test('Install Multiple Versions', async () => {
-    const versions = ['3.1', '5.0'];
-    let dotnetPaths: string[] = [];
-    for (const version of versions) {
-      const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', { version });
-      assert.exists(result);
-      assert.exists(result!.dotnetPath);
-      assert.include(result!.dotnetPath, version);
-      if (result!.dotnetPath) {
-        dotnetPaths = dotnetPaths.concat(result!.dotnetPath);
-      }
-    }
-    // All versions are still there after all installs are completed
-    for (const dotnetPath of dotnetPaths) {
-      assert.isTrue(fs.existsSync(dotnetPath));
-    }
+    // Install 3.1
+    let version = '3.1';
+    let result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', { version });
+    assert.exists(result);
+    assert.exists(result!.dotnetPath);
+    let sdkDirs = fs.readdirSync(path.join(path.dirname(result!.dotnetPath), 'sdk'));
+    assert.isNotEmpty(sdkDirs.filter(dir => dir.includes(version)));
+
+    // Install 5.0
+    version = '5.0';
+    result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', { version });
+    assert.exists(result);
+    assert.exists(result!.dotnetPath);
+    sdkDirs = fs.readdirSync(path.join(path.dirname(result!.dotnetPath), 'sdk'));
+    assert.isNotEmpty(sdkDirs.filter(dir => dir.includes(version)));
+
+    // 5.0 and 3.1 SDKs should still be installed
+    sdkDirs = fs.readdirSync(path.join(path.dirname(result!.dotnetPath), 'sdk'));
+    assert.isNotEmpty(sdkDirs.filter(dir => dir.includes('3.1')));
+    assert.isNotEmpty(sdkDirs.filter(dir => dir.includes('5.0')));
+
     // Clean up storage
     await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
   }).timeout(600000);
