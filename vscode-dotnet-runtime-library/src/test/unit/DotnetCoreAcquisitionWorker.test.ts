@@ -42,7 +42,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function() {
             acquisitionInvoker: new NoInstallAcquisitionInvoker(eventStream),
             installationValidator: new MockInstallationValidator(eventStream),
             timeoutValue: 10,
-            installDirectoryProvider: runtimeInstall ? new RuntimeInstallationDirectoryProvider() : new SdkInstallationDirectoryProvider(),
+            installDirectoryProvider: runtimeInstall ? new RuntimeInstallationDirectoryProvider('') : new SdkInstallationDirectoryProvider(''),
         });
         return [ acquisitionWorker, eventStream, context ];
     }
@@ -159,7 +159,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function() {
             acquisitionInvoker: new RejectingAcquisitionInvoker(eventStream),
             installationValidator: new MockInstallationValidator(eventStream),
             timeoutValue: 10,
-            installDirectoryProvider: new RuntimeInstallationDirectoryProvider(),
+            installDirectoryProvider: new RuntimeInstallationDirectoryProvider(''),
         });
 
         return assert.isRejected(acquisitionWorker.acquireRuntime('1.0'), '.NET Acquisition Failed: Installation failed: Rejecting message');

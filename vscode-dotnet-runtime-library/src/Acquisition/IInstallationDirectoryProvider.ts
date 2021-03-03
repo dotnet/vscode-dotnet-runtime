@@ -2,11 +2,15 @@
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
+import * as path from 'path';
 
-import { IExtensionState } from '../IExtensionState';
+export abstract class IInstallationDirectoryProvider {
+    constructor(protected storagePath: string) { }
 
-export interface IInstallationDirectoryProvider {
-    getDotnetInstallDir(version: string, installDir: string): string;
+    public abstract getInstallDir(version: string): string;
 
-    isBundleInstalled(dotnetPath: string, version: string, extensionState: IExtensionState, installingVersionsKey: string): boolean;
+    public getStoragePath(): string {
+        const installFolderName = process.env._VSCODE_DOTNET_INSTALL_FOLDER || '.dotnet';
+        return path.join(this.storagePath, installFolderName);
+    }
 }

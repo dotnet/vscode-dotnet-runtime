@@ -40,7 +40,7 @@ suite('WebRequestWorker Unit Tests', () => {
             acquisitionInvoker: new ErrorAcquisitionInvoker(eventStream),
             installationValidator: new MockInstallationValidator(eventStream),
             timeoutValue: 10,
-            installDirectoryProvider: new RuntimeInstallationDirectoryProvider(),
+            installDirectoryProvider: new RuntimeInstallationDirectoryProvider(''),
         });
         return assert.isRejected(acquisitionWorker.acquireRuntime('1.0'), Error, '.NET Acquisition Failed');
     });

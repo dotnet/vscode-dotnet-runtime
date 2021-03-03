@@ -104,7 +104,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         acquisitionInvoker: new AcquisitionInvoker(context.globalState, eventStream),
         installationValidator: new InstallationValidator(eventStream),
         timeoutValue: timeoutValue === undefined ? defaultTimeoutValue : timeoutValue,
-        installDirectoryProvider: new SdkInstallationDirectoryProvider(),
+        installDirectoryProvider: new SdkInstallationDirectoryProvider(storagePath),
     });
     const versionResolver = new VersionResolver(context.globalState, eventStream);
 

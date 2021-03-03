@@ -2,6 +2,7 @@
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
+import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import rimraf = require('rimraf');
@@ -21,15 +22,12 @@ import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 
 export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker {
     private readonly installingVersionsKey = 'installing';
-    private readonly installDir: string;
     private readonly dotnetExecutable: string;
     private readonly timeoutValue: number;
 
     private acquisitionPromises: { [version: string]: Promise<string> | undefined };
 
     constructor(private readonly context: IAcquisitionWorkerContext) {
-        const installFolderName = process.env._VSCODE_DOTNET_INSTALL_FOLDER || '.dotnet';
-        this.installDir = path.join(this.context.storagePath, installFolderName);
         const dotnetExtension = os.platform() === 'win32' ? '.exe' : '';
         this.dotnetExecutable = `dotnet${dotnetExtension}`;
         this.timeoutValue = context.timeoutValue;
@@ -41,7 +39,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         this.acquisitionPromises = {};
 
-        this.removeFolderRecursively(this.installDir);
+        this.removeFolderRecursively(this.context.installDirectoryProvider.getStoragePath());
 
         await this.context.extensionState.update(this.installingVersionsKey, []);
 
@@ -88,10 +86,10 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             await this.uninstallAll();
         }
 
-        const dotnetInstallDir = this.context.installDirectoryProvider.getDotnetInstallDir(version, this.installDir);
+        const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(version);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
 
-        if (this.context.installDirectoryProvider.isBundleInstalled(dotnetPath, version, this.context.extensionState, this.installingVersionsKey)) {
+        if (installingVersions.includes(version) && fs.existsSync(dotnetPath)) {
             // Version requested has already been installed.
             this.context.installationValidator.validateDotnetInstall(version, dotnetPath);
             this.context.eventStream.post(new DotnetAcquisitionAlreadyInstalled(version));
@@ -130,7 +128,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     private async uninstallRuntime(version: string) {
         delete this.acquisitionPromises[version];
 
-        const dotnetInstallDir = this.context.installDirectoryProvider.getDotnetInstallDir(version, this.installDir);
+        const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(version);
         this.removeFolderRecursively(dotnetInstallDir);
 
         const installingVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
