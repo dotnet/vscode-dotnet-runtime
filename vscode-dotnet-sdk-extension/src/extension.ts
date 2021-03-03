@@ -14,6 +14,7 @@ import {
     AcquisitionInvoker,
     callWithErrorHandling,
     DotnetAcquisitionRequested,
+    DotnetAcquisitionStatusRequested,
     DotnetCoreAcquisitionWorker,
     DotnetSDKAcquisitionStarted,
     enableExtensionTelemetry,
@@ -43,6 +44,7 @@ namespace configKeys {
 }
 namespace commandKeys {
     export const acquire = 'acquire';
+    export const acquireStatus = 'acquireStatus';
     export const uninstallAll = 'uninstallAll';
     export const showAcquisitionLog = 'showAcquisitionLog';
     export const reportIssue = 'reportIssue';
@@ -121,6 +123,15 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         }, issueContext(commandContext.errorConfiguration, 'acquireSDK'));
         return pathResult;
     });
+    const dotnetAcquireStatusRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquireStatus}`, async (commandContext: IDotnetAcquireContext) => {
+        const pathResult = callWithErrorHandling(async () => {
+            eventStream.post(new DotnetAcquisitionStatusRequested(commandContext.version, commandContext.requestingExtensionId));
+            const resolvedVersion = await versionResolver.getFullSDKVersion(commandContext.version);
+            const dotnetPath = await acquisitionWorker.acquireSDKStatus(resolvedVersion);
+            return dotnetPath;
+        }, issueContext(commandContext.errorConfiguration, 'acquireSDKStatus'));
+        return pathResult;
+    });
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallAll}`, async (commandContext: IDotnetUninstallContext | undefined) => {
         await callWithErrorHandling(async () => {
             await acquisitionWorker.uninstallAll();
@@ -135,6 +146,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
     context.subscriptions.push(
         dotnetAcquireRegistration,
+        dotnetAcquireStatusRegistration,
         dotnetUninstallAllRegistration,
         showOutputChannelRegistration,
         reportIssueRegistration,

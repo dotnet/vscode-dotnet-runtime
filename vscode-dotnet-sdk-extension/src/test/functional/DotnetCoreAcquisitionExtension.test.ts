@@ -94,6 +94,21 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
   }).timeout(100000);
 
+  test('Install Status Command', async () => {
+    const context: IDotnetAcquireContext = { version: '5.0' };
+    let result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquireStatus', context);
+    assert.isUndefined(result);
+
+    await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context);
+    result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquireStatus', context);
+    assert.exists(result);
+    assert.exists(result!.dotnetPath);
+    assert.isTrue(fs.existsSync(result!.dotnetPath));
+
+    // Clean up storage
+    await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
+  }).timeout(100000);
+
   test('Uninstall Command', async () => {
     const context: IDotnetAcquireContext = { version: '3.1' };
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context);
