@@ -83,6 +83,10 @@ export class WebRequestError extends DotnetAcquisitionError {
     public readonly eventName = 'WebRequestError';
 }
 
+export class DotnetPreinstallDetectionError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetPreinstallDetectionError';
+}
+
 export class DotnetCommandFailed extends DotnetAcquisitionError {
     public readonly eventName = 'DotnetCommandFailed';
 
@@ -368,6 +372,15 @@ export class WebRequestSent extends DotnetAcquisitionMessage {
 
     public getProperties() {
         return {WebRequestUri : this.url};
+    }
+}
+
+export class DotnetPreinstallDetected extends DotnetAcquisitionMessage {
+    public readonly eventName = 'DotnetPreinstallDetected';
+    constructor(public readonly version: string) { super(); }
+
+    public getProperties() {
+        return {PreinstalledVersion : this.version};
     }
 }
 

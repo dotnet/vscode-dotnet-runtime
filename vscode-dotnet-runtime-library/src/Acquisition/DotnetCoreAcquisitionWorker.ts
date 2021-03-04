@@ -14,6 +14,8 @@ import {
     DotnetAcquisitionStarted,
     DotnetAcquisitionStatusResolved,
     DotnetAcquisitionStatusUndefined,
+    DotnetPreinstallDetected,
+    DotnetPreinstallDetectionError,
     DotnetUninstallAllCompleted,
     DotnetUninstallAllStarted,
 } from '../EventStream/EventStreamEvents';
@@ -97,7 +99,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     }
 
     private async acquireCore(version: string, installRuntime: boolean): Promise<string> {
-        const installedVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
+        let installedVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
         const partialInstall = installedVersions.indexOf(version) >= 0;
         if (partialInstall && installRuntime) {
             // Partial install, we never updated our extension to no longer be 'installing'.
@@ -112,6 +114,11 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(version);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
+
+        if (fs.existsSync(dotnetPath) && installedVersions.length === 0) {
+            // A local install already exists, add it to our managed installs
+            installedVersions = await this.managePreinstalledVersion(dotnetInstallDir, installedVersions);
+        }
 
         if (installedVersions.includes(version) && fs.existsSync(dotnetPath)) {
             // Version requested has already been installed.
@@ -166,5 +173,22 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     private removeFolderRecursively(folderPath: string) {
         this.context.eventStream.post(new DotnetAcquisitionDeletion(folderPath));
         rimraf.sync(folderPath);
+    }
+
+    private async managePreinstalledVersion(dotnetInstallDir: string, installedVersions: string[]): Promise<string[]> {
+        try {
+            // Determine installed version(s)
+            const versions = fs.readdirSync(path.join(dotnetInstallDir, 'sdk'));
+
+            // Update extension state
+            for (const version of versions) {
+                this.context.eventStream.post(new DotnetPreinstallDetected(version));
+                installedVersions.push(version);
+                await this.context.extensionState.update(this.installingVersionsKey, installedVersions);
+            }
+        } catch (error) {
+            this.context.eventStream.post(new DotnetPreinstallDetectionError(error));
+        }
+        return installedVersions;
     }
 }

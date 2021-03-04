@@ -9,13 +9,20 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import {
+  DotnetAcquisitionAlreadyInstalled,
+  DotnetCoreAcquisitionWorker,
+  DotnetPreinstallDetected,
   IDotnetAcquireContext,
   IDotnetAcquireResult,
   MockEnvironmentVariableCollection,
+  MockEventStream,
   MockExtensionConfiguration,
   MockExtensionContext,
+  MockInstallationValidator,
   MockTelemetryReporter,
   MockWindowDisplayWorker,
+  NoInstallAcquisitionInvoker,
+  SdkInstallationDirectoryProvider,
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { uninstallSDKExtension } from '../../ExtensionUninstall';
@@ -53,6 +60,49 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.exists(extensionContext);
     assert.isAbove(extensionContext.subscriptions.length, 0);
   });
+
+  test('Detect Preinstalled SDK', async () => {
+    // Set up acquisition worker
+    const context = new MockExtensionContext();
+    const eventStream = new MockEventStream();
+    const installDirectoryProvider = new SdkInstallationDirectoryProvider(storagePath);
+    const acquisitionWorker = new DotnetCoreAcquisitionWorker({
+        storagePath: '',
+        extensionState: context,
+        eventStream,
+        acquisitionInvoker: new NoInstallAcquisitionInvoker(eventStream),
+        installationValidator: new MockInstallationValidator(eventStream),
+        timeoutValue: 10,
+        installDirectoryProvider,
+    });
+    const version = '5.0';
+
+    // Write 'preinstalled' SDKs
+    const dotnetDir = installDirectoryProvider.getInstallDir(version);
+    const dotnetExePath = path.join(dotnetDir, `dotnet${ os.platform() === 'win32' ? '.exe' : '' }`);
+    const sdkDir50 = path.join(dotnetDir, 'sdk', version);
+    const sdkDir31 = path.join(dotnetDir, 'sdk', '3.1');
+    fs.mkdirSync(sdkDir50, { recursive: true });
+    fs.mkdirSync(sdkDir31, { recursive: true });
+    fs.writeFileSync(dotnetExePath, '');
+
+    // Assert preinstalled SDKs are detected
+    const result = await acquisitionWorker.acquireSDK(version);
+    assert.equal(path.dirname(result.dotnetPath), dotnetDir);
+    const preinstallEvents = eventStream.events
+      .filter(event => event instanceof DotnetPreinstallDetected)
+      .map(event => event as DotnetPreinstallDetected);
+    assert.equal(preinstallEvents.length, 2);
+    assert.exists(preinstallEvents.find(event => event.version === '5.0'));
+    assert.exists(preinstallEvents.find(event => event.version === '3.1'));
+    const alreadyInstalledEvent = eventStream.events
+      .find(event => event instanceof DotnetAcquisitionAlreadyInstalled) as DotnetAcquisitionAlreadyInstalled;
+    assert.exists(alreadyInstalledEvent);
+    assert.equal(alreadyInstalledEvent.version, '5.0');
+
+    // Clean up storage
+    await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
+});
 
   test('Install Command', async () => {
     const context: IDotnetAcquireContext = { version: '5.0' };
