@@ -116,7 +116,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
 
         if (fs.existsSync(dotnetPath) && installedVersions.length === 0) {
-            // A local install already exists, add it to our managed installs
+            // The education bundle already laid down a local install, add it to our managed installs
             installedVersions = await this.managePreinstalledVersion(dotnetInstallDir, installedVersions);
         }
 
