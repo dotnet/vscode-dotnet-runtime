@@ -54,7 +54,7 @@ const configPrefix = 'dotnetSDKAcquisitionExtension';
 const displayChannelName = '.NET SDK';
 const defaultTimeoutValue = 240;
 const pathTroubleshootingOption = 'Troubleshoot';
-const troubleshootingUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/master/Documentation/troubleshooting-sdk.md';
+const troubleshootingUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-sdk.md';
 
 export function activate(context: vscode.ExtensionContext, extensionContext?: IExtensionContext) {
     const extensionConfiguration = extensionContext !== undefined && extensionContext.extensionConfiguration ?
