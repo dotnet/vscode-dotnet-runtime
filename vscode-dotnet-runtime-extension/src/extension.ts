@@ -57,7 +57,7 @@ const commandPrefix = 'dotnet';
 const configPrefix = 'dotnetAcquisitionExtension';
 const displayChannelName = '.NET Runtime';
 const defaultTimeoutValue = 120;
-const moreInfoUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/master/Documentation/troubleshooting-runtime.md';
+const moreInfoUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md';
 
 export function activate(context: vscode.ExtensionContext, extensionContext?: IExtensionContext) {
     const extensionConfiguration = extensionContext !== undefined && extensionContext.extensionConfiguration ?
