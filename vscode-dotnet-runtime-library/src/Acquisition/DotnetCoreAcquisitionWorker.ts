@@ -68,7 +68,13 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(version);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
-        const installedVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
+        let installedVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
+
+        if (installedVersions.length === 0 && fs.existsSync(dotnetPath)) {
+            // The education bundle already laid down a local install, add it to our managed installs
+            installedVersions = await this.managePreinstalledVersion(dotnetInstallDir, installedVersions);
+        }
+
         if (installedVersions.includes(version) && fs.existsSync(dotnetPath)) {
             // Requested version has already been installed.
             this.context.eventStream.post(new DotnetAcquisitionStatusResolved(version));

@@ -7,6 +7,7 @@ import * as cp from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import rimraf = require('rimraf');
 import * as vscode from 'vscode';
 import {
   DotnetAcquisitionAlreadyInstalled,
@@ -101,8 +102,43 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.equal(alreadyInstalledEvent.version, '5.0');
 
     // Clean up storage
-    await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
-});
+    rimraf.sync(dotnetDir);
+  });
+
+  test('Install Status Command with Preinstalled SDK', async () => {
+    // Set up acquisition worker
+    const context = new MockExtensionContext();
+    const eventStream = new MockEventStream();
+    const installDirectoryProvider = new SdkInstallationDirectoryProvider(storagePath);
+    const acquisitionWorker = new DotnetCoreAcquisitionWorker({
+        storagePath: '',
+        extensionState: context,
+        eventStream,
+        acquisitionInvoker: new NoInstallAcquisitionInvoker(eventStream),
+        installationValidator: new MockInstallationValidator(eventStream),
+        timeoutValue: 10,
+        installDirectoryProvider,
+    });
+    const version = '5.0';
+
+    // Ensure nothing is returned when there is no preinstalled SDK
+    const noPreinstallResult = await acquisitionWorker.acquireSDKStatus(version);
+    assert.isUndefined(noPreinstallResult);
+
+    // Write 'preinstalled' SDK
+    const dotnetDir = installDirectoryProvider.getInstallDir(version);
+    const dotnetExePath = path.join(dotnetDir, `dotnet${ os.platform() === 'win32' ? '.exe' : '' }`);
+    const sdkDir50 = path.join(dotnetDir, 'sdk', version);
+    fs.mkdirSync(sdkDir50, { recursive: true });
+    fs.writeFileSync(dotnetExePath, '');
+
+    // Assert preinstalled SDKs are detected
+    const result = await acquisitionWorker.acquireSDKStatus(version);
+    assert.equal(path.dirname(result!.dotnetPath), dotnetDir);
+
+    // Clean up storage
+    rimraf.sync(dotnetDir);
+  });
 
   test('Install Command', async () => {
     const context: IDotnetAcquireContext = { version: '5.0' };
