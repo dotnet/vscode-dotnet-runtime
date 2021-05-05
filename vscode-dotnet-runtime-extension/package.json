@@ -27,6 +27,11 @@
 		"dotnet",
 		"Extension Authoring"
 	],
+	"capabilities": {
+		"untrustedWorkspaces": {
+			"supported": true
+		}
+	},
 	"activationEvents": [
 		"onCommand:dotnet.acquire",
 		"onCommand:dotnet.uninstallAll",

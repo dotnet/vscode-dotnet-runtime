@@ -28,6 +28,11 @@
 		"dotnet",
 		".NET SDK"
 	],
+	"capabilities": {
+		"untrustedWorkspaces": {
+			"supported": true
+		}
+	},
 	"activationEvents": [
 		"onCommand:dotnet-sdk.acquire",
 		"onCommand:dotnet-sdk.acquireStatus",
