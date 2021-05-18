@@ -59,7 +59,7 @@
 				},
 				"dotnetSDKAcquisitionExtension.installTimeoutValue": {
 					"type": "number",
-					"default": 240,
+					"default": 300,
 					"description": "Timeout for installing .NET SDK in seconds."
 				}
 			}
