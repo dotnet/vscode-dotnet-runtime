@@ -52,7 +52,7 @@ namespace commandKeys {
 const commandPrefix = 'dotnet-sdk';
 const configPrefix = 'dotnetSDKAcquisitionExtension';
 const displayChannelName = '.NET SDK';
-const defaultTimeoutValue = 240;
+const defaultTimeoutValue = 300;
 const pathTroubleshootingOption = 'Troubleshoot';
 const troubleshootingUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-sdk.md';
 
