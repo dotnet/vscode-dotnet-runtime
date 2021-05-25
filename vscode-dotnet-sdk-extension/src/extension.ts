@@ -112,10 +112,10 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     const versionResolver = new VersionResolver(context.globalState, eventStream);
 
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) => {
-        if (commandContext.requestingExtensionId === undefined || !knownExtensionIds.includes(commandContext.requestingExtensionId!)) {
-            return Promise.reject(commandContext.requestingExtensionId === undefined ?
-                'No requesting extension id was provided.' :
-                `${commandContext.requestingExtensionId} is not a known requesting extension id. The vscode-dotnet-sdk extension can only be used by ms-dotnettools.vscode-dotnet-pack.`);
+        if (commandContext.requestingExtensionId === undefined) {
+            return Promise.reject('No requesting extension id was provided.');
+        } else if (!knownExtensionIds.includes(commandContext.requestingExtensionId!)) {
+            return Promise.reject(`${commandContext.requestingExtensionId} is not a known requesting extension id. The vscode-dotnet-sdk extension can only be used by ms-dotnettools.vscode-dotnet-pack.`);
         }
 
         const pathResult = callWithErrorHandling(async () => {
