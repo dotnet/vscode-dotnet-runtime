@@ -15,6 +15,9 @@
 	"categories": [
 		"Other"
 	],
+	"capabilities": {
+		"virtualWorkspaces": true
+	},
 	"activationEvents": [
 		"onCommand:sample.helloworld",
 		"onCommand:sample.dotnet.acquire",
