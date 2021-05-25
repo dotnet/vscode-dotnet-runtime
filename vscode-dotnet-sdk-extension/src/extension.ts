@@ -55,6 +55,7 @@ const displayChannelName = '.NET SDK';
 const defaultTimeoutValue = 300;
 const pathTroubleshootingOption = 'Troubleshoot';
 const troubleshootingUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-sdk.md';
+const knownExtensionIds = ['ms-dotnettools.sample-extension', 'ms-dotnettools.vscode-dotnet-pack'];
 
 export function activate(context: vscode.ExtensionContext, extensionContext?: IExtensionContext) {
     const extensionConfiguration = extensionContext !== undefined && extensionContext.extensionConfiguration ?
@@ -111,6 +112,12 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     const versionResolver = new VersionResolver(context.globalState, eventStream);
 
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) => {
+        if (commandContext.requestingExtensionId === undefined || !knownExtensionIds.includes(commandContext.requestingExtensionId!)) {
+            return Promise.reject(commandContext.requestingExtensionId === undefined ?
+                'No requesting extension id was provided.' :
+                `${commandContext.requestingExtensionId} is not a known requesting extension id. The vscode-dotnet-sdk extension can only be used by ms-dotnettools.vscode-dotnet-pack.`);
+        }
+
         const pathResult = callWithErrorHandling(async () => {
             eventStream.post(new DotnetSDKAcquisitionStarted());
 
