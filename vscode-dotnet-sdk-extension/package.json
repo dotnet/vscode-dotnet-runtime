@@ -13,7 +13,7 @@
 	"description": "Allows acquisition of the .NET SDK.",
 	"appInsightsKey": "02dc18e0-7494-43b2-b2a3-18ada5fcb522",
 	"icon": "images/dotnetIcon.png",
-	"version": "0.6.0",
+	"version": "0.7.0",
 	"publisher": "ms-dotnettools",
 	"engines": {
 		"vscode": "^1.41.0"
