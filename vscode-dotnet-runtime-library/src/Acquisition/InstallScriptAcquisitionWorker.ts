@@ -18,7 +18,7 @@ import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWork
 
 export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisitionWorker {
     protected webWorker: WebRequestWorker;
-    private readonly scriptAcquisitionUrl: string = 'https://aka.ms/dotnet-install-script-';
+    private readonly scriptAcquisitionUrl: string = 'https://dot.net/v1/dotnet-install.';
     private readonly scriptFilePath: string;
 
     constructor(extensionState: IExtensionState, private readonly eventStream: IEventStream) {
