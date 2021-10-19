@@ -24,7 +24,7 @@ If .NET installation is failing or you want to reuse an existing installation of
 
 ```json
     "dotnetAcquisitionExtension.existingDotnetPath": [
-        {"extensionId": "msazurermtools.azurerm-vscode-tools", "path": "C:\Program Files\dotnet\dotnet.exe"}
+        {"extensionId": "msazurermtools.azurerm-vscode-tools", "path": "C:\\Program Files\\dotnet\\dotnet.exe"}
     ]
 ```
 
