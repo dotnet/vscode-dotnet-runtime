@@ -24,6 +24,8 @@ We use and recommend the following workflow:
 6. Build the repository with your changes.
     - Make sure that the builds are clean.
     - Make sure that the tests are all passing, including your new tests.
+    - Try running the sample extension to test the extensions manually. The sample extension exposes the extensions' commands that are not normally user facing to allow developers to test end to end.
+    - If you made any changes to the extensions' command API surface, make sure to update the sample extension to account for these changes.
 7. Create a pull request (PR) against the upstream repository's **main** branch.
     - Push your changes to your fork on GitHub (if you haven't already).
 
@@ -34,6 +36,15 @@ Note: It is OK to create your PR as "[WIP]" on the upstream repo before the impl
 ## Building and Testing Locally
 
 Before making a pull request, be sure to build and test your changes locally with the build script ([windows](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/build.cmd), [mac](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/build.sh)) and test script ([windows](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/test.cmd), [mac](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/test.sh)). To lint your changes, run the test script with the parameter `--tslint`
+
+## Building a .VSIX
+
+To build an installable .vsix file locally, navigate to the directory containing the extension's package.json (either `vscode-dotnet-runtime-extension` or `vscode-dotnet-sdk-extension`) run the following commands:
+
+```
+npm install -g vsce
+vsce package --ignoreFile ../.vscodeignore --yarn
+```
 
 ## PR - CI Process
 
