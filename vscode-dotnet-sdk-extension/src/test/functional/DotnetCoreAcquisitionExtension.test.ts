@@ -124,7 +124,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     const version = '5.0';
 
     // Ensure nothing is returned when there is no preinstalled SDK
-    const noPreinstallResult = await acquisitionWorker.acquireSDKStatus(version);
+    const noPreinstallResult = await acquisitionWorker.acquireStatus(version, false);
     assert.isUndefined(noPreinstallResult);
 
     // Write 'preinstalled' SDK
@@ -135,7 +135,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     fs.writeFileSync(dotnetExePath, '');
 
     // Assert preinstalled SDKs are detected
-    const result = await acquisitionWorker.acquireSDKStatus(version);
+    const result = await acquisitionWorker.acquireStatus(version, false);
     assert.equal(path.dirname(result!.dotnetPath), dotnetDir);
 
     // Clean up storage
