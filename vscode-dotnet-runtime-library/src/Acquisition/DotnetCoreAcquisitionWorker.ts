@@ -58,7 +58,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         return this.acquire(version, true);
     }
 
-    public async acquireSDKStatus(version: string): Promise<IDotnetAcquireResult | undefined> {
+    public async acquireStatus(version: string, installRuntime: boolean): Promise<IDotnetAcquireResult | undefined> {
         const existingAcquisitionPromise = this.acquisitionPromises[version];
         if (existingAcquisitionPromise) {
             // Requested version is being acquired
@@ -70,7 +70,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
         let installedVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
 
-        if (installedVersions.length === 0 && fs.existsSync(dotnetPath)) {
+        if (installedVersions.length === 0 && fs.existsSync(dotnetPath) && !installRuntime) {
             // The education bundle already laid down a local install, add it to our managed installs
             installedVersions = await this.managePreinstalledVersion(dotnetInstallDir, installedVersions);
         }

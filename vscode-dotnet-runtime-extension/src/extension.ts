@@ -14,6 +14,7 @@ import {
     callWithErrorHandling,
     DotnetAcquisitionMissingLinuxDependencies,
     DotnetAcquisitionRequested,
+    DotnetAcquisitionStatusRequested,
     DotnetCoreAcquisitionWorker,
     DotnetCoreDependencyInstaller,
     DotnetExistingPathResolutionCompleted,
@@ -48,6 +49,7 @@ namespace configKeys {
 }
 namespace commandKeys {
     export const acquire = 'acquire';
+    export const acquireStatus = 'acquireStatus';
     export const uninstallAll = 'uninstallAll';
     export const showAcquisitionLog = 'showAcquisitionLog';
     export const ensureDotnetDependencies = 'ensureDotnetDependencies';
@@ -128,6 +130,15 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         }, issueContext(commandContext.errorConfiguration, 'acquire', commandContext.version), commandContext.requestingExtensionId);
         return dotnetPath;
     });
+    const dotnetAcquireStatusRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquireStatus}`, async (commandContext: IDotnetAcquireContext) => {
+        const pathResult = callWithErrorHandling(async () => {
+            eventStream.post(new DotnetAcquisitionStatusRequested(commandContext.version, commandContext.requestingExtensionId));
+            const resolvedVersion = await versionResolver.getFullRuntimeVersion(commandContext.version);
+            const dotnetPath = await acquisitionWorker.acquireStatus(resolvedVersion, true);
+            return dotnetPath;
+        }, issueContext(commandContext.errorConfiguration, 'acquireRuntimeStatus'));
+        return pathResult;
+    });
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallAll}`, async (commandContext: IDotnetUninstallContext | undefined) => {
         await callWithErrorHandling(() => acquisitionWorker.uninstallAll(), issueContext(commandContext ? commandContext.errorConfiguration : undefined, 'uninstallAll'));
     });
@@ -155,6 +166,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
     context.subscriptions.push(
         dotnetAcquireRegistration,
+        dotnetAcquireStatusRegistration,
         dotnetUninstallAllRegistration,
         showOutputChannelRegistration,
         ensureDependenciesRegistration,

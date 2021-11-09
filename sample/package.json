@@ -21,10 +21,12 @@
 	"activationEvents": [
 		"onCommand:sample.helloworld",
 		"onCommand:sample.dotnet.acquire",
+		"onCommand:sample.dotnet.acquireStatus",
 		"onCommand:sample.dotnet.uninstallAll",
 		"onCommand:sample.dotnet.concurrentTest",
 		"onCommand:sample.dotnet.showAcquisitionLog",
 		"onCommand:sample.dotnet-sdk.acquire",
+		"onCommand:sample.dotnet-sdk.acquireStatus",
 		"onCommand:sample.dotnet-sdk.uninstallAll",
 		"onCommand:sample.dotnet-sdk.showAcquisitionLog"
 	],
@@ -39,6 +41,11 @@
 			{
 				"command": "sample.dotnet.acquire",
 				"title": "Acquire .NET runtime",
+				"category": "Sample"
+			},
+			{
+				"command": "sample.dotnet.acquireStatus",
+				"title": "Check the status of acquiring the .NET runtime",
 				"category": "Sample"
 			},
 			{
@@ -59,6 +66,11 @@
 			{
 				"command": "sample.dotnet-sdk.acquire",
 				"title": "Acquire .NET SDK",
+				"category": "Sample"
+			},
+			{
+				"command": "sample.dotnet-sdk.acquireStatus",
+				"title": "Check the status of acquiring the .NET SDK",
 				"category": "Sample"
 			},
 			{

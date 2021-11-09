@@ -107,14 +107,29 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function() {
     test('Acquire SDK Status', async () => {
         const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(false);
         const version = '5.0';
-        let result = await acquisitionWorker.acquireSDKStatus(version);
+        let result = await acquisitionWorker.acquireStatus(version, false);
         assert.isUndefined(result);
         const undefinedEvent = eventStream.events.find(event => event instanceof DotnetAcquisitionStatusUndefined);
         assert.exists(undefinedEvent);
 
         await acquisitionWorker.acquireSDK(version);
-        result = await acquisitionWorker.acquireSDKStatus(version);
+        result = await acquisitionWorker.acquireStatus(version, false);
         await assertAcquisitionSucceeded(version, result!.dotnetPath, eventStream, context, false);
+        const resolvedEvent = eventStream.events.find(event => event instanceof DotnetAcquisitionStatusResolved);
+        assert.exists(resolvedEvent);
+    });
+
+    test('Acquire Runtime Status', async () => {
+        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(true);
+        const version = '5.0';
+        let result = await acquisitionWorker.acquireStatus(version, true);
+        assert.isUndefined(result);
+        const undefinedEvent = eventStream.events.find(event => event instanceof DotnetAcquisitionStatusUndefined);
+        assert.exists(undefinedEvent);
+
+        await acquisitionWorker.acquireSDK(version);
+        result = await acquisitionWorker.acquireStatus(version, true);
+        await assertAcquisitionSucceeded(version, result!.dotnetPath, eventStream, context, true);
         const resolvedEvent = eventStream.events.find(event => event instanceof DotnetAcquisitionStatusResolved);
         assert.exists(resolvedEvent);
     });
