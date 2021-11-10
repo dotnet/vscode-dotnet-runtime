@@ -38,7 +38,7 @@ export class VersionResolver implements IVersionResolver {
             this.eventStream.post(new DotnetVersionResolutionCompleted(version, versionResult));
             return versionResult;
         } catch (error) {
-            this.eventStream.post(new DotnetVersionResolutionError(error, version));
+            this.eventStream.post(new DotnetVersionResolutionError(error as Error, version));
             throw error;
         }
     }

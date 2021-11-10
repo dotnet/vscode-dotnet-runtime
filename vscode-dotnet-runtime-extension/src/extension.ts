@@ -152,7 +152,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
             const result = cp.spawnSync(commandContext.command, commandContext.arguments);
             const installer = new DotnetCoreDependencyInstaller();
-            if (installer.signalIndicatesMissingLinuxDependencies(result.signal)) {
+            if (installer.signalIndicatesMissingLinuxDependencies(result.signal!)) {
                 eventStream.post(new DotnetAcquisitionMissingLinuxDependencies());
                 await installer.promptLinuxDependencyInstall('Failed to run .NET runtime.');
             }

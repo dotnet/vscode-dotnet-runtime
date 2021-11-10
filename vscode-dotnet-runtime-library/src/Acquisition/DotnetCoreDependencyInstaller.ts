@@ -45,7 +45,7 @@ export class DotnetCoreDependencyInstaller {
         const result = cp.spawnSync(shellCommand, [path.join(scriptRoot, 'determine-linux-distro.sh')]);
         if (result.status !== 0) {
             console.log(`Failed to determine distro. Exit code: ${result.status}`);
-            return result.status;
+            return result.status!;
         }
         const distro = result.stdout.toString().trim();
         console.log(`Found distro ${distro}`);

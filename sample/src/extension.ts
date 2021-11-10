@@ -70,7 +70,7 @@ ${stderr}`);
             const appOutput = result.stdout.toString();
             vscode.window.showInformationMessage(`.NET Output: ${appOutput}`);
         } catch (error) {
-            vscode.window.showErrorMessage(error.toString());
+            vscode.window.showErrorMessage((error as Error).toString());
         }
     });
 
@@ -87,7 +87,7 @@ ${stderr}`);
             await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
             await vscode.commands.executeCommand('dotnet.acquire', { version, requestingExtensionId });
         } catch (error) {
-            vscode.window.showErrorMessage(error.toString());
+            vscode.window.showErrorMessage((error as Error).toString());
         }
     });
     const sampleAcquireStatusRegistration = vscode.commands.registerCommand('sample.dotnet.acquireStatus', async (version) => {
@@ -104,7 +104,7 @@ ${stderr}`);
             const status = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquireStatus', { version, requestingExtensionId });
             vscode.window.showInformationMessage(status === undefined ? '.NET is not installed' :`.NET version ${version} installed at ${status.dotnetPath}`);
         } catch (error) {
-            vscode.window.showErrorMessage(error.toString());
+            vscode.window.showErrorMessage((error as Error).toString());
         }
     });
     const sampleDotnetUninstallAllRegistration = vscode.commands.registerCommand('sample.dotnet.uninstallAll', async () => {
@@ -112,7 +112,7 @@ ${stderr}`);
             await vscode.commands.executeCommand('dotnet.uninstallAll');
             vscode.window.showInformationMessage('.NET runtimes uninstalled.');
         } catch (error) {
-            vscode.window.showErrorMessage(error.toString());
+            vscode.window.showErrorMessage((error as Error).toString());
         }
     });
     const sampleConcurrentTest = vscode.commands.registerCommand('sample.dotnet.concurrentTest', async () => {
@@ -128,14 +128,14 @@ ${stderr}`);
                 await promise;
             }
         } catch (error) {
-            vscode.window.showErrorMessage(error.toString());
+            vscode.window.showErrorMessage((error as Error).toString());
         }
     });
     const sampleShowAcquisitionLogRegistration = vscode.commands.registerCommand('sample.dotnet.showAcquisitionLog', async () => {
         try {
             await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
         } catch (error) {
-            vscode.window.showErrorMessage(error.toString());
+            vscode.window.showErrorMessage((error as Error).toString());
         }
     });
 
@@ -164,7 +164,7 @@ ${stderr}`);
             await vscode.commands.executeCommand('dotnet-sdk.showAcquisitionLog');
             await vscode.commands.executeCommand('dotnet-sdk.acquire', { version, requestingExtensionId });
         } catch (error) {
-            vscode.window.showErrorMessage(error.toString());
+            vscode.window.showErrorMessage((error as Error).toString());
         }
     });
     const sampleSDKAcquireStatusRegistration = vscode.commands.registerCommand('sample.dotnet-sdk.acquireStatus', async (version) => {
@@ -181,7 +181,7 @@ ${stderr}`);
             const status = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquireStatus', { version, requestingExtensionId });
             vscode.window.showInformationMessage(status === undefined ? '.NET is not installed' :`.NET version ${version} installed at ${status.dotnetPath}`);
         } catch (error) {
-            vscode.window.showErrorMessage(error.toString());
+            vscode.window.showErrorMessage((error as Error).toString());
         }
     });
     const sampleSDKDotnetUninstallAllRegistration = vscode.commands.registerCommand('sample.dotnet-sdk.uninstallAll', async () => {
@@ -189,14 +189,14 @@ ${stderr}`);
             await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
             vscode.window.showInformationMessage('.NET SDKs uninstalled.');
         } catch (error) {
-            vscode.window.showErrorMessage(error.toString());
+            vscode.window.showErrorMessage((error as Error).toString());
         }
     });
     const sampleSDKShowAcquisitionLogRegistration = vscode.commands.registerCommand('sample.dotnet-sdk.showAcquisitionLog', async () => {
         try {
             await vscode.commands.executeCommand('dotnet-sdk.showAcquisitionLog');
         } catch (error) {
-            vscode.window.showErrorMessage(error.toString());
+            vscode.window.showErrorMessage((error as Error).toString());
         }
     });
 

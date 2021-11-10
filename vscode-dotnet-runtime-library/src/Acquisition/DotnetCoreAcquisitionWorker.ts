@@ -193,7 +193,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
                 await this.context.extensionState.update(this.installingVersionsKey, installedVersions);
             }
         } catch (error) {
-            this.context.eventStream.post(new DotnetPreinstallDetectionError(error));
+            this.context.eventStream.post(new DotnetPreinstallDetectionError(error as Error));
         }
         return installedVersions;
     }

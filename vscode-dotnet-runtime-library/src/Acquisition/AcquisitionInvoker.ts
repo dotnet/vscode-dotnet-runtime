@@ -69,7 +69,7 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
                     }
                 });
             } catch (error) {
-                this.eventStream.post(new DotnetAcquisitionUnexpectedError(error, installContext.version));
+                this.eventStream.post(new DotnetAcquisitionUnexpectedError(error as Error, installContext.version));
                 reject(error);
             }
         });
