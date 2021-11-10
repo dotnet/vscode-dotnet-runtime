@@ -39,7 +39,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
             this.eventStream.post(new DotnetInstallScriptAcquisitionCompleted());
             return this.scriptFilePath;
         } catch (error) {
-            this.eventStream.post(new DotnetInstallScriptAcquisitionError(error));
+            this.eventStream.post(new DotnetInstallScriptAcquisitionError(error as Error));
 
             // Try to use fallback install script
             const fallbackPath = this.getFallbackScriptPath();

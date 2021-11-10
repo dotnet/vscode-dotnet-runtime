@@ -49,7 +49,8 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
         const result = await callback();
         context.eventStream.post(new DotnetCommandSucceeded(context.commandName));
         return result;
-    } catch (error) {
+    } catch (caughtError) {
+        const error = caughtError as Error;
         context.eventStream.post(new DotnetCommandFailed(error, context.commandName));
         if (context.errorConfiguration === AcquireErrorConfiguration.DisplayAllErrorPopups) {
             if ((error.message as string).includes(timeoutConstants.timeoutMessage)) {
@@ -99,7 +100,7 @@ async function configureManualInstall(context: IIssueContext, requestingExtensio
             await context.extensionConfigWorker.setPathConfigurationValue(configVal);
             context.displayWorker.showInformationMessage(`Set .NET path to ${manualPath}. Please reload VSCode to apply settings.`, () => { /* No callback needed */});
         } catch (e) {
-            context.displayWorker.showWarningMessage(`Failed to configure the path: ${e.toString()}`, () => { /* No callback needed */ });
+            context.displayWorker.showWarningMessage(`Failed to configure the path: ${(e as Error).toString()}`, () => { /* No callback needed */ });
         }
     } else {
         context.displayWorker.showWarningMessage('Manually configured path was not valid.', () => { /* No callback needed */ });

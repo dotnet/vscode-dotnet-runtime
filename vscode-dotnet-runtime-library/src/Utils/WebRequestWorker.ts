@@ -2,7 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import * as retry from 'p-retry';
+import retry from 'p-retry';
 import * as request from 'request-promise-native';
 import { IEventStream } from '../EventStream/EventStream';
 import { WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
@@ -49,11 +49,11 @@ export class WebRequestWorker {
             return response;
         } catch (error) {
             if (throwOnError) {
-                let formattedError = error;
-                if ((error.message as string).toLowerCase().includes('block')) {
-                    formattedError = new Error(`Software restriction policy is blocking .NET installation: Request to ${this.url} Failed: ${error.message}`);
+                let formattedError = error as Error;
+                if ((formattedError.message as string).toLowerCase().includes('block')) {
+                    formattedError = new Error(`Software restriction policy is blocking .NET installation: Request to ${this.url} Failed: ${formattedError.message}`);
                 } else {
-                    formattedError = new Error(`Please ensure that you are online: Request to ${this.url} Failed: ${error.message}`);
+                    formattedError = new Error(`Please ensure that you are online: Request to ${this.url} Failed: ${formattedError.message}`);
                 }
                 this.eventStream.post(new WebRequestError(formattedError));
                 throw formattedError;

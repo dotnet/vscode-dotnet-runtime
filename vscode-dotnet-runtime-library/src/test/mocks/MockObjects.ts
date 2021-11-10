@@ -37,6 +37,9 @@ export class MockExtensionContext implements IExtensionState {
     public clear() {
         this.values = {};
     }
+    public keys(): readonly string[] {
+        return this.values.keys;
+    }
 }
 
 export class MockEventStream implements IEventStream {
