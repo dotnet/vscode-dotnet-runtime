@@ -26,6 +26,7 @@ import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 
 export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker {
     private readonly installingVersionsKey = 'installing';
+    private readonly installedVersionsKey = 'installed';
     private readonly dotnetExecutable: string;
     private readonly timeoutValue: number;
 
@@ -46,6 +47,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         this.removeFolderRecursively(this.context.installDirectoryProvider.getStoragePath());
 
         await this.context.extensionState.update(this.installingVersionsKey, []);
+        await this.context.extensionState.update(this.installedVersionsKey, []);
 
         this.context.eventStream.post(new DotnetUninstallAllCompleted());
     }
@@ -68,7 +70,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(version);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
-        let installedVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
+        let installedVersions = this.context.extensionState.get<string[]>(this.installedVersionsKey, []);
 
         if (installedVersions.length === 0 && fs.existsSync(dotnetPath) && !installRuntime) {
             // The education bundle already laid down a local install, add it to our managed installs
@@ -105,8 +107,9 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     }
 
     private async acquireCore(version: string, installRuntime: boolean): Promise<string> {
-        let installedVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
-        const partialInstall = installedVersions.indexOf(version) >= 0;
+        const installingVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
+        let installedVersions = this.context.extensionState.get<string[]>(this.installedVersionsKey, []);
+        const partialInstall = installingVersions.indexOf(version) >= 0;
         if (partialInstall && installRuntime) {
             // Partial install, we never updated our extension to no longer be 'installing'.
             // uninstall everything and then re-install.
@@ -134,8 +137,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         }
 
         // We update the extension state to indicate we're starting a .NET Core installation.
-        installedVersions.push(version);
-        await this.context.extensionState.update(this.installingVersionsKey, installedVersions);
+        await this.addVersionToExtensionState(this.installingVersionsKey, version);
 
         const installContext = {
             installDir: dotnetInstallDir,
@@ -150,14 +152,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         });
         this.context.installationValidator.validateDotnetInstall(version, dotnetPath);
 
-        // Need to re-query our installing versions because there may have been concurrent acquisitions that
-        // changed its value.
-        const latestInstallingVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
-        const versionIndex = latestInstallingVersions.indexOf(version);
-        if (versionIndex >= 0) {
-            latestInstallingVersions.splice(versionIndex, 1);
-            await this.context.extensionState.update(this.installingVersionsKey, latestInstallingVersions);
-        }
+        await this.removeVersionFromExtensionState(this.installingVersionsKey, version);
+        await this.addVersionToExtensionState(this.installedVersionsKey, version);
 
         return dotnetPath;
     }
@@ -168,12 +164,23 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(version);
         this.removeFolderRecursively(dotnetInstallDir);
 
-        const installingVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
-        const versionIndex = installingVersions.indexOf(version);
+        await this.removeVersionFromExtensionState(this.installedVersionsKey, version);
+        await this.removeVersionFromExtensionState(this.installingVersionsKey, version);
+    }
+
+    private async removeVersionFromExtensionState(key: string, version: string) {
+        const state = this.context.extensionState.get<string[]>(key, []);
+        const versionIndex = state.indexOf(version);
         if (versionIndex >= 0) {
-            installingVersions.splice(versionIndex, 1);
-            await this.context.extensionState.update(this.installingVersionsKey, installingVersions);
+            state.splice(versionIndex, 1);
+            await this.context.extensionState.update(key, state);
         }
+    }
+
+    private async addVersionToExtensionState(key: string, version: string) {
+        const state = this.context.extensionState.get<string[]>(key, []);
+        state.push(version);
+        await this.context.extensionState.update(key, state);
     }
 
     private removeFolderRecursively(folderPath: string) {
@@ -189,8 +196,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             // Update extension state
             for (const version of versions) {
                 this.context.eventStream.post(new DotnetPreinstallDetected(version));
+                await this.addVersionToExtensionState(this.installedVersionsKey, version);
                 installedVersions.push(version);
-                await this.context.extensionState.update(this.installingVersionsKey, installedVersions);
             }
         } catch (error) {
             this.context.eventStream.post(new DotnetPreinstallDetectionError(error as Error));
