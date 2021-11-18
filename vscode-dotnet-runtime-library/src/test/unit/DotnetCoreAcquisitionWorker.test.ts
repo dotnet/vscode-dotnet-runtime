@@ -32,6 +32,7 @@ chai.use(chaiAsPromised);
 
 suite('DotnetCoreAcquisitionWorker Unit Tests', function() {
     const installingVersionsKey = 'installing';
+    const installedVersionsKey = 'installed';
     const dotnetFolderName = `.dotnet O'Hare O'Donald`;
 
     function getTestAcquisitionWorker(runtimeInstall: boolean): [ DotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext ] {
@@ -66,7 +67,9 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function() {
         assert.equal(exePath, expectedPath);
 
         // Should be finished installing
-        assert.isEmpty(context.get(installingVersionsKey));
+        assert.isEmpty(context.get<string[]>(installingVersionsKey, []));
+        assert.isNotEmpty(context.get<string[]>(installedVersionsKey, []));
+        assert.include(context.get<string[]>(installedVersionsKey, []), version);
 
         //  No errors in event stream
         assert.notExists(eventStream.events.find(event => event.type === EventType.DotnetAcquisitionError));
@@ -158,6 +161,8 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function() {
         await acquisitionWorker.uninstallAll();
         assert.exists(eventStream.events.find(event => event instanceof DotnetUninstallAllStarted));
         assert.exists(eventStream.events.find(event => event instanceof DotnetUninstallAllCompleted));
+        assert.isEmpty(context.get<string[]>(installingVersionsKey, []));
+        assert.isEmpty(context.get<string[]>(installedVersionsKey, []));
     });
 
     test('Acquire Runtime and UninstallAll', async () => {
@@ -169,6 +174,8 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function() {
         await acquisitionWorker.uninstallAll();
         assert.exists(eventStream.events.find(event => event instanceof DotnetUninstallAllStarted));
         assert.exists(eventStream.events.find(event => event instanceof DotnetUninstallAllCompleted));
+        assert.isEmpty(context.get<string[]>(installingVersionsKey, []));
+        assert.isEmpty(context.get<string[]>(installedVersionsKey, []));
     });
 
     test('Repeated Acquisition', async () => {
