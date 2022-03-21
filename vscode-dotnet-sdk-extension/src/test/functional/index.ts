@@ -5,8 +5,10 @@
 import * as glob from 'glob';
 import * as Mocha from 'mocha';
 import * as path from 'path';
+import * as sourceMapSupport from 'source-map-support';
 
 export function run(): Promise<void> {
+  sourceMapSupport.install();
   // Create the mocha test
   const mocha = new Mocha({
     ui: 'tdd',
