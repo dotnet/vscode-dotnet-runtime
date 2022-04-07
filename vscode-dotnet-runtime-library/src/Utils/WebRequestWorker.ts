@@ -2,29 +2,37 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import retry from 'p-retry';
-import * as request from 'request-promise-native';
+import axios from 'axios';
+import axiosRetry from 'axios-retry';
 import { IEventStream } from '../EventStream/EventStream';
 import { WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
 import { IExtensionState } from '../IExtensionState';
+
+axiosRetry(axios, {
+    retryDelay(retryCount: number) {
+        return Math.pow(2, retryCount);
+    }
+})
 
 export class WebRequestWorker {
     private cachedData: string | undefined;
     private currentRequest: Promise<string | undefined> | undefined;
 
     constructor(private readonly extensionState: IExtensionState,
-                private readonly eventStream: IEventStream,
-                private readonly url: string,
-                private readonly extensionStateKey: string) {}
+        private readonly eventStream: IEventStream,
+        private readonly url: string,
+        private readonly extensionStateKey: string) {
+
+    }
 
     public async getCachedData(retriesCount = 2): Promise<string | undefined> {
         this.cachedData = this.extensionState.get<string>(this.extensionStateKey);
         if (!this.cachedData) {
             // Have to acquire data before continuing
-            this.cachedData = await this.makeWebRequestWithRetries(true, retriesCount);
+            this.cachedData = await this.makeWebRequest(true, retriesCount);
         } else if (!this.currentRequest) {
             // Update without blocking, continue with cached information
-            this.currentRequest = this.makeWebRequest(false);
+            this.currentRequest = this.makeWebRequest(false, 0);
             this.currentRequest.then((result) => {
                 if (result) {
                     this.cachedData = result;
@@ -36,17 +44,20 @@ export class WebRequestWorker {
     }
 
     // Protected for ease of testing
-    protected async makeWebRequest(throwOnError: boolean): Promise<string | undefined> {
-        const options = {
-            url: this.url,
-            Connection: 'keep-alive',
-        };
-
+    protected async makeWebRequest(throwOnError: boolean, retries: number): Promise<string | undefined> {
         try {
             this.eventStream.post(new WebRequestSent(this.url));
-            const response = await request.get(options);
-            this.cacheResults(response);
-            return response;
+            const responseHeaders = await axios.get(this.url, {
+                headers: {
+                    Connection: 'keep-alive'
+                },
+                "axios-retry": {
+                    retries: retries,
+                }
+            });
+            const responseBody = await responseHeaders.data;
+            this.cacheResults(responseBody);
+            return responseBody;
         } catch (error) {
             if (throwOnError) {
                 let formattedError = error as Error;
@@ -64,17 +75,5 @@ export class WebRequestWorker {
 
     protected async cacheResults(response: string) {
         await this.extensionState.update(this.extensionStateKey, response);
-    }
-
-    private async makeWebRequestWithRetries(throwOnError: boolean, retriesCount: number): Promise<string | undefined> {
-        return retry(async () => {
-            return this.makeWebRequest(throwOnError);
-        }, { retries: retriesCount, onFailedAttempt: async (error) => {
-            await this.delay(Math.pow(2, error.attemptNumber));
-        }});
-    }
-
-    private delay(ms: number) {
-        return new Promise( resolve => setTimeout(resolve, ms) );
     }
 }
