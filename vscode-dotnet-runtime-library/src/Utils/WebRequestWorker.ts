@@ -4,41 +4,61 @@
  *--------------------------------------------------------------------------------------------*/
 import axios from 'axios';
 import axiosRetry from 'axios-retry';
+import { AxiosCacheInstance, buildStorage, setupCache, StorageValue } from 'axios-cache-interceptor';
 import { IEventStream } from '../EventStream/EventStream';
 import { WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
 import { IExtensionState } from '../IExtensionState';
 
-axiosRetry(axios, {
-    retryDelay(retryCount: number) {
-        return Math.pow(2, retryCount);
-    }
-})
+// axiosRetry(axios, {
+//     retryDelay(retryCount: number) {
+//         return Math.pow(2, retryCount);
+//     }
+// });
+
+const mementoStorage = (extensionStorage: IExtensionState) => {
+    const cachePrefix = "axios-cache";
+    return buildStorage({
+        set(key: string, value: any) {
+            extensionStorage.update(cachePrefix + key, value);
+        },
+        remove(key: string) {
+            extensionStorage.update(cachePrefix + key, undefined);
+        },
+        find(key: string) {
+            return extensionStorage.get(cachePrefix + key) as StorageValue;
+        }
+    });
+}
+
+// const axios = setupCache(axios, {
+//     storage: build
+// });
 
 export class WebRequestWorker {
     private cachedData: string | undefined;
-    private currentRequest: Promise<string | undefined> | undefined;
+    private client: AxiosCacheInstance;
 
-    constructor(private readonly extensionState: IExtensionState,
+    constructor(
+        private readonly extensionState: IExtensionState,
         private readonly eventStream: IEventStream,
-        private readonly url: string,
-        private readonly extensionStateKey: string) {
-
+        private readonly url: string) {
+        var c = axios.create({
+            baseURL: url,
+        });
+        axiosRetry(c, {
+            retryDelay(retryCount: number) {
+                return Math.pow(2, retryCount);
+            }
+        });
+        this.client = setupCache(c, {
+            storage: mementoStorage(extensionState),
+        });
     }
 
     public async getCachedData(retriesCount = 2): Promise<string | undefined> {
-        this.cachedData = this.extensionState.get<string>(this.extensionStateKey);
         if (!this.cachedData) {
             // Have to acquire data before continuing
             this.cachedData = await this.makeWebRequest(true, retriesCount);
-        } else if (!this.currentRequest) {
-            // Update without blocking, continue with cached information
-            this.currentRequest = this.makeWebRequest(false, 0);
-            this.currentRequest.then((result) => {
-                if (result) {
-                    this.cachedData = result;
-                }
-                this.currentRequest = undefined;
-            });
         }
         return this.cachedData;
     }
@@ -47,7 +67,7 @@ export class WebRequestWorker {
     protected async makeWebRequest(throwOnError: boolean, retries: number): Promise<string | undefined> {
         try {
             this.eventStream.post(new WebRequestSent(this.url));
-            const responseHeaders = await axios.get(this.url, {
+            const responseHeaders = await this.client.get(this.url, {
                 headers: {
                     Connection: 'keep-alive'
                 },
@@ -56,7 +76,6 @@ export class WebRequestWorker {
                 }
             });
             const responseBody = await responseHeaders.data;
-            this.cacheResults(responseBody);
             return responseBody;
         } catch (error) {
             if (throwOnError) {
@@ -73,7 +92,4 @@ export class WebRequestWorker {
         }
     }
 
-    protected async cacheResults(response: string) {
-        await this.extensionState.update(this.extensionStateKey, response);
-    }
 }

@@ -20,7 +20,7 @@ export class VersionResolver implements IVersionResolver {
 
     constructor(extensionState: IExtensionState,
                 private readonly eventStream: IEventStream) {
-        this.webWorker = new WebRequestWorker(extensionState, eventStream, this.releasesUrl, this.releasesKey);
+        this.webWorker = new WebRequestWorker(extensionState, eventStream, this.releasesUrl);
     }
 
     public async getFullRuntimeVersion(version: string): Promise<string> {

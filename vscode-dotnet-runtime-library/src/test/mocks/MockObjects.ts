@@ -80,7 +80,7 @@ export const versionPairs = [['1.0', '1.0.16'], ['1.1', '1.1.13'], ['2.0', '2.0.
 export class FileWebRequestWorker extends WebRequestWorker {
     constructor(extensionState: IExtensionState, eventStream: IEventStream, uri: string, extensionStateKey: string,
                 private readonly mockFilePath: string) {
-        super(extensionState, eventStream, uri, extensionStateKey);
+        super(extensionState, eventStream, uri);
     }
 
     protected async makeWebRequest(): Promise<string | undefined> {
@@ -91,7 +91,7 @@ export class FileWebRequestWorker extends WebRequestWorker {
 
 export class FailingWebRequestWorker extends WebRequestWorker {
     constructor(extensionState: IExtensionState, eventStream: IEventStream, uri: string, extensionStateKey: string) {
-        super(extensionState, eventStream, '', extensionStateKey); // Empty string as uri
+        super(extensionState, eventStream, ''); // Empty string as uri
     }
 
     public async getCachedData(): Promise<string | undefined> {
@@ -105,7 +105,7 @@ export class MockWebRequestWorker extends WebRequestWorker {
     private readonly response = 'Mock Web Request Result';
 
     constructor(extensionState: IExtensionState, eventStream: IEventStream, url: string, extensionStateKey: string, private readonly succeed = true) {
-        super(extensionState, eventStream, url, extensionStateKey);
+        super(extensionState, eventStream, url);
     }
 
     public getRequestCount() {
@@ -115,7 +115,6 @@ export class MockWebRequestWorker extends WebRequestWorker {
     protected async makeWebRequest(): Promise<string | undefined> {
         this.requestCount++;
         if (this.succeed) {
-            this.cacheResults(this.response);
             return this.response;
         } else {
             throw new Error(this.errorMessage);
