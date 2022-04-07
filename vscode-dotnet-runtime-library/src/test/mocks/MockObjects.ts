@@ -38,7 +38,7 @@ export class MockExtensionContext implements IExtensionState {
         this.values = {};
     }
     public keys(): readonly string[] {
-        return this.values.keys;
+        return Object.keys(this.values);
     }
 }
 
@@ -90,7 +90,7 @@ export class FileWebRequestWorker extends WebRequestWorker {
 }
 
 export class FailingWebRequestWorker extends WebRequestWorker {
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, uri: string, extensionStateKey: string) {
+    constructor(extensionState: IExtensionState, eventStream: IEventStream, uri: string) {
         super(extensionState, eventStream, ''); // Empty string as uri
     }
 
@@ -99,21 +99,36 @@ export class FailingWebRequestWorker extends WebRequestWorker {
     }
 }
 
-export class MockWebRequestWorker extends WebRequestWorker {
-    public readonly errorMessage = 'Web Request Failed';
-    private requestCount = 0;
-    private readonly response = 'Mock Web Request Result';
-
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, url: string, extensionStateKey: string, private readonly succeed = true) {
-        super(extensionState, eventStream, url);
+export class TrackingWebRequestWorker extends WebRequestWorker {
+    private requestCount: number = 0;
+    constructor(extensionState: IExtensionState, eventStream: IEventStream, uri: string) {
+        super(extensionState, eventStream, uri);
     }
 
     public getRequestCount() {
         return this.requestCount;
     }
 
-    protected async makeWebRequest(): Promise<string | undefined> {
+    public incrementRequestCount() {
         this.requestCount++;
+    }
+
+    protected async makeWebRequest(shouldThrow = false, retries = 2): Promise<string | undefined> {
+        this.incrementRequestCount();
+        return super.makeWebRequest(shouldThrow, retries);
+    }
+}
+
+export class MockWebRequestWorker extends TrackingWebRequestWorker {
+    public readonly errorMessage = 'Web Request Failed';
+    private readonly response = 'Mock Web Request Result';
+
+    constructor(extensionState: IExtensionState, eventStream: IEventStream, url: string, private readonly succeed = true) {
+        super(extensionState, eventStream, url);
+    }
+
+    protected async makeWebRequest(): Promise<string | undefined> {
+        this.incrementRequestCount()
         if (this.succeed) {
             return this.response;
         } else {
@@ -135,8 +150,8 @@ export class MockInstallScriptWorker extends InstallScriptAcquisitionWorker {
     constructor(extensionState: IExtensionState, eventStream: IEventStream, failing: boolean, private fallback = false) {
         super(extensionState, eventStream);
         this.webWorker = failing ?
-            new FailingWebRequestWorker(extensionState, eventStream, '', '') :
-            new MockWebRequestWorker(extensionState, eventStream, '', '');
+            new FailingWebRequestWorker(extensionState, eventStream, '') :
+            new MockWebRequestWorker(extensionState, eventStream, '');
     }
 
     protected getFallbackScriptPath(): string {
@@ -151,7 +166,7 @@ export class MockInstallScriptWorker extends InstallScriptAcquisitionWorker {
 export class FailingInstallScriptWorker extends InstallScriptAcquisitionWorker {
     constructor(extensionState: IExtensionState, eventStream: IEventStream) {
         super(extensionState, eventStream);
-        this.webWorker = new MockWebRequestWorker(extensionState, eventStream, '', '');
+        this.webWorker = new MockWebRequestWorker(extensionState, eventStream, '');
     }
 
     protected writeScriptAsFile(scriptContent: string, filePath: string) {

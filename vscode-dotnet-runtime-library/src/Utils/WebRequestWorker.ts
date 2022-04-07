@@ -70,8 +70,7 @@ export class WebRequestWorker {
                     retries: retries,
                 },
             });
-            const responseBody = await responseHeaders.data;
-            return responseBody;
+            return responseHeaders.data;
         } catch (error) {
             if (throwOnError) {
                 let formattedError = error as Error;
