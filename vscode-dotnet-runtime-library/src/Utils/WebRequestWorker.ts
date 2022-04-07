@@ -9,12 +9,10 @@ import { IEventStream } from '../EventStream/EventStream';
 import { WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
 import { IExtensionState } from '../IExtensionState';
 
-// axiosRetry(axios, {
-//     retryDelay(retryCount: number) {
-//         return Math.pow(2, retryCount);
-//     }
-// });
-
+/*
+This wraps the VSCode memento state blob into an axios-cache-interceptor-compatible Storage.
+All the calls are synchronous
+*/
 const mementoStorage = (extensionStorage: IExtensionState) => {
     const cachePrefix = "axios-cache";
     return buildStorage({
@@ -30,10 +28,6 @@ const mementoStorage = (extensionStorage: IExtensionState) => {
     });
 }
 
-// const axios = setupCache(axios, {
-//     storage: build
-// });
-
 export class WebRequestWorker {
     private cachedData: string | undefined;
     private client: AxiosCacheInstance;
@@ -42,9 +36,9 @@ export class WebRequestWorker {
         private readonly extensionState: IExtensionState,
         private readonly eventStream: IEventStream,
         private readonly url: string) {
-        var c = axios.create({
-            baseURL: url,
-        });
+        
+        // we can configure the retry and cache policies specifically for this axios client
+        var c = axios.create({});
         axiosRetry(c, {
             retryDelay(retryCount: number) {
                 return Math.pow(2, retryCount);
@@ -71,9 +65,10 @@ export class WebRequestWorker {
                 headers: {
                     Connection: 'keep-alive'
                 },
+                // since retry configuration is per-request, we flow that into the retry middleware here
                 "axios-retry": {
                     retries: retries,
-                }
+                },
             });
             const responseBody = await responseHeaders.data;
             return responseBody;
