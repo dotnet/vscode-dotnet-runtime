@@ -46,7 +46,7 @@
 		"request": "^2.88.0",
 		"request-promise-native": "^1.0.8",
 		"rimraf": "3.0.2",
-		"shelljs": "0.8.4",
+		"shelljs": "0.8.5",
 		"tslint": "5.20.1",
 		"typescript": "4.4.4",
 		"vscode-extension-telemetry": "^0.4.3",
