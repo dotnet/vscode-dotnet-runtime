@@ -67,7 +67,7 @@ stages:
   - job: TSLint
     displayName: 'TSLint'
     pool:
-      vmImage: 'vs2017-win2016'
+      vmImage: 'windows-latest'
     steps:
     - task: npmAuthenticate@0
       inputs:
@@ -83,7 +83,7 @@ stages:
     - TSLint
     condition: and(succeeded(), notin(variables['Build.Reason'], 'PullRequest'))
     pool:
-      vmImage: 'vs2017-win2016'
+      vmImage: 'windows-latest'
     strategy:
       matrix:
         Runtime:
@@ -136,13 +136,13 @@ stages:
   # Note: This step requires approval, allows for manual smoke testing the artifact before release
   - deployment: Deploy
     pool:
-      vmImage: 'vs2017-win2016'
+      vmImage: 'windows-latest'
     environment: 'vscode-dotnetcore-extension-releases'
   ##### Determine version to publish #####
   - job: GetVersion
     displayName: 'Get Version'
     pool:
-      vmImage: 'vs2017-win2016'
+      vmImage: 'windows-latest'
     steps:
     - task: NodeTool@0
       inputs:
@@ -161,7 +161,7 @@ stages:
     - Deploy
     - GetVersion
     pool:
-      vmImage: 'vs2017-win2016'
+      vmImage: 'windows-latest'
     variables:
       version: $[ dependencies.GetVersion.outputs['GetVersion.version'] ]
     steps:
@@ -189,13 +189,13 @@ stages:
   # Note: This step requires approval, allows for manual smoke testing the artifact before release
   - deployment: Deploy
     pool:
-      vmImage: 'vs2017-win2016'
+      vmImage: 'windows-latest'
     environment: 'vscode-dotnetcore-extension-releases'
   ##### Determine version to publish #####
   - job: GetVersion
     displayName: 'Get Version'
     pool:
-      vmImage: 'vs2017-win2016'
+      vmImage: 'windows-latest'
     steps:
     - task: NodeTool@0
       inputs:
@@ -214,7 +214,7 @@ stages:
     - Deploy
     - GetVersion
     pool:
-      vmImage: 'vs2017-win2016'
+      vmImage: 'windows-latest'
     variables:
       version: $[ dependencies.GetVersion.outputs['GetVersion.version'] ]
     steps:
