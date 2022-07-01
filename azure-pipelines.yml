@@ -74,11 +74,6 @@ stages:
         versionSpec: '15.x'
       displayName: 'Install Node.js'
     - bash: |
-        find .
-        ls
-        echo "$PWD"
-        npm install -g vsts-npm-auth --registry https://registry.npmjs.com --always-auth false
-        vsts-npm-auth -config .npmrc -V Detailed -N
         npm install -g tslint
         npm run lint
       displayName: Run Lint
