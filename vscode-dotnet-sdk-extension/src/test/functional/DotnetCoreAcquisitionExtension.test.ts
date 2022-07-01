@@ -28,7 +28,7 @@ import {
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { uninstallSDKExtension } from '../../ExtensionUninstall';
-const assert = chai.assert;
+const assert: Chai.Assert = chai.assert;
 chai.use(chaiAsPromised);
 /* tslint:disable:no-any */
 
