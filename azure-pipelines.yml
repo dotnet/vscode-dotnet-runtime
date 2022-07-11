@@ -74,7 +74,7 @@ stages:
         versionSpec: '15.x'
       displayName: 'Install Node.js'
     - bash: |
-        npm install -g vsts-npm-auth
+        npm install vsts-npm-auth --registry https://registry.npmjs.org
         vsts-npm-auth -config .npmrc -V Detailed -N
         npm install --location=global tslint
         npm run lint
