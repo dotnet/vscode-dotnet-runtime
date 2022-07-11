@@ -74,6 +74,8 @@ stages:
         versionSpec: '15.x'
       displayName: 'Install Node.js'
     - bash: |
+        npm install -g vsts-npm-auth
+        vsts-npm-auth -config .npmrc -V Detailed -N
         npm install --location=global tslint
         npm run lint
       displayName: Run Lint
