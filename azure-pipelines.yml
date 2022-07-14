@@ -70,9 +70,9 @@ stages:
       vmImage: 'windows-latest'
     steps:
     - task: npmAuthenticate@0
-    inputs:
-      workingFile: .npmrc
-      displayName: 'Authenticate NPM'
+      inputs:
+        workingFile: .npmrc
+        displayName: 'Authenticate NPM'
     - script: npm install tslint 
     - script: npm run lint
   ##### Package and Publish #####
