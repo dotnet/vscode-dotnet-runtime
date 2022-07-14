@@ -107,5 +107,11 @@
 		"copy-webpack-plugin": "9.0.1",
 		"webpack": "5.63.0",
 		"webpack-cli": "4.9.1"
+	},
+	"__metadata": {
+		"id": "1aab81a1-b3d9-4aef-976b-577d5d90fe3f",
+		"publisherDisplayName": "Microsoft",
+		"publisherId": "d05e23de-3974-4ff0-8d47-23ee77830092",
+		"isPreReleaseVersion": false
 	}
 }
