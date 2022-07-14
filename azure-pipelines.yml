@@ -69,14 +69,12 @@ stages:
     pool:
       vmImage: 'vs2017-win2016'
     steps:
-    - task: NodeTool@0
-      inputs:
-        versionSpec: '15.x'
-      displayName: 'Install Node.js'
-    - bash: |
-        npm install -g tslint
-        npm run lint
-      displayName: Run Lint
+    - task: npmAuthenticate@0
+    inputs:
+      workingFile: .npmrc
+      displayName: 'Authenticate NPM'
+    - script: npm install tslint 
+    - script: npm run lint
   ##### Package and Publish #####
   - job: Package
     displayName: 'Package and Publish'
