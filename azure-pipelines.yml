@@ -35,9 +35,10 @@ stages:
         Windows:
           imageName: 'windows-latest'
     steps:
-    - task: NodeTool@0
+    - task: npmAuthenticate@0
       inputs:
         versionSpec: '15.x'
+        workingFile: .npmrc
       displayName: 'Install Node.js'
     - script: build.cmd
       displayName: Build Windows
@@ -93,7 +94,7 @@ stages:
           dir-name: 'vscode-dotnet-sdk-extension'
           package-name: 'vscode-dotnet-sdk'
     steps:
-    - task: NodeTool@0
+    - task: npmAuthenticate@0
       inputs:
         versionSpec: '15.x'
       displayName: 'Install Node.js'
@@ -109,10 +110,9 @@ stages:
       name: GetVersion
       displayName: 'Get Version'
       workingDirectory: $(dir-name)
-    - bash: |
-        npm install -g rimraf
-        npm install -g vsce
-        vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
+    - script: npm install -g rimraf
+    - script: npm install -g vsce
+    - script: vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
       displayName: Package Artifact
       workingDirectory: $(dir-name)
     - task: CopyFiles@2
@@ -144,9 +144,10 @@ stages:
     pool:
       vmImage: 'windows-latest'
     steps:
-    - task: NodeTool@0
+    - task: npmAuthenticate@0
       inputs:
         versionSpec: '15.x'
+        workingFile: .npmrc
       displayName: 'Install Node.js'
     - bash: |
         VERSION=`node -p "require('./package.json').version"`
@@ -170,13 +171,13 @@ stages:
       displayName: 'Download Packaged Extension'
       inputs:
         path: '$(System.ArtifactsDirectory)'
-    - task: NodeTool@0
+    - task: npmAuthenticate@0
       inputs:
         versionSpec: '15.x'
+        workingFile: .npmrc
       displayName: 'Install Node.js'
-    - bash: |
-        npm install -g vsce
-        vsce publish --packagePath vscode-dotnet-runtime-$(version).vsix -p $(VSCODE_MARKETPLACE_TOKEN)
+    - script: npm install vsce
+    - script: vsce publish --packagePath vscode-dotnet-runtime-$(version).vsix -p $(VSCODE_MARKETPLACE_TOKEN)
       displayName: 'Publish to Marketplace'
       workingDirectory: '$(System.ArtifactsDirectory)/vscode-dotnet-runtime-extension'
 
@@ -197,9 +198,10 @@ stages:
     pool:
       vmImage: 'windows-latest'
     steps:
-    - task: NodeTool@0
+    - task: npmAuthenticate@0
       inputs:
         versionSpec: '15.x'
+        workingFile: .npmrc
       displayName: 'Install Node.js'
     - bash: |
         VERSION=`node -p "require('./package.json').version"`
@@ -223,12 +225,13 @@ stages:
       displayName: 'Download Packaged Extension'
       inputs:
         path: '$(System.ArtifactsDirectory)'
-    - task: NodeTool@0
+    - task: npmAuthenticate@0
       inputs:
         versionSpec: '15.x'
+        workingFile: .npmrc
       displayName: 'Install Node.js'
     - bash: |
-        npm install -g vsce
+        npm install vsce
         vsce publish --packagePath vscode-dotnet-sdk-$(version).vsix -p $(VSCODE_MARKETPLACE_TOKEN)
       displayName: 'Publish to Marketplace'
       workingDirectory: '$(System.ArtifactsDirectory)/vscode-dotnet-sdk-extension'
