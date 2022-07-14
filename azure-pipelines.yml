@@ -72,7 +72,7 @@ stages:
     - task: npmAuthenticate@0
       inputs:
         workingFile: .npmrc
-        displayName: 'Authenticate NPM'
+        displayName: 'Authenticate NPM and Run Lint'
     - script: npm install tslint 
     - script: npm run lint
   ##### Package and Publish #####
