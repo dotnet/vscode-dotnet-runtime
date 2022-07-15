@@ -40,9 +40,11 @@ stages:
         versionSpec: '15.x'
         workingFile: .npmrc
       displayName: 'Install Node.js'
-    - script: npm install
-    - script: npm install vsts-npm-auth
-    - script: vsts-npm-auth -config .npmrc
+    - task: npmAuthenticate@0
+      inputs:
+        versionSpec: '15.x'
+        workingFile: 'vscode-dotnet-runtime-library/.npmrc'
+      displayName: 'Auth runtime-library'
     - script: build.cmd
       displayName: Build Windows
       condition: eq(variables['Agent.OS'], 'Windows_NT')
