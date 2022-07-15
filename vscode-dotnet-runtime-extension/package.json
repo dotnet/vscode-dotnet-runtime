@@ -82,7 +82,7 @@
 		"webpack": "webpack --mode development"
 	},
 	"dependencies": {
-		"chai": "^4.3.4",
+		"chai": "4.3.4",
 		"child_process": "^1.0.2",
 		"diff": ">=5.0.0",
 		"glob": "^7.2.0",
@@ -99,7 +99,7 @@
 		"vscode-test": "^1.6.1"
 	},
 	"devDependencies": {
-		"@types/chai": "^4.2.22",
+		"@types/chai": "4.2.22",
 		"@types/mocha": "^9.0.0",
 		"@types/node": "16.11.7",
 		"@types/rimraf": "3.0.2",

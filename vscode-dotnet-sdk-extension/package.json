@@ -78,13 +78,13 @@
 		"webpack": "webpack --mode development"
 	},
 	"dependencies": {
-		"@types/chai": "^4.2.22",
+		"@types/chai": "4.2.22",
 		"@types/chai-as-promised": "^7.1.4",
 		"@types/mocha": "^9.0.0",
 		"@types/node": "16.11.7",
 		"@types/rimraf": "3.0.2",
 		"@types/vscode": "1.62.0",
-		"chai": "^4.3.4",
+		"chai": "4.3.4",
 		"chai-as-promised": "^7.1.1",
 		"child_process": "^1.0.2",
 		"diff": ">=5.0.0",
