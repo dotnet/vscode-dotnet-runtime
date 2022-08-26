@@ -19,8 +19,8 @@ variables:
 
 stages:
 ##### Test and Build #####
-- stage: Build
-  jobs:
+# - stage: Build
+#   jobs:
 #   ##### Build #####
 #   - job: Build
 #     displayName: 'Build and Test'
