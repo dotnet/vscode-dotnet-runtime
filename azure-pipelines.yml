@@ -35,16 +35,10 @@ stages:
         Windows:
           imageName: 'windows-latest'
     steps:
-    - task: npmAuthenticate@0
+    - task: NodeTool@0
       inputs:
         versionSpec: '15.x'
-        workingFile: .npmrc
       displayName: 'Install Node.js'
-    - task: npmAuthenticate@0
-      inputs:
-        versionSpec: '15.x'
-        workingFile: 'vscode-dotnet-runtime-library/.npmrc'
-      displayName: 'Auth runtime-library'
     - script: build.cmd
       displayName: Build Windows
       condition: eq(variables['Agent.OS'], 'Windows_NT')
@@ -75,12 +69,14 @@ stages:
     pool:
       vmImage: 'windows-latest'
     steps:
-    - task: npmAuthenticate@0
+    - task: NodeTool@0
       inputs:
-        workingFile: .npmrc
-        displayName: 'Authenticate NPM and Run Lint'
-    - script: npm install tslint 
-    - script: npm run lint
+        versionSpec: '15.x'
+      displayName: 'Install Node.js'
+    - bash: |
+        npm install -g tslint
+        npm run lint
+      displayName: Run Lint
   ##### Package and Publish #####
   - job: Package
     displayName: 'Package and Publish'
@@ -99,7 +95,7 @@ stages:
           dir-name: 'vscode-dotnet-sdk-extension'
           package-name: 'vscode-dotnet-sdk'
     steps:
-    - task: npmAuthenticate@0
+    - task: NodeTool@0
       inputs:
         versionSpec: '15.x'
       displayName: 'Install Node.js'
@@ -115,9 +111,10 @@ stages:
       name: GetVersion
       displayName: 'Get Version'
       workingDirectory: $(dir-name)
-    - script: npm install -g rimraf
-    - script: npm install -g vsce
-    - script: vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
+    - bash: |
+          npm install -g rimraf
+          npm install -g vsce
+          vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
       displayName: Package Artifact
       workingDirectory: $(dir-name)
     - task: CopyFiles@2
@@ -149,10 +146,9 @@ stages:
     pool:
       vmImage: 'windows-latest'
     steps:
-    - task: npmAuthenticate@0
+    - task: NodeTool@0
       inputs:
         versionSpec: '15.x'
-        workingFile: .npmrc
       displayName: 'Install Node.js'
     - bash: |
         VERSION=`node -p "require('./package.json').version"`
@@ -176,13 +172,13 @@ stages:
       displayName: 'Download Packaged Extension'
       inputs:
         path: '$(System.ArtifactsDirectory)'
-    - task: npmAuthenticate@0
+    - task: NodeTool@0
       inputs:
         versionSpec: '15.x'
-        workingFile: .npmrc
       displayName: 'Install Node.js'
-    - script: npm install vsce
-    - script: vsce publish --packagePath vscode-dotnet-runtime-$(version).vsix -p $(VSCODE_MARKETPLACE_TOKEN)
+    - bash: |
+        npm install -g vsce
+        vsce publish --packagePath vscode-dotnet-runtime-$(version).vsix -p $(VSCODE_MARKETPLACE_TOKEN)
       displayName: 'Publish to Marketplace'
       workingDirectory: '$(System.ArtifactsDirectory)/vscode-dotnet-runtime-extension'
 
@@ -203,10 +199,9 @@ stages:
     pool:
       vmImage: 'windows-latest'
     steps:
-    - task: npmAuthenticate@0
+    - task: NodeTool@0
       inputs:
         versionSpec: '15.x'
-        workingFile: .npmrc
       displayName: 'Install Node.js'
     - bash: |
         VERSION=`node -p "require('./package.json').version"`
@@ -230,13 +225,12 @@ stages:
       displayName: 'Download Packaged Extension'
       inputs:
         path: '$(System.ArtifactsDirectory)'
-    - task: npmAuthenticate@0
+    - task: NodeTool@0
       inputs:
         versionSpec: '15.x'
-        workingFile: .npmrc
       displayName: 'Install Node.js'
     - bash: |
-        npm install vsce
+        npm install -g vsce
         vsce publish --packagePath vscode-dotnet-sdk-$(version).vsix -p $(VSCODE_MARKETPLACE_TOKEN)
       displayName: 'Publish to Marketplace'
       workingDirectory: '$(System.ArtifactsDirectory)/vscode-dotnet-sdk-extension'
