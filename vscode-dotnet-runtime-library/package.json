@@ -8,7 +8,7 @@
 	},
 	"license": "MIT",
 	"engines": {
-		"vscode": "^1.62.0"
+		"vscode": "1.62.0"
 	},
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
@@ -21,7 +21,7 @@
 		"clean": "rimraf dist"
 	},
 	"devDependencies": {
-		"@types/chai": "^4.2.22",
+		"@types/chai": "4.2.22",
 		"glob": "^7.2.0"
 	},
 	"dependencies": {
@@ -32,8 +32,8 @@
 		"@types/rimraf": "3.0.2",
 		"@types/semver": "^7.3.9",
 		"@types/shelljs": "0.8.9",
-		"@types/vscode": "^1.62.0",
-		"chai": "^4.3.4",
+		"@types/vscode": "1.62.0",
+		"chai": "4.3.4",
 		"chai-as-promised": "^7.1.1",
 		"diff": ">=5.0.0",
 		"eol": "^0.9.1",
