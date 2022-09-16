@@ -84,7 +84,7 @@ stages:
     dependsOn: 
     - Build
     - TSLint
-    condition: and(succeeded(), notin(variables['Build.Reason'], 'PullRequest'))
+    condition: succeeded()
     pool:
       vmImage: 'windows-latest'
     strategy:
