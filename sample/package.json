@@ -98,11 +98,11 @@
 		"vscode-dotnet-sdk": "file:../vscode-dotnet-sdk-extension"
 	},
 	"devDependencies": {
-		"@types/mocha": "^9.0.0",
+		"@types/mocha": "9.0.0",
 		"@types/node": "16.11.7",
 		"@types/rimraf": "3.0.2",
 		"@types/vscode": "1.62.0",
-		"mocha": "^9.1.3",
+		"mocha": "9.1.3",
 		"rimraf": "3.0.2",
 		"tslint": "5.20.1",
 		"typescript": "4.4.4"
