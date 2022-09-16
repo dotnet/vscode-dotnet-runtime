@@ -12,5 +12,8 @@
 	"scripts": {
 		"compile-all": "build.cmd",
 		"lint": "tslint -c tslint.json 'vscode-dotnet-runtime-library/src/**/*.ts' 'vscode-dotnet-runtime-extension/src/**/*.ts' 'vscode-dotnet-sdk-extension/src/**/*.ts'"
+	},
+	"dependencies": {
+		"vsce": "^2.11.0"
 	}
 }
