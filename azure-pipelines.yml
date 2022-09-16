@@ -74,6 +74,7 @@ stages:
         versionSpec: '15.x'
       displayName: 'Install Node.js'
     - bash: |
+        npm install --cache /temp/empty-cache
         npm install tslint --verbose
         npm run lint
       displayName: Run Lint
