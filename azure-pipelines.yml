@@ -117,7 +117,7 @@ stages:
           npm install vsce -g --verbose
           where vsce
           echo %PATH%
-          vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore
+          vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
       displayName: Package Artifact
       workingDirectory: $(dir-name)
     - task: CopyFiles@2
