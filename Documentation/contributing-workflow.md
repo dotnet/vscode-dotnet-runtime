@@ -42,7 +42,7 @@ Before making a pull request, be sure to build and test your changes locally wit
 To build an installable .vsix file locally, navigate to the directory containing the extension's package.json (either `vscode-dotnet-runtime-extension` or `vscode-dotnet-sdk-extension`) run the following commands:
 
 ```
-npm install -g vsce
+npm ci -g vsce
 vsce package --ignoreFile ../.vscodeignore --yarn
 ```
 
