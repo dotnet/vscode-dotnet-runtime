@@ -178,7 +178,7 @@ stages:
       displayName: 'Install Node.js'
     - bash: |
         yarn global add vsce --verbose
-        vsce publish --packagePath vscode-dotnet-runtime-$(version).vsix -p $(VSCODE_MARKETPLACE_TOKEN)
+        vsce publish --packagePath vscode-dotnet-runtime-$(version).vsix -p $(VSCODE_MARKETPLACE_TOKEN) --yarn
       displayName: 'Publish to Marketplace'
       workingDirectory: '$(System.ArtifactsDirectory)/vscode-dotnet-runtime-extension'
 
@@ -231,6 +231,6 @@ stages:
       displayName: 'Install Node.js'
     - bash: |
         yarn global add vsce
-        vsce publish --packagePath vscode-dotnet-sdk-$(version).vsix -p $(VSCODE_MARKETPLACE_TOKEN)
+        vsce publish --packagePath vscode-dotnet-sdk-$(version).vsix -p $(VSCODE_MARKETPLACE_TOKEN) --yarn
       displayName: 'Publish to Marketplace'
       workingDirectory: '$(System.ArtifactsDirectory)/vscode-dotnet-sdk-extension'
