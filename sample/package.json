@@ -86,10 +86,10 @@
 		]
 	},
 	"scripts": {
-		"vscode:prepublish": "npm install && npm run compile",
-		"compile": "npm run clean && tsc -p ./",
-		"watch": "npm run clean && tsc -watch -p ./",
-		"test": "npm run compile && node ./node_modules/vscode/bin/test",
+		"vscode:prepublish": "yarn install --frozen-lockfile && yarn run compile",
+		"compile": "yarn run clean && tsc -p ./",
+		"watch": "yarn run clean && tsc -watch -p ./",
+		"test": "yarn run compile && node ./node_modules/vscode/bin/test",
 		"clean": "rimraf out"
 	},
 	"dependencies": {

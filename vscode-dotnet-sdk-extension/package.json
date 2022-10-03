@@ -67,13 +67,13 @@
 		}
 	},
 	"scripts": {
-		"vscode:prepublish": "npm run compile-all && npm install && webpack --mode production",
+		"vscode:prepublish": "yarn run compile-all && yarn install --frozen-lockfile && webpack --mode production",
 		"vscode:uninstall": "node ./dist/ExtensionUninstall",
-		"compile": "npm run clean && tsc -p ./",
-		"watch": "npm run compile && tsc -watch -p ./",
-		"test": "npm run compile --silent && node ./dist/test/functional/runTest.js",
+		"compile": "yarn run clean && tsc -p ./",
+		"watch": "yarn run compile && tsc -watch -p ./",
+		"test": "yarn run compile --silent && node ./dist/test/functional/runTest.js",
 		"clean": "rimraf dist",
-		"compile-all": "cd ../vscode-dotnet-runtime-library && npm install && npm run compile && cd ../vscode-dotnet-sdk-extension && npm install && npm run compile",
+		"compile-all": "cd ../vscode-dotnet-runtime-library && yarn install --frozen-lockfile && yarn run compile && cd ../vscode-dotnet-sdk-extension && yarn install --frozen-lockfile && yarn run compile",
 		"lint": "tslint -c ../tslint.json '../vscode-dotnet-runtime-library/src/**/*.ts' '../vscode-dotnet-sdk-extension/src/**/*.ts'",
 		"webpack": "webpack --mode development"
 	},

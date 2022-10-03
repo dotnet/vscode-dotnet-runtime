@@ -115,7 +115,7 @@ stages:
     - bash: |
           npm ci rimraf --verbose
           npm ci vsce --verbose
-          vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
+          npm vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
       displayName: Package Artifact
       workingDirectory: $(dir-name)
     - task: CopyFiles@2

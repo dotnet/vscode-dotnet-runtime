@@ -3,7 +3,7 @@ $errorColor = "Red"
 $successColor = "Green"
 
 if ($args[1] -eq '--tslint') {
-    npm run lint
+    yarn run lint
     if ($LASTEXITCODE -ne 0)
     {
         Write-Host "`nTSLint Failed.`n" -ForegroundColor $errorColor
@@ -17,8 +17,8 @@ if ($args[1] -eq '--tslint') {
 
 pushd vscode-dotnet-runtime-library
 if (Test-Path node_modules) { rm -r -force node_modules }
-npm ci --silent
-npm run test
+yarn install --frozen-lockfile --silent
+yarn run test
 if ($LASTEXITCODE -ne 0)
 {
     Write-Host "`nAcquisition Library Tests Failed.`n" -ForegroundColor $errorColor
@@ -32,8 +32,8 @@ popd
 
 pushd vscode-dotnet-runtime-extension
 if (Test-Path node_modules) { rm -r -force node_modules }
-npm ci --silent
-npm run test
+yarn install --frozen-lockfile --silent
+yarn run test
 if ($LASTEXITCODE -ne 0)
 {
     Write-Host "`n.NET Runtime Acquisition Extension Tests Failed.`n" -ForegroundColor $errorColor
@@ -47,8 +47,8 @@ popd
 
 pushd vscode-dotnet-sdk-extension
 if (Test-Path node_modules) { rm -r -force node_modules }
-npm ci --silent
-npm run test
+yarn install --frozen-lockfile --silent
+yarn run test
 if ($LASTEXITCODE -ne 0)
 {
     Write-Host "`n.NET SDK Acquisition Extension Tests Failed.`n" -ForegroundColor $errorColor

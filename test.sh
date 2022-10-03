@@ -5,7 +5,7 @@ NC=`tput sgr0`
 
 if [ "$1" = "--tslint" ];
 then
-    npm run lint
+    yarn run lint
     if [ $? -ne 0 ];
     then
         echo ""
@@ -24,8 +24,8 @@ echo "----------- Testing vscode-dotnet-runtime-library -----------"
 echo ""
 pushd vscode-dotnet-runtime-library
 rm -rf node_modules
-npm ci
-npm run test
+yarn install --frozen-lockfile
+yarn run test
 
 if [ $? -ne 0 ];
 then
@@ -45,8 +45,8 @@ echo "----------- Testing vscode-dotnet-runtime-extension -----------"
 echo ""
 pushd vscode-dotnet-runtime-extension
 rm -rf node_modules
-npm ci
-npm run test
+yarn install --frozen-lockfile
+yarn run test
 
 if [ $? -ne 0 ];
 then
