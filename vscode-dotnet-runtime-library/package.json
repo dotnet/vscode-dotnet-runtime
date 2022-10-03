@@ -16,7 +16,7 @@
 		"vscode:prepublish": "yarn run compile",
 		"compile": "yarn run clean && tsc -p ./",
 		"watch": "yarn run clean && tsc -watch -p ./",
-		"test": "yarn run compile --silent && yarn run unit-test",
+		"test": "yarn run compile && yarn run unit-test",
 		"unit-test": "mocha -u tdd -- dist/test/unit/**.test.js",
 		"clean": "rimraf dist"
 	},

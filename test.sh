@@ -66,8 +66,8 @@ echo "----------- Testing vscode-dotnet-sdk-extension -----------"
 echo ""
 pushd vscode-dotnet-sdk-extension
 rm -rf node_modules
-npm ci
-npm run test
+yarn install --frozen-lockfile
+yarn run test
 
 if [ $? -ne 0 ];
 then

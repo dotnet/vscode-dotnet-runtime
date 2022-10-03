@@ -75,7 +75,7 @@
 		"vscode:prepublish": "yarn run compile-all && yarn install --frozen-lockfile && webpack --mode production",
 		"compile": "yarn run clean && tsc -p ./",
 		"watch": "yarn run compile && tsc -watch -p ./",
-		"test": "yarn run compile --silent && node ./dist/test/functional/runTest.js",
+		"test": "yarn run compile && node ./dist/test/functional/runTest.js",
 		"clean": "rimraf dist",
 		"compile-all": "cd ../vscode-dotnet-runtime-library && yarn install --frozen-lockfile && yarn run compile && cd ../vscode-dotnet-runtime-extension && yarn install --frozen-lockfile && yarn run compile",
 		"lint": "tslint -c ../tslint.json '../vscode-dotnet-runtime-library/src/**/*.ts' '../vscode-dotnet-runtime-extension/src/**/*.ts'",
