@@ -16,6 +16,7 @@
 	"version": "0.9.0",
 	"publisher": "ms-dotnettools",
 	"engines": {
+		"npm": "\n\nERROR: Please use yarn instead of npm for this repository.!!!\n\n",
 		"vscode": "1.62.0"
 	},
 	"preview": true,
@@ -67,11 +68,11 @@
 		}
 	},
 	"scripts": {
-		"vscode:prepublish": "yarn run compile-all && yarn install --frozen-lockfile && webpack --mode production",
+		"vscode:prepublish": "yarn --ignore-engines run compile-all && yarn install --frozen-lockfile && webpack --mode production",
 		"vscode:uninstall": "node ./dist/ExtensionUninstall",
-		"compile": "yarn run clean && tsc -p ./",
-		"watch": "yarn run compile && tsc -watch -p ./",
-		"test": "yarn run compile && node ./dist/test/functional/runTest.js",
+		"compile": "yarn run --ignore-engines clean && tsc -p ./",
+		"watch": "yarn run --ignore-engines compile && tsc -watch -p ./",
+		"test": "yarn run --ignore-engines compile && node ./dist/test/functional/runTest.js",
 		"clean": "rimraf dist",
 		"compile-all": "cd ../vscode-dotnet-runtime-library && yarn install --frozen-lockfile && yarn run compile && cd ../vscode-dotnet-sdk-extension && yarn install --frozen-lockfile && yarn run compile",
 		"lint": "tslint -c ../tslint.json '../vscode-dotnet-runtime-library/src/**/*.ts' '../vscode-dotnet-sdk-extension/src/**/*.ts'",

@@ -30,7 +30,7 @@ icacls "./vscode-dotnet-runtime-library/install scripts/dotnet-install.sh" /gran
 pushd vscode-dotnet-runtime-library
 if (Test-Path node_modules) { rm -r -force node_modules }
 yarn install --frozen-lockfile --ignore-engines
-yarn run compile
+yarn --ignore-engines run compile 
 
 if (! $?)
 {
@@ -43,7 +43,7 @@ popd
 pushd vscode-dotnet-runtime-extension
 if (Test-Path node_modules) { rm -r -force node_modules }
 yarn install --frozen-lockfile --ignore-engines
-yarn run compile
+yarn --ignore-engines run compile
 
 if (! $?)
 {
@@ -56,7 +56,7 @@ popd
 pushd vscode-dotnet-sdk-extension
 if (Test-Path node_modules) { rm -r -force node_modules }
 yarn install --frozen-lockfile --ignore-engines
-yarn run compile
+yarn --ignore-engines run compile
 
 if (! $?)
 {
@@ -69,7 +69,7 @@ popd
 pushd sample
 if (Test-Path node_modules) { rm -r -force node_modules }
 yarn install --frozen-lockfile --ignore-engines
-yarn run compile
+yarn --ignore-engines run compile
 
 if (! $?)
 {

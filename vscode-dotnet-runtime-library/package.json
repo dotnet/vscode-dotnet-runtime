@@ -8,15 +8,16 @@
 	},
 	"license": "MIT",
 	"engines": {
+		"npm": "\n\nERROR: Please use yarn instead of npm for this repository.!!!\n\n",
 		"vscode": "1.62.0"
 	},
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
 	"scripts": {
-		"vscode:prepublish": "yarn run compile",
-		"compile": "yarn run clean && tsc -p ./",
-		"watch": "yarn run clean && tsc -watch -p ./",
-		"test": "yarn run compile && yarn run unit-test",
+		"vscode:prepublish": "yarn --ignore-engines run compile",
+		"compile": "yarn --ignore-engines run clean && tsc -p ./",
+		"watch": "yarn --ignore-engines run clean && tsc -watch -p ./",
+		"test": "yarn --ignore-engines run compile && yarn run unit-test",
 		"unit-test": "mocha -u tdd -- dist/test/unit/**.test.js",
 		"clean": "rimraf dist"
 	},
