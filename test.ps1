@@ -17,7 +17,7 @@ if ($args[1] -eq '--tslint') {
 
 pushd vscode-dotnet-runtime-library
 if (Test-Path node_modules) { rm -r -force node_modules }
-yarn install --silent
+yarn install --silent --ignore-engines
 yarn run test
 if ($LASTEXITCODE -ne 0)
 {
@@ -32,7 +32,7 @@ popd
 
 pushd vscode-dotnet-runtime-extension
 if (Test-Path node_modules) { rm -r -force node_modules }
-yarn install --silent
+yarn install --silent --ignore-engines
 yarn run test
 if ($LASTEXITCODE -ne 0)
 {
@@ -47,7 +47,7 @@ popd
 
 pushd vscode-dotnet-sdk-extension
 if (Test-Path node_modules) { rm -r -force node_modules }
-yarn install --silent
+yarn install --silent --ignore-engines
 yarn run test
 if ($LASTEXITCODE -ne 0)
 {
