@@ -23,8 +23,8 @@ echo "----------- Compiling vscode-dotnet-runtime-library -----------"
 echo ""
 pushd vscode-dotnet-runtime-library
 rm -rf node_modules
-npm ci
-npm run compile
+yarn install --frozen-lockfile --ignore-engines
+yarn run compile
 
 if [ $? -ne 0 ];
 then
@@ -39,8 +39,8 @@ echo "----------- Compiling vscode-dotnet-runtime-extension -----------"
 echo ""
 pushd vscode-dotnet-runtime-extension
 rm -rf node_modules
-npm ci
-npm run compile
+yarn install --frozen-lockfile --ignore-engines
+yarn run compile
 
 if [ $? -ne 0 ];
 then
@@ -55,8 +55,8 @@ echo "----------- Compiling vscode-dotnet-sdk-extension -----------"
 echo ""
 pushd vscode-dotnet-sdk-extension
 rm -rf node_modules
-npm ci
-npm run compile
+yarn install --frozen-lockfile --ignore-engines
+yarn run compile
 
 if [ $? -ne 0 ];
 then
@@ -71,8 +71,8 @@ echo "----------- Compiling sample -----------"
 echo ""
 pushd sample
 rm -rf node_modules
-npm ci
-npm run compile
+yarn install --frozen-lockfile --ignore-engines
+yarn run compile
 
 if [ $? -ne 0 ];
 then

@@ -74,9 +74,8 @@ stages:
         versionSpec: '15.x'
       displayName: 'Install Node.js'
     - bash: |
-        npm ci --cache /temp/empty-cache
-        npm ci tslint --verbose
-        npm run lint
+        yarn install tslint --frozen-lockfile --verbose
+        yarn run lint
       displayName: Run Lint
   ##### Package and Publish #####
   - job: Package
@@ -113,8 +112,8 @@ stages:
       displayName: 'Get Version'
       workingDirectory: $(dir-name)
     - bash: |
-          npm ci rimraf --verbose
-          npm ci vsce --verbose
+          yarn install rimraf --verbose
+          yarn global add vsce --verbose
           vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
       displayName: Package Artifact
       workingDirectory: $(dir-name)
@@ -178,8 +177,8 @@ stages:
         versionSpec: '15.x'
       displayName: 'Install Node.js'
     - bash: |
-        npm ci vsce --verbose
-        vsce publish --packagePath vscode-dotnet-runtime-$(version).vsix -p $(VSCODE_MARKETPLACE_TOKEN)
+        yarn global add vsce --verbose
+        vsce publish --packagePath vscode-dotnet-runtime-$(version).vsix -p $(VSCODE_MARKETPLACE_TOKEN) --yarn
       displayName: 'Publish to Marketplace'
       workingDirectory: '$(System.ArtifactsDirectory)/vscode-dotnet-runtime-extension'
 
@@ -231,7 +230,7 @@ stages:
         versionSpec: '15.x'
       displayName: 'Install Node.js'
     - bash: |
-        npm ci vsce --verbose
-        vsce publish --packagePath vscode-dotnet-sdk-$(version).vsix -p $(VSCODE_MARKETPLACE_TOKEN)
+        yarn global add vsce
+        vsce publish --packagePath vscode-dotnet-sdk-$(version).vsix -p $(VSCODE_MARKETPLACE_TOKEN) --yarn
       displayName: 'Publish to Marketplace'
       workingDirectory: '$(System.ArtifactsDirectory)/vscode-dotnet-sdk-extension'

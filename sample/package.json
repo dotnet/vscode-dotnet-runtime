@@ -10,7 +10,8 @@
 	"version": "0.0.1",
 	"publisher": "ms-dotnettools",
 	"engines": {
-		"vscode": "1.62.0"
+		"vscode": "1.62.0",
+		"npm": "\n\nERROR: Please use yarn instead of npm for this repository.!!!\n\n"
 	},
 	"categories": [
 		"Other"
@@ -86,10 +87,10 @@
 		]
 	},
 	"scripts": {
-		"vscode:prepublish": "npm install && npm run compile",
-		"compile": "npm run clean && tsc -p ./",
-		"watch": "npm run clean && tsc -watch -p ./",
-		"test": "npm run compile && node ./node_modules/vscode/bin/test",
+		"vscode:prepublish": "yarn install --frozen-lockfile && yarn run compile",
+		"compile": "yarn --ignore-engines run clean && tsc -p ./",
+		"watch": "yarn run clean && tsc -watch -p ./",
+		"test": "yarn --ignore-engines run compile && node ./node_modules/vscode/bin/test",
 		"clean": "rimraf out"
 	},
 	"dependencies": {
