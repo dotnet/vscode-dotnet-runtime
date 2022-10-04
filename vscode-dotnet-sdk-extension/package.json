@@ -16,7 +16,6 @@
 	"version": "0.9.0",
 	"publisher": "ms-dotnettools",
 	"engines": {
-		"npm": "\n\nERROR: Please use yarn instead of npm for this repository.!!!\n\n",
 		"vscode": "1.62.0"
 	},
 	"preview": true,
