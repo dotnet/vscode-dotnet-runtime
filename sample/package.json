@@ -86,7 +86,7 @@
 		]
 	},
 	"scripts": {
-		"vscode:prepublish": "npm install && npm run compile",
+		"vscode:prepublish": "npm install --install-links && npm run compile",
 		"compile": "npm run clean && tsc -p ./",
 		"watch": "npm run clean && tsc -watch -p ./",
 		"test": "npm run compile && node ./node_modules/vscode/bin/test",
