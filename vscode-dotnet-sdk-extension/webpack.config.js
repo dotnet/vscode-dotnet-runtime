@@ -5,6 +5,14 @@
 const path = require('path');
 const CopyPlugin = require('copy-webpack-plugin');
 
+const { IgnorePlugin } = require('webpack');
+
+const optionalPlugins = [];
+if (process.platform !== "darwin") {
+  optionalPlugins.push(new IgnorePlugin({ resourceRegExp: /^fsevents$/ }));
+}
+
+
 /**@type {import('webpack').Configuration}*/
 const extensionConfig = {
   target: 'node', // vscode extensions run in a Node.js-context 📖 -> https://webpack.js.org/configuration/node/
@@ -43,6 +51,7 @@ const extensionConfig = {
     ]
   },
   plugins: [
+    ...optionalPlugins,
     new CopyPlugin({ patterns: [
       { from: path.resolve(__dirname, '../vscode-dotnet-runtime-library/install scripts'), to: path.resolve(__dirname, 'dist', 'install scripts') },
       { from: path.resolve(__dirname, '../images'), to: path.resolve(__dirname, 'images') },
