@@ -4,7 +4,7 @@ import os
 
 def main():
     """Check if the dependency updates in package-lock are also updated in yarn.locks"""
-    targetBranch = sys.argv[1] # Script is called with PR Target Branch Name, Fulfilled by AzDo
+    targetBranch = "nagilson-refresh" # sys.argv[1] # Script is called with PR Target Branch Name, Fulfilled by AzDo
     subprocess.getoutput(f"git fetch --all")
     subprocess.getoutput(f"git pull origin {targetBranch}")
     VerifyDependencies(targetBranch)
@@ -12,7 +12,8 @@ def main():
 
 def VerifyDependencies(targetBranch):
     """Enumerate through all changed files to check diffs."""
-    changedFiles = subprocess.getoutput(f"git diff --name-only {targetBranch}..")
+    # origin/ requires origin/ to be up to date. 
+    changedFiles = subprocess.getoutput(f"git diff --name-only origin/{targetBranch}..").splitlines()
     npmLockFile = "package-lock.json"
     
     for file in changedFiles:
