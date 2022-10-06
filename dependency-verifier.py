@@ -6,7 +6,7 @@ from pathlib import Path
 
 def main():
     """Check if the dependency updates in package-lock are also updated in yarn.locks"""
-    targetBranch = "nagilson-refresh" # sys.argv[1] # Script is called with PR Target Branch Name, Fulfilled by AzDo
+    targetBranch = sys.argv[1] # Script is called with PR Target Branch Name, Fulfilled by AzDo
     subprocess.getoutput(f"git fetch --all")
     subprocess.getoutput(f"git pull origin {targetBranch}")
     VerifyDependencies(targetBranch)
