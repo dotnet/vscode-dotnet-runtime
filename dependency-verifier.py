@@ -1,11 +1,12 @@
 import sys
 import subprocess
+import os
 
 def main():
     """Check if the dependency updates in package-lock are also updated in yarn.locks"""
     targetBranch = sys.argv[1] # Script is called with PR Target Branch Name, Fulfilled by AzDo
     subprocess.getoutput(f"git fetch --all")
-    sys.exit(subprocess.getoutput(f"git pull origin {targetBranch}"))
+    subprocess.getoutput(f"git pull origin {targetBranch}")
     VerifyDependencies(targetBranch)
     sys.exit(0)
 
@@ -30,7 +31,7 @@ def GetNpmDependencyUpdates(packageLockDiff):
 
 def GetYarnDependencyUpdates(yarnLockDiff):
     """Returns a dictionary of [dependency -> [] (can be changed to version in later implementations)] changes found in diff string of yarn.lock"""
-    # Assumes dependency line starts with "DEPEDENCY@Version"
+    # Assumes dependency line starts with "DEPEDENCY@Version
     dependencies = {}
     for line in yarnLockDiff.splitlines():
         if line.startswith('"'):
@@ -67,11 +68,12 @@ def NpmChangesMirrorYarnChanges(changedFiles, packageLockPath, targetBranch):
     else:
         outOfDateYarnLocks += yarnLockPath
     if(outOfDateYarnLocks != []):
-        sys.exit(f"The yarn.lock and package-lock appear to be out of sync with the changes made after {targetBranch}. Update by doing yarn import or yarn add for {outOfDateYarnLocks}.")
+        sys.exit(f"The yarn.lock and package-lock appear to be out of sync with the changes made after {targetBranch}. Update by doing yarn import or yarn add dep@package-lock-version for {outOfDateYarnLocks}.")
     else:
         return 0 # OK, status here is not used
-
-main()
+    
+if __name__ == "__main__":
+    main()
 
 
 
