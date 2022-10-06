@@ -24,7 +24,7 @@ echo "----------- Testing vscode-dotnet-runtime-library -----------"
 echo ""
 pushd vscode-dotnet-runtime-library
 rm -rf node_modules
-npm install
+npm ci
 npm run test
 
 if [ $? -ne 0 ];
@@ -45,7 +45,7 @@ echo "----------- Testing vscode-dotnet-runtime-extension -----------"
 echo ""
 pushd vscode-dotnet-runtime-extension
 rm -rf node_modules
-npm install
+npm ci
 npm run test
 
 if [ $? -ne 0 ];
@@ -66,7 +66,7 @@ echo "----------- Testing vscode-dotnet-sdk-extension -----------"
 echo ""
 pushd vscode-dotnet-sdk-extension
 rm -rf node_modules
-npm install
+npm ci
 npm run test
 
 if [ $? -ne 0 ];

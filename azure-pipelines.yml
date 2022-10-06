@@ -74,7 +74,8 @@ stages:
         versionSpec: '15.x'
       displayName: 'Install Node.js'
     - bash: |
-        npm install -g tslint --verbose
+        npm install --cache /temp/empty-cache
+        npm install tslint --verbose
         npm run lint
       displayName: Run Lint
   ##### Verify NPM and Yarn are in sync #####
@@ -129,8 +130,8 @@ stages:
       displayName: 'Get Version'
       workingDirectory: $(dir-name)
     - bash: |
-          npm install -g rimraf
-          npm install -g vsce
+          npm install rimraf --verbose
+          npm install vsce --verbose
           vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
       displayName: Package Artifact
       workingDirectory: $(dir-name)
@@ -194,7 +195,7 @@ stages:
         versionSpec: '15.x'
       displayName: 'Install Node.js'
     - bash: |
-        npm install -g vsce
+        npm install vsce --verbose
         vsce publish --packagePath vscode-dotnet-runtime-$(version).vsix -p $(VSCODE_MARKETPLACE_TOKEN)
       displayName: 'Publish to Marketplace'
       workingDirectory: '$(System.ArtifactsDirectory)/vscode-dotnet-runtime-extension'
@@ -247,7 +248,7 @@ stages:
         versionSpec: '15.x'
       displayName: 'Install Node.js'
     - bash: |
-        npm install -g vsce
+        npm install vsce --verbose
         vsce publish --packagePath vscode-dotnet-sdk-$(version).vsix -p $(VSCODE_MARKETPLACE_TOKEN)
       displayName: 'Publish to Marketplace'
       workingDirectory: '$(System.ArtifactsDirectory)/vscode-dotnet-sdk-extension'
