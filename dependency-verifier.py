@@ -28,11 +28,35 @@ def NpmChangesMirrorYarnChanges(changedFiles, packageLockPath, targetBranch):
     if yarnLockPath in changedFiles:
         yarnDiff = subprocess.getoutput(f"git diff {targetBranch}.. {yarnLockPath}")
         npmDiff = subprocess.getoutput(f"git diff {targetBranch}.. {packageLockPath}")
-        
+        if(DiffsMatch(yarnDiff, npmDiff):
+           ;
+        else:
+            outOfDateYarnLocks += yarnLockPath
     else:
         outOfDateYarnLocks += yarnLockPath
-    sys.exit(f"The yarn.lock and package-lock appear to be out of sync. Update by doing yarn import or yarn add for {outOfDateYarnLocks}.")
+    if(outOfDateYarnLocks != []):
+        sys.exit(f"The yarn.lock and package-lock appear to be out of sync. Update by doing yarn import or yarn add for {outOfDateYarnLocks}.")
+    else:
+        return 0 # OK, status here is not used
 
+def GetNpmDependencyUpdates(packageLockDiff):
+    """Returns a dictionary of [dependency -> version] changes found in diff string of package-lock.json"""
+    pass
+
+def GetYarnDependencyUpdates(yarnLockDiff):
+    """Returns a dictionary of [dependency -> version] changes found in diff string of yarn.lock"""
+    pass
+
+def DiffsMatch(yarnDiff, npmDiff):
+    """Returns true if dependency updates are reflected in both diffs."""
+    yarnDeps = GetYarnDependencyUpdates(yarnDiff)
+    npmDeps = GetNpmDependencyUpdates(npmDiff)
+    for dep in npmDeps:
+        if dep in yarnDeps and yarnDeps[dep] == npmDeps[dep]: # version changes match
+            continue
+        else:
+            return False
+    return True
     
 
 main()
