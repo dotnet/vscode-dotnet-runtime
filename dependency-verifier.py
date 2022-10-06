@@ -75,7 +75,7 @@ def NpmChangesMirrorYarnChanges(changedFiles, packageLockPath, targetBranch):
         else:
             outOfDateYarnLocks.append((str(yarnLockPath), diffSetComplement))
     else:
-        outOfDateYarnLocks += yarnLockPath
+        outOfDateYarnLocks.append(yarnLockPath)
     if(outOfDateYarnLocks != []):
         sys.exit(f"The yarn.lock and package-lock appear to be out of sync with the changes made after {targetBranch}. Update by doing yarn import or yarn add dep@package-lock-version for {outOfDateYarnLocks}. For sub-dependencies, try adding just the main dependency first.")
     else:
