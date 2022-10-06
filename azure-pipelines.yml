@@ -77,6 +77,23 @@ stages:
         npm install -g tslint --verbose
         npm run lint
       displayName: Run Lint
+  ##### Verify NPM and Yarn are in sync #####
+  - job: SyncPackageManagers
+    displayName: 'Verify NPM & Yarn In-Sync'
+    pool:
+      vmImage: 'windows-latest'
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.x'
+        addToPath: true
+        architecture: 'x64'
+    - task: PythonScript@0
+      inputs:
+        scriptSource: 'filePath'
+        scriptPath: 'dependency-verifier.py'
+        arguments: 'System.PullRequest.TargetBranch'
+        failOnStderr: true  
   ##### Package and Publish #####
   - job: Package
     displayName: 'Package and Publish'
