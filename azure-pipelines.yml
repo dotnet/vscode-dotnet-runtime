@@ -79,7 +79,7 @@ stages:
       displayName: Run Lint
   ##### Verify NPM and Yarn are in sync #####
   - job: SyncPackageManagers
-    displayName: 'Verify NPM & Yarn In-Sync'
+    displayName: 'Verify NPM & Yarn In-Sync [Local Copy of Target Branch Must Be Up to Date]'
     pool:
       vmImage: 'windows-latest'
     steps:
