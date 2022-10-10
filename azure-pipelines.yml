@@ -84,7 +84,7 @@ stages:
     dependsOn: 
     - Build
     - TSLint
-    condition: and(succeeded(), notin(variables['Build.Reason'], 'PullRequest'))
+    condition: succeeded()
     pool:
       vmImage: 'windows-latest'
     strategy:
@@ -114,7 +114,7 @@ stages:
       workingDirectory: $(dir-name)
     - bash: |
           npm install rimraf --verbose
-          npm install vsce --verbose
+          npm install vsce -g --verbose
           vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
       displayName: Package Artifact
       workingDirectory: $(dir-name)
@@ -178,7 +178,7 @@ stages:
         versionSpec: '15.x'
       displayName: 'Install Node.js'
     - bash: |
-        npm install vsce --verbose
+        npm install vsce -g --verbose
         vsce publish --packagePath vscode-dotnet-runtime-$(version).vsix -p $(VSCODE_MARKETPLACE_TOKEN)
       displayName: 'Publish to Marketplace'
       workingDirectory: '$(System.ArtifactsDirectory)/vscode-dotnet-runtime-extension'
@@ -231,7 +231,7 @@ stages:
         versionSpec: '15.x'
       displayName: 'Install Node.js'
     - bash: |
-        npm install vsce --verbose
+        npm install vsce -g --verbose
         vsce publish --packagePath vscode-dotnet-sdk-$(version).vsix -p $(VSCODE_MARKETPLACE_TOKEN)
       displayName: 'Publish to Marketplace'
       workingDirectory: '$(System.ArtifactsDirectory)/vscode-dotnet-sdk-extension'
