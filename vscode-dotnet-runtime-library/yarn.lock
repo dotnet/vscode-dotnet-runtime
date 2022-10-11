@@ -1857,10 +1857,10 @@
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/setimmediate/-/setimmediate-1.0.5.tgz"
   "version" "1.0.5"
 
-"shelljs@0.8.4":
-  "integrity" "sha1-3naE/ut2f4cWsyYHiooAh1iQ48I="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/shelljs/-/shelljs-0.8.4.tgz"
-  "version" "0.8.4"
+"shelljs@0.8.5":
+  "integrity" "sha1-3gVUCNg2G+1mxmnS8ABTjO2O4gw="
+  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/shelljs/-/shelljs-0.8.5.tgz"
+  "version" "0.8.5"
   dependencies:
     "glob" "^7.0.0"
     "interpret" "^1.0.0"

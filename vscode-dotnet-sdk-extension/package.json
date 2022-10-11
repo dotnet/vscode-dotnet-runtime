@@ -16,7 +16,7 @@
 	"version": "0.9.0",
 	"publisher": "ms-dotnettools",
 	"engines": {
-		"vscode": "1.62.0"
+		"vscode": "1.72.0"
 	},
 	"preview": true,
 	"categories": [
