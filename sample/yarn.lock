@@ -36,10 +36,10 @@
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/minimatch/-/minimatch-3.0.5.tgz"
   "version" "3.0.5"
 
-"@types/mocha@9.2.2":
+"@types/mocha@9.0.0":
   "integrity" "sha1-MgW80Vram8aBrCC+9k6ebfiP0pc="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/mocha/-/mocha-9.2.2.tgz"
-  "version" "9.2.2"
+  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/mocha/-/mocha-9.0.0.tgz"
+  "version" "9.0.0"
 
 "@types/node@*", "@types/node@16.11.7":
   "integrity" "sha1-NoIJRQYTJpeMQqAeVrYc0iPf3EI="
@@ -770,7 +770,7 @@
   "version" "1.0.0"
   dependencies:
     "@types/chai-as-promised" "^7.1.4"
-    "@types/mocha" "^9.2.2"
+    "@types/mocha" "^9.0.0"
     "@types/node" "16.11.7"
     "@types/request-promise-native" "^1.0.18"
     "@types/rimraf" "3.0.2"
@@ -824,7 +824,7 @@
   dependencies:
     "@types/chai" "4.2.22"
     "@types/chai-as-promised" "^7.1.4"
-    "@types/mocha" "^9.2.2"
+    "@types/mocha" "^9.0.0"
     "@types/node" "16.11.7"
     "@types/rimraf" "3.0.2"
     "@types/vscode" "1.62.0"
