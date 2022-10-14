@@ -67,25 +67,43 @@ stages:
   - job: TSLint
     displayName: 'TSLint'
     pool:
-      vmImage: 'vs2017-win2016'
+      vmImage: 'windows-latest'
     steps:
     - task: NodeTool@0
       inputs:
         versionSpec: '15.x'
       displayName: 'Install Node.js'
     - bash: |
-        npm install -g tslint
+        npm install --cache /temp/empty-cache
+        npm install tslint --verbose
         npm run lint
       displayName: Run Lint
+  ##### Verify NPM and Yarn are in sync #####
+  - job: SyncPackageManagers
+    displayName: 'Verify NPM & Yarn In-Sync [Local Copy of Target Branch Must Be Up to Date]'
+    pool:
+      vmImage: 'windows-latest'
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.x'
+        addToPath: true
+        architecture: 'x64'
+    - task: PythonScript@0
+      inputs:
+        scriptSource: 'filePath'
+        scriptPath: 'dependency-verifier.py'
+        arguments: '$(System.PullRequest.TargetBranch)'
+        failOnStderr: true  
   ##### Package and Publish #####
   - job: Package
     displayName: 'Package and Publish'
     dependsOn: 
     - Build
     - TSLint
-    condition: and(succeeded(), notin(variables['Build.Reason'], 'PullRequest'))
+    condition: succeeded()
     pool:
-      vmImage: 'vs2017-win2016'
+      vmImage: 'windows-latest'
     strategy:
       matrix:
         Runtime:
@@ -112,9 +130,9 @@ stages:
       displayName: 'Get Version'
       workingDirectory: $(dir-name)
     - bash: |
-        npm install -g rimraf
-        npm install -g vsce
-        vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
+          npm install rimraf --reg https://registry.npmjs.org/ --verbose
+          npm install vsce -g --reg https://registry.npmjs.org/ --verbose
+          vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
       displayName: Package Artifact
       workingDirectory: $(dir-name)
     - task: CopyFiles@2
@@ -138,13 +156,13 @@ stages:
   # Note: This step requires approval, allows for manual smoke testing the artifact before release
   - deployment: Deploy
     pool:
-      vmImage: 'vs2017-win2016'
+      vmImage: 'windows-latest'
     environment: 'vscode-dotnetcore-extension-releases'
   ##### Determine version to publish #####
   - job: GetVersion
     displayName: 'Get Version'
     pool:
-      vmImage: 'vs2017-win2016'
+      vmImage: 'windows-latest'
     steps:
     - task: NodeTool@0
       inputs:
@@ -163,7 +181,7 @@ stages:
     - Deploy
     - GetVersion
     pool:
-      vmImage: 'vs2017-win2016'
+      vmImage: 'windows-latest'
     variables:
       version: $[ dependencies.GetVersion.outputs['GetVersion.version'] ]
     steps:
@@ -177,7 +195,7 @@ stages:
         versionSpec: '15.x'
       displayName: 'Install Node.js'
     - bash: |
-        npm install -g vsce
+        npm install vsce --reg https://registry.npmjs.org/ -g --verbose
         vsce publish --packagePath vscode-dotnet-runtime-$(version).vsix -p $(VSCODE_MARKETPLACE_TOKEN)
       displayName: 'Publish to Marketplace'
       workingDirectory: '$(System.ArtifactsDirectory)/vscode-dotnet-runtime-extension'
@@ -191,13 +209,13 @@ stages:
   # Note: This step requires approval, allows for manual smoke testing the artifact before release
   - deployment: Deploy
     pool:
-      vmImage: 'vs2017-win2016'
+      vmImage: 'windows-latest'
     environment: 'vscode-dotnetcore-extension-releases'
   ##### Determine version to publish #####
   - job: GetVersion
     displayName: 'Get Version'
     pool:
-      vmImage: 'vs2017-win2016'
+      vmImage: 'windows-latest'
     steps:
     - task: NodeTool@0
       inputs:
@@ -216,7 +234,7 @@ stages:
     - Deploy
     - GetVersion
     pool:
-      vmImage: 'vs2017-win2016'
+      vmImage: 'windows-latest'
     variables:
       version: $[ dependencies.GetVersion.outputs['GetVersion.version'] ]
     steps:
@@ -230,7 +248,7 @@ stages:
         versionSpec: '15.x'
       displayName: 'Install Node.js'
     - bash: |
-        npm install -g vsce
+        npm install vsce --reg https://registry.npmjs.org/ -g --verbose
         vsce publish --packagePath vscode-dotnet-sdk-$(version).vsix -p $(VSCODE_MARKETPLACE_TOKEN)
       displayName: 'Publish to Marketplace'
       workingDirectory: '$(System.ArtifactsDirectory)/vscode-dotnet-sdk-extension'
