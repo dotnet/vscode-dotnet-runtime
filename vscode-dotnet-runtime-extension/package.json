@@ -13,10 +13,10 @@
 	"description": "Allows acquisition of the .NET runtime specifically for VS Code extension authors.",
 	"appInsightsKey": "02dc18e0-7494-43b2-b2a3-18ada5fcb522",
 	"icon": "images/dotnetIcon.png",
-	"version": "1.6.0",
+	"version": "1.6.1",
 	"publisher": "ms-dotnettools",
 	"engines": {
-		"vscode": "1.62.0"
+		"vscode": "^1.72.0"
 	},
 	"categories": [
 		"Other"
@@ -92,7 +92,7 @@
 		"open": "^8.4.0",
 		"rimraf": "3.0.2",
 		"safe-regex-test": "^1.0.0",
-		"shelljs": "^0.8.4",
+		"shelljs": "^0.8.5",
 		"ts-loader": "^9.2.6",
 		"tslint": "^5.20.1",
 		"typescript": "4.4.4",

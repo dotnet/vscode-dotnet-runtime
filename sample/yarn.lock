@@ -487,7 +487,6 @@
     "brace-expansion" "^1.1.7"
 
 "minimist@^1.2.6":
-  "integrity" "sha1-hjelt1nqDW6YcCz7OpKDMjyTr0Q="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/minimist/-/minimist-1.2.6.tgz"
   "version" "1.2.6"
 
@@ -790,7 +789,7 @@
     "request" "^2.88.0"
     "request-promise-native" "^1.0.8"
     "rimraf" "3.0.2"
-    "shelljs" "0.8.4"
+    "shelljs" "0.8.5"
     "tslint" "5.20.1"
     "typescript" "4.4.4"
     "vscode-extension-telemetry" "^0.4.3"
@@ -800,7 +799,7 @@
 
 "vscode-dotnet-runtime@file:../vscode-dotnet-runtime-extension":
   "resolved" "file:../vscode-dotnet-runtime-extension"
-  "version" "1.6.0"
+  "version" "1.6.1"
   dependencies:
     "chai" "4.3.4"
     "child_process" "^1.0.2"
@@ -811,7 +810,7 @@
     "mocha" "^9.1.3"
     "open" "^8.4.0"
     "rimraf" "3.0.2"
-    "shelljs" "^0.8.4"
+    "shelljs" "^0.8.5"
     "ts-loader" "^9.2.6"
     "tslint" "^5.20.1"
     "typescript" "4.4.4"
@@ -839,7 +838,7 @@
     "mocha" "^9.1.3"
     "open" "^8.4.0"
     "rimraf" "3.0.2"
-    "shelljs" "^0.8.4"
+    "shelljs" "^0.8.5"
     "ts-loader" "^9.2.6"
     "tslint" "^5.20.1"
     "typescript" "4.4.4"
