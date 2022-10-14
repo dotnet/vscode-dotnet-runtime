@@ -74,8 +74,8 @@ stages:
         versionSpec: '15.x'
       displayName: 'Install Node.js'
     - bash: |
-        npm ci --cache /temp/empty-cache
-        npm ci tslint --verbose
+        npm install --cache /temp/empty-cache
+        npm install tslint --verbose
         npm run lint
       displayName: Run Lint
   ##### Verify NPM and Yarn are in sync #####
