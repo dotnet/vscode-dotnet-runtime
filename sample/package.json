@@ -18,6 +18,10 @@
 	"capabilities": {
 		"virtualWorkspaces": true
 	},
+	"extensionDependencies": [
+        "ms-dotnettools.vscode-dotnet-runtime",
+        "ms-dotnettools.vscode-dotnet-sdk"
+    ],
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [

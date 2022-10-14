@@ -798,7 +798,7 @@ tsutils@^2.29.0:
     fsevents "^2.3.2"
 
 "vscode-dotnet-runtime@file:../vscode-dotnet-runtime-extension":
-  version "1.6.0"
+  version "1.6.1"
   resolved "file:../vscode-dotnet-runtime-extension"
   dependencies:
     chai "4.3.4"
@@ -820,7 +820,7 @@ tsutils@^2.29.0:
     yarn "^1.22.19"
 
 "vscode-dotnet-sdk@file:../vscode-dotnet-sdk-extension":
-  version "0.9.0"
+  version "2.0.0"
   resolved "file:../vscode-dotnet-sdk-extension"
   dependencies:
     "@types/chai" "4.2.22"

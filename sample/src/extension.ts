@@ -12,8 +12,8 @@ import {
     IDotnetListVersionsResult,
     IDotnetVersion
 } from 'vscode-dotnet-runtime-library';
-import * as runtimeExtension from 'vscode-dotnet-runtime';
-import * as sdkExtension from 'vscode-dotnet-sdk';
+// import * as runtimeExtension from 'vscode-dotnet-runtime';
+// import * as sdkExtension from 'vscode-dotnet-sdk';
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -21,6 +21,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     /*
 
+    ***** See the package.json, I followed the instructions here: ****
     NOTE: This sample should technically have the following in its package.json:
 
     "extensionDependencies": [
@@ -36,8 +37,8 @@ export function activate(context: vscode.ExtensionContext) {
     */
 
     const requestingExtensionId = 'ms-dotnettools.sample-extension';
-    runtimeExtension.activate(context);
-    sdkExtension.activate(context);
+    // runtimeExtension.activate(context);
+    // sdkExtension.activate(context);
 
 
     // --------------------------------------------------------------------------
