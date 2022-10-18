@@ -19,6 +19,8 @@ then
     fi
 fi
 
+DEBUG=mocha*
+
 echo ""
 echo "----------- Testing vscode-dotnet-runtime-library -----------"
 echo ""
