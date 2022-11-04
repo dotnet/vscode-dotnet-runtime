@@ -15,11 +15,11 @@ pr:
 
 variables:
   - name: is-runtime-release
-        value: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/Runtime-v')]
+    value: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/Runtime-v')]
   - name: is-sdk-release
-        value: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/SDK-v')]
+    value: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/SDK-v')]
   - name: Codeql.Enabled
-      value: true
+    value: true
 
 stages:
 ##### Test and Build #####
