@@ -14,6 +14,7 @@
 		"lint": "tslint -c tslint.json 'vscode-dotnet-runtime-library/src/**/*.ts' 'vscode-dotnet-runtime-extension/src/**/*.ts' 'vscode-dotnet-sdk-extension/src/**/*.ts'"
 	},
 	"dependencies": {
+		"got": "12.5.3",
 		"vsce": "2.11.0"
 	}
 }
