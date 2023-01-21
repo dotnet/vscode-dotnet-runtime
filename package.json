@@ -15,6 +15,7 @@
 	},
 	"dependencies": {
 		"got": "12.5.3",
+		"mimic-response": "4.0.0",
 		"vsce": "2.11.0"
 	}
 }
