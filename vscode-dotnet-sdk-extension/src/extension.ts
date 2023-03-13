@@ -22,6 +22,7 @@ import {
     ExtensionConfigurationWorker,
     formatIssueUrl,
     IDotnetAcquireContext,
+    IDotnetListVersionsContext,
     IDotnetUninstallContext,
     IEventStreamContext,
     IExtensionContext,

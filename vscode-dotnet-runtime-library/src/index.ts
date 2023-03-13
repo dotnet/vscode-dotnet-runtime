@@ -8,6 +8,7 @@ export * from './test/mocks/MockWindowDisplayWorker';
 export * from './test/mocks/MockEnvironmentVariableCollection';
 export * from './IExtensionContext';
 export * from './IDotnetAcquireContext';
+export * from './IDotnetListVersionsContext';
 export * from './IDotnetUninstallContext';
 export * from './IDotnetAcquireResult';
 export * from './IDotnetEnsureDependenciesContext';
