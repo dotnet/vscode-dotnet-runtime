@@ -167,6 +167,7 @@ ${stderr}`);
             vscode.window.showErrorMessage((error as Error).toString());
         }
     });
+
     const sampleSDKAcquireStatusRegistration = vscode.commands.registerCommand('sample.dotnet-sdk.acquireStatus', async (version) => {
         if (!version) {
             version = await vscode.window.showInputBox({
@@ -184,6 +185,11 @@ ${stderr}`);
             vscode.window.showErrorMessage((error as Error).toString());
         }
     });
+
+    const sampleSDKListSDKs = vscode.commands.registerCommand('dotnet-sdk.listSdks', async () => {
+
+    });
+
     const sampleSDKDotnetUninstallAllRegistration = vscode.commands.registerCommand('sample.dotnet-sdk.uninstallAll', async () => {
         try {
             await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
@@ -192,6 +198,7 @@ ${stderr}`);
             vscode.window.showErrorMessage((error as Error).toString());
         }
     });
+
     const sampleSDKShowAcquisitionLogRegistration = vscode.commands.registerCommand('sample.dotnet-sdk.showAcquisitionLog', async () => {
         try {
             await vscode.commands.executeCommand('dotnet-sdk.showAcquisitionLog');

@@ -16,6 +16,7 @@ import {
   DotnetPreinstallDetected,
   IDotnetAcquireContext,
   IDotnetAcquireResult,
+  IDotnetListVersionsResponse,
   MockEnvironmentVariableCollection,
   MockEventStream,
   MockExtensionConfiguration,
@@ -201,6 +202,11 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     // Clean up storage
     await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
   }).timeout(100000);
+
+  test('List Sdks Command', async () => {
+    const result = await vscode.commands.executeCommand<IDotnetListVersionsResponse>('dotnet-sdk.listSdks', context);
+    assert.exists(result);
+  }).timeout(10000);
 
   test('Uninstall Command', async () => {
     const context: IDotnetAcquireContext = { version: '3.1', requestingExtensionId: 'ms-dotnettools.sample-extension' };
