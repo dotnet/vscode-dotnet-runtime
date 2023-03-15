@@ -10,13 +10,14 @@ import * as os from 'os';
 import * as path from 'path';
 import rimraf = require('rimraf');
 import * as vscode from 'vscode';
+import { IDotnetListVersionsContext } from 'vscode-dotnet-runtime-library';
 import {
   DotnetAcquisitionAlreadyInstalled,
   DotnetCoreAcquisitionWorker,
   DotnetPreinstallDetected,
   IDotnetAcquireContext,
   IDotnetAcquireResult,
-  IDotnetListVersionsResponse,
+  IDotnetListVersionsResult,
   MockEnvironmentVariableCollection,
   MockEventStream,
   MockExtensionConfiguration,
@@ -93,16 +94,16 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     // Assert preinstalled SDKs are detected
     const result = await acquisitionWorker.acquireSDK(version);
     assert.equal(path.dirname(result.dotnetPath), dotnetDir);
-    const preinstallEvents = eventStream.events
-      .filter(event => event instanceof DotnetPreinstallDetected)
+    const preinstallEvents = eventStream.events
+      .filter(event => event instanceof DotnetPreinstallDetected)
       .map(event => event as DotnetPreinstallDetected);
-    assert.equal(preinstallEvents.length, 2);
-    assert.exists(preinstallEvents.find(event => event.version === '5.0'));
-    assert.exists(preinstallEvents.find(event => event.version === '3.1'));
-    const alreadyInstalledEvent = eventStream.events
-      .find(event => event instanceof DotnetAcquisitionAlreadyInstalled) as DotnetAcquisitionAlreadyInstalled;
-    assert.exists(alreadyInstalledEvent);
-    assert.equal(alreadyInstalledEvent.version, '5.0');
+    assert.equal(preinstallEvents.length, 2);
+    assert.exists(preinstallEvents.find(event => event.version === '5.0'));
+    assert.exists(preinstallEvents.find(event => event.version === '3.1'));
+    const alreadyInstalledEvent = eventStream.events
+      .find(event => event instanceof DotnetAcquisitionAlreadyInstalled) as DotnetAcquisitionAlreadyInstalled;
+    assert.exists(alreadyInstalledEvent);
+    assert.equal(alreadyInstalledEvent.version, '5.0');
 
     // Clean up storage
     rimraf.sync(dotnetDir);
@@ -204,7 +205,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   }).timeout(100000);
 
   test('List Sdks Command', async () => {
-    const result = await vscode.commands.executeCommand<IDotnetListVersionsResponse>('dotnet-sdk.listSdks', context);
+    const context: IDotnetListVersionsContext = { listRuntimes: false };
+    const result = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet-sdk.listSdks', context);
     assert.exists(result);
   }).timeout(10000);
 
