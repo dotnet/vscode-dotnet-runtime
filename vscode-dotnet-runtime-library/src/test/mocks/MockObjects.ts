@@ -102,7 +102,7 @@ export class FailingWebRequestWorker extends WebRequestWorker {
 export class MockWebRequestWorker extends WebRequestWorker {
     public readonly errorMessage = 'Web Request Failed';
     private requestCount = 0;
-    private readonly response = 'Mock Web Request Result';
+    public response = 'Mock Web Request Result';
 
     constructor(extensionState: IExtensionState, eventStream: IEventStream, url: string, extensionStateKey: string, private readonly succeed = true) {
         super(extensionState, eventStream, url, extensionStateKey);

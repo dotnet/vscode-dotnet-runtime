@@ -161,38 +161,37 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
      * @throws
      * Exception if the API service for releases-index.json is unavailable.
      */
-    const dotnetListSdksRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listSdks}`, async (commandContext: IDotnetListVersionsContext | undefined) => {
+    const dotnetListSdksRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listSdks}`, async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) => {
         let getSdks : boolean = commandContext?.listRuntimes === null || commandContext?.listRuntimes === undefined || !commandContext.listRuntimes; // If false, getRuntimes, else, get Sdks.
 
         // Acquire the SDK Versions Available.
-        let webWorker = new WebRequestWorker(
+        let webWorker = customWebWorker != undefined ? customWebWorker : new WebRequestWorker(
             context.globalState,
             eventStream,
             availableDontetVersionsUrl,
             'listSDKVersionsCacheKey'
         );
 
-        var availableVersions : IDotnetListVersionsResult = {result: []};
+        var availableVersions : IDotnetListVersionsResult = [];
 
-        webWorker.getCachedData().then(
-            (response) => {
-                if (!response) {
-                    throw new Error('The service to request available SDK versions (releases.json) is unavailable.');
-                }
-                else
+        let response = await webWorker.getCachedData();
+        
+        if (!response) {
+            throw new Error('The service to request available SDK versions (releases.json) is unavailable.');
+        }
+        else
+        {
+            let SdkDetailsJson = JSON.parse(response)['releases-index'];
+
+            for(let availableSdk of SdkDetailsJson)
+            {
+                if(availableSdk['release-type'] === 'lts' || availableSdk['release-type'] === 'sts')
                 {
-                    let SdkDetailsJson = JSON.parse(response)['releases-index'];
-
-                    for(let availableSdk of SdkDetailsJson)
-                    {
-                        if(availableSdk['release-type'] === 'lts' || availableSdk['release-type'] === 'sts')
-                        {
-                            availableVersions.result.push({supportStatus: (availableSdk['release-type'] as DotnetVersionSupportStatus), version: availableSdk[getSdks ? 'latest-sdk' : 'latest-runtime']} as IDotnetVersion);
-                        }
-                    }
+                    availableVersions.push({supportStatus: (availableSdk['release-type'] as DotnetVersionSupportStatus), version: availableSdk[getSdks ? 'latest-sdk' : 'latest-runtime']} as IDotnetVersion);
                 }
             }
-        );
+        }
+            
         return availableVersions;
     });
 

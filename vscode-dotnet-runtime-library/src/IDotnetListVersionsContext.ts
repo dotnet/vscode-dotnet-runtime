@@ -14,13 +14,11 @@ export interface IDotnetListVersionsContext {
     listRuntimes: boolean | null
 }
 
-export interface IDotnetListVersionsResult {
-    /**
-     * @remarks
-     * The result/response from the API to be implemented that returns available SDKs/Runtimes.
-     */
-    result: IDotnetVersion[]
-}
+/**
+ * @remarks
+ * The result/response from the API to be implemented that returns available SDKs/Runtimes.
+ */
+export type IDotnetListVersionsResult = IDotnetVersion[]
 
 export interface IDotnetVersion {
     /**
