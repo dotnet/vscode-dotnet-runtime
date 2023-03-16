@@ -1,5 +1,0 @@
-{
-    "compilerOptions": {
-      "types": ["mocha", "node", "vscode"]
-    }
-  }
