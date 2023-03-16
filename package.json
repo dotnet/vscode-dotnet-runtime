@@ -12,5 +12,11 @@
 	"scripts": {
 		"compile-all": "build.cmd",
 		"lint": "tslint -c tslint.json 'vscode-dotnet-runtime-library/src/**/*.ts' 'vscode-dotnet-runtime-extension/src/**/*.ts' 'vscode-dotnet-sdk-extension/src/**/*.ts'"
+	},
+	"dependencies": {
+		"ts-node": "^10.9.1"
+	},
+	"devDependencies": {
+		"@types/mocha": "^10.0.1"
 	}
 }
