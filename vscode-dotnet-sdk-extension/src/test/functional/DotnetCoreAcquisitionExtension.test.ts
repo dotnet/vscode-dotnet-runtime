@@ -14,6 +14,7 @@ import {
   DotnetAcquisitionAlreadyInstalled,
   DotnetCoreAcquisitionWorker,
   DotnetPreinstallDetected,
+  DotnetVersionProvider,
   IDotnetAcquireContext,
   IDotnetAcquireResult,
   IDotnetListVersionsContext,
@@ -32,7 +33,6 @@ import {
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { uninstallSDKExtension } from '../../ExtensionUninstall';
-import { DotnetVersionProvider } from 'vscode-dotnet-runtime-library/src/Utils/DotnetVersionProvider';
 
 const maxTimeoutTime : number = 100000;
 const assert = chai.assert;

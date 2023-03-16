@@ -8,6 +8,7 @@ import * as path from 'path';
 import * as rimraf from 'rimraf';
 import * as vscode from 'vscode';
 import {
+  DotnetVersionProvider,
   IDotnetAcquireContext,
   IDotnetAcquireResult,
   IDotnetListVersionsContext,

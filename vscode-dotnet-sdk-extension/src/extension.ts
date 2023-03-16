@@ -17,6 +17,7 @@ import {
     DotnetAcquisitionStatusRequested,
     DotnetCoreAcquisitionWorker,
     DotnetSDKAcquisitionStarted,
+    DotnetVersionProvider,
     enableExtensionTelemetry,
     ErrorConfiguration,
     ExtensionConfigurationWorker,
@@ -31,12 +32,11 @@ import {
     registerEventStream,
     SdkInstallationDirectoryProvider,
     VersionResolver,
+    WebRequestWorker,
+    IWindowDisplayWorker,
     WindowDisplayWorker,
 } from 'vscode-dotnet-runtime-library';
-import { IWindowDisplayWorker } from 'vscode-dotnet-runtime-library/dist/EventStream/IWindowDisplayWorker';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquistionId';
-import { WebRequestWorker } from 'vscode-dotnet-runtime-library/src/Utils/WebRequestWorker';
-import { DotnetVersionProvider } from 'vscode-dotnet-runtime-library/src/Utils/DotnetVersionProvider';
 
 // tslint:disable no-var-requires
 const packageJson = require('../package.json');
