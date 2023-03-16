@@ -36,6 +36,7 @@ import {
     IWindowDisplayWorker,
     WindowDisplayWorker,
 } from 'vscode-dotnet-runtime-library';
+
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquistionId';
 
 // tslint:disable no-var-requires

@@ -14,6 +14,7 @@ export * from './IDotnetAcquireResult';
 export * from './IDotnetEnsureDependenciesContext';
 export * from './IExtensionContext';
 export * from './EventStream/EventStreamRegistration';
+export * from './EventStream/IWindowDisplayWorker';
 export * from './EventStream/WindowDisplayWorker';
 export * from './EventStream/EventStreamEvents';
 export * from './Utils/DotnetVersionProvider';
