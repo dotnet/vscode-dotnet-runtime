@@ -36,10 +36,10 @@
 	"activationEvents": [
 		"onCommand:dotnet.acquire",
 		"onCommand:dotnet.acquireStatus",
+		"onCommand:dotnet.listSdks",
 		"onCommand:dotnet.uninstallAll",
 		"onCommand:dotnet.showAcquisitionLog",
-		"onCommand:dotnet.ensureDotnetDependencies",
-		"onCommand:dotnet.reportIssue"
+		"onCommand:dotnet.ensureDotnetDependencies"
 	],
 	"main": "./dist/extension.js",
 	"types": "./dist/extension.d.ts",

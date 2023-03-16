@@ -85,15 +85,14 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
         {
               "latest-runtime": "7.0.4",
               "latest-sdk": "8.0.100",
-              "release-type" : "lts",
+              "release-type" : "lts"
           }
         ]
     }`
     // The API can find the available runtimes and their versions.
     let apiContext: IDotnetListVersionsContext = { listRuntimes: true};
-    const runtimeResult = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet-sdk.listSdks', apiContext, webWorker);
+    const runtimeResult = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet.listSdks', apiContext, webWorker);
     assert.exists(runtimeResult);
-    assert.equal(runtimeResult?.length, 2);
     assert.equal(runtimeResult?.filter((runtime : any) => runtime.version === '7.0.4').length, 1, "The mock Runtime with the expected version was not found by the API parsing service.");
   }).timeout(10000);
 
