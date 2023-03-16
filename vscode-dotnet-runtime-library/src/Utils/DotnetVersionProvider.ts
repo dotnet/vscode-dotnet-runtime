@@ -11,22 +11,22 @@ export class DotnetVersionProvider {
     static dotnetAvailableVersionsPageUnavailableError = 'The service to request available SDK versions (releases.json) is unavailable.';
 
     /**
-     * @remarks 
+     * @remarks
      * Use the release.json manifest (provided to the webWorker) that contains the newest version of the SDK and Runtime for each major.minor of .NET to get the available versions.
      * Relies on the context listRuntimes to tell if it should get runtime or sdk versions.
-     * 
+     *
      * @returns
      * IDotnetListVersionsResult of versions available.
-     * 
+     *
      * @throws
      * Exception if the API service for releases-index.json is unavailable.
      */
-    async GetAvailableDotnetVersions(commandContext: IDotnetListVersionsContext | undefined, webWorker: WebRequestWorker) 
+    async GetAvailableDotnetVersions(commandContext: IDotnetListVersionsContext | undefined, webWorker: WebRequestWorker)
     {
         // If shouldObtainSdkVersions === false, get Runtimes. Else, get Sdks.
-        let shouldObtainSdkVersions : boolean = commandContext?.listRuntimes === null || commandContext?.listRuntimes === undefined || !commandContext.listRuntimes;
+        const shouldObtainSdkVersions : boolean = commandContext?.listRuntimes === null || commandContext?.listRuntimes === undefined || !commandContext.listRuntimes;
 
-        var availableVersions : IDotnetListVersionsResult = [];
+        const availableVersions : IDotnetListVersionsResult = [];
         let response = null;
 
         try
@@ -35,17 +35,17 @@ export class DotnetVersionProvider {
         }
         catch(e)
         {
-            throw new Error(DotnetVersionProvider.dotnetAvailableVersionsPageUnavailableError); 
+            throw new Error(DotnetVersionProvider.dotnetAvailableVersionsPageUnavailableError);
         }
-        
+
         if (!response) {
             throw new Error(DotnetVersionProvider.dotnetAvailableVersionsPageUnavailableError);
         }
         else
         {
-            let SdkDetailsJson = JSON.parse(response)['releases-index'];
+            const sdkDetailsJson = JSON.parse(response)['releases-index'];
 
-            for(let availableSdk of SdkDetailsJson)
+            for(let availableSdk of sdkDetailsJson)
             {
                 if(availableSdk['release-type'] === 'lts' || availableSdk['release-type'] === 'sts')
                 {
@@ -57,7 +57,7 @@ export class DotnetVersionProvider {
                 }
             }
         }
-            
+
         return availableVersions;
     }
 }

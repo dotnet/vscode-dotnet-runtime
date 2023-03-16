@@ -147,14 +147,15 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         return pathResult;
     });
 
-    const dotnetListSdksRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listSdks}`, async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) => {
-        let webWorker = customWebWorker != undefined ? customWebWorker : new WebRequestWorker(
+    const dotnetListSdksRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listSdks}`,
+        async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) => {
+        const webWorker = customWebWorker !== undefined ? customWebWorker : new WebRequestWorker(
             context.globalState,
             eventStream,
             DotnetVersionProvider.availableDontetVersionsUrl,
             'listSDKVersionsCacheKey'
         );
-        
+
         return new DotnetVersionProvider().GetAvailableDotnetVersions(commandContext, webWorker);
     });
 
@@ -179,7 +180,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             }
         }, issueContext(commandContext.errorConfiguration, 'ensureDependencies'));
     });
-    
+
     const reportIssueRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.reportIssue}`, async () => {
         const [url, issueBody] = formatIssueUrl(undefined, issueContext(AcquireErrorConfiguration.DisableErrorPopups, 'reportIssue'));
         await vscode.env.clipboard.writeText(issueBody);

@@ -148,15 +148,16 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         }, issueContext(commandContext.errorConfiguration, 'acquireSDKStatus'));
         return pathResult;
     });
-    
-    const dotnetListSdksRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listSdks}`, async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) => {
-        let webWorker = customWebWorker != undefined ? customWebWorker : new WebRequestWorker(
+
+    const dotnetListSdksRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listSdks}`,
+        async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) => {
+        const webWorker = customWebWorker !== undefined ? customWebWorker : new WebRequestWorker(
             context.globalState,
             eventStream,
             DotnetVersionProvider.availableDontetVersionsUrl,
             'listSDKVersionsCacheKey'
         );
-        
+
         return new DotnetVersionProvider().GetAvailableDotnetVersions(commandContext, webWorker);
     });
 

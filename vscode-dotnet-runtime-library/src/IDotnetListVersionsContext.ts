@@ -37,4 +37,4 @@ export interface IDotnetVersion {
  * lts: Long-term support
  * sts: Standard-term support
  */
-export type DotnetVersionSupportStatus = 'lts' | 'sts'; 
+export type DotnetVersionSupportStatus = 'lts' | 'sts';
