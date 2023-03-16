@@ -18,6 +18,7 @@ import {
   IDotnetAcquireContext,
   IDotnetAcquireResult,
   IDotnetListVersionsResult,
+  FailingWebRequestWorker,
   MockEnvironmentVariableCollection,
   MockEventStream,
   MockExtensionConfiguration,
@@ -29,9 +30,9 @@ import {
   NoInstallAcquisitionInvoker,
   SdkInstallationDirectoryProvider,
 } from 'vscode-dotnet-runtime-library';
-import { web } from 'webpack';
 import * as extension from '../../extension';
 import { uninstallSDKExtension } from '../../ExtensionUninstall';
+import { dotnetAvailableVersionsPageUnavailableError } from '../../extension'
 const maxTimeoutTime : number = 100000;
 const assert = chai.assert;
 chai.use(chaiAsPromised);
@@ -69,7 +70,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.isAbove(extensionContext.subscriptions.length, 0);
   });
 
-  test('List Sdks & Runtimes Command', async () => {
+  test('List Sdks & Runtimes (API Correctly Returns Sdks & Runtimes)', async () => {
     const mockWebContext = new MockExtensionContext();
     const eventStream = new MockEventStream();
     let webWorker = new MockWebRequestWorker(mockWebContext, eventStream, '', 'MockKey');
@@ -83,7 +84,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
               "release-type" : "lts",
               "support-phase": "preview"
           },
-            {
+          {
               "channel-version": "7.0",
               "latest-release": "7.0.4",
               "latest-release-date": "2023-03-14",
@@ -95,18 +96,46 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
         ]
     }`
 
+    // The API can find the available SDKs and list their versions.
     let apiContext: IDotnetListVersionsContext = { listRuntimes: false };
     const result = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet-sdk.listSdks', apiContext, webWorker);
     assert.exists(result);
     assert.equal(result?.length, 2);
-    assert.equal(result?.filter((sdk : any) => sdk.version === '7.0.202').length, 1)
+    assert.equal(result?.filter((sdk : any) => sdk.version === '7.0.202').length, 1, "The mock SDK with the expected version was not found by the API parsing service.");
 
+    // The API can find the available runtimes and their versions.
     apiContext.listRuntimes = true;
     const runtimeResult = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet-sdk.listSdks', apiContext, webWorker);
     assert.exists(runtimeResult);
     assert.equal(runtimeResult?.length, 2);
-    assert.equal(result?.filter((runtime : any) => runtime.version === '7.0.4').length, 1)
+    assert.equal(runtimeResult?.filter((runtime : any) => runtime.version === '7.0.4').length, 1, "The mock Runtime with the expected version was not found by the API parsing service.");
   }).timeout(maxTimeoutTime);
+
+
+  test('List Sdks & Runtimes (Fails Elegantly if Relases.Json is Unavailable)', async () => {
+    let apiContext: IDotnetListVersionsContext = { listRuntimes: null};
+    const mockWebContext = new MockExtensionContext();
+    const eventStream = new MockEventStream();
+
+    try
+    {
+      assert.throws(async () =>
+      {
+        await vscode.commands.executeCommand<IDotnetListVersionsResult>(
+          'dotnet-sdk.listSdks', apiContext, new FailingWebRequestWorker(mockWebContext, eventStream, '', 'MockKey')
+        )
+      },
+      dotnetAvailableVersionsPageUnavailableError
+      );
+    }
+    catch(e)
+    {
+      // Do nothing.
+      // Why? The assert.throws is in a catch block: Chai.throws code does not handle async functions which will cause the test to fail, even though the throw is expected.
+      // https://github.com/chaijs/chai/issues/882#issuecomment-322131680 
+    }
+  }).timeout(maxTimeoutTime * 3);
+
 
   test('Detect Preinstalled SDK', async () => {
     // Set up acquisition worker

@@ -91,7 +91,7 @@ export class FileWebRequestWorker extends WebRequestWorker {
 
 export class FailingWebRequestWorker extends WebRequestWorker {
     constructor(extensionState: IExtensionState, eventStream: IEventStream, uri: string, extensionStateKey: string) {
-        super(extensionState, eventStream, '', extensionStateKey); // Empty string as uri
+        super(extensionState, eventStream, '', extensionStateKey); // Empty string as uri to cause failure. Uri is required to match the interface even though it's unused.
     }
 
     public async getCachedData(): Promise<string | undefined> {

@@ -62,6 +62,7 @@ const defaultTimeoutValue = 300;
 const pathTroubleshootingOption = 'Troubleshoot';
 const troubleshootingUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-sdk.md';
 const availableDontetVersionsUrl = 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json';
+export const dotnetAvailableVersionsPageUnavailableError = 'The service to request available SDK versions (releases.json) is unavailable.';
 const knownExtensionIds = ['ms-dotnettools.sample-extension', 'ms-dotnettools.vscode-dotnet-pack'];
 
 export function activate(context: vscode.ExtensionContext, extensionContext?: IExtensionContext) {
@@ -173,11 +174,18 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         );
 
         var availableVersions : IDotnetListVersionsResult = [];
-
-        let response = await webWorker.getCachedData();
+        let response = null;
+        try
+        {
+            response = await webWorker.getCachedData();
+        }
+        catch(e)
+        {
+            throw new Error(dotnetAvailableVersionsPageUnavailableError); 
+        }
         
         if (!response) {
-            throw new Error('The service to request available SDK versions (releases.json) is unavailable.');
+            throw new Error(dotnetAvailableVersionsPageUnavailableError);
         }
         else
         {
