@@ -10,13 +10,13 @@ import * as os from 'os';
 import * as path from 'path';
 import rimraf = require('rimraf');
 import * as vscode from 'vscode';
-import { IDotnetListVersionsContext } from 'vscode-dotnet-runtime-library';
 import {
   DotnetAcquisitionAlreadyInstalled,
   DotnetCoreAcquisitionWorker,
   DotnetPreinstallDetected,
   IDotnetAcquireContext,
   IDotnetAcquireResult,
+  IDotnetListVersionsContext,
   IDotnetListVersionsResult,
   FailingWebRequestWorker,
   MockEnvironmentVariableCollection,
@@ -32,7 +32,8 @@ import {
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { uninstallSDKExtension } from '../../ExtensionUninstall';
-import { dotnetAvailableVersionsPageUnavailableError } from '../../extension'
+import { DotnetVersionProvider } from 'vscode-dotnet-runtime-library/src/Utils/DotnetVersionProvider';
+
 const maxTimeoutTime : number = 100000;
 const assert = chai.assert;
 chai.use(chaiAsPromised);
@@ -125,7 +126,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
           'dotnet-sdk.listSdks', apiContext, new FailingWebRequestWorker(mockWebContext, eventStream, '', 'MockKey')
         )
       },
-      dotnetAvailableVersionsPageUnavailableError
+      DotnetVersionProvider.dotnetAvailableVersionsPageUnavailableError
       );
     }
     catch(e)

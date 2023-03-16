@@ -23,9 +23,6 @@ import {
     formatIssueUrl,
     IDotnetAcquireContext,
     IDotnetListVersionsContext,
-    IDotnetListVersionsResult,
-    IDotnetVersion,
-    DotnetVersionSupportStatus,
     IDotnetUninstallContext,
     IEventStreamContext,
     IExtensionContext,
@@ -39,6 +36,8 @@ import {
 import { IWindowDisplayWorker } from 'vscode-dotnet-runtime-library/dist/EventStream/IWindowDisplayWorker';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquistionId';
 import { WebRequestWorker } from 'vscode-dotnet-runtime-library/src/Utils/WebRequestWorker';
+import { DotnetVersionProvider } from 'vscode-dotnet-runtime-library/src/Utils/DotnetVersionProvider';
+
 // tslint:disable no-var-requires
 const packageJson = require('../package.json');
 
@@ -61,8 +60,6 @@ const displayChannelName = '.NET SDK';
 const defaultTimeoutValue = 300;
 const pathTroubleshootingOption = 'Troubleshoot';
 const troubleshootingUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-sdk.md';
-const availableDontetVersionsUrl = 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json';
-export const dotnetAvailableVersionsPageUnavailableError = 'The service to request available SDK versions (releases.json) is unavailable.';
 const knownExtensionIds = ['ms-dotnettools.sample-extension', 'ms-dotnettools.vscode-dotnet-pack'];
 
 export function activate(context: vscode.ExtensionContext, extensionContext?: IExtensionContext) {
@@ -151,56 +148,15 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         return pathResult;
     });
     
-    /**
-     * @remarks 
-     * Use the release.json manifest which contains the newest version of the SDK and Runtime for each major.minor of .NET to get the available versions.
-     * Relies on the context listRuntimes to tell if it should get runtime or sdk versions.
-     * 
-     * @returns
-     * IDotnetListVersionsResult of versions available.
-     * 
-     * @throws
-     * Exception if the API service for releases-index.json is unavailable.
-     */
     const dotnetListSdksRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listSdks}`, async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) => {
-        let getSdks : boolean = commandContext?.listRuntimes === null || commandContext?.listRuntimes === undefined || !commandContext.listRuntimes; // If false, getRuntimes, else, get Sdks.
-
-        // Acquire the SDK Versions Available.
         let webWorker = customWebWorker != undefined ? customWebWorker : new WebRequestWorker(
             context.globalState,
             eventStream,
-            availableDontetVersionsUrl,
+            DotnetVersionProvider.availableDontetVersionsUrl,
             'listSDKVersionsCacheKey'
         );
-
-        var availableVersions : IDotnetListVersionsResult = [];
-        let response = null;
-        try
-        {
-            response = await webWorker.getCachedData();
-        }
-        catch(e)
-        {
-            throw new Error(dotnetAvailableVersionsPageUnavailableError); 
-        }
         
-        if (!response) {
-            throw new Error(dotnetAvailableVersionsPageUnavailableError);
-        }
-        else
-        {
-            let SdkDetailsJson = JSON.parse(response)['releases-index'];
-
-            for(let availableSdk of SdkDetailsJson)
-            {
-                if(availableSdk['release-type'] === 'lts' || availableSdk['release-type'] === 'sts')
-                {
-                    availableVersions.push({supportStatus: (availableSdk['release-type'] as DotnetVersionSupportStatus), version: availableSdk[getSdks ? 'latest-sdk' : 'latest-runtime']} as IDotnetVersion);
-                }
-            }
-        }
-            
-        return availableVersions;
+        return new DotnetVersionProvider().GetAvailableDotnetVersions(commandContext, webWorker);
     });
 
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallAll}`, async (commandContext: IDotnetUninstallContext | undefined) => {
