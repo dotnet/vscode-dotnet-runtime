@@ -45,7 +45,7 @@ export class DotnetVersionProvider {
         {
             const sdkDetailsJson = JSON.parse(response)['releases-index'];
 
-            for(let availableSdk of sdkDetailsJson)
+            for(const availableSdk of sdkDetailsJson)
             {
                 if(availableSdk['release-type'] === 'lts' || availableSdk['release-type'] === 'sts')
                 {
