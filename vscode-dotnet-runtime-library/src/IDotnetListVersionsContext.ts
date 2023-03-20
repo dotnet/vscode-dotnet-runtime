@@ -28,7 +28,7 @@ export interface IDotnetVersion {
      * @property version - The channel version (major) version.
      * @property supportStatus - Is the version in long-term support or 'standard-term' support
      */
-	version: string,
+    version: string,
     supportStatus: DotnetVersionSupportStatus
 }
 

@@ -90,7 +90,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
         ]
     }`
     // The API can find the available runtimes and their versions.
-    const apiContext: IDotnetListVersionsContext = { listRuntimes: true};
+    const apiContext: IDotnetListVersionsContext = { listRuntimes: true };
     const runtimeResult = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet.listSdks', apiContext, webWorker);
     assert.exists(runtimeResult);
     assert.equal(runtimeResult?.filter((runtime : any) => runtime.version === '7.0.4').length, 1, 'The mock Runtime with the expected version was not found by the API parsing service.');
