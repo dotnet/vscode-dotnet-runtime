@@ -2,51 +2,75 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import retry from 'p-retry';
-import * as request from 'request-promise-native';
+import axios from 'axios';
+import axiosRetry from 'axios-retry';
+import { AxiosCacheInstance, buildStorage, setupCache, StorageValue } from 'axios-cache-interceptor';
 import { IEventStream } from '../EventStream/EventStream';
 import { WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
 import { IExtensionState } from '../IExtensionState';
 
+/*
+This wraps the VSCode memento state blob into an axios-cache-interceptor-compatible Storage.
+All the calls are synchronous
+*/
+const mementoStorage = (extensionStorage: IExtensionState) => {
+    const cachePrefix = "axios-cache";
+    return buildStorage({
+        set(key: string, value: any) {
+            extensionStorage.update(cachePrefix + key, value);
+        },
+        remove(key: string) {
+            extensionStorage.update(cachePrefix + key, undefined);
+        },
+        find(key: string) {
+            return extensionStorage.get(cachePrefix + key) as StorageValue;
+        }
+    });
+}
+
 export class WebRequestWorker {
     private cachedData: string | undefined;
-    private currentRequest: Promise<string | undefined> | undefined;
+    private client: AxiosCacheInstance;
 
-    constructor(private readonly extensionState: IExtensionState,
-                private readonly eventStream: IEventStream,
-                private readonly url: string,
-                private readonly extensionStateKey: string) {}
+    constructor(
+        private readonly extensionState: IExtensionState,
+        private readonly eventStream: IEventStream,
+        private readonly url: string) {
+        
+        // we can configure the retry and cache policies specifically for this axios client
+        var c = axios.create({});
+        axiosRetry(c, {
+            retryDelay(retryCount: number) {
+                return Math.pow(2, retryCount);
+            }
+        });
+        this.client = setupCache(c, {
+            storage: mementoStorage(extensionState),
+        });
+    }
 
     public async getCachedData(retriesCount = 2): Promise<string | undefined> {
-        this.cachedData = this.extensionState.get<string>(this.extensionStateKey);
         if (!this.cachedData) {
             // Have to acquire data before continuing
-            this.cachedData = await this.makeWebRequestWithRetries(true, retriesCount);
-        } else if (!this.currentRequest) {
-            // Update without blocking, continue with cached information
-            this.currentRequest = this.makeWebRequest(false);
-            this.currentRequest.then((result) => {
-                if (result) {
-                    this.cachedData = result;
-                }
-                this.currentRequest = undefined;
-            });
+            this.cachedData = await this.makeWebRequest(true, retriesCount);
         }
         return this.cachedData;
     }
 
     // Protected for ease of testing
-    protected async makeWebRequest(throwOnError: boolean): Promise<string | undefined> {
-        const options = {
-            url: this.url,
-            Connection: 'keep-alive',
-        };
-
+    protected async makeWebRequest(throwOnError: boolean, retries: number): Promise<string | undefined> {
         try {
             this.eventStream.post(new WebRequestSent(this.url));
-            const response = await request.get(options);
-            this.cacheResults(response);
-            return response;
+            const responseHeaders = await this.client.get(this.url, {
+                headers: {
+                    Connection: 'keep-alive'
+                },
+                // since retry configuration is per-request, we flow that into the retry middleware here
+                "axios-retry": {
+                    retries: retries,
+                },
+            });
+            return responseHeaders.data;
         } catch (error) {
             if (throwOnError) {
                 let formattedError = error as Error;
@@ -62,19 +86,4 @@ export class WebRequestWorker {
         }
     }
 
-    protected async cacheResults(response: string) {
-        await this.extensionState.update(this.extensionStateKey, response);
-    }
-
-    private async makeWebRequestWithRetries(throwOnError: boolean, retriesCount: number): Promise<string | undefined> {
-        return retry(async () => {
-            return this.makeWebRequest(throwOnError);
-        }, { retries: retriesCount, onFailedAttempt: async (error) => {
-            await this.delay(Math.pow(2, error.attemptNumber));
-        }});
-    }
-
-    private delay(ms: number) {
-        return new Promise( resolve => setTimeout(resolve, ms) );
-    }
 }
