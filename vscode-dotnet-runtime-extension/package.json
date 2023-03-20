@@ -16,7 +16,7 @@
 	"version": "1.6.0",
 	"publisher": "ms-dotnettools",
 	"engines": {
-		"vscode": "^1.62.0"
+		"vscode": "^1.72.0"
 	},
 	"categories": [
 		"Other"
@@ -82,7 +82,7 @@
 		"webpack": "webpack --mode development"
 	},
 	"dependencies": {
-		"chai": "^4.3.4",
+		"chai": "4.3.4",
 		"child_process": "^1.0.2",
 		"diff": ">=5.0.0",
 		"glob": "^7.2.0",
@@ -91,21 +91,29 @@
 		"mocha": "^9.1.3",
 		"open": "^8.4.0",
 		"rimraf": "3.0.2",
-		"shelljs": "^0.8.4",
+		"safe-regex-test": "^1.0.0",
+		"shelljs": "^0.8.5",
 		"ts-loader": "^9.2.6",
 		"tslint": "^5.20.1",
 		"typescript": "4.4.4",
 		"vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library",
-		"vscode-test": "^1.6.1"
+		"vscode-test": "^1.6.1",
+		"yarn": "^1.22.19"
 	},
 	"devDependencies": {
-		"@types/chai": "^4.2.22",
+		"@types/chai": "4.2.22",
 		"@types/mocha": "^9.0.0",
 		"@types/node": "16.11.7",
 		"@types/rimraf": "3.0.2",
-		"@types/vscode": "^1.62.0",
+		"@types/vscode": "1.62.0",
 		"copy-webpack-plugin": "9.0.1",
 		"webpack": "5.63.0",
 		"webpack-cli": "4.9.1"
+	},
+	"__metadata": {
+		"id": "1aab81a1-b3d9-4aef-976b-577d5d90fe3f",
+		"publisherDisplayName": "Microsoft",
+		"publisherId": "d05e23de-3974-4ff0-8d47-23ee77830092",
+		"isPreReleaseVersion": false
 	}
 }
