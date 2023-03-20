@@ -2,6 +2,7 @@
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
+import { suite, test } from 'mocha';
 import * as chai from 'chai';
 import { InstallationValidator } from '../../Acquisition/InstallationValidator';
 import { MockEventStream } from '../mocks/MockObjects';
