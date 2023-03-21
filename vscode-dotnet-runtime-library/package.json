@@ -15,6 +15,7 @@
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
 		"compile": "npm run clean && tsc -p ./",
+		"compile-all": "npm install && npm run compile",
 		"watch": "npm run clean && tsc -watch -p ./",
 		"test": "npm run compile --silent && npm run unit-test",
 		"unit-test": "mocha -u tdd -- dist/test/unit/**.test.js",

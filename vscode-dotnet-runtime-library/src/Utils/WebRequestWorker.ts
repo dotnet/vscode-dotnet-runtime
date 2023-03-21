@@ -11,7 +11,8 @@ import { IExtensionState } from '../IExtensionState';
 
 /*
 This wraps the VSCode memento state blob into an axios-cache-interceptor-compatible Storage.
-All the calls are synchronous
+(The momento state is used to save extensionState/data across runs of the extension.)
+All the calls are synchronous.
 */
 const mementoStorage = (extensionStorage: IExtensionState) => {
     const cachePrefix = "axios-cache";
@@ -29,6 +30,11 @@ const mementoStorage = (extensionStorage: IExtensionState) => {
 }
 
 export class WebRequestWorker {
+    /**
+     * @remarks
+     * An interface for sending get requests to APIS.
+     * The responses from GET requests are cached with a 'time-to-live' of 5 minutes by default.
+     */
     private cachedData: string | undefined;
     private client: AxiosCacheInstance;
 
@@ -36,15 +42,18 @@ export class WebRequestWorker {
         private readonly extensionState: IExtensionState,
         private readonly eventStream: IEventStream,
         private readonly url: string) {
-        
-        // we can configure the retry and cache policies specifically for this axios client
-        var c = axios.create({});
-        axiosRetry(c, {
+
+        var uncachedAxiosClient = axios.create({});
+
+        // Wrap the client with a retry interceptor. We don't need to return a new client, it should be applied automatically.
+        axiosRetry(uncachedAxiosClient, {
+            // Inject a custom retry delay to expoentially increase the time until we retry.
             retryDelay(retryCount: number) {
                 return Math.pow(2, retryCount);
             }
         });
-        this.client = setupCache(c, {
+
+        this.client = setupCache(uncachedAxiosClient, {
             storage: mementoStorage(extensionState),
         });
     }
@@ -61,7 +70,7 @@ export class WebRequestWorker {
     protected async makeWebRequest(throwOnError: boolean, retries: number): Promise<string | undefined> {
         try {
             this.eventStream.post(new WebRequestSent(this.url));
-            const responseHeaders = await this.client.get(this.url, {
+            const response = await this.client.get(this.url, {
                 headers: {
                     Connection: 'keep-alive'
                 },
@@ -70,7 +79,7 @@ export class WebRequestWorker {
                     retries: retries,
                 },
             });
-            return responseHeaders.data;
+            return response.data;
         } catch (error) {
             if (throwOnError) {
                 let formattedError = error as Error;
