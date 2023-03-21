@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
-import { suite, test } from 'mocha';
+
 import * as chaiAsPromised from 'chai-as-promised';
 import {
     MockEventStream,

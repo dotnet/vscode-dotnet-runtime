@@ -3,7 +3,6 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
-import { suite, test } from 'mocha';
 import { AcquireErrorConfiguration } from '../../Utils/ErrorHandler';
 import { formatIssueUrl } from '../../Utils/IssueReporter';
 import { MockExtensionConfigurationWorker } from '../mocks/MockExtensionConfigurationWorker';
