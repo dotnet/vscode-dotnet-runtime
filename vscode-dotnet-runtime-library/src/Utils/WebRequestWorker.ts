@@ -8,6 +8,9 @@ import { AxiosCacheInstance, buildStorage, setupCache, StorageValue } from 'axio
 import { IEventStream } from '../EventStream/EventStream';
 import { WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
 import { IExtensionState } from '../IExtensionState';
+import { report } from 'process';
+
+var log = require('debug')('WebRequestWorker');
 
 /*
 This wraps the VSCode memento state blob into an axios-cache-interceptor-compatible Storage.
@@ -44,6 +47,7 @@ export class WebRequestWorker {
         private readonly url: string) {
 
         var uncachedAxiosClient = axios.create({});
+        log(`Axios client instantiated: ${uncachedAxiosClient}`);
 
         // Wrap the client with a retry interceptor. We don't need to return a new client, it should be applied automatically.
         axiosRetry(uncachedAxiosClient, {
@@ -53,21 +57,29 @@ export class WebRequestWorker {
             }
         });
 
+        log(`Axios client wrapped around axios-retry: ${uncachedAxiosClient}`);
+
         this.client = setupCache(uncachedAxiosClient, {
             storage: mementoStorage(extensionState),
         });
+
+        log(`Cached Axios Client Created: ${this.client}`);
     }
 
     public async getCachedData(retriesCount = 2): Promise<string | undefined> {
+        log(`getCachedData() Invoked.`);
         if (!this.cachedData) {
             // Have to acquire data before continuing
+            log(`Data requested is uncached. Retry Count Requested: ${retriesCount}.`);
             this.cachedData = await this.makeWebRequest(true, retriesCount);
         }
+        log(`Data requested is cached. Returning cached data.`);
         return this.cachedData;
     }
 
     // Protected for ease of testing
     protected async makeWebRequest(throwOnError: boolean, retries: number): Promise<string | undefined> {
+        log(`makeWebRequest Invoked. Requested URL: ${this.url}`);
         try {
             this.eventStream.post(new WebRequestSent(this.url));
             const response = await this.client.get(this.url, {
@@ -79,8 +91,10 @@ export class WebRequestWorker {
                     retries: retries,
                 },
             });
+            log(`Reponse: ${response}. Response.data: ${response.data}`);
             return response.data;
         } catch (error) {
+            log(`Error submitting request: ${error}.`);
             if (throwOnError) {
                 let formattedError = error as Error;
                 if ((formattedError.message as string).toLowerCase().includes('block')) {
@@ -91,6 +105,7 @@ export class WebRequestWorker {
                 this.eventStream.post(new WebRequestError(formattedError));
                 throw formattedError;
             }
+            log(`Returning undefined result.`);
             return undefined;
         }
     }
