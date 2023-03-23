@@ -64,7 +64,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         context: MockExtensionContext,
         isRuntimeInstall = true) {
         const expectedPath = getExpectedPath(version, isRuntimeInstall);
-        
+
         // Path to exe should be correct
         assert.equal(exePath, expectedPath);
 
@@ -88,19 +88,18 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
             event instanceof TestAcquireCalled && (event as TestAcquireCalled).context.version === version) as TestAcquireCalled;
         assert.exists(acquireEvent);
         assert.equal(acquireEvent!.context.dotnetPath, expectedPath);
-        assert.equal(acquireEvent!.context.installDir, path.dirname(expectedPath));;
+        assert.equal(acquireEvent!.context.installDir, path.dirname(expectedPath));
     }
 
     this.beforeAll(async () => {
         process.env._VSCODE_DOTNET_INSTALL_FOLDER = dotnetFolderName;
     });
 
-    test('Acquire Runtime Version', async (done) => {
+    test('Acquire Runtime Version', async () => {
         const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(true);
 
         const result = await acquisitionWorker.acquireRuntime('1.0');
         await assertAcquisitionSucceeded('1.0', result.dotnetPath, eventStream, context);
-        done();
     });
 
     test('Acquire SDK Version', async () => {

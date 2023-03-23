@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 import axios from 'axios';
 import axiosRetry from 'axios-retry';
-import { AxiosCacheInstance, buildStorage, setupCache, StorageValue } from 'axios-cache-interceptor';
+import axiosCache = require('axios-cache-interceptor');
 import { IEventStream } from '../EventStream/EventStream';
 import { WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
 import { IExtensionState } from '../IExtensionState';
@@ -17,7 +17,7 @@ All the calls are synchronous.
 */
 const mementoStorage = (extensionStorage: IExtensionState) => {
     const cachePrefix = "axios-cache";
-    return buildStorage({
+    return axiosCache.buildStorage({
         set(key: string, value: any) {
             extensionStorage.update(cachePrefix + key, value);
         },
@@ -25,7 +25,7 @@ const mementoStorage = (extensionStorage: IExtensionState) => {
             extensionStorage.update(cachePrefix + key, undefined);
         },
         find(key: string) {
-            return extensionStorage.get(cachePrefix + key) as StorageValue;
+            return extensionStorage.get(cachePrefix + key) as axiosCache.StorageValue;
         }
     });
 }
@@ -36,12 +36,12 @@ export class WebRequestWorker {
      * An interface for sending get requests to APIS.
      * The responses from GET requests are cached with a 'time-to-live' of 5 minutes by default.
      */
-    private client: AxiosCacheInstance;
+    protected client: axiosCache.AxiosCacheInstance;
 
     constructor(
         private readonly extensionState: IExtensionState,
         private readonly eventStream: IEventStream,
-        private readonly url: string) {
+        protected readonly url: string) {
 
         var uncachedAxiosClient = axios.create({});
         Debugging.log(`Axios client instantiated: ${uncachedAxiosClient}`);
@@ -56,7 +56,7 @@ export class WebRequestWorker {
 
         Debugging.log(`Axios client wrapped around axios-retry: ${uncachedAxiosClient}`);
 
-        this.client = setupCache(uncachedAxiosClient, {
+        this.client = axiosCache.setupCache(uncachedAxiosClient, {
             storage: mementoStorage(extensionState),
         });
 
@@ -73,25 +73,23 @@ export class WebRequestWorker {
         Debugging.log(`makeWebRequest Invoked. Requested URL: ${this.url}`);
         try
         {
-            Debugging.log(`Cached value exists? : ${undefined !== (await this.client.storage.get(this.url)).data}`);
+            Debugging.log(`Cached value state: ${(await this.client.storage.get(this.url)).state}`);
 
             this.eventStream.post(new WebRequestSent(this.url));
             const response = await this.client.get(
                 this.url,
                 {
-                    headers: { Connection: 'keep-alive' },
-                    // since retry configuration is per-request, we flow that into the retry middleware here
-                    'axios-retry': { retries: retries }
+                    headers: { 'Connection': 'keep-alive' },
                 }
             );
 
             Debugging.log(`Response: ${response}.`);
             return response.data;
-        } 
+        }
         catch (error)
         {
             Debugging.log(`Error submitting request: ${error}.`);
-            
+
             if (throwOnError) {
                 let formattedError = error as Error;
                 if ((formattedError.message as string).toLowerCase().includes('block')) {
@@ -106,7 +104,7 @@ export class WebRequestWorker {
                 this.eventStream.post(new WebRequestError(formattedError));
                 throw formattedError;
             }
-            
+
             Debugging.log(`Returning undefined result.`);
             return undefined;
         }

@@ -99,7 +99,7 @@ export class FailingWebRequestWorker extends WebRequestWorker {
     }
 }
 
-export class TrackingWebRequestWorker extends WebRequestWorker {
+export class MockTrackingWebRequestWorker extends WebRequestWorker {
     private requestCount: number = 0;
     constructor(extensionState: IExtensionState, eventStream: IEventStream, uri: string) {
         super(extensionState, eventStream, uri);
@@ -114,14 +114,17 @@ export class TrackingWebRequestWorker extends WebRequestWorker {
     }
 
     protected async makeWebRequest(shouldThrow = false, retries = 2): Promise<string | undefined> {
-        this.incrementRequestCount();
+        if( true ) //undefined === (await super.client.storage.get(this.url)).data)
+        {
+            this.incrementRequestCount();
+        }
         return super.makeWebRequest(shouldThrow, retries);
     }
 }
 
-export class MockWebRequestWorker extends TrackingWebRequestWorker {
+export class MockWebRequestWorker extends MockTrackingWebRequestWorker {
     public readonly errorMessage = 'Web Request Failed';
-    private readonly response = 'Mock Web Request Result';
+    public readonly response = 'Mock Web Request Result';
 
     constructor(extensionState: IExtensionState, eventStream: IEventStream, url: string, private readonly succeed = true) {
         super(extensionState, eventStream, url);
