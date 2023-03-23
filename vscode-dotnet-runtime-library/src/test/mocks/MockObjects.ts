@@ -114,7 +114,7 @@ export class MockTrackingWebRequestWorker extends WebRequestWorker {
     }
 
     protected async makeWebRequest(shouldThrow = false, retries = 2): Promise<string | undefined> {
-        if( true ) //undefined === (await super.client.storage.get(this.url)).data)
+        if(undefined === (await super.client.storage.get(this.url)).data)
         {
             this.incrementRequestCount();
         }
