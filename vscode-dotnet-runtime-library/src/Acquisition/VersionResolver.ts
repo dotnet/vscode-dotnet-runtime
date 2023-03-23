@@ -12,10 +12,10 @@ import { IExtensionState } from '../IExtensionState';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { IVersionResolver } from './IVersionResolver';
 import { ReleasesResult } from './ReleasesResult';
+import { Debugging } from '../Utils/Debugging';
 
 export class VersionResolver implements IVersionResolver {
     protected webWorker: WebRequestWorker;
-    private readonly releasesKey = 'releases';
     private readonly releasesUrl = 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json';
 
     constructor(extensionState: IExtensionState,
@@ -24,10 +24,12 @@ export class VersionResolver implements IVersionResolver {
     }
 
     public async getFullRuntimeVersion(version: string): Promise<string> {
+        Debugging.log(`Request: Get full runtime version for: ${version}`);
         return this.getFullVersion(version, true);
     }
 
     public async getFullSDKVersion(version: string): Promise<string> {
+        Debugging.log(`Request: Get full SDK version for: ${version}`);
         return this.getFullVersion(version, false);
     }
 
@@ -62,11 +64,13 @@ export class VersionResolver implements IVersionResolver {
     }
 
     private async getReleasesInfo(): Promise<ReleasesResult> {
+        Debugging.log(`VersionResolver requesting releases.json.`);
         const response = await this.webWorker.getCachedData();
         if (!response) {
             throw new Error('Unable to get the full version.');
         }
 
+        Debugging.log(`VersionResolver response obtained: ${response}.`);
         const releasesVersions = new ReleasesResult(response);
         return releasesVersions;
     }

@@ -76,15 +76,14 @@ export class WebRequestWorker {
             Debugging.log(`Cached value exists? : ${undefined !== (await this.client.storage.get(this.url)).data}`);
 
             this.eventStream.post(new WebRequestSent(this.url));
-            const response = await this.client.get(this.url, {
-                headers: {
-                    Connection: 'keep-alive'
-                },
-                // since retry configuration is per-request, we flow that into the retry middleware here
-                "axios-retry": {
-                    retries: retries,
-                },
-            });
+            const response = await this.client.get(
+                this.url,
+                {
+                    headers: { Connection: 'keep-alive' },
+                    // since retry configuration is per-request, we flow that into the retry middleware here
+                    'axios-retry': { retries: retries }
+                }
+            );
 
             Debugging.log(`Response: ${response}.`);
             return response.data;
