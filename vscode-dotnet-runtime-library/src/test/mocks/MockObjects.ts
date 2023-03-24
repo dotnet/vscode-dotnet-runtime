@@ -84,7 +84,7 @@ export class FileWebRequestWorker extends WebRequestWorker {
     }
 
     protected async makeWebRequest(): Promise<string | undefined> {
-        const result =  fs.readFileSync(this.mockFilePath, 'utf8');
+        const result =  JSON.parse(fs.readFileSync(this.mockFilePath, 'utf8'));
         return result;
     }
 }
@@ -95,14 +95,14 @@ export class FailingWebRequestWorker extends WebRequestWorker {
     }
 
     public async getCachedData(): Promise<string | undefined> {
-        return super.getCachedData(0); // Don't retry
+        throw new Error('Fail!');
     }
 }
 
 export class MockTrackingWebRequestWorker extends WebRequestWorker {
     private requestCount: number = 0;
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, uri: string) {
-        super(extensionState, eventStream, uri);
+    constructor(extensionState: IExtensionState, eventStream: IEventStream, uri: string, ttl = 1) {
+        super(extensionState, eventStream, uri, ttl); // time to live is very small so tests do not fail on rerun as cache state changes.
     }
 
     public getRequestCount() {
@@ -114,7 +114,7 @@ export class MockTrackingWebRequestWorker extends WebRequestWorker {
     }
 
     protected async makeWebRequest(shouldThrow = false, retries = 2): Promise<string | undefined> {
-        if(undefined === (await super.client.storage.get(this.url)).data)
+        if ( await this.getCachedState() != 'cached')
         {
             this.incrementRequestCount();
         }
@@ -133,7 +133,14 @@ export class MockWebRequestWorker extends MockTrackingWebRequestWorker {
     protected async makeWebRequest(): Promise<string | undefined> {
         this.incrementRequestCount()
         if (this.succeed) {
-            return this.response;
+            try // axios will return a json object instead of a string if the object is json. mimic this.
+            {
+                JSON.parse(this.response);
+            }
+            catch (e)
+            {
+                return this.response;
+            }
         } else {
             throw new Error(this.errorMessage);
         }
