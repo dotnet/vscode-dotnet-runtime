@@ -83,19 +83,19 @@ export class WebRequestWorker {
      */
     public async isUrlCached(cachedUrl : string = this.url) : Promise<boolean>
     {
-        Promise.race(
-            [
-            (await this.client.get(cachedUrl)).cached, 
-            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 500)) // 500 ms timeout is arbitrary but the expected worst case.
-            ]
-        )
-        .then(isCached => {return isCached})
-        .catch(function(err)
-            {
-                return false;
-            }
-        )
-        return false;
+        if(this.url === '')
+        {
+            return false;
+        }
+        try
+        {
+            const cachedState : boolean = (await this.client.get(cachedUrl, {timeout: 900})).cached; // 900 ms timeout is arbitrary but the expected worst case.
+            return cachedState;
+        }
+        catch (error) // The url was unavailable.
+        {
+            return false;
+        }
     }
 
     // Protected for ease of testing.
