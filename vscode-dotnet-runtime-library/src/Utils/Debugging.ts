@@ -3,8 +3,11 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
+/**
+ * A simple wrapper around console logging that can disable / enable all debugging or logging messages.
+ */
 export class Debugging {
-    static debugOn = true;
+    static debugOn = false;
 
     public static log(message : string)
     {

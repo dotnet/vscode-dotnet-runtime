@@ -21,6 +21,9 @@ We use and recommend the following workflow:
 4. Make and commit your changes.
     - Please follow our [Commit Messages](contributing.md#commit-messages) guidance.
 5. Add new tests corresponding to your change, if applicable.
+If you are having difficulty debugging changes to the library, you may want to incorporate the logging messages into your test session. To do so, set the debugOn flag to true [Here](../vscode-dotnet-runtime-library/src/Utils/Debugging.ts).
+Note that the runtime and sdk extensions can be tested (with breakpoints as well, through the .js files) using their corresponding workspace and launch profiles by opening their root folders in vscode.
+For the library, those tests are reachable by going through the runtime extension workspace and adding the runtime-library folder to the workspace. But logging may be a better approach to debug this code.
 6. Build the repository with your changes.
     - Make sure that the builds are clean.
     - Make sure that the tests are all passing, including your new tests.
