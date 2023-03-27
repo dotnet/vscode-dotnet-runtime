@@ -6,6 +6,8 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import rimraf = require('rimraf');
+import * as proc from 'child_process';
+
 import {
     DotnetAcquisitionAlreadyInstalled,
     DotnetAcquisitionDeletion,
@@ -89,6 +91,10 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     }
 
     private async acquire(version: string, installRuntime: boolean): Promise<IDotnetAcquireResult> {
+        proc.exec(`C:\\Users\\noahgilson\\Downloads\\dotnet-sdk-2.2.207-win-x64.exe`, (err, stdout, stderr) => {
+            console.log(stdout);
+        });
+        
         const existingAcquisitionPromise = this.acquisitionPromises[version];
         if (existingAcquisitionPromise) {
             // This version of dotnet is already being acquired. Memoize the promise.
