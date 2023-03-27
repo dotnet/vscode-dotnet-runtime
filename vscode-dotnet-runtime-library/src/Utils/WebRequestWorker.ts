@@ -16,16 +16,16 @@ This wraps the VSCode memento state blob into an axios-cache-interceptor-compati
 All the calls are synchronous.
 */
 const mementoStorage = (extensionStorage: IExtensionState) => {
-    const cachePrefix = "axios-cache";
+    const cachePrefix = "axios-cache"; // Used to make it easier to tell what part of the extension state is from the cache
     return buildStorage({
         set(key: string, value: any) {
-            extensionStorage.update(cachePrefix + key, value);
+            extensionStorage.update(`${cachePrefix}:${key}`, value);
         },
         remove(key: string) {
-            extensionStorage.update(cachePrefix + key, undefined);
+            extensionStorage.update(`${cachePrefix}:${key}`, undefined);
         },
         find(key: string) {
-            return extensionStorage.get(cachePrefix + key) as StorageValue;
+            return extensionStorage.get(`${cachePrefix}:${key}`) as StorageValue;
         }
     });
 }
@@ -68,14 +68,30 @@ export class WebRequestWorker {
 
     public async getCachedData(retriesCount = 2): Promise<string | undefined> {
         Debugging.log(`getCachedData() Invoked.`);
-        Debugging.log(`Cached value state: ${(await this.getCachedState(this.url))}`);
+        Debugging.log(`Cached value state: ${await this.isUrlCached()}`);
         return await this.makeWebRequest(true, retriesCount);
     }
 
-    public async getCachedState(cachedUrl : string = this.url)
+    /**
+     * 
+     * @param cachedUrl 
+     * @returns true if the url was in the cache before this function executes, false elsewise.
+     * 
+     * @remarks Calling this WILL put the url data in the cache as we need to poke the cache to properly get the information.
+     * (Checking the storage cache state results in invalid results.)
+     * Returns false if the url is unavailable.
+     */
+    public async isUrlCached(cachedUrl : string = this.url) : Promise<boolean>
     {
-        const cachedState = await this.client.storage.get(cachedUrl);
-        return cachedState.state;
+        try
+        {
+        const cachedState : boolean = (await this.client.get(cachedUrl)).cached;
+        return cachedState;
+        }
+        catch (error) // The url was unavailable.
+        {
+            return false;
+        }
     }
 
     // Protected for ease of testing.
@@ -83,8 +99,6 @@ export class WebRequestWorker {
         Debugging.log(`makeWebRequest Invoked. Requested URL: ${this.url}`);
         try
         {
-            Debugging.log(`Cached value state: ${await this.getCachedState(this.url)}`);
-
             this.eventStream.post(new WebRequestSent(this.url));
             const response = await this.client.get(
                 this.url,

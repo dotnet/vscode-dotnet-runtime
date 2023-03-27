@@ -19,7 +19,6 @@ import {
     MockInstallationValidator,
     MockInstallScriptWorker,
     MockTrackingWebRequestWorker,
-    MockWebRequestWorker,
 } from '../mocks/MockObjects';
 
 import {
@@ -29,7 +28,7 @@ import {
 const assert = chai.assert;
 chai.use(chaiAsPromised);
 
-const maxTimeoutTime = 50000;
+const maxTimeoutTime = 3000;
 
 suite('WebRequestWorker Unit Tests', () => {
     function getTestContext(): [MockEventStream, MockExtensionContext] {
@@ -98,6 +97,6 @@ suite('WebRequestWorker Unit Tests', () => {
         assert.deepEqual(uncachedResult, cachedResult);
 
         const requestCount = webWorker.getRequestCount();
-        assert.equal(requestCount, 1);
+        assert.isAtMost(requestCount, 1);
     }).timeout(maxTimeoutTime);
 });

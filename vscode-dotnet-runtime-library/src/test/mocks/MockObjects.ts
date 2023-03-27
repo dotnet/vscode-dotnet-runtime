@@ -114,7 +114,7 @@ export class MockTrackingWebRequestWorker extends WebRequestWorker {
     }
 
     protected async makeWebRequest(shouldThrow = false, retries = 2): Promise<string | undefined> {
-        if ( await this.getCachedState() != 'cached')
+        if ( !(await this.isUrlCached()) )
         {
             this.incrementRequestCount();
         }
