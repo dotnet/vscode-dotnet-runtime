@@ -7,7 +7,7 @@
  * A simple wrapper around console logging that can disable / enable all debugging or logging messages.
  */
 export class Debugging {
-    static debugOn = false;
+    static debugOn = true;
 
     public static log(message : string)
     {

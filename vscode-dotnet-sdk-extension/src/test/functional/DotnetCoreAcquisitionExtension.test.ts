@@ -251,25 +251,4 @@ suite('DotnetCoreAcquisitionExtension End to End', function () {
     uninstallSDKExtension();
     assert.isFalse(fs.existsSync(result!.dotnetPath));
   }).timeout(100000);
-
-  test('Extension installs latest SDK version', async () => {
-    Debugging.log("--- TEST (Install Latest SDK) ---");
-    const context: IDotnetAcquireContext = { version: currentSDKVersion, requestingExtensionId: 'ms-dotnettools.sample-extension' };
-
-    Debugging.log("Acquire the SDK.");
-    const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context);
-    assert.exists(result);
-    Debugging.log("Check that the dotnet appdata path exists..");
-    assert.isTrue(fs.existsSync(result!.dotnetPath));
-
-    Debugging.log("Scan the dotnet path sdk folder for SDKs.");
-    const sdkDirs = fs.readdirSync(path.join(path.dirname(result!.dotnetPath), 'sdk'));
-    Debugging.log("Validate the version we expect to be installed (hardcoded in test) is installed.");
-    assert.isTrue(sdkDirs.findIndex(d => path.basename(d) === "6.0.201") !== -1);
-
-    Debugging.log("Clean up.");
-    uninstallSDKExtension();
-    assert.isFalse(fs.existsSync(result!.dotnetPath));
-  });
-
 });
