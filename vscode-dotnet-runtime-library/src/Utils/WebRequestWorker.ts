@@ -74,7 +74,7 @@ export class WebRequestWorker {
      * @returns The response from AXIOS. The response may be in ANY type, string by default, but maybe even JSON, depending on whatever the request return content can be casted to.
      * @remarks This function is used as a custom axios.get with a timeout because axios does not correctly handle CONNECTION-based timeouts: https://github.com/axios/axios/issues/647 (e.g. bad URL/site down).
      */
-    public async axiosGet(url : string, options = {})
+    private async axiosGet(url : string, options = {})
     {
         const abort = axios.CancelToken.source()
         const id = setTimeout(
