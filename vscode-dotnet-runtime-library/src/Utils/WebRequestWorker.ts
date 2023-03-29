@@ -42,7 +42,8 @@ export class WebRequestWorker {
         private readonly extensionState: IExtensionState,
         private readonly eventStream: IEventStream,
         private readonly url: string,
-        private readonly cacheTimeToLive = 1000 * 60 * 5 // 5 minutes
+        private readonly cacheTimeToLive = 1000 * 60 * 5, // 5 minutes
+        private readonly websiteTimeoutMs = 1000 // 900 ms timeout is arbitrary but the expected worst case.
         )
         {
             var uncachedAxiosClient = axios.create({});
@@ -59,13 +60,39 @@ export class WebRequestWorker {
             Debugging.log(`Axios client wrapped around axios-retry: ${uncachedAxiosClient}`);
 
             this.client = setupCache(uncachedAxiosClient, {
-                storage: mementoStorage(extensionState),
-                ttl: cacheTimeToLive
+                storage: mementoStorage(this.extensionState),
+                ttl: this.cacheTimeToLive
             });
 
             Debugging.log(`Cached Axios Client Created: ${this.client}`);
     }
 
+    /**
+     *
+     * @param url The URL of the website to send a get request to.
+     * @param options The AXIOS flavor options dictonary which will be forwarded to an axios call.
+     * @returns The response from AXIOS. The response may be in ANY type, string by default, but maybe even JSON, depending on whatever the request return content can be casted to.
+     * @remarks This function is used as a custom axios.get with a timeout because axios does not correctly handle CONNECTION-based timeouts: https://github.com/axios/axios/issues/647 (e.g. bad URL/site down).
+     */
+    public async axiosGet(url : string, options = {})
+    {
+        const abort = axios.CancelToken.source()
+        const id = setTimeout(
+            () => abort.cancel(`Timeout, ${url} is unavailable.`),
+            this.websiteTimeoutMs
+        )
+        return await this.client
+            .get(url, { cancelToken: abort.token, ...options })
+            .then(response => {
+            clearTimeout(id)
+            return response
+            })
+    }
+
+    /**
+     * @returns The data from a web request that was hopefully cached. Even if it wasn't cached, we will make an attempt to get the data.
+     * @remarks This function is no longer needed as the data is cached either way if you call makeWebRequest, but it was kept to prevent breaking APIs.
+    */
     public async getCachedData(retriesCount = 2): Promise<string | undefined> {
         Debugging.log(`getCachedData() Invoked.`);
         Debugging.log(`Cached value state: ${await this.isUrlCached()}`);
@@ -73,10 +100,10 @@ export class WebRequestWorker {
     }
 
     /**
-     * 
-     * @param cachedUrl 
+     *
+     * @param cachedUrl
      * @returns true if the url was in the cache before this function executes, false elsewise.
-     * 
+     *
      * @remarks Calling this WILL put the url data in the cache as we need to poke the cache to properly get the information.
      * (Checking the storage cache state results in invalid results.)
      * Returns false if the url is unavailable.
@@ -89,7 +116,7 @@ export class WebRequestWorker {
         }
         try
         {
-            const cachedState : boolean = (await this.client.get(cachedUrl, {timeout: 900})).cached; // 900 ms timeout is arbitrary but the expected worst case.
+            const cachedState : boolean = (await this.axiosGet(cachedUrl, {timeout: this.websiteTimeoutMs})).cached;
             return cachedState;
         }
         catch (error) // The url was unavailable.
@@ -98,16 +125,23 @@ export class WebRequestWorker {
         }
     }
 
-    // Protected for ease of testing.
-    protected async makeWebRequest(throwOnError: boolean, retries: number): Promise<string | undefined> {
+    /**
+     *
+     * @param throwOnError Should we throw if the connection fails, there's a bad URL passed in, or something else goes wrong?
+     * @param numRetries The number of retry attempts if the url is not giving a good response.
+     * @returns The data returned from a get request to the url. It may be of string type, but it may also be of another type if the return result is convertable (e.g. JSON.)
+     * @remarks protected for ease of testing.
+     */
+    protected async makeWebRequest(throwOnError: boolean, numRetries: number): Promise<string | undefined> {
         Debugging.log(`makeWebRequest Invoked. Requested URL: ${this.url}`);
         try
         {
             this.eventStream.post(new WebRequestSent(this.url));
-            const response = await this.client.get(
+            const response = await this.axiosGet(
                 this.url,
                 {
                     headers: { 'Connection': 'keep-alive' },
+                    'axios-retry': { retries: numRetries }
                 }
             );
 
