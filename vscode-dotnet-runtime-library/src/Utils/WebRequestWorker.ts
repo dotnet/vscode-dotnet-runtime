@@ -79,6 +79,10 @@ export class WebRequestWorker {
      */
     private async axiosGet(url : string, options = {})
     {
+        if(url === '' || url === undefined || url === null)
+        {
+            throw new Error(`Request to the url ${this.url} failed, as the URL is invalid.`);
+        }
         const abort = axios.CancelToken.source()
         const id = setTimeout(
             () => abort.cancel(`Timeout, ${url} is unavailable.`),
