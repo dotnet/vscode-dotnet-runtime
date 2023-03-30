@@ -60,19 +60,19 @@ suite('WebRequestWorker Unit Tests', () => {
     });
 
     test('Install Script Request Failure With Fallback Install Script', async () => {
-        Debugging.log("Get Test Context.");
+        Debugging.log('Get Test Context.');
         const [eventStream, context] = getTestContext();
 
-        Debugging.log("Instantiate Install Script Worker.");
+        Debugging.log('Instantiate Install Script Worker.');
         const installScriptWorker: IInstallScriptAcquisitionWorker = new MockInstallScriptWorker(context, eventStream, true, true);
 
-        Debugging.log("Request the install script path.");
+        Debugging.log('Request the install script path.');
         const scriptPath = await installScriptWorker.getDotnetInstallScriptPath();
 
-        Debugging.log("Asserting the path is as expected.");
+        Debugging.log('Asserting the path is as expected.');
         assert.equal(scriptPath, path.join(__dirname, '..'));
 
-        Debugging.log("Scan the event stream events.");
+        Debugging.log('Scan the event stream events.');
         assert.exists(eventStream.events.find(event => event instanceof DotnetInstallScriptAcquisitionError));
         assert.exists(eventStream.events.find(event => event instanceof DotnetFallbackInstallScriptUsed));
     });
@@ -89,9 +89,9 @@ suite('WebRequestWorker Unit Tests', () => {
         const webWorker = new MockTrackingWebRequestWorker(context, eventStream, 'https://httpstat.us/200', maxTimeoutTime); // Website used for the sake of it returning the same response always (tm)
 
         // Make a request to cache the data.
-        var uncachedResult = await webWorker.getCachedData();
+        const uncachedResult = await webWorker.getCachedData();
         // The data should now be cached.
-        var cachedResult = await webWorker.getCachedData();
+        const cachedResult = await webWorker.getCachedData();
 
         assert.exists(uncachedResult);
         assert.deepEqual(uncachedResult, cachedResult);

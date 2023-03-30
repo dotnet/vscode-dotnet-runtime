@@ -18,6 +18,7 @@
 export class ReleasesResult {
    public releasesIndex: ReleasesChannel[];
 
+// tslint:disable-next-line
    constructor(json: any) {
       const releasesJson = json['releases-index'] as ReleaseChannels;
       if (!releasesJson) {

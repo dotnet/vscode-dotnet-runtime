@@ -16,8 +16,9 @@ This wraps the VSCode memento state blob into an axios-cache-interceptor-compati
 All the calls are synchronous.
 */
 const mementoStorage = (extensionStorage: IExtensionState) => {
-    const cachePrefix = "axios-cache"; // Used to make it easier to tell what part of the extension state is from the cache
+    const cachePrefix = 'axios-cache'; // Used to make it easier to tell what part of the extension state is from the cache
     return buildStorage({
+        // tslint:disable-next-line
         set(key: string, value: any) {
             extensionStorage.update(`${cachePrefix}:${key}`, value);
         },
@@ -46,7 +47,7 @@ export class WebRequestWorker {
         private readonly websiteTimeoutMs = 1000 // 900 ms timeout is arbitrary but the expected worst case.
         )
         {
-            var uncachedAxiosClient = axios.create({});
+            const uncachedAxiosClient = axios.create({});
             Debugging.log(`Axios client instantiated: ${uncachedAxiosClient}`);
 
             // Wrap the client with a retry interceptor. We don't need to return a new client, it should be applied automatically.
@@ -71,8 +72,10 @@ export class WebRequestWorker {
      *
      * @param url The URL of the website to send a get request to.
      * @param options The AXIOS flavor options dictonary which will be forwarded to an axios call.
-     * @returns The response from AXIOS. The response may be in ANY type, string by default, but maybe even JSON, depending on whatever the request return content can be casted to.
-     * @remarks This function is used as a custom axios.get with a timeout because axios does not correctly handle CONNECTION-based timeouts: https://github.com/axios/axios/issues/647 (e.g. bad URL/site down).
+     * @returns The response from AXIOS. The response may be in ANY type, string by default, but maybe even JSON ...
+     * depending on whatever the request return content can be casted to.
+     * @remarks This function is used as a custom axios.get with a timeout because axios does not correctly handle CONNECTION-based timeouts:
+     * https://github.com/axios/axios/issues/647 (e.g. bad URL/site down).
      */
     private async axiosGet(url : string, options = {})
     {
@@ -81,7 +84,7 @@ export class WebRequestWorker {
             () => abort.cancel(`Timeout, ${url} is unavailable.`),
             this.websiteTimeoutMs
         )
-        return await this.client
+        return this.client
             .get(url, { cancelToken: abort.token, ...options })
             .then(response => {
             clearTimeout(id)
@@ -92,11 +95,11 @@ export class WebRequestWorker {
     /**
      * @returns The data from a web request that was hopefully cached. Even if it wasn't cached, we will make an attempt to get the data.
      * @remarks This function is no longer needed as the data is cached either way if you call makeWebRequest, but it was kept to prevent breaking APIs.
-    */
+     */
     public async getCachedData(retriesCount = 2): Promise<string | undefined> {
         Debugging.log(`getCachedData() Invoked.`);
         Debugging.log(`Cached value state: ${await this.isUrlCached()}`);
-        return await this.makeWebRequest(true, retriesCount);
+        return this.makeWebRequest(true, retriesCount);
     }
 
     /**

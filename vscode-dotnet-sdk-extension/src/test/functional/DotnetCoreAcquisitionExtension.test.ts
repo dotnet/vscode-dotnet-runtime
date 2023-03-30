@@ -33,7 +33,7 @@ const assert = chai.assert;
 chai.use(chaiAsPromised);
 /* tslint:disable:no-any */
 
-const currentSDKVersion = "6.0";
+const currentSDKVersion = '6.0';
 
 suite('DotnetCoreAcquisitionExtension End to End', function () {
   this.retries(3);
@@ -178,7 +178,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function () {
 
     let pathResult: string;
     if (os.platform() === 'win32') {
-      pathResult = cp.execSync(`%SystemRoot%\\System32\\reg.exe query "HKCU\\Environment" /v "Path"`).toString();
+      pathResult = cp.execSync(`%SystemRoot%\\System32\\reg.exe query 'HKCU\\Environment' /v 'Path'`).toString();
     } else if (os.platform() === 'darwin') {
       pathResult = fs.readFileSync(path.join(os.homedir(), '.zshrc')).toString();
     } else {

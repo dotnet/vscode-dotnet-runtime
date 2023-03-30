@@ -100,7 +100,7 @@ export class FailingWebRequestWorker extends WebRequestWorker {
 }
 
 export class MockTrackingWebRequestWorker extends WebRequestWorker {
-    private requestCount: number = 0;
+    private requestCount = 0;
     constructor(extensionState: IExtensionState, eventStream: IEventStream, uri: string, ttl = 1) {
         super(extensionState, eventStream, uri, ttl); // time to live is very small so tests do not fail on rerun as cache state changes.
     }
