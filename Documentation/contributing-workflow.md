@@ -7,16 +7,16 @@ You can contribute to .NET Core with issues and PRs. Simply filing issues for pr
 
 We use and recommend the following workflow:
 
-1. Create an issue for your work. 
+1. Create an issue for your work.
     - You can skip this step for trivial changes.
     - Reuse an existing issue on the topic, if there is one.
     - Use [CODE_OWNERS.TXT](../CODE_OWNERS.txt) to find relevant maintainers and @ mention them to ask for feedback on your issue.
     - Get agreement from the team and the community that your proposed change is a good one.
-    - If your change adds a new API, follow the [API Review Process](https://github.com/dotnet/corefx/blob/main/Documentation/project-docs/api-review-process.md) (but replace CoreFX with this repo). 
+    - If your change adds a new API, follow the [API Review Process](https://github.com/dotnet/corefx/blob/main/Documentation/project-docs/api-review-process.md) (but replace CoreFX with this repo).
     - Clearly state that you are going to take on implementing it, if that's the case. You can request that the issue be assigned to you. Note: The issue filer and the implementer don't have to be the same person.
 2. Create a personal fork of the repository on GitHub (if you don't already have one).
-3. Create a branch off of main (`git checkout -b mybranch`). 
-    - Name the branch so that it clearly communicates your intentions, such as issue-123 or githubhandle-issue. 
+3. Create a branch off of main (`git checkout -b mybranch`).
+    - Name the branch so that it clearly communicates your intentions, such as issue-123 or githubhandle-issue.
     - Branches are useful since they isolate your changes from incoming changes from upstream. They also enable you to create multiple PRs from the same fork.
 4. Make and commit your changes.
     - Please follow our [Commit Messages](contributing.md#commit-messages) guidance.
@@ -40,6 +40,11 @@ Note: It is OK to create your PR as "[WIP]" on the upstream repo before the impl
 
 Before making a pull request, be sure to build and test your changes locally with the build script ([windows](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/build.cmd), [mac](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/build.sh)) and test script ([windows](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/test.cmd), [mac](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/test.sh)). To lint your changes, run the test script with the parameter `--tslint`
 
+You can also test only a specific set of tests using the following parameters with the test script:
+Test SDK Extension Only: `test sdk` (Tests the SDK extension only.)
+Test SDK Extension Only: `test rnt` (Tests the runtime extension only.)
+Test SDK Extension Only: `test lib` (Tests the library only.)
+
 ## Building a .VSIX
 
 To build an installable .vsix file locally, navigate to the directory containing the extension's package.json (either `vscode-dotnet-runtime-extension` or `vscode-dotnet-sdk-extension`) run the following commands:
@@ -57,7 +62,7 @@ If the CI build fails for any reason, the PR issue will be updated with a link t
 
 ## PR Feedback
 
-Microsoft team and community members will provide feedback on your change. Community feedback is highly valued. You will often see the absence of team feedback if the community has already provided good review feedback. 
+Microsoft team and community members will provide feedback on your change. Community feedback is highly valued. You will often see the absence of team feedback if the community has already provided good review feedback.
 
 1 or more Microsoft team members will review every PR prior to merge. They will often reply with "LGTM, modulo comments". That means that the PR will be merged once the feedback is resolved. "LGTM" == "looks good to me".
 
