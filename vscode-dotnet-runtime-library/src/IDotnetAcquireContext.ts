@@ -18,11 +18,9 @@ export interface IDotnetAcquireContext {
      * Major.Minor (e.g: 3.1)
      * Feature Band (e.g: 7.0.1xx or 7.0.10x)
      * Specific Version / Fully-Qualified Version (e.g: 8.0.103)
-     *
-     * @property requestingExtensionId - The Extension that relies on our extension to acquire the runtime or .NET SDK. It MUST be provided.
-     *
+     * @property requestingExtensionId - The Extension that relies on our extension to acquire the runtime or .NET SDK.
+     * NOTE: For global SDK installations, this is not required. For others, it MUST be provided.
      * @property errorConfiguration - An set of options for the desired treat as error and error verbosity behaviors of the extension.
-     *
      * @property installType - For SDK installations, allows either global or local installs.
      * Do NOT use the local install feature with the global install feature or any global install as it is currently unsupported.
      */
