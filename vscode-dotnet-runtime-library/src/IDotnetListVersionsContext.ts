@@ -26,10 +26,12 @@ export interface IDotnetVersion {
      * Information regarding the version of the .NET SDK / Runtime.
      *
      * @property version - The full version of the SDK or Runtime. May include text such as -Preview.
+     * @property channelVersion - The major.minor version.
      * @property supportStatus - Is the version in long-term support or 'standard-term' support
      */
     version: string,
     supportStatus: DotnetVersionSupportStatus
+    channelVersion: string
 }
 
 /**

@@ -51,7 +51,8 @@ export class DotnetVersionProvider {
                 {
                     availableVersions.push({
                             supportStatus: (availableSdk['release-type'] as DotnetVersionSupportStatus),
-                            version: availableSdk[shouldObtainSdkVersions ? 'latest-sdk' : 'latest-runtime']
+                            version: availableSdk[shouldObtainSdkVersions ? 'latest-sdk' : 'latest-runtime'],
+                            channelVersion: availableSdk['channel-version']
                         } as IDotnetVersion
                     );
                 }

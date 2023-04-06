@@ -103,6 +103,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.exists(result);
     assert.equal(result?.length, 2);
     assert.equal(result?.filter((sdk : any) => sdk.version === '7.0.202').length, 1, 'The mock SDK with the expected version was not found by the API parsing service.');
+    assert.equal(result?.filter((sdk : any) => sdk.channelVersion === '7.0').length, 1, 'The mock SDK with the expected channel version was not found by the API parsing service.');
 
     // The API can find the available runtimes and their versions.
     apiContext.listRuntimes = true;
