@@ -54,10 +54,20 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         this.context.eventStream.post(new DotnetUninstallAllCompleted());
     }
 
+    /**
+     * 
+     * @remarks this is simply a wrapper around the acquire function.
+     * @returns the requested dotnet path. 
+     */
     public async acquireSDK(version: string): Promise<IDotnetAcquireResult> {
         return this.acquire(version, false);
     }
 
+    /**
+     * 
+     * @remarks this is simply a wrapper around the acquire function.
+     * @returns the requested dotnet path. 
+     */
     public async acquireRuntime(version: string): Promise<IDotnetAcquireResult> {
         return this.acquire(version, true);
     }
@@ -74,12 +84,14 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
         let installedVersions = this.context.extensionState.get<string[]>(this.installedVersionsKey, []);
 
-        if (installedVersions.length === 0 && fs.existsSync(dotnetPath) && !installRuntime) {
+        if (installedVersions.length === 0 && fs.existsSync(dotnetPath) && !installRuntime)
+        {
             // The education bundle already laid down a local install, add it to our managed installs
             installedVersions = await this.managePreinstalledVersion(dotnetInstallDir, installedVersions);
         }
 
-        if (installedVersions.includes(version) && fs.existsSync(dotnetPath)) {
+        if (installedVersions.includes(version) && fs.existsSync(dotnetPath))
+        {
             // Requested version has already been installed.
             this.context.eventStream.post(new DotnetAcquisitionStatusResolved(version));
             return { dotnetPath };
@@ -90,17 +102,23 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         return undefined;
     }
 
-    private async acquire(version: string, installRuntime: boolean): Promise<IDotnetAcquireResult> {
-        proc.exec(`C:\\Users\\noahgilson\\Downloads\\dotnet-sdk-2.2.207-win-x64.exe`, (err, stdout, stderr) => {
-            console.log(stdout);
-        });
-        
+    /**
+     * 
+     * @param version the version to get of the runtime or sdk.
+     * @param installRuntime true for runtime acquisition, false for SDK.
+     * @param global false for local install, true for global SDK installs.
+     * @returns the dotnet acqusition result.
+     */
+    private async acquire(version: string, installRuntime: boolean, global = false): Promise<IDotnetAcquireResult> {
         const existingAcquisitionPromise = this.acquisitionPromises[version];
-        if (existingAcquisitionPromise) {
+        if (existingAcquisitionPromise)
+        {
             // This version of dotnet is already being acquired. Memoize the promise.
             this.context.eventStream.post(new DotnetAcquisitionInProgress(version));
             return existingAcquisitionPromise.then((res) => ({ dotnetPath: res }));
-        } else {
+        }
+        else
+        {
             // We're the only one acquiring this version of dotnet, start the acquisition process.
             const acquisitionPromise = this.acquireCore(version, installRuntime).catch((error: Error) => {
                 delete this.acquisitionPromises[version];
@@ -112,6 +130,15 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         }
     }
 
+    /**
+     * 
+     * @param version The version of the object to acquire.
+     * @param installRuntime true if the request is to install the runtime, false for the SDK.
+     * @param global false if we're doing a local install, true if we're doing a global install. Only supported for the SDK atm.
+     * @returns the dotnet path of the acquired dotnet.
+     * 
+     * @remarks it is called "core" because it is the meat of the actual acquisition work; this has nothing to do with .NET core vs framework.
+     */
     private async acquireCore(version: string, installRuntime: boolean): Promise<string> {
         const installingVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
         let installedVersions = this.context.extensionState.get<string[]>(this.installedVersionsKey, []);
@@ -209,5 +236,12 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             this.context.eventStream.post(new DotnetPreinstallDetectionError(error as Error));
         }
         return installedVersions;
+    }
+
+    private async executeInstaller(installerPath : string)
+    {
+        proc.exec(installerPath, (err, stdout, stderr) => {
+            console.log(stdout);
+        });
     }
 }
