@@ -17,11 +17,13 @@ import {
     DotnetAcquisitionStatusRequested,
     DotnetCoreAcquisitionWorker,
     DotnetSDKAcquisitionStarted,
+    DotnetVersionProvider,
     enableExtensionTelemetry,
     ErrorConfiguration,
     ExtensionConfigurationWorker,
     formatIssueUrl,
     IDotnetAcquireContext,
+    IDotnetListVersionsContext,
     IDotnetUninstallContext,
     IEventStreamContext,
     IExtensionContext,
@@ -30,10 +32,13 @@ import {
     registerEventStream,
     SdkInstallationDirectoryProvider,
     VersionResolver,
+    WebRequestWorker,
+    IWindowDisplayWorker,
     WindowDisplayWorker,
 } from 'vscode-dotnet-runtime-library';
-import { IWindowDisplayWorker } from 'vscode-dotnet-runtime-library/dist/EventStream/IWindowDisplayWorker';
+
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquistionId';
+
 // tslint:disable no-var-requires
 const packageJson = require('../package.json');
 
@@ -45,6 +50,7 @@ namespace configKeys {
 namespace commandKeys {
     export const acquire = 'acquire';
     export const acquireStatus = 'acquireStatus';
+    export const listSdks = 'listSdks'
     export const uninstallAll = 'uninstallAll';
     export const showAcquisitionLog = 'showAcquisitionLog';
     export const reportIssue = 'reportIssue';
@@ -88,6 +94,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             moreInfoUrl: troubleshootingUrl,
         } as IIssueContext;
     };
+
     const timeoutValue = extensionConfiguration.get<number>(configKeys.installTimeoutValue);
     let storagePath: string;
     if (os.platform() === 'win32') {
@@ -109,6 +116,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         timeoutValue: timeoutValue === undefined ? defaultTimeoutValue : timeoutValue,
         installDirectoryProvider: new SdkInstallationDirectoryProvider(storagePath),
     });
+
     const versionResolver = new VersionResolver(context.globalState, eventStream);
 
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) => {
@@ -130,6 +138,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         }, issueContext(commandContext.errorConfiguration, 'acquireSDK'));
         return pathResult;
     });
+
     const dotnetAcquireStatusRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquireStatus}`, async (commandContext: IDotnetAcquireContext) => {
         const pathResult = callWithErrorHandling(async () => {
             eventStream.post(new DotnetAcquisitionStatusRequested(commandContext.version, commandContext.requestingExtensionId));
@@ -139,12 +148,27 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         }, issueContext(commandContext.errorConfiguration, 'acquireSDKStatus'));
         return pathResult;
     });
+
+    const dotnetListSdksRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listSdks}`,
+        async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) => {
+        const webWorker = customWebWorker !== undefined ? customWebWorker : new WebRequestWorker(
+            context.globalState,
+            eventStream,
+            DotnetVersionProvider.availableDontetVersionsUrl,
+            'listSDKVersionsCacheKey'
+        );
+
+        return new DotnetVersionProvider().GetAvailableDotnetVersions(commandContext, webWorker);
+    });
+
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallAll}`, async (commandContext: IDotnetUninstallContext | undefined) => {
         await callWithErrorHandling(async () => {
             await acquisitionWorker.uninstallAll();
         }, issueContext(commandContext ? commandContext.errorConfiguration : undefined, 'uninstallAll'));
     });
+
     const showOutputChannelRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.showAcquisitionLog}`, () => outputChannel.show(/* preserveFocus */ false));
+
     const reportIssueRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.reportIssue}`, async () => {
         const [url, issueBody] = formatIssueUrl(undefined, issueContext(AcquireErrorConfiguration.DisableErrorPopups, 'reportIssue'));
         await vscode.env.clipboard.writeText(issueBody);
@@ -154,6 +178,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     context.subscriptions.push(
         dotnetAcquireRegistration,
         dotnetAcquireStatusRegistration,
+        dotnetListSdksRegistration,
         dotnetUninstallAllRegistration,
         showOutputChannelRegistration,
         reportIssueRegistration,
