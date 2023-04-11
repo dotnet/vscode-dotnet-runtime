@@ -20,7 +20,7 @@ export class GlobalSDKInstallerUrlResolver {
     {
     }
 
-    public async getCorrectInstallerUrl(version: string): Promise<string> {
+    public async getInstallerUrl(version: string): Promise<string> {
         return this.routeRequestToProperVersionRequestType(version);
     }
 
@@ -37,17 +37,17 @@ export class GlobalSDKInstallerUrlResolver {
             const indexUrl = this.getIndexUrl(numberOfPeriods == 0 ? version + '.0' : version);
             const indexJsonData = await this.fetchJsonObjectFromUrl(indexUrl);
             const specificVersion : string = indexJsonData['latest-sdk'];
-            return await this.getInstallerUrl(specificVersion, indexUrl);
+            return await this.findCorrectInstallerUrl(specificVersion, indexUrl);
         }
         else if(this.isNonSpecificFeatureBandedVersion(version))
         {
             const specificVersion : string = await this.getNewestSpecificVersionFromFeatureBand(version);
-            return await this.getInstallerUrl(specificVersion, this.getIndexUrl(this.getMajorMinor(specificVersion)));
+            return await this.findCorrectInstallerUrl(specificVersion, this.getIndexUrl(this.getMajorMinor(specificVersion)));
         }
         else if(this.isFullySpecifiedVersion(version))
         {
             const indexUrl = this.getIndexUrl(this.getMajorMinor(version));
-            return await this.getInstallerUrl(version, indexUrl);
+            return await this.findCorrectInstallerUrl(version, indexUrl);
         }
 
         throw Error(`The version requested: ${version} is not in a valid format.`)
@@ -60,7 +60,7 @@ export class GlobalSDKInstallerUrlResolver {
      * @param indexUrl The url of the index server that hosts installer downlod links.
      * @returns The installer url to download.
      */
-    private async getInstallerUrl(specificVersion : string, indexUrl : string) : Promise<string>
+    private async findCorrectInstallerUrl(specificVersion : string, indexUrl : string) : Promise<string>
     {
         if(specificVersion === null || specificVersion === undefined || specificVersion == "")
         {

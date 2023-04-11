@@ -38,6 +38,7 @@ import {
 } from 'vscode-dotnet-runtime-library';
 
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquistionId';
+import { GlobalSDKInstallerUrlResolver } from './GlobalSDKInstallerUrlResolver';
 
 // tslint:disable no-var-requires
 const packageJson = require('../package.json');
@@ -128,13 +129,21 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
         const pathResult = callWithErrorHandling(async () => {
             eventStream.post(new DotnetSDKAcquisitionStarted());
-
             eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
-            const resolvedVersion = await versionResolver.getFullSDKVersion(commandContext.version);
-            const dotnetPath = await acquisitionWorker.acquireSDK(resolvedVersion);
-            const pathEnvVar = path.dirname(dotnetPath.dotnetPath);
-            setPathEnvVar(pathEnvVar, displayWorker, context.environmentVariableCollection);
-            return dotnetPath;
+            if(commandContext.installType === 'global')
+            {
+                const installDiscoverer = new GlobalSDKInstallerUrlResolver(context.globalState, eventStream);
+                const installerUrl = await installDiscoverer.getInstallerUrl(commandContext.version);
+                await.acquireGlobalSdk(installerUrl); // decide if we want to do that here
+            }
+            else
+            {
+                const resolvedVersion = await versionResolver.getFullSDKVersion(commandContext.version);
+                const dotnetPath = await acquisitionWorker.acquireSDK(resolvedVersion);
+                const pathEnvVar = path.dirname(dotnetPath.dotnetPath);
+                setPathEnvVar(pathEnvVar, displayWorker, context.environmentVariableCollection);
+                return dotnetPath;
+            }
         }, issueContext(commandContext.errorConfiguration, 'acquireSDK'));
         return pathResult;
     });
