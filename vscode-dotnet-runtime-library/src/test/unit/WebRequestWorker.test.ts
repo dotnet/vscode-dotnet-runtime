@@ -72,13 +72,13 @@ suite('WebRequestWorker Unit Tests', () => {
 
     test('Web Requests Memoized on Repeated Installs', async () => {
         const [eventStream, context] = getTestContext();
-        const webWorker = new MockWebRequestWorker(context, eventStream, '', 'MockKey');
+        const webWorker = new MockWebRequestWorker(context, eventStream,);
 
         // Make a request to cache the data
-        await webWorker.getCachedData(0);
+        await webWorker.getCachedData('', 0);
         const requests = [];
         for (let i = 0; i < 10; i++) {
-            requests.push(webWorker.getCachedData(0));
+            requests.push(webWorker.getCachedData('', 0));
         }
         for (const request of requests) {
             assert.equal(await request, 'Mock Web Request Result');
@@ -89,10 +89,10 @@ suite('WebRequestWorker Unit Tests', () => {
 
     test('Web Requests are retried', async () => {
         const [eventStream, context] = getTestContext();
-        const webWorker = new MockWebRequestWorker(context, eventStream, '', 'MockKey', false);
+        const webWorker = new MockWebRequestWorker(context, eventStream, false);
 
         const retryCount = 1;
-        await assert.isRejected(webWorker.getCachedData(retryCount));
+        await assert.isRejected(webWorker.getCachedData('', retryCount));
         const requestCount = webWorker.getRequestCount();
         assert.equal(requestCount, retryCount + 1);
     }).timeout(3000);

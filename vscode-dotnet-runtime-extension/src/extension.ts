@@ -143,6 +143,16 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         return pathResult;
     });
 
+    const dotnetListSdksRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listSdks}`,
+        async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) => {
+        const webWorker = customWebWorker !== undefined ? customWebWorker : new WebRequestWorker(
+            context.globalState,
+            eventStream
+        );
+
+        return new DotnetVersionProvider().GetAvailableDotnetVersions(commandContext, webWorker);
+    });
+
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallAll}`, async (commandContext: IDotnetUninstallContext | undefined) => {
         await callWithErrorHandling(() => acquisitionWorker.uninstallAll(), issueContext(commandContext ? commandContext.errorConfiguration : undefined, 'uninstallAll'));
     });

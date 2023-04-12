@@ -146,7 +146,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             if(commandContext.installType === 'global')
             {
                 const globalInstallerResolver = new GlobalSDKInstallerResolver(context.globalState, eventStream, commandContext.version);
-                await acquisitionWorker.acquireGlobalSdk(globalInstallerResolver); // decide if we want to do that here
+                await acquisitionWorker.acquireGlobalSDK(globalInstallerResolver);
             }
             else
             {
@@ -170,11 +170,12 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         return pathResult;
     });
 
-    const dotnetlistVersionsRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listVersions}`,
-        async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) =>
-    {
-        return getAvailableVersions(commandContext, customWebWorker);
-    });
+    const dotnetListSdksRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listSdks}`,
+        async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) => {
+        const webWorker = customWebWorker !== undefined ? customWebWorker : new WebRequestWorker(
+            context.globalState,
+            eventStream
+        );
 
     const dotnetRecommendedVersionRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.recommendedVersion}`,
     async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) : Promise<IDotnetVersion> =>

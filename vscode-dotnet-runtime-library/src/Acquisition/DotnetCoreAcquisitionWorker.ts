@@ -27,6 +27,8 @@ import { IDotnetCoreAcquisitionWorker } from './IDotnetCoreAcquisitionWorker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 import { GlobalSDKInstallerResolver } from './GlobalSDKInstallerResolver';
 import { createSemanticDiagnosticsBuilderProgram } from 'typescript';
+import { FileUtilities } from '../Utils/FileUtilities';
+import { WebRequestWorker } from '../Utils/WebRequestWorker';
 
 export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker {
     private readonly installingVersionsKey = 'installing';
@@ -220,7 +222,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         // check if theres a partial install from the extension if that can happen
 
         const installerUrl : string = await globalInstallerResolver.getInstallerUrl();
-        const installerFile : string = this.downloadInstallerOnMachine(installerUrl);
+        const installerFile : string = await this.downloadInstallerOnMachine(installerUrl);
         const installerResult : string = await this.executeInstaller(installerFile);
         // add the version to the extension state and remove if necessary
 
@@ -275,11 +277,22 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         return installedVersions;
     }
 
-    private downloadInstallerOnMachine(installerUrl : string) : string
+    private async downloadInstallerOnMachine(installerUrl : string) : Promise<string>
     {
-        return '';
+        const installerPath = path.join(__dirname, 'installers', `${installerUrl.split('/').slice(-1)}`);
+
+        const webWorker = new WebRequestWorker(this.context.extensionState, this.context.eventStream);
+        let rawInstallerFileContent : string | undefined = await webWorker.getCachedData(installerUrl);
+        if(rawInstallerFileContent === undefined)
+        {
+            throw Error(`The downloaded installer is corrupt or unavailable.`);
+        }
+
+        FileUtilities.writeFileOntoDisk(rawInstallerFileContent, installerPath)
+        return installerPath;
     }
 
+    // TODO: Handle this differently depending on the package type.
     private async executeInstaller(installerPath : string) : Promise<string>
     {
         proc.exec(installerPath, (err, stdout, stderr) => {

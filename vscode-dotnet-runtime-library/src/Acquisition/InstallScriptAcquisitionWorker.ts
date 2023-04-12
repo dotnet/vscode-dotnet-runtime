@@ -15,27 +15,30 @@ import {
 import { IExtensionState } from '../IExtensionState';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
+import { FileUtilities } from '../Utils/FileUtilities';
 
 export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisitionWorker {
     protected webWorker: WebRequestWorker;
     private readonly scriptAcquisitionUrl: string = 'https://dot.net/v1/dotnet-install.';
     private readonly scriptFilePath: string;
+    private readonly scriptFileEnding: string;
+
 
     constructor(extensionState: IExtensionState, private readonly eventStream: IEventStream) {
-        const scriptFileEnding = os.platform() === 'win32' ? 'ps1' : 'sh';
+        this.scriptFileEnding = os.platform() === 'win32' ? 'ps1' : 'sh';
         const scriptFileName = 'dotnet-install';
-        this.scriptFilePath = path.join(__dirname, 'install scripts', `${scriptFileName}.${scriptFileEnding}`);
-        this.webWorker = new WebRequestWorker(extensionState, eventStream, this.scriptAcquisitionUrl + scriptFileEnding, scriptFileName + scriptFileEnding);
+        this.scriptFilePath = path.join(__dirname, 'install scripts', `${scriptFileName}.${this.scriptFileEnding}`);
+        this.webWorker = new WebRequestWorker(extensionState, eventStream);
     }
 
     public async getDotnetInstallScriptPath(): Promise<string> {
         try {
-            const script = await this.webWorker.getCachedData();
+            const script = await this.webWorker.getCachedData(this.scriptAcquisitionUrl + this.scriptFileEnding);
             if (!script) {
                 throw new Error('Unable to get script path.');
             }
 
-            this.writeScriptAsFile(script, this.scriptFilePath);
+            FileUtilities.writeFileOntoDisk(script, this.scriptFilePath);
             this.eventStream.post(new DotnetInstallScriptAcquisitionCompleted());
             return this.scriptFilePath;
         } catch (error) {
@@ -50,16 +53,6 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
 
             throw new Error(`Failed to Acquire Dotnet Install Script: ${error}`);
         }
-    }
-
-    // Protected for testing purposes
-    protected writeScriptAsFile(scriptContent: string, filePath: string) {
-        if (!fs.existsSync(path.dirname(filePath))) {
-            fs.mkdirSync(path.dirname(filePath), { recursive: true });
-        }
-        scriptContent = eol.auto(scriptContent);
-        fs.writeFileSync(filePath, scriptContent);
-        fs.chmodSync(filePath, 0o700);
     }
 
     // Protected for testing purposes

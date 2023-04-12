@@ -25,65 +25,8 @@ export class VersionResolver implements IVersionResolver {
     private readonly releasesUrl = 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json';
 
     constructor(extensionState: IExtensionState,
-                private readonly eventStream: IEventStream,
-                webWorker?: WebRequestWorker
-    )
-    {
-        this.webWorker = webWorker ?? new WebRequestWorker(extensionState, eventStream, this.releasesUrl, this.releasesKey);
-    }
-
-    /**
-     * @remarks
-     * Use the release.json manifest that contains the newest version of the SDK and Runtime for each major.minor of .NET to get the available versions.
-     * Relies on the context listRuntimes to tell if it should get runtime or sdk versions.
-     *
-     * @params
-     * webWorker - This class can use its own web-worker or a custom one for testing purposes.
-     *
-     * @returns
-     * IDotnetListVersionsResult of versions available.
-     *
-     * @throws
-     * Exception if the API service for releases-index.json is unavailable.
-     */
-    public async GetAvailableDotnetVersions(commandContext: IDotnetListVersionsContext | undefined) : Promise<IDotnetListVersionsResult>
-    {
-        // If shouldObtainSdkVersions === false, get Runtimes. Else, get Sdks.
-        const shouldObtainSdkVersions : boolean = !commandContext?.listRuntimes;
-        const availableVersions : IDotnetListVersionsResult = [];
-
-        const response = await this.webWorker.getCachedData();
-
-
-        return new Promise<IDotnetListVersionsResult>((resolve, reject) =>
-        {
-            if (!response)
-            {
-                const offlineError = new Error('Unable to connect to the index server: Cannot find .NET versions.');
-                this.eventStream.post(new DotnetOfflineFailure(offlineError, 'any'));
-                reject(offlineError);
-            }
-            else
-            {
-                const sdkDetailsJson = JSON.parse(response)['releases-index'];
-
-                for(const availableSdk of sdkDetailsJson)
-                {
-                    if(availableSdk['release-type'] === 'lts' || availableSdk['release-type'] === 'sts')
-                    {
-                        availableVersions.push({
-                                supportStatus: (availableSdk['release-type'] as DotnetVersionSupportStatus),
-                                supportPhase: (availableSdk['support-phase'] as DotnetVersionSupportPhase),
-                                version: availableSdk[shouldObtainSdkVersions ? 'latest-sdk' : 'latest-runtime'],
-                                channelVersion: availableSdk['channel-version']
-                            } as IDotnetVersion
-                        );
-                    }
-                }
-            }
-
-            resolve(availableVersions);
-        });
+                private readonly eventStream: IEventStream) {
+        this.webWorker = new WebRequestWorker(extensionState, eventStream);
     }
 
     public async getFullRuntimeVersion(version: string): Promise<string> {
@@ -127,11 +70,8 @@ export class VersionResolver implements IVersionResolver {
         }
     }
 
-    private async getReleasesInfo(getRuntimeVersion : boolean): Promise<IDotnetListVersionsResult>
-    {
-        const apiContext: IDotnetListVersionsContext = { listRuntimes: getRuntimeVersion };
-
-        const response = await this.GetAvailableDotnetVersions(apiContext);
+    private async getReleasesInfo(): Promise<ReleasesResult> {
+        const response = await this.webWorker.getCachedData(this.releasesUrl);
         if (!response) {
             throw new Error('Unable to get the full version.');
         }

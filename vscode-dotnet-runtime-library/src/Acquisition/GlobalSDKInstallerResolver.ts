@@ -22,6 +22,12 @@ export class GlobalSDKInstallerResolver {
     // The resolved version that was requested.
     private specificVersionRequested : string;
 
+    /**
+     * @remarks Do NOT set this unless you are testing.
+     * Written to allow mock data to be given to the resolver.
+     */
+    public customWebRequestWorker? : WebRequestWorker | null = null;
+
     constructor(
         private readonly extensionState: IExtensionState,
         private readonly eventStream: IEventStream,
@@ -292,8 +298,8 @@ export class GlobalSDKInstallerResolver {
      */
     private async fetchJsonObjectFromUrl(url : string)
     {
-        const webWorker = new WebRequestWorker(this.extensionState, this.eventStream, url, url);
-        const jsonStringData = await webWorker.getCachedData(1); // 1 retry should be good enough.
+        const webWorker = this.customWebRequestWorker ? this.customWebRequestWorker : new WebRequestWorker(this.extensionState, this.eventStream);
+        const jsonStringData = await webWorker.getCachedData(url, 1); // 1 retry should be good enough.
         if(jsonStringData === undefined)
         {
             throw Error(`The requested url ${url} is unreachable.`);
