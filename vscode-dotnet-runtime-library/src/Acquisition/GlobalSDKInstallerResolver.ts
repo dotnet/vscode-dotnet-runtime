@@ -1,34 +1,101 @@
-import { IVersionResolver } from 'vscode-dotnet-runtime-library';
-import { WebRequestWorker } from 'vscode-dotnet-runtime-library';
-import { IEventStream } from 'vscode-dotnet-runtime-library'
-import { IExtensionState } from 'vscode-dotnet-runtime-library';
-import { DotnetVersionResolutionError } from 'vscode-dotnet-runtime-library';
-import { DotnetVersionResolutionCompleted } from 'vscode-dotnet-runtime-library';
+import { WebRequestWorker } from '../Utils/WebRequestWorker';
+import { IEventStream } from '../EventStream/EventStream';
+import { IExtensionState } from '../IExtensionState';
+import { DotnetVersionResolutionError } from '../EventStream/EventStreamEvents';
+import { DotnetVersionResolutionCompleted } from '../EventStream/EventStreamEvents';
 import * as os from 'os';
+import * as cp from 'child_process';
 
-export class GlobalSDKInstallerUrlResolver {
-    /**
-     * @remarks
-     * This is similar to the version resolver but accepts a wider range of inputs such as '6', '6.1', or '6.0.3xx' or '6.0.301'.
-     * It currently only is used for SDK Global acquistion to prevent breaking existing behaviors.
-     */
+/**
+ * @remarks
+ * This is similar to the version resolver but accepts a wider range of inputs such as '6', '6.1', or '6.0.3xx' or '6.0.301'.
+ * It currently only is used for SDK Global acquistion to prevent breaking existing behaviors.
+ * Throws various errors in the event that a version is incorrectly formatted, the sdk server is unavailable, etc.
+ */
+export class GlobalSDKInstallerResolver {
+    // The unparsed version into given to the API to request a version of the SDK.
+    private requestedVersion : string;
+
+    // The url for a the installer matching the machine os and arch of the system running the extension
+    private discoveredInstallerUrl : string;
+
+    // The resolved version that was requested.
+    private specificVersionRequested : string;
 
     constructor(
         private readonly extensionState: IExtensionState,
-        private readonly eventStream: IEventStream
-    ) 
+        private readonly eventStream: IEventStream,
+        requestedVersion : string
+    )
     {
+        this.requestedVersion = requestedVersion;
+        this.discoveredInstallerUrl = '';
+        this.specificVersionRequested = '';
     }
 
-    public async getInstallerUrl(version: string): Promise<string> {
-        return this.routeRequestToProperVersionRequestType(version);
+
+    /**
+     *
+     * @returns The url to the installer for the sdk that matches the machine os and architecture, as well as for the requestedVersion.
+     */
+    public async getInstallerUrl(): Promise<string>
+    {
+        if(this.discoveredInstallerUrl === '')
+        {
+            this.discoveredInstallerUrl = await this.routeRequestToProperVersionRequestType(this.requestedVersion);
+        }
+        return this.discoveredInstallerUrl;
     }
 
     /**
-     * 
-     * @remarks this function maps the input version to a singular, specific and correct format based on the accepted version formats for global sdk installs. 
+     *
+     * @returns the fully specified version in a standardized format that was requested.
+     */
+    public async getFullVersion(): Promise<string>
+    {
+        if(this.specificVersionRequested === '')
+        {
+            this.discoveredInstallerUrl = await this.routeRequestToProperVersionRequestType(this.requestedVersion);
+        }
+        return this.specificVersionRequested;
+    }
+
+    /**
+     *
+     * @returns Returns '' if no conflicting version was found on the machine.
+     * Returns the existing version if a global install with the requested version already exists.
+     * OR: If a global install exists for the same band with a higher version.
+     * For non-windows cases: there may only be one dotnet allowed in root, and we need to TODO: get a PM decision on what to do for this.
+     */
+    public async GlobalInstallWithConflictingVersionAlreadyExists() : Promise<string>
+    {
+        if(this.specificVersionRequested === '')
+        {
+            this.discoveredInstallerUrl = await this.routeRequestToProperVersionRequestType(this.requestedVersion);
+        }
+
+        const sdks : Array<string> = this.getGlobalSdksInstalledOnMachine();
+        sdks.forEach((sdk: string) =>
+        {
+            if
+            ( // side by side installs of the same major.minor and band can cause issues in some cases. So we decided to just not allow it
+                this.getMajorMinor(this.specificVersionRequested) === this.getMajorMinor(sdk) &&
+                this.getFeatureBandFromVersion(this.specificVersionRequested) === this.getFeatureBandFromVersion(sdk) &&
+                this.specificVersionRequested <= sdk
+            )
+            {
+                return sdk;
+            }
+        });
+
+        return '';
+    }
+
+    /**
+     *
+     * @remarks this function maps the input version to a singular, specific and correct format based on the accepted version formats for global sdk installs.
      * @param version The requested version given to the API.
-     * @returns The installer download URL for the correct OS, Architecture, & Specific Version based on the given input version. 
+     * @returns The installer download URL for the correct OS, Architecture, & Specific Version based on the given input version.
      */
     private async routeRequestToProperVersionRequestType(version : string) : Promise<string> {
         if(this.isNonSpecificMajorOrMajorMinorVersion(version))
@@ -36,26 +103,27 @@ export class GlobalSDKInstallerUrlResolver {
             const numberOfPeriods = version.split('.').length - 1;
             const indexUrl = this.getIndexUrl(numberOfPeriods == 0 ? version + '.0' : version);
             const indexJsonData = await this.fetchJsonObjectFromUrl(indexUrl);
-            const specificVersion : string = indexJsonData['latest-sdk'];
-            return await this.findCorrectInstallerUrl(specificVersion, indexUrl);
+            this.specificVersionRequested = indexJsonData['latest-sdk'];
+            return await this.findCorrectInstallerUrl(this.specificVersionRequested, indexUrl);
         }
         else if(this.isNonSpecificFeatureBandedVersion(version))
         {
-            const specificVersion : string = await this.getNewestSpecificVersionFromFeatureBand(version);
-            return await this.findCorrectInstallerUrl(specificVersion, this.getIndexUrl(this.getMajorMinor(specificVersion)));
+            this.specificVersionRequested = await this.getNewestSpecificVersionFromFeatureBand(version);
+            return await this.findCorrectInstallerUrl(this.specificVersionRequested, this.getIndexUrl(this.getMajorMinor(this.specificVersionRequested)));
         }
         else if(this.isFullySpecifiedVersion(version))
         {
-            const indexUrl = this.getIndexUrl(this.getMajorMinor(version));
-            return await this.findCorrectInstallerUrl(version, indexUrl);
+            this.specificVersionRequested = version;
+            const indexUrl = this.getIndexUrl(this.getMajorMinor(this.specificVersionRequested));
+            return await this.findCorrectInstallerUrl(this.specificVersionRequested, indexUrl);
         }
 
         throw Error(`The version requested: ${version} is not in a valid format.`)
     }
 
     /**
-     * 
-     * @remakrs this function handles finding the right os, arch url for the installer.
+     *
+     * @remarks this function handles finding the right os, arch url for the installer.
      * @param specificVersion the full, specific version, e.g. 7.0.301 to get.
      * @param indexUrl The url of the index server that hosts installer downlod links.
      * @returns The installer url to download.
@@ -72,7 +140,7 @@ export class GlobalSDKInstallerUrlResolver {
 
         let convertedOs = "";
         let convertedArch = "";
-        
+
         switch(operatingSys)
         {
             case 'win32': {
@@ -113,7 +181,7 @@ export class GlobalSDKInstallerUrlResolver {
 
         const indexJson =  await this.fetchJsonObjectFromUrl(indexUrl);
         const sdks = indexJson['releases']['sdks'];
-        
+
         sdks.forEach((sdk: { [x: string]: any; }) => {
             const thisSDKVersion : string = sdk['version'];
             if(thisSDKVersion === specificVersion) // NOTE that this will not catch things like -preview or build number suffixed versions.
@@ -132,7 +200,7 @@ export class GlobalSDKInstallerUrlResolver {
     }
 
     /**
-     * 
+     *
      * @param fullVersion the fully specified version, e.g. 7.0.301 to get the major minor from.
      * @returns the major.minor in the form of '3.1', etc.
      */
@@ -142,7 +210,7 @@ export class GlobalSDKInstallerUrlResolver {
     }
 
     /**
-     * 
+     *
      * @param majorMinor the major.minor in the form of '3.1', etc.
      * @returns the url to obtain the installer for the version.
      */
@@ -151,6 +219,36 @@ export class GlobalSDKInstallerUrlResolver {
         return 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/' + majorMinor + '/releases.json';
     }
 
+    /**
+     *
+     * @returns an array containing fully specified / specific versions of all globally installed sdks on the machine in windows for 32 and 64 bit sdks.
+     * TODO: Expand this function to work with linux.
+     */
+    private getGlobalSdksInstalledOnMachine() : Array<string>
+    {
+        const sdks: string[] = [];
+
+        if (os.platform() === 'win32')
+        {
+            const sdkInstallRecords64Bit = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\dotnet\\Setup\\InstalledVersions\\x64\\sdk';
+            const sdkInstallRecords32Bit = sdkInstallRecords64Bit.replace('x64', 'x86');
+            const installRecordKeys64Bit = cp.execSync(`%SystemRoot%\\System32\\reg.exe query "${sdkInstallRecords64Bit}"`).toString();
+            const installRecordKeys32Bit = cp.execSync(`%SystemRoot%\\System32\\reg.exe query "${sdkInstallRecords32Bit}"`).toString();
+            installRecordKeys64Bit.concat(installRecordKeys32Bit).split("").forEach( function (regData : string)
+                {
+                    sdks.push(regData);
+                }
+            );
+        }
+
+        return sdks;
+    }
+
+    /**
+     *
+     * @param version the version of the sdk.. either fully specified or not, but containing a band definition.
+     * @returns a single string representing the band number.
+     */
     private getFeatureBandFromVersion(version : string) : string
     {
         const band : string | undefined = version.split('.').at(2)?.charAt(0);
@@ -162,7 +260,7 @@ export class GlobalSDKInstallerUrlResolver {
     }
 
     /**
-     * 
+     *
      * @param version the non-specific version, such as 6.0.4xx.
      * @param band The band of the version.
      */
@@ -170,7 +268,7 @@ export class GlobalSDKInstallerUrlResolver {
     {
         const band : string = this.getFeatureBandFromVersion(version);
         const indexUrl : string = this.getIndexUrl(this.getMajorMinor(version));
-        
+
         // Get the sdks
         const indexJson =  await this.fetchJsonObjectFromUrl(indexUrl);
         const sdks = indexJson['releases']['sdks'];
@@ -188,9 +286,9 @@ export class GlobalSDKInstallerUrlResolver {
     }
 
     /**
-     * 
+     *
      * @param url The url containing raw json data to parse.
-     * @returns a serizled JSON object. 
+     * @returns a serizled JSON object.
      */
     private async fetchJsonObjectFromUrl(url : string)
     {
@@ -200,12 +298,12 @@ export class GlobalSDKInstallerUrlResolver {
         {
             throw Error(`The requested url ${url} is unreachable.`);
         }
-        
+
         return JSON.parse(jsonStringData);
     }
 
     /**
-     * 
+     *
      * @param version the requested version to analyze.
      * @returns true IFF version is of an expected length and format.
      */
@@ -217,7 +315,7 @@ export class GlobalSDKInstallerUrlResolver {
     }
 
     /**
-     * 
+     *
      * @param version the requested version to analyze.
      * @returns true IFF version is a feature band with an unspecified sub-version was given e.g. 6.0.4xx or 6.0.40x
      */
@@ -227,7 +325,7 @@ export class GlobalSDKInstallerUrlResolver {
     }
 
     /**
-     * 
+     *
      * @param version the requested version to analyze.
      * @returns true IFF a major release represented as an integer was given. e.g. 6, which we convert to 6.0, OR a major minor was given, e.g. 6.1.
      */
@@ -237,7 +335,7 @@ export class GlobalSDKInstallerUrlResolver {
     }
 
     /**
-     * 
+     *
      * @param version the requested version to analyze.
      * @returns true IFF version is a specific version e.g. 7.0.301.
      */
@@ -248,7 +346,7 @@ export class GlobalSDKInstallerUrlResolver {
     }
 
     /**
-     * 
+     *
      * @param value the string to check and see if it's a valid number.
      * @returns true if it's a valid number.
      */
