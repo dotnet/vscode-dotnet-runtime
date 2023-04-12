@@ -292,6 +292,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         return installerPath;
     }
 
+    // TODO: Handle this differently depending on the package type.
     private async executeInstaller(installerPath : string) : Promise<string>
     {
         proc.exec(installerPath, (err, stdout, stderr) => {

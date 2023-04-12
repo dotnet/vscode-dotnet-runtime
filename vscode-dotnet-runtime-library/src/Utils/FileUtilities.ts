@@ -17,6 +17,5 @@ export class FileUtilities {
         scriptContent = eol.auto(scriptContent);
         fs.writeFileSync(filePath, scriptContent);
         fs.chmodSync(filePath, 0o700);}
-    }
 }
 
