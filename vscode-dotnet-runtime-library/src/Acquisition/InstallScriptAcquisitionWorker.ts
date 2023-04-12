@@ -15,6 +15,7 @@ import {
 import { IExtensionState } from '../IExtensionState';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
+import { FileUtilities } from '../Utils/FileUtilities';
 
 export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisitionWorker {
     protected webWorker: WebRequestWorker;
@@ -35,7 +36,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
                 throw new Error('Unable to get script path.');
             }
 
-            this.writeScriptAsFile(script, this.scriptFilePath);
+            FileUtilities.writeFileOntoDisk(script, this.scriptFilePath);
             this.eventStream.post(new DotnetInstallScriptAcquisitionCompleted());
             return this.scriptFilePath;
         } catch (error) {
@@ -50,16 +51,6 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
 
             throw new Error(`Failed to Acquire Dotnet Install Script: ${error}`);
         }
-    }
-
-    // Protected for testing purposes
-    protected writeScriptAsFile(scriptContent: string, filePath: string) {
-        if (!fs.existsSync(path.dirname(filePath))) {
-            fs.mkdirSync(path.dirname(filePath), { recursive: true });
-        }
-        scriptContent = eol.auto(scriptContent);
-        fs.writeFileSync(filePath, scriptContent);
-        fs.chmodSync(filePath, 0o700);
     }
 
     // Protected for testing purposes

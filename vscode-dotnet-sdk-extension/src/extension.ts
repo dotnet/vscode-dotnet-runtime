@@ -133,7 +133,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             if(commandContext.installType === 'global')
             {
                 const globalInstallerResolver = new GlobalSDKInstallerResolver(context.globalState, eventStream, commandContext.version);
-                await acquisitionWorker.acquireGlobalSdk(globalInstallerResolver); // decide if we want to do that here
+                await acquisitionWorker.acquireGlobalSDK(globalInstallerResolver); // decide if we want to do that here
             }
             else
             {
