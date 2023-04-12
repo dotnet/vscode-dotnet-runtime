@@ -40,7 +40,7 @@ import {
 } from 'vscode-dotnet-runtime-library';
 
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquistionId';
-import { GlobalSDKInstallerUrlResolver } from './GlobalSDKInstallerUrlResolver';
+import { GlobalSDKInstallerResolver } from 'vscode-dotnet-runtime-library/dist/Acquisition/GlobalSDKInstallerResolver';
 
 // tslint:disable no-var-requires
 const packageJson = require('../package.json');
@@ -145,9 +145,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
             if(commandContext.installType === 'global')
             {
-                const installDiscoverer = new GlobalSDKInstallerUrlResolver(context.globalState, eventStream);
-                const installerUrl = await installDiscoverer.getInstallerUrl(commandContext.version);
-                await.acquireGlobalSdk(installerUrl); // decide if we want to do that here
+                const globalInstallerResolver = new GlobalSDKInstallerResolver(context.globalState, eventStream, commandContext.version);
+                await acquisitionWorker.acquireGlobalSdk(globalInstallerResolver); // decide if we want to do that here
             }
             else
             {
