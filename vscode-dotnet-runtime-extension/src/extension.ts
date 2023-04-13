@@ -151,9 +151,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) => {
         const webWorker = customWebWorker !== undefined ? customWebWorker : new WebRequestWorker(
             context.globalState,
-            eventStream,
-            DotnetVersionProvider.availableDontetVersionsUrl,
-            'listSDKVersionsCacheKey'
+            eventStream
         );
 
         return new DotnetVersionProvider().GetAvailableDotnetVersions(commandContext, webWorker);

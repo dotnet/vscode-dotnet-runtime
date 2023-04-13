@@ -79,7 +79,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
 
     const mockWebContext = new MockExtensionContext();
     const eventStream = new MockEventStream();
-    const webWorker = new MockWebRequestWorker(mockWebContext, eventStream, '', 'MockKey');
+    const webWorker = new MockWebRequestWorker(mockWebContext, eventStream);
     webWorker.response = `{
       "releases-index": [
         {

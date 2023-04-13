@@ -281,8 +281,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     {
         const installerPath = path.join(__dirname, 'installers', `${installerUrl.split('/').slice(-1)}`);
 
-        const webWorker = new WebRequestWorker(this.context.extensionState, this.context.eventStream, installerUrl, installerUrl);
-        let rawInstallerFileContent : string | undefined = await webWorker.getCachedData();
+        const webWorker = new WebRequestWorker(this.context.extensionState, this.context.eventStream);
+        let rawInstallerFileContent : string | undefined = await webWorker.getCachedData(installerUrl);
         if(rawInstallerFileContent === undefined)
         {
             throw Error(`The downloaded installer is corrupt or unavailable.`);

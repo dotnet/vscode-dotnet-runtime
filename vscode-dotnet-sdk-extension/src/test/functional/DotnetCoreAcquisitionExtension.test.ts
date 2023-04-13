@@ -33,6 +33,7 @@ import {
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { uninstallSDKExtension } from '../../ExtensionUninstall';
+import { GlobalSDKInstallerResolver } from 'vscode-dotnet-runtime-library/dist/Acquisition/GlobalSDKInstallerResolver';
 
 const maxTimeoutTime = 100000;
 const assert = chai.assert;
@@ -236,6 +237,52 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   test('Install Command with Unknown Extension Id', async () => {
     const context: IDotnetAcquireContext = { version: '5.0', requestingExtensionId: 'unknown' };
     return assert.isRejected(vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context));
+  }).timeout(maxTimeoutTime);
+
+  test('Global Install Version Parsing Handles Different Version Formats Correctly', async () => {
+    const mockExtensionContext = new MockExtensionContext();
+    const eventStream = new MockEventStream();
+
+    const majorOnlyVersion = '6';
+    const majorMinorVersion = '6.0';
+    const featureBandOnlyVersion = '6.0.3xx';
+    const fullVersion = '6.0.301';
+
+    let webWorker = new MockWebRequestWorker(mockExtensionContext, eventStream, '');
+    webWorker.response = `{
+      "releases-index": [
+        {
+          "channel-version": "8.0",
+          "latest-release": "8.0.0-preview.2",
+          "latest-runtime": "8.0.0-preview.2.23128.3",
+          "latest-sdk": "8.0.100-preview.2.23157.25",
+          "release-type" : "lts",
+          "support-phase": "preview"
+        },
+        {
+          "channel-version": "7.0",
+          "latest-release": "7.0.4",
+          "latest-release-date": "2023-03-14",
+          "latest-runtime": "7.0.4",
+          "latest-sdk": "7.0.202",
+          "release-type" : "sts",
+          "support-phase": "active"
+        }
+      ]
+    }`
+
+    let resolver : GlobalSDKInstallerResolver = new GlobalSDKInstallerResolver(mockExtensionContext, eventStream, majorOnlyVersion);
+    resolver.customWebRequestWorker = webWorker;
+    assert.strictEqual(fullVersion, await resolver.getFullVersion());
+
+    resolver = new GlobalSDKInstallerResolver(mockExtensionContext, eventStream, majorMinorVersion);
+    assert.strictEqual(fullVersion, await resolver.getFullVersion());
+
+    resolver = new GlobalSDKInstallerResolver(mockExtensionContext, eventStream, featureBandOnlyVersion);
+    assert.strictEqual(fullVersion, await resolver.getFullVersion());
+
+    resolver = new GlobalSDKInstallerResolver(mockExtensionContext, eventStream, fullVersion);
+    assert.strictEqual(fullVersion, await resolver.getFullVersion());
   }).timeout(maxTimeoutTime);
 
   test('Install Command Sets the PATH', async () => {

@@ -20,7 +20,7 @@ export class VersionResolver implements IVersionResolver {
 
     constructor(extensionState: IExtensionState,
                 private readonly eventStream: IEventStream) {
-        this.webWorker = new WebRequestWorker(extensionState, eventStream, this.releasesUrl, this.releasesKey);
+        this.webWorker = new WebRequestWorker(extensionState, eventStream);
     }
 
     public async getFullRuntimeVersion(version: string): Promise<string> {
@@ -62,7 +62,7 @@ export class VersionResolver implements IVersionResolver {
     }
 
     private async getReleasesInfo(): Promise<ReleasesResult> {
-        const response = await this.webWorker.getCachedData();
+        const response = await this.webWorker.getCachedData(this.releasesUrl);
         if (!response) {
             throw new Error('Unable to get the full version.');
         }

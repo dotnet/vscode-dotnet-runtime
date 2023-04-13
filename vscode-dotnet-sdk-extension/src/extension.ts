@@ -133,7 +133,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             if(commandContext.installType === 'global')
             {
                 const globalInstallerResolver = new GlobalSDKInstallerResolver(context.globalState, eventStream, commandContext.version);
-                await acquisitionWorker.acquireGlobalSDK(globalInstallerResolver); // decide if we want to do that here
+                await acquisitionWorker.acquireGlobalSDK(globalInstallerResolver);
             }
             else
             {
@@ -161,9 +161,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) => {
         const webWorker = customWebWorker !== undefined ? customWebWorker : new WebRequestWorker(
             context.globalState,
-            eventStream,
-            DotnetVersionProvider.availableDontetVersionsUrl,
-            'listSDKVersionsCacheKey'
+            eventStream
         );
 
         return new DotnetVersionProvider().GetAvailableDotnetVersions(commandContext, webWorker);
