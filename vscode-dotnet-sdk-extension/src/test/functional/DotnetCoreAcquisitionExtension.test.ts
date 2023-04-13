@@ -75,7 +75,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   test('List Sdks & Runtimes (API Correctly Returns Sdks & Runtimes)', async () => {
     const mockWebContext = new MockExtensionContext();
     const eventStream = new MockEventStream();
-    const webWorker = new MockWebRequestWorker(mockWebContext, eventStream, '', 'MockKey');
+    const webWorker = new MockWebRequestWorker(mockWebContext, eventStream);
     webWorker.response = `{
       "releases-index": [
         {
@@ -125,7 +125,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       assert.throws(async () =>
       {
         await vscode.commands.executeCommand<IDotnetListVersionsResult>(
-          'dotnet-sdk.listSdks', apiContext, new FailingWebRequestWorker(mockWebContext, eventStream, '', 'MockKey')
+          'dotnet-sdk.listSdks', apiContext, new FailingWebRequestWorker(mockWebContext, eventStream)
         )
       },
       DotnetVersionProvider.dotnetAvailableVersionsPageUnavailableError
@@ -248,7 +248,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     const featureBandOnlyVersion = '6.0.3xx';
     const fullVersion = '6.0.301';
 
-    let webWorker = new MockWebRequestWorker(mockExtensionContext, eventStream, '');
+    let webWorker = new MockWebRequestWorker(mockExtensionContext, eventStream);
     webWorker.response = `{
       "releases-index": [
         {
