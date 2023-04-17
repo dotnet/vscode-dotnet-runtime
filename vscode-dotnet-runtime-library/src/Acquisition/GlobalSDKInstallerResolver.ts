@@ -81,7 +81,7 @@ export class GlobalSDKInstallerResolver {
         }
 
         const sdks : Array<string> = this.getGlobalSdksInstalledOnMachine();
-        sdks.forEach((sdk: string) =>
+        for (let sdk of sdks)
         {
             if
             ( // side by side installs of the same major.minor and band can cause issues in some cases. So we decided to just not allow it
@@ -92,7 +92,7 @@ export class GlobalSDKInstallerResolver {
             {
                 return sdk;
             }
-        });
+        }
 
         return '';
     }
@@ -186,21 +186,35 @@ export class GlobalSDKInstallerResolver {
         const desiredRidPackage = convertedOs + '-' + convertedArch;
 
         const indexJson =  await this.fetchJsonObjectFromUrl(indexUrl);
-        const sdks = indexJson['releases']['sdks'];
+        const releases = indexJson['releases'];
+        if(releases.length == 0)
+        {
+            throw Error(`The releases json format used by ${indexUrl} is invalid or has changed, and the extension needs to be updated.`);
+        }
 
-        sdks.forEach((sdk: { [x: string]: any; }) => {
+        const sdks = releases[0]['sdks'];
+
+        for (let sdk of sdks) 
+        {
             const thisSDKVersion : string = sdk['version'];
             if(thisSDKVersion === specificVersion) // NOTE that this will not catch things like -preview or build number suffixed versions.
             {
                const thisSDKFiles = sdk['files'];
-               thisSDKFiles.array.forEach((installer: { [x: string]: any; }) => {
+               for (let installer of thisSDKFiles)
+               {
                     if(installer['rid'] == desiredRidPackage)
                     {
-                        return installer['url'];
+                        const installerUrl = installer['url'];
+                        if(installerUrl === undefined)
+                        {
+                            throw Error(`URL for ${desiredRidPackage} on ${specificVersion} is unavailable: The version may be Out of Support, or the releases json format used by ${indexUrl} may be invalid and the extension needs to be updated.`);
+                        }
+                        return installerUrl;
                     }
-               });
+                }
+                throw Error(`An installer for the runtime ${desiredRidPackage} could not be found for version ${specificVersion}.`);
             }
-        });
+        }
 
         throw Error(`The requested version ${specificVersion} or resolved version is invalid. Note that -preview versions or versions with build numbers aren't yet supported.`);
     }
@@ -277,8 +291,16 @@ export class GlobalSDKInstallerResolver {
 
         // Get the sdks
         const indexJson =  await this.fetchJsonObjectFromUrl(indexUrl);
-        const sdks = indexJson['releases']['sdks'];
-        sdks.forEach((sdk: { [x: string]: any; }) => {
+        const releases = indexJson['releases']
+        
+        if(releases.length == 0)
+        {
+            throw Error(`The releases json format used by ${indexUrl} is invalid or has changed, and the extension needs to be updated.`);
+        }
+
+        const sdks = releases[0]['sdks'];
+        for (let sdk of sdks)
+        {
             // The SDKs in the index should be in-order, so we can rely on that property.
             // The first one we find with the given feature band will also be the 'newest.'
             const thisSDKVersion : string = sdk['version'];
@@ -286,7 +308,7 @@ export class GlobalSDKInstallerResolver {
             {
                 return thisSDKVersion;
             }
-        });
+        }
 
         throw Error(`A version for the requested feature band ${band} under the series ${version} couldn't be found.`);
     }
