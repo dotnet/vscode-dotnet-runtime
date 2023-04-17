@@ -34,6 +34,7 @@ import {
 import * as extension from '../../extension';
 import { uninstallSDKExtension } from '../../ExtensionUninstall';
 import { GlobalSDKInstallerResolver } from 'vscode-dotnet-runtime-library/dist/Acquisition/GlobalSDKInstallerResolver';
+import { MockIndexWebRequestWorker } from 'vscode-dotnet-runtime-library';
 
 const maxTimeoutTime = 100000;
 const assert = chai.assert;
@@ -239,50 +240,155 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     return assert.isRejected(vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context));
   }).timeout(maxTimeoutTime);
 
-  test('Global Install Version Parsing Handles Different Version Formats Correctly', async () => {
+  test('Global Install Version Parsing Handles Different Version Formats Correctly and Gives Expected Installer URL', async () => {
     const mockExtensionContext = new MockExtensionContext();
     const eventStream = new MockEventStream();
 
     const majorOnlyVersion = '6';
     const majorMinorVersion = '6.0';
     const featureBandOnlyVersion = '6.0.3xx';
-    const fullVersion = '6.0.301';
+    const fullVersion = '6.0.311';
 
-    let webWorker = new MockWebRequestWorker(mockExtensionContext, eventStream);
-    webWorker.response = `{
-      "releases-index": [
+    const newestBandedVersion = '6.0.311';
+    const newestVersion = '6.0.408';
+
+    let webWorker = new MockIndexWebRequestWorker(mockExtensionContext, eventStream);
+    webWorker.knownUrls.push("https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/6.0/releases.json");
+    webWorker.matchingUrlResponses.push(
+    `{
+      "channel-version": "6.0",
+      "latest-runtime": "6.0.16",
+      "latest-sdk": "6.0.408",
+      "releases": [
         {
-          "channel-version": "8.0",
-          "latest-release": "8.0.0-preview.2",
-          "latest-runtime": "8.0.0-preview.2.23128.3",
-          "latest-sdk": "8.0.100-preview.2.23157.25",
-          "release-type" : "lts",
-          "support-phase": "preview"
-        },
-        {
-          "channel-version": "7.0",
-          "latest-release": "7.0.4",
-          "latest-release-date": "2023-03-14",
-          "latest-runtime": "7.0.4",
-          "latest-sdk": "7.0.202",
-          "release-type" : "sts",
-          "support-phase": "active"
-        }
-      ]
-    }`
+          "runtime": {
+            "version": "6.0.16"
+          },
+          "sdk": {
+            "version": "6.0.408",
+            "files": []
+          },
+          "sdks": [
+            {
+              "version": "6.0.408",
+              "files": []
+            },
+            {
+              "version": "6.0.311",
+              "files": [
+                {
+                  "name": "dotnet-sdk-linux-arm.tar.gz",
+                  "rid": "linux-arm",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-linux-arm.ta.gz",
+                },
+                {
+                  "name": "dotnet-sdk-linux-arm64.tar.gz",
+                  "rid": "linux-arm64",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-linux-arm64.ar.gz",
+                },
+                {
+                  "name": "dotnet-sdk-linux-musl-arm.tar.gz",
+                  "rid": "linux-musl-arm",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-linux-musl-am.tar.gz",
+                },
+                {
+                  "name": "dotnet-sdk-linux-musl-x64.tar.gz",
+                  "rid": "linux-musl-x64",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-linux-musl-x4.tar.gz",
+                },
+                {
+                  "name": "dotnet-sdk-linux-x64.tar.gz",
+                  "rid": "linux-x64",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-linux-x64.ta.gz",
+                },
+                {
+                  "name": "dotnet-sdk-osx-arm64.pkg",
+                  "rid": "osx-arm64",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-osx-arm64.pk",
+                },
+                {
+                  "name": "dotnet-sdk-osx-arm64.tar.gz",
+                  "rid": "osx-arm64",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-osx-arm64.ta.gz",
+                },
+                {
+                  "name": "dotnet-sdk-osx-x64.pkg",
+                  "rid": "osx-x64",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-osx-x64.pkg"
+                },
+                {
+                  "name": "dotnet-sdk-osx-x64.tar.gz",
+                  "rid": "osx-x64",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-osx-x64.tar.z",
+                },
+                {
+                  "name": "dotnet-sdk-win-arm64.exe",
+                  "rid": "win-arm64",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-win-arm64.ex",
+                },
+                {
+                  "name": "dotnet-sdk-win-arm64.zip",
+                  "rid": "win-arm64",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-win-arm64.zi",
+                },
+                {
+                  "name": "dotnet-sdk-win-x64.exe",
+                  "rid": "win-x64",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-win-x64.exe"
+                },
+                {
+                  "name": "dotnet-sdk-win-x64.zip",
+                  "rid": "win-x64",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-win-x64.zip"
+                },
+                {
+                  "name": "dotnet-sdk-win-x86.exe",
+                  "rid": "win-x86",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-win-x86.exe"
+                },
+                {
+                  "name": "dotnet-sdk-win-x86.zip",
+                  "rid": "win-x86",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-win-x86.zip"
+                }
+              ]
+            },
+            {
+              "version": "6.0.116",
+              "files": []
+            }
+          ]
+        }]
+    }
+    `);
 
     let resolver : GlobalSDKInstallerResolver = new GlobalSDKInstallerResolver(mockExtensionContext, eventStream, majorOnlyVersion);
     resolver.customWebRequestWorker = webWorker;
-    assert.strictEqual(fullVersion, await resolver.getFullVersion());
+    assert.strictEqual(await resolver.getFullVersion(), newestVersion);
 
     resolver = new GlobalSDKInstallerResolver(mockExtensionContext, eventStream, majorMinorVersion);
-    assert.strictEqual(fullVersion, await resolver.getFullVersion());
+    assert.strictEqual(await resolver.getFullVersion(), newestVersion);
 
     resolver = new GlobalSDKInstallerResolver(mockExtensionContext, eventStream, featureBandOnlyVersion);
-    assert.strictEqual(fullVersion, await resolver.getFullVersion());
+    assert.strictEqual(await resolver.getFullVersion(), newestBandedVersion);
+
+    if(os.arch() === 'x64')
+    {
+      // We check this only on x64 because that matches the build machines and we dont want to duplicate architecture mapping logic
+      if(os.platform() === 'win32')
+      {
+        const expectedWinInstallerUrl = 'https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-win-x64.exe';
+        assert.strictEqual(await resolver.getInstallerUrl(), expectedWinInstallerUrl);
+      }
+      else if(os.platform() === 'darwin')
+      {
+        const expectedMacInstallerUrl = 'https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-osx-x64.pkg';
+        assert.strictEqual(await resolver.getInstallerUrl(), expectedMacInstallerUrl);
+      }
+    }
 
     resolver = new GlobalSDKInstallerResolver(mockExtensionContext, eventStream, fullVersion);
-    assert.strictEqual(fullVersion, await resolver.getFullVersion());
+    assert.strictEqual(await resolver.getFullVersion(), fullVersion);
   }).timeout(maxTimeoutTime);
 
   test('Install Command Sets the PATH', async () => {
