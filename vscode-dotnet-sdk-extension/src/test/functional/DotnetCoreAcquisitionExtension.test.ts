@@ -271,7 +271,83 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
           "sdks": [
             {
               "version": "6.0.408",
-              "files": []
+              "files": [
+                {
+                  "name": "dotnet-sdk-linux-arm.tar.gz",
+                  "rid": "linux-arm",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.408-linux-arm.tar.gz"
+                },
+                {
+                  "name": "dotnet-sdk-linux-arm64.tar.gz",
+                  "rid": "linux-arm64",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.408-linux-arm64.tar.gz"
+                },
+                {
+                  "name": "dotnet-sdk-linux-musl-arm.tar.gz",
+                  "rid": "linux-musl-arm",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.408-linux-musl-am.tar.gz"
+                },
+                {
+                  "name": "dotnet-sdk-linux-musl-x64.tar.gz",
+                  "rid": "linux-musl-x64",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.408-linux-musl-x4.tar.gz"
+                },
+                {
+                  "name": "dotnet-sdk-linux-x64.tar.gz",
+                  "rid": "linux-x64",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.408-linux-x64.tar.gz"
+                },
+                {
+                  "name": "dotnet-sdk-osx-arm64.pkg",
+                  "rid": "osx-arm64",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.408-osx-arm64.pkg"
+                },
+                {
+                  "name": "dotnet-sdk-osx-arm64.tar.gz",
+                  "rid": "osx-arm64",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.408-osx-arm64.tar.gz"
+                },
+                {
+                  "name": "dotnet-sdk-osx-x64.pkg",
+                  "rid": "osx-x64",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.408-osx-x64.pkg"
+                },
+                {
+                  "name": "dotnet-sdk-osx-x64.tar.gz",
+                  "rid": "osx-x64",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.408-osx-x64.tar.gz"
+                },
+                {
+                  "name": "dotnet-sdk-win-arm64.exe",
+                  "rid": "win-arm64",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.408-win-arm64.exe"
+                },
+                {
+                  "name": "dotnet-sdk-win-arm64.zip",
+                  "rid": "win-arm64",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.408-win-arm64.zip"
+                },
+                {
+                  "name": "dotnet-sdk-win-x64.exe",
+                  "rid": "win-x64",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.408-win-x64.exe"
+                },
+                {
+                  "name": "dotnet-sdk-win-x64.zip",
+                  "rid": "win-x64",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.408-win-x64.zip"
+                },
+                {
+                  "name": "dotnet-sdk-win-x86.exe",
+                  "rid": "win-x86",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.408-win-x86.exe"
+                },
+                {
+                  "name": "dotnet-sdk-win-x86.zip",
+                  "rid": "win-x86",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.408-win-x86.zip"
+                }
+              ]
             },
             {
               "version": "6.0.311",
@@ -279,37 +355,37 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
                 {
                   "name": "dotnet-sdk-linux-arm.tar.gz",
                   "rid": "linux-arm",
-                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-linux-arm.ta.gz",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-linux-arm.tar.gz"
                 },
                 {
                   "name": "dotnet-sdk-linux-arm64.tar.gz",
                   "rid": "linux-arm64",
-                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-linux-arm64.ar.gz",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-linux-arm64.tar.gz"
                 },
                 {
                   "name": "dotnet-sdk-linux-musl-arm.tar.gz",
                   "rid": "linux-musl-arm",
-                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-linux-musl-am.tar.gz",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-linux-musl-am.tar.gz"
                 },
                 {
                   "name": "dotnet-sdk-linux-musl-x64.tar.gz",
                   "rid": "linux-musl-x64",
-                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-linux-musl-x4.tar.gz",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-linux-musl-x4.tar.gz"
                 },
                 {
                   "name": "dotnet-sdk-linux-x64.tar.gz",
                   "rid": "linux-x64",
-                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-linux-x64.ta.gz",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-linux-x64.tar.gz"
                 },
                 {
                   "name": "dotnet-sdk-osx-arm64.pkg",
                   "rid": "osx-arm64",
-                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-osx-arm64.pk",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-osx-arm64.pkg"
                 },
                 {
                   "name": "dotnet-sdk-osx-arm64.tar.gz",
                   "rid": "osx-arm64",
-                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-osx-arm64.ta.gz",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-osx-arm64.tar.gz"
                 },
                 {
                   "name": "dotnet-sdk-osx-x64.pkg",
@@ -319,17 +395,17 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
                 {
                   "name": "dotnet-sdk-osx-x64.tar.gz",
                   "rid": "osx-x64",
-                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-osx-x64.tar.z",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-osx-x64.tar.gz"
                 },
                 {
                   "name": "dotnet-sdk-win-arm64.exe",
                   "rid": "win-arm64",
-                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-win-arm64.ex",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-win-arm64.exe"
                 },
                 {
                   "name": "dotnet-sdk-win-arm64.zip",
                   "rid": "win-arm64",
-                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-win-arm64.zi",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-win-arm64.zip"
                 },
                 {
                   "name": "dotnet-sdk-win-x64.exe",
@@ -367,9 +443,11 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.strictEqual(await resolver.getFullVersion(), newestVersion);
 
     resolver = new GlobalSDKInstallerResolver(mockExtensionContext, eventStream, majorMinorVersion);
+    resolver.customWebRequestWorker = webWorker;
     assert.strictEqual(await resolver.getFullVersion(), newestVersion);
 
     resolver = new GlobalSDKInstallerResolver(mockExtensionContext, eventStream, featureBandOnlyVersion);
+    resolver.customWebRequestWorker = webWorker;
     assert.strictEqual(await resolver.getFullVersion(), newestBandedVersion);
 
     if(os.arch() === 'x64')
@@ -388,6 +466,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     }
 
     resolver = new GlobalSDKInstallerResolver(mockExtensionContext, eventStream, fullVersion);
+    resolver.customWebRequestWorker = webWorker;
     assert.strictEqual(await resolver.getFullVersion(), fullVersion);
   }).timeout(maxTimeoutTime);
 
