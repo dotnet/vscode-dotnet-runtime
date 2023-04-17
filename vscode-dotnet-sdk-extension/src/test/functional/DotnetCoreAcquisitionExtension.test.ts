@@ -33,6 +33,7 @@ import * as extension from '../../extension';
 import { uninstallSDKExtension } from '../../ExtensionUninstall';
 import { GlobalSDKInstallerResolver } from 'vscode-dotnet-runtime-library/dist/Acquisition/GlobalSDKInstallerResolver';
 import { MockIndexWebRequestWorker } from 'vscode-dotnet-runtime-library';
+import { warn } from 'console';
 
 const standardTimeoutTime = 100000;
 const assert = chai.assert;
@@ -454,6 +455,44 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     resolver = new GlobalSDKInstallerResolver(mockExtensionContext, eventStream, fullVersion);
     resolver.customWebRequestWorker = webWorker;
     assert.strictEqual(await resolver.getFullVersion(), fullVersion);
+  }).timeout(maxTimeoutTime);
+
+  test('Global SDK Install Successfully Installs on Admin', async () => {
+    const version : string = '7.0.103'
+
+    // We only test if the process is running under ADMIN because non-admin requires user-intervention.
+    if(DotnetCoreAcquisitionWorker.isElevated())
+    {
+      const installersDir : string = path.join(__dirname, 'installers');
+      let numInstallersAlreadyDownloaded = fs.readdirSync(installersDir).length;
+
+      // The installers should be removed upon exit.
+      assert(numInstallersAlreadyDownloaded === 0);
+
+      const context : IDotnetAcquireContext = { version: version, requestingExtensionId: 'ms-dotnettools.sample-extension', installType: 'global' };
+      const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context);
+      assert.exists(result);
+      assert.exists(result!.dotnetPath);
+
+      numInstallersAlreadyDownloaded = fs.readdirSync(installersDir).length;
+      // The installer gets erased before we can check it.
+      assert(numInstallersAlreadyDownloaded === 0);
+            
+      // Assert install occurred
+      let sdkDirs = fs.readdirSync(path.join(path.dirname(result!.dotnetPath), 'sdk'));
+      assert.isNotEmpty(sdkDirs.filter(dir => dir.includes(version)));
+
+      if(os.platform() === 'win32')
+      {
+        // TODO Assert that it can find the existing install in registry and doesnt re-install but also doesn't fail.
+      }
+    }
+    else
+    {
+      // We could run the installer without privellege but it would require human interaction to use the UAC
+      // And we wouldn't be able to kill the process so the test would leave a lot of hanging procs on the machine
+      warn("The Global SDK Install test cannot run as the machine is unprivelleged.");
+    }
   }).timeout(maxTimeoutTime);
 
   test('Install Command Sets the PATH', async () => {
