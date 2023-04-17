@@ -224,9 +224,10 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         const installerUrl : string = await globalInstallerResolver.getInstallerUrl();
         const installerFile : string = await this.downloadInstallerOnMachine(installerUrl);
         const installerResult : string = await this.executeInstaller(installerFile);
-        // add the version to the extension state and remove if necessary
+        
+        // TODO add the version to the extension state and remove if necessary
 
-        // return the path of the installed sdk
+        // TODO return the path of the installed sdk
         return '';
     }
 
@@ -277,9 +278,16 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         return installedVersions;
     }
 
+    /**
+     * 
+     * @param installerUrl the url of the installer to download.
+     * @returns the path to the installer which was downloaded into a directory managed by us.
+     */
     private async downloadInstallerOnMachine(installerUrl : string) : Promise<string>
     {
-        const installerPath = path.join(__dirname, 'installers', `${installerUrl.split('/').slice(-1)}`);
+        const ourInstallerDownloadFolder = path.join(__dirname, 'installers');
+        this.wipeDirectory(ourInstallerDownloadFolder);
+        const installerPath = path.join(ourInstallerDownloadFolder, `${installerUrl.split('/').slice(-1)}`);
 
         const webWorker = new WebRequestWorker(this.context.extensionState, this.context.eventStream);
         let rawInstallerFileContent : string | undefined = await webWorker.getCachedData(installerUrl);
@@ -292,12 +300,62 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         return installerPath;
     }
 
-    // TODO: Handle this differently depending on the package type.
+    /**
+     * 
+     * @returns true if the process is running with admin privelleges on windows.
+     */
+    public static isElevated() : boolean
+    {
+        if(os.platform() !== 'win32')
+        {
+            // TODO: Implemnet root check on linux
+            return false;
+        }
+
+        try
+        {
+            // If we can execute this command on Windows then we have admin rights.
+            proc.execFileSync( "net", ["session"], { "stdio": "ignore" } );
+            return true;
+        }
+        catch ( error )
+        {
+            return false;
+        }
+    }
+
+    /**
+     * 
+     * @param directoryToWipe the directory to delete all of the files in if privellege to do so exists.
+     */
+    private wipeDirectory(directoryToWipe : string)
+    {
+        fs.readdir(directoryToWipe, (err, files) => {
+            if (err) throw err;
+          
+            for (const file of files) {
+              fs.unlink(path.join(directoryToWipe, file), (err) => {
+                if (err) throw err;
+              });
+            }
+          });
+    }
+
+    /**
+     * 
+     * @param installerPath The path to the installer file to run.
+     * @returns The exit code from running the global install.
+     */
     private async executeInstaller(installerPath : string) : Promise<string>
     {
-        proc.exec(installerPath, (err, stdout, stderr) => {
+        // TODO: Handle this differently depending on the package type.
+        const installCommand = `"${installerPath}" ${DotnetCoreAcquisitionWorker.isElevated() ? "/quiet /install /norestart" : ""}"`
+        proc.exec(installCommand, (err, stdout, stderr) => {
+            this.wipeDirectory(path.dirname(installerPath));
             return stdout;
         });
+
+        this.wipeDirectory(path.dirname(installerPath));
         return '1';
     }
 }
