@@ -348,7 +348,7 @@ export class GlobalSDKInstallerResolver {
     private isNonSpecificMajorOrMajorMinorVersion(version : string) : boolean
     {
         const numberOfPeriods = version.split('.').length - 1;
-        return this.isNumber(version) && numberOfPeriods > 0 && numberOfPeriods < 2;
+        return this.isNumber(version) && numberOfPeriods >= 0 && numberOfPeriods < 2;
     }
 
     /**
