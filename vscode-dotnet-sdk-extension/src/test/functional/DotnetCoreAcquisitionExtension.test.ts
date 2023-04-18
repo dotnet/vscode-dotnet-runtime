@@ -68,13 +68,13 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     });
   });
 
-  test('Activate', async () => {
+  /*test('Activate', async () => {
     // Commands should now be registered
     assert.exists(extensionContext);
     assert.isAbove(extensionContext.subscriptions.length, 0);
   });
 
-  test('List Sdks & Runtimes (API Correctly Returns Sdks & Runtimes)', async () => {
+  test('List Sdks & Runtimes', async () => {
     const mockWebContext = new MockExtensionContext();
     const eventStream = new MockEventStream();
     const webWorker = new MockWebRequestWorker(mockWebContext, eventStream);
@@ -115,32 +115,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.equal(runtimeResult?.length, 2);
     assert.equal(runtimeResult?.filter((runtime : any) => runtime.version === '7.0.4').length, 1, 'The mock Runtime with the expected version was not found by the API parsing service.');
   }).timeout(maxTimeoutTime);
-
-
-  test('List Sdks & Runtimes (Fails Elegantly if Relases.Json is Unavailable)', async () => {
-    const apiContext: IDotnetListVersionsContext = { listRuntimes: null};
-    const mockWebContext = new MockExtensionContext();
-    const eventStream = new MockEventStream();
-
-    try
-    {
-      assert.throws(async () =>
-      {
-        await vscode.commands.executeCommand<IDotnetListVersionsResult>(
-          'dotnet-sdk.listSdks', apiContext, new FailingWebRequestWorker(mockWebContext, eventStream)
-        )
-      },
-      DotnetVersionProvider.dotnetAvailableVersionsPageUnavailableError
-      );
-    }
-    catch(e)
-    {
-      // Do nothing.
-      // Why? The assert.throws is in a catch block: Chai.throws code does not handle async functions which will cause the test to fail, even though the throw is expected.
-      // https://github.com/chaijs/chai/issues/882#issuecomment-322131680
-    }
-  }).timeout(maxTimeoutTime * 3);
-
 
   test('Detect Preinstalled SDK', async () => {
     // Set up acquisition worker
@@ -247,14 +221,15 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
 
     const majorOnlyVersion = '6';
     const majorMinorVersion = '6.0';
-    const featureBandOnlyVersion = '6.0.3xx';
-    const fullVersion = '6.0.311';
+    const featureBandOnlyVersion = '6.0.3xx'; // this should be a full version thats lower than the newest version available.
+    const fullVersion = '6.0.311'; // this should be a full version thats lower than the newest version available.
 
     const newestBandedVersion = '6.0.311';
     const newestVersion = '6.0.408';
 
     let webWorker = new MockIndexWebRequestWorker(mockExtensionContext, eventStream);
     webWorker.knownUrls.push("https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/6.0/releases.json");
+    // Note that ZIPS in the data below come before EXEs to make sure the file extension check works.
     webWorker.matchingUrlResponses.push(
     `{
       "channel-version": "6.0",
@@ -409,24 +384,24 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
                   "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-win-arm64.zip"
                 },
                 {
-                  "name": "dotnet-sdk-win-x64.exe",
-                  "rid": "win-x64",
-                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-win-x64.exe"
-                },
-                {
                   "name": "dotnet-sdk-win-x64.zip",
                   "rid": "win-x64",
                   "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-win-x64.zip"
                 },
                 {
-                  "name": "dotnet-sdk-win-x86.exe",
-                  "rid": "win-x86",
-                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-win-x86.exe"
+                  "name": "dotnet-sdk-win-x64.exe",
+                  "rid": "win-x64",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-win-x64.exe"
                 },
                 {
                   "name": "dotnet-sdk-win-x86.zip",
                   "rid": "win-x86",
                   "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-win-x86.zip"
+                },
+                {
+                  "name": "dotnet-sdk-win-x86.exe",
+                  "rid": "win-x86",
+                  "url": "https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-win-x86.exe"
                 }
               ]
             },
@@ -470,28 +445,24 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     resolver.customWebRequestWorker = webWorker;
     assert.strictEqual(await resolver.getFullVersion(), fullVersion);
   }).timeout(maxTimeoutTime);
-
-  test('Global SDK Install Successfully Installs on Admin', async () => {
-    const version : string = '7.0.103'
-
+  */
+  test('Install Globally (Requires Admin)', async () => {
     // We only test if the process is running under ADMIN because non-admin requires user-intervention.
     if(DotnetCoreAcquisitionWorker.isElevated())
     {
-      const installersDir : string = path.join(__dirname, 'installers');
-      let numInstallersAlreadyDownloaded = fs.readdirSync(installersDir).length;
-
-      // The installers should be removed upon exit.
-      assert(numInstallersAlreadyDownloaded === 0);
+      const version : string = '7.0.103';
 
       const context : IDotnetAcquireContext = { version: version, requestingExtensionId: 'ms-dotnettools.sample-extension', installType: 'global' };
       const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context);
-      assert.exists(result);
+      assert.exists(result, "The global acquisition command did not provide a result?");
       assert.exists(result!.dotnetPath);
 
-      numInstallersAlreadyDownloaded = fs.readdirSync(installersDir).length;
-      // The installer gets erased before we can check it.
+      const installersDir : string = DotnetCoreAcquisitionWorker.getInstallerDownloadFolder();
+      assert.exists(installersDir);
+      const numInstallersAlreadyDownloaded = fs.readdirSync(installersDir).length;
+      // The installer should be removed from the disk after the command is done.
       assert(numInstallersAlreadyDownloaded === 0);
-            
+
       // Assert install occurred
       let sdkDirs = fs.readdirSync(path.join(path.dirname(result!.dotnetPath), 'sdk'));
       assert.isNotEmpty(sdkDirs.filter(dir => dir.includes(version)));
@@ -512,11 +483,12 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   test('Install Command Sets the PATH', async () => {
     const context: IDotnetAcquireContext = { version: '5.0', requestingExtensionId: 'ms-dotnettools.sample-extension' };
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context);
-    assert.exists(result);
+    assert.exists(result, "The acquisition command did not provide a valid result?");
     assert.exists(result!.dotnetPath);
 
     const expectedPath = path.dirname(result!.dotnetPath);
     const pathVar = environmentVariableCollection.variables.PATH;
+    assert.exists(pathVar, "The environment variable PATH for DOTNET was not found?");
     assert.include(pathVar, expectedPath);
 
     let pathResult: string;

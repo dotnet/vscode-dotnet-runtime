@@ -5,6 +5,7 @@ import { DotnetVersionResolutionError } from '../EventStream/EventStreamEvents';
 import { DotnetVersionResolutionCompleted } from '../EventStream/EventStreamEvents';
 import * as os from 'os';
 import * as cp from 'child_process';
+import * as path from 'path';
 
 /**
  * @remarks
@@ -161,6 +162,10 @@ export class GlobalSDKInstallerResolver {
                 convertedOs = operatingSys;
                 break;
             }
+            default:
+            {
+                throw Error(`The OS ${operatingSys} is currently unsupported or unknown.`);
+            }
         }
 
         switch(operatingArch)
@@ -181,6 +186,10 @@ export class GlobalSDKInstallerResolver {
                 convertedArch = operatingArch;
                 break;
             }
+            default:
+            {
+                throw Error(`The architecture ${operatingArch} is currently unsupported or unknown.`);
+            }
         }
 
         const desiredRidPackage = convertedOs + '-' + convertedArch;
@@ -192,9 +201,12 @@ export class GlobalSDKInstallerResolver {
             throw Error(`The releases json format used by ${indexUrl} is invalid or has changed, and the extension needs to be updated.`);
         }
 
-        const sdks = releases[0]['sdks'];
+        let sdks: any[] = [];
+        releases.forEach(function (release : any) {
+            sdks.push.apply(sdks, release['sdks']);
+        });
 
-        for (let sdk of sdks) 
+        for (let sdk of sdks)
         {
             const thisSDKVersion : string = sdk['version'];
             if(thisSDKVersion === specificVersion) // NOTE that this will not catch things like -preview or build number suffixed versions.
@@ -202,7 +214,7 @@ export class GlobalSDKInstallerResolver {
                const thisSDKFiles = sdk['files'];
                for (let installer of thisSDKFiles)
                {
-                    if(installer['rid'] == desiredRidPackage)
+                    if(installer['rid'] == desiredRidPackage && this.installerMatchesDesiredFileExtension(installer, convertedOs))
                     {
                         const installerUrl = installer['url'];
                         if(installerUrl === undefined)
@@ -216,7 +228,7 @@ export class GlobalSDKInstallerResolver {
             }
         }
 
-        throw Error(`The requested version ${specificVersion} or resolved version is invalid. Note that -preview versions or versions with build numbers aren't yet supported.`);
+        throw Error(`The SDK installation files for version ${specificVersion} running on ${desiredRidPackage} couldn't be found. Is the version in support? Note that -preview versions or versions with build numbers aren't yet supported.`);
     }
 
     /**
@@ -252,16 +264,83 @@ export class GlobalSDKInstallerResolver {
         {
             const sdkInstallRecords64Bit = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\dotnet\\Setup\\InstalledVersions\\x64\\sdk';
             const sdkInstallRecords32Bit = sdkInstallRecords64Bit.replace('x64', 'x86');
-            const installRecordKeys64Bit = cp.execSync(`%SystemRoot%\\System32\\reg.exe query "${sdkInstallRecords64Bit}"`).toString();
-            const installRecordKeys32Bit = cp.execSync(`%SystemRoot%\\System32\\reg.exe query "${sdkInstallRecords32Bit}"`).toString();
-            installRecordKeys64Bit.concat(installRecordKeys32Bit).split("").forEach( function (regData : string)
+
+            const queries = [sdkInstallRecords32Bit, sdkInstallRecords64Bit];
+            for ( let query of queries)
+            {
+                try
                 {
-                    sdks.push(regData);
+                    const registryQueryCommand = `%SystemRoot%\\System32\\reg.exe query "${query}"`;
+                    const installRecordKeysOfXBit = cp.execSync(registryQueryCommand).toString();
+                    const installedSdks = this.extractVersionsOutOfRegistryKeyStrings(installRecordKeysOfXBit);
+                    sdks.concat(installedSdks);
                 }
-            );
+                catch(e)
+                {
+                    // There are no "X" bit sdks on the machine.
+                }
+            }
         }
 
         return sdks;
+    }
+
+    /**
+     *
+     * @param registryQueryResult the raw output of a registry query converted into a string
+     * @returns
+     */
+    private extractVersionsOutOfRegistryKeyStrings(registryQueryResult : string) : string[]
+    {
+        return registryQueryResult.split(" ")
+        .filter
+        (
+            function(value : string, i : number) { return value != '' && i != 0; } // Filter out the whitespace & query as the query return value starts with the query.
+        )
+        .filter
+        (
+            function(value : string, i : number) { return i % 3 == 0; } // Every 0th, 4th, etc item will be a value name AKA the SDK version. The rest will be REGTYPE and REGHEXVALUE.
+        );
+    }
+
+    /**
+     * @remarks The releases json may contain both zips and exes or others that match the RID.
+     * We need to make sure we get the desired file type for each OS.
+     *
+     * @returns true if the filetype of the installer json entry containing the installer file name in the key 'name' is of a desired installer file extension type.
+     * (e.g. EXE on windows or PKG on mac.)
+     */
+    private installerMatchesDesiredFileExtension(installerJson : any, operatingSystemInDotnetFormat : string) : boolean
+    {
+        const installerFileName = installerJson['name'];
+        if(installerFileName === undefined)
+        {
+            throw Error(`The json data provided was invalid: ${installerJson}.`);
+        }
+
+        let desiredFileExtension = "";
+
+        switch(operatingSystemInDotnetFormat)
+        {
+            case 'win': {
+                desiredFileExtension = '.exe';
+                break;
+            }
+            case 'osx': {
+                desiredFileExtension = '.pkg';
+                break;
+            }
+            case 'linux': {
+                desiredFileExtension = '.gz';
+                break;
+            }
+            default:
+            {
+                throw Error(`The SDK Extension failed to map the OS ${operatingSystemInDotnetFormat} to a proper package type.`);
+            }
+        }
+
+        return path.extname(installerFileName) === desiredFileExtension;
     }
 
     /**
@@ -292,12 +371,13 @@ export class GlobalSDKInstallerResolver {
         // Get the sdks
         const indexJson =  await this.fetchJsonObjectFromUrl(indexUrl);
         const releases = indexJson['releases']
-        
+
         if(releases.length == 0)
         {
             throw Error(`The releases json format used by ${indexUrl} is invalid or has changed, and the extension needs to be updated.`);
         }
 
+        // Assumption: The first release in releases will be the newest release and contain the newest sdk for each feature band. This has been 'confirmed' with the releases team.
         const sdks = releases[0]['sdks'];
         for (let sdk of sdks)
         {

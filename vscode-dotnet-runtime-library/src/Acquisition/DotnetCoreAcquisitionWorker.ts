@@ -67,9 +67,9 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         return this.acquire(version, false);
     }
 
-    acquireGlobalSDK(installerResolver: GlobalSDKInstallerResolver): Promise<IDotnetAcquireResult>
+    public async acquireGlobalSDK(installerResolver: GlobalSDKInstallerResolver): Promise<IDotnetAcquireResult>
     {
-        throw Error();
+        return this.acquire(await installerResolver.getFullVersion(), false, installerResolver);
     }
 
     /**
@@ -118,7 +118,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      * @param global false for local install, true for global SDK installs.
      * @returns the dotnet acqusition result.
      */
-    private async acquire(version: string, installRuntime: boolean, globalInstallerResolver = null): Promise<IDotnetAcquireResult> {
+    private async acquire(version: string, installRuntime: boolean, globalInstallerResolver : GlobalSDKInstallerResolver | null = null): Promise<IDotnetAcquireResult> {
         const existingAcquisitionPromise = this.acquisitionPromises[version];
         if (existingAcquisitionPromise)
         {
@@ -224,7 +224,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         const installerUrl : string = await globalInstallerResolver.getInstallerUrl();
         const installerFile : string = await this.downloadInstallerOnMachine(installerUrl);
         const installerResult : string = await this.executeInstaller(installerFile);
-        
+
         // TODO add the version to the extension state and remove if necessary
 
         // TODO return the path of the installed sdk
@@ -279,13 +279,13 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     }
 
     /**
-     * 
+     *
      * @param installerUrl the url of the installer to download.
      * @returns the path to the installer which was downloaded into a directory managed by us.
      */
     private async downloadInstallerOnMachine(installerUrl : string) : Promise<string>
     {
-        const ourInstallerDownloadFolder = path.join(__dirname, 'installers');
+        const ourInstallerDownloadFolder = DotnetCoreAcquisitionWorker.getInstallerDownloadFolder();
         this.wipeDirectory(ourInstallerDownloadFolder);
         const installerPath = path.join(ourInstallerDownloadFolder, `${installerUrl.split('/').slice(-1)}`);
 
@@ -301,7 +301,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     }
 
     /**
-     * 
+     *
      * @returns true if the process is running with admin privelleges on windows.
      */
     public static isElevated() : boolean
@@ -325,14 +325,14 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     }
 
     /**
-     * 
+     *
      * @param directoryToWipe the directory to delete all of the files in if privellege to do so exists.
      */
     private wipeDirectory(directoryToWipe : string)
     {
         fs.readdir(directoryToWipe, (err, files) => {
             if (err) throw err;
-          
+
             for (const file of files) {
               fs.unlink(path.join(directoryToWipe, file), (err) => {
                 if (err) throw err;
@@ -342,20 +342,47 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     }
 
     /**
-     * 
+     *
+     * @returns The folder where global sdk installers will be downloaded onto the disk.
+     */
+    public static getInstallerDownloadFolder() : string
+    {
+        return path.join(__dirname, 'installers');
+    }
+
+
+    /*private AsyncExecutor(this: any) : () => Promise<string>;
+    {
+        this.execute = function (command : string) {
+            return new Promise( (resolve, reject) =>
+            {
+                proc.exec(command, (err, stdout, stderr) =>
+                {
+                    if(err)
+                    {
+                        reject(err);
+                        return;
+                    }
+                    resolve(stdout);
+                });
+            });
+        }
+    }*/
+
+    /**
+     *
      * @param installerPath The path to the installer file to run.
      * @returns The exit code from running the global install.
      */
     private async executeInstaller(installerPath : string) : Promise<string>
     {
         // TODO: Handle this differently depending on the package type.
-        const installCommand = `"${installerPath}" ${DotnetCoreAcquisitionWorker.isElevated() ? "/quiet /install /norestart" : ""}"`
-        proc.exec(installCommand, (err, stdout, stderr) => {
-            this.wipeDirectory(path.dirname(installerPath));
-            return stdout;
-        });
+        const installCommand = `"${installerPath}" ${DotnetCoreAcquisitionWorker.isElevated() ? "/quiet /install /norestart" : ""}"`;
+
+        const commandResult = proc.execSync(installCommand);
 
         this.wipeDirectory(path.dirname(installerPath));
-        return '1';
+        return commandResult.toString();
     }
 }
+

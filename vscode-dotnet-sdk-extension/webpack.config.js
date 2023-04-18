@@ -45,6 +45,7 @@ const extensionConfig = {
   plugins: [
     new CopyPlugin({ patterns: [
       { from: path.resolve(__dirname, '../vscode-dotnet-runtime-library/install scripts'), to: path.resolve(__dirname, 'dist', 'install scripts') },
+      { from: path.resolve(__dirname, '../vscode-dotnet-runtime-library/installers'), to: path.resolve(__dirname, 'dist', 'installers') },
       { from: path.resolve(__dirname, '../images'), to: path.resolve(__dirname, 'images') },
       { from: path.resolve(__dirname, '../LICENSE.txt'), to: path.resolve(__dirname, 'LICENSE.txt') }
   ]}),
@@ -71,6 +72,6 @@ const uninstallConfig = {
   target: 'node',
 };
 module.exports = [
-  extensionConfig, 
+  extensionConfig,
   uninstallConfig
 ];
