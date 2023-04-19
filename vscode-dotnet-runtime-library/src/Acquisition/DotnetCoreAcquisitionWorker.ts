@@ -7,6 +7,7 @@ import * as os from 'os';
 import * as path from 'path';
 import rimraf = require('rimraf');
 import * as proc from 'child_process';
+import * as https from 'https';
 
 import {
     DotnetAcquisitionAlreadyInstalled,
@@ -289,7 +290,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         this.wipeDirectory(ourInstallerDownloadFolder);
         const installerPath = path.join(ourInstallerDownloadFolder, `${installerUrl.split('/').slice(-1)}`);
 
-        const webWorker = new WebRequestWorker(this.context.extensionState, this.context.eventStream);
+        /**const webWorker = new WebRequestWorker(this.context.extensionState, this.context.eventStream);
         let rawInstallerFileContent : string | undefined = await webWorker.getCachedData(installerUrl);
         if(rawInstallerFileContent === undefined)
         {
@@ -297,6 +298,18 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         }
 
         FileUtilities.writeFileOntoDisk(rawInstallerFileContent, installerPath)
+        */
+        const file = fs.createWriteStream(installerPath);
+        https.get(installerUrl, function(response : any) {
+            response.pipe(file);
+
+            // after download completed close filestream
+            file.on("finish", () => {
+                file.close();
+                console.log("Download Completed");
+            });
+        });
+
         return installerPath;
     }
 
