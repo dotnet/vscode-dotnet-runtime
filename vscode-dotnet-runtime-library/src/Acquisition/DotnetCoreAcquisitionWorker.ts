@@ -221,10 +221,12 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         }
 
         // check if theres a partial install from the extension if that can happen
-
+        
         const installerUrl : string = await globalInstallerResolver.getInstallerUrl();
         const installerFile : string = await this.downloadInstallerOnMachine(installerUrl);
         const installerResult : string = await this.executeInstaller(installerFile);
+
+        this.wipeDirectory(path.dirname(installerFile));
 
         // TODO add the version to the extension state and remove if necessary
 
@@ -299,8 +301,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         FileUtilities.writeFileOntoDisk(rawInstallerFileContent, installerPath)
         */
-        const file = fs.createWriteStream(installerPath);
-        https.get(installerUrl, function(response : any) {
+        //const file = fs.createWriteStream(installerPath);
+        /*https.get(installerUrl, function(response : any) {
             response.pipe(file);
 
             // after download completed close filestream
@@ -308,9 +310,69 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
                 file.close();
                 console.log("Download Completed");
             });
-        });
+        });*/
+        await this.download(installerUrl, installerPath);
 
         return installerPath;
+    }
+
+    private async download(url : string, dest : string) {
+        return new Promise<void>((resolve, reject) => {
+
+            const installerDir = path.dirname(dest);
+            if (!fs.existsSync(installerDir)){
+                fs.mkdirSync(installerDir);
+            }
+            const file = fs.createWriteStream(dest, { flags: "wx" });
+    
+            const request = https.get(url, response => {
+                if (response.statusCode === 200) {
+                    response.pipe(file);
+                } else {
+                    file.close();
+                    fs.unlink(dest, () => {}); // Delete temp file
+                    reject(`Server responded with ${response.statusCode}: ${response.statusMessage}`);
+                }
+            });
+    
+            request.on("error", err => {
+                file.close();
+                fs.unlink(dest, () => {}); // Delete temp file
+                reject(err.message);
+            });
+    
+            file.on("finish", () => {
+                resolve();
+            });
+    
+            file.on("error", err => {
+                file.close();
+    
+                if (err.message === "EEXIST")
+                {
+                    reject("File already exists");
+                } 
+                else
+                {
+                    fs.unlink(dest, () => {}); // Delete temp file
+                    reject(err.message);
+                }
+            });
+        });
+    }
+
+    private async httpsGet(url : string, file : any) : Promise<string> {
+        return new Promise((resolve) => {
+            https.get(url, function(response : any) {
+                response.pipe(file);
+
+                // after download completed close filestream
+                file.on("finish", () => {
+                    file.close();
+                    resolve("complete");
+                });
+            });
+        });
     }
 
     /**
@@ -382,6 +444,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         }
     }*/
 
+
     /**
      *
      * @param installerPath The path to the installer file to run.
@@ -390,12 +453,23 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     private async executeInstaller(installerPath : string) : Promise<string>
     {
         // TODO: Handle this differently depending on the package type.
-        const installCommand = `"${installerPath}" ${DotnetCoreAcquisitionWorker.isElevated() ? "/quiet /install /norestart" : ""}"`;
+        let installCommand : string = `${installerPath}`;
+        if(DotnetCoreAcquisitionWorker.isElevated())
+        {
+            // We want the installer to run without a window pop-up whenvever possible to improve UX.
+            //installCommand = installCommand.concat(` /quiet /install /norestart`);
+        }
 
-        const commandResult = proc.execSync(installCommand);
-
-        this.wipeDirectory(path.dirname(installerPath));
-        return commandResult.toString();
+        try
+        {
+            const commandResult = proc.execFileSync(installCommand, [`/quiet`, `/install`, `/norestart`]);
+            //const commandResult = proc.execSync(installCommand, { cwd: process.cwd(), env: process.env, stdio: 'pipe' }).toString();
+            return commandResult.toString();
+        }
+        catch(error : any)
+        {
+            return error;
+        }
     }
 }
 
