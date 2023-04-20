@@ -220,18 +220,17 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             throw Error(`An global install is already on the machine with a version that conflicts with the requested version.`)
         }
 
-        // check if theres a partial install from the extension if that can happen
+        // TODO check if theres a partial install from the extension if that can happen
 
         const installerUrl : string = await globalInstallerResolver.getInstallerUrl();
         const installerFile : string = await this.downloadInstallerOnMachine(installerUrl);
         const installerResult : string = await this.executeInstaller(installerFile);
-
+        const installedSDKPath : string = this.getGloballyInstalledSDKPath(await globalInstallerResolver.getFullVersion(), os.arch());
         this.wipeDirectory(path.dirname(installerFile));
 
         // TODO add the version to the extension state and remove if necessary
 
-        // TODO return the path of the installed sdk
-        return '';
+        return installedSDKPath;
     }
 
     private async uninstallRuntime(version: string) {
@@ -291,28 +290,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         const ourInstallerDownloadFolder = DotnetCoreAcquisitionWorker.getInstallerDownloadFolder();
         this.wipeDirectory(ourInstallerDownloadFolder);
         const installerPath = path.join(ourInstallerDownloadFolder, `${installerUrl.split('/').slice(-1)}`);
-
-        /**const webWorker = new WebRequestWorker(this.context.extensionState, this.context.eventStream);
-        let rawInstallerFileContent : string | undefined = await webWorker.getCachedData(installerUrl);
-        if(rawInstallerFileContent === undefined)
-        {
-            throw Error(`The downloaded installer is corrupt or unavailable.`);
-        }
-
-        FileUtilities.writeFileOntoDisk(rawInstallerFileContent, installerPath)
-        */
-        //const file = fs.createWriteStream(installerPath);
-        /*https.get(installerUrl, function(response : any) {
-            response.pipe(file);
-
-            // after download completed close filestream
-            file.on("finish", () => {
-                file.close();
-                console.log("Download Completed");
-            });
-        });*/
         await this.download(installerUrl, installerPath);
-
         return installerPath;
     }
 
@@ -361,20 +339,6 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         });
     }
 
-    private async httpsGet(url : string, file : any) : Promise<string> {
-        return new Promise((resolve) => {
-            https.get(url, function(response : any) {
-                response.pipe(file);
-
-                // after download completed close filestream
-                file.on("finish", () => {
-                    file.close();
-                    resolve("complete");
-                });
-            });
-        });
-    }
-
     /**
      *
      * @returns true if the process is running with admin privelleges on windows.
@@ -397,6 +361,24 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         {
             return false;
         }
+    }
+
+    private getGloballyInstalledSDKPath(specificSDKVersionInstalled : string, installedArch : string) : string
+    {
+        if(os.platform() === 'win32')
+        {
+            if(installedArch === 'x32')
+            {
+                return path.join(`C:\\Program Files (x86)\\dotnet\\sdk\\`, specificSDKVersionInstalled);
+            }
+            else if(installedArch === 'x64')
+            {
+                return path.join(`C:\\Program Files\\dotnet\\sdk\\`, specificSDKVersionInstalled);
+            }
+        }
+
+        // TODO check this on mac and linux it should be root. and check security of returning this
+        return '';
     }
 
     /**
@@ -425,26 +407,6 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         return path.join(__dirname, 'installers');
     }
 
-
-    /*private AsyncExecutor(this: any) : () => Promise<string>;
-    {
-        this.execute = function (command : string) {
-            return new Promise( (resolve, reject) =>
-            {
-                proc.exec(command, (err, stdout, stderr) =>
-                {
-                    if(err)
-                    {
-                        reject(err);
-                        return;
-                    }
-                    resolve(stdout);
-                });
-            });
-        }
-    }*/
-
-
     /**
      *
      * @param installerPath The path to the installer file to run.
@@ -463,15 +425,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         try
         {
-            //installCommand = `C:\\Windows\\System32\\xcopy.exe "C:\\Users\\noahgilson\\wolf.txt" "C:\\Users\\noahgilson\\fox.txt" /f /y`
-            //installCommand = `${path.resolve(`C:\\Windows\\System32\\xcopy.exe`)}`;
-            //installCommand = installCommand.concat(` "C:\\Users\\noahgilson\\wolf.txt" "C:\\Users\\noahgilson\\fox.txt" /f /y /q`);
-
-            //const commandResult = require('child_process').spawnSync(`${path.resolve(`C:\\Windows\\System32\\xcopy.exe`)}`, [`"C:\\Users\\noahgilson\\wolf.txt"`, `"C:\\Users\\noahgilson\\fox.txt"`, '/f', '/y']);
-            //  hers the working one             const commandResult =  require('child_process').spawnSync(`${path.resolve(`C:\\Users\\noahgilson\\source\\repos\\vscode-dotnet-runtime\\vscode-dotnet-runtime-library\\dist\\Acquisition\\installers\\dotnet-sdk-7.0.103-win-x64.exe`)}`, ['/quiet', '/install', '/norestart']);
-
-            const commandResult =  require('child_process').spawnSync(installCommand, args);
-            //const commandResult = proc.execSync(installCommand, { cwd: process.cwd(), env: process.env, stdio: 'pipe' }).toString();
+            const commandResult =  require('child_process').spawnSync(installCommand, ['/quiet', '/install', '/norestart']);
             return commandResult.toString();
         }
         catch(error : any)
