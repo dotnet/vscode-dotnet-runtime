@@ -416,16 +416,10 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     {
         // TODO: Handle this differently depending on the package type.
         let installCommand = `${path.resolve(installerPath)}`;
-        let args : string[] = [];
-        if(DotnetCoreAcquisitionWorker.isElevated())
-        {
-            // We want the installer to run without a window pop-up whenvever possible to improve UX.
-            args = ['/quiet', '/install', '/norestart'];
-        }
 
         try
         {
-            const commandResult =  require('child_process').spawnSync(installCommand, ['/quiet', '/install', '/norestart']);
+            const commandResult = proc.spawnSync(installCommand, DotnetCoreAcquisitionWorker.isElevated() ? ['/quiet', '/install', '/norestart'] : []);
             return commandResult.toString();
         }
         catch(error : any)
