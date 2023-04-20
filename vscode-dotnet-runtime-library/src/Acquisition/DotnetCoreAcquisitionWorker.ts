@@ -221,7 +221,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         }
 
         // check if theres a partial install from the extension if that can happen
-        
+
         const installerUrl : string = await globalInstallerResolver.getInstallerUrl();
         const installerFile : string = await this.downloadInstallerOnMachine(installerUrl);
         const installerResult : string = await this.executeInstaller(installerFile);
@@ -324,7 +324,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
                 fs.mkdirSync(installerDir);
             }
             const file = fs.createWriteStream(dest, { flags: "wx" });
-    
+
             const request = https.get(url, response => {
                 if (response.statusCode === 200) {
                     response.pipe(file);
@@ -334,24 +334,24 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
                     reject(`Server responded with ${response.statusCode}: ${response.statusMessage}`);
                 }
             });
-    
+
             request.on("error", err => {
                 file.close();
                 fs.unlink(dest, () => {}); // Delete temp file
                 reject(err.message);
             });
-    
+
             file.on("finish", () => {
                 resolve();
             });
-    
+
             file.on("error", err => {
                 file.close();
-    
+
                 if (err.message === "EEXIST")
                 {
                     reject("File already exists");
-                } 
+                }
                 else
                 {
                     fs.unlink(dest, () => {}); // Delete temp file
@@ -453,16 +453,24 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     private async executeInstaller(installerPath : string) : Promise<string>
     {
         // TODO: Handle this differently depending on the package type.
-        let installCommand : string = `${installerPath}`;
+        let installCommand = `${path.resolve(installerPath)}`;
+        let args : string[] = [];
         if(DotnetCoreAcquisitionWorker.isElevated())
         {
             // We want the installer to run without a window pop-up whenvever possible to improve UX.
-            //installCommand = installCommand.concat(` /quiet /install /norestart`);
+            args = ['/quiet', '/install', '/norestart'];
         }
 
         try
         {
-            const commandResult = proc.execFileSync(installCommand, [`/quiet`, `/install`, `/norestart`]);
+            //installCommand = `C:\\Windows\\System32\\xcopy.exe "C:\\Users\\noahgilson\\wolf.txt" "C:\\Users\\noahgilson\\fox.txt" /f /y`
+            //installCommand = `${path.resolve(`C:\\Windows\\System32\\xcopy.exe`)}`;
+            //installCommand = installCommand.concat(` "C:\\Users\\noahgilson\\wolf.txt" "C:\\Users\\noahgilson\\fox.txt" /f /y /q`);
+
+            //const commandResult = require('child_process').spawnSync(`${path.resolve(`C:\\Windows\\System32\\xcopy.exe`)}`, [`"C:\\Users\\noahgilson\\wolf.txt"`, `"C:\\Users\\noahgilson\\fox.txt"`, '/f', '/y']);
+            //  hers the working one             const commandResult =  require('child_process').spawnSync(`${path.resolve(`C:\\Users\\noahgilson\\source\\repos\\vscode-dotnet-runtime\\vscode-dotnet-runtime-library\\dist\\Acquisition\\installers\\dotnet-sdk-7.0.103-win-x64.exe`)}`, ['/quiet', '/install', '/norestart']);
+
+            const commandResult =  require('child_process').spawnSync(installCommand, args);
             //const commandResult = proc.execSync(installCommand, { cwd: process.cwd(), env: process.env, stdio: 'pipe' }).toString();
             return commandResult.toString();
         }
