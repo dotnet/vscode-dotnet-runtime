@@ -7,6 +7,7 @@ import * as cp from 'child_process';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import {
+    IDotnetAcquireContext,
     IDotnetAcquireResult,
     IDotnetListVersionsResult,
     IDotnetVersion
@@ -113,7 +114,7 @@ ${stderr}`);
             vscode.window.showErrorMessage((error as Error).toString());
         }
     });
-    
+
     const sampleDotnetUninstallAllRegistration = vscode.commands.registerCommand('sample.dotnet.uninstallAll', async () => {
         try {
             await vscode.commands.executeCommand('dotnet.uninstallAll');
@@ -178,6 +179,24 @@ ${stderr}`);
         }
     });
 
+    const sampleSDKGlobalAcquireRegistration = vscode.commands.registerCommand('sample.dotnet-sdk.acquireGlobal', async (version) => {
+        if (!version) {
+            version = await vscode.window.showInputBox({
+                placeHolder: '7.0.103',
+                value: '7.0.103',
+                prompt: 'The .NET SDK version. You can use different formats: 5, 3.1, 7.0.3xx, 6.0.201, etc.',
+            });
+        }
+
+        try {
+            await vscode.commands.executeCommand('dotnet-sdk.showAcquisitionLog');
+            let commandContext : IDotnetAcquireContext = { version, requestingExtensionId, installType: 'global' };
+            await vscode.commands.executeCommand('dotnet-sdk.acquire', commandContext);
+        } catch (error) {
+            vscode.window.showErrorMessage((error as Error).toString());
+        }
+    });
+
     const sampleSDKAcquireStatusRegistration = vscode.commands.registerCommand('sample.dotnet-sdk.acquireStatus', async (version) => {
         if (!version) {
             version = await vscode.window.showInputBox({
@@ -196,7 +215,8 @@ ${stderr}`);
         }
     });
 
-    const sampleSDKlistVersions = vscode.commands.registerCommand('sample.dotnet-sdk.listVersions', async (getRuntimes : boolean) => {
+    const sampleSDKListSDKs = vscode.commands.registerCommand('sample.dotnet-sdk.listSdks', async (getRuntimes) => {
+
         if (!getRuntimes) {
             getRuntimes = JSON.parse(await vscode.window.showInputBox({
                 placeHolder: 'false',
@@ -241,6 +261,7 @@ ${stderr}`);
 
     context.subscriptions.push(
         sampleSDKAcquireRegistration,
+        sampleSDKGlobalAcquireRegistration,
         sampleSDKAcquireStatusRegistration,
         sampleSDKlistVersions,
         sampleSDKrecommendedVersion,

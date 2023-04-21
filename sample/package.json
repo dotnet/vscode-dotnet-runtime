@@ -57,6 +57,11 @@
 				"category": "Sample"
 			},
 			{
+				"command": "sample.dotnet-sdk.acquireGlobal",
+				"title": "Acquire .NET SDK on the machine globally. Requires admin.",
+				"category": "Sample"
+			},
+			{
 				"command": "sample.dotnet-sdk.acquireStatus",
 				"title": "Check the status of acquiring the .NET SDK",
 				"category": "Sample"

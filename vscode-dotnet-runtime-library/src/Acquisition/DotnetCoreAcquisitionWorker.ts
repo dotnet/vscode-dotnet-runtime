@@ -139,6 +139,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
                     throw new Error(`.NET Acquisition Failed: ${error.message}`);
                 });
             }
+            else
             {
                 acquisitionPromise = this.acquireCore(version, installRuntime).catch((error: Error) => {
                     delete this.acquisitionPromises[version];
@@ -220,15 +221,32 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             throw Error(`An global install is already on the machine with a version that conflicts with the requested version.`)
         }
 
+        // TODO fix handling with empty input split
         // TODO check if theres a partial install from the extension if that can happen
+        // TODO fix registry check
+        // TODO report installer OK if conflicting exists
 
         const installerUrl : string = await globalInstallerResolver.getInstallerUrl();
         const installerFile : string = await this.downloadInstallerOnMachine(installerUrl);
+
+        const installingVersion = await globalInstallerResolver.getFullVersion();
+        await this.addVersionToExtensionState(this.installingVersionsKey, installingVersion);
+
+        this.context.eventStream.post(new DotnetAcquisitionStarted(installingVersion));
         const installerResult : string = await this.executeInstaller(installerFile);
+        if(installerResult !== '0')
+        {
+            // TODO handle this.
+        }
         const installedSDKPath : string = this.getGloballyInstalledSDKPath(await globalInstallerResolver.getFullVersion(), os.arch());
         this.wipeDirectory(path.dirname(installerFile));
 
-        // TODO add the version to the extension state and remove if necessary
+        // TODO: Add exe to path.
+        //this.context.installationValidator.validateDotnetInstall(installingVersion, installedSDKPath);
+
+        // TODO see if the below is needed
+        await this.removeVersionFromExtensionState(this.installingVersionsKey, installingVersion);
+        await this.addVersionToExtensionState(this.installedVersionsKey, installingVersion);
 
         return installedSDKPath;
     }
