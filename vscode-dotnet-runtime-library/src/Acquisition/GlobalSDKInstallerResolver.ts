@@ -88,7 +88,7 @@ export class GlobalSDKInstallerResolver {
             ( // side by side installs of the same major.minor and band can cause issues in some cases. So we decided to just not allow it
                 this.getMajorMinor(this.specificVersionRequested) === this.getMajorMinor(sdk) &&
                 this.getFeatureBandFromVersion(this.specificVersionRequested) === this.getFeatureBandFromVersion(sdk) &&
-                this.specificVersionRequested <= sdk
+                this.specificVersionRequested <= sdk // TODO add architecture check as well...
             )
             {
                 return sdk;
@@ -259,7 +259,7 @@ export class GlobalSDKInstallerResolver {
     private getGlobalSdksInstalledOnMachine() : Array<string>
     {
         const sdks: string[] = [];
-        
+
 
         if (os.platform() === 'win32')
         {

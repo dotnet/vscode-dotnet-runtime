@@ -146,7 +146,9 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             if(commandContext.installType === 'global')
             {
                 const globalInstallerResolver = new GlobalSDKInstallerResolver(context.globalState, eventStream, commandContext.version);
-                await acquisitionWorker.acquireGlobalSDK(globalInstallerResolver);
+                const dotnetPath = await acquisitionWorker.acquireGlobalSDK(globalInstallerResolver);
+                // TODO: Check to make sure path is set by the installer.
+                return dotnetPath;
             }
             else
             {
