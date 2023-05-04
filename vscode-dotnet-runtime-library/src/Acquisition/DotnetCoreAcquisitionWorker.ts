@@ -365,8 +365,9 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     {
         if(os.platform() !== 'win32')
         {
-            // TODO: Implemnet root check on linux
-            return false;
+            // TODO: Make sure this works on mac and linux.
+            const commandResult = proc.spawnSync("id", ["-u"]);
+            return commandResult.status === 0;
         }
 
         try
@@ -394,8 +395,20 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
                 return path.join(`C:\\Program Files\\dotnet\\sdk\\`, specificSDKVersionInstalled);
             }
         }
+        else if(os.platform() === 'darwin')
+        {
+            if(installedArch !== 'x64')
+            {
+                return path.join(`/usr/local/share/dotnet/sdk`, specificSDKVersionInstalled);
+            }
+            else
+            {
+                // We only know this to be correct in the ARM scenarios but I decided to assume the default is the same elsewhere.
+                return path.join(`/usr/local/share/dotnet/x64/dotnet/sdk`, specificSDKVersionInstalled);
+            }
+        }
 
-        // TODO check this on mac and linux it should be root. and check security of returning this
+        // TODO Add code for linux: it should be root. Check security of returning this
         return '';
     }
 
@@ -428,16 +441,22 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     /**
      *
      * @param installerPath The path to the installer file to run.
-     * @returns The exit code from running the global install.
+     * @returns The exit result from running the global install.
      */
     private async executeInstaller(installerPath : string) : Promise<string>
     {
-        // TODO: Handle this differently depending on the package type.
-        let installCommand = `${path.resolve(installerPath)}`;
+        if(os.platform() === 'darwin')
+        {
+            // For Mac:
+            // We don't rely on the installer because it doesn't allow us to run without sudo, and we don't want to handle the user password.
+            // The -W flag makes it so we wait for the installer .pkg to exit, though we are unable to get the exit code.
+            const commandResult = proc.spawnSync('open', ['-W', `${path.resolve(installerPath)}`]);
+            return commandResult.toString();
+        }
 
         try
         {
-            const commandResult = proc.spawnSync(installCommand, DotnetCoreAcquisitionWorker.isElevated() ? ['/quiet', '/install', '/norestart'] : []);
+            const commandResult = proc.spawnSync(`${path.resolve(installerPath)}`, DotnetCoreAcquisitionWorker.isElevated() ? ['/quiet', '/install', '/norestart'] : []);
             return commandResult.toString();
         }
         catch(error : any)
