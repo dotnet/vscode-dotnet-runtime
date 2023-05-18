@@ -132,6 +132,11 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
             if(commandContext.installType === 'global')
             {
+                if(commandContext.version === '')
+                {
+                    throw Error(`No version was defined to install.`);
+                }
+
                 const globalInstallerResolver = new GlobalSDKInstallerResolver(context.globalState, eventStream, commandContext.version);
                 const dotnetPath = await acquisitionWorker.acquireGlobalSDK(globalInstallerResolver);
                 // TODO: Check to make sure path is set by the installer.

@@ -11,6 +11,7 @@ import * as https from 'https';
 
 import {
     DotnetAcquisitionAlreadyInstalled,
+    DotnetAcquisitionCompleted,
     DotnetAcquisitionDeletion,
     DotnetAcquisitionInProgress,
     DotnetAcquisitionPartialInstallation,
@@ -221,7 +222,6 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             throw Error(`An global install is already on the machine with a version that conflicts with the requested version.`)
         }
 
-        // TODO fix handling with empty input split
         // TODO check if theres a partial install from the extension if that can happen
         // TODO fix registry check
         // TODO report installer OK if conflicting exists
@@ -230,21 +230,24 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         const installerFile : string = await this.downloadInstallerOnMachine(installerUrl);
 
         const installingVersion = await globalInstallerResolver.getFullVersion();
+        // Indicate that we're beginning to do the install.
         await this.addVersionToExtensionState(this.installingVersionsKey, installingVersion);
-
         this.context.eventStream.post(new DotnetAcquisitionStarted(installingVersion));
+
         const installerResult : string = await this.executeInstaller(installerFile);
         if(installerResult !== '0')
         {
             // TODO handle this.
         }
+
         const installedSDKPath : string = this.getGloballyInstalledSDKPath(await globalInstallerResolver.getFullVersion(), os.arch());
         this.wipeDirectory(path.dirname(installerFile));
 
-        // TODO: Add exe to path.
-        //this.context.installationValidator.validateDotnetInstall(installingVersion, installedSDKPath);
+        this.context.installationValidator.validateDotnetInstall(installingVersion, installedSDKPath);
 
-        // TODO see if the below is needed
+        this.context.eventStream.post(new DotnetAcquisitionCompleted(installingVersion, installedSDKPath));
+
+        // Remove the indication that we're installing and replace it notifying of the real installation completion.
         await this.removeVersionFromExtensionState(this.installingVersionsKey, installingVersion);
         await this.addVersionToExtensionState(this.installedVersionsKey, installingVersion);
 
@@ -388,11 +391,11 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         {
             if(installedArch === 'x32')
             {
-                return path.join(`C:\\Program Files (x86)\\dotnet\\sdk\\`, specificSDKVersionInstalled);
+                return path.join(`C:\\Program Files (x86)\\dotnet\\sdk\\`, specificSDKVersionInstalled, "dotnet.dll");
             }
             else if(installedArch === 'x64')
             {
-                return path.join(`C:\\Program Files\\dotnet\\sdk\\`, specificSDKVersionInstalled);
+                return path.join(`C:\\Program Files\\dotnet\\sdk\\`, specificSDKVersionInstalled, "dotnet.dll");
             }
         }
         else if(os.platform() === 'darwin')
