@@ -271,9 +271,9 @@ export class GlobalSDKInstallerResolver {
             {
                 try
                 {
-                    const registryQueryCommand = `%SystemRoot%\\System32\\reg.exe query "${query}"`;
+                    const registryQueryCommand = `%SystemRoot%\\System32\\reg.exe`;
                     // stdio settings: don't print registry key DNE warnings as they may not be on the machine if no SDKs are installed and we dont want to error.
-                    const installRecordKeysOfXBit = cp.execSync(registryQueryCommand, {stdio : ['pipe', 'ignore', 'ignore']}).toString();
+                    const installRecordKeysOfXBit = cp.spawnSync(registryQueryCommand, [`query`, `"${query}"`], {stdio : ['pipe', 'ignore', 'ignore']}).toString();
                     const installedSdks = this.extractVersionsOutOfRegistryKeyStrings(installRecordKeysOfXBit);
                     sdks.concat(installedSdks);
                 }
