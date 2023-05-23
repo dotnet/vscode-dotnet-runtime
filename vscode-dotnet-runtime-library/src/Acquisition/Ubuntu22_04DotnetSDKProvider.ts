@@ -4,15 +4,16 @@
  * ------------------------------------------------------------------------------------------ */
 import * as proc from 'child_process';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
+import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 
 export class Ubuntu22_04DotnetSDKProvider extends IDistroDotnetSDKProvider {
 
-    public installDotnet(installContext: IDotnetInstallationContext): Promise<void>
+    public async installDotnet(installContext: IDotnetInstallationContext): Promise<boolean>
     {
-
+        return false;
     }
 
-    public async getInstalledDotnetPathIfExists() : Promise<string | null>
+    public async getInstalledGlobalDotnetPathIfExists() : Promise<string | null>
     {
         const commandResult = proc.spawnSync('which', ['dotnet']);
         return commandResult.toString();
@@ -20,26 +21,26 @@ export class Ubuntu22_04DotnetSDKProvider extends IDistroDotnetSDKProvider {
 
     public async getExpectedDotnetInstallationDirectory() : Promise<string>
     {
-
+        return '';
     }
 
     public async dotnetPackageExistsOnSystem() : Promise<boolean>
     {
-
+        return false;
     }
 
     public async isDotnetVersionSupported() : Promise<boolean>
     {
-
+        return false;
     }
 
     public async upgradeDotnet(versionToUpgrade : string): Promise<boolean>
     {
-
+        return false;
     }
 
     public async uninstallDotnet(versionToUninstall : string): Promise<boolean>
     {
-
+        return false;
     }
 }

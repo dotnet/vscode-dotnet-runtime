@@ -70,4 +70,54 @@ export class VersionResolver implements IVersionResolver {
         const releasesVersions = new ReleasesResult(response);
         return releasesVersions;
     }
+
+        /**
+     *
+     * @param fullySpecifiedVersion the fully specified version, e.g. 7.0.301 to get the major from.
+     * @returns the major.minor in the form of '3', etc.
+     */
+    public static getMajor(fullVersion : string) : string
+    {
+        return VersionResolver.getMajorMinor(fullVersion).substring(0, 1);
+    }
+
+    /**
+     *
+     * @param fullySpecifiedVersion the fully specified version, e.g. 7.0.301 to get the major minor from.
+     * @returns the major.minor in the form of '3.1', etc.
+     */
+    public static getMajorMinor(fullySpecifiedVersion : string) : string
+    {
+        return fullySpecifiedVersion.substring(0, 3);
+    }
+
+    /**
+     *
+     * @param fullySpecifiedVersion the version of the sdk, either fully specified or not, but containing a band definition.
+     * @returns a single string representing the band number, e.g. 3 in 7.0.301.
+     */
+    public static getFeatureBandFromVersion(fullySpecifiedVersion : string) : string
+    {
+        const band : string | undefined = fullySpecifiedVersion.split('.').at(2)?.charAt(0);
+        if(band === undefined)
+        {
+            throw Error(`A feature band couldn't be determined for the requested version ${fullySpecifiedVersion}.`)
+        }
+        return band;
+    }
+
+    /**
+     *
+     * @param fullySpecifiedVersion the version of the sdk, either fully specified or not, but containing a band definition.
+     * @returns a single string representing the band patch version, e.g. 12 in 7.0.312.
+     */
+    public static getFeatureBandPatchVersion(fullySpecifiedVersion : string) : string
+    {
+        const patch : string | undefined = fullySpecifiedVersion.split('.').at(2)?.substring(1);
+        if(patch === undefined)
+        {
+            throw Error(`A feature band patch version couldn't be determined for the requested version ${fullySpecifiedVersion}.`)
+        }
+        return patch;
+    }
 }
