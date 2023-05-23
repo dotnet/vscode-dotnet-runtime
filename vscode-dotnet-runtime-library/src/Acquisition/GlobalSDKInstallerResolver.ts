@@ -6,6 +6,7 @@ import { DotnetVersionResolutionCompleted } from '../EventStream/EventStreamEven
 import * as os from 'os';
 import * as cp from 'child_process';
 import * as path from 'path';
+import { VersionResolver } from './VersionResolver';
 
 /**
  * @remarks
@@ -15,13 +16,14 @@ import * as path from 'path';
  */
 export class GlobalSDKInstallerResolver {
     // The unparsed version into given to the API to request a version of the SDK.
+    // The word 'version' is 2nd in the name so that it's not auto-completed and mistaken for fullySpecifiedVersionRequested, which is what should be used.
     private requestedVersion : string;
 
     // The url for a the installer matching the machine os and arch of the system running the extension
     private discoveredInstallerUrl : string;
 
-    // The resolved version that was requested.
-    private specificVersionRequested : string;
+    // The properly resolved version that was requested in the fully-specified 3-part semver version of the .NET SDK.
+    private fullySpecifiedVersionRequested : string;
 
     /**
      * @remarks Do NOT set this unless you are testing.
@@ -37,7 +39,7 @@ export class GlobalSDKInstallerResolver {
     {
         this.requestedVersion = requestedVersion;
         this.discoveredInstallerUrl = '';
-        this.specificVersionRequested = '';
+        this.fullySpecifiedVersionRequested = '';
     }
 
 
@@ -60,11 +62,11 @@ export class GlobalSDKInstallerResolver {
      */
     public async getFullVersion(): Promise<string>
     {
-        if(this.specificVersionRequested === '')
+        if(this.fullySpecifiedVersionRequested === '')
         {
             this.discoveredInstallerUrl = await this.routeRequestToProperVersionRequestType(this.requestedVersion);
         }
-        return this.specificVersionRequested;
+        return this.fullySpecifiedVersionRequested;
     }
 
     /**
@@ -76,19 +78,19 @@ export class GlobalSDKInstallerResolver {
      */
     public async GlobalInstallWithConflictingVersionAlreadyExists() : Promise<string>
     {
-        if(this.specificVersionRequested === '')
+        if(this.fullySpecifiedVersionRequested === '')
         {
             this.discoveredInstallerUrl = await this.routeRequestToProperVersionRequestType(this.requestedVersion);
         }
 
-        const sdks : Array<string> = this.getGlobalSdksInstalledOnMachine();
+        const sdks : Array<string> = []; // this.getGlobalSdksInstalledOnMachine();
         for (let sdk of sdks)
         {
             if
             ( // side by side installs of the same major.minor and band can cause issues in some cases. So we decided to just not allow it
-                this.getMajorMinor(this.specificVersionRequested) === this.getMajorMinor(sdk) &&
-                this.getFeatureBandFromVersion(this.specificVersionRequested) === this.getFeatureBandFromVersion(sdk) &&
-                this.specificVersionRequested <= sdk // TODO add architecture check as well...
+                Number(VersionResolver.getMajorMinor(this.fullySpecifiedVersionRequested)) === Number(VersionResolver.getMajorMinor(sdk)) &&
+                Number(VersionResolver.getFeatureBandFromVersion(this.fullySpecifiedVersionRequested)) === Number(VersionResolver.getFeatureBandFromVersion(sdk)) &&
+                Number(VersionResolver.getFeatureBandPatchVersion(this.fullySpecifiedVersionRequested)) <=  Number(VersionResolver.getFeatureBandPatchVersion(sdk)) // TODO add architecture check as well...
             )
             {
                 return sdk;
@@ -96,6 +98,7 @@ export class GlobalSDKInstallerResolver {
         }
 
         return '';
+        // todo move this to distro or os specific code
     }
 
     /**
@@ -110,19 +113,19 @@ export class GlobalSDKInstallerResolver {
             const numberOfPeriods = version.split('.').length - 1;
             const indexUrl = this.getIndexUrl(numberOfPeriods == 0 ? version + '.0' : version);
             const indexJsonData = await this.fetchJsonObjectFromUrl(indexUrl);
-            this.specificVersionRequested = indexJsonData['latest-sdk'];
-            return await this.findCorrectInstallerUrl(this.specificVersionRequested, indexUrl);
+            this.fullySpecifiedVersionRequested = indexJsonData['latest-sdk'];
+            return await this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, indexUrl);
         }
         else if(this.isNonSpecificFeatureBandedVersion(version))
         {
-            this.specificVersionRequested = await this.getNewestSpecificVersionFromFeatureBand(version);
-            return await this.findCorrectInstallerUrl(this.specificVersionRequested, this.getIndexUrl(this.getMajorMinor(this.specificVersionRequested)));
+            this.fullySpecifiedVersionRequested = await this.getNewestSpecificVersionFromFeatureBand(version);
+            return await this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, this.getIndexUrl(VersionResolver.getMajorMinor(this.fullySpecifiedVersionRequested)));
         }
         else if(this.isFullySpecifiedVersion(version))
         {
-            this.specificVersionRequested = version;
-            const indexUrl = this.getIndexUrl(this.getMajorMinor(this.specificVersionRequested));
-            return await this.findCorrectInstallerUrl(this.specificVersionRequested, indexUrl);
+            this.fullySpecifiedVersionRequested = version;
+            const indexUrl = this.getIndexUrl(VersionResolver.getMajorMinor(this.fullySpecifiedVersionRequested));
+            return await this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, indexUrl);
         }
 
         throw Error(`The version requested: ${version} is not in a valid format.`)
@@ -231,15 +234,7 @@ export class GlobalSDKInstallerResolver {
         throw Error(`The SDK installation files for version ${specificVersion} running on ${desiredRidPackage} couldn't be found. Is the version in support? Note that -preview versions or versions with build numbers aren't yet supported.`);
     }
 
-    /**
-     *
-     * @param fullVersion the fully specified version, e.g. 7.0.301 to get the major minor from.
-     * @returns the major.minor in the form of '3.1', etc.
-     */
-    private getMajorMinor(fullVersion : string) : string
-    {
-        return fullVersion.substring(0, 3);
-    }
+
 
     /**
      *
@@ -249,60 +244,6 @@ export class GlobalSDKInstallerResolver {
     private getIndexUrl(majorMinor : string ) : string
     {
         return 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/' + majorMinor + '/releases.json';
-    }
-
-    /**
-     *
-     * @returns an array containing fully specified / specific versions of all globally installed sdks on the machine in windows for 32 and 64 bit sdks.
-     * TODO: Expand this function to work with linux.
-     */
-    private getGlobalSdksInstalledOnMachine() : Array<string>
-    {
-        const sdks: string[] = [];
-
-
-        if (os.platform() === 'win32')
-        {
-            const sdkInstallRecords64Bit = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\dotnet\\Setup\\InstalledVersions\\x64\\sdk';
-            const sdkInstallRecords32Bit = sdkInstallRecords64Bit.replace('x64', 'x86');
-
-            const queries = [sdkInstallRecords32Bit, sdkInstallRecords64Bit];
-            for ( let query of queries)
-            {
-                try
-                {
-                    const registryQueryCommand = `%SystemRoot%\\System32\\reg.exe`;
-                    // stdio settings: don't print registry key DNE warnings as they may not be on the machine if no SDKs are installed and we dont want to error.
-                    const installRecordKeysOfXBit = cp.spawnSync(registryQueryCommand, [`query`, `"${query}"`], {stdio : ['pipe', 'ignore', 'ignore']}).toString();
-                    const installedSdks = this.extractVersionsOutOfRegistryKeyStrings(installRecordKeysOfXBit);
-                    sdks.concat(installedSdks);
-                }
-                catch(e)
-                {
-                    // There are no "X" bit sdks on the machine.
-                }
-            }
-        }
-
-        return sdks;
-    }
-
-    /**
-     *
-     * @param registryQueryResult the raw output of a registry query converted into a string
-     * @returns
-     */
-    private extractVersionsOutOfRegistryKeyStrings(registryQueryResult : string) : string[]
-    {
-        return registryQueryResult.split(" ")
-        .filter
-        (
-            function(value : string, i : number) { return value != '' && i != 0; } // Filter out the whitespace & query as the query return value starts with the query.
-        )
-        .filter
-        (
-            function(value : string, i : number) { return i % 3 == 0; } // Every 0th, 4th, etc item will be a value name AKA the SDK version. The rest will be REGTYPE and REGHEXVALUE.
-        );
     }
 
     /**
@@ -345,20 +286,7 @@ export class GlobalSDKInstallerResolver {
         return path.extname(installerFileName) === desiredFileExtension;
     }
 
-    /**
-     *
-     * @param version the version of the sdk.. either fully specified or not, but containing a band definition.
-     * @returns a single string representing the band number.
-     */
-    private getFeatureBandFromVersion(version : string) : string
-    {
-        const band : string | undefined = version.split('.').at(2)?.charAt(0);
-        if(band === undefined)
-        {
-            throw Error(`A feature band couldn't be determined for the requested version ${version}.`)
-        }
-        return band;
-    }
+
 
     /**
      *
@@ -367,8 +295,8 @@ export class GlobalSDKInstallerResolver {
      */
     private async getNewestSpecificVersionFromFeatureBand(version : string) : Promise<string>
     {
-        const band : string = this.getFeatureBandFromVersion(version);
-        const indexUrl : string = this.getIndexUrl(this.getMajorMinor(version));
+        const band : string = VersionResolver.getFeatureBandFromVersion(version);
+        const indexUrl : string = this.getIndexUrl(VersionResolver.getMajorMinor(version));
 
         // Get the sdks
         const indexJson =  await this.fetchJsonObjectFromUrl(indexUrl);
@@ -386,7 +314,7 @@ export class GlobalSDKInstallerResolver {
             // The SDKs in the index should be in-order, so we can rely on that property.
             // The first one we find with the given feature band will also be the 'newest.'
             const thisSDKVersion : string = sdk['version'];
-            if(this.getFeatureBandFromVersion(thisSDKVersion) === band)
+            if(VersionResolver.getFeatureBandFromVersion(thisSDKVersion) === band)
             {
                 return thisSDKVersion;
             }

@@ -18,6 +18,9 @@ import {
   IDotnetAcquireResult,
   IDotnetListVersionsContext,
   IDotnetListVersionsResult,
+  FailingWebRequestWorker,
+  FileUtilities,
+  GlobalSDKInstallerResolver,
   MockEnvironmentVariableCollection,
   MockEventStream,
   MockExtensionConfiguration,
@@ -28,11 +31,10 @@ import {
   MockWindowDisplayWorker,
   NoInstallAcquisitionInvoker,
   SdkInstallationDirectoryProvider,
+  WinMacSDKInstaller
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { uninstallSDKExtension } from '../../ExtensionUninstall';
-import { GlobalSDKInstallerResolver } from 'vscode-dotnet-runtime-library/dist/Acquisition/GlobalSDKInstallerResolver';
-import { MockIndexWebRequestWorker } from 'vscode-dotnet-runtime-library';
 import { warn } from 'console';
 
 const standardTimeoutTime = 100000;
@@ -460,7 +462,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   */
   test('Install Globally (Requires Admin)', async () => {
     // We only test if the process is running under ADMIN because non-admin requires user-intervention.
-    if(DotnetCoreAcquisitionWorker.isElevated())
+    if(FileUtilities.isElevated())
     {
       const version : string = '7.0.103';
 
@@ -469,7 +471,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       assert.exists(result, "The global acquisition command did not provide a result?");
       assert.exists(result!.dotnetPath);
 
-      const installersDir : string = DotnetCoreAcquisitionWorker.getInstallerDownloadFolder();
+      const installersDir : string = WinMacSDKInstaller.getDownloadedInstallFilesFolder();
       assert.exists(installersDir);
       const numInstallersAlreadyDownloaded = fs.readdirSync(installersDir).length;
       // The installer should be removed from the disk after the command is done.
