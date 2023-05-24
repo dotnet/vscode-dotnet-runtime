@@ -229,10 +229,10 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         // TODO fix registry check
         // TODO report installer OK if conflicting exists
 
-        let installer : ISDKInstaller = os.platform() === 'linux' ? new LinuxSDKInstaller() : new WinMacSDKInstaller(await globalInstallerResolver.getInstallerUrl());
-
-
         const installingVersion = await globalInstallerResolver.getFullVersion();
+        let installer : ISDKInstaller = os.platform() === 'linux' ? new LinuxSDKInstaller(installingVersion) : new WinMacSDKInstaller(await globalInstallerResolver.getInstallerUrl());
+
+
         // Indicate that we're beginning to do the install.
         await this.addVersionToExtensionState(this.installingVersionsKey, installingVersion);
         this.context.eventStream.post(new DotnetAcquisitionStarted(installingVersion));
@@ -243,7 +243,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             // TODO handle this.
         }
 
-        const installedSDKPath : string = installer.getExpectedGlobalSDKPath(await globalInstallerResolver.getFullVersion(), os.arch());
+        const installedSDKPath : string = await installer.getExpectedGlobalSDKPath(await globalInstallerResolver.getFullVersion(), os.arch());
 
         this.context.installationValidator.validateDotnetInstall(installingVersion, installedSDKPath);
 

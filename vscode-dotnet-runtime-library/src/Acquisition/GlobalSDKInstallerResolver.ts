@@ -83,7 +83,7 @@ export class GlobalSDKInstallerResolver {
             this.discoveredInstallerUrl = await this.routeRequestToProperVersionRequestType(this.requestedVersion);
         }
 
-        const sdks : Array<string> = this.getGlobalSdksInstalledOnMachine();
+        const sdks : Array<string> = []; // this.getGlobalSdksInstalledOnMachine();
         for (let sdk of sdks)
         {
             if
@@ -119,7 +119,7 @@ export class GlobalSDKInstallerResolver {
         else if(this.isNonSpecificFeatureBandedVersion(version))
         {
             this.fullySpecifiedVersionRequested = await this.getNewestSpecificVersionFromFeatureBand(version);
-            return await this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, this.getIndexUrl(this.getMajorMinor(this.fullySpecifiedVersionRequested)));
+            return await this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, this.getIndexUrl(VersionResolver.getMajorMinor(this.fullySpecifiedVersionRequested)));
         }
         else if(this.isFullySpecifiedVersion(version))
         {
