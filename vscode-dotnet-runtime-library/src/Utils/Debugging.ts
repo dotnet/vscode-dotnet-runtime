@@ -17,7 +17,7 @@ export class Debugging {
         }
         else
         {
-            ; // do nothing to appease ansych?
+            ; // do nothing to appease ansync?
         }
     }
 };
