@@ -149,7 +149,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         return pathResult;
     });
 
-    const dotnetListNewestSDKsRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listNewestDotnets}`,
+    const dotnetListNewestDotnetsRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listNewestDotnets}`,
         async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) => {
         const webWorker = customWebWorker !== undefined ? customWebWorker : new WebRequestWorker(
             context.globalState,
@@ -178,7 +178,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     context.subscriptions.push(
         dotnetAcquireRegistration,
         dotnetAcquireStatusRegistration,
-        dotnetListNewestSDKsRegistration,
+        dotnetListNewestDotnetsRegistration,
         dotnetUninstallAllRegistration,
         showOutputChannelRegistration,
         reportIssueRegistration,
