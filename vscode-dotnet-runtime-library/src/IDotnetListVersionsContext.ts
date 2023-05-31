@@ -7,7 +7,7 @@ export interface IDotnetListVersionsContext {
     /**
      * @remarks
      * Holds the parameters necessary to acquire the available SDK or Runtimes.
-     * By available, this means all in-support SDKs or Runtimes, and only those at the newest minor version for each major version.
+     * By available this means only those at the newest minor version for each major version.
      *
      * @property listRuntimes - If this is not true (false or undefined), list SDK versions available. Elsewise, list runtimes available.
      */
