@@ -85,7 +85,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
         {
               "latest-runtime": "7.0.4",
               "latest-sdk": "8.0.100",
-              "release-type" : "lts"
+              "release-type" : "lts",
+              "support-phase" : "active"
           }
         ]
     }`

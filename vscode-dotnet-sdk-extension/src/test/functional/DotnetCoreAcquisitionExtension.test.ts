@@ -14,12 +14,10 @@ import {
   DotnetAcquisitionAlreadyInstalled,
   DotnetCoreAcquisitionWorker,
   DotnetPreinstallDetected,
-  DotnetVersionProvider,
   IDotnetAcquireContext,
   IDotnetAcquireResult,
   IDotnetListVersionsContext,
   IDotnetListVersionsResult,
-  FailingWebRequestWorker,
   MockEnvironmentVariableCollection,
   MockEventStream,
   MockExtensionConfiguration,
@@ -102,8 +100,9 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     const result = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet-sdk.listNewestSDKs', apiContext, webWorker);
     assert.exists(result);
     assert.equal(result?.length, 2);
-    assert.equal(result?.filter((sdk : any) => sdk.version === '7.0.202').length, 1, 'The mock SDK with the expected version was not found by the API parsing service.');
-    assert.equal(result?.filter((sdk : any) => sdk.channelVersion === '7.0').length, 1, 'The mock SDK with the expected channel version was not found by the API parsing service.');
+    assert.equal(result?.filter((sdk : any) => sdk.version === '7.0.202').length, 1, 'The mock SDK with the expected version {7.0.200} was not found by the API parsing service.');
+    assert.equal(result?.filter((sdk : any) => sdk.channelVersion === '7.0').length, 1, 'The mock SDK with the expected channel version {7.0} was not found by the API parsing service.');
+    assert.equal(result?.filter((sdk : any) => sdk.supportPhase === 'active').length, 1, 'The mock SDK with the expected support phase of {active} was not found by the API parsing service.');
 
     // The API can find the available runtimes and their versions.
     apiContext.listNewestRuntimes = true;
