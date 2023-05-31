@@ -9,9 +9,9 @@ export interface IDotnetListVersionsContext {
      * Holds the parameters necessary to acquire the available SDK or Runtimes.
      * By available, this means all in-support SDKs or Runtimes, and only those at the newest minor version for each major version.
      *
-     * @property listRuntimes - If this is not true (false or undefined), list SDK versions available. Elsewise, list runtimes available.
+     * @property listNewestRuntimes - If this is not true (false or undefined), list SDK versions available. Elsewise, list runtimes available.
      */
-    listRuntimes: boolean | null
+    listNewestRuntimes: boolean | null
 }
 
 /**
@@ -47,4 +47,4 @@ export type DotnetVersionSupportStatus = 'lts' | 'sts';
  * @remarks
  * preview support does not mean the development is stable and actively supported.
  */
-export type DotnetVersionSupportPhase = 'active' | 'preview' | 'eol'; 
+export type DotnetVersionSupportPhase = 'active' | 'preview' | 'eol' | 'go-live' | 'maintenance'; 

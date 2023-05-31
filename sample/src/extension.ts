@@ -189,7 +189,7 @@ ${stderr}`);
         }
     });
 
-    const sampleSDKListSDKs = vscode.commands.registerCommand('sample.dotnet-sdk.listSdks', async (getRuntimes) => {
+    const sampleSDKListSDKs = vscode.commands.registerCommand('sample.dotnet-sdk.listNewestSDKs', async (getRuntimes) => {
         
         if (!getRuntimes) {
             getRuntimes = JSON.parse(await vscode.window.showInputBox({
@@ -200,7 +200,7 @@ ${stderr}`);
         }
 
         try {
-            const result : IDotnetListVersionsResult | undefined = await vscode.commands.executeCommand('dotnet-sdk.listSdks', { listRuntimes: getRuntimes });
+            const result : IDotnetListVersionsResult | undefined = await vscode.commands.executeCommand('dotnet-sdk.listNewestSDKs', { listNewestRuntimes: getRuntimes });
             vscode.window.showInformationMessage(`Available ${getRuntimes == false ? 'SDKS' : 'Runtimes'}: ${result?.map(x => x.version).join(", ")}`);
         } catch (error) {
             vscode.window.showErrorMessage((error as Error).toString());
