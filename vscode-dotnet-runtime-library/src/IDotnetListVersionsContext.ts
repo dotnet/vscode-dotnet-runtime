@@ -47,4 +47,4 @@ export type DotnetVersionSupportStatus = 'lts' | 'sts';
  * @remarks
  * preview support does not mean the development is stable and actively supported.
  */
-export type DotnetVersionSupportPhase = 'active' | 'preview' | 'eol' | 'go-live' | 'maintenance'; 
+export type DotnetVersionSupportPhase = 'active' | 'preview' | 'eol' | 'go-live' | 'maintenance';
