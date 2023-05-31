@@ -37,7 +37,7 @@
 	"activationEvents": [
 		"onCommand:dotnet-sdk.acquire",
 		"onCommand:dotnet-sdk.acquireStatus",
-		"onCommand:dotnet-sdk.listNewestSDKs",
+		"onCommand:dotnet-sdk.listNewestDotnets",
 		"onCommand:dotnet-sdk.uninstallAll",
 		"onCommand:dotnet-sdk.showAcquisitionLog"
 	],

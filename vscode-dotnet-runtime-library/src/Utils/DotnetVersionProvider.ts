@@ -13,7 +13,7 @@ export class DotnetVersionProvider {
     /**
      * @remarks
      * Use the release.json manifest (provided to the webWorker) that contains the newest version of the SDK and Runtime for each major.minor of .NET to get the available versions.
-     * Relies on the context listNewestRuntimes to tell if it should get runtime or sdk versions.
+     * Relies on the context listRuntimes to tell if it should get runtime or sdk versions.
      *
      * @returns
      * IDotnetListVersionsResult of versions available.
@@ -24,7 +24,7 @@ export class DotnetVersionProvider {
     async GetAvailableDotnetVersions(commandContext: IDotnetListVersionsContext | undefined, webWorker: WebRequestWorker)
     {
         // If shouldObtainSdkVersions === false, get Runtimes. Else, get Sdks.
-        const shouldObtainSdkVersions : boolean = commandContext?.listNewestRuntimes === null || commandContext?.listNewestRuntimes === undefined || !commandContext.listNewestRuntimes;
+        const shouldObtainSdkVersions : boolean = commandContext?.listRuntimes === null || commandContext?.listRuntimes === undefined || !commandContext.listRuntimes;
 
         const availableVersions : IDotnetListVersionsResult = [];
         let response = null;

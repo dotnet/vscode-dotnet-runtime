@@ -54,7 +54,7 @@ namespace configKeys {
 namespace commandKeys {
     export const acquire = 'acquire';
     export const acquireStatus = 'acquireStatus';
-    export const listNewestSDKs = 'listNewestSDKs'
+    export const listNewestDotnets = 'listNewestDotnets'
     export const uninstallAll = 'uninstallAll';
     export const showAcquisitionLog = 'showAcquisitionLog';
     export const ensureDotnetDependencies = 'ensureDotnetDependencies';
@@ -147,7 +147,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         return pathResult;
     });
 
-    const dotnetListSdksRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listNewestSDKs}`,
+    const dotnetListNewestDotnetsRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listNewestDotnets}`,
         async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) => {
         const webWorker = customWebWorker !== undefined ? customWebWorker : new WebRequestWorker(
             context.globalState,
@@ -190,7 +190,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     context.subscriptions.push(
         dotnetAcquireRegistration,
         dotnetAcquireStatusRegistration,
-        dotnetListSdksRegistration,
+        dotnetListNewestDotnetsRegistration,
         dotnetUninstallAllRegistration,
         showOutputChannelRegistration,
         ensureDependenciesRegistration,
