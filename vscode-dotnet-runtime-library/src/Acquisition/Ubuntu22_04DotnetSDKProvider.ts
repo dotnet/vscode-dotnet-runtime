@@ -54,4 +54,19 @@ export class Ubuntu22_04DotnetSDKProvider extends IDistroDotnetSDKProvider {
     {
         return false;
     }
+
+    public getInstalledDotnetVersions(): Promise<string[]>
+    {
+        throw new Error('Method not implemented.');
+    }
+    
+    public getInstalledGlobalDotnetVersionIfExists(): Promise<string | null> 
+    {
+        throw new Error('Method not implemented.');
+    }
+
+    public getDotnetVersionSupportStatus(fullySpecifiedVersion: string): Promise<DotnetDistroSupportStatus>
+    {
+        throw new Error('Method not implemented.');
+    }
 }

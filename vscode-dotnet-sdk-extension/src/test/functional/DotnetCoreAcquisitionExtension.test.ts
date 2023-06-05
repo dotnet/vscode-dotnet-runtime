@@ -31,12 +31,14 @@ import {
   MockWindowDisplayWorker,
   NoInstallAcquisitionInvoker,
   SdkInstallationDirectoryProvider,
+  FileUtilities,
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { uninstallSDKExtension } from '../../ExtensionUninstall';
 import { GlobalSDKInstallerResolver } from 'vscode-dotnet-runtime-library/dist/Acquisition/GlobalSDKInstallerResolver';
 import { MockIndexWebRequestWorker } from 'vscode-dotnet-runtime-library';
 import { warn } from 'console';
+import { WinMacSDKInstaller } from '../../../../vscode-dotnet-runtime-library/src/Acquisition/WinMacSDKInstaller';
 
 const maxTimeoutTime = 100000;
 const assert = chai.assert;
@@ -458,7 +460,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       assert.exists(result, "The global acquisition command did not provide a result?");
       assert.exists(result!.dotnetPath);
 
-      const installersDir : string = DotnetCoreAcquisitionWorker.getInstallerDownloadFolder();
+      const installersDir : string = WinMacSDKInstaller.getDownloadedInstallFilesFolder();
       assert.exists(installersDir);
       const numInstallersAlreadyDownloaded = fs.readdirSync(installersDir).length;
       // The installer should be removed from the disk after the command is done.
