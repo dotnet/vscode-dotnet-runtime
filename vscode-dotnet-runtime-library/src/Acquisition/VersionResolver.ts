@@ -50,7 +50,8 @@ export class VersionResolver implements IVersionResolver {
         const shouldObtainSdkVersions : boolean = !commandContext?.listRuntimes;
         const availableVersions : IDotnetListVersionsResult = [];
 
-        const response = webWorker != null ? await webWorker.getCachedData() : await this.webWorker.getCachedData();
+        const response = webWorker ? await webWorker.getCachedData() : await this.webWorker.getCachedData();
+
 
         return new Promise<IDotnetListVersionsResult>((resolve, reject) =>
         {
