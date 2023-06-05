@@ -13,7 +13,7 @@ export interface IDotnetListVersionsContext {
      *
      * @property listRuntimes - If this is not true (false or undefined), list SDK versions available. Elsewise, list runtimes available.
      * @property errorConfiguration - Do we want to show pop-ups for errors? Use this for this option and other options in the event of an error.
-    */
+     */
     listRuntimes: boolean | null,
     errorConfiguration?: AcquireErrorConfiguration;
 }

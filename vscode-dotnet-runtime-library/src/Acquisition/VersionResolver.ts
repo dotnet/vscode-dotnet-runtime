@@ -43,7 +43,7 @@ export class VersionResolver implements IVersionResolver {
      *
      * @throws
      * Exception if the API service for releases-index.json is unavailable.
-    */
+     */
     public async GetAvailableDotnetVersions(commandContext: IDotnetListVersionsContext | undefined, webWorker: WebRequestWorker | undefined) : Promise<IDotnetListVersionsResult>
     {
         // If shouldObtainSdkVersions === false, get Runtimes. Else, get Sdks.
@@ -58,7 +58,7 @@ export class VersionResolver implements IVersionResolver {
             if (!response)
             {
                 const offlineError = new Error('Unable to connect to the index server: Cannot find .NET versions.');
-                this.eventStream.post(new DotnetOfflineFailure(offlineError, "any"));
+                this.eventStream.post(new DotnetOfflineFailure(offlineError, 'any'));
                 reject(offlineError);
             }
             else
