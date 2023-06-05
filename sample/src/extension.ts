@@ -37,6 +37,29 @@ export function activate(context: vscode.ExtensionContext) {
     runtimeExtension.activate(context);
     sdkExtension.activate(context);
 
+
+    // --------------------------------------------------------------------------
+
+    // -------------------shared helper functions------------------------
+
+    const exposeListVersionsCommand = async (getRuntimes : boolean) =>
+    {
+        if (!getRuntimes) {
+            getRuntimes = JSON.parse(await vscode.window.showInputBox({
+                placeHolder: 'false',
+                value: 'false',
+                prompt: 'Acquire Runtimes? Use `true` if so, else, give `false`.',
+            }) ?? 'false');
+        }
+
+        try {
+            const result : IDotnetListVersionsResult | undefined = await vscode.commands.executeCommand('dotnet-sdk.listVersions', { listRuntimes: getRuntimes });
+            vscode.window.showInformationMessage(`Available ${getRuntimes == false ? 'SDKS' : 'Runtimes'}: ${result?.map(x => x.version).join(", ")}`);
+        } catch (error) {
+            vscode.window.showErrorMessage((error as Error).toString());
+        }
+    }
+
     // --------------------------------------------------------------------------
 
     // -------------------runtime extension registrations------------------------
@@ -142,13 +165,19 @@ ${stderr}`);
         }
     });
 
+    const sampleRuntimelistVersions = vscode.commands.registerCommand('sample.dotnet.listVersions', async (getRuntimes : boolean) => {
+        exposeListVersionsCommand(getRuntimes);
+    });
+
     context.subscriptions.push(
         sampleHelloWorldRegistration,
         sampleAcquireRegistration,
         sampleAcquireStatusRegistration,
         sampleDotnetUninstallAllRegistration,
         sampleConcurrentTest,
-        sampleShowAcquisitionLogRegistration);
+        sampleShowAcquisitionLogRegistration,
+        sampleRuntimelistVersions
+    );
 
     // --------------------------------------------------------------------------
 
@@ -189,22 +218,8 @@ ${stderr}`);
         }
     });
 
-    const sampleSDKlistVersions = vscode.commands.registerCommand('sample.dotnet-sdk.listVersions', async (getRuntimes) => {
-
-        if (!getRuntimes) {
-            getRuntimes = JSON.parse(await vscode.window.showInputBox({
-                placeHolder: 'false',
-                value: 'false',
-                prompt: 'Acquire Runtimes? Use `true` if so, else, give `false`.',
-            }) ?? 'false');
-        }
-
-        try {
-            const result : IDotnetListVersionsResult | undefined = await vscode.commands.executeCommand('dotnet-sdk.listVersions', { listRuntimes: getRuntimes });
-            vscode.window.showInformationMessage(`Available ${getRuntimes == false ? 'SDKS' : 'Runtimes'}: ${result?.map(x => x.version).join(", ")}`);
-        } catch (error) {
-            vscode.window.showErrorMessage((error as Error).toString());
-        }
+    const sampleSDKlistVersions = vscode.commands.registerCommand('sample.dotnet-sdk.listVersions', async (getRuntimes : boolean) => {
+        exposeListVersionsCommand(getRuntimes);
     });
 
     const sampleSDKDotnetUninstallAllRegistration = vscode.commands.registerCommand('sample.dotnet-sdk.uninstallAll', async () => {
