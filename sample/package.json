@@ -62,7 +62,7 @@
 				"category": "Sample"
 			},
 			{
-				"command": "sample.dotnet-sdk.listNewestDotnets",
+				"command": "sample.dotnet-sdk.listVersions",
 				"title": "List the newest available versions of the .NET SDK or .NET Runtime.",
 				"category": "Sample"
 			},
