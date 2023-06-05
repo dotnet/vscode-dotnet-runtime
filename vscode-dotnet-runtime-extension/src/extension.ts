@@ -18,7 +18,6 @@ import {
     DotnetCoreAcquisitionWorker,
     DotnetCoreDependencyInstaller,
     DotnetExistingPathResolutionCompleted,
-    DotnetVersionProvider,
     DotnetRuntimeAcquisitionStarted,
     enableExtensionTelemetry,
     ErrorConfiguration,
@@ -148,16 +147,11 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     });
 
     const dotnetlistVersionsRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listVersions}`,
-        async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) => {
-        const webWorker = customWebWorker !== undefined ? customWebWorker : new WebRequestWorker(
-            context.globalState,
-            eventStream,
-            DotnetVersionProvider.availableDontetVersionsUrl,
-            'listSDKVersionsCacheKey'
-        );
-
+        async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) =>
+    {
         const versionsResult = callWithErrorHandling(async () => {
-            new DotnetVersionProvider().GetAvailableDotnetVersions(commandContext, webWorker)
+            const versionResolver = new VersionResolver(context.globalState, eventStream);
+            return versionResolver.GetAvailableDotnetVersions(commandContext, customWebWorker);
         }, issueContext(commandContext?.errorConfiguration, 'listVersions'));
 
         return versionsResult;

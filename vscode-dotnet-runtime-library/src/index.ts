@@ -17,7 +17,6 @@ export * from './EventStream/EventStreamRegistration';
 export * from './EventStream/IWindowDisplayWorker';
 export * from './EventStream/WindowDisplayWorker';
 export * from './EventStream/EventStreamEvents';
-export * from './Utils/DotnetVersionProvider';
 export * from './Utils/ErrorHandler';
 export * from './Utils/IIssueContext';
 export * from './Utils/IssueReporter';
