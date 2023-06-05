@@ -158,7 +158,11 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             'listSDKVersionsCacheKey'
         );
 
-        return new DotnetVersionProvider().GetAvailableDotnetVersions(commandContext, webWorker);
+        const versionsResult = callWithErrorHandling(async () => {
+            new DotnetVersionProvider().GetAvailableDotnetVersions(commandContext, webWorker)
+        }, issueContext(commandContext?.errorConfiguration, 'listVersions'));
+
+        return versionsResult;
     });
 
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallAll}`, async (commandContext: IDotnetUninstallContext | undefined) => {

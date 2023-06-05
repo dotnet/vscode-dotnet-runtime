@@ -3,6 +3,8 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
+import { AcquireErrorConfiguration } from './Utils/ErrorHandler';
+
 export interface IDotnetListVersionsContext {
     /**
      * @remarks
@@ -10,8 +12,10 @@ export interface IDotnetListVersionsContext {
      * By available this means only those at the newest minor version for each major version.
      *
      * @property listRuntimes - If this is not true (false or undefined), list SDK versions available. Elsewise, list runtimes available.
-     */
-    listRuntimes: boolean | null
+     * @property errorConfiguration - Do we want to show pop-ups for errors? Use this for this option and other options in the event of an error.
+    */
+    listRuntimes: boolean | null,
+    errorConfiguration?: AcquireErrorConfiguration;
 }
 
 /**
@@ -33,7 +37,7 @@ export interface IDotnetVersion {
     version: string,
     supportStatus: DotnetVersionSupportStatus,
     supportPhase: DotnetVersionSupportPhase,
-    channelVersion: string
+    channelVersion: string,
 }
 
 /**
