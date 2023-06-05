@@ -62,11 +62,6 @@
 				"category": "Sample"
 			},
 			{
-				"command": "sample.dotnet.listVersions",
-				"title": "Using the Runtime Extension, list the newest versions of the .NET Runtime or .NET SDK.",
-				"category": "Sample"
-			},
-			{
 				"command": "sample.dotnet-sdk.uninstallAll",
 				"title": "Uninstall all .NET SDKs",
 				"category": "Sample"
