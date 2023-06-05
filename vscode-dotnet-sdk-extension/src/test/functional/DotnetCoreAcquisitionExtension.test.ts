@@ -20,6 +20,7 @@ import {
   IDotnetListVersionsContext,
   IDotnetListVersionsResult,
   FailingWebRequestWorker,
+  FileUtilities,
   MockEnvironmentVariableCollection,
   MockEventStream,
   MockExtensionConfiguration,
@@ -448,7 +449,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   */
   test('Install Globally (Requires Admin)', async () => {
     // We only test if the process is running under ADMIN because non-admin requires user-intervention.
-    if(DotnetCoreAcquisitionWorker.isElevated())
+    if(FileUtilities.isElevated())
     {
       const version : string = '7.0.103';
 

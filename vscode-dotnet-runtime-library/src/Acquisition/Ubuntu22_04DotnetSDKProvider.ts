@@ -5,8 +5,19 @@
 import * as proc from 'child_process';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
+import { DotnetDistroSupportStatus } from './DotnetGlobalSDKLinuxInstallerResolver';
 
 export class Ubuntu22_04DotnetSDKProvider extends IDistroDotnetSDKProvider {
+
+    public getInstalledDotnetVersions(): Promise<string[]> {
+        throw new Error('Method not implemented.');
+    }
+    public getInstalledGlobalDotnetVersionIfExists(): Promise<string | null> {
+        throw new Error('Method not implemented.');
+    }
+    public getDotnetVersionSupportStatus(fullySpecifiedVersion: string): Promise<DotnetDistroSupportStatus> {
+        throw new Error('Method not implemented.');
+    }
 
     public async installDotnet(installContext: IDotnetInstallationContext): Promise<boolean>
     {

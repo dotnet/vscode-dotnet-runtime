@@ -16,7 +16,7 @@
 	"version": "1.6.0",
 	"publisher": "ms-dotnettools",
 	"engines": {
-		"vscode": "^1.72.0"
+		"vscode": "^1.74.0"
 	},
 	"categories": [
 		"Other"
@@ -33,14 +33,6 @@
 		},
 		"virtualWorkspaces": true
 	},
-	"activationEvents": [
-		"onCommand:dotnet.acquire",
-		"onCommand:dotnet.acquireStatus",
-		"onCommand:dotnet.listSdks",
-		"onCommand:dotnet.uninstallAll",
-		"onCommand:dotnet.showAcquisitionLog",
-		"onCommand:dotnet.ensureDotnetDependencies"
-	],
 	"main": "./dist/extension.js",
 	"types": "./dist/extension.d.ts",
 	"contributes": {
