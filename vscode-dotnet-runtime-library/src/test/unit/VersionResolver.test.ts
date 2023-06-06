@@ -4,6 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
 import { MockEventStream, MockExtensionContext, MockVersionResolver, versionPairs } from '../mocks/MockObjects';
+import { IDotnetListVersionsResult } from '../../IDotnetListVersionsContext';
 const assert = chai.assert;
 
 suite('VersionResolver Unit Tests', () => {
@@ -12,6 +13,14 @@ suite('VersionResolver Unit Tests', () => {
     // MockVersionResolver is a VersionResolver that uses a fake releases.json
     // (prevents us from making web requests in unit tests)
     const resolver: MockVersionResolver = new MockVersionResolver(context, eventStream);
+
+    test('Get Available Versions', async () => {
+        const result : IDotnetListVersionsResult = await resolver.GetAvailableDotnetVersions(undefined);
+        // Assert that the call gives a result with members. The data may change, so we did not include data here.
+        // Comprehensive e2e tests with data are in the sdk extension.
+        assert(result);
+        assert(result.length > 0); 
+    });
 
     test('Error With Invalid Version', async () => {
         return assert.isRejected(resolver.getFullRuntimeVersion('foo'), Error, 'Invalid version');

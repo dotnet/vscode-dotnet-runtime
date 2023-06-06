@@ -27,7 +27,6 @@ import {
     IDotnetAcquireContext,
     IDotnetAcquireResult,
     IDotnetEnsureDependenciesContext,
-    IDotnetListVersionsContext,
     IDotnetUninstallContext,
     IEventStreamContext,
     IExtensionContext,
@@ -36,7 +35,6 @@ import {
     registerEventStream,
     RuntimeInstallationDirectoryProvider,
     VersionResolver,
-    WebRequestWorker,
     WindowDisplayWorker,
 } from 'vscode-dotnet-runtime-library';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquistionId';
@@ -53,7 +51,6 @@ namespace configKeys {
 namespace commandKeys {
     export const acquire = 'acquire';
     export const acquireStatus = 'acquireStatus';
-    export const listVersions = 'listVersions'
     export const uninstallAll = 'uninstallAll';
     export const showAcquisitionLog = 'showAcquisitionLog';
     export const ensureDotnetDependencies = 'ensureDotnetDependencies';

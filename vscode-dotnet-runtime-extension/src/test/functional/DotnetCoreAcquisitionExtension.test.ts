@@ -10,14 +10,10 @@ import * as vscode from 'vscode';
 import {
   IDotnetAcquireContext,
   IDotnetAcquireResult,
-  IDotnetListVersionsContext,
-  IDotnetListVersionsResult,
   ITelemetryEvent,
-  MockEventStream,
   MockExtensionConfiguration,
   MockExtensionContext,
   MockTelemetryReporter,
-  MockWebRequestWorker,
   MockWindowDisplayWorker,
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';

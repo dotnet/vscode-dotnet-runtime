@@ -26,8 +26,12 @@ export class VersionResolver implements IVersionResolver {
     private readonly releasesUrl = 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json';
 
     constructor(extensionState: IExtensionState,
-                private readonly eventStream: IEventStream) {
-        this.webWorker = new WebRequestWorker(extensionState, eventStream, this.releasesUrl, this.releasesKey);
+                private readonly eventStream: IEventStream,
+                webWorker: WebRequestWorker | undefined = undefined
+
+    )
+    {
+        this.webWorker = webWorker ?? new WebRequestWorker(extensionState, eventStream, this.releasesUrl, this.releasesKey);
     }
 
     /**
@@ -44,13 +48,13 @@ export class VersionResolver implements IVersionResolver {
      * @throws
      * Exception if the API service for releases-index.json is unavailable.
      */
-    public async GetAvailableDotnetVersions(commandContext: IDotnetListVersionsContext | undefined, webWorker: WebRequestWorker | undefined) : Promise<IDotnetListVersionsResult>
+    public async GetAvailableDotnetVersions(commandContext: IDotnetListVersionsContext | undefined) : Promise<IDotnetListVersionsResult>
     {
         // If shouldObtainSdkVersions === false, get Runtimes. Else, get Sdks.
         const shouldObtainSdkVersions : boolean = !commandContext?.listRuntimes;
         const availableVersions : IDotnetListVersionsResult = [];
 
-        const response = webWorker ? await webWorker.getCachedData() : await this.webWorker.getCachedData();
+        const response = await this.webWorker.getCachedData();
 
 
         return new Promise<IDotnetListVersionsResult>((resolve, reject) =>
