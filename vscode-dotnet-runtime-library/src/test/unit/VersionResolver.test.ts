@@ -19,7 +19,7 @@ suite('VersionResolver Unit Tests', () => {
         // Assert that the call gives a result with members. The data may change, so we did not include data here.
         // Comprehensive e2e tests with data are in the sdk extension.
         assert(result);
-        assert(result.length > 0); 
+        assert(result.length > 0);
     });
 
     test('Error With Invalid Version', async () => {

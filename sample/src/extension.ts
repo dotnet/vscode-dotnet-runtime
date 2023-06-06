@@ -8,7 +8,8 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import {
     IDotnetAcquireResult,
-    IDotnetListVersionsResult
+    IDotnetListVersionsResult,
+    IDotnetVersion
 } from 'vscode-dotnet-runtime-library';
 import * as runtimeExtension from 'vscode-dotnet-runtime';
 import * as sdkExtension from 'vscode-dotnet-sdk';
@@ -94,6 +95,7 @@ ${stderr}`);
             vscode.window.showErrorMessage((error as Error).toString());
         }
     });
+
     const sampleAcquireStatusRegistration = vscode.commands.registerCommand('sample.dotnet.acquireStatus', async (version) => {
         if (!version) {
             version = await vscode.window.showInputBox({
@@ -111,6 +113,7 @@ ${stderr}`);
             vscode.window.showErrorMessage((error as Error).toString());
         }
     });
+    
     const sampleDotnetUninstallAllRegistration = vscode.commands.registerCommand('sample.dotnet.uninstallAll', async () => {
         try {
             await vscode.commands.executeCommand('dotnet.uninstallAll');
@@ -119,6 +122,7 @@ ${stderr}`);
             vscode.window.showErrorMessage((error as Error).toString());
         }
     });
+
     const sampleConcurrentTest = vscode.commands.registerCommand('sample.dotnet.concurrentTest', async () => {
         try {
             vscode.commands.executeCommand('dotnet.showAcquisitionLog');
@@ -135,6 +139,7 @@ ${stderr}`);
             vscode.window.showErrorMessage((error as Error).toString());
         }
     });
+
     const sampleShowAcquisitionLogRegistration = vscode.commands.registerCommand('sample.dotnet.showAcquisitionLog', async () => {
         try {
             await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
@@ -208,6 +213,15 @@ ${stderr}`);
         }
     });
 
+    const sampleSDKrecommendedVersion = vscode.commands.registerCommand('sample.dotnet-sdk.recommendedVersion', async (getRuntimes : boolean) => {
+        try {
+            const result : IDotnetVersion | undefined = await vscode.commands.executeCommand('dotnet-sdk.recommendedVersion', { listRuntimes: getRuntimes });
+            vscode.window.showInformationMessage(`Recommended SDK Version to Install: ${result?.version}`);
+        } catch (error) {
+            vscode.window.showErrorMessage((error as Error).toString());
+        }
+    });
+
     const sampleSDKDotnetUninstallAllRegistration = vscode.commands.registerCommand('sample.dotnet-sdk.uninstallAll', async () => {
         try {
             await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
@@ -229,6 +243,7 @@ ${stderr}`);
         sampleSDKAcquireRegistration,
         sampleSDKAcquireStatusRegistration,
         sampleSDKlistVersions,
+        sampleSDKrecommendedVersion,
         sampleSDKDotnetUninstallAllRegistration,
         sampleSDKShowAcquisitionLogRegistration);
 }

@@ -12,7 +12,6 @@ import {
 import { IExtensionState } from '../IExtensionState';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { IVersionResolver } from './IVersionResolver';
-import { ReleasesResult } from './ReleasesResult';
 import { DotnetVersionSupportPhase,
     DotnetVersionSupportStatus,
     IDotnetListVersionsContext,
@@ -95,11 +94,14 @@ export class VersionResolver implements IVersionResolver {
     public async getFullSDKVersion(version: string): Promise<string> {
         return this.getFullVersion(version, false);
     }
-
-    private async getFullVersion(version: string, runtimeVersion: boolean): Promise<string> {
+ 
+    /**
+     * @param getRuntimeVersion - True for getting the full runtime version, false for the SDk version.
+     */
+    private async getFullVersion(version: string, getRuntimeVersion: boolean): Promise<string> {
         try {
-            const releasesVersions = await this.getReleasesInfo();
-            const versionResult = this.resolveVersion(version, releasesVersions, runtimeVersion);
+            const releasesVersions = await this.getReleasesInfo(getRuntimeVersion);
+            const versionResult = this.resolveVersion(version, releasesVersions);
             this.eventStream.post(new DotnetVersionResolutionCompleted(version, versionResult));
             return versionResult;
         } catch (error) {
@@ -108,15 +110,15 @@ export class VersionResolver implements IVersionResolver {
         }
     }
 
-    private resolveVersion(version: string, releases: ReleasesResult, runtimeVersion: boolean): string {
+    private resolveVersion(version: string, releases: IDotnetListVersionsResult): string {
         this.validateVersionInput(version);
 
-        const channel = releases.releasesIndex.filter((channelVal) => channelVal.channelVersion === version);
-        if (!channel || channel.length !== 1) {
+        const matchingVersion = releases.filter((availableVersions : IDotnetVersion) => availableVersions.channelVersion === version);
+        if (!matchingVersion || matchingVersion.length < 1) {
             throw new Error(`Unable to resolve version: ${version}`);
         }
-        const versionRes =  runtimeVersion ? channel[0].latestRuntime : channel[0].latestSDK;
-        return versionRes;
+
+        return matchingVersion[0].version;
     }
 
     private validateVersionInput(version: string) {
@@ -126,13 +128,15 @@ export class VersionResolver implements IVersionResolver {
         }
     }
 
-    private async getReleasesInfo(): Promise<ReleasesResult> {
-        const response = await this.webWorker.getCachedData();
+    private async getReleasesInfo(getRuntimeVersion : boolean): Promise<IDotnetListVersionsResult>
+    {
+        const apiContext: IDotnetListVersionsContext = { listRuntimes: getRuntimeVersion };
+
+        const response = await this.GetAvailableDotnetVersions(apiContext);
         if (!response) {
             throw new Error('Unable to get the full version.');
         }
 
-        const releasesVersions = new ReleasesResult(response);
-        return releasesVersions;
+        return response;
     }
 }
