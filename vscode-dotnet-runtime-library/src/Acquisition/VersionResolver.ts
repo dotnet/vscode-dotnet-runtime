@@ -26,8 +26,7 @@ export class VersionResolver implements IVersionResolver {
 
     constructor(extensionState: IExtensionState,
                 private readonly eventStream: IEventStream,
-                webWorker: WebRequestWorker | undefined = undefined
-
+                webWorker?: WebRequestWorker
     )
     {
         this.webWorker = webWorker ?? new WebRequestWorker(extensionState, eventStream, this.releasesUrl, this.releasesKey);
@@ -94,7 +93,7 @@ export class VersionResolver implements IVersionResolver {
     public async getFullSDKVersion(version: string): Promise<string> {
         return this.getFullVersion(version, false);
     }
- 
+
     /**
      * @param getRuntimeVersion - True for getting the full runtime version, false for the SDk version.
      */

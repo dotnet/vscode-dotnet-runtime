@@ -38,7 +38,7 @@ const assert = chai.assert;
 chai.use(chaiAsPromised);
 /* tslint:disable:no-any */
 
-const mockReleasesData : string = `{
+const mockReleasesData = `{
   "releases-index": [
     {
           "channel-version": "8.0",

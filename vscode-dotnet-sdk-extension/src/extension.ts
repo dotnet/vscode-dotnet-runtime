@@ -128,7 +128,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             const customVersionResolver = new VersionResolver(context.globalState, eventStream, customWebWorker);
             return customVersionResolver.GetAvailableDotnetVersions(commandContext);
         }, issueContext(commandContext?.errorConfiguration, 'listVersions'));
-    
+
         return versionsResult;
     }
 
@@ -165,7 +165,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     const dotnetlistVersionsRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listVersions}`,
         async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) =>
     {
-        return await getAvailableVersions(commandContext, customWebWorker);
+        return getAvailableVersions(commandContext, customWebWorker);
     });
 
     const dotnetRecommendedVersionRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.recommendedVersion}`,
