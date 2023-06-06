@@ -75,6 +75,11 @@
 				"command": "sample.dotnet-sdk.listVersions",
 				"title": "Using the SDK Extension, list the newest versions of the .NET SDK or .NET Runtime.",
 				"category": "Sample"
+			},
+			{
+				"command": "sample.dotnet-sdk.recommendedVersion",
+				"title": "Show the recommended version of the SDK to install.",
+				"category": "Sample"
 			}
 		]
 	},
