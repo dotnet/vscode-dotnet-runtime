@@ -9,16 +9,6 @@ import { DotnetDistroSupportStatus } from './DotnetGlobalSDKLinuxInstallerResolv
 
 export class Ubuntu22_04DotnetSDKProvider extends IDistroDotnetSDKProvider {
 
-    public getInstalledDotnetVersions(): Promise<string[]> {
-        throw new Error('Method not implemented.');
-    }
-    public getInstalledGlobalDotnetVersionIfExists(): Promise<string | null> {
-        throw new Error('Method not implemented.');
-    }
-    public getDotnetVersionSupportStatus(fullySpecifiedVersion: string): Promise<DotnetDistroSupportStatus> {
-        throw new Error('Method not implemented.');
-    }
-
     public async installDotnet(installContext: IDotnetInstallationContext): Promise<boolean>
     {
         return false;
@@ -59,8 +49,8 @@ export class Ubuntu22_04DotnetSDKProvider extends IDistroDotnetSDKProvider {
     {
         throw new Error('Method not implemented.');
     }
-    
-    public getInstalledGlobalDotnetVersionIfExists(): Promise<string | null> 
+
+    public getInstalledGlobalDotnetVersionIfExists(): Promise<string | null>
     {
         throw new Error('Method not implemented.');
     }

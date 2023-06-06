@@ -5,14 +5,11 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import rimraf = require('rimraf');
 import * as proc from 'child_process';
 import * as https from 'https';
 
-import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { ISDKInstaller } from './ISDKInstaller';
-import { GlobalSDKInstallerResolver } from './GlobalSDKInstallerResolver';
 
 /**
  * @remarks
