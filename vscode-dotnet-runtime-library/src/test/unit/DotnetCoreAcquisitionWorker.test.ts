@@ -10,7 +10,6 @@ import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisi
 import { RuntimeInstallationDirectoryProvider } from '../../Acquisition/RuntimeInstallationDirectoryProvider';
 import { SdkInstallationDirectoryProvider } from '../../Acquisition/SdkInstallationDirectoryProvider';
 import {
-    DotnetAcquisitionAlreadyInstalled,
     DotnetAcquisitionCompleted,
     DotnetAcquisitionStarted,
     DotnetAcquisitionStatusResolved,

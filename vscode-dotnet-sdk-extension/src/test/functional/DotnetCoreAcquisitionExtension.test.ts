@@ -21,6 +21,7 @@ import {
   IDotnetListVersionsResult,
   FailingWebRequestWorker,
   FileUtilities,
+  GlobalSDKInstallerResolver,
   MockEnvironmentVariableCollection,
   MockEventStream,
   MockExtensionConfiguration,
@@ -31,14 +32,11 @@ import {
   MockWindowDisplayWorker,
   NoInstallAcquisitionInvoker,
   SdkInstallationDirectoryProvider,
-  FileUtilities,
+  WinMacSDKInstaller
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { uninstallSDKExtension } from '../../ExtensionUninstall';
-import { GlobalSDKInstallerResolver } from 'vscode-dotnet-runtime-library/dist/Acquisition/GlobalSDKInstallerResolver';
-import { MockIndexWebRequestWorker } from 'vscode-dotnet-runtime-library';
 import { warn } from 'console';
-import { WinMacSDKInstaller } from '../../../../vscode-dotnet-runtime-library/src/Acquisition/WinMacSDKInstaller';
 
 const maxTimeoutTime = 100000;
 const assert = chai.assert;
