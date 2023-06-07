@@ -18,7 +18,6 @@ import {
   IDotnetAcquireResult,
   IDotnetListVersionsContext,
   IDotnetListVersionsResult,
-  FailingWebRequestWorker,
   FileUtilities,
   GlobalSDKInstallerResolver,
   MockEnvironmentVariableCollection,
@@ -31,11 +30,13 @@ import {
   MockWindowDisplayWorker,
   NoInstallAcquisitionInvoker,
   SdkInstallationDirectoryProvider,
-  WinMacSDKInstaller
+  WinMacSDKInstaller,
+  MockIndexWebRequestWorker
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { uninstallSDKExtension } from '../../ExtensionUninstall';
 import { IDotnetVersion } from 'vscode-dotnet-runtime-library';
+import { warn } from 'console';
 
 const standardTimeoutTime = 100000;
 const assert = chai.assert;
@@ -99,7 +100,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   test('List Sdks & Runtimes', async () => {
     const mockWebContext = new MockExtensionContext();
     const eventStream = new MockEventStream();
-    const webWorker = new MockWebRequestWorker(mockWebContext, eventStream, '', 'MockKey');
+    const webWorker = new MockWebRequestWorker(mockWebContext, eventStream);
     webWorker.response = mockReleasesData;
 
     // The API can find the available SDKs and list their versions.
@@ -122,7 +123,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   test('Get Recommended SDK Version', async () => {
     const mockWebContext = new MockExtensionContext();
     const eventStream = new MockEventStream();
-    const webWorker = new MockWebRequestWorker(mockWebContext, eventStream, '', 'MockKey');
+    const webWorker = new MockWebRequestWorker(mockWebContext, eventStream);
     webWorker.response = mockReleasesData;
 
     const result = await vscode.commands.executeCommand<IDotnetVersion>('dotnet-sdk.recommendedVersion', null, webWorker);
@@ -458,8 +459,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     resolver = new GlobalSDKInstallerResolver(mockExtensionContext, eventStream, fullVersion);
     resolver.customWebRequestWorker = webWorker;
     assert.strictEqual(await resolver.getFullVersion(), fullVersion);
-  }).timeout(maxTimeoutTime);
-  */
+  }).timeout(standardTimeoutTime);
+  
   test('Install Globally (Requires Admin)', async () => {
     // We only test if the process is running under ADMIN because non-admin requires user-intervention.
     if(FileUtilities.isElevated())
@@ -492,7 +493,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       // And we wouldn't be able to kill the process so the test would leave a lot of hanging procs on the machine
       warn("The Global SDK Install test cannot run as the machine is unprivelleged.");
     }
-  }).timeout(maxTimeoutTime);
+  }).timeout(standardTimeoutTime);
 
   test('Install Command Sets the PATH', async () => {
     const context: IDotnetAcquireContext = { version: '5.0', requestingExtensionId: 'ms-dotnettools.sample-extension' };

@@ -21,7 +21,6 @@ import { DotnetVersionSupportPhase,
 
 export class VersionResolver implements IVersionResolver {
     protected webWorker: WebRequestWorker;
-    private readonly releasesKey = 'releases';
     private readonly releasesUrl = 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json';
 
     constructor(extensionState: IExtensionState,
@@ -29,7 +28,7 @@ export class VersionResolver implements IVersionResolver {
                 webWorker?: WebRequestWorker
     )
     {
-        this.webWorker = webWorker ?? new WebRequestWorker(extensionState, eventStream, this.releasesUrl, this.releasesKey);
+        this.webWorker = webWorker ?? new WebRequestWorker(extensionState, eventStream);
     }
 
     /**
@@ -52,7 +51,7 @@ export class VersionResolver implements IVersionResolver {
         const shouldObtainSdkVersions : boolean = !commandContext?.listRuntimes;
         const availableVersions : IDotnetListVersionsResult = [];
 
-        const response = await this.webWorker.getCachedData();
+        const response = await this.webWorker.getCachedData(this.releasesUrl);
 
 
         return new Promise<IDotnetListVersionsResult>((resolve, reject) =>
