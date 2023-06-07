@@ -16,10 +16,10 @@ suite('VersionResolver Unit Tests', () => {
 
     test('Get Available Versions', async () => {
         const result : IDotnetListVersionsResult = await resolver.GetAvailableDotnetVersions(undefined);
-        // Assert that the call gives a result with members. The data may change, so we did not include data here.
-        // Comprehensive e2e tests with data are in the sdk extension.
+
         assert(result);
         assert(result.length > 0);
+        assert(result.some(x => x.version === '2.2.207')); // this is one of the versions we'd expect to be available.
     });
 
     test('Error With Invalid Version', async () => {
