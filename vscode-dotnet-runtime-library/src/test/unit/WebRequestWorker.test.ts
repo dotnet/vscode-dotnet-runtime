@@ -73,6 +73,7 @@ suite('WebRequestWorker Unit Tests', () => {
     test('Web Requests Memoized on Repeated Installs', async () => {
         const [eventStream, context] = getTestContext();
         const webWorker = new MockWebRequestWorker(context, eventStream, '', 'MockKey');
+
         // Make a request to cache the data
         await webWorker.getCachedData(0);
         const requests = [];

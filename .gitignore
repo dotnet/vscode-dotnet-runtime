@@ -28,6 +28,9 @@ project.lock.json
 *.ncrunchsolution
 *.*sdf
 *.ipch
+*.js
+*.d.ts
+*.js.map
 .build/
 .vs/
 launchSettings.json
