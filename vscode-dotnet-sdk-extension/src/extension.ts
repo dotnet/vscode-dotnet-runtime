@@ -145,14 +145,18 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
             if(commandContext.installType === 'global')
             {
-                if(commandContext.version === '')
+                if(commandContext.version === '' || !commandContext.version)
                 {
                     throw Error(`No version was defined to install.`);
                 }
 
                 const globalInstallerResolver = new GlobalSDKInstallerResolver(context.globalState, eventStream, commandContext.version);
+
                 const dotnetPath = await acquisitionWorker.acquireGlobalSDK(globalInstallerResolver);
-                // TODO: Check to make sure path is set by the installer.
+                const pathEnvVar = path.dirname(dotnetPath.dotnetPath);
+                
+                // For windows and mac the global installer we download updates the path, but that's not the case on linux.
+                setPathEnvVar(pathEnvVar, displayWorker, context.environmentVariableCollection, os.platform() === 'linux');
                 return dotnetPath;
             }
             else
@@ -226,7 +230,12 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         ...eventStreamObservers);
 }
 
-function setPathEnvVar(pathAddition: string, displayWorker: IWindowDisplayWorker, environmentVariables: vscode.EnvironmentVariableCollection) {
+/**
+ * 
+ * Sets the PATH environment variable for .net globally and on the vscode process which is needed to prevent you from having to restart vs code to get the new environment changes.
+ * @param setSystemWideVariable - Set to false if you only want to affect the process (e.g. the global installer already did the environment variable)
+ * */
+function setPathEnvVar(pathAddition: string, displayWorker: IWindowDisplayWorker, environmentVariables: vscode.EnvironmentVariableCollection, setSystemWideVariable = true) {
     // Set user PATH variable
     let pathCommand: string | undefined;
     if (os.platform() === 'win32') {
@@ -235,7 +244,7 @@ function setPathEnvVar(pathAddition: string, displayWorker: IWindowDisplayWorker
         pathCommand = getLinuxPathCommand(pathAddition);
     }
 
-    if (pathCommand !== undefined) {
+    if (pathCommand !== undefined && setSystemWideVariable) {
         runPathCommand(pathCommand, displayWorker);
     }
 
