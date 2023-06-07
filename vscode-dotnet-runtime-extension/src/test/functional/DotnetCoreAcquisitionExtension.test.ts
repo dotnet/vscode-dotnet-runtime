@@ -10,14 +10,10 @@ import * as vscode from 'vscode';
 import {
   IDotnetAcquireContext,
   IDotnetAcquireResult,
-  IDotnetListVersionsContext,
-  IDotnetListVersionsResult,
   ITelemetryEvent,
-  MockEventStream,
   MockExtensionConfiguration,
   MockExtensionContext,
   MockTelemetryReporter,
-  MockWebRequestWorker,
   MockWindowDisplayWorker,
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
@@ -72,29 +68,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.include(result!.dotnetPath, '.dotnet');
     assert.include(result!.dotnetPath, context.version);
   }).timeout(40000);
-
-  test('List Sdks & Runtimes', async () => {
-    // A mirror of the test in the SDK Extension.
-    // Test to see if the basic functionality of version acquistion works from both extensions. The more comprehensive test of this code is in the SDK extension.
-
-    const mockWebContext = new MockExtensionContext();
-    const eventStream = new MockEventStream();
-    const webWorker = new MockWebRequestWorker(mockWebContext, eventStream);
-    webWorker.response = `{
-      "releases-index": [
-        {
-              "latest-runtime": "7.0.4",
-              "latest-sdk": "8.0.100",
-              "release-type" : "lts"
-          }
-        ]
-    }`
-    // The API can find the available runtimes and their versions.
-    const apiContext: IDotnetListVersionsContext = { listRuntimes: true };
-    const runtimeResult = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet.listSdks', apiContext, webWorker);
-    assert.exists(runtimeResult);
-    assert.equal(runtimeResult?.filter((runtime : any) => runtime.version === '7.0.4').length, 1, 'The mock Runtime with the expected version was not found by the API parsing service.');
-  }).timeout(10000);
 
   test('Uninstall Command', async () => {
     const context: IDotnetAcquireContext = { version: '2.1', requestingExtensionId };

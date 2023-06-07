@@ -14,7 +14,6 @@ import {
   DotnetAcquisitionAlreadyInstalled,
   DotnetCoreAcquisitionWorker,
   DotnetPreinstallDetected,
-  DotnetVersionProvider,
   IDotnetAcquireContext,
   IDotnetAcquireResult,
   IDotnetListVersionsContext,
@@ -36,12 +35,34 @@ import {
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { uninstallSDKExtension } from '../../ExtensionUninstall';
-import { warn } from 'console';
+import { IDotnetVersion } from 'vscode-dotnet-runtime-library';
 
-const maxTimeoutTime = 100000;
+const standardTimeoutTime = 100000;
 const assert = chai.assert;
 chai.use(chaiAsPromised);
 /* tslint:disable:no-any */
+
+const mockReleasesData = `{
+  "releases-index": [
+    {
+          "channel-version": "8.0",
+          "latest-release": "8.0.0-preview.2",
+          "latest-runtime": "8.0.0-preview.2.23128.3",
+          "latest-sdk": "8.0.100-preview.2.23157.25",
+          "release-type" : "lts",
+          "support-phase": "preview"
+      },
+      {
+          "channel-version": "7.0",
+          "latest-release": "7.0.4",
+          "latest-release-date": "2023-03-14",
+          "latest-runtime": "7.0.4",
+          "latest-sdk": "7.0.202",
+          "release-type" : "sts",
+          "support-phase": "active"
+      }
+    ]
+}`
 
 suite('DotnetCoreAcquisitionExtension End to End', function() {
   this.retries(0);
@@ -69,7 +90,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     });
   });
 
-  /*test('Activate', async () => {
+  test('Activate', async () => {
     // Commands should now be registered
     assert.exists(extensionContext);
     assert.isAbove(extensionContext.subscriptions.length, 0);
@@ -78,44 +99,36 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   test('List Sdks & Runtimes', async () => {
     const mockWebContext = new MockExtensionContext();
     const eventStream = new MockEventStream();
-    const webWorker = new MockWebRequestWorker(mockWebContext, eventStream);
-    webWorker.response = `{
-      "releases-index": [
-        {
-              "channel-version": "8.0",
-              "latest-release": "8.0.0-preview.2",
-              "latest-runtime": "8.0.0-preview.2.23128.3",
-              "latest-sdk": "8.0.100-preview.2.23157.25",
-              "release-type" : "lts",
-              "support-phase": "preview"
-          },
-          {
-              "channel-version": "7.0",
-              "latest-release": "7.0.4",
-              "latest-release-date": "2023-03-14",
-              "latest-runtime": "7.0.4",
-              "latest-sdk": "7.0.202",
-              "release-type" : "sts",
-              "support-phase": "active"
-          }
-        ]
-    }`
+    const webWorker = new MockWebRequestWorker(mockWebContext, eventStream, '', 'MockKey');
+    webWorker.response = mockReleasesData;
 
     // The API can find the available SDKs and list their versions.
     const apiContext: IDotnetListVersionsContext = { listRuntimes: false };
-    const result = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet-sdk.listSdks', apiContext, webWorker);
+    const result = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet-sdk.listVersions', apiContext, webWorker);
     assert.exists(result);
     assert.equal(result?.length, 2);
-    assert.equal(result?.filter((sdk : any) => sdk.version === '7.0.202').length, 1, 'The mock SDK with the expected version was not found by the API parsing service.');
-    assert.equal(result?.filter((sdk : any) => sdk.channelVersion === '7.0').length, 1, 'The mock SDK with the expected channel version was not found by the API parsing service.');
+    assert.equal(result?.filter((sdk : any) => sdk.version === '7.0.202').length, 1, 'The mock SDK with the expected version {7.0.200} was not found by the API parsing service.');
+    assert.equal(result?.filter((sdk : any) => sdk.channelVersion === '7.0').length, 1, 'The mock SDK with the expected channel version {7.0} was not found by the API parsing service.');
+    assert.equal(result?.filter((sdk : any) => sdk.supportPhase === 'active').length, 1, 'The mock SDK with the expected support phase of {active} was not found by the API parsing service.');
 
     // The API can find the available runtimes and their versions.
     apiContext.listRuntimes = true;
-    const runtimeResult = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet-sdk.listSdks', apiContext, webWorker);
+    const runtimeResult = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet-sdk.listVersions', apiContext, webWorker);
     assert.exists(runtimeResult);
     assert.equal(runtimeResult?.length, 2);
     assert.equal(runtimeResult?.filter((runtime : any) => runtime.version === '7.0.4').length, 1, 'The mock Runtime with the expected version was not found by the API parsing service.');
-  }).timeout(maxTimeoutTime);
+  }).timeout(standardTimeoutTime);
+
+  test('Get Recommended SDK Version', async () => {
+    const mockWebContext = new MockExtensionContext();
+    const eventStream = new MockEventStream();
+    const webWorker = new MockWebRequestWorker(mockWebContext, eventStream, '', 'MockKey');
+    webWorker.response = mockReleasesData;
+
+    const result = await vscode.commands.executeCommand<IDotnetVersion>('dotnet-sdk.recommendedVersion', null, webWorker);
+    assert.exists(result);
+    assert.equal(result?.version, '7.0.202', 'The SDK did not recommend the version it was supposed to, which should be {7.0.200} from the mock data.');
+  }).timeout(standardTimeoutTime);
 
   test('Detect Preinstalled SDK', async () => {
     // Set up acquisition worker
@@ -209,12 +222,12 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.isTrue(fs.existsSync(result!.dotnetPath));
     // Clean up storage
     await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
-  }).timeout(maxTimeoutTime);
+  }).timeout(standardTimeoutTime);
 
   test('Install Command with Unknown Extension Id', async () => {
     const context: IDotnetAcquireContext = { version: '5.0', requestingExtensionId: 'unknown' };
     return assert.isRejected(vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context));
-  }).timeout(maxTimeoutTime);
+  }).timeout(standardTimeoutTime);
 
   test('Global Install Version Parsing Handles Different Version Formats Correctly and Gives Expected Installer URL', async () => {
     const mockExtensionContext = new MockExtensionContext();
@@ -504,7 +517,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
 
     // Clean up storage
     await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
-  }).timeout(maxTimeoutTime);
+  }).timeout(standardTimeoutTime);
 
   test('Install Status Command', async () => {
     const context: IDotnetAcquireContext = { version: '5.0', requestingExtensionId: 'ms-dotnettools.sample-extension' };
@@ -519,7 +532,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
 
     // Clean up storage
     await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
-  }).timeout(maxTimeoutTime);
+  }).timeout(standardTimeoutTime);
 
   test('Uninstall Command', async () => {
     const context: IDotnetAcquireContext = { version: '3.1', requestingExtensionId: 'ms-dotnettools.sample-extension' };
@@ -531,7 +544,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.isTrue(fs.existsSync(result!.dotnetPath!));
     await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
     assert.isFalse(fs.existsSync(result!.dotnetPath));
-  }).timeout(maxTimeoutTime);
+  }).timeout(standardTimeoutTime);
 
   test('Install Multiple Versions', async () => {
     // Install 3.1
@@ -557,7 +570,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
 
     // Clean up storage
     await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
-  }).timeout(maxTimeoutTime * 6);
+  }).timeout(standardTimeoutTime * 6);
 
   test('Extension Uninstall Removes SDKs', async () => {
     const context: IDotnetAcquireContext = { version: '5.0', requestingExtensionId: 'ms-dotnettools.sample-extension' };
@@ -566,5 +579,5 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.exists(result!.dotnetPath);
     uninstallSDKExtension();
     assert.isFalse(fs.existsSync(result!.dotnetPath));
-  }).timeout(maxTimeoutTime);
+  }).timeout(standardTimeoutTime);
 });

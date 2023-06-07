@@ -18,7 +18,6 @@ import {
     DotnetCoreAcquisitionWorker,
     DotnetCoreDependencyInstaller,
     DotnetExistingPathResolutionCompleted,
-    DotnetVersionProvider,
     DotnetRuntimeAcquisitionStarted,
     enableExtensionTelemetry,
     ErrorConfiguration,
@@ -28,7 +27,6 @@ import {
     IDotnetAcquireContext,
     IDotnetAcquireResult,
     IDotnetEnsureDependenciesContext,
-    IDotnetListVersionsContext,
     IDotnetUninstallContext,
     IEventStreamContext,
     IExtensionContext,
@@ -37,7 +35,6 @@ import {
     registerEventStream,
     RuntimeInstallationDirectoryProvider,
     VersionResolver,
-    WebRequestWorker,
     WindowDisplayWorker,
 } from 'vscode-dotnet-runtime-library';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquistionId';
@@ -54,7 +51,6 @@ namespace configKeys {
 namespace commandKeys {
     export const acquire = 'acquire';
     export const acquireStatus = 'acquireStatus';
-    export const listSdks = 'listSdks'
     export const uninstallAll = 'uninstallAll';
     export const showAcquisitionLog = 'showAcquisitionLog';
     export const ensureDotnetDependencies = 'ensureDotnetDependencies';
@@ -147,16 +143,6 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         return pathResult;
     });
 
-    const dotnetListSdksRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listSdks}`,
-        async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) => {
-        const webWorker = customWebWorker !== undefined ? customWebWorker : new WebRequestWorker(
-            context.globalState,
-            eventStream
-        );
-
-        return new DotnetVersionProvider().GetAvailableDotnetVersions(commandContext, webWorker);
-    });
-
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallAll}`, async (commandContext: IDotnetUninstallContext | undefined) => {
         await callWithErrorHandling(() => acquisitionWorker.uninstallAll(), issueContext(commandContext ? commandContext.errorConfiguration : undefined, 'uninstallAll'));
     });
@@ -188,7 +174,6 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     context.subscriptions.push(
         dotnetAcquireRegistration,
         dotnetAcquireStatusRegistration,
-        dotnetListSdksRegistration,
         dotnetUninstallAllRegistration,
         showOutputChannelRegistration,
         ensureDependenciesRegistration,

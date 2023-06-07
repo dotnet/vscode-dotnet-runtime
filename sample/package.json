@@ -67,11 +67,6 @@
 				"category": "Sample"
 			},
 			{
-				"command": "sample.dotnet-sdk.listSdks",
-				"title": "List the available and in-support versions of the .NET SDK or .NET Runtime.",
-				"category": "Sample"
-			},
-			{
 				"command": "sample.dotnet-sdk.uninstallAll",
 				"title": "Uninstall all .NET SDKs",
 				"category": "Sample"
@@ -79,6 +74,16 @@
 			{
 				"command": "sample.dotnet-sdk.showAcquisitionLog",
 				"title": "Show .NET SDK acquisition log",
+				"category": "Sample"
+			},
+			{
+				"command": "sample.dotnet-sdk.listVersions",
+				"title": "Using the SDK Extension, list the newest versions of the .NET SDK or .NET Runtime.",
+				"category": "Sample"
+			},
+			{
+				"command": "sample.dotnet-sdk.recommendedVersion",
+				"title": "Show the recommended version of the SDK to install.",
 				"category": "Sample"
 			}
 		]
