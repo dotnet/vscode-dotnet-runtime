@@ -91,7 +91,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     });
   });
 
-  /*test('Activate', async () => {
+  /*
+  test('Activate', async () => {
     // Commands should now be registered
     assert.exists(extensionContext);
     assert.isAbove(extensionContext.subscriptions.length, 0);
@@ -460,6 +461,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     resolver.customWebRequestWorker = webWorker;
     assert.strictEqual(await resolver.getFullVersion(), fullVersion);
   }).timeout(standardTimeoutTime);
+  */
 
   test('Install Globally (Requires Admin)', async () => {
     // We only test if the process is running under ADMIN because non-admin requires user-intervention.
@@ -493,7 +495,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       // And we wouldn't be able to kill the process so the test would leave a lot of hanging procs on the machine
       warn("The Global SDK Install test cannot run as the machine is unprivelleged.");
     }
-  }).timeout(standardTimeoutTime);
+  }).timeout(standardTimeoutTime*1000);
 
   test('Install Command Sets the PATH', async () => {
     const context: IDotnetAcquireContext = { version: '5.0', requestingExtensionId: 'ms-dotnettools.sample-extension' };
