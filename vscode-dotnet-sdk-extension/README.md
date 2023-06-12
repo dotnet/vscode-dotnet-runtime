@@ -1,6 +1,6 @@
 # .NET Education Bundle SDK Install Tool
 
-[![Version](https://vsmarketplacebadge.apphb.com/version/ms-dotnettools.vscode-dotnet-sdk.svg)](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.vscode-dotnet-sdk) [![Installs](https://vsmarketplacebadge.apphb.com/installs-short/ms-dotnettools.vscode-dotnet-sdk.svg)](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.vscode-dotnet-sdk)
+[![Version](https://img.shields.io/visual-studio-marketplace/v/ms-dotnettools.vscode-dotnet-sdk?style=for-the-badge)](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.vscode-dotnet-sdk) [![Installs](https://img.shields.io/visual-studio-marketplace/i/ms-dotnettools.vscode-dotnet-sdk?style=for-the-badge)](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.vscode-dotnet-sdk)
 
 **Note: This is a very early preview of this tool and is not intended for use outside the .NET education bundle. Using this in other scenarios will result in broken installs on user machines due to conflict with the normal SDK installer.**
 

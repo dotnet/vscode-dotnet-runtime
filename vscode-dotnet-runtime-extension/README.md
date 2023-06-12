@@ -1,8 +1,8 @@
 # .NET Runtime Install Tool
 
-[![Version](https://vsmarketplacebadge.apphb.com/version/ms-dotnettools.vscode-dotnet-runtime.svg)](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.vscode-dotnet-runtime) [![Installs](https://vsmarketplacebadge.apphb.com/installs-short/ms-dotnettools.vscode-dotnet-runtime.svg)](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.vscode-dotnet-runtime)
+[![Version](https://img.shields.io/visual-studio-marketplace/v/ms-dotnettools.vscode-dotnet-runtime?style=for-the-badge)](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.vscode-dotnet-runtime) [![Installs](https://img.shields.io/visual-studio-marketplace/i/ms-dotnettools.vscode-dotnet-runtime?style=for-the-badge)](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.vscode-dotnet-runtime)
 
-This extension provides an API that allows users to ensure a specific version of the .NET Runtime is installed. Typically, you would use this extension if you are writing a Visual Studio Code extension that has components that are written in .NET languages, and so require the .NET runtime to be installed. This extension is not intended to be used directly by users to install .NET for development purposes, because it only includes the .NET Runtime and not the entire .NET SDK.
+This extension provides an API that allows users to ensure a specific version of the .NET Runtime is installed. Typically, you would use this extension if you are writing a Visual Studio Code extension that has components that are written in .NET languages, and so require the .NET runtime to be installed. This extension is not intended to be used directly by end-users to install .NET for development purposes, because it only includes the .NET Runtime and not the entire .NET SDK.
 
 ## Goals: Acquiring .NET Runtimes for extensions
 
