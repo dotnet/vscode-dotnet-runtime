@@ -1,16 +1,16 @@
-# .NET Install Tool for Extension Authors
+# .NET Runtime Install Tool
 
 [![Version](https://vsmarketplacebadge.apphb.com/version/ms-dotnettools.vscode-dotnet-runtime.svg)](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.vscode-dotnet-runtime) [![Installs](https://vsmarketplacebadge.apphb.com/installs-short/ms-dotnettools.vscode-dotnet-runtime.svg)](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.vscode-dotnet-runtime)
 
-This extension allows acquisition of the .NET runtime specifically for Visual Studio Code extension authors. This tool is intended to be leveraged in extensions that are written in .NET and require .NET to boot pieces of the extension (e.g. a language server). The extension is not intended to be used directly by users to install .NET for development.
+This extension provides an API that allows users to ensure a specific version of the .NET Runtime is installed. Typically, you would use this extension if you are writing a Visual Studio Code extension that has components that are written in .NET languages, and so require the .NET runtime to be installed. This extension is not intended to be used directly by users to install .NET for development purposes, because it only includes the .NET Runtime and not the entire .NET SDK.
 
-## Goals: Acquiring .NET for extensions
+## Goals: Acquiring .NET Runtimes for extensions
 
-Prior to the release of this extension, extension authors had no way of knowing if the .NET runtime was installed on their target machines. Other solutions had a number of challenges:
+Prior to the release of this extension, extension authors had no way of knowing if the .NET Runtime was installed on their target machines. Other solutions had a number of challenges:
 
-1. **Duplication of .NET runtimes and slow updates**: Each extension was acquiring its own copy of .NET at ~30mb each.
-2. **Clean up**: When extensions installed .NET in a non-VSCode folder location it was likely to be left behind.
-3. **Servicing and floating versions**: It was difficult to ensure that extensions would use the latest releases, particuarly without re-shipping.
+1. **Duplication of .NET runtimes and slow updates**: Each extension was acquiring its own copy of .NET, wasting disk space.
+2. **Clean up**: When extensions installed .NET in a non-VSCode-managed folder location it was likely to be left behind.
+3. **Servicing and floating versions**: It was difficult to ensure that extensions would use the latest releases, particularly without re-shipping their extension.
 4. **Corrupted installations**: Corrupted installations could arise when VS Code was shut down mid-download or unzip.
 5. **Network security policies**: Alternative installation methods could have resulted in errors due to blocking from network security policies.
 6. **Locked down environments**: Some developers are unable to freely install software, requiring the ability to install extensions manually via a VSIX.
