@@ -10,6 +10,7 @@ import * as https from 'https';
 
 import { FileUtilities } from '../Utils/FileUtilities';
 import { ISDKInstaller } from './ISDKInstaller';
+import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 
 /**
  * @remarks
@@ -21,9 +22,9 @@ export class WinMacSDKInstaller extends ISDKInstaller {
 
     private installerUrl : string;
 
-    constructor(installerUrl : string)
+    constructor(context : IAcquisitionWorkerContext, installerUrl : string)
     {
-        super();
+        super(context);
         this.installerUrl = installerUrl
     }
 

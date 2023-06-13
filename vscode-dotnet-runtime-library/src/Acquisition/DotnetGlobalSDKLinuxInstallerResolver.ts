@@ -1,3 +1,5 @@
+import { DotnetAcquisitionDistroUnknownError } from '../EventStream/EventStreamEvents';
+import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 import { Ubuntu22_04DotnetSDKProvider as GenericDistroSDKProvider } from './Ubuntu22_04DotnetSDKProvider';
 import * as proc from 'child_process';
@@ -9,7 +11,7 @@ import * as proc from 'child_process';
  * Each . in a semver should be represented with _.
  * The string representation of the enum should contain exactly one space that separates the distro, then the version.
  */
-export interface distroVersionPair {
+export interface DistroVersionPair {
     [distro: string]: string;
 }
 
@@ -40,29 +42,60 @@ export const enum DotnetDistroSupportStatus {
  * Since those don't exist for linux, we need to manually implement and check certain edge-cases before allowing the installation to occur.
  */
 export class DotnetGlobalSDKLinuxInstallerResolver {
-    private distro : distroVersionPair = {};
+    private distro : DistroVersionPair = {};
+    private context : IAcquisitionWorkerContext;
     public readonly distroSDKProvider: IDistroDotnetSDKProvider;
 
-    constructor() {
+    constructor(context : IAcquisitionWorkerContext) {
+        this.context = context;
         this.distro = this.getRunningDistro();
         this.distroSDKProvider = this.DistroProviderFactory(this.distro);
     }
 
-    private getRunningDistro() : distroVersionPair
+
+    private static escapeRegExp(str : string)
+    {
+        return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+      }
+      
+    private static replaceAll(str : string , find : string, replace : string)
+    {
+        return str.replace(new RegExp(DotnetGlobalSDKLinuxInstallerResolver.escapeRegExp(find), 'g'), replace);
+    }
+
+    private getRunningDistro() : DistroVersionPair
     {
         const commandResult = proc.spawnSync('cat', ['/etc/os-release']);
         const distroNameKey = 'NAME';
         const distroVersionKey = 'VERSION_ID';
-        let distroName = '';
-        let distroVersion = '';
 
-        let pair : distroVersionPair = {};
-        pair = { distroName : distroVersion};
+        const stdOut = commandResult.stdout.toString().split("\n");
+        // We need to remove the quotes from the KEY="VALUE"\n pairs returned by the command stdout, and then turn it into a dictionary. We can't use replaceAll for older browsers.
+        // Replace only replaces one quote, so we remove the 2nd one later.
+        const stdOutWithQuotesRemoved = stdOut.map( x => x.replace('"', ''));
+        const stdOutWithSeparatedKeyValues = stdOutWithQuotesRemoved.map( x => x.split('='));
+        const keyValueMap =  Object.fromEntries(stdOutWithSeparatedKeyValues.map(x => [x[0], x[1]]));
+
+        // Remove the 2nd quotes.
+        const distroName : string = keyValueMap[distroNameKey]?.replace('"', '') ?? '';
+        const distroVersion : string = keyValueMap[distroVersionKey]?.replace('"', '') ?? '';
+
+        if(distroName == '' || distroVersion == '')
+        {
+            const error = new DotnetAcquisitionDistroUnknownError('We are unable to detect the distro or version of your machine');
+            this.eventStream.post();
+            throw error;
+        }
+
+        let pair : DistroVersionPair = {};
+        pair = { distroName : distroVersion };
+
+        
         return pair;
     }
 
 
-    private DistroProviderFactory(distroAndVersion : distroVersionPair) : IDistroDotnetSDKProvider
+    private DistroProviderFactory(distroAndVersion : DistroVersionPair) : IDistroDotnetSDKProvider
     {
         switch(distroAndVersion)
         {
