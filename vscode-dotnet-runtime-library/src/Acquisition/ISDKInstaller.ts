@@ -4,10 +4,15 @@
  * ------------------------------------------------------------------------------------------ */
 
 import path = require("path");
+import { IAcquisitionWorkerContext } from "./IAcquisitionWorkerContext";
 
 export abstract class ISDKInstaller {
 
-    constructor() {
+    protected context : IAcquisitionWorkerContext;
+
+    constructor(context : IAcquisitionWorkerContext)
+    {
+        this.context = context;
     }
 
     public abstract installSDK() : Promise<string>

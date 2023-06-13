@@ -5,6 +5,7 @@
 
 import { ISDKInstaller } from './ISDKInstaller';
 import { DotnetGlobalSDKLinuxInstallerResolver } from './DotnetGlobalSDKLinuxInstallerResolver';
+import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 
 export class LinuxSDKInstaller extends ISDKInstaller {
 
@@ -12,10 +13,10 @@ export class LinuxSDKInstaller extends ISDKInstaller {
     private version : string;
     private linuxSDKResolver : DotnetGlobalSDKLinuxInstallerResolver;
 
-    constructor(fullySpecifiedDotnetVersion : string)
+    constructor(context : IAcquisitionWorkerContext, fullySpecifiedDotnetVersion : string)
     {
-        super();
-        this.linuxSDKResolver = new DotnetGlobalSDKLinuxInstallerResolver();
+        super(context);
+        this.linuxSDKResolver = new DotnetGlobalSDKLinuxInstallerResolver(context);
         this.version = fullySpecifiedDotnetVersion;
     }
 

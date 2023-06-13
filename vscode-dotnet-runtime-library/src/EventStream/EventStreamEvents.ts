@@ -188,6 +188,17 @@ export class DotnetInstallationValidationError extends DotnetAcquisitionVersionE
     }
 }
 
+export class DotnetAcquisitionDistroUnknownError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetAcquisitionDistroUnknownError';
+
+    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+        return {ErrorMessage : this.error.message,
+            ErrorName : this.error.name,
+            StackTrace : this.error.stack ? this.error.stack : ''};
+    }
+}
+
+
 export abstract class DotnetAcquisitionSuccessEvent extends IEvent {
     public readonly type = EventType.DotnetAcquisitionSuccessEvent;
 
