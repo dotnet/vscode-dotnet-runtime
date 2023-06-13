@@ -2,7 +2,7 @@
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
-import { DotnetDistroSupportStatus } from './DotnetGlobalSDKLinuxInstallerResolver';
+import { distroVersionPair } from './DotnetGlobalSDKLinuxInstallerResolver';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 
 /**
@@ -14,7 +14,10 @@ import { IDotnetInstallationContext } from './IDotnetInstallationContext';
  */
 export abstract class IDistroDotnetSDKProvider {
 
-    constructor() {
+    private distroVersion : distroVersionPair | null = null;
+
+    constructor(distroVersion : distroVersionPair) {
+        this.distroVersion = distroVersion;
     }
 
     /**
