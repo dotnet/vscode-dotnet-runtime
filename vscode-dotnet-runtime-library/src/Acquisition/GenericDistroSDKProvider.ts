@@ -2,47 +2,50 @@
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
-import * as proc from 'child_process';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
-import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 import { DotnetDistroSupportStatus } from './DotnetGlobalSDKLinuxInstallerResolver';
 
-export class Ubuntu22_04DotnetSDKProvider extends IDistroDotnetSDKProvider {
+export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
 
-    public async installDotnet(installContext: IDotnetInstallationContext): Promise<boolean>
+    public async installDotnet(): Promise<string>
     {
-        return false;
+        return (await this.runCommand("sudo apt-get"))[0];
     }
 
     public async getInstalledGlobalDotnetPathIfExists() : Promise<string | null>
     {
-        const commandResult = proc.spawnSync('which', ['dotnet']);
+        const commandResult = this.runCommand('which dotnet');
         return commandResult.toString();
-    }
-
-    public async getExpectedDotnetInstallationDirectory() : Promise<string>
-    {
-        return '';
     }
 
     public async dotnetPackageExistsOnSystem() : Promise<boolean>
     {
-        return false;
+        throw new Error('Method not implemented.');
     }
 
     public async isDotnetVersionSupported() : Promise<boolean>
     {
-        return false;
+        throw new Error('Method not implemented.');
     }
 
-    public async upgradeDotnet(versionToUpgrade : string): Promise<boolean>
+    public getExpectedDotnetDistroFeedInstallationDirectory(): Promise<string>
     {
-        return false;
+        throw new Error('Method not implemented.');
     }
 
-    public async uninstallDotnet(versionToUninstall : string): Promise<boolean>
+    public getExpectedDotnetMicrosoftFeedInstallationDirectory(): Promise<string>
     {
-        return false;
+        throw new Error('Method not implemented.');
+    }
+
+    public async upgradeDotnet(versionToUpgrade : string): Promise<string>
+    {
+        throw new Error('Method not implemented.');
+    }
+
+    public async uninstallDotnet(versionToUninstall : string): Promise<string>
+    {
+        throw new Error('Method not implemented.');
     }
 
     public getInstalledDotnetVersions(): Promise<string[]>

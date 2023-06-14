@@ -1,9 +1,12 @@
-import { DotnetAcquisitionDistroUnknownError } from '../EventStream/EventStreamEvents';
+import { DotnetAcquisitionDistroUnknownError, DotnetConflictingLinuxInstallTypesError, DotnetCustomLinuxInstallExistsError } from '../EventStream/EventStreamEvents';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
-import { Ubuntu22_04DotnetSDKProvider as GenericDistroSDKProvider } from './Ubuntu22_04DotnetSDKProvider';
+import { GenericDistroSDKProvider as GenericDistroSDKProvider } from './GenericDistroSDKProvider';
 import * as proc from 'child_process';
-
+import * as fs from 'fs';
+import path = require('path');
+import { VersionResolver } from './VersionResolver';
+import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 
 /**
  * An enumeration type representing all distros with their versions that we recognize.
@@ -41,26 +44,18 @@ export const enum DotnetDistroSupportStatus {
  * by implementing version validation that normally happens inside of a windows or mac .net installer.
  * Since those don't exist for linux, we need to manually implement and check certain edge-cases before allowing the installation to occur.
  */
-export class DotnetGlobalSDKLinuxInstallerResolver {
+export class DotnetGlobalSDKLinuxInstallerResolver
+{
     private distro : DistroVersionPair = {};
-    private context : IAcquisitionWorkerContext;
     public readonly distroSDKProvider: IDistroDotnetSDKProvider;
 
-    constructor(context : IAcquisitionWorkerContext) {
-        this.context = context;
+    protected acquisitionContext : IAcquisitionWorkerContext;
+
+    constructor(acquisitionContext : IAcquisitionWorkerContext)
+    {
+        this.acquisitionContext = acquisitionContext;
         this.distro = this.getRunningDistro();
         this.distroSDKProvider = this.DistroProviderFactory(this.distro);
-    }
-
-
-    private static escapeRegExp(str : string)
-    {
-        return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
-      }
-      
-    private static replaceAll(str : string , find : string, replace : string)
-    {
-        return str.replace(new RegExp(DotnetGlobalSDKLinuxInstallerResolver.escapeRegExp(find), 'g'), replace);
     }
 
     private getRunningDistro() : DistroVersionPair
@@ -82,8 +77,8 @@ export class DotnetGlobalSDKLinuxInstallerResolver {
 
         if(distroName == '' || distroVersion == '')
         {
-            const error = new DotnetAcquisitionDistroUnknownError('We are unable to detect the distro or version of your machine');
-            this.eventStream.post();
+            const error = new DotnetAcquisitionDistroUnknownError(new Error('We are unable to detect the distro or version of your machine'));
+            this.acquisitionContext.eventStream.post(error);
             throw error;
         }
 
@@ -113,14 +108,81 @@ export class DotnetGlobalSDKLinuxInstallerResolver {
 
     public async ValidateAndInstallSDK(fullySpecifiedDotnetVersion : string) : Promise<string>
     {
+        // Verify the version of dotnet is supported
         if (!( await this.distroSDKProvider.isDotnetVersionSupported(fullySpecifiedDotnetVersion) ))
         {
             throw new Error(`The distro ${this.distro} does not officially support dotnet version ${fullySpecifiedDotnetVersion}.`);
         }
 
-        const existingInstall = this.distroSDKProvider.getInstalledGlobalDotnetPathIfExists();
+        // Verify there are no conflicting installs
+        // Check existing installs ...
+        const supportStatus = await this.distroSDKProvider.getDotnetVersionSupportStatus(fullySpecifiedDotnetVersion);
+        if(supportStatus === DotnetDistroSupportStatus.Distro)
+        {
+            const microsoftFeedDir = await this.distroSDKProvider.getExpectedDotnetMicrosoftFeedInstallationDirectory();
+            if(fs.existsSync(microsoftFeedDir))
+            {
+                const err = new DotnetConflictingLinuxInstallTypesError(new Error(`A dotnet installation was found in ${microsoftFeedDir} which indicates dotnet that was installed via Microsoft package feeds. But for this distro and version, we only acquire .NET via the distro feeds.
+                    You should not mix distro feed and microsoft feed installations. To continue, please completely remove this version of dotnet to continue by following https://learn.microsoft.com/dotnet/core/install/remove-runtime-sdk-versions?pivots=os-linux`), 
+                    fullySpecifiedDotnetVersion);
+                this.acquisitionContext.eventStream.post(err);
+                throw err;
+            }
+        }
+        else if(supportStatus === DotnetDistroSupportStatus.Microsoft)
+        {
+            const distroFeedDir = await this.distroSDKProvider.getExpectedDotnetDistroFeedInstallationDirectory();
+            if(fs.existsSync(distroFeedDir))
+            {
+                const err = new DotnetConflictingLinuxInstallTypesError(new Error(`A dotnet installation was found in ${distroFeedDir} which indicates dotnet that was installed via distro package feeds. But for this distro and version, we only acquire .NET via the Microsoft feeds.
+                    You should not mix distro feed and microsoft feed installations. To continue, please completely remove this version of dotnet to continue by following https://learn.microsoft.com/dotnet/core/install/remove-runtime-sdk-versions?pivots=os-linux`), 
+                    fullySpecifiedDotnetVersion);
+                this.acquisitionContext.eventStream.post(err);
+                throw err;
+            }
+        }
 
-        return '1';
+        const existingInstall = await this.distroSDKProvider.getInstalledGlobalDotnetPathIfExists();
+        // Check for a custom install
+        if(existingInstall && path.resolve(existingInstall) !== path.resolve(supportStatus === DotnetDistroSupportStatus.Distro ? await this.distroSDKProvider.getExpectedDotnetDistroFeedInstallationDirectory() : await this.distroSDKProvider.getExpectedDotnetMicrosoftFeedInstallationDirectory() ))
+        {
+            const err = new DotnetCustomLinuxInstallExistsError(new Error(`A custom dotnet installation exists at ${existingInstall}.
+                If we were to install another .NET, we would break your custom .NET installation, so the installation request has been refused.
+                If you would like to proceed with installing .NET automatically for VS Code, you must remove this custom installation.`), 
+            fullySpecifiedDotnetVersion);
+            this.acquisitionContext.eventStream.post(err);
+            throw err;
+        }
+        // Check if we need to install or not, if we can install (if the version conflicts with an existing one), or if we can just update the existing install.
+        else if(existingInstall)
+        {
+            const existingGlobalInstallSDKVersion = await this.distroSDKProvider.getInstalledGlobalDotnetVersionIfExists();
+            if(existingGlobalInstallSDKVersion && Number(VersionResolver.getMajorMinor(existingGlobalInstallSDKVersion)) === Number(VersionResolver.getMajorMinor(fullySpecifiedDotnetVersion)))
+            {
+                if(Number(VersionResolver.getMajorMinor(existingGlobalInstallSDKVersion)) > Number(VersionResolver.getMajorMinor(fullySpecifiedDotnetVersion)))
+                {
+                    // We shouldn't downgrade to a lower patch
+                    const err = new DotnetCustomLinuxInstallExistsError(new Error(`An installation of ${fullySpecifiedDotnetVersion} was requested but ${existingGlobalInstallSDKVersion} is already available.`), 
+                        fullySpecifiedDotnetVersion);
+                    this.acquisitionContext.eventStream.post(err);
+                    throw err;
+                }
+                else if(await this.distroSDKProvider.dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion) ||
+                    Number(VersionResolver.getFeatureBandPatchVersion(existingGlobalInstallSDKVersion)) < Number(VersionResolver.getFeatureBandPatchVersion(fullySpecifiedDotnetVersion)))
+                {
+                    // We can update instead of doing an install 
+                    return (await this.distroSDKProvider.upgradeDotnet(existingGlobalInstallSDKVersion)) ? '0' : '1';
+                }
+                else
+                {
+                    // An existing install exists. 
+                    return '0';
+                }
+            }
+            // Additional logic to check the major.minor could be added here if we wanted to prevent installing lower major.minors if an existing install existed.
+        }
+
+        return await this.distroSDKProvider.installDotnet() ? '0' : '1';
     }
 
 }

@@ -225,9 +225,9 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         // TODO check if theres a partial install from the extension if that can happen
         // TODO fix registry check
         // TODO report installer OK if conflicting exists
-        
         const installingVersion = await globalInstallerResolver.getFullVersion();
-        let installer : ISDKInstaller = os.platform() === 'linux' ? new LinuxSDKInstaller(installingVersion) : new WinMacSDKInstaller(await globalInstallerResolver.getInstallerUrl());
+
+        let installer : ISDKInstaller = os.platform() === 'linux' ? new LinuxSDKInstaller(this.context, installingVersion) : new WinMacSDKInstaller(this.context, await globalInstallerResolver.getInstallerUrl());
 
 
         // Indicate that we're beginning to do the install.

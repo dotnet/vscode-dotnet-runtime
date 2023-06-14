@@ -151,6 +151,18 @@ export class DotnetVersionResolutionError extends DotnetAcquisitionVersionError 
     public readonly eventName = 'DotnetVersionResolutionError';
 }
 
+export class DotnetConflictingLinuxInstallTypesError extends DotnetAcquisitionVersionError {
+    public readonly eventName = 'DotnetConflictingLinuxInstallTypesError';
+}
+
+export class DotnetCustomLinuxInstallExistsError extends DotnetAcquisitionVersionError {
+    public readonly eventName = 'DotnetCustomLinuxInstallExistsError';
+}
+
+export class DotnetUnknownDistroError extends DotnetAcquisitionVersionError {
+    public readonly eventName = 'DotnetUnknownDistroError';
+}
+
 export class DotnetInstallationValidationError extends DotnetAcquisitionVersionError {
     public readonly eventName = 'DotnetInstallationValidationError';
     public readonly fileStructure: string;
