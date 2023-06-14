@@ -8,11 +8,10 @@ import { IAcquisitionWorkerContext } from "./IAcquisitionWorkerContext";
 
 export abstract class ISDKInstaller {
 
-    protected context : IAcquisitionWorkerContext;
+    protected acquisitionContext : IAcquisitionWorkerContext;
 
-    constructor(context : IAcquisitionWorkerContext)
-    {
-        this.context = context;
+    constructor(acquisitionContext : IAcquisitionWorkerContext) {
+        this.acquisitionContext = acquisitionContext;
     }
 
     public abstract installSDK() : Promise<string>

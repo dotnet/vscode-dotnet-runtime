@@ -4,7 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 
 import { ISDKInstaller } from './ISDKInstaller';
-import { DotnetGlobalSDKLinuxInstallerResolver } from './DotnetGlobalSDKLinuxInstallerResolver';
+import { DotnetDistroSupportStatus, DotnetGlobalSDKLinuxInstallerResolver } from './DotnetGlobalSDKLinuxInstallerResolver';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 
 export class LinuxSDKInstaller extends ISDKInstaller {
@@ -13,10 +13,10 @@ export class LinuxSDKInstaller extends ISDKInstaller {
     private version : string;
     private linuxSDKResolver : DotnetGlobalSDKLinuxInstallerResolver;
 
-    constructor(context : IAcquisitionWorkerContext, fullySpecifiedDotnetVersion : string)
+    constructor(acqusitionContext : IAcquisitionWorkerContext, fullySpecifiedDotnetVersion : string)
     {
-        super(context);
-        this.linuxSDKResolver = new DotnetGlobalSDKLinuxInstallerResolver(context);
+        super(acqusitionContext);
+        this.linuxSDKResolver = new DotnetGlobalSDKLinuxInstallerResolver(acqusitionContext);
         this.version = fullySpecifiedDotnetVersion;
     }
 
@@ -27,7 +27,9 @@ export class LinuxSDKInstaller extends ISDKInstaller {
 
     public async getExpectedGlobalSDKPath(specificSDKVersionInstalled : string, installedArch : string) : Promise<string>
     {
-        let dotnetFolder = await this.linuxSDKResolver.distroSDKProvider.getExpectedDotnetInstallationDirectory();
+        const dotnetFolder = await this.linuxSDKResolver.distroSDKProvider.getDotnetVersionSupportStatus(specificSDKVersionInstalled) === DotnetDistroSupportStatus.Distro ?
+            await this.linuxSDKResolver.distroSDKProvider.getExpectedDotnetDistroFeedInstallationDirectory() :
+            await this.linuxSDKResolver.distroSDKProvider.getExpectedDotnetMicrosoftFeedInstallationDirectory();
         return dotnetFolder;
     }
 
