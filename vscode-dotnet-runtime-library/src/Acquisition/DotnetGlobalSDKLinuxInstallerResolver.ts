@@ -100,23 +100,8 @@ export class DotnetGlobalSDKLinuxInstallerResolver
         }
     }
 
-    private async ValidateVersionFeatureBand(version : string, existingGlobalDotnetVersion : string)
+    private async VerifyNoConflictInstallTypeExists(supportStatus : DotnetDistroSupportStatus, fullySpecifiedDotnetVersion : string) : void
     {
-
-
-    }
-
-    public async ValidateAndInstallSDK(fullySpecifiedDotnetVersion : string) : Promise<string>
-    {
-        // Verify the version of dotnet is supported
-        if (!( await this.distroSDKProvider.isDotnetVersionSupported(fullySpecifiedDotnetVersion) ))
-        {
-            throw new Error(`The distro ${this.distro} does not officially support dotnet version ${fullySpecifiedDotnetVersion}.`);
-        }
-
-        // Verify there are no conflicting installs
-        // Check existing installs ...
-        const supportStatus = await this.distroSDKProvider.getDotnetVersionSupportStatus(fullySpecifiedDotnetVersion);
         if(supportStatus === DotnetDistroSupportStatus.Distro)
         {
             const microsoftFeedDir = await this.distroSDKProvider.getExpectedDotnetMicrosoftFeedInstallationDirectory();
@@ -141,9 +126,10 @@ export class DotnetGlobalSDKLinuxInstallerResolver
                 throw err;
             }
         }
+    }
 
-        const existingInstall = await this.distroSDKProvider.getInstalledGlobalDotnetPathIfExists();
-        // Check for a custom install
+    private async VerifyNoCustomInstallExists(supportStatus : DotnetDistroSupportStatus, fullySpecifiedDotnetVersion : string, existingInstall : string | null) : void
+    {
         if(existingInstall && path.resolve(existingInstall) !== path.resolve(supportStatus === DotnetDistroSupportStatus.Distro ? await this.distroSDKProvider.getExpectedDotnetDistroFeedInstallationDirectory() : await this.distroSDKProvider.getExpectedDotnetMicrosoftFeedInstallationDirectory() ))
         {
             const err = new DotnetCustomLinuxInstallExistsError(new Error(`A custom dotnet installation exists at ${existingInstall}.
@@ -153,8 +139,11 @@ export class DotnetGlobalSDKLinuxInstallerResolver
             this.acquisitionContext.eventStream.post(err);
             throw err;
         }
-        // Check if we need to install or not, if we can install (if the version conflicts with an existing one), or if we can just update the existing install.
-        else if(existingInstall)
+    }
+    
+    private async UpdateOrRejectIfVersionRequestDoesNotRequireInstall(fullySpecifiedDotnetVersion : string, existingInstall : string | null)
+    {
+        if(existingInstall)
         {
             const existingGlobalInstallSDKVersion = await this.distroSDKProvider.getInstalledGlobalDotnetVersionIfExists();
             if(existingGlobalInstallSDKVersion && Number(VersionResolver.getMajorMinor(existingGlobalInstallSDKVersion)) === Number(VersionResolver.getMajorMinor(fullySpecifiedDotnetVersion)))
@@ -181,6 +170,27 @@ export class DotnetGlobalSDKLinuxInstallerResolver
             }
             // Additional logic to check the major.minor could be added here if we wanted to prevent installing lower major.minors if an existing install existed.
         }
+    }
+
+    public async ValidateAndInstallSDK(fullySpecifiedDotnetVersion : string) : Promise<string>
+    {
+        // Verify the version of dotnet is supported
+        if (!( await this.distroSDKProvider.isDotnetVersionSupported(fullySpecifiedDotnetVersion) ))
+        {
+            throw new Error(`The distro ${this.distro} does not officially support dotnet version ${fullySpecifiedDotnetVersion}.`);
+        }
+
+        // Verify there are no conflicting installs
+        // Check existing installs ...
+        const supportStatus = await this.distroSDKProvider.getDotnetVersionSupportStatus(fullySpecifiedDotnetVersion);
+        await this.VerifyNoConflictInstallTypeExists(supportStatus, fullySpecifiedDotnetVersion);
+
+        const existingInstall = await this.distroSDKProvider.getInstalledGlobalDotnetPathIfExists();
+        // Check for a custom install
+        await this.VerifyNoCustomInstallExists(supportStatus, fullySpecifiedDotnetVersion, existingInstall);
+
+        // Check if we need to install or not, if we can install (if the version conflicts with an existing one), or if we can just update the existing install.
+        await this.UpdateOrRejectIfVersionRequestDoesNotRequireInstall(fullySpecifiedDotnetVersion, existingInstall);
 
         return await this.distroSDKProvider.installDotnet() ? '0' : '1';
     }

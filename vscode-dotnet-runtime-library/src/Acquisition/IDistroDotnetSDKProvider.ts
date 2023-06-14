@@ -7,6 +7,7 @@ import * as fs from 'fs';
 import { DistroVersionPair, DotnetDistroSupportStatus } from './DotnetGlobalSDKLinuxInstallerResolver';
 import path = require('path');
 import { DotnetAcquisitionDistroUnknownError } from '../EventStream/EventStreamEvents';
+import { VersionResolver } from './VersionResolver';
 
 /**
  * This interface describes the functionality needed to manage the .NET SDK on a specific distro and version of Linux.
@@ -85,7 +86,8 @@ export abstract class IDistroDotnetSDKProvider {
     public async isDotnetVersionSupported(fullySpecifiedVersion : string)
     {
         const supportStatus = await this.getDotnetVersionSupportStatus(fullySpecifiedVersion);
-        return supportStatus === DotnetDistroSupportStatus.Distro;
+        const supportedType : boolean = supportStatus === DotnetDistroSupportStatus.Distro || supportStatus === DotnetDistroSupportStatus.Microsoft;
+        return supportedType && VersionResolver.getFeatureBandFromVersion(fullySpecifiedVersion) === '1';
     }
 
     /**
