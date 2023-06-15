@@ -1,10 +1,8 @@
-# .NET Education Bundle SDK Install Tool
+# .NET SDK Install Tool
 
 [![Version](https://img.shields.io/visual-studio-marketplace/v/ms-dotnettools.vscode-dotnet-sdk?style=for-the-badge)](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.vscode-dotnet-sdk) [![Installs](https://img.shields.io/visual-studio-marketplace/i/ms-dotnettools.vscode-dotnet-sdk?style=for-the-badge)](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.vscode-dotnet-sdk)
 
-**Note: This is a very early preview of this tool and is not intended for use outside the .NET education bundle. Using this in other scenarios will result in broken installs on user machines due to conflict with the normal SDK installer.**
-
-This extension allows acquisition of a local copy of the .NET SDK specifically for Visual Studio Code and the education bundle. The extension is not intended to be used directly by users to install .NET for development.
+This VSCode extension allows acquisition of a local copy of the .NET SDK. This can be used by other extensions, like C# DevKit, Polyglot Notebooks, and others, to ensure that a .NET SDK is available on the user's machine. This can be useful when another extension needs to make use of the .NET Toolchain to compile or run code.
 
 ## .NET Foundation
 

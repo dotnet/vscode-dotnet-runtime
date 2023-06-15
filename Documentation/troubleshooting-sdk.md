@@ -32,4 +32,4 @@ Learn more about configuring Visual Studio Code settings [here](https://code.vis
 
 ## Other Issues
 
-Haven't found a solution? Check out our [open issues](https://github.com/dotnet/vscode-dotnet-runtime/issues). If you don't see your issue there, please file a new issue by evoking the `.NET Education Bundle SDK Install Tool: Report an issue with the .NET Education Bundle SDK Install Tool` command from Visual Studio Code.
+Haven't found a solution? Check out our [open issues](https://github.com/dotnet/vscode-dotnet-runtime/issues). If you don't see your issue there, please file a new issue by evoking the `.NET SDK Install Tool: Report an issue with the .NET SDK Install Tool` command from Visual Studio Code.

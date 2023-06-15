@@ -10,7 +10,7 @@
 	"license": "MIT",
 	"author": "Microsoft Corporation",
 	"displayName": ".NET Runtime Install Tool",
-	"description": "Ensures that requested versions of the .NET Runtime are installed for use by other extensions that have .NET components.",
+	"description": "This extension installs and manages different versions of the .NET Runtime.",
 	"appInsightsKey": "02dc18e0-7494-43b2-b2a3-18ada5fcb522",
 	"icon": "images/dotnetIcon.png",
 	"version": "1.6.0",

@@ -1,4 +1,4 @@
-# Troubleshooting Issues with .NET Install Tool for Extension Authors
+# Troubleshooting Issues with the .NET Runtime Install Tool
 
 ## Install Script Timeouts
 
