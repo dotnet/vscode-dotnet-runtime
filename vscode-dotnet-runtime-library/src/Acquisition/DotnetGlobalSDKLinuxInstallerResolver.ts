@@ -15,7 +15,8 @@ import { IDotnetInstallationContext } from './IDotnetInstallationContext';
  * The string representation of the enum should contain exactly one space that separates the distro, then the version.
  */
 export interface DistroVersionPair {
-    [distro: string]: string;
+    distro : string,
+    version : string
 }
 
 /**
@@ -46,7 +47,7 @@ export const enum DotnetDistroSupportStatus {
  */
 export class DotnetGlobalSDKLinuxInstallerResolver
 {
-    private distro : DistroVersionPair = {};
+    private distro : DistroVersionPair | null = null;
     public readonly distroSDKProvider: IDistroDotnetSDKProvider;
 
     protected acquisitionContext : IAcquisitionWorkerContext;
@@ -82,9 +83,7 @@ export class DotnetGlobalSDKLinuxInstallerResolver
             throw error;
         }
 
-        let pair : DistroVersionPair = {};
-        pair = { distroName : distroVersion };
-
+        let pair : DistroVersionPair = { distro : distroName, version : distroVersion };
 
         return pair;
     }
@@ -95,8 +94,11 @@ export class DotnetGlobalSDKLinuxInstallerResolver
         switch(distroAndVersion)
         {
             // Implement any custom logic for a Distro Class in a new DistroSDKProvider and add it to the factory here.
+            case null:
+                const error = new DotnetAcquisitionDistroUnknownError(new Error('We are unable to detect the distro or version of your machine.'));
+                throw error;
             default:
-                return new GenericDistroSDKProvider(this.distro);
+                return new GenericDistroSDKProvider(distroAndVersion);
         }
     }
 
@@ -174,6 +176,8 @@ export class DotnetGlobalSDKLinuxInstallerResolver
 
     public async ValidateAndInstallSDK(fullySpecifiedDotnetVersion : string) : Promise<string>
     {
+        await this.distroSDKProvider.installDotnet();
+
         // Verify the version of dotnet is supported
         if (!( await this.distroSDKProvider.isDotnetVersionSupported(fullySpecifiedDotnetVersion) ))
         {

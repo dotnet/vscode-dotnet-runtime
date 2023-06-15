@@ -1,0 +1,86 @@
+{
+	"Ubuntu": {
+		"installCommand": "sudo apt-get update && sudo apt-get install -y {0}",
+		"uninstallCommand": "sudo apt-get remove {0}",
+		"updateCommand": "sudo apt-get update && apt-get upgrade -y {0}",
+		"isInstalledCommand": "sudo apt list --installed {0}",
+		"expectedInstallationDirectory": "/usr/lib/dotnet/sdk",
+		"installedSDKVersionsCommand": "dotnet --list-sdks",
+		"currentInstallationInfoCommand": "dotnet --info",
+		"versions": [{
+				"version": "18.04",
+				"dotnet": [{
+						"version": "6.0",
+						"sdk": "dotnet-sdk-6.0",
+						"runtime": "dotnet-runtime-6.0:",
+						"aspnetcore": "aspnetcore-runtime-6.0"
+					},
+					{
+						"version": "7.0",
+						"sdk": "dotnet-sdk-6.0",
+						"runtime": "dotnet-runtime-6.0:",
+						"aspnetcore": "aspnetcore-runtime-6.0"
+					}
+				],
+				"preInstallCommands": [
+					"apt-get update && apt install -y wget",
+					"wget https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb",
+					"sudo dpkg -i packages-microsoft-prod.deb && rm packages-microsoft-prod.deb"
+				]
+			},
+			{
+				"version": "20.04",
+				"dotnet": [{
+						"version": "6.0",
+						"sdk": "dotnet-sdk-6.0",
+						"runtime": "dotnet-runtime-6.0:",
+						"aspnetcore": "aspnetcore-runtime-6.0"
+					},
+					{
+						"version": "7.0",
+						"sdk": "dotnet-sdk-6.0",
+						"runtime": "dotnet-runtime-6.0:",
+						"aspnetcore": "aspnetcore-runtime-6.0"
+					}
+				],
+				"preInstallCommands": [
+					"apt-get update && apt install -y wget",
+					"wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb",
+					"sudo dpkg -i packages-microsoft-prod.deb && rm packages-microsoft-prod.deb"
+				]
+			},
+			{
+				"version": "22.04",
+				"dotnet": [{
+						"version": "6.0",
+						"sdk": "dotnet-sdk-6.0",
+						"runtime": "dotnet-runtime-6.0:",
+						"aspnetcore": "aspnetcore-runtime-6.0"
+					},
+					{
+						"version": "7.0",
+						"sdk": "dotnet-sdk-6.0",
+						"runtime": "dotnet-runtime-6.0:",
+						"aspnetcore": "aspnetcore-runtime-6.0"
+					}
+				]
+			},
+			{
+				"version": "23.04",
+				"dotnet": [{
+						"version": "6.0",
+						"sdk": "dotnet-sdk-6.0",
+						"runtime": "dotnet-runtime-6.0:",
+						"aspnetcore": "aspnetcore-runtime-6.0"
+					},
+					{
+						"version": "7.0",
+						"sdk": "dotnet-sdk-6.0",
+						"runtime": "dotnet-runtime-6.0:",
+						"aspnetcore": "aspnetcore-runtime-6.0"
+					}
+				]
+			}
+		]
+	}
+}
