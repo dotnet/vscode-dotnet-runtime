@@ -85,7 +85,7 @@ export class DotnetGlobalSDKLinuxInstallerResolver
         let pair : DistroVersionPair = {};
         pair = { distroName : distroVersion };
 
-        
+
         return pair;
     }
 
@@ -100,7 +100,7 @@ export class DotnetGlobalSDKLinuxInstallerResolver
         }
     }
 
-    private async VerifyNoConflictInstallTypeExists(supportStatus : DotnetDistroSupportStatus, fullySpecifiedDotnetVersion : string) : void
+    private async VerifyNoConflictInstallTypeExists(supportStatus : DotnetDistroSupportStatus, fullySpecifiedDotnetVersion : string) : Promise<void>
     {
         if(supportStatus === DotnetDistroSupportStatus.Distro)
         {
@@ -108,7 +108,7 @@ export class DotnetGlobalSDKLinuxInstallerResolver
             if(fs.existsSync(microsoftFeedDir))
             {
                 const err = new DotnetConflictingLinuxInstallTypesError(new Error(`A dotnet installation was found in ${microsoftFeedDir} which indicates dotnet that was installed via Microsoft package feeds. But for this distro and version, we only acquire .NET via the distro feeds.
-                    You should not mix distro feed and microsoft feed installations. To continue, please completely remove this version of dotnet to continue by following https://learn.microsoft.com/dotnet/core/install/remove-runtime-sdk-versions?pivots=os-linux`), 
+                    You should not mix distro feed and microsoft feed installations. To continue, please completely remove this version of dotnet to continue by following https://learn.microsoft.com/dotnet/core/install/remove-runtime-sdk-versions?pivots=os-linux`),
                     fullySpecifiedDotnetVersion);
                 this.acquisitionContext.eventStream.post(err);
                 throw err;
@@ -120,7 +120,7 @@ export class DotnetGlobalSDKLinuxInstallerResolver
             if(fs.existsSync(distroFeedDir))
             {
                 const err = new DotnetConflictingLinuxInstallTypesError(new Error(`A dotnet installation was found in ${distroFeedDir} which indicates dotnet that was installed via distro package feeds. But for this distro and version, we only acquire .NET via the Microsoft feeds.
-                    You should not mix distro feed and microsoft feed installations. To continue, please completely remove this version of dotnet to continue by following https://learn.microsoft.com/dotnet/core/install/remove-runtime-sdk-versions?pivots=os-linux`), 
+                    You should not mix distro feed and microsoft feed installations. To continue, please completely remove this version of dotnet to continue by following https://learn.microsoft.com/dotnet/core/install/remove-runtime-sdk-versions?pivots=os-linux`),
                     fullySpecifiedDotnetVersion);
                 this.acquisitionContext.eventStream.post(err);
                 throw err;
@@ -128,19 +128,19 @@ export class DotnetGlobalSDKLinuxInstallerResolver
         }
     }
 
-    private async VerifyNoCustomInstallExists(supportStatus : DotnetDistroSupportStatus, fullySpecifiedDotnetVersion : string, existingInstall : string | null) : void
+    private async VerifyNoCustomInstallExists(supportStatus : DotnetDistroSupportStatus, fullySpecifiedDotnetVersion : string, existingInstall : string | null) : Promise<void>
     {
         if(existingInstall && path.resolve(existingInstall) !== path.resolve(supportStatus === DotnetDistroSupportStatus.Distro ? await this.distroSDKProvider.getExpectedDotnetDistroFeedInstallationDirectory() : await this.distroSDKProvider.getExpectedDotnetMicrosoftFeedInstallationDirectory() ))
         {
             const err = new DotnetCustomLinuxInstallExistsError(new Error(`A custom dotnet installation exists at ${existingInstall}.
                 If we were to install another .NET, we would break your custom .NET installation, so the installation request has been refused.
-                If you would like to proceed with installing .NET automatically for VS Code, you must remove this custom installation.`), 
+                If you would like to proceed with installing .NET automatically for VS Code, you must remove this custom installation.`),
             fullySpecifiedDotnetVersion);
             this.acquisitionContext.eventStream.post(err);
             throw err;
         }
     }
-    
+
     private async UpdateOrRejectIfVersionRequestDoesNotRequireInstall(fullySpecifiedDotnetVersion : string, existingInstall : string | null)
     {
         if(existingInstall)
@@ -151,7 +151,7 @@ export class DotnetGlobalSDKLinuxInstallerResolver
                 if(Number(VersionResolver.getMajorMinor(existingGlobalInstallSDKVersion)) > Number(VersionResolver.getMajorMinor(fullySpecifiedDotnetVersion)))
                 {
                     // We shouldn't downgrade to a lower patch
-                    const err = new DotnetCustomLinuxInstallExistsError(new Error(`An installation of ${fullySpecifiedDotnetVersion} was requested but ${existingGlobalInstallSDKVersion} is already available.`), 
+                    const err = new DotnetCustomLinuxInstallExistsError(new Error(`An installation of ${fullySpecifiedDotnetVersion} was requested but ${existingGlobalInstallSDKVersion} is already available.`),
                         fullySpecifiedDotnetVersion);
                     this.acquisitionContext.eventStream.post(err);
                     throw err;
@@ -159,12 +159,12 @@ export class DotnetGlobalSDKLinuxInstallerResolver
                 else if(await this.distroSDKProvider.dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion) ||
                     Number(VersionResolver.getFeatureBandPatchVersion(existingGlobalInstallSDKVersion)) < Number(VersionResolver.getFeatureBandPatchVersion(fullySpecifiedDotnetVersion)))
                 {
-                    // We can update instead of doing an install 
+                    // We can update instead of doing an install
                     return (await this.distroSDKProvider.upgradeDotnet(existingGlobalInstallSDKVersion)) ? '0' : '1';
                 }
                 else
                 {
-                    // An existing install exists. 
+                    // An existing install exists.
                     return '0';
                 }
             }
