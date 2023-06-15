@@ -34,21 +34,24 @@ then
 fi
 popd
 
-echo ""
-echo "----------- Compiling vscode-dotnet-runtime-extension -----------"
-echo ""
-pushd vscode-dotnet-runtime-extension
-rm -rf node_modules
-npm ci
-npm run compile
-
-if [ $? -ne 0 ];
+if [[ -n "$1" ]] && [[ "${1#*.}" != "nornt" ]];
 then
     echo ""
-    echo "${RED}Build failed!${NC}"
-    exit 1
+    echo "----------- Compiling vscode-dotnet-runtime-extension -----------"
+    echo ""
+    pushd vscode-dotnet-runtime-extension
+    rm -rf node_modules
+    npm ci
+    npm run compile
+
+    if [ $? -ne 0 ];
+    then
+        echo ""
+        echo "${RED}Build failed!${NC}"
+        exit 1
+    fi
+    popd
 fi
-popd
 
 echo ""
 echo "----------- Compiling vscode-dotnet-sdk-extension -----------"

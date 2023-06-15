@@ -8,6 +8,7 @@ import { DistroVersionPair, DotnetDistroSupportStatus } from './DotnetGlobalSDKL
 import path = require('path');
 import { DotnetAcquisitionDistroUnknownError } from '../EventStream/EventStreamEvents';
 import { VersionResolver } from './VersionResolver';
+import { stderr } from 'process';
 
 /**
  * This interface describes the functionality needed to manage the .NET SDK on a specific distro and version of Linux.
@@ -23,7 +24,9 @@ export abstract class IDistroDotnetSDKProvider {
 
     constructor(distroVersion : DistroVersionPair) {
         this.distroVersion = distroVersion;
-        this.distroJson = JSON.parse(fs.readFileSync(path.join('distroInstallInformation', 'distroInstalls.json'), 'utf8'));
+        // Hard-code to the upper path (lib/dist/acquisition) from __dirname to the lib folder, as webpack-copy doesn't seem to copy the distro-support.json
+        const distroDataFile = path.join(path.dirname(path.dirname(__dirname)), 'distro-data', 'distro-support.json');
+        this.distroJson = JSON.parse(fs.readFileSync(distroDataFile, 'utf8'));
 
         if(!distroVersion || !this.distroJson || !((this.distroJson as any)[this.distroVersion.distro]))
         {
@@ -105,7 +108,7 @@ export abstract class IDistroDotnetSDKProvider {
     public abstract uninstallDotnet(versionToUninstall : string): Promise<string>;
 
     /**
-     * 
+     *
      * @param command The command to run as a whole string. Commands with && will be run individually. Sudo commands will request sudo from the user.
      * @returns the result(s) of each command. Can throw generically if the command fails.
      */
@@ -123,22 +126,32 @@ export abstract class IDistroDotnetSDKProvider {
 
             if(rootCommand === "sudo")
             {
-                const options = {name: 'VS Code .NET Acquisition'};
-                sudoPrompt.exec(command.slice(1), options, (error?: any, stdout?: any, stderr?: any) =>
+                // The '.' character is not allowed for sudo-prompt so we use 'DotNET'
+                const options = { name: 'VS Code DotNET Acquisition' };
+                sudoPrompt.exec(commandFollowUps.join(' '), options, (error?: any, stdout?: any, stderr?: any) =>
                 {
                     if (error)
                     {
                         throw error;
+                    }
+                    else if(stderr)
+                    {
+                        throw stderr;
+                    }
+                    else
+                    {
+                        const commandResultString : string = stdout?.toString() ?? '';
+                        commandResults.push(commandResultString);
                     }
                 });
             }
             else
             {
                 const commandResult = proc.spawnSync(rootCommand, commandFollowUps);
+                commandResults.push(commandResult.stdout.toString() + commandResult.stderr.toString());
             }
         }
 
-        // TODO : append results.
         return commandResults;
     }
 }
