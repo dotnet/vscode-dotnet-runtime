@@ -99,7 +99,11 @@ export class DotnetCommandFailed extends DotnetAcquisitionError {
             CommandName : this.command,
             ErrorName : this.error.name,
             StackTrace : this.error.stack ? this.error.stack : ''};
+        }
     }
+
+export class DotnetWSLSecurityError extends DotnetAcquisitionError {
+        public readonly eventName = 'DotnetWSLSecurityError';
 }
 
 export abstract class DotnetAcquisitionVersionError extends DotnetAcquisitionError {
@@ -158,6 +162,7 @@ export class DotnetConflictingLinuxInstallTypesError extends DotnetAcquisitionVe
 export class DotnetCustomLinuxInstallExistsError extends DotnetAcquisitionVersionError {
     public readonly eventName = 'DotnetCustomLinuxInstallExistsError';
 }
+
 
 export class DotnetUnknownDistroError extends DotnetAcquisitionVersionError {
     public readonly eventName = 'DotnetUnknownDistroError';
