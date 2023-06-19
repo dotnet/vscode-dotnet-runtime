@@ -6,9 +6,11 @@ import * as proc from 'child_process';
 import * as fs from 'fs';
 import { DistroVersionPair, DotnetDistroSupportStatus } from './DotnetGlobalSDKLinuxInstallerResolver';
 import path = require('path');
-import { DotnetAcquisitionDistroUnknownError } from '../EventStream/EventStreamEvents';
+import { DotnetAcquisitionDistroUnknownError, DotnetWSLSecurityError } from '../EventStream/EventStreamEvents';
 import { VersionResolver } from './VersionResolver';
 import { stderr } from 'process';
+import {exec} from '@vscode/sudo-prompt';
+import { FileUtilities } from '../Utils/FileUtilities';
 
 /**
  * This interface describes the functionality needed to manage the .NET SDK on a specific distro and version of Linux.
@@ -19,8 +21,27 @@ import { stderr } from 'process';
  */
 export abstract class IDistroDotnetSDKProvider {
 
-    private distroVersion : DistroVersionPair | null = null;
-    private distroJson : JSON | null = null;
+    protected distroVersion : DistroVersionPair;
+    protected distroJson : any | null = null;
+
+    protected preinstallCommandKey : string = 'preInstallCommands';
+    protected installCommandKey : string = 'installCommand';
+    protected uninstallCommandKey : string = 'uninstallCommand';
+    protected updateCommandKey : string = 'updateCommand';
+    protected packageLookupCommandKey : string = 'packageLookupCommand';
+    protected currentInstallPathCommandKey : string = 'currentInstallPathCommand';
+    protected isInstalledCommandKey : string = 'isInstalledCommand';
+    protected expectedMicrosoftFeedInstallDirKey : string = 'expectedDistroFeedInstallDirectory';
+    protected expectedDistroFeedInstallDirKey : string = 'expectedMicrosoftFeedInstallDirectory';
+    protected installedSDKVersionsCommandKey : string = 'installedSDKVersionsCommand';
+    protected currentInstallInfoCommandKey : string = 'currentInstallationInfoCommand';
+
+    protected distroVersionsKey : string = 'versions';
+    protected versionKey : string = 'version';
+    protected dotnetPackagesKey : string = 'dotnet';
+    protected sdkKey : string = 'sdk';
+    protected runtimeKey : string = 'runtime';
+    protected aspNetKey : string = 'aspnetcore';
 
     constructor(distroVersion : DistroVersionPair) {
         this.distroVersion = distroVersion;
@@ -40,7 +61,7 @@ export abstract class IDistroDotnetSDKProvider {
      * Return '0' on success.
      * @param installContext
      */
-    public abstract installDotnet(): Promise<string>;
+    public abstract installDotnet(fullySpecifiedVersion : string): Promise<string>;
 
     /**
      * Search the machine for all installed .NET SDKs and return a list of their fully specified versions.
@@ -82,11 +103,17 @@ export abstract class IDistroDotnetSDKProvider {
     public abstract getDotnetVersionSupportStatus(fullySpecifiedVersion : string) : Promise<DotnetDistroSupportStatus>;
 
     /**
+     * @remarks Returns the newest in support version of the dotnet SDK that's available in this distro+version.
+     * Generally should be of the form major.minor.band with no patch, so like 7.0.1xx.
+     */
+    public abstract getRecommendedDotnetVersion() : string;
+
+    /**
      *
      * @param fullySpecifiedVersion The version of dotnet to check support for in the 3-part semver version.
      * @returns true if the version is supported by default within the distro, false elsewise.
      */
-    public async isDotnetVersionSupported(fullySpecifiedVersion : string)
+    public async isDotnetVersionSupported(fullySpecifiedVersion : string) : Promise<boolean>
     {
         const supportStatus = await this.getDotnetVersionSupportStatus(fullySpecifiedVersion);
         const supportedType : boolean = supportStatus === DotnetDistroSupportStatus.Distro || supportStatus === DotnetDistroSupportStatus.Microsoft;
@@ -98,23 +125,102 @@ export abstract class IDistroDotnetSDKProvider {
      * Return '0' on success.
      * @param versionToUpgrade The version of dotnet to upgrade.
      */
-    public abstract upgradeDotnet(versionToUpgrade : string): Promise<string>;
+    public abstract upgradeDotnet(versionToUpgrade : string) : Promise<string>;
 
     /**
      * Uninstall the .NET SDK.
      * @param versionToUninstall The fully specified version of the .NET SDK to uninstall.
      * Return '0' on success.
      */
-    public abstract uninstallDotnet(versionToUninstall : string): Promise<string>;
+    public abstract uninstallDotnet(versionToUninstall : string) : Promise<string>;
+
+    /**
+     *
+     * @param fullySpecifiedDotnetVersion The fully specified version requested.
+     * @returns The most specific supported version by the distro that it uses in the package names.
+     * Example: dotnet-sdk-7.0 is the package for ubuntu. For 7.0.103, the most specific we can give that will be in the json file is just 7.0.
+     * Typically, the major.minor is what's given here.
+     */
+    protected abstract JsonDotnetVersion(fullySpecifiedDotnetVersion : string) : string;
+
+    /**
+     *
+     * @param commandFollowUps The strings/args/options after the first word in the command.
+     * @returns The output of the command.
+     */
+    private async ExecSudoAsync(commandFollowUps : string[]) : Promise<string>
+    {
+        if(this.isRunningUnderWSL())
+        {
+            // For WSL, vscode/sudo-prompt does not work.
+            // This is because it relies on pkexec or a GUI app to popup and request sudo privellege.
+            // GUI in WSL is not supported, so it will fail.
+            // We can open a vscode box and get the user password, but that will require more security analysis.
+
+            if(!FileUtilities.isElevated())
+            {
+                const err = new DotnetWSLSecurityError(new Error(`Automatic SDK Acqusition is not yet supported in WSL due to security concerns.`));
+                throw err;
+            }
+            else
+            {
+                // TODO : verify this works
+                // We are already elevated, so hopefully we don't need to get elevation and can just run the command.
+                return (await this.runCommand(("sudo" + commandFollowUps.join(" ")), true))[0];
+            }
+        }
+
+        // We wrap the exec in a promise because there is no synchronous version of the sudo exec command for vscode/sudo
+        return new Promise<string>((resolve, reject) =>
+        {
+            // The '.' character is not allowed for sudo-prompt so we use 'DotNET'
+            const options = { name: 'VS Code DotNET Acquisition' };
+            exec(commandFollowUps.join(' '), options, (error?: any, stdout?: any, stderr?: any) =>
+            {
+                let commandResultString : string = '';
+
+                if (stdout)
+                {
+                    commandResultString += stdout;
+                }
+                if (stderr)
+                {
+                    commandResultString += stderr;
+                }
+
+                if (error)
+                {
+                    reject(error);
+                }
+                else
+                {
+                    resolve(commandResultString);
+                }
+            });
+        });
+    }
+
+    /**
+     * Returns true if the linux agent is running under WSL, false elsewise.
+     */
+    private isRunningUnderWSL() : boolean
+    {
+        // See https://github.com/microsoft/WSL/issues/4071 for evidence that we can rely on this behavior.
+
+        const command = 'grep';
+        const args = ['-i', 'Microsoft', '/proc/version'];
+        const commandResult = proc.spawnSync(command, args);
+
+        return commandResult.stdout.toString() != '';
+    }
 
     /**
      *
      * @param command The command to run as a whole string. Commands with && will be run individually. Sudo commands will request sudo from the user.
      * @returns the result(s) of each command. Can throw generically if the command fails.
      */
-    protected async runCommand(command : string) : Promise<string[]>
+    protected async runCommand(command : string, forceNoSudoPrompt = false) : Promise<string[]>
     {
-        const sudoPrompt = await import('@vscode/sudo-prompt');
 
         const commands : string[] = command.split('&&');
         const commandResults : string[] = [];
@@ -122,28 +228,12 @@ export abstract class IDistroDotnetSDKProvider {
         for (const command of commands)
         {
             const rootCommand = command.split(' ')[0];
-            const commandFollowUps = command.split(' ').slice(1);
+            const commandFollowUps : string[] = command.split(' ').slice(1);
 
-            if(rootCommand === "sudo")
+            if(rootCommand === "sudo" && !forceNoSudoPrompt)
             {
-                // The '.' character is not allowed for sudo-prompt so we use 'DotNET'
-                const options = { name: 'VS Code DotNET Acquisition' };
-                sudoPrompt.exec(commandFollowUps.join(' '), options, (error?: any, stdout?: any, stderr?: any) =>
-                {
-                    if (error)
-                    {
-                        throw error;
-                    }
-                    else if(stderr)
-                    {
-                        throw stderr;
-                    }
-                    else
-                    {
-                        const commandResultString : string = stdout?.toString() ?? '';
-                        commandResults.push(commandResultString);
-                    }
-                });
+                const commandResult = await this.ExecSudoAsync(commandFollowUps);
+                commandResults.push(commandResult);
             }
             else
             {
@@ -153,5 +243,22 @@ export abstract class IDistroDotnetSDKProvider {
         }
 
         return commandResults;
+    }
+
+    protected myVersionPackages() : any
+    {
+        const distroVersions = this.distroJson[this.distroVersion.distro][this.distroVersionsKey];
+        return distroVersions.filter((x: { [x: string]: string; }) => x[this.versionKey] === this.distroVersion.version)[0];
+    }
+
+    protected myDistroCommands() : any
+    {
+        return this.distroJson[this.distroVersion.distro];
+    }
+
+    protected myDotnetVersionPackages(fullySpecifiedDotnetVersion : string) : any
+    {
+        const myDotnetVersions = this.myVersionPackages();
+        return myDotnetVersions.filter((x: { [x: string]: { [x: string]: string; }; }) => x[this.dotnetPackagesKey][this.versionKey] == this.JsonDotnetVersion(fullySpecifiedDotnetVersion))[0];
     }
 }

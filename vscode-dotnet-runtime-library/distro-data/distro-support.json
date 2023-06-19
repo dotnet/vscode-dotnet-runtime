@@ -4,9 +4,12 @@
 		"uninstallCommand": "sudo apt-get remove {0}",
 		"updateCommand": "sudo apt-get update && apt-get upgrade -y {0}",
 		"isInstalledCommand": "sudo apt list --installed {0}",
-		"expectedInstallationDirectory": "/usr/lib/dotnet/sdk",
+		"packageLookupCommand": "dpkg -l {0}",
+		"expectedDistroFeedInstallDirectory" : "/usr/lib/dotnet/sdk",
+        "expectedMicrosoftFeedInstallDirectory" : "?",
 		"installedSDKVersionsCommand": "dotnet --list-sdks",
 		"currentInstallationInfoCommand": "dotnet --info",
+		"currentInstallPathCommand" : "which dotnet",
 		"versions": [{
 				"version": "18.04",
 				"dotnet": [{
