@@ -2,6 +2,7 @@ import * as proc from 'child_process';
 import { DotnetWSLSecurityError } from '../EventStream/EventStreamEvents';
 import {exec} from '@vscode/sudo-prompt';
 import { ICommandExecutor } from "./ICommandExecutor";
+import path = require('path');
 
 /* --------------------------------------------------------------------------------------------
  * Copyright (c) Microsoft Corporation. All rights reserved.
@@ -74,10 +75,16 @@ export class CommandExecutor extends ICommandExecutor
     /**
      *
      * @param command The command to run as a whole string. Commands with && will be run individually. Sudo commands will request sudo from the user.
+     * @param workingDirectory - the directory to execute in. Only works for non sudo commands.
+     *
      * @returns the result(s) of each command. Can throw generically if the command fails.
      */
-    public async execute(command : string) : Promise<string[]>
+    public async execute(command : string, workingDirectory : string | null = null) : Promise<string[]>
     {
+        if(!workingDirectory)
+        {
+            workingDirectory = __dirname;
+        }
 
         const commands : string[] = command.split('&&');
         const commandResults : string[] = [];
@@ -94,7 +101,7 @@ export class CommandExecutor extends ICommandExecutor
             }
             else
             {
-                const commandResult = proc.spawnSync(rootCommand, commandFollowUps);
+                const commandResult = proc.spawnSync(rootCommand, commandFollowUps, {cwd : path.resolve(workingDirectory)});
                 commandResults.push(commandResult.stdout.toString() + commandResult.stderr.toString());
             }
         }

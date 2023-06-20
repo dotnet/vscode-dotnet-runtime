@@ -9,7 +9,7 @@
         "expectedMicrosoftFeedInstallDirectory" : "/usr/bin/dotnet",
 		"installedSDKVersionsCommand": "dotnet --list-sdks",
 		"installedRuntimeVersionsCommand": "dotnet --list-runtimes",
-		"currentInstallationInfoCommand": "dotnet --info",
+		"currentInstallationVersionCommand": "dotnet --version",
 		"currentInstallPathCommand" : "which dotnet",
 		"versions": [{
 				"version": "18.04",

@@ -65,16 +65,16 @@ suite('Linux Distro Logic Unit Tests', () =>
         if(os.platform() === 'linux')
         {
             mockExecutor.fakeReturnValue = `
-            7.0.105 [/usr/lib/dotnet/sdk]
-            7.0.104 [/usr/custom/dotnet/sdk]`;
+7.0.105 [/usr/lib/dotnet/sdk]
+7.0.104 [/usr/custom/dotnet/sdk]`;
             let versions = await provider.getInstalledDotnetSDKVersions();
             mockExecutor.fakeReturnValue = '';
-            assert.equal(versions, ['7.0.105', '7.0.104']);
+            assert.deepStrictEqual(versions, ['7.0.105', '7.0.104']);
 
             mockExecutor.fakeReturnValue = noDotnetString;
             versions = await provider.getInstalledDotnetSDKVersions();
             mockExecutor.fakeReturnValue = '';
-            assert.equal(versions, []);
+            assert.deepStrictEqual(versions, []);
         }
     });
 
@@ -82,16 +82,16 @@ suite('Linux Distro Logic Unit Tests', () =>
         if(os.platform() === 'linux')
         {
             mockExecutor.fakeReturnValue = `
-            7.0.101 [/usr/lib/dotnet/runtime]
-            7.0.104 [fakedir]`;
+Microsoft.NETCore.App 6.0.16 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]
+Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
             let versions = await provider.getInstalledDotnetRuntimeVersions();
             mockExecutor.fakeReturnValue = '';
-            assert.equal(versions, ['7.0.101', '7.0.104']);
+            assert.deepStrictEqual(versions, ['6.0.16', '7.0.5']);
 
             mockExecutor.fakeReturnValue = noDotnetString;
             versions = await provider.getInstalledDotnetRuntimeVersions();
             mockExecutor.fakeReturnValue = '';
-            assert.equal(versions, []);
+            assert.deepStrictEqual(versions, []);
         }
     });
 
@@ -106,43 +106,7 @@ suite('Linux Distro Logic Unit Tests', () =>
     test('Finds Existing Global Dotnet Version', async () => {
         if(os.platform() === 'linux')
         {
-            mockExecutor.fakeReturnValue = `
-.NET SDK:
- Version:   7.0.105
- Commit:    e1bc5e001c
-
-Runtime Environment:
- OS Name:     ubuntu
- OS Version:  22.04
- OS Platform: Linux
- RID:         ubuntu.22.04-x64
- Base Path:   /usr/lib/dotnet/sdk/7.0.105/
-
-Host:
-  Version:      7.0.5
-  Architecture: x64
-  Commit:       8042d61b17
-
-.NET SDKs installed:
-  7.0.105 [/usr/lib/dotnet/sdk]
-
-.NET runtimes installed:
-  Microsoft.AspNetCore.App 6.0.16 [/usr/lib/dotnet/shared/Microsoft.AspNetCore.App]
-
-Other architectures found:
-  None
-
-Environment variables:
-  DOTNET_ROOT       [/usr/lib/dotnet]
-
-global.json file:
-  Not found
-
-Learn more:
-  https://aka.ms/dotnet/info
-
-Download .NET:
-  https://aka.ms/dotnet/download`;
+            mockExecutor.fakeReturnValue = `7.0.105`;
             let currentInfo = await provider.getInstalledGlobalDotnetVersionIfExists();
             mockExecutor.fakeReturnValue = '';
             assert.equal(currentInfo, '7.0.105');
@@ -179,7 +143,7 @@ Download .NET:
     test('Runs Correct Install Command', async () => {
         if(os.platform() === 'linux')
         {
-            provider.installDotnet(mockVersion);
+            await provider.installDotnet(mockVersion);
             assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get update && sudo apt-get install -y dotnet-sdk-7.0');
         }
     });
@@ -187,7 +151,7 @@ Download .NET:
     test('Runs Correct Uninstall Command', async () => {
         if(os.platform() === 'linux')
         {
-            provider.uninstallDotnet(mockVersion);
+            await provider.uninstallDotnet(mockVersion);
             assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get remove dotnet-sdk-7.0');
 
         }
@@ -196,7 +160,7 @@ Download .NET:
     test('Runs Correct Update Command', async () => {
         if(os.platform() === 'linux')
         {
-            provider.upgradeDotnet(mockVersion);
+            await provider.upgradeDotnet(mockVersion);
             assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get update && apt-get upgrade -y dotnet-sdk-7.0');
         }
     }).timeout(standardTimeoutTime*1000);
