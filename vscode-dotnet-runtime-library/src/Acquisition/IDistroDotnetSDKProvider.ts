@@ -157,17 +157,8 @@ export abstract class IDistroDotnetSDKProvider {
             // GUI in WSL is not supported, so it will fail.
             // We can open a vscode box and get the user password, but that will require more security analysis.
 
-            if(!FileUtilities.isElevated())
-            {
-                const err = new DotnetWSLSecurityError(new Error(`Automatic SDK Acqusition is not yet supported in WSL due to security concerns.`));
-                throw err;
-            }
-            else
-            {
-                // TODO : verify this works
-                // We are already elevated, so hopefully we don't need to get elevation and can just run the command.
-                return (await this.runCommand(("sudo " + commandFollowUps.join(" ")), true))[0];
-            }
+            const err = new DotnetWSLSecurityError(new Error(`Automatic SDK Acqusition is not yet supported in WSL due to security concerns.`));
+            throw err;
         }
 
         // We wrap the exec in a promise because there is no synchronous version of the sudo exec command for vscode/sudo
