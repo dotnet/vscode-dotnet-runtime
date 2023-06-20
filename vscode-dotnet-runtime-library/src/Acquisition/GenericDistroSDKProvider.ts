@@ -55,9 +55,9 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
 
     public async upgradeDotnet(versionToUpgrade : string): Promise<string>
     {
-        const command = this.myDistroCommands()[this.updateCommandKey];
+        let command = this.myDistroCommands()[this.updateCommandKey];
         const sdkPackage = this.myDotnetVersionPackages(versionToUpgrade)[this.sdkKey];
-        command.replace("{0}", sdkPackage);
+        command = command.replace("{0}", sdkPackage);
         const commandResult = await this.runCommand(command);
 
         return commandResult[0];
@@ -65,9 +65,9 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
 
     public async uninstallDotnet(versionToUninstall : string): Promise<string>
     {
-        const command = this.myDistroCommands()[this.uninstallCommandKey];
+        let command = this.myDistroCommands()[this.uninstallCommandKey];
         const sdkPackage = this.myDotnetVersionPackages(versionToUninstall)[this.sdkKey];
-        command.replace("{0}", sdkPackage);
+        command = command.replace("{0}", sdkPackage);
         const commandResult = await this.runCommand(command);
 
         return commandResult[0];
