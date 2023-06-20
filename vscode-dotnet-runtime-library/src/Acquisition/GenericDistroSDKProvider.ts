@@ -73,9 +73,19 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
         return commandResult[0];
     }
 
-    public async getInstalledDotnetVersions(): Promise<string[]>
+    public async getInstalledDotnetSDKVersions(): Promise<string[]>
     {
         const command = this.myDistroCommands()[this.installedSDKVersionsCommandKey];
+        const commandResult = await this.commandRunner.execute(command);
+
+        // TODO: Verify this works v
+        const versions : string[] = commandResult[0].split("\n");
+        return versions;
+    }
+
+    public async getInstalledDotnetRuntimeVersions(): Promise<string[]>
+    {
+        const command = this.myDistroCommands()[this.installedRuntimeVersionsCommandKey];
         const commandResult = await this.commandRunner.execute(command);
 
         // TODO: Verify this works v

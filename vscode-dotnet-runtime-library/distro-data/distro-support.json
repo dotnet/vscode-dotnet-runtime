@@ -6,8 +6,9 @@
 		"isInstalledCommand": "sudo apt list --installed {0}",
 		"packageLookupCommand": "dpkg -l {0}",
 		"expectedDistroFeedInstallDirectory" : "/usr/lib/dotnet/sdk",
-        "expectedMicrosoftFeedInstallDirectory" : "?",
+        "expectedMicrosoftFeedInstallDirectory" : "/usr/bin/dotnet",
 		"installedSDKVersionsCommand": "dotnet --list-sdks",
+		"installedRuntimeVersionsCommand": "dotnet --list-runtimes",
 		"currentInstallationInfoCommand": "dotnet --info",
 		"currentInstallPathCommand" : "which dotnet",
 		"versions": [{

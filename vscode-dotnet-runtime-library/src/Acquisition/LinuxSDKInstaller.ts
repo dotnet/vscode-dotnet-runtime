@@ -35,7 +35,7 @@ export class LinuxSDKInstaller extends ISDKInstaller {
 
     public getGlobalSdkVersionsInstalledOnMachine(): Promise<string[]>
     {
-        return this.linuxSDKResolver.distroSDKProvider.getInstalledDotnetVersions();
+        return this.linuxSDKResolver.distroSDKProvider.getInstalledDotnetSDKVersions();
     }
 
 }
