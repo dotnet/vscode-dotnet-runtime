@@ -259,6 +259,6 @@ export abstract class IDistroDotnetSDKProvider {
     protected myDotnetVersionPackages(fullySpecifiedDotnetVersion : string) : any
     {
         const myDotnetVersions = this.myVersionPackages();
-        return myDotnetVersions.filter((x: { [x: string]: { [x: string]: string; }; }) => x[this.dotnetPackagesKey][this.versionKey] == this.JsonDotnetVersion(fullySpecifiedDotnetVersion))[0];
+        return myDotnetVersions[this.dotnetPackagesKey].filter((x: { [x: string]: string; }) => x[this.versionKey] == this.JsonDotnetVersion(fullySpecifiedDotnetVersion))[0];
     }
 }

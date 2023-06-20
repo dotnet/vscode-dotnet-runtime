@@ -17,9 +17,9 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
             const preparationResult = (await this.runCommand(preinstallCommands))[0];
         }
 
-        const command = this.myDistroCommands()[this.installCommandKey];
+        let command = this.myDistroCommands()[this.installCommandKey];
         const sdkPackage = this.myDotnetVersionPackages(fullySpecifiedVersion)[this.sdkKey];
-        command.replace("{0}", sdkPackage);
+        command = command.replace("{0}", sdkPackage);
         const commandResult = await this.runCommand(command);
 
         return commandResult[0];
@@ -33,9 +33,9 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
 
     public async dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion : string) : Promise<boolean>
     {
-        const command = this.myDistroCommands()[this.packageLookupCommandKey];
+        let command = this.myDistroCommands()[this.packageLookupCommandKey];
         const sdkPackage = this.myDotnetVersionPackages(this.JsonDotnetVersion(fullySpecifiedDotnetVersion))[this.sdkKey];
-        command.replace("{0}", sdkPackage);
+        command = command.replace("{0}", sdkPackage);
         const commandResult = await this.runCommand(command);
 
         const noPackageResult = 'no packages found';
