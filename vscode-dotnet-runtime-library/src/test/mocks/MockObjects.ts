@@ -18,6 +18,7 @@ import { IExistingPath, IExtensionConfiguration } from '../../IExtensionContext'
 import { IExtensionState } from '../../IExtensionState';
 import { WebRequestWorker } from '../../Utils/WebRequestWorker';
 import { ICommandExecutor } from '../../Utils/ICommandExecutor';
+import { CommandExecutor } from '../../Utils/CommandExecutor';
 /* tslint:disable:no-any */
 
 export class MockExtensionContext implements IExtensionState {
@@ -176,20 +177,26 @@ export class MockInstallScriptWorker extends InstallScriptAcquisitionWorker {
 export class MockCommandExecutor extends ICommandExecutor
 {
     private trueExecutor : CommandExecutor;
+    public fakeReturnValue : string = '';
     public attemptedCommand : string = '';
 
     constructor()
     {
-        this.trueExecutor = new CommandExecutor(extensionState, eventStream);
+        super();
+        this.trueExecutor = new CommandExecutor();
     }
 
     public async execute(command: string): Promise<string[]>
     {
         this.attemptedCommand = command;
         let commandResults : string[] = [];
-        if(!command.contains("sudo"))
+        if(!command.includes("sudo") && this.fakeReturnValue === '')
         {
             commandResults = await this.trueExecutor.execute(command);
+        }
+        else
+        {
+            commandResults.push(this.fakeReturnValue);
         }
         return commandResults;
     }

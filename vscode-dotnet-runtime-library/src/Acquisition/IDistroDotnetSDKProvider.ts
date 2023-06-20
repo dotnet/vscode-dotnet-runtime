@@ -33,6 +33,7 @@ export abstract class IDistroDotnetSDKProvider {
     protected expectedMicrosoftFeedInstallDirKey : string = 'expectedDistroFeedInstallDirectory';
     protected expectedDistroFeedInstallDirKey : string = 'expectedMicrosoftFeedInstallDirectory';
     protected installedSDKVersionsCommandKey : string = 'installedSDKVersionsCommand';
+    protected installedRuntimeVersionsCommandKey : string = 'installedRuntimeVersionsCommand';
     protected currentInstallInfoCommandKey : string = 'currentInstallationInfoCommand';
 
     protected distroVersionsKey : string = 'versions';
@@ -68,7 +69,13 @@ export abstract class IDistroDotnetSDKProvider {
      * Search the machine for all installed .NET SDKs and return a list of their fully specified versions.
      * The fully specified version is a 3-part semver, such as 7.0.103
      */
-    public abstract getInstalledDotnetVersions() : Promise<Array<string>>;
+    public abstract getInstalledDotnetSDKVersions() : Promise<Array<string>>;
+
+    /**
+     * Search the machine for all installed .NET Runtimes and return a list of their fully specified versions.
+     * The fully specified version is a 3-part semver, such as 7.0.103
+     */
+    public abstract getInstalledDotnetRuntimeVersions() : Promise<Array<string>>;
 
     /**
      * For the .NET SDK that should be on the path and or managed by the distro, return its path.
