@@ -166,7 +166,7 @@ export abstract class IDistroDotnetSDKProvider {
             {
                 // TODO : verify this works
                 // We are already elevated, so hopefully we don't need to get elevation and can just run the command.
-                return (await this.runCommand(("sudo" + commandFollowUps.join(" ")), true))[0];
+                return (await this.runCommand(("sudo " + commandFollowUps.join(" ")), true))[0];
             }
         }
 
