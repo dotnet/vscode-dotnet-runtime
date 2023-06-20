@@ -176,7 +176,7 @@ export class DotnetGlobalSDKLinuxInstallerResolver
 
     public async ValidateAndInstallSDK(fullySpecifiedDotnetVersion : string) : Promise<string>
     {
-        await this.distroSDKProvider.installDotnet();
+        await this.distroSDKProvider.installDotnet(fullySpecifiedDotnetVersion);
 
         // Verify the version of dotnet is supported
         if (!( await this.distroSDKProvider.isDotnetVersionSupported(fullySpecifiedDotnetVersion) ))
@@ -196,7 +196,7 @@ export class DotnetGlobalSDKLinuxInstallerResolver
         // Check if we need to install or not, if we can install (if the version conflicts with an existing one), or if we can just update the existing install.
         await this.UpdateOrRejectIfVersionRequestDoesNotRequireInstall(fullySpecifiedDotnetVersion, existingInstall);
 
-        return await this.distroSDKProvider.installDotnet() ? '0' : '1';
+        return await this.distroSDKProvider.installDotnet(fullySpecifiedDotnetVersion) ? '0' : '1';
     }
 
 }
