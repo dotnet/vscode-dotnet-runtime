@@ -2,15 +2,13 @@
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
-import * as proc from 'child_process';
 import * as fs from 'fs';
 import { DistroVersionPair, DotnetDistroSupportStatus } from './DotnetGlobalSDKLinuxInstallerResolver';
 import path = require('path');
-import { DotnetAcquisitionDistroUnknownError, DotnetWSLSecurityError } from '../EventStream/EventStreamEvents';
+import { DotnetAcquisitionDistroUnknownError } from '../EventStream/EventStreamEvents';
 import { VersionResolver } from './VersionResolver';
-import { stderr } from 'process';
-import {exec} from '@vscode/sudo-prompt';
-import { FileUtilities } from '../Utils/FileUtilities';
+import { ICommandExecutor } from '../Utils/ICommandExecutor';
+import { CommandExecutor } from '../Utils/CommandExecutor';
 
 /**
  * This interface describes the functionality needed to manage the .NET SDK on a specific distro and version of Linux.
@@ -21,6 +19,7 @@ import { FileUtilities } from '../Utils/FileUtilities';
  */
 export abstract class IDistroDotnetSDKProvider {
 
+    protected commandRunner : ICommandExecutor;
     protected distroVersion : DistroVersionPair;
     protected distroJson : any | null = null;
 
@@ -43,7 +42,9 @@ export abstract class IDistroDotnetSDKProvider {
     protected runtimeKey : string = 'runtime';
     protected aspNetKey : string = 'aspnetcore';
 
-    constructor(distroVersion : DistroVersionPair) {
+    constructor(distroVersion : DistroVersionPair, executor : ICommandExecutor | null = null)
+    {
+        this.commandRunner = executor ?? new CommandExecutor();
         this.distroVersion = distroVersion;
         // Hard-code to the upper path (lib/dist/acquisition) from __dirname to the lib folder, as webpack-copy doesn't seem to copy the distro-support.json
         const distroDataFile = path.join(path.dirname(path.dirname(__dirname)), 'distro-data', 'distro-support.json');
@@ -109,18 +110,6 @@ export abstract class IDistroDotnetSDKProvider {
     public abstract getRecommendedDotnetVersion() : string;
 
     /**
-     *
-     * @param fullySpecifiedVersion The version of dotnet to check support for in the 3-part semver version.
-     * @returns true if the version is supported by default within the distro, false elsewise.
-     */
-    public async isDotnetVersionSupported(fullySpecifiedVersion : string) : Promise<boolean>
-    {
-        const supportStatus = await this.getDotnetVersionSupportStatus(fullySpecifiedVersion);
-        const supportedType : boolean = supportStatus === DotnetDistroSupportStatus.Distro || supportStatus === DotnetDistroSupportStatus.Microsoft;
-        return supportedType && VersionResolver.getFeatureBandFromVersion(fullySpecifiedVersion) === '1';
-    }
-
-    /**
      * Update the globally installed .NET to the newest in-support version of the same feature band and major.minor.
      * Return '0' on success.
      * @param versionToUpgrade The version of dotnet to upgrade.
@@ -145,95 +134,14 @@ export abstract class IDistroDotnetSDKProvider {
 
     /**
      *
-     * @param commandFollowUps The strings/args/options after the first word in the command.
-     * @returns The output of the command.
+     * @param fullySpecifiedVersion The version of dotnet to check support for in the 3-part semver version.
+     * @returns true if the version is supported by default within the distro, false elsewise.
      */
-    private async ExecSudoAsync(commandFollowUps : string[]) : Promise<string>
+    public async isDotnetVersionSupported(fullySpecifiedVersion : string) : Promise<boolean>
     {
-        if(this.isRunningUnderWSL())
-        {
-            // For WSL, vscode/sudo-prompt does not work.
-            // This is because it relies on pkexec or a GUI app to popup and request sudo privellege.
-            // GUI in WSL is not supported, so it will fail.
-            // We can open a vscode box and get the user password, but that will require more security analysis.
-
-            const err = new DotnetWSLSecurityError(new Error(`Automatic SDK Acqusition is not yet supported in WSL due to security concerns.`));
-            throw err;
-        }
-
-        // We wrap the exec in a promise because there is no synchronous version of the sudo exec command for vscode/sudo
-        return new Promise<string>((resolve, reject) =>
-        {
-            // The '.' character is not allowed for sudo-prompt so we use 'DotNET'
-            const options = { name: 'VS Code DotNET Acquisition' };
-            exec(commandFollowUps.join(' '), options, (error?: any, stdout?: any, stderr?: any) =>
-            {
-                let commandResultString : string = '';
-
-                if (stdout)
-                {
-                    commandResultString += stdout;
-                }
-                if (stderr)
-                {
-                    commandResultString += stderr;
-                }
-
-                if (error)
-                {
-                    reject(error);
-                }
-                else
-                {
-                    resolve(commandResultString);
-                }
-            });
-        });
-    }
-
-    /**
-     * Returns true if the linux agent is running under WSL, false elsewise.
-     */
-    private isRunningUnderWSL() : boolean
-    {
-        // See https://github.com/microsoft/WSL/issues/4071 for evidence that we can rely on this behavior.
-
-        const command = 'grep';
-        const args = ['-i', 'Microsoft', '/proc/version'];
-        const commandResult = proc.spawnSync(command, args);
-
-        return commandResult.stdout.toString() != '';
-    }
-
-    /**
-     *
-     * @param command The command to run as a whole string. Commands with && will be run individually. Sudo commands will request sudo from the user.
-     * @returns the result(s) of each command. Can throw generically if the command fails.
-     */
-    protected async runCommand(command : string, forceNoSudoPrompt = false) : Promise<string[]>
-    {
-
-        const commands : string[] = command.split('&&');
-        const commandResults : string[] = [];
-
-        for (const command of commands)
-        {
-            const rootCommand = command.split(' ')[0];
-            const commandFollowUps : string[] = command.split(' ').slice(1);
-
-            if(rootCommand === "sudo" && !forceNoSudoPrompt)
-            {
-                const commandResult = await this.ExecSudoAsync(commandFollowUps);
-                commandResults.push(commandResult);
-            }
-            else
-            {
-                const commandResult = proc.spawnSync(rootCommand, commandFollowUps);
-                commandResults.push(commandResult.stdout.toString() + commandResult.stderr.toString());
-            }
-        }
-
-        return commandResults;
+        const supportStatus = await this.getDotnetVersionSupportStatus(fullySpecifiedVersion);
+        const supportedType : boolean = supportStatus === DotnetDistroSupportStatus.Distro || supportStatus === DotnetDistroSupportStatus.Microsoft;
+        return supportedType && VersionResolver.getFeatureBandFromVersion(fullySpecifiedVersion) === '1';
     }
 
     protected myVersionPackages() : any
