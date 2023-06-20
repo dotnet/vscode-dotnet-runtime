@@ -5,6 +5,7 @@
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 import { DotnetDistroSupportStatus } from './DotnetGlobalSDKLinuxInstallerResolver';
 import { VersionResolver } from './VersionResolver';
+import * as path from 'path';
 
 export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
 
@@ -78,8 +79,18 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
         const command = this.myDistroCommands()[this.installedSDKVersionsCommandKey];
         const commandResult = await this.commandRunner.execute(command);
 
-        // TODO: Verify this works v
-        const versions : string[] = commandResult[0].split("\n");
+        const outputLines : string[] = commandResult[0].split("\n");
+        const versions : string[]  = [];
+
+        for(const line of outputLines)
+        {
+            const splitLine = line.split(/\s+/);
+            // list sdk lines shows in the form: version [path], so the version is the 2nd item
+            if(splitLine.length == 2)
+            {
+                versions.push(splitLine[0]);
+            }
+        }
         return versions;
     }
 
@@ -88,18 +99,37 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
         const command = this.myDistroCommands()[this.installedRuntimeVersionsCommandKey];
         const commandResult = await this.commandRunner.execute(command);
 
-        // TODO: Verify this works v
-        const versions : string[] = commandResult[0].split("\n");
+        const outputLines : string[] = commandResult[0].split("\n");
+        const versions : string[]  = [];
+
+        for(const line of outputLines)
+        {
+            const splitLine = line.split(/\s+/);
+            // list runtimes lines shows in the form: runtime version [path], so the version is the 3rd item
+            if(splitLine.length == 3)
+            {
+                versions.push(splitLine[1]);
+            }
+        }
         return versions;
     }
 
     public async getInstalledGlobalDotnetVersionIfExists(): Promise<string | null>
     {
-        const command = this.myDistroCommands()[this.currentInstallInfoCommandKey];
-        const commandResult = (await this.commandRunner.execute(command))[0];
+        const command = this.myDistroCommands()[this.currentInstallVersionCommandKey];
 
-        // TODO: Check for the line .NET SDK and then the line Version' after that. The version should be after a tab
-        return null;
+        // we need to run this command in the root directory otherwise local dotnets on the path may interfere
+        const rootDir = path.parse(__dirname).root;
+        let commandResult = (await this.commandRunner.execute(command, rootDir))[0];
+
+        commandResult = commandResult.replace('\n', '');
+        if(!VersionResolver.isValidLongFormVersionFormat(commandResult))
+        {
+            return null;
+        }
+        {
+            return commandResult;
+        }
     }
 
     public getDotnetVersionSupportStatus(fullySpecifiedVersion: string): Promise<DotnetDistroSupportStatus>

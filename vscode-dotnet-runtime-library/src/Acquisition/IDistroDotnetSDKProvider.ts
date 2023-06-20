@@ -30,11 +30,11 @@ export abstract class IDistroDotnetSDKProvider {
     protected packageLookupCommandKey : string = 'packageLookupCommand';
     protected currentInstallPathCommandKey : string = 'currentInstallPathCommand';
     protected isInstalledCommandKey : string = 'isInstalledCommand';
-    protected expectedMicrosoftFeedInstallDirKey : string = 'expectedDistroFeedInstallDirectory';
-    protected expectedDistroFeedInstallDirKey : string = 'expectedMicrosoftFeedInstallDirectory';
+    protected expectedMicrosoftFeedInstallDirKey : string = 'expectedMicrosoftFeedInstallDirectory';
+    protected expectedDistroFeedInstallDirKey : string = 'expectedDistroFeedInstallDirectory';
     protected installedSDKVersionsCommandKey : string = 'installedSDKVersionsCommand';
     protected installedRuntimeVersionsCommandKey : string = 'installedRuntimeVersionsCommand';
-    protected currentInstallInfoCommandKey : string = 'currentInstallationInfoCommand';
+    protected currentInstallVersionCommandKey : string = 'currentInstallationVersionCommand';
 
     protected distroVersionsKey : string = 'versions';
     protected versionKey : string = 'version';
@@ -73,7 +73,8 @@ export abstract class IDistroDotnetSDKProvider {
 
     /**
      * Search the machine for all installed .NET Runtimes and return a list of their fully specified versions.
-     * The fully specified version is a 3-part semver, such as 7.0.103
+     * The fully specified version is a 3-part semver, such as 7.0.103.
+     * Note this also gives aspnet runtime versions, etc, not just core runtimes.
      */
     public abstract getInstalledDotnetRuntimeVersions() : Promise<Array<string>>;
 

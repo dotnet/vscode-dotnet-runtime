@@ -187,4 +187,61 @@ export class VersionResolver implements IVersionResolver {
         }
         return patch;
     }
+
+    /**
+     *
+     * @param version the requested version to analyze.
+     * @returns true IFF version is of an expected length and format.
+     */
+      public static isValidLongFormVersionFormat(version : string) : boolean
+      {
+          const numberOfPeriods = version.split('.').length - 1;
+          // 9 is used to prevent bad versions (current expectation is 7 but we want to support .net 10 etc)
+          return numberOfPeriods == 2 && version.length < 11;
+      }
+
+    /**
+     *
+     * @param version the requested version to analyze.
+     * @returns true IFF version is a feature band with an unspecified sub-version was given e.g. 6.0.4xx or 6.0.40x
+     */
+    public static isNonSpecificFeatureBandedVersion(version : string) : boolean
+    {
+        return version.split(".").slice(0, 2).every(x => this.isNumber(x)) && version.endsWith('x') && this.isValidLongFormVersionFormat(version);
+    }
+
+    /**
+     *
+     * @param version the requested version to analyze.
+     * @returns true IFF a major release represented as an integer was given. e.g. 6, which we convert to 6.0, OR a major minor was given, e.g. 6.1.
+     */
+    public static isFullySpecifiedVersion(version : string) : boolean
+    {
+        return version.split(".").every(x => this.isNumber(x)) && this.isValidLongFormVersionFormat(version);
+    }
+
+    /**
+     *
+     * @param version the requested version to analyze.
+     * @returns true IFF version is a specific version e.g. 7.0.301.
+     */
+    public static isNonSpecificMajorOrMajorMinorVersion(version : string) : boolean
+    {
+        const numberOfPeriods = version.split('.').length - 1;
+        return this.isNumber(version) && numberOfPeriods >= 0 && numberOfPeriods < 2;
+    }
+
+    /**
+     *
+     * @param value the string to check and see if it's a valid number.
+     * @returns true if it's a valid number.
+     */
+    private static isNumber(value: string | number): boolean
+    {
+        return (
+            (value != null) &&
+            (value !== '') &&
+            !isNaN(Number(value.toString()))
+        );
+    }
 }

@@ -108,7 +108,7 @@ export class GlobalSDKInstallerResolver {
      * @returns The installer download URL for the correct OS, Architecture, & Specific Version based on the given input version.
      */
     private async routeRequestToProperVersionRequestType(version : string) : Promise<string> {
-        if(this.isNonSpecificMajorOrMajorMinorVersion(version))
+        if(VersionResolver.isNonSpecificMajorOrMajorMinorVersion(version))
         {
             const numberOfPeriods = version.split('.').length - 1;
             const indexUrl = this.getIndexUrl(numberOfPeriods == 0 ? version + '.0' : version);
@@ -116,12 +116,12 @@ export class GlobalSDKInstallerResolver {
             this.fullySpecifiedVersionRequested = indexJsonData['latest-sdk'];
             return await this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, indexUrl);
         }
-        else if(this.isNonSpecificFeatureBandedVersion(version))
+        else if(VersionResolver.isNonSpecificFeatureBandedVersion(version))
         {
             this.fullySpecifiedVersionRequested = await this.getNewestSpecificVersionFromFeatureBand(version);
             return await this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, this.getIndexUrl(VersionResolver.getMajorMinor(this.fullySpecifiedVersionRequested)));
         }
-        else if(this.isFullySpecifiedVersion(version))
+        else if(VersionResolver.isFullySpecifiedVersion(version))
         {
             this.fullySpecifiedVersionRequested = version;
             const indexUrl = this.getIndexUrl(VersionResolver.getMajorMinor(this.fullySpecifiedVersionRequested));
@@ -234,8 +234,6 @@ export class GlobalSDKInstallerResolver {
         throw Error(`The SDK installation files for version ${specificVersion} running on ${desiredRidPackage} couldn't be found. Is the version in support? Note that -preview versions or versions with build numbers aren't yet supported.`);
     }
 
-
-
     /**
      *
      * @param majorMinor the major.minor in the form of '3.1', etc.
@@ -285,8 +283,6 @@ export class GlobalSDKInstallerResolver {
 
         return path.extname(installerFileName) === desiredFileExtension;
     }
-
-
 
     /**
      *
@@ -338,62 +334,5 @@ export class GlobalSDKInstallerResolver {
         }
 
         return JSON.parse(jsonStringData);
-    }
-
-    /**
-     *
-     * @param version the requested version to analyze.
-     * @returns true IFF version is of an expected length and format.
-     */
-    private isValidLongFormVersionFormat(version : string) : boolean
-    {
-        const numberOfPeriods = version.split('.').length - 1;
-        // 9 is used to prevent bad versions (current expectation is 7 but we want to support .net 10 etc)
-        return numberOfPeriods == 2 && version.length < 9;
-    }
-
-    /**
-     *
-     * @param version the requested version to analyze.
-     * @returns true IFF version is a feature band with an unspecified sub-version was given e.g. 6.0.4xx or 6.0.40x
-     */
-    private isNonSpecificFeatureBandedVersion(version : string) : boolean
-    {
-        return version.split(".").slice(0, 2).every(x => this.isNumber(x)) && version.endsWith('x') && this.isValidLongFormVersionFormat(version);
-    }
-
-    /**
-     *
-     * @param version the requested version to analyze.
-     * @returns true IFF a major release represented as an integer was given. e.g. 6, which we convert to 6.0, OR a major minor was given, e.g. 6.1.
-     */
-    private isFullySpecifiedVersion(version : string) : boolean
-    {
-        return version.split(".").every(x => this.isNumber(x)) && this.isValidLongFormVersionFormat(version);
-    }
-
-    /**
-     *
-     * @param version the requested version to analyze.
-     * @returns true IFF version is a specific version e.g. 7.0.301.
-     */
-    private isNonSpecificMajorOrMajorMinorVersion(version : string) : boolean
-    {
-        const numberOfPeriods = version.split('.').length - 1;
-        return this.isNumber(version) && numberOfPeriods >= 0 && numberOfPeriods < 2;
-    }
-
-    /**
-     *
-     * @param value the string to check and see if it's a valid number.
-     * @returns true if it's a valid number.
-     */
-    private isNumber(value: string | number): boolean
-    {
-        return (
-            (value != null) &&
-            (value !== '') &&
-            !isNaN(Number(value.toString()))
-        );
     }
 }
