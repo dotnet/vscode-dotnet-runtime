@@ -17,6 +17,7 @@ import { ITelemetryReporter } from '../../EventStream/TelemetryObserver';
 import { IExistingPath, IExtensionConfiguration } from '../../IExtensionContext';
 import { IExtensionState } from '../../IExtensionState';
 import { WebRequestWorker } from '../../Utils/WebRequestWorker';
+import { ICommandExecutor } from '../../Utils/ICommandExecutor';
 /* tslint:disable:no-any */
 
 export class MockExtensionContext implements IExtensionState {
@@ -166,6 +167,31 @@ export class MockInstallScriptWorker extends InstallScriptAcquisitionWorker {
         } else {
             return super.getFallbackScriptPath();
         }
+    }
+}
+
+/**
+ * @remarks does NOT run the commands (if they have sudo), but records them to verify the correct command should've been run.
+ */
+export class MockCommandExecutor extends ICommandExecutor
+{
+    private trueExecutor : CommandExecutor;
+    public attemptedCommand : string = '';
+
+    constructor()
+    {
+        this.trueExecutor = new CommandExecutor(extensionState, eventStream);
+    }
+
+    public async execute(command: string): Promise<string[]>
+    {
+        this.attemptedCommand = command;
+        let commandResults : string[] = [];
+        if(!command.contains("sudo"))
+        {
+            commandResults = await this.trueExecutor.execute(command);
+        }
+        return commandResults;
     }
 }
 

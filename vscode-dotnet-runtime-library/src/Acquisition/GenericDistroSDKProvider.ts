@@ -14,20 +14,20 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
         if(supportStatus == DotnetDistroSupportStatus.Microsoft)
         {
             const preinstallCommands = this.myVersionPackages()[this.preinstallCommandKey];
-            const preparationResult = (await this.runCommand(preinstallCommands))[0];
+            const preparationResult = (await this.commandRunner.execute(preinstallCommands))[0];
         }
 
         let command = this.myDistroCommands()[this.installCommandKey];
         const sdkPackage = this.myDotnetVersionPackages(fullySpecifiedVersion)[this.sdkKey];
         command = command.replace("{0}", sdkPackage);
-        const commandResult = await this.runCommand(command);
+        const commandResult = await this.commandRunner.execute(command);
 
         return commandResult[0];
     }
 
     public async getInstalledGlobalDotnetPathIfExists() : Promise<string | null>
     {
-        const commandResult = await this.runCommand(this.myDistroCommands()[this.currentInstallPathCommandKey]);
+        const commandResult = await this.commandRunner.execute(this.myDistroCommands()[this.currentInstallPathCommandKey]);
         return commandResult[0];
     }
 
@@ -36,7 +36,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
         let command = this.myDistroCommands()[this.packageLookupCommandKey];
         const sdkPackage = this.myDotnetVersionPackages(this.JsonDotnetVersion(fullySpecifiedDotnetVersion))[this.sdkKey];
         command = command.replace("{0}", sdkPackage);
-        const commandResult = await this.runCommand(command);
+        const commandResult = await this.commandRunner.execute(command);
 
         const noPackageResult = 'no packages found';
         // TODO: check this v
@@ -58,7 +58,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
         let command = this.myDistroCommands()[this.updateCommandKey];
         const sdkPackage = this.myDotnetVersionPackages(versionToUpgrade)[this.sdkKey];
         command = command.replace("{0}", sdkPackage);
-        const commandResult = await this.runCommand(command);
+        const commandResult = await this.commandRunner.execute(command);
 
         return commandResult[0];
     }
@@ -68,7 +68,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
         let command = this.myDistroCommands()[this.uninstallCommandKey];
         const sdkPackage = this.myDotnetVersionPackages(versionToUninstall)[this.sdkKey];
         command = command.replace("{0}", sdkPackage);
-        const commandResult = await this.runCommand(command);
+        const commandResult = await this.commandRunner.execute(command);
 
         return commandResult[0];
     }
@@ -76,7 +76,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
     public async getInstalledDotnetVersions(): Promise<string[]>
     {
         const command = this.myDistroCommands()[this.installedSDKVersionsCommandKey];
-        const commandResult = await this.runCommand(command);
+        const commandResult = await this.commandRunner.execute(command);
 
         // TODO: Verify this works v
         const versions : string[] = commandResult[0].split("\n");
@@ -86,7 +86,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
     public async getInstalledGlobalDotnetVersionIfExists(): Promise<string | null>
     {
         const command = this.myDistroCommands()[this.currentInstallInfoCommandKey];
-        const commandResult = (await this.runCommand(command))[0];
+        const commandResult = (await this.commandRunner.execute(command))[0];
 
         // TODO: Check for the line .NET SDK and then the line Version' after that. The version should be after a tab
         return null;
