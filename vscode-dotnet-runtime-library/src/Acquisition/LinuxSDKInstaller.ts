@@ -4,19 +4,19 @@
  * ------------------------------------------------------------------------------------------ */
 
 import { ISDKInstaller } from './ISDKInstaller';
-import { DotnetDistroSupportStatus, DotnetGlobalSDKLinuxInstallerResolver } from './DotnetGlobalSDKLinuxInstallerResolver';
+import { DotnetDistroSupportStatus, LinuxVersionResolver } from './LinuxVersionResolver';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 
 export class LinuxSDKInstaller extends ISDKInstaller {
 
 
     private version : string;
-    private linuxSDKResolver : DotnetGlobalSDKLinuxInstallerResolver;
+    private linuxSDKResolver : LinuxVersionResolver;
 
     constructor(acqusitionContext : IAcquisitionWorkerContext, fullySpecifiedDotnetVersion : string)
     {
         super(acqusitionContext);
-        this.linuxSDKResolver = new DotnetGlobalSDKLinuxInstallerResolver(acqusitionContext);
+        this.linuxSDKResolver = new LinuxVersionResolver(acqusitionContext);
         this.version = fullySpecifiedDotnetVersion;
     }
 

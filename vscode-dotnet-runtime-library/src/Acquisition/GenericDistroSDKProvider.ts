@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
-import { DotnetDistroSupportStatus } from './DotnetGlobalSDKLinuxInstallerResolver';
+import { DotnetDistroSupportStatus } from './LinuxVersionResolver';
 import { VersionResolver } from './VersionResolver';
 import * as path from 'path';
 

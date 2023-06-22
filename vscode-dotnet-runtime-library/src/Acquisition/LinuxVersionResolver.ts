@@ -45,7 +45,7 @@ export const enum DotnetDistroSupportStatus {
  * by implementing version validation that normally happens inside of a windows or mac .net installer.
  * Since those don't exist for linux, we need to manually implement and check certain edge-cases before allowing the installation to occur.
  */
-export class DotnetGlobalSDKLinuxInstallerResolver
+export class LinuxVersionResolver
 {
     private distro : DistroVersionPair | null = null;
     public readonly distroSDKProvider: IDistroDotnetSDKProvider;
@@ -59,33 +59,46 @@ export class DotnetGlobalSDKLinuxInstallerResolver
         this.distroSDKProvider = this.DistroProviderFactory(this.distro);
     }
 
-    private getRunningDistro() : DistroVersionPair
+    /**
+     * @remarks relies on /etc/os-release currently. public for testing purposes.
+     * @returns The linux distro and version thats running this app. Should only ever be ran on linux.
+     */
+    public getRunningDistro() : DistroVersionPair
     {
         const commandResult = proc.spawnSync('cat', ['/etc/os-release']);
         const distroNameKey = 'NAME';
         const distroVersionKey = 'VERSION_ID';
 
-        const stdOut = commandResult.stdout.toString().split("\n");
-        // We need to remove the quotes from the KEY="VALUE"\n pairs returned by the command stdout, and then turn it into a dictionary. We can't use replaceAll for older browsers.
-        // Replace only replaces one quote, so we remove the 2nd one later.
-        const stdOutWithQuotesRemoved = stdOut.map( x => x.replace('"', ''));
-        const stdOutWithSeparatedKeyValues = stdOutWithQuotesRemoved.map( x => x.split('='));
-        const keyValueMap =  Object.fromEntries(stdOutWithSeparatedKeyValues.map(x => [x[0], x[1]]));
-
-        // Remove the 2nd quotes.
-        const distroName : string = keyValueMap[distroNameKey]?.replace('"', '') ?? '';
-        const distroVersion : string = keyValueMap[distroVersionKey]?.replace('"', '') ?? '';
-
-        if(distroName == '' || distroVersion == '')
+        try
         {
-            const error = new DotnetAcquisitionDistroUnknownError(new Error('We are unable to detect the distro or version of your machine'));
-            this.acquisitionContext.eventStream.post(error);
-            throw error;
+            const stdOut = commandResult.stdout.toString().split("\n");
+            // We need to remove the quotes from the KEY="VALUE"\n pairs returned by the command stdout, and then turn it into a dictionary. We can't use replaceAll for older browsers.
+            // Replace only replaces one quote, so we remove the 2nd one later.
+            const stdOutWithQuotesRemoved = stdOut.map( x => x.replace('"', ''));
+            const stdOutWithSeparatedKeyValues = stdOutWithQuotesRemoved.map( x => x.split('='));
+            const keyValueMap =  Object.fromEntries(stdOutWithSeparatedKeyValues.map(x => [x[0], x[1]]));
+
+            // Remove the 2nd quotes.
+            const distroName : string = keyValueMap[distroNameKey]?.replace('"', '') ?? '';
+            const distroVersion : string = keyValueMap[distroVersionKey]?.replace('"', '') ?? '';
+
+            if(distroName == '' || distroVersion == '')
+            {
+                const error = new DotnetAcquisitionDistroUnknownError(new Error('We are unable to detect the distro or version of your machine'));
+                this.acquisitionContext.eventStream.post(error);
+                throw error;
+            }
+
+            let pair : DistroVersionPair = { distro : distroName, version : distroVersion };
+
+            return pair;
         }
-
-        let pair : DistroVersionPair = { distro : distroName, version : distroVersion };
-
-        return pair;
+        catch(error)
+        {
+            const err = new DotnetAcquisitionDistroUnknownError(new Error('We are unable to detect the distro or version of your machine, does /etc/os-release exist?'));
+            this.acquisitionContext.eventStream.post(err);
+            throw err;
+        }
     }
 
 
@@ -102,7 +115,15 @@ export class DotnetGlobalSDKLinuxInstallerResolver
         }
     }
 
-    private async VerifyNoConflictInstallTypeExists(supportStatus : DotnetDistroSupportStatus, fullySpecifiedDotnetVersion : string) : Promise<void>
+    /**
+     *
+     * @param supportStatus The support status of this distro and version pair.
+     * @param fullySpecifiedDotnetVersion The version of dotnet requested to install, upgrade, etc.
+     * @remarks Throws a specific error below if a conflicting install type of dotnet exists on linux.
+     * Microsoft and distro feed packages together cause system instability with dotnet, so we dont want to let people get into those states.
+     * Eventually, we could add logic to remove them for users, but that may require consent first.
+     */
+    public async VerifyNoConflictInstallTypeExists(supportStatus : DotnetDistroSupportStatus, fullySpecifiedDotnetVersion : string) : Promise<void>
     {
         if(supportStatus === DotnetDistroSupportStatus.Distro)
         {
@@ -130,6 +151,10 @@ export class DotnetGlobalSDKLinuxInstallerResolver
         }
     }
 
+    /**
+     * Similar to VerifyNoConflictInstallTypeExists, but checks if a custom install exists. We dont want to override that.
+     * It could also cause unstable behavior and break a users current setup.
+     */
     private async VerifyNoCustomInstallExists(supportStatus : DotnetDistroSupportStatus, fullySpecifiedDotnetVersion : string, existingInstall : string | null) : Promise<void>
     {
         if(existingInstall && path.resolve(existingInstall) !== path.resolve(supportStatus === DotnetDistroSupportStatus.Distro ? await this.distroSDKProvider.getExpectedDotnetDistroFeedInstallationDirectory() : await this.distroSDKProvider.getExpectedDotnetMicrosoftFeedInstallationDirectory() ))
@@ -143,6 +168,13 @@ export class DotnetGlobalSDKLinuxInstallerResolver
         }
     }
 
+    /**
+     *
+     * @param fullySpecifiedDotnetVersion The version to install of the dotnet sdk.
+     * @param existingInstall a path to the existing dotnet install on the machine.
+     * @returns 0 if we can proceed. Will throw if a conflicting install exists. If we can update, it will do the update and return 1.
+     * A string is returned in case we want to make this return more info about the update.
+     */
     private async UpdateOrRejectIfVersionRequestDoesNotRequireInstall(fullySpecifiedDotnetVersion : string, existingInstall : string | null)
     {
         if(existingInstall)
@@ -162,22 +194,21 @@ export class DotnetGlobalSDKLinuxInstallerResolver
                     Number(VersionResolver.getFeatureBandPatchVersion(existingGlobalInstallSDKVersion)) < Number(VersionResolver.getFeatureBandPatchVersion(fullySpecifiedDotnetVersion)))
                 {
                     // We can update instead of doing an install
-                    return (await this.distroSDKProvider.upgradeDotnet(existingGlobalInstallSDKVersion)) ? '0' : '1';
+                    return (await this.distroSDKProvider.upgradeDotnet(existingGlobalInstallSDKVersion)) ? '1' : '1';
                 }
                 else
                 {
                     // An existing install exists.
-                    return '0';
+                    return '1';
                 }
             }
             // Additional logic to check the major.minor could be added here if we wanted to prevent installing lower major.minors if an existing install existed.
         }
+        return '0';
     }
 
     public async ValidateAndInstallSDK(fullySpecifiedDotnetVersion : string) : Promise<string>
     {
-        await this.distroSDKProvider.installDotnet(fullySpecifiedDotnetVersion);
-
         // Verify the version of dotnet is supported
         if (!( await this.distroSDKProvider.isDotnetVersionSupported(fullySpecifiedDotnetVersion) ))
         {
@@ -194,9 +225,12 @@ export class DotnetGlobalSDKLinuxInstallerResolver
         await this.VerifyNoCustomInstallExists(supportStatus, fullySpecifiedDotnetVersion, existingInstall);
 
         // Check if we need to install or not, if we can install (if the version conflicts with an existing one), or if we can just update the existing install.
-        await this.UpdateOrRejectIfVersionRequestDoesNotRequireInstall(fullySpecifiedDotnetVersion, existingInstall);
-
-        return await this.distroSDKProvider.installDotnet(fullySpecifiedDotnetVersion) ? '0' : '1';
+        const updateOrRejectState = await this.UpdateOrRejectIfVersionRequestDoesNotRequireInstall(fullySpecifiedDotnetVersion, existingInstall);
+        if(updateOrRejectState == '0')
+        {
+            return await this.distroSDKProvider.installDotnet(fullySpecifiedDotnetVersion) ? '0' : '1';
+        }
+        return updateOrRejectState;
     }
 
 }
