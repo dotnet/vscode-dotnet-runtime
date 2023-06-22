@@ -29,7 +29,7 @@ export * from './Utils/WebRequestWorker';
 export * from './Acquisition/DotnetCoreAcquisitionWorker';
 export * from './Acquisition/AcquisitionInvoker';
 export * from './Acquisition/DotnetCoreDependencyInstaller';
-export * from './Acquisition/DotnetGlobalSDKLinuxInstallerResolver';
+export * from './Acquisition/LinuxVersionResolver';
 export * from './Acquisition/GenericDistroSDKProvider';
 export * from './Acquisition/GlobalSDKInstallerResolver';
 export * from './Acquisition/InstallationValidator';

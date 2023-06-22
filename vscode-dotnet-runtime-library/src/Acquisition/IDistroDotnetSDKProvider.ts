@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as fs from 'fs';
-import { DistroVersionPair, DotnetDistroSupportStatus } from './DotnetGlobalSDKLinuxInstallerResolver';
+import { DistroVersionPair, DotnetDistroSupportStatus } from './LinuxVersionResolver';
 import path = require('path');
 import { DotnetAcquisitionDistroUnknownError } from '../EventStream/EventStreamEvents';
 import { VersionResolver } from './VersionResolver';
