@@ -187,14 +187,23 @@ export class VersionResolver implements IVersionResolver {
      */
     public static getFeatureBandPatchVersion(fullySpecifiedVersion : string) : string
     {
+        return Number(this.getPatchVersionString(fullySpecifiedVersion)).toString();
+    }
+
+    /**
+     *
+     * @remarks the logic for getFeatureBandPatchVersion, except that it returns '01' or '00' instead of the patch number.
+     * Not meant for public use.
+     */
+    private static getPatchVersionString(fullySpecifiedVersion : string) : string
+    {
         const patch : string | undefined = fullySpecifiedVersion.split('.')?.at(2)?.substring(1);
         if(patch === undefined || !this.isNumber(patch))
         {
             throw Error(`A feature band patch version couldn't be determined for the requested version ${fullySpecifiedVersion}.`)
         }
-        return Number(patch).toString();
+        return patch
     }
-
     /**
      *
      * @param fullySpecifiedVersion the requested version to analyze.
@@ -206,7 +215,7 @@ export class VersionResolver implements IVersionResolver {
           // 9 is used to prevent bad versions (current expectation is 7 but we want to support .net 10 etc)
           if(numberOfPeriods == 2 && fullySpecifiedVersion.length < 11)
           {
-            if(this.isNonSpecificFeatureBandedVersion(fullySpecifiedVersion) || this.getFeatureBandPatchVersion(fullySpecifiedVersion).length === 2)
+            if(this.isNonSpecificFeatureBandedVersion(fullySpecifiedVersion) || (this.getPatchVersionString(fullySpecifiedVersion).length <= 2 && this.getPatchVersionString(fullySpecifiedVersion).length > 1))
             {
                 return true;
             }
