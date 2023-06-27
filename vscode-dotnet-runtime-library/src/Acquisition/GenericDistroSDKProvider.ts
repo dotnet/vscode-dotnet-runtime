@@ -177,7 +177,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
         return this.JsonDotnetVersion(maxVersion) + '.1xx';
     }
 
-    protected JsonDotnetVersion(fullySpecifiedDotnetVersion : string) : string
+    public JsonDotnetVersion(fullySpecifiedDotnetVersion : string) : string
     {
         return VersionResolver.getMajorMinor(fullySpecifiedDotnetVersion);
     }
