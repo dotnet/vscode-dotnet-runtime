@@ -19,6 +19,9 @@ import { IExtensionState } from '../../IExtensionState';
 import { WebRequestWorker } from '../../Utils/WebRequestWorker';
 import { ICommandExecutor } from '../../Utils/ICommandExecutor';
 import { CommandExecutor } from '../../Utils/CommandExecutor';
+import { IDistroDotnetSDKProvider } from '../../Acquisition/IDistroDotnetSDKProvider';
+import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
+import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProvider';
 /* tslint:disable:no-any */
 
 export class MockExtensionContext implements IExtensionState {
@@ -201,6 +204,83 @@ export class MockCommandExecutor extends ICommandExecutor
         return commandResults;
     }
 }
+
+/**
+ * @remarks does NOT run the commands (if they have sudo), but records them to verify the correct command should've been run.
+ */
+export class MockDistroProvider extends IDistroDotnetSDKProvider
+{
+    public installReturnValue : string = '';
+    public installedSDKsReturnValue : string[] = [];
+    public installedRuntimesReturnValue : string[] = [];
+    public globalPathReturnValue : string | null = '';
+    public globalVersionReturnValue : string | null = '';
+    public distroFeedReturnValue : string = '';
+    public microsoftFeedReturnValue : string = '';
+    public packageExistsReturnValue : boolean = false;
+    public supportStatusReturnValue : DotnetDistroSupportStatus = DotnetDistroSupportStatus.Distro;
+    public recommendedVersionReturnValue : string = '';
+    public upgradeReturnValue : string = '';
+    public uninstallReturnValue : string = '';
+
+    constructor(version : DistroVersionPair)
+    {
+        super(version);
+    }
+
+    public installDotnet(fullySpecifiedVersion: string): Promise<string> {
+        return Promise.resolve(this.installReturnValue);
+    }
+
+    public getInstalledDotnetSDKVersions(): Promise<string[]> {
+        return Promise.resolve(this.installedSDKsReturnValue);
+    }
+
+    public getInstalledDotnetRuntimeVersions(): Promise<string[]> {
+        return Promise.resolve(this.installedRuntimesReturnValue);
+    }
+
+    public getInstalledGlobalDotnetPathIfExists(): Promise<string | null> {
+        return Promise.resolve(this.globalPathReturnValue);
+    }
+
+    public getInstalledGlobalDotnetVersionIfExists(): Promise<string | null> {
+        return Promise.resolve(this.globalVersionReturnValue);
+    }
+
+    public getExpectedDotnetDistroFeedInstallationDirectory(): Promise<string> {
+        return Promise.resolve(this.distroFeedReturnValue);
+    }
+
+    public getExpectedDotnetMicrosoftFeedInstallationDirectory(): Promise<string> {
+        return Promise.resolve(this.microsoftFeedReturnValue);
+    }
+
+    public dotnetPackageExistsOnSystem(fullySpecifiedVersion: string): Promise<boolean> {
+        return Promise.resolve(this.packageExistsReturnValue);
+    }
+
+    public getDotnetVersionSupportStatus(fullySpecifiedVersion: string): Promise<DotnetDistroSupportStatus> {
+        return Promise.resolve(this.supportStatusReturnValue);
+    }
+
+    public getRecommendedDotnetVersion(): string {
+        return this.recommendedVersionReturnValue;
+    }
+
+    public upgradeDotnet(versionToUpgrade: string): Promise<string> {
+        return Promise.resolve(this.upgradeReturnValue);
+    }
+
+    public uninstallDotnet(versionToUninstall: string): Promise<string> {
+        return Promise.resolve(this.uninstallReturnValue);
+    }
+
+    public JsonDotnetVersion(fullySpecifiedDotnetVersion: string): string {
+        return new GenericDistroSDKProvider(this.distroVersion).JsonDotnetVersion(fullySpecifiedDotnetVersion);
+    }
+}
+
 
 export class FailingInstallScriptWorker extends InstallScriptAcquisitionWorker {
     constructor(extensionState: IExtensionState, eventStream: IEventStream) {

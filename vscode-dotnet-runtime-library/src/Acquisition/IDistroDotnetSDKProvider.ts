@@ -137,8 +137,9 @@ export abstract class IDistroDotnetSDKProvider {
      * @returns The most specific supported version by the distro that it uses in the package names.
      * Example: dotnet-sdk-7.0 is the package for ubuntu. For 7.0.103, the most specific we can give that will be in the json file is just 7.0.
      * Typically, the major.minor is what's given here.
+     * @remarks Public for testing. Do NOT use.
      */
-    protected abstract JsonDotnetVersion(fullySpecifiedDotnetVersion : string) : string;
+    public abstract JsonDotnetVersion(fullySpecifiedDotnetVersion : string) : string;
 
     /**
      *
