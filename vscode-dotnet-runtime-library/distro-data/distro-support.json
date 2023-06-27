@@ -16,13 +16,13 @@
 				"dotnet": [{
 						"version": "6.0",
 						"sdk": "dotnet-sdk-6.0",
-						"runtime": "dotnet-runtime-6.0:",
+						"runtime": "dotnet-runtime-6.0",
 						"aspnetcore": "aspnetcore-runtime-6.0"
 					},
 					{
 						"version": "7.0",
 						"sdk": "dotnet-sdk-7.0",
-						"runtime": "dotnet-runtime-7.0:",
+						"runtime": "dotnet-runtime-7.0",
 						"aspnetcore": "aspnetcore-runtime-7.0"
 					}
 				],
@@ -37,13 +37,13 @@
 				"dotnet": [{
 						"version": "6.0",
 						"sdk": "dotnet-sdk-6.0",
-						"runtime": "dotnet-runtime-6.0:",
+						"runtime": "dotnet-runtime-6.0",
 						"aspnetcore": "aspnetcore-runtime-6.0"
 					},
 					{
 						"version": "7.0",
 						"sdk": "dotnet-sdk-7.0",
-						"runtime": "dotnet-runtime-7.0:",
+						"runtime": "dotnet-runtime-7.0",
 						"aspnetcore": "aspnetcore-runtime-7.0"
 					}
 				],
@@ -58,13 +58,13 @@
 				"dotnet": [{
 						"version": "6.0",
 						"sdk": "dotnet-sdk-6.0",
-						"runtime": "dotnet-runtime-6.0:",
+						"runtime": "dotnet-runtime-6.0",
 						"aspnetcore": "aspnetcore-runtime-6.0"
 					},
 					{
 						"version": "7.0",
 						"sdk": "dotnet-sdk-7.0",
-						"runtime": "dotnet-runtime-7.0:",
+						"runtime": "dotnet-runtime-7.0",
 						"aspnetcore": "aspnetcore-runtime-7.0"
 					}
 				]
@@ -74,13 +74,13 @@
 				"dotnet": [{
 						"version": "6.0",
 						"sdk": "dotnet-sdk-6.0",
-						"runtime": "dotnet-runtime-6.0:",
+						"runtime": "dotnet-runtime-6.0",
 						"aspnetcore": "aspnetcore-runtime-6.0"
 					},
 					{
 						"version": "7.0",
 						"sdk": "dotnet-sdk-7.0",
-						"runtime": "dotnet-runtime-7.0:",
+						"runtime": "dotnet-runtime-7.0",
 						"aspnetcore": "aspnetcore-runtime-7.0"
 					}
 				]
