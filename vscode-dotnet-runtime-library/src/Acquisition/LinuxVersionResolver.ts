@@ -125,7 +125,7 @@ export class LinuxVersionResolver
      * The command executor needs to be able to run async commands. We cant call async commands in the constructor.
      * So we have to use this pattern of calling initialize to verify our members are not null in each function.
      */
-    private async Initialize()
+    public async Initialize()
     {
         if(!this.distro)
         {
@@ -167,7 +167,7 @@ export class LinuxVersionResolver
      */
     public async VerifyNoConflictInstallTypeExists(supportStatus : DotnetDistroSupportStatus, fullySpecifiedDotnetVersion : string) : Promise<void>
     {
-        this.Initialize();
+        await this.Initialize();
 
         if(supportStatus === DotnetDistroSupportStatus.Distro)
         {
@@ -199,8 +199,7 @@ export class LinuxVersionResolver
      */
     private async VerifyNoCustomInstallExists(supportStatus : DotnetDistroSupportStatus, fullySpecifiedDotnetVersion : string, existingInstall : string | null) : Promise<void>
     {
-
-        this.Initialize();
+        await this.Initialize();
 
         if(existingInstall && path.resolve(existingInstall) !== path.resolve(supportStatus === DotnetDistroSupportStatus.Distro ? await this.distroSDKProvider!.getExpectedDotnetDistroFeedInstallationDirectory() : await this.distroSDKProvider!.getExpectedDotnetMicrosoftFeedInstallationDirectory() ))
         {
@@ -220,8 +219,7 @@ export class LinuxVersionResolver
      */
     private async UpdateOrRejectIfVersionRequestDoesNotRequireInstall(fullySpecifiedDotnetVersion : string, existingInstall : string | null)
     {
-
-        this.Initialize();
+        await this.Initialize();
 
         if(existingInstall)
         {
@@ -255,8 +253,7 @@ export class LinuxVersionResolver
 
     public async ValidateAndInstallSDK(fullySpecifiedDotnetVersion : string) : Promise<string>
     {
-
-        this.Initialize();
+        await this.Initialize();
 
         // Verify the version of dotnet is supported
         if (!( await this.distroSDKProvider!.isDotnetVersionSupported(fullySpecifiedDotnetVersion) ))

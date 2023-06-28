@@ -223,56 +223,68 @@ export class MockDistroProvider extends IDistroDotnetSDKProvider
     public upgradeReturnValue : string = '';
     public uninstallReturnValue : string = '';
 
-    constructor(version : DistroVersionPair)
+    constructor(version : DistroVersionPair, commandRunner : ICommandExecutor)
     {
-        super(version);
+        super(version, commandRunner);
     }
 
     public installDotnet(fullySpecifiedVersion: string): Promise<string> {
+        this.commandRunner.execute('install dotnet');
         return Promise.resolve(this.installReturnValue);
     }
 
     public getInstalledDotnetSDKVersions(): Promise<string[]> {
+        this.commandRunner.execute('get sdk versions');
         return Promise.resolve(this.installedSDKsReturnValue);
     }
 
     public getInstalledDotnetRuntimeVersions(): Promise<string[]> {
+        this.commandRunner.execute('get runtime versions');
         return Promise.resolve(this.installedRuntimesReturnValue);
     }
 
     public getInstalledGlobalDotnetPathIfExists(): Promise<string | null> {
+        this.commandRunner.execute('global path');
         return Promise.resolve(this.globalPathReturnValue);
     }
 
     public getInstalledGlobalDotnetVersionIfExists(): Promise<string | null> {
+        this.commandRunner.execute('global version');
         return Promise.resolve(this.globalVersionReturnValue);
     }
 
     public getExpectedDotnetDistroFeedInstallationDirectory(): Promise<string> {
+        this.commandRunner.execute('distro feed dir');
         return Promise.resolve(this.distroFeedReturnValue);
     }
 
     public getExpectedDotnetMicrosoftFeedInstallationDirectory(): Promise<string> {
+        this.commandRunner.execute('microsoft feed dir');
         return Promise.resolve(this.microsoftFeedReturnValue);
     }
 
     public dotnetPackageExistsOnSystem(fullySpecifiedVersion: string): Promise<boolean> {
+        this.commandRunner.execute('package check');
         return Promise.resolve(this.packageExistsReturnValue);
     }
 
     public getDotnetVersionSupportStatus(fullySpecifiedVersion: string): Promise<DotnetDistroSupportStatus> {
+        this.commandRunner.execute('support status');
         return Promise.resolve(this.supportStatusReturnValue);
     }
 
     public getRecommendedDotnetVersion(): string {
+        this.commandRunner.execute('recommended version');
         return this.recommendedVersionReturnValue;
     }
 
     public upgradeDotnet(versionToUpgrade: string): Promise<string> {
+        this.commandRunner.execute('upgrade update dotnet');
         return Promise.resolve(this.upgradeReturnValue);
     }
 
     public uninstallDotnet(versionToUninstall: string): Promise<string> {
+        this.commandRunner.execute('uninstall dotnet');
         return Promise.resolve(this.uninstallReturnValue);
     }
 
