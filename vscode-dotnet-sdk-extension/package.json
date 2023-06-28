@@ -13,7 +13,7 @@
 	"description": "Allows acquisition of the .NET SDK.",
 	"appInsightsKey": "02dc18e0-7494-43b2-b2a3-18ada5fcb522",
 	"icon": "images/dotnetIcon.png",
-	"version": "0.9.0",
+	"version": "2.0.0",
 	"publisher": "ms-dotnettools",
 	"engines": {
 		"vscode": "^1.74.0"
@@ -84,7 +84,7 @@
 		"@types/mocha": "^9.0.0",
 		"@types/node": "16.11.7",
 		"@types/rimraf": "3.0.2",
-		"@types/vscode": "1.62.0",
+		"@types/vscode": "1.74.0",
 		"chai": "4.3.4",
 		"chai-as-promised": "^7.1.1",
 		"child_process": "^1.0.2",

@@ -179,9 +179,9 @@
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/tough-cookie/-/tough-cookie-4.0.2.tgz"
   integrity sha1-Yoa0xyKNWKt4ZtGXFvNpbgOgk5c=
 
-"@types/vscode@1.62.0":
-  version "1.62.0"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/vscode/-/vscode-1.62.0.tgz"
+"@types/vscode@1.74.0":
+  version "1.74.0"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/vscode/-/vscode-1.74.0.tgz"
   integrity sha1-tNbRktWut16R0K3vaJw+zvmHnac=
 
 "@ungap/promise-all-settled@1.1.2":
