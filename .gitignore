@@ -46,3 +46,4 @@ vscode-dotnet-runtime-library/install scripts/dotnet-install.*
 */images/*
 vscode-dotnet-runtime-extension/LICENSE.txt
 vscode-dotnet-sdk-extension/LICENSE.txt
+.gitignore
