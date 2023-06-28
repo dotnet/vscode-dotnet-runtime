@@ -37,7 +37,7 @@ suite('Linux Version Resolver Tests', () =>
     const mockExecutor = new MockCommandExecutor();
     const pair : DistroVersionPair = { distro : 'Ubuntu', version : '22.04' };
     const shouldRun = os.platform() === 'linux';
-    let mockDistroProvider = new MockDistroProvider(pair);
+    let mockDistroProvider = new MockDistroProvider(pair, mockExecutor);
     const resolver : LinuxVersionResolver = new LinuxVersionResolver(mockContext(false), mockExecutor, mockDistroProvider);
 
     test('It can determine the running distro', async () => {
@@ -66,7 +66,7 @@ suite('Linux Version Resolver Tests', () =>
         {
             mockDistroProvider.microsoftFeedReturnValue = `/`;
             assert.isRejected(resolver.ValidateAndInstallSDK(mockVersion), Error, resolver.conflictingInstallErrorMessage + '/');
-            mockExecutor.fakeReturnValue = '';
+            mockDistroProvider.microsoftFeedReturnValue = ``;
         }
     });
 
@@ -103,20 +103,59 @@ suite('Linux Version Resolver Tests', () =>
         {
             mockDistroProvider.globalPathReturnValue = `/`;
             mockDistroProvider.distroFeedReturnValue = `/`;
+            mockDistroProvider.globalVersionReturnValue = '7.0.102';
             mockDistroProvider.packageExistsReturnValue = true;
 
             const okResult = await resolver.ValidateAndInstallSDK(mockVersion);
-            // assert install command not ran
+            assert.exists(okResult);
+            assert.isNotTrue(mockExecutor.attemptedCommand.includes('install'));
+            assert.isTrue(mockExecutor.attemptedCommand.includes('update'));
 
             mockDistroProvider.globalPathReturnValue = null;
             mockDistroProvider.distroFeedReturnValue = ``;
             mockDistroProvider.packageExistsReturnValue = false;
+            mockDistroProvider.globalVersionReturnValue = null;
+        }
+    });
+
+    test('It rejects downloading a lower patch of a major minor', async () => {
+        // TODO: ReVerify with PMs if this behavior is desired.
+        if(shouldRun)
+        {
+            mockDistroProvider.globalPathReturnValue = `/`;
+            mockDistroProvider.distroFeedReturnValue = `/`;
+            mockDistroProvider.globalVersionReturnValue = mockVersion;
+            mockDistroProvider.packageExistsReturnValue = true;
+
+            assert.isRejected(resolver.ValidateAndInstallSDK(mockVersion), Error);
+
+            mockDistroProvider.globalPathReturnValue = null;
+            mockDistroProvider.distroFeedReturnValue = ``;
+            mockDistroProvider.packageExistsReturnValue = false;
+            mockDistroProvider.globalVersionReturnValue = null;
         }
     });
 
     test('It does not install if install already exists', async () => {
         if(shouldRun)
         {
+            mockDistroProvider.globalPathReturnValue = `/`;
+            mockDistroProvider.distroFeedReturnValue = `/`;
+            mockDistroProvider.globalVersionReturnValue = mockVersion;
+
+            let okResult = await resolver.ValidateAndInstallSDK(mockVersion);
+            assert.exists(okResult);
+            assert.isNotTrue(mockExecutor.attemptedCommand.includes('install'));
+
+            // validate the install DOES happen if it needs to
+
+            mockDistroProvider.globalPathReturnValue = ``;
+            mockDistroProvider.distroFeedReturnValue = ``;
+            mockDistroProvider.globalVersionReturnValue = null;
+
+            okResult = await resolver.ValidateAndInstallSDK(mockVersion);
+            assert.exists(okResult);
+            assert.isTrue(mockExecutor.attemptedCommand.includes('install'));
         }
     });
 

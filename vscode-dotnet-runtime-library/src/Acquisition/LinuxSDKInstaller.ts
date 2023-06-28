@@ -27,15 +27,18 @@ export class LinuxSDKInstaller extends ISDKInstaller {
 
     public async getExpectedGlobalSDKPath(specificSDKVersionInstalled : string, installedArch : string) : Promise<string>
     {
-        const dotnetFolder = await this.linuxSDKResolver.distroSDKProvider.getDotnetVersionSupportStatus(specificSDKVersionInstalled) === DotnetDistroSupportStatus.Distro ?
-            await this.linuxSDKResolver.distroSDKProvider.getExpectedDotnetDistroFeedInstallationDirectory() :
-            await this.linuxSDKResolver.distroSDKProvider.getExpectedDotnetMicrosoftFeedInstallationDirectory();
+        await this.linuxSDKResolver.Initialize();
+
+        const dotnetFolder = await this.linuxSDKResolver.distroSDKProvider!.getDotnetVersionSupportStatus(specificSDKVersionInstalled) === DotnetDistroSupportStatus.Distro ?
+            await this.linuxSDKResolver.distroSDKProvider!.getExpectedDotnetDistroFeedInstallationDirectory() :
+            await this.linuxSDKResolver.distroSDKProvider!.getExpectedDotnetMicrosoftFeedInstallationDirectory();
         return dotnetFolder;
     }
 
-    public getGlobalSdkVersionsInstalledOnMachine(): Promise<string[]>
+    public async getGlobalSdkVersionsInstalledOnMachine(): Promise<string[]>
     {
-        return this.linuxSDKResolver.distroSDKProvider.getInstalledDotnetSDKVersions();
+        await this.linuxSDKResolver.Initialize();
+        return this.linuxSDKResolver.distroSDKProvider!.getInstalledDotnetSDKVersions();
     }
 
 }
