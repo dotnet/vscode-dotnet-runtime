@@ -14,7 +14,7 @@ import { VersionResolver } from './VersionResolver';
  * It currently only is used for SDK Global acquistion to prevent breaking existing behaviors.
  * Throws various errors in the event that a version is incorrectly formatted, the sdk server is unavailable, etc.
  */
-export class GlobalSDKInstallerResolver {
+export class GlobalInstallerResolver {
     // The unparsed version into given to the API to request a version of the SDK.
     // The word 'version' is 2nd in the name so that it's not auto-completed and mistaken for fullySpecifiedVersionRequested, which is what should be used.
     private requestedVersion : string;
@@ -58,7 +58,7 @@ export class GlobalSDKInstallerResolver {
 
     /**
      *
-     * @returns the fully specified version in a standardized format that was requested.
+     * @returns The fully specified version in a standardized format that was requested.
      */
     public async getFullVersion(): Promise<string>
     {
@@ -67,38 +67,6 @@ export class GlobalSDKInstallerResolver {
             this.discoveredInstallerUrl = await this.routeRequestToProperVersionRequestType(this.requestedVersion);
         }
         return this.fullySpecifiedVersionRequested;
-    }
-
-    /**
-     *
-     * @returns Returns '' if no conflicting version was found on the machine.
-     * Returns the existing version if a global install with the requested version already exists.
-     * OR: If a global install exists for the same band with a higher version.
-     * For non-windows cases: there may only be one dotnet allowed in root, and we need to TODO: get a PM decision on what to do for this.
-     */
-    public async GlobalInstallWithConflictingVersionAlreadyExists() : Promise<string>
-    {
-        if(this.fullySpecifiedVersionRequested === '')
-        {
-            this.discoveredInstallerUrl = await this.routeRequestToProperVersionRequestType(this.requestedVersion);
-        }
-
-        const sdks : Array<string> = []; // this.getGlobalSdksInstalledOnMachine();
-        for (let sdk of sdks)
-        {
-            if
-            ( // side by side installs of the same major.minor and band can cause issues in some cases. So we decided to just not allow it
-                Number(VersionResolver.getMajorMinor(this.fullySpecifiedVersionRequested)) === Number(VersionResolver.getMajorMinor(sdk)) &&
-                Number(VersionResolver.getFeatureBandFromVersion(this.fullySpecifiedVersionRequested)) === Number(VersionResolver.getFeatureBandFromVersion(sdk)) &&
-                Number(VersionResolver.getFeatureBandPatchVersion(this.fullySpecifiedVersionRequested)) <=  Number(VersionResolver.getFeatureBandPatchVersion(sdk)) // TODO add architecture check as well...
-            )
-            {
-                return sdk;
-            }
-        }
-
-        return '';
-        // todo move this to distro or os specific code
     }
 
     /**

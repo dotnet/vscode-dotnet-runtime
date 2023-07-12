@@ -6,7 +6,7 @@
 import path = require("path");
 import { IAcquisitionWorkerContext } from "./IAcquisitionWorkerContext";
 
-export abstract class ISDKInstaller {
+export abstract class IGlobalInstaller {
 
     protected acquisitionContext : IAcquisitionWorkerContext;
 

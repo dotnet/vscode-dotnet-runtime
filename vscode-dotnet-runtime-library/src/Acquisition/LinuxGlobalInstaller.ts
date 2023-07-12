@@ -3,11 +3,11 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-import { ISDKInstaller } from './ISDKInstaller';
+import { IGlobalInstaller } from './IGlobalInstaller';
 import { DotnetDistroSupportStatus, LinuxVersionResolver } from './LinuxVersionResolver';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 
-export class LinuxSDKInstaller extends ISDKInstaller {
+export class LinuxGlobalInstaller extends IGlobalInstaller {
 
 
     private version : string;

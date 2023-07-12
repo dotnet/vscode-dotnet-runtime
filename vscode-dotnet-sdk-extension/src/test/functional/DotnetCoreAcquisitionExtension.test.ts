@@ -19,7 +19,7 @@ import {
   IDotnetListVersionsContext,
   IDotnetListVersionsResult,
   FileUtilities,
-  GlobalSDKInstallerResolver,
+  GlobalInstallerResolver,
   MockEnvironmentVariableCollection,
   MockEventStream,
   MockExtensionConfiguration,
@@ -30,7 +30,7 @@ import {
   MockWindowDisplayWorker,
   NoInstallAcquisitionInvoker,
   SdkInstallationDirectoryProvider,
-  WinMacSDKInstaller,
+  WinMacGlobalInstaller,
   MockIndexWebRequestWorker
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
@@ -430,15 +430,15 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     }
     `);
 
-    let resolver : GlobalSDKInstallerResolver = new GlobalSDKInstallerResolver(mockExtensionContext, eventStream, majorOnlyVersion);
+    let resolver : GlobalInstallerResolver = new GlobalInstallerResolver(mockExtensionContext, eventStream, majorOnlyVersion);
     resolver.customWebRequestWorker = webWorker;
     assert.strictEqual(await resolver.getFullVersion(), newestVersion);
 
-    resolver = new GlobalSDKInstallerResolver(mockExtensionContext, eventStream, majorMinorVersion);
+    resolver = new GlobalInstallerResolver(mockExtensionContext, eventStream, majorMinorVersion);
     resolver.customWebRequestWorker = webWorker;
     assert.strictEqual(await resolver.getFullVersion(), newestVersion);
 
-    resolver = new GlobalSDKInstallerResolver(mockExtensionContext, eventStream, featureBandOnlyVersion);
+    resolver = new GlobalInstallerResolver(mockExtensionContext, eventStream, featureBandOnlyVersion);
     resolver.customWebRequestWorker = webWorker;
     assert.strictEqual(await resolver.getFullVersion(), newestBandedVersion);
 
@@ -457,7 +457,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       }
     }
 
-    resolver = new GlobalSDKInstallerResolver(mockExtensionContext, eventStream, fullVersion);
+    resolver = new GlobalInstallerResolver(mockExtensionContext, eventStream, fullVersion);
     resolver.customWebRequestWorker = webWorker;
     assert.strictEqual(await resolver.getFullVersion(), fullVersion);
   }).timeout(standardTimeoutTime);
@@ -474,7 +474,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       assert.exists(result, "The global acquisition command did not provide a result?");
       assert.exists(result!.dotnetPath);
 
-      const installersDir : string = WinMacSDKInstaller.getDownloadedInstallFilesFolder();
+      const installersDir : string = WinMacGlobalInstaller.getDownloadedInstallFilesFolder();
       assert.exists(installersDir);
       const numInstallersAlreadyDownloaded = fs.readdirSync(installersDir).length;
       // The installer should be removed from the disk after the command is done.

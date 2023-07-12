@@ -9,8 +9,10 @@ import * as proc from 'child_process';
 import * as https from 'https';
 
 import { FileUtilities } from '../Utils/FileUtilities';
-import { ISDKInstaller } from './ISDKInstaller';
+import { IGlobalInstaller } from './IGlobalInstaller';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { VersionResolver } from './VersionResolver';
+import { DotnetConflictingGlobalWindowsInstallError, DotnetCustomLinuxInstallExistsError } from '../EventStream/EventStreamEvents';
 
 /**
  * @remarks
@@ -18,17 +20,33 @@ import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
  * Both of these OS's have official installers that we can download and run on the machine.
  * Since Linux does not, it is delegated into its own set of classes.
  */
-export class WinMacSDKInstaller extends ISDKInstaller {
+export class WinMacGlobalInstaller extends IGlobalInstaller {
 
     private installerUrl : string;
+    private installingVersion : string;
 
-    constructor(context : IAcquisitionWorkerContext, installerUrl : string)
+    constructor(context : IAcquisitionWorkerContext, installingVersion : string, installerUrl : string)
     {
         super(context);
         this.installerUrl = installerUrl
+        this.installingVersion = installingVersion;
     }
 
-    public async installSDK(): Promise<string> {
+    public async installSDK(): Promise<string>
+    {
+        // Check for conflicting windows installs
+        if(os.platform() === 'win32')
+        {
+            const conflictingVersion = await this.GlobalWindowsInstallWithConflictingVersionAlreadyExists(this.installingVersion);
+            if(conflictingVersion !== '')
+            {
+                const err = new DotnetConflictingGlobalWindowsInstallError(new Error(`An global install is already on the machine: version ${conflictingVersion}, that conflicts with the requested version.
+                    Please uninstall this version first if you would like to continue.`));
+                this.acquisitionContext.eventStream.post(err);
+                throw err;
+            }
+        }
+
         const installerFile : string = await this.downloadInstaller(this.installerUrl);
         const installerResult : string = await this.executeInstall(installerFile);
 
@@ -44,13 +62,18 @@ export class WinMacSDKInstaller extends ISDKInstaller {
      */
     private async downloadInstaller(installerUrl : string) : Promise<string>
     {
-        const ourInstallerDownloadFolder = ISDKInstaller.getDownloadedInstallFilesFolder();
+        const ourInstallerDownloadFolder = IGlobalInstaller.getDownloadedInstallFilesFolder();
         FileUtilities.wipeDirectory(ourInstallerDownloadFolder);
         const installerPath = path.join(ourInstallerDownloadFolder, `${installerUrl.split('/').slice(-1)}`);
         await this.download(installerUrl, installerPath);
         return installerPath;
     }
 
+    /**
+     *
+     * @returns an empty promise. It will download the file from the url. The url is expected to be a file server that responds with the file directly.
+     * We cannot use a simpler download pattern because we need to download and match the installer file exactly as-is from the server as opposed to writing/copying the bits we are given.
+     */
     private async download(url : string, dest : string) {
         return new Promise<void>((resolve, reject) => {
 
@@ -61,26 +84,32 @@ export class WinMacSDKInstaller extends ISDKInstaller {
             const file = fs.createWriteStream(dest, { flags: "wx" });
 
             const request = https.get(url, response => {
-                if (response.statusCode === 200) {
+                if (response.statusCode === 200)
+                {
                     response.pipe(file);
-                } else {
+                }
+                else
+                {
                     file.close();
-                    fs.unlink(dest, () => {}); // Delete temp file
+                    fs.unlink(dest, () => {}); // Delete incomplete file download
                     reject(`Server responded with ${response.statusCode}: ${response.statusMessage}`);
                 }
             });
 
-            request.on("error", err => {
+            request.on("error", err =>
+            {
                 file.close();
-                fs.unlink(dest, () => {}); // Delete temp file
+                fs.unlink(dest, () => {}); // Delete incomplete file download
                 reject(err.message);
             });
 
-            file.on("finish", () => {
+            file.on("finish", () =>
+            {
                 resolve();
             });
 
-            file.on("error", err => {
+            file.on("error", err =>
+            {
                 file.close();
 
                 if (err.message === "EEXIST")
@@ -89,7 +118,7 @@ export class WinMacSDKInstaller extends ISDKInstaller {
                 }
                 else
                 {
-                    fs.unlink(dest, () => {}); // Delete temp file
+                    fs.unlink(dest, () => {}); // Delete incomplete file download
                     reject(err.message);
                 }
             });
@@ -179,11 +208,36 @@ export class WinMacSDKInstaller extends ISDKInstaller {
         );
     }
 
+    /**
+     *
+     * @returns Returns '' if no conflicting version was found on the machine.
+     * Returns the existing version if a global install with the requested version already exists.
+     * OR: If a global install exists for the same band with a higher version.
+     * For non-windows cases: In Mac the installer is always shown so that will show users this. For Linux, it's handled by the distro specific code.
+     */
+    public async GlobalWindowsInstallWithConflictingVersionAlreadyExists(requestedVersion : string) : Promise<string>
+    {
+        const sdks : Array<string> = await this.getGlobalSdkVersionsInstalledOnMachine();
+        for (let sdk of sdks)
+        {
+            if
+            ( // Side by side installs of the same major.minor and band can cause issues in some cases. So we decided to just not allow it unless upgrading to a newer patch version.
+              // The installer can catch this but we can avoid unnecessary work this way, and for windows the installer may never appear to the user. With this approach, we don't need to handle installer error codes.
+                Number(VersionResolver.getMajorMinor(requestedVersion)) === Number(VersionResolver.getMajorMinor(sdk)) &&
+                Number(VersionResolver.getFeatureBandFromVersion(requestedVersion)) === Number(VersionResolver.getFeatureBandFromVersion(sdk)) &&
+                Number(VersionResolver.getFeatureBandPatchVersion(requestedVersion)) <= Number(VersionResolver.getFeatureBandPatchVersion(sdk))
+            )
+            {
+                return sdk;
+            }
+        }
+
+        return '';
+    }
 
     /**
      *
      * @returns an array containing fully specified / specific versions of all globally installed sdks on the machine in windows for 32 and 64 bit sdks.
-     * TODO: Expand this function to work with mac.
      */
     public async getGlobalSdkVersionsInstalledOnMachine() : Promise<Array<string>>
     {

@@ -5,47 +5,55 @@
 import * as chai from 'chai';
 import * as os from 'os';
 import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProvider';
-import { MockCommandExecutor } from '../mocks/MockObjects';
+import { FileWebRequestWorker, MockCommandExecutor, MockEventStream, MockExtensionContext, MockWebRequestWorker } from '../mocks/MockObjects';
 import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
+import { GlobalInstallerResolver } from '../../Acquisition/GlobalInstallerResolver';
+import path = require('path');
 const assert = chai.assert;
 
-const mockVersion = '7.0.103';
-const mockExecutor = new MockCommandExecutor();
-const pair : DistroVersionPair = { distro : 'Ubuntu', version : '22.04' };
-const provider : GenericDistroSDKProvider = new GenericDistroSDKProvider(pair, mockExecutor);
+const mockVersion = '7.0.306';
+const featureBandVersion = '7.0.1xx';
+const newestFeatureBandedVersion = '7.0.109';
+const majorOnly = '7';
+const majorMinorOnly = '7.0';
+
+const context = new MockExtensionContext();
+const eventStream = new MockEventStream();
+const filePath = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-channel-7-index.json');
+const webWorker = new FileWebRequestWorker(context, eventStream, filePath);
 
 
-suite('Global SDK Installer Resolver Tests', () =>
+suite('Global Installer Resolver Tests', () =>
 {
     test('It finds the newest patch version given a feature band', async () => {
+        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, featureBandVersion);
+        provider.customWebRequestWorker = webWorker;
 
+        assert.equal(await provider.getFullVersion(), newestFeatureBandedVersion);
     });
 
-    test('It finds the correct windows installer download url', async () => {
+    test('It finds the correct installer download url for the os', async () => {
+        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, mockVersion);
+        provider.customWebRequestWorker = webWorker;
 
-    });
-
-    test('It finds the correct mac installer download url', async () => {
-
-    });
-
-    test('It detects if a conflicting SDK version exists', async () => {
-
+        assert.equal(await provider.getFullVersion(), mockVersion);
+        const installerUrl = await provider.getInstallerUrl();
+        assert.isTrue(installerUrl.includes(os.platform() === 'win32' ? 'exe' : 'pkg'));
+        // The architecture in the installer file will match unless its x32, in which case itll be called x86.
+        assert.isTrue(installerUrl.includes(os.arch() === 'x32' ? 'x86' : os.arch()));
     });
 
     test('It parses the major format', async () => {
+        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, majorMinorOnly);
+        provider.customWebRequestWorker = webWorker;
 
+        assert.equal(await provider.getFullVersion(), mockVersion);
     });
 
     test('It parses the major.minor format', async () => {
+        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, majorOnly);
+        provider.customWebRequestWorker = webWorker;
 
+        assert.equal(await provider.getFullVersion(), mockVersion);
     });
-
-    test('It parses the non specific feature band format', async () => {
-
-    });
-    test('It parses the fully specified format', async () => {
-
-    });
-
 });
