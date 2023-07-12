@@ -4,7 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
-import { GlobalSDKInstallerResolver } from './GlobalSDKInstallerResolver';
+import { GlobalInstallerResolver } from './GlobalInstallerResolver';
 
 export interface IDotnetCoreAcquisitionWorker {
     uninstallAll(): void;
@@ -13,5 +13,5 @@ export interface IDotnetCoreAcquisitionWorker {
 
     acquireSDK(version: string): Promise<IDotnetAcquireResult>;
 
-    acquireGlobalSDK(installerResolver: GlobalSDKInstallerResolver): Promise<IDotnetAcquireResult>;
+    acquireGlobalSDK(installerResolver: GlobalInstallerResolver): Promise<IDotnetAcquireResult>;
 }

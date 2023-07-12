@@ -116,8 +116,8 @@ export abstract class DotnetAcquisitionVersionError extends DotnetAcquisitionErr
             AcquisitionErrorVersion : this.version,
             ErrorName : this.error.name,
             StackTrace : this.error.stack ? this.error.stack : ''};
+        }
     }
-}
 
 export class DotnetAcquisitionUnexpectedError extends DotnetAcquisitionVersionError {
     public readonly eventName = 'DotnetAcquisitionUnexpectedError';
@@ -129,6 +129,10 @@ export class DotnetAcquisitionInstallError extends DotnetAcquisitionVersionError
 
 export class DotnetAcquisitionScriptError extends DotnetAcquisitionVersionError {
     public readonly eventName = 'DotnetAcquisitionScriptError';
+}
+
+export class DotnetConflictingGlobalWindowsInstallError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetConflictingGlobalWindowsInstallError';
 }
 
 export class DotnetOfflineFailure extends DotnetAcquisitionVersionError {

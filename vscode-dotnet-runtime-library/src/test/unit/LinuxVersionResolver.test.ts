@@ -14,25 +14,23 @@ const assert = chai.assert;
 const standardTimeoutTime = 100000;
 
 
+function mockContext(runtimeInstall: boolean): IAcquisitionWorkerContext {
+    const extensionContext = new MockExtensionContext();
+    const eventStream = new MockEventStream();
+    const workerContext : IAcquisitionWorkerContext = {
+        storagePath: '',
+        extensionState: extensionContext,
+        eventStream,
+        acquisitionInvoker: new NoInstallAcquisitionInvoker(eventStream),
+        installationValidator: new MockInstallationValidator(eventStream),
+        timeoutValue: standardTimeoutTime,
+        installDirectoryProvider: runtimeInstall ? new RuntimeInstallationDirectoryProvider('') : new SdkInstallationDirectoryProvider(''),
+    };
+    return workerContext;
+}
 
 suite('Linux Version Resolver Tests', () =>
 {
-
-    function mockContext(runtimeInstall: boolean): IAcquisitionWorkerContext {
-        const extensionContext = new MockExtensionContext();
-        const eventStream = new MockEventStream();
-        const workerContext : IAcquisitionWorkerContext = {
-            storagePath: '',
-            extensionState: extensionContext,
-            eventStream,
-            acquisitionInvoker: new NoInstallAcquisitionInvoker(eventStream),
-            installationValidator: new MockInstallationValidator(eventStream),
-            timeoutValue: standardTimeoutTime,
-            installDirectoryProvider: runtimeInstall ? new RuntimeInstallationDirectoryProvider('') : new SdkInstallationDirectoryProvider(''),
-        };
-        return workerContext;
-    }
-
     const mockVersion = '7.0.103';
     const mockExecutor = new MockCommandExecutor();
     const pair : DistroVersionPair = { distro : 'Ubuntu', version : '22.04' };
@@ -119,7 +117,6 @@ suite('Linux Version Resolver Tests', () =>
     });
 
     test('It rejects downloading a lower patch of a major minor', async () => {
-        // TODO: ReVerify with PMs if this behavior is desired.
         if(shouldRun)
         {
             mockDistroProvider.globalPathReturnValue = `/`;
@@ -147,7 +144,7 @@ suite('Linux Version Resolver Tests', () =>
             assert.exists(okResult);
             assert.isNotTrue(mockExecutor.attemptedCommand.includes('install'));
 
-            // validate the install DOES happen if it needs to
+            // Validate the install DOES happen if it needs to
 
             mockDistroProvider.globalPathReturnValue = ``;
             mockDistroProvider.distroFeedReturnValue = ``;

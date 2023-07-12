@@ -40,7 +40,7 @@ import {
 } from 'vscode-dotnet-runtime-library';
 
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquistionId';
-import { GlobalSDKInstallerResolver } from 'vscode-dotnet-runtime-library/dist/Acquisition/GlobalSDKInstallerResolver';
+import { GlobalInstallerResolver } from 'vscode-dotnet-runtime-library/dist/Acquisition/GlobalInstallerResolver';
 
 // tslint:disable no-var-requires
 const packageJson = require('../package.json');
@@ -150,7 +150,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
                     throw Error(`No version was defined to install.`);
                 }
 
-                const globalInstallerResolver = new GlobalSDKInstallerResolver(context.globalState, eventStream, commandContext.version);
+                const globalInstallerResolver = new GlobalInstallerResolver(context.globalState, eventStream, commandContext.version);
                 const dotnetPath = await acquisitionWorker.acquireGlobalSDK(globalInstallerResolver);
                 // TODO: Check to make sure path is set by the installer.
                 return dotnetPath;

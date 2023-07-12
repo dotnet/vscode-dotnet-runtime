@@ -27,10 +27,10 @@ import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetCoreAcquisitionWorker } from './IDotnetCoreAcquisitionWorker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
-import { GlobalSDKInstallerResolver } from './GlobalSDKInstallerResolver';
-import { WinMacSDKInstaller } from './WinMacSDKInstaller';
-import { ISDKInstaller } from './ISDKInstaller';
-import { LinuxSDKInstaller } from './LinuxSDKInstaller';
+import { GlobalInstallerResolver } from './GlobalInstallerResolver';
+import { WinMacGlobalInstaller } from './WinMacGlobalInstaller';
+import { IGlobalInstaller } from './IGlobalInstaller';
+import { LinuxGlobalInstaller } from './LinuxGlobalInstaller';
 
 export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker {
     private readonly installingVersionsKey = 'installing';
@@ -69,7 +69,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         return this.acquire(version, false);
     }
 
-    public async acquireGlobalSDK(installerResolver: GlobalSDKInstallerResolver): Promise<IDotnetAcquireResult>
+    public async acquireGlobalSDK(installerResolver: GlobalInstallerResolver): Promise<IDotnetAcquireResult>
     {
         return this.acquire(await installerResolver.getFullVersion(), false, installerResolver);
     }
@@ -120,7 +120,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      * @param global false for local install, true for global SDK installs.
      * @returns the dotnet acqusition result.
      */
-    private async acquire(version: string, installRuntime: boolean, globalInstallerResolver : GlobalSDKInstallerResolver | null = null): Promise<IDotnetAcquireResult> {
+    private async acquire(version: string, installRuntime: boolean, globalInstallerResolver : GlobalInstallerResolver | null = null): Promise<IDotnetAcquireResult> {
         const existingAcquisitionPromise = this.acquisitionPromises[version];
         if (existingAcquisitionPromise)
         {
@@ -214,20 +214,14 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         return dotnetPath;
     }
 
-    private async acquireGlobalCore(globalInstallerResolver : GlobalSDKInstallerResolver): Promise<string>
+    private async acquireGlobalCore(globalInstallerResolver : GlobalInstallerResolver): Promise<string>
     {
-        const conflictingVersion = await globalInstallerResolver.GlobalInstallWithConflictingVersionAlreadyExists()
-        if (conflictingVersion !== '')
-        {
-            throw Error(`An global install is already on the machine with a version that conflicts with the requested version.`)
-        }
-
         // TODO check if theres a partial install from the extension if that can happen
         // TODO fix registry check
         // TODO report installer OK if conflicting exists
         const installingVersion = await globalInstallerResolver.getFullVersion();
 
-        let installer : ISDKInstaller = os.platform() === 'linux' ? new LinuxSDKInstaller(this.context, installingVersion) : new WinMacSDKInstaller(this.context, await globalInstallerResolver.getInstallerUrl());
+        let installer : IGlobalInstaller = os.platform() === 'linux' ? new LinuxGlobalInstaller(this.context, installingVersion) : new WinMacGlobalInstaller(this.context, installingVersion, await globalInstallerResolver.getInstallerUrl());
 
 
         // Indicate that we're beginning to do the install.
