@@ -38,9 +38,9 @@ suite('Global Installer Resolver Tests', () =>
 
         assert.equal(await provider.getFullVersion(), mockVersion);
         const installerUrl = await provider.getInstallerUrl();
-        assert.isTrue(installerUrl.includes(os.platform() === 'win32' ? 'exe' : 'pkg'));
+        assert.include(installerUrl, (os.platform() === 'win32' ? 'exe' : 'pkg'));
         // The architecture in the installer file will match unless its x32, in which case itll be called x86.
-        assert.isTrue(installerUrl.includes(os.arch() === 'x32' ? 'x86' : os.arch()));
+        assert.include(installerUrl, (os.arch() === 'x32' ? 'x86' : os.arch()));
     });
 
     test('It parses the major format', async () => {

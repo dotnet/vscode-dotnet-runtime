@@ -106,8 +106,8 @@ suite('Linux Version Resolver Tests', () =>
 
             const okResult = await resolver.ValidateAndInstallSDK(mockVersion);
             assert.exists(okResult);
-            assert.isNotTrue(mockExecutor.attemptedCommand.includes('install'));
-            assert.isTrue(mockExecutor.attemptedCommand.includes('update'));
+            assert.notInclude(mockExecutor.attemptedCommand, 'install');
+            assert.include(mockExecutor.attemptedCommand, 'update');
 
             mockDistroProvider.globalPathReturnValue = null;
             mockDistroProvider.distroFeedReturnValue = ``;
@@ -142,7 +142,7 @@ suite('Linux Version Resolver Tests', () =>
 
             let okResult = await resolver.ValidateAndInstallSDK(mockVersion);
             assert.exists(okResult);
-            assert.isNotTrue(mockExecutor.attemptedCommand.includes('install'));
+            assert.notInclude(mockExecutor.attemptedCommand, 'install');
 
             // Validate the install DOES happen if it needs to
 
@@ -152,7 +152,7 @@ suite('Linux Version Resolver Tests', () =>
 
             okResult = await resolver.ValidateAndInstallSDK(mockVersion);
             assert.exists(okResult);
-            assert.isTrue(mockExecutor.attemptedCommand.includes('install'));
+            assert.include(mockExecutor.attemptedCommand, 'install');
         }
     });
 
