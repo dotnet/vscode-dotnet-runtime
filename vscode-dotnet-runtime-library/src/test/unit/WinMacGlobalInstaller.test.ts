@@ -125,39 +125,50 @@ suite('Windows & Mac Global Installer Tests', () =>
     test('It runs the correct install command', async () =>
     {
         mockExecutor.fakeReturnValue = `0`;
+        installer.cleanupInstallFiles = false;
         let result = await installer.installSDK();
         assert.exists(result);
         assert.equal(result, '0');
-        mockExecutor.fakeReturnValue = ``;
 
         if(os.platform() === 'darwin')
         {
-            assert.isTrue(mockExecutor.attemptedCommand.startsWith('open -W'))
+            assert.isTrue(mockExecutor.attemptedCommand.startsWith('open -W'), 'It ran the right mac command')
         }
         else if(os.platform() === 'win32')
         {
-            assert.isTrue(fs.existsSync(mockExecutor.attemptedCommand.split(' ')[0]));
+            assert.isTrue(fs.existsSync(mockExecutor.attemptedCommand.split(' ')[0]), 'It ran a command to an executable that exists');
             if(FileUtilities.isElevated())
             {
-                assert.isTrue(mockExecutor.attemptedCommand.includes(' /quiet /install /norestart'))
+                assert.isTrue(mockExecutor.attemptedCommand.includes(' /quiet /install /norestart'), 'It ran under the hood if it had privelleges already')
             }
         }
+
+        // Rerun install to clean it up.
+        installer.cleanupInstallFiles = true;
+        await installer.installSDK();
+        mockExecutor.fakeReturnValue = ``;
     });
 
     test('It downloads a file precisely and deletes installer downloads', async () =>
     {
         mockExecutor.fakeReturnValue = `0`;
+        installer.cleanupInstallFiles = false;
         let result = await installer.installSDK();
-        assert.exists(result);
-        assert.equal(result, '0');
-        mockExecutor.fakeReturnValue = ``;
+        assert.exists(result, 'The installation on test was successful');
+        assert.equal(result, '0', 'No errors were reported by the fake install');
 
         const installerDownloadFolder = path.resolve(__dirname, '../../Acquisition/', 'installers');
         const installersDir = WinMacGlobalInstaller.getDownloadedInstallFilesFolder();
-        assert.equal(installerDownloadFolder, installersDir);
+        assert.equal(installerDownloadFolder, installersDir, 'The expected installer folder is used');
 
-        assert.isTrue(fs.existsSync(installerDownloadFolder));
-        // The installer files should be removed.
-        assert.isTrue(fs.readdirSync(installerDownloadFolder).length === 0);
+        assert.isTrue(fs.existsSync(installerDownloadFolder), 'install folder is created when we dont clean it up');
+
+
+        installer.cleanupInstallFiles = true;
+        await installer.installSDK();
+        // The installer files should be removed. Note this doesnt really check the default as we changed it manually
+        assert.equal(fs.readdirSync(installerDownloadFolder).length, 0, 'the installer file was deleted upon exit');
+        mockExecutor.fakeReturnValue = ``;
+
     });
 });
