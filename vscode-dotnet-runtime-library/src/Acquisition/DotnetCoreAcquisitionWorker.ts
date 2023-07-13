@@ -227,7 +227,14 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         await this.addVersionToExtensionState(this.installingVersionsKey, installingVersion);
         this.context.eventStream.post(new DotnetAcquisitionStarted(installingVersion));
 
+        // See if we should return a fake path instead of running the install
+        if(process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH && process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH === 'true')
+        {
+            return 'fake-sdk';
+        }
+
         const installerResult = await installer.installSDK();
+
         if(installerResult !== '0')
         {
             const err = new DotnetNonZeroInstallerExitCodeError(new Error(`An unexpected error was raised by the installer. The error it gave us: ${installerResult}`));

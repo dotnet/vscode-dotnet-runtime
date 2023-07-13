@@ -152,13 +152,15 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
                 const globalInstallerResolver = new GlobalInstallerResolver(context.globalState, eventStream, commandContext.version);
                 const dotnetPath = await acquisitionWorker.acquireGlobalSDK(globalInstallerResolver);
-                // TODO: Check to make sure path is set by the installer.
+
+                setPathEnvVar(dotnetPath.dotnetPath, displayWorker, context.environmentVariableCollection);
                 return dotnetPath;
             }
             else
             {
                 const resolvedVersion = await versionResolver.getFullSDKVersion(commandContext.version);
                 const dotnetPath = await acquisitionWorker.acquireSDK(resolvedVersion);
+
                 const pathEnvVar = path.dirname(dotnetPath.dotnetPath);
                 setPathEnvVar(pathEnvVar, displayWorker, context.environmentVariableCollection);
                 return dotnetPath;

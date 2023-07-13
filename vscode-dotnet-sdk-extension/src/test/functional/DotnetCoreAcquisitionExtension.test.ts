@@ -65,7 +65,8 @@ const mockReleasesData = `{
     ]
 }`
 
-suite('DotnetCoreAcquisitionExtension End to End', function() {
+suite('DotnetCoreAcquisitionExtension End to End', function()
+{
   this.retries(0);
   const storagePath = path.join(__dirname, 'tmp');
   const mockState = new MockExtensionContext();
@@ -91,7 +92,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     });
   });
 
-  /*
+
   test('Activate', async () => {
     // Commands should now be registered
     assert.exists(extensionContext);
@@ -461,28 +462,40 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     resolver.customWebRequestWorker = webWorker;
     assert.strictEqual(await resolver.getFullVersion(), fullVersion);
   }).timeout(standardTimeoutTime);
-  */
+
 
   test('Install Globally E2E (Requires Admin)', async () => {
     // We only test if the process is running under ADMIN because non-admin requires user-intervention.
     if(FileUtilities.isElevated())
     {
+      const originalPath = process.env.PATH;
       const version : string = '7.0.103';
-
       const context : IDotnetAcquireContext = { version: version, requestingExtensionId: 'ms-dotnettools.sample-extension', installType: 'global' };
-      const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context);
-      assert.exists(result, "The global acquisition command did not provide a result?");
+
+      // We cannot use the describe pattern to restore the environment variables using vscodes extension testing infrastructure.
+      // So we must set and unset it ourselves, which isn't ideal as this variable could remain.
+      let result;
+      // We cannot test much as we don't want to leave global installs on devboxes. But we do want to make sure the e-2-e goes through the right path. Vendors can test the rest.
+      // So we have this environment variable that tells us to stop before running any real install.
+      process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH = 'true';
+      try
+      {
+        result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context);
+      }
+      catch(err)
+      {
+        process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH = undefined;
+        process.env.PATH = originalPath;
+        throw(`The test failed to run the acquire command successfully. Error: ${err}`);
+      }
+      const pathAfterInstall = process.env.PATH;
+
+      assert.exists(result, 'The global acquisition command did not provide a result?');
+
       assert.exists(result!.dotnetPath);
-
-      const installersDir : string = WinMacGlobalInstaller.getDownloadedInstallFilesFolder();
-      assert.exists(installersDir);
-      const numInstallersAlreadyDownloaded = fs.readdirSync(installersDir).length;
-      // The installer should be removed from the disk after the command is done.
-      assert(numInstallersAlreadyDownloaded === 0);
-
-      // Assert install occurred
-      let sdkDirs = fs.readdirSync(path.join(path.dirname(result!.dotnetPath), 'sdk'));
-      assert.isNotEmpty(sdkDirs.filter(dir => dir.includes(version)));
+      assert.equal(result!.dotnetPath, 'fake-sdk');
+      assert.exists(pathAfterInstall, "The environment variable PATH for DOTNET was not found?");
+      assert.include(pathAfterInstall, result!.dotnetPath, 'Is the PATH correctly set by the global installer?');
     }
     else
     {

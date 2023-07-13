@@ -152,27 +152,27 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         {
             if(installedArch === 'x32')
             {
-                return path.join(`C:\\Program Files (x86)\\dotnet\\sdk\\`, specificSDKVersionInstalled, "dotnet.dll");
+                return path.resolve(`C:\\Program Files (x86)\\dotnet\\sdk\\`);
             }
             else if(installedArch === 'x64')
             {
-                return path.join(`C:\\Program Files\\dotnet\\sdk\\`, specificSDKVersionInstalled, "dotnet.dll");
+                return path.resolve(`C:\\Program Files\\dotnet\\sdk\\`);
             }
         }
         else if(os.platform() === 'darwin')
         {
             if(installedArch !== 'x64')
             {
-                return path.join(`/usr/local/share/dotnet/sdk`, specificSDKVersionInstalled);
+                return path.resolve(`/usr/local/share/dotnet/sdk`);
             }
             else
             {
                 // We only know this to be correct in the ARM scenarios but I decided to assume the default is the same elsewhere.
-                return path.join(`/usr/local/share/dotnet/x64/dotnet/sdk`, specificSDKVersionInstalled);
+                return path.resolve(`/usr/local/share/dotnet/x64/dotnet/sdk`);
             }
         }
 
-        throw Error(`The operating system is unsupported.`);
+        throw Error(`The operating system ${os.platform()} is unsupported.`);
     }
 
     /**
