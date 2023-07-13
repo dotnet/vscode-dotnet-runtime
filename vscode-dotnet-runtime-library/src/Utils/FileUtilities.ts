@@ -45,7 +45,6 @@ export class FileUtilities {
     {
         if(os.platform() !== 'win32')
         {
-            // TODO: Make sure this works on mac and linux.
             const commandResult = proc.spawnSync("id", ["-u"]);
             return commandResult.status === 0;
         }

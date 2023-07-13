@@ -13,6 +13,8 @@ import { IGlobalInstaller } from './IGlobalInstaller';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { VersionResolver } from './VersionResolver';
 import { DotnetConflictingGlobalWindowsInstallError, DotnetCustomLinuxInstallExistsError } from '../EventStream/EventStreamEvents';
+import { ICommandExecutor } from '../Utils/ICommandExecutor';
+import { CommandExecutor } from '../Utils/CommandExecutor';
 
 /**
  * @remarks
@@ -24,12 +26,14 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
 
     private installerUrl : string;
     private installingVersion : string;
+    protected commandRunner : ICommandExecutor;
 
-    constructor(context : IAcquisitionWorkerContext, installingVersion : string, installerUrl : string)
+    constructor(context : IAcquisitionWorkerContext, installingVersion : string, installerUrl : string, executor : ICommandExecutor | null = null)
     {
         super(context);
         this.installerUrl = installerUrl
         this.installingVersion = installingVersion;
+        this.commandRunner = executor ?? new CommandExecutor();
     }
 
     public async installSDK(): Promise<string>
@@ -40,6 +44,11 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
             const conflictingVersion = await this.GlobalWindowsInstallWithConflictingVersionAlreadyExists(this.installingVersion);
             if(conflictingVersion !== '')
             {
+                if(conflictingVersion === this.installingVersion)
+                {
+                    // The install already exists, we can just exit with Ok.
+                    return '0';
+                }
                 const err = new DotnetConflictingGlobalWindowsInstallError(new Error(`An global install is already on the machine: version ${conflictingVersion}, that conflicts with the requested version.
                     Please uninstall this version first if you would like to continue.`));
                 this.acquisitionContext.eventStream.post(err);
@@ -166,27 +175,18 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
             // For Mac:
             // We don't rely on the installer because it doesn't allow us to run without sudo, and we don't want to handle the user password.
             // The -W flag makes it so we wait for the installer .pkg to exit, though we are unable to get the exit code.
-            try
-            {
-                const commandResult = proc.spawnSync('open', ['-W', `${path.resolve(installerPath)}`]);
-                return commandResult.toString();
-            }
-            catch(error : any)
-            {
-                return error;
-            }
+            const commandResult = await this.commandRunner.execute(`open -W ${path.resolve(installerPath)}`);
+            return commandResult[0];
         }
         else
         {
-            try
+            let command = `${path.resolve(installerPath)}`;
+            if(FileUtilities.isElevated())
             {
-                const commandResult = proc.spawnSync(`${path.resolve(installerPath)}`, FileUtilities.isElevated() ? ['/quiet', '/install', '/norestart'] : []);
-                return commandResult.toString();
+                command += ' /quiet /install /norestart';
             }
-            catch(error : any)
-            {
-                return error;
-            }
+            const commandResult = await this.commandRunner.execute(command);
+            return commandResult[0];
         }
     }
 
@@ -197,15 +197,22 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
      */
     private extractVersionsOutOfRegistryKeyStrings(registryQueryResult : string) : string[]
     {
-        return registryQueryResult.split(" ")
-        .filter
-        (
-            function(value : string, i : number) { return value != '' && i != 0; } // Filter out the whitespace & query as the query return value starts with the query.
-        )
-        .filter
-        (
-            function(value : string, i : number) { return i % 3 == 0; } // Every 0th, 4th, etc item will be a value name AKA the SDK version. The rest will be REGTYPE and REGHEXVALUE.
-        );
+        if(registryQueryResult.includes("ERROR") || registryQueryResult === '')
+        {
+                return [];
+        }
+        else
+        {
+            return registryQueryResult.split(" ")
+            .filter
+            (
+                function(value : string, i : number) { return value != '' && i != 0; } // Filter out the whitespace & query as the query return value starts with the query.
+            )
+            .filter
+            (
+                function(value : string, i : number) { return i % 3 == 0; } // Every 0th, 4th, etc item will be a value name AKA the SDK version. The rest will be REGTYPE and REGHEXVALUE.
+            );
+        }
     }
 
     /**
@@ -217,6 +224,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
      */
     public async GlobalWindowsInstallWithConflictingVersionAlreadyExists(requestedVersion : string) : Promise<string>
     {
+        // Note that we could be more intelligent here and consider only if the SDKs conflict within an architecture, but for now we won't do this.
         const sdks : Array<string> = await this.getGlobalSdkVersionsInstalledOnMachine();
         for (let sdk of sdks)
         {
@@ -241,7 +249,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
      */
     public async getGlobalSdkVersionsInstalledOnMachine() : Promise<Array<string>>
     {
-        const sdks: string[] = [];
+        let sdks: string[] = [];
 
 
         if (os.platform() === 'win32')
@@ -256,9 +264,10 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
                 {
                     const registryQueryCommand = `%SystemRoot%\\System32\\reg.exe`;
                     // stdio settings: don't print registry key DNE warnings as they may not be on the machine if no SDKs are installed and we dont want to error.
-                    const installRecordKeysOfXBit = proc.spawnSync(registryQueryCommand, [`query`, `"${query}"`], {stdio : ['pipe', 'ignore', 'ignore']}).toString();
+                    const installRecordKeysOfXBit = (await this.commandRunner.execute(`${registryQueryCommand} query "${query}"`, {stdio : ['pipe', 'ignore', 'ignore']}))[0];
                     const installedSdks = this.extractVersionsOutOfRegistryKeyStrings(installRecordKeysOfXBit);
-                    sdks.concat(installedSdks);
+                    // Append any newly found sdk versions
+                    sdks = sdks.concat(installedSdks.filter((item) => sdks.indexOf(item) < 0));
                 }
                 catch(e)
                 {

@@ -135,6 +135,10 @@ export class DotnetConflictingGlobalWindowsInstallError extends DotnetAcquisitio
     public readonly eventName = 'DotnetConflictingGlobalWindowsInstallError';
 }
 
+export class DotnetNonZeroInstallerExitCodeError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetNonZeroInstallerExitCodeError';
+}
+
 export class DotnetOfflineFailure extends DotnetAcquisitionVersionError {
     public readonly eventName = 'DotnetOfflineFailure';
 }

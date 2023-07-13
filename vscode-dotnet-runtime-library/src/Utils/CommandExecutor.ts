@@ -79,11 +79,11 @@ export class CommandExecutor extends ICommandExecutor
      *
      * @returns the result(s) of each command. Can throw generically if the command fails.
      */
-    public async execute(command : string, workingDirectory : string | null = null) : Promise<string[]>
+    public async execute(command : string, options : any | null = null) : Promise<string[]>
     {
-        if(!workingDirectory)
+        if(!options)
         {
-            workingDirectory = __dirname;
+            options = {cwd : path.resolve(__dirname)};
         }
 
         const commands : string[] = command.split('&&');
@@ -101,7 +101,7 @@ export class CommandExecutor extends ICommandExecutor
             }
             else
             {
-                const commandResult = proc.spawnSync(rootCommand, commandFollowUps, {cwd : path.resolve(workingDirectory)});
+                const commandResult = proc.spawnSync(rootCommand, commandFollowUps, options);
                 commandResults.push(commandResult.stdout.toString() + commandResult.stderr.toString());
             }
         }

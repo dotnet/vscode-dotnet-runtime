@@ -18,6 +18,7 @@ import {
     DotnetAcquisitionStarted,
     DotnetAcquisitionStatusResolved,
     DotnetAcquisitionStatusUndefined,
+    DotnetNonZeroInstallerExitCodeError,
     DotnetPreinstallDetected,
     DotnetPreinstallDetectionError,
     DotnetUninstallAllCompleted,
@@ -217,12 +218,10 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     private async acquireGlobalCore(globalInstallerResolver : GlobalInstallerResolver): Promise<string>
     {
         // TODO check if theres a partial install from the extension if that can happen
-        // TODO fix registry check
         // TODO report installer OK if conflicting exists
         const installingVersion = await globalInstallerResolver.getFullVersion();
 
         let installer : IGlobalInstaller = os.platform() === 'linux' ? new LinuxGlobalInstaller(this.context, installingVersion) : new WinMacGlobalInstaller(this.context, installingVersion, await globalInstallerResolver.getInstallerUrl());
-
 
         // Indicate that we're beginning to do the install.
         await this.addVersionToExtensionState(this.installingVersionsKey, installingVersion);
@@ -231,7 +230,9 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         const installerResult = await installer.installSDK();
         if(installerResult !== '0')
         {
-            // TODO handle this.
+            const err = new DotnetNonZeroInstallerExitCodeError(new Error(`An unexpected error was raised by the installer. The error it gave us: ${installerResult}`));
+            this.context.eventStream.post(err);
+            throw err;
         }
 
         const installedSDKPath : string = await installer.getExpectedGlobalSDKPath(await globalInstallerResolver.getFullVersion(), os.arch());

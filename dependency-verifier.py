@@ -14,10 +14,10 @@ def main():
 
 def VerifyDependencies(targetBranch):
     """Enumerate through all changed files to check diffs."""
-    # origin/ requires origin/ to be up to date. 
+    # origin/ requires origin/ to be up to date.
     changedFiles = [Path(path) for path in subprocess.getoutput(f"git diff --name-only origin/{targetBranch}..").splitlines()]
     npmLockFile = "package-lock.json"
-    
+
     for file in changedFiles:
         fileName = os.path.basename(os.path.realpath(file))
         if fileName == npmLockFile:
@@ -44,7 +44,7 @@ def GetYarnDependencyUpdates(yarnLockDiffLines):
             for dependencyAtVers in depsAtVers:
                 dep = dependencyAtVers.rsplit("@", 1)[0]
                 vers = dependencyAtVers.rsplit("@", 1)[1]
-                dependencies[dep] = [] # Could add version here later. (TODO) that will probably not happen
+                dependencies[dep] = [] # Could add version here later. That will probably not happen
     return dependencies
 
 def GetUnmatchedDiffs(yarnDiff, npmDiff):
@@ -65,7 +65,7 @@ def NpmChangesMirrorYarnChanges(changedFiles, packageLockPath, targetBranch):
     yarnLockFile = "yarn.lock"
     yarnLockPath = Path(os.path.join(os.path.dirname(packageLockPath), yarnLockFile))
     outOfDateYarnLocks = []
-    
+
     if yarnLockPath in changedFiles:
         yarnDiff = subprocess.getoutput(f"git diff origin/{targetBranch}.. -- {str(yarnLockPath)}")
         npmDiff = subprocess.getoutput(f"git diff origin/{targetBranch}..  -- {packageLockPath}")
@@ -80,6 +80,6 @@ def NpmChangesMirrorYarnChanges(changedFiles, packageLockPath, targetBranch):
         sys.exit(f"The yarn.lock and package-lock appear to be out of sync with the changes made after {targetBranch}. Update by doing yarn import or yarn add dep@package-lock-version for {outOfDateYarnLocks}. For sub-dependencies, try adding just the main dependency first.")
     else:
         return 0 # OK, status here is not used
-    
+
 if __name__ == "__main__":
     main()
