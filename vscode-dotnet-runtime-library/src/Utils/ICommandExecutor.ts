@@ -5,5 +5,5 @@
 
 export abstract class ICommandExecutor
 {
-    public abstract execute(command : string, workingDirectory? : string | null) : Promise<string[]>;
+    public abstract execute(command : string, options? : any | null) : Promise<string[]>;
 };

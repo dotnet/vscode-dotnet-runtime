@@ -463,7 +463,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   }).timeout(standardTimeoutTime);
   */
 
-  test('Install Globally (Requires Admin)', async () => {
+  test('Install Globally E2E (Requires Admin)', async () => {
     // We only test if the process is running under ADMIN because non-admin requires user-intervention.
     if(FileUtilities.isElevated())
     {
@@ -483,17 +483,12 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       // Assert install occurred
       let sdkDirs = fs.readdirSync(path.join(path.dirname(result!.dotnetPath), 'sdk'));
       assert.isNotEmpty(sdkDirs.filter(dir => dir.includes(version)));
-
-      if(os.platform() === 'win32')
-      {
-        // TODO Assert that it can find the existing install in registry and doesnt re-install but also doesn't fail.
-      }
     }
     else
     {
       // We could run the installer without privellege but it would require human interaction to use the UAC
       // And we wouldn't be able to kill the process so the test would leave a lot of hanging procs on the machine
-      warn("The Global SDK Install test cannot run as the machine is unprivelleged.");
+      warn("The Global SDK E2E Install test cannot run as the machine is unprivelleged.");
     }
   }).timeout(standardTimeoutTime*1000);
 

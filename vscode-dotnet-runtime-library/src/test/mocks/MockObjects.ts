@@ -183,6 +183,11 @@ export class MockCommandExecutor extends ICommandExecutor
     public fakeReturnValue : string = '';
     public attemptedCommand : string = '';
 
+    // If you expect several commands to be run and want to specify unique outputs for each, describe them in the same order using the below two arrays.
+    // We will check for an includes match and not an exact match!
+    public otherCommandsToMock : string[] = [];
+    public otherCommandsReturnValues : string[] = [];
+
     constructor()
     {
         super();
@@ -193,9 +198,16 @@ export class MockCommandExecutor extends ICommandExecutor
     {
         this.attemptedCommand = command;
         let commandResults : string[] = [];
+
         if(!command.includes("sudo") && this.fakeReturnValue === '')
         {
-            commandResults = await this.trueExecutor.execute(command, workingDirectory);
+            commandResults = await this.trueExecutor.execute(command, workingDirectory ? null : {cwd : path.resolve(workingDirectory!)});
+        }
+        else if(this.otherCommandsToMock.some(x => x.includes(command)))
+        {
+            const fakeResultIndex = this.otherCommandsToMock.findIndex(x => x.includes(command));
+            // We don't need to verify the index since this is test code!
+            commandResults.push(this.otherCommandsReturnValues[fakeResultIndex]);
         }
         else
         {

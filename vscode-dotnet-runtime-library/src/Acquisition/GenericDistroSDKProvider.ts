@@ -40,7 +40,6 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
         const commandResult = await this.commandRunner.execute(command);
 
         const noPackageResult = 'no packages found';
-        // TODO: check this v
         return commandResult[0].includes(noPackageResult);
     }
 
