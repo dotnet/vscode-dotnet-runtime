@@ -27,6 +27,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
     private installerUrl : string;
     private installingVersion : string;
     protected commandRunner : ICommandExecutor;
+    public cleanupInstallFiles = true;
 
     constructor(context : IAcquisitionWorkerContext, installingVersion : string, installerUrl : string, executor : ICommandExecutor | null = null)
     {
@@ -59,7 +60,10 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         const installerFile : string = await this.downloadInstaller(this.installerUrl);
         const installerResult : string = await this.executeInstall(installerFile);
 
-        FileUtilities.wipeDirectory(path.dirname(installerFile));
+        if(this.cleanupInstallFiles)
+        {
+            FileUtilities.wipeDirectory(path.dirname(installerFile));
+        }
 
         return installerResult;
     }
@@ -90,6 +94,13 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
             if (!fs.existsSync(installerDir)){
                 fs.mkdirSync(installerDir);
             }
+
+            // The file has already been downloaded before. Note that a user couldve added a file here. This is part of why we should sign check the file before launch.
+            if(fs.existsSync(dest))
+            {
+                resolve();
+            }
+
             const file = fs.createWriteStream(dest, { flags: "wx" });
 
             const request = https.get(url, response => {
@@ -121,9 +132,10 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
             {
                 file.close();
 
-                if (err.message === "EEXIST")
+                if (err.message.includes('EEXIST'))
                 {
-                    reject("File already exists");
+                    // 2+ concurrent requests to download the installer occurred and ours got to the race last.
+                    resolve();
                 }
                 else
                 {

@@ -7,6 +7,7 @@
  import * as path from 'path';
  import * as os from 'os';
  import * as proc from 'child_process';
+const rimraf = require('rimraf');
 
 export class FileUtilities {
     constructor() {}
@@ -26,15 +27,13 @@ export class FileUtilities {
      */
     public static wipeDirectory(directoryToWipe : string)
     {
-        fs.readdir(directoryToWipe, (err, files) => {
-            if (err) throw err;
+        if(!fs.existsSync(directoryToWipe))
+        {
+            return;
+        }
 
-            for (const file of files) {
-            fs.unlink(path.join(directoryToWipe, file), (err) => {
-                if (err) throw err;
-            });
-            }
-        });
+        // Use rimraf to delete all of the items in a directory without the directory itself.
+        fs.readdirSync(directoryToWipe).forEach(f => fs.rmSync(`${directoryToWipe}/${f}`));
     }
 
     /**
