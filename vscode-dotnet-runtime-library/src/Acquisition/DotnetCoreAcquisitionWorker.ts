@@ -6,8 +6,6 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import rimraf = require('rimraf');
-import * as proc from 'child_process';
-import * as https from 'https';
 
 import {
     DotnetAcquisitionAlreadyInstalled,
@@ -164,20 +162,10 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      * @remarks it is called "core" because it is the meat of the actual acquisition work; this has nothing to do with .NET core vs framework.
      */
     private async acquireCore(version: string, installRuntime: boolean): Promise<string> {
-        const installingVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
+
+        this.checkForPartialInstalls(version, installRuntime, !installRuntime);
+
         let installedVersions = this.context.extensionState.get<string[]>(this.installedVersionsKey, []);
-        const partialInstall = installingVersions.indexOf(version) >= 0;
-        if (partialInstall && installRuntime) {
-            // Partial install, we never updated our extension to no longer be 'installing'.
-            // uninstall everything and then re-install.
-            this.context.eventStream.post(new DotnetAcquisitionPartialInstallation(version));
-
-            await this.uninstallRuntime(version);
-        } else if (partialInstall) {
-            this.context.eventStream.post(new DotnetAcquisitionPartialInstallation(version));
-            await this.uninstallAll();
-        }
-
         const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(version);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
 
@@ -215,11 +203,32 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         return dotnetPath;
     }
 
+    private async checkForPartialInstalls(version : string, uninstallLocalRuntime : boolean, uninstallLocalSDK : boolean)
+    {
+        const installingVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
+        const partialInstall = installingVersions.indexOf(version) >= 0;
+        if (partialInstall)
+        {
+            // Partial install, we never updated our extension to no longer be 'installing'.
+            this.context.eventStream.post(new DotnetAcquisitionPartialInstallation(version));
+
+            // Uninstall everything so we can re-install. For global installs, let the installer handle it.
+            if(uninstallLocalRuntime)
+            {
+                await this.uninstallAll();
+            }
+            else if(uninstallLocalSDK)
+            {
+                await this.uninstallRuntime(version);
+            }
+        }
+    }
+
     private async acquireGlobalCore(globalInstallerResolver : GlobalInstallerResolver): Promise<string>
     {
-        // TODO check if theres a partial install from the extension if that can happen
-        // TODO report installer OK if conflicting exists
+        // TODO report installer OK if conflicting exists and check running installer return code
         const installingVersion = await globalInstallerResolver.getFullVersion();
+        this.checkForPartialInstalls(installingVersion, false, false);
 
         let installer : IGlobalInstaller = os.platform() === 'linux' ? new LinuxGlobalInstaller(this.context, installingVersion) : new WinMacGlobalInstaller(this.context, installingVersion, await globalInstallerResolver.getInstallerUrl());
 
@@ -237,7 +246,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         if(installerResult !== '0')
         {
-            const err = new DotnetNonZeroInstallerExitCodeError(new Error(`An unexpected error was raised by the installer. The error it gave us: ${installerResult}`));
+            const err = new DotnetNonZeroInstallerExitCodeError(new Error(`An error was raised by the .NET SDK installer. The exit code it gave us: ${installerResult}`));
             this.context.eventStream.post(err);
             throw err;
         }

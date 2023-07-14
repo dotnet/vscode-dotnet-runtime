@@ -2,11 +2,9 @@ import { DotnetAcquisitionDistroUnknownError, DotnetConflictingLinuxInstallTypes
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 import { GenericDistroSDKProvider as GenericDistroSDKProvider } from './GenericDistroSDKProvider';
-import * as proc from 'child_process';
 import * as fs from 'fs';
 import path = require('path');
 import { VersionResolver } from './VersionResolver';
-import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 

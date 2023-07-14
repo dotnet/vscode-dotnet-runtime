@@ -1,10 +1,7 @@
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { IEventStream } from '../EventStream/EventStream';
 import { IExtensionState } from '../IExtensionState';
-import { DotnetVersionResolutionError } from '../EventStream/EventStreamEvents';
-import { DotnetVersionResolutionCompleted } from '../EventStream/EventStreamEvents';
 import * as os from 'os';
-import * as cp from 'child_process';
 import * as path from 'path';
 import { VersionResolver } from './VersionResolver';
 

@@ -5,7 +5,6 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import * as proc from 'child_process';
 import * as https from 'https';
 
 import { FileUtilities } from '../Utils/FileUtilities';
@@ -15,6 +14,7 @@ import { VersionResolver } from './VersionResolver';
 import { DotnetConflictingGlobalWindowsInstallError, DotnetCustomLinuxInstallExistsError } from '../EventStream/EventStreamEvents';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+import { valid } from 'semver';
 
 /**
  * @remarks
@@ -65,7 +65,15 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
             FileUtilities.wipeDirectory(path.dirname(installerFile));
         }
 
-        return installerResult;
+        const validInstallerStatusCodes = ['0', '1641', '3010']; // Ok, Pending Update, + Update Starting Now
+        if(validInstallerStatusCodes.includes(installerResult))
+        {
+            return '0'; // These statuses are a success, we dont want to throw.
+        }
+        else
+        {
+            return installerResult;
+        }
     }
 
     /**
@@ -182,12 +190,14 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
      */
     public async executeInstall(installerPath : string) : Promise<string>
     {
+        this.commandRunner.returnStatus = true;
         if(os.platform() === 'darwin')
         {
             // For Mac:
             // We don't rely on the installer because it doesn't allow us to run without sudo, and we don't want to handle the user password.
             // The -W flag makes it so we wait for the installer .pkg to exit, though we are unable to get the exit code.
             const commandResult = await this.commandRunner.execute(`open -W ${path.resolve(installerPath)}`);
+            this.commandRunner.returnStatus = false;
             return commandResult[0];
         }
         else
@@ -198,6 +208,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
                 command += ' /quiet /install /norestart';
             }
             const commandResult = await this.commandRunner.execute(command);
+            this.commandRunner.returnStatus = false;
             return commandResult[0];
         }
     }
