@@ -3,6 +3,7 @@ import { DotnetWSLSecurityError } from '../EventStream/EventStreamEvents';
 import {exec} from '@vscode/sudo-prompt';
 import { ICommandExecutor } from "./ICommandExecutor";
 import path = require('path');
+import { commands } from 'vscode';
 
 /* --------------------------------------------------------------------------------------------
  * Copyright (c) Microsoft Corporation. All rights reserved.
@@ -102,7 +103,7 @@ export class CommandExecutor extends ICommandExecutor
             else
             {
                 const commandResult = proc.spawnSync(rootCommand, commandFollowUps, options);
-                commandResults.push(commandResult.stdout.toString() + commandResult.stderr.toString());
+                commandResults.push(this.returnStatus ? (commandResult.status ? commandResult.status.toString() : commandResult.signal!.toString()) : commandResult.stdout.toString() + commandResult.stderr.toString());
             }
         }
 
