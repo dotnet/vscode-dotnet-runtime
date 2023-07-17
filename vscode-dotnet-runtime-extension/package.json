@@ -33,6 +33,13 @@
 		},
 		"virtualWorkspaces": true
 	},
+	"activationEvents": [
+		"onCommand:dotnet.acquire",
+		"onCommand:dotnet.acquireStatus",
+		"onCommand:dotnet.uninstallAll",
+		"onCommand:dotnet.showAcquisitionLog",
+		"onCommand:dotnet.ensureDotnetDependencies"
+	],
 	"main": "./dist/extension.js",
 	"types": "./dist/extension.d.ts",
 	"contributes": {
