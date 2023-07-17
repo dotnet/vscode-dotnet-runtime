@@ -96,7 +96,9 @@ export class GlobalInstallerResolver {
             return await this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, indexUrl);
         }
 
-        throw Error(`The version requested: ${version} is not in a valid format.`)
+        const err = new DotnetVersionResolutionError(new Error(`The requested version resolved version is invalid.`), version);
+        this.eventStream.post(err);
+        throw err;
     }
 
     /**
@@ -110,7 +112,7 @@ export class GlobalInstallerResolver {
     {
         if(specificVersion === null || specificVersion === undefined || specificVersion == "")
         {
-            const err = new DotnetVersionResolutionError(new Error(`The requested version resolved version is invalid.`), specificVersion));
+            const err = new DotnetVersionResolutionError(new Error(`The requested version resolved version is invalid.`), specificVersion);
             this.eventStream.post(err);
             throw err;
         }

@@ -11,7 +11,7 @@ import { FileUtilities } from '../Utils/FileUtilities';
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { VersionResolver } from './VersionResolver';
-import { DotnetConflictingGlobalWindowsInstallError, DotnetCustomLinuxInstallExistsError } from '../EventStream/EventStreamEvents';
+import { DotnetConflictingGlobalWindowsInstallError, DotnetCustomLinuxInstallExistsError, DotnetUnexpectedInstallerOSError } from '../EventStream/EventStreamEvents';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { valid } from 'semver';

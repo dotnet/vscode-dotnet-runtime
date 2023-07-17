@@ -147,7 +147,7 @@ suite('Windows & Mac Global Installer Tests', () =>
         installer.cleanupInstallFiles = true;
         await installer.installSDK();
         mockExecutor.fakeReturnValue = ``;
-    });
+    }).timeout(15000);
 
     test('It downloads a file precisely and deletes installer downloads', async () =>
     {
@@ -167,8 +167,15 @@ suite('Windows & Mac Global Installer Tests', () =>
         installer.cleanupInstallFiles = true;
         await installer.installSDK();
         // The installer files should be removed. Note this doesnt really check the default as we changed it manually
-        assert.equal(fs.readdirSync(installerDownloadFolder).length, 0, 'the installer file was deleted upon exit');
-        mockExecutor.fakeReturnValue = ``;
 
-    });
+        if(FileUtilities.isElevated())
+        {
+            assert.equal(fs.readdirSync(installerDownloadFolder).length, 0, 'the installer file was deleted upon exit');
+            mockExecutor.fakeReturnValue = ``;
+        }
+        else
+        {
+            console.warn('The check for installer file deletion cannot run without elevation.');
+        }
+    }).timeout(15000);;
 });

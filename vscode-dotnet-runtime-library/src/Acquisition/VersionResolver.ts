@@ -99,16 +99,23 @@ export class VersionResolver implements IVersionResolver {
     /**
      * @param getRuntimeVersion - True for getting the full runtime version, false for the SDk version.
      */
-    private async getFullVersion(version: string, getRuntimeVersion: boolean): Promise<string> {
-        try {
-            const releasesVersions = await this.getReleasesInfo(getRuntimeVersion);
-            const versionResult = this.resolveVersion(version, releasesVersions);
-            this.eventStream.post(new DotnetVersionResolutionCompleted(version, versionResult));
-            return versionResult;
-        } catch (error) {
-            this.eventStream.post(new DotnetVersionResolutionError(error as Error, version));
-            throw error;
-        }
+    private async getFullVersion(version: string, getRuntimeVersion: boolean): Promise<string>
+    {
+        const releasesVersions = await this.getReleasesInfo(getRuntimeVersion);
+        return new Promise<string>((resolve, reject) =>
+        {
+            try
+            {
+                const versionResult = this.resolveVersion(version, releasesVersions);
+                this.eventStream.post(new DotnetVersionResolutionCompleted(version, versionResult));
+                resolve(versionResult);
+            }
+            catch (error)
+            {
+                this.eventStream.post(new DotnetVersionResolutionError(error as Error, version));
+                reject(error);
+            }
+        });
     }
 
     private resolveVersion(version: string, releases: IDotnetListVersionsResult): string {
@@ -127,8 +134,11 @@ export class VersionResolver implements IVersionResolver {
 
     private validateVersionInput(version: string) {
         const parsedVer = semver.coerce(version);
-        if (version.split('.').length !== 2 || !parsedVer) {
-            throw new Error(`Invalid version: ${version}`);
+        if (version.split('.').length !== 2 || !parsedVer)
+        {
+            const err = new DotnetVersionResolutionError(new Error(`An invalid version was requested. Version: ${version}`), version);
+            this.eventStream.post(err);
+            throw err;
         }
     }
 

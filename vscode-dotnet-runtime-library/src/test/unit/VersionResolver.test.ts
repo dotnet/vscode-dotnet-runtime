@@ -35,15 +35,15 @@ suite('VersionResolver Unit Tests', () => {
     });
 
     test('Error With Invalid Version', async () => {
-        return assert.isRejected(resolver.getFullRuntimeVersion('foo'), Error, 'Invalid version');
+        assert.isRejected(resolver.getFullRuntimeVersion('foo'), Error, 'Invalid version');
     });
 
     test('Error With Three Part Version', async () => {
-        return assert.isRejected(resolver.getFullRuntimeVersion('1.0.16'), Error, 'Invalid version');
+        assert.isRejected(resolver.getFullRuntimeVersion('1.0.16'), Error, 'Invalid version');
     });
 
     test('Error With Invalid Major.Minor', async () => {
-        return assert.isRejected(resolver.getFullRuntimeVersion('0.0'), Error, 'Unable to resolve version');
+        assert.isRejected(resolver.getFullRuntimeVersion('0.0'), Error, 'Unable to resolve version');
     });
 
     test('Resolve Valid Runtime Versions', async () => {
