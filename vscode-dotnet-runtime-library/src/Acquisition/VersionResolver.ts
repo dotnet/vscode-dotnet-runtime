@@ -5,6 +5,8 @@
 import * as semver from 'semver';
 import { IEventStream } from '../EventStream/EventStream';
 import {
+    DotnetFeatureBandDoesNotExistError,
+    DotnetInvalidReleasesJSONError,
     DotnetOfflineFailure,
     DotnetVersionResolutionCompleted,
     DotnetVersionResolutionError,
@@ -22,6 +24,7 @@ import { DotnetVersionSupportPhase,
 export class VersionResolver implements IVersionResolver {
     protected webWorker: WebRequestWorker;
     private readonly releasesUrl = 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json';
+    protected static invalidFeatureBandErrorString = `A feature band couldn't be determined for the requested version: `;
 
     constructor(extensionState: IExtensionState,
                 private readonly eventStream: IEventStream,
@@ -112,8 +115,11 @@ export class VersionResolver implements IVersionResolver {
         this.validateVersionInput(version);
 
         const matchingVersion = releases.filter((availableVersions : IDotnetVersion) => availableVersions.channelVersion === version);
-        if (!matchingVersion || matchingVersion.length < 1) {
-            throw new Error(`Unable to resolve version: ${version}`);
+        if (!matchingVersion || matchingVersion.length < 1)
+        {
+            const err = new DotnetVersionResolutionError(new Error(`The requested and or resolved version is invalid.`), version);
+            this.eventStream.post(err);
+            throw err;
         }
 
         return matchingVersion[0].version;
@@ -131,14 +137,17 @@ export class VersionResolver implements IVersionResolver {
         const apiContext: IDotnetListVersionsContext = { listRuntimes: getRuntimeVersion };
 
         const response = await this.GetAvailableDotnetVersions(apiContext);
-        if (!response) {
-            throw new Error('Unable to get the full version.');
+        if (!response)
+        {
+            const err = new DotnetInvalidReleasesJSONError(new Error(`We could not reach the releases API to download dotnet, is your machine offline?`));
+            this.eventStream.post(err);
+            throw err;
         }
 
         return response;
     }
 
-        /**
+    /**
      *
      * @param fullySpecifiedVersion the fully specified version of the sdk, e.g. 7.0.301 to get the major from.
      * @returns the major.minor in the form of '3', etc.
@@ -158,7 +167,8 @@ export class VersionResolver implements IVersionResolver {
     {
         if(fullySpecifiedVersion.split('.').length < 2)
         {
-            throw Error(`The requested version ${fullySpecifiedVersion} is invalid.`);
+            const err = new DotnetVersionResolutionError(new Error(`The requested version is invalid.`), fullySpecifiedVersion);
+            throw err;
         }
 
         const majorMinor = fullySpecifiedVersion.split('.').at(0) + '.' + fullySpecifiedVersion.split('.').at(1);
@@ -175,7 +185,8 @@ export class VersionResolver implements IVersionResolver {
         const band : string | undefined = fullySpecifiedVersion.split('.')?.at(2)?.charAt(0);
         if(band === undefined)
         {
-            throw Error(`A feature band couldn't be determined for the requested version ${fullySpecifiedVersion}.`)
+            const err = new DotnetFeatureBandDoesNotExistError(new Error(VersionResolver.invalidFeatureBandErrorString + `${fullySpecifiedVersion}.`));
+            throw err;
         }
         return band;
     }
@@ -200,7 +211,8 @@ export class VersionResolver implements IVersionResolver {
         const patch : string | undefined = fullySpecifiedVersion.split('.')?.at(2)?.substring(1);
         if(patch === undefined || !this.isNumber(patch))
         {
-            throw Error(`A feature band patch version couldn't be determined for the requested version ${fullySpecifiedVersion}.`)
+            const err = new DotnetFeatureBandDoesNotExistError(new Error(VersionResolver.invalidFeatureBandErrorString + `${fullySpecifiedVersion}.`));
+            throw err;
         }
         return patch
     }

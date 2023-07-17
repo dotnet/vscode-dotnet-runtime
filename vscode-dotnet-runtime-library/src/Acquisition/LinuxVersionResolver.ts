@@ -33,7 +33,7 @@ export interface DistroVersionPair {
  */
 export const enum DotnetDistroSupportStatus {
     Unsupported = 'UNSUPPORTED',
-	Distro = 'DISTRO',
+    Distro = 'DISTRO',
     Microsoft = 'MICROSOFT',
     Partial = 'PARTIAL',
     Unknown = 'UNKNOWN'
@@ -138,6 +138,7 @@ export class LinuxVersionResolver
         if(!this.distro || !this.distroSDKProvider)
         {
             const error = new DotnetAcquisitionDistroUnknownError(new Error(this.baseUnsupportedDistroErrorMessage + ' ... we cannot initialize.'));
+            this.acquisitionContext.eventStream.post(error);
             throw error;
         }
     }
@@ -149,6 +150,7 @@ export class LinuxVersionResolver
             // Implement any custom logic for a Distro Class in a new DistroSDKProvider and add it to the factory here.
             case null:
                 const error = new DotnetAcquisitionDistroUnknownError(new Error(this.baseUnsupportedDistroErrorMessage));
+                this.acquisitionContext.eventStream.post(error);
                 throw error;
             default:
                 return new GenericDistroSDKProvider(distroAndVersion);

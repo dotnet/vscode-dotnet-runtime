@@ -102,9 +102,26 @@ export class DotnetCommandFailed extends DotnetAcquisitionError {
         }
     }
 
-export class DotnetWSLSecurityError extends DotnetAcquisitionError {
-        public readonly eventName = 'DotnetWSLSecurityError';
+export class DotnetInvalidReleasesJSONError extends DotnetAcquisitionError {
+        public readonly eventName = 'DotnetInvalidReleasesJSONError';
 }
+
+export class DotnetNoInstallerFileExistsError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetNoInstallerFileExistsError';
+}
+
+export class DotnetUnexpectedInstallerOSError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetUnexpectedInstallerOSError';
+}
+
+export class DotnetFeatureBandDoesNotExistError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetFeatureBandDoesNotExistError';
+}
+
+export class DotnetWSLSecurityError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetWSLSecurityError';
+}
+
 
 export abstract class DotnetAcquisitionVersionError extends DotnetAcquisitionError {
     constructor(error: Error, public readonly version: string) {
@@ -169,11 +186,6 @@ export class DotnetConflictingLinuxInstallTypesError extends DotnetAcquisitionVe
 
 export class DotnetCustomLinuxInstallExistsError extends DotnetAcquisitionVersionError {
     public readonly eventName = 'DotnetCustomLinuxInstallExistsError';
-}
-
-
-export class DotnetUnknownDistroError extends DotnetAcquisitionVersionError {
-    public readonly eventName = 'DotnetUnknownDistroError';
 }
 
 export class DotnetInstallationValidationError extends DotnetAcquisitionVersionError {

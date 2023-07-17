@@ -180,7 +180,9 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
             }
         }
 
-        throw Error(`The operating system ${os.platform()} is unsupported.`);
+        const err = new DotnetUnexpectedInstallerOSError(new Error(`The operating system ${os.platform()} is unsupported.`));
+        this.acquisitionContext.eventStream.post(err);
+        throw err;
     }
 
     /**

@@ -4,6 +4,7 @@ import { IExtensionState } from '../IExtensionState';
 import * as os from 'os';
 import * as path from 'path';
 import { VersionResolver } from './VersionResolver';
+import { DotnetFeatureBandDoesNotExistError, DotnetInvalidReleasesJSONError, DotnetNoInstallerFileExistsError, DotnetUnexpectedInstallerOSError, DotnetVersionResolutionError, WebRequestError } from '../EventStream/EventStreamEvents';
 
 /**
  * @remarks
@@ -21,6 +22,8 @@ export class GlobalInstallerResolver {
 
     // The properly resolved version that was requested in the fully-specified 3-part semver version of the .NET SDK.
     private fullySpecifiedVersionRequested : string;
+
+    private releasesJsonErrorString = `The API hosting the dotnet releases.json is invalid or has changed and the extension needs to be updated. Invalid API URL: `;
 
     /**
      * @remarks Do NOT set this unless you are testing.
@@ -107,7 +110,9 @@ export class GlobalInstallerResolver {
     {
         if(specificVersion === null || specificVersion === undefined || specificVersion == "")
         {
-            throw Error(`The requested version ${specificVersion} or resolved version is invalid.`);
+            const err = new DotnetVersionResolutionError(new Error(`The requested version resolved version is invalid.`), specificVersion));
+            this.eventStream.post(err);
+            throw err;
         }
 
         const operatingSys : string = os.platform();
@@ -132,7 +137,9 @@ export class GlobalInstallerResolver {
             }
             default:
             {
-                throw Error(`The OS ${operatingSys} is currently unsupported or unknown.`);
+                const err = new DotnetUnexpectedInstallerOSError(new Error(`The OS ${operatingSys} is currently unsupported or unknown.`));
+                this.eventStream.post(err);
+                throw err;
             }
         }
 
@@ -156,7 +163,9 @@ export class GlobalInstallerResolver {
             }
             default:
             {
-                throw Error(`The architecture ${operatingArch} is currently unsupported or unknown.`);
+                const err = new DotnetUnexpectedInstallerOSError(new Error(`The architecture ${operatingArch} is currently unsupported or unknown.`));
+                this.eventStream.post(err);
+                throw err;
             }
         }
 
@@ -166,7 +175,9 @@ export class GlobalInstallerResolver {
         const releases = indexJson['releases'];
         if(releases.length == 0)
         {
-            throw Error(`The releases json format used by ${indexUrl} is invalid or has changed, and the extension needs to be updated.`);
+            const err = new DotnetInvalidReleasesJSONError(new Error(this.releasesJsonErrorString + `${indexUrl}`));
+            this.eventStream.post(err);
+            throw err;
         }
 
         let sdks: any[] = [];
@@ -187,16 +198,23 @@ export class GlobalInstallerResolver {
                         const installerUrl = installer['url'];
                         if(installerUrl === undefined)
                         {
-                            throw Error(`URL for ${desiredRidPackage} on ${specificVersion} is unavailable: The version may be Out of Support, or the releases json format used by ${indexUrl} may be invalid and the extension needs to be updated.`);
+                            const err = new DotnetInvalidReleasesJSONError(new Error(`URL for ${desiredRidPackage} on ${specificVersion} is unavailable: The version may be Out of Support, or the releases json format used by ${indexUrl} may be invalid and the extension needs to be updated.`));
+                            this.eventStream.post(err);
+                            throw err;
                         }
                         return installerUrl;
                     }
                 }
-                throw Error(`An installer for the runtime ${desiredRidPackage} could not be found for version ${specificVersion}.`);
+
+                const err = new DotnetNoInstallerFileExistsError(new Error(`An installer for the runtime ${desiredRidPackage} could not be found for version ${specificVersion}.`));
+                this.eventStream.post(err);
+                throw err;
             }
         }
 
-        throw Error(`The SDK installation files for version ${specificVersion} running on ${desiredRidPackage} couldn't be found. Is the version in support? Note that -preview versions or versions with build numbers aren't yet supported.`);
+        const err = new DotnetNoInstallerFileExistsError(new Error(`The SDK installation files for version ${specificVersion} running on ${desiredRidPackage} couldn't be found. Is the version in support? Note that -preview versions or versions with build numbers aren't yet supported.`));
+        this.eventStream.post(err);
+        throw err;
     }
 
     /**
@@ -221,7 +239,9 @@ export class GlobalInstallerResolver {
         const installerFileName = installerJson['name'];
         if(installerFileName === undefined)
         {
-            throw Error(`The json data provided was invalid: ${installerJson}.`);
+            const err = new DotnetInvalidReleasesJSONError(new Error(this.releasesJsonErrorString + `${installerJson}`));
+            this.eventStream.post(err);
+            throw err;
         }
 
         let desiredFileExtension = "";
@@ -242,7 +262,9 @@ export class GlobalInstallerResolver {
             }
             default:
             {
-                throw Error(`The SDK Extension failed to map the OS ${operatingSystemInDotnetFormat} to a proper package type.`);
+                const err = new DotnetUnexpectedInstallerOSError(new Error(`The SDK Extension failed to map the OS ${operatingSystemInDotnetFormat} to a proper package type.`));
+                this.eventStream.post(err);
+                throw err;
             }
         }
 
@@ -265,7 +287,9 @@ export class GlobalInstallerResolver {
 
         if(releases.length == 0)
         {
-            throw Error(`The releases json format used by ${indexUrl} is invalid or has changed, and the extension needs to be updated.`);
+            const err = new DotnetInvalidReleasesJSONError(new Error(this.releasesJsonErrorString + `${indexUrl}`));
+            this.eventStream.post(err);
+            throw err;
         }
 
         // Assumption: The first release in releases will be the newest release and contain the newest sdk for each feature band. This has been 'confirmed' with the releases team.
@@ -281,7 +305,10 @@ export class GlobalInstallerResolver {
             }
         }
 
-        throw Error(`A version for the requested feature band ${band} under the series ${version} couldn't be found.`);
+
+        const err = new DotnetFeatureBandDoesNotExistError(new Error(`A version for the requested feature band ${band} under the series ${version} couldn't be found.`));
+        this.eventStream.post(err);
+        throw err;
     }
 
     /**
@@ -295,7 +322,9 @@ export class GlobalInstallerResolver {
         const jsonStringData = await webWorker.getCachedData(url, 1); // 1 retry should be good enough.
         if(jsonStringData === undefined)
         {
-            throw Error(`The requested url ${url} is unreachable.`);
+            const err = new WebRequestError(new Error(`The requested url ${url} is unreachable. Please check your internet connection?`));
+            this.eventStream.post(err);
+            throw err;
         }
 
         return JSON.parse(jsonStringData);
