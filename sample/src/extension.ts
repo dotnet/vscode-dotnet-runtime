@@ -114,7 +114,7 @@ ${stderr}`);
             vscode.window.showErrorMessage((error as Error).toString());
         }
     });
-
+    
     const sampleDotnetUninstallAllRegistration = vscode.commands.registerCommand('sample.dotnet.uninstallAll', async () => {
         try {
             await vscode.commands.executeCommand('dotnet.uninstallAll');
@@ -215,8 +215,7 @@ ${stderr}`);
         }
     });
 
-    const sampleSDKListSDKs = vscode.commands.registerCommand('sample.dotnet-sdk.listSdks', async (getRuntimes) => {
-
+    const sampleSDKlistVersions = vscode.commands.registerCommand('sample.dotnet-sdk.listVersions', async (getRuntimes : boolean) => {
         if (!getRuntimes) {
             getRuntimes = JSON.parse(await vscode.window.showInputBox({
                 placeHolder: 'false',
