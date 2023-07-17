@@ -1,4 +1,3 @@
-! This PR Description is a copy of the document made in `\Documentation\global-installs\early-global-code-changes-overview.md`)
 
 # .NET Global Acquisition Engineering Spec
 

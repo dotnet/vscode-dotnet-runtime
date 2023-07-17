@@ -226,7 +226,6 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
     private async acquireGlobalCore(globalInstallerResolver : GlobalInstallerResolver): Promise<string>
     {
-        // TODO report installer OK if conflicting exists and check running installer return code
         const installingVersion = await globalInstallerResolver.getFullVersion();
         this.checkForPartialInstalls(installingVersion, false, false);
 
