@@ -38,24 +38,28 @@ export class WebRequestWorker {
     }
 
     // Protected for ease of testing
-    protected async makeWebRequest(url : string, throwOnError: boolean): Promise<string | undefined> {
-        const options = {
-            url: url,
+    protected async makeWebRequest(desiredUrl : string, throwOnError: boolean): Promise<string | undefined> {
+        const options =
+        {
+            url: desiredUrl,
             Connection: 'keep-alive',
         };
 
-        try {
-            this.eventStream.post(new WebRequestSent(url));
+        try
+        {
+            this.eventStream.post(new WebRequestSent(desiredUrl));
             const response = await request.get(options);
-            this.cacheResults(url, response);
+            this.cacheResults(desiredUrl, response);
             return response;
-        } catch (error) {
+        }
+        catch (error)
+        {
             if (throwOnError) {
                 let formattedError = error as Error;
                 if ((formattedError.message as string).toLowerCase().includes('block')) {
-                    formattedError = new Error(`Software restriction policy is blocking .NET installation: Request to ${url} Failed: ${formattedError.message}`);
+                    formattedError = new Error(`Software restriction policy is blocking .NET installation: Request to ${desiredUrl} Failed: ${formattedError.message}`);
                 } else {
-                    formattedError = new Error(`Please ensure that you are online: Request to ${url} Failed: ${formattedError.message}`);
+                    formattedError = new Error(`Please ensure that you are online: Request to ${desiredUrl} Failed: ${formattedError.message}`);
                 }
                 this.eventStream.post(new WebRequestError(formattedError));
                 throw formattedError;

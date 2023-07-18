@@ -1,14 +1,14 @@
-import * as proc from 'child_process';
-import { DotnetWSLSecurityError } from '../EventStream/EventStreamEvents';
-import {exec} from '@vscode/sudo-prompt';
-import { ICommandExecutor } from "./ICommandExecutor";
-import path = require('path');
-import { commands } from 'vscode';
-
 /* --------------------------------------------------------------------------------------------
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
+import * as proc from 'child_process';
+import { DotnetWSLSecurityError } from '../EventStream/EventStreamEvents';
+import {exec} from '@vscode/sudo-prompt';
+import { ICommandExecutor } from './ICommandExecutor';
+import path = require('path');
+/* tslint:disable:no-any */
+
 export class CommandExecutor extends ICommandExecutor
 {
     /**
@@ -22,7 +22,7 @@ export class CommandExecutor extends ICommandExecutor
         const args = ['-i', 'Microsoft', '/proc/version'];
         const commandResult = proc.spawnSync(command, args);
 
-        return commandResult.stdout.toString() != '';
+        return commandResult.stdout.toString() !== '';
     }
 
     /**
@@ -50,7 +50,7 @@ export class CommandExecutor extends ICommandExecutor
             const options = { name: 'VS Code DotNET Acquisition' };
             exec(commandFollowUps.join(' '), options, (error?: any, stdout?: any, stderr?: any) =>
             {
-                let commandResultString : string = '';
+                let commandResultString = '';
 
                 if (stdout)
                 {
@@ -87,13 +87,13 @@ export class CommandExecutor extends ICommandExecutor
             options = {cwd : path.resolve(__dirname)};
         }
 
-        const commands : string[] = command.split('&&');
+        const splitCommands : string[] = command.split('&&');
         const commandResults : string[] = [];
 
-        for (const command of commands)
+        for (const isolatedCommand of splitCommands)
         {
-            const rootCommand = command.split(' ')[0];
-            const commandFollowUps : string[] = command.split(' ').slice(1);
+            const rootCommand = isolatedCommand.split(' ')[0];
+            const commandFollowUps : string[] = isolatedCommand.split(' ').slice(1);
 
             if(rootCommand === "sudo")
             {

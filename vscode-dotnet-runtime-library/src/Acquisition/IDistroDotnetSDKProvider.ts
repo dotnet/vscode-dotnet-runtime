@@ -9,6 +9,7 @@ import { DotnetAcquisitionDistroUnknownError } from '../EventStream/EventStreamE
 import { VersionResolver } from './VersionResolver';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+/* eslint no-any: 0 */  // --> OFF
 
 /**
  * This interface describes the functionality needed to manage the .NET SDK on a specific distro and version of Linux.
@@ -23,25 +24,25 @@ export abstract class IDistroDotnetSDKProvider {
     protected distroVersion : DistroVersionPair;
     protected distroJson : any | null = null;
 
-    protected preinstallCommandKey : string = 'preInstallCommands';
-    protected installCommandKey : string = 'installCommand';
-    protected uninstallCommandKey : string = 'uninstallCommand';
-    protected updateCommandKey : string = 'updateCommand';
-    protected packageLookupCommandKey : string = 'packageLookupCommand';
-    protected currentInstallPathCommandKey : string = 'currentInstallPathCommand';
-    protected isInstalledCommandKey : string = 'isInstalledCommand';
-    protected expectedMicrosoftFeedInstallDirKey : string = 'expectedMicrosoftFeedInstallDirectory';
-    protected expectedDistroFeedInstallDirKey : string = 'expectedDistroFeedInstallDirectory';
-    protected installedSDKVersionsCommandKey : string = 'installedSDKVersionsCommand';
-    protected installedRuntimeVersionsCommandKey : string = 'installedRuntimeVersionsCommand';
-    protected currentInstallVersionCommandKey : string = 'currentInstallationVersionCommand';
+    protected preinstallCommandKey = 'preInstallCommands';
+    protected installCommandKey = 'installCommand';
+    protected uninstallCommandKey = 'uninstallCommand';
+    protected updateCommandKey = 'updateCommand';
+    protected packageLookupCommandKey = 'packageLookupCommand';
+    protected currentInstallPathCommandKey = 'currentInstallPathCommand';
+    protected isInstalledCommandKey = 'isInstalledCommand';
+    protected expectedMicrosoftFeedInstallDirKey = 'expectedMicrosoftFeedInstallDirectory';
+    protected expectedDistroFeedInstallDirKey = 'expectedDistroFeedInstallDirectory';
+    protected installedSDKVersionsCommandKey = 'installedSDKVersionsCommand';
+    protected installedRuntimeVersionsCommandKey = 'installedRuntimeVersionsCommand';
+    protected currentInstallVersionCommandKey = 'currentInstallationVersionCommand';
 
-    protected distroVersionsKey : string = 'versions';
-    protected versionKey : string = 'version';
-    protected dotnetPackagesKey : string = 'dotnet';
-    protected sdkKey : string = 'sdk';
-    protected runtimeKey : string = 'runtime';
-    protected aspNetKey : string = 'aspnetcore';
+    protected distroVersionsKey = 'versions';
+    protected versionKey = 'version';
+    protected dotnetPackagesKey = 'dotnet';
+    protected sdkKey = 'sdk';
+    protected runtimeKey = 'runtime';
+    protected aspNetKey = 'aspnetcore';
 
     constructor(distroVersion : DistroVersionPair, executor : ICommandExecutor | null = null)
     {
@@ -167,6 +168,6 @@ export abstract class IDistroDotnetSDKProvider {
     protected myDotnetVersionPackages(fullySpecifiedDotnetVersion : string) : any
     {
         const myDotnetVersions = this.myVersionPackages();
-        return myDotnetVersions[this.dotnetPackagesKey].filter((x: { [x: string]: string; }) => x[this.versionKey] == this.JsonDotnetVersion(fullySpecifiedDotnetVersion))[0];
+        return myDotnetVersions[this.dotnetPackagesKey].filter((x: { [x: string]: string; }) => x[this.versionKey] === this.JsonDotnetVersion(fullySpecifiedDotnetVersion))[0];
     }
 }

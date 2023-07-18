@@ -244,8 +244,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     const newestBandedVersion = '6.0.311';
     const newestVersion = '6.0.408';
 
-    let webWorker = new MockIndexWebRequestWorker(mockExtensionContext, eventStream);
-    webWorker.knownUrls.push("https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/6.0/releases.json");
+    const webWorker = new MockIndexWebRequestWorker(mockExtensionContext, eventStream);
+    webWorker.knownUrls.push('https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/6.0/releases.json');
     // Note that ZIPS in the data below come before EXEs to make sure the file extension check works.
     const mockJsonFile = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-releases.json');
     webWorker.matchingUrlResponses.push(fs.readFileSync(mockJsonFile, 'utf8'));
@@ -288,8 +288,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     if(FileUtilities.isElevated())
     {
       const originalPath = process.env.PATH;
-      const version : string = '7.0.103';
-      const context : IDotnetAcquireContext = { version: version, requestingExtensionId: 'ms-dotnettools.sample-extension', installType: 'global' };
+      const sdkVersion = '7.0.103';
+      const context : IDotnetAcquireContext = { version: sdkVersion, requestingExtensionId: 'ms-dotnettools.sample-extension', installType: 'global' };
 
       // We cannot use the describe pattern to restore the environment variables using vscodes extension testing infrastructure.
       // So we must set and unset it ourselves, which isn't ideal as this variable could remain.
@@ -305,7 +305,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
       {
         process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH = undefined;
         process.env.PATH = originalPath;
-        throw(`The test failed to run the acquire command successfully. Error: ${err}`);
+        throw(new Error(`The test failed to run the acquire command successfully. Error: ${err}`));
       }
       const pathAfterInstall = process.env.PATH;
 
@@ -313,26 +313,26 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
 
       assert.exists(result!.dotnetPath);
       assert.equal(result!.dotnetPath, 'fake-sdk');
-      assert.exists(pathAfterInstall, "The environment variable PATH for DOTNET was not found?");
+      assert.exists(pathAfterInstall, 'The environment variable PATH for DOTNET was not found?');
       assert.include(pathAfterInstall, result!.dotnetPath, 'Is the PATH correctly set by the global installer?');
     }
     else
     {
       // We could run the installer without privellege but it would require human interaction to use the UAC
       // And we wouldn't be able to kill the process so the test would leave a lot of hanging procs on the machine
-      warn("The Global SDK E2E Install test cannot run as the machine is unprivelleged.");
+      warn('The Global SDK E2E Install test cannot run as the machine is unprivelleged.');
     }
   }).timeout(standardTimeoutTime*1000);
 
   test('Install Command Sets the PATH', async () => {
     const context: IDotnetAcquireContext = { version: '5.0', requestingExtensionId: 'ms-dotnettools.sample-extension' };
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context);
-    assert.exists(result, "The acquisition command did not provide a valid result?");
+    assert.exists(result, 'The acquisition command did not provide a valid result?');
     assert.exists(result!.dotnetPath);
 
     const expectedPath = path.dirname(result!.dotnetPath);
     const pathVar = environmentVariableCollection.variables.PATH;
-    assert.exists(pathVar, "The environment variable PATH for DOTNET was not found?");
+    assert.exists(pathVar, 'The environment variable PATH for DOTNET was not found?');
     assert.include(pathVar, expectedPath);
 
     let pathResult: string;

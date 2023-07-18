@@ -7,10 +7,12 @@
  import * as path from 'path';
  import * as os from 'os';
  import * as proc from 'child_process';
-const rimraf = require('rimraf');
 
 export class FileUtilities {
-    constructor() {}
+    constructor()
+    {
+
+    }
 
     public static writeFileOntoDisk(scriptContent: string, filePath: string)
     {
@@ -44,14 +46,14 @@ export class FileUtilities {
     {
         if(os.platform() !== 'win32')
         {
-            const commandResult = proc.spawnSync("id", ["-u"]);
+            const commandResult = proc.spawnSync('id', ['-u']);
             return commandResult.status === 0;
         }
 
         try
         {
             // If we can execute this command on Windows then we have admin rights.
-            proc.execFileSync( "net", ["session"], { "stdio": "ignore" } );
+            proc.execFileSync( 'net', ['session'], { 'stdio': 'ignore' } );
             return true;
         }
         catch ( error )

@@ -105,7 +105,7 @@ suite('VersionResolver Unit Tests', () => {
         assert.equal(VersionResolver.isNonSpecificMajorOrMajorMinorVersion(twoDigitMajorVersion), false);
         assert.equal(VersionResolver.isNonSpecificMajorOrMajorMinorVersion(majorOnly), true, 'It detects major only versions as major only versions');
         assert.equal(VersionResolver.isNonSpecificMajorOrMajorMinorVersion(featureBandVersion), false, 'It doesnt think xx versions are major minor versions');
-        assert.equal(VersionResolver.isNonSpecificMajorOrMajorMinorVersion(majorMinorOnly), true), 'It can determine if the version is only major.minor';
+        assert.equal(VersionResolver.isNonSpecificMajorOrMajorMinorVersion(majorMinorOnly), true, 'It can determine if the version is only major.minor');
     });
 
     test('Detects if Version is Valid', async () => {

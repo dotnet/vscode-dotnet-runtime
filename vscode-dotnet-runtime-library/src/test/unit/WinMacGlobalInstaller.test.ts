@@ -113,7 +113,7 @@ suite('Windows & Mac Global Installer Tests', () =>
            ${mockVersion}    REG_DWORD    0x1
        `;
 
-           let result = await installer.installSDK();
+           const result = await installer.installSDK();
            assert.exists(result);
            assert.equal(result, '0');
 
@@ -126,7 +126,7 @@ suite('Windows & Mac Global Installer Tests', () =>
     {
         mockExecutor.fakeReturnValue = `0`;
         installer.cleanupInstallFiles = false;
-        let result = await installer.installSDK();
+        const result = await installer.installSDK();
         assert.exists(result);
         assert.equal(result, '0');
 
@@ -153,7 +153,7 @@ suite('Windows & Mac Global Installer Tests', () =>
     {
         mockExecutor.fakeReturnValue = `0`;
         installer.cleanupInstallFiles = false;
-        let result = await installer.installSDK();
+        const result = await installer.installSDK();
         assert.exists(result, 'The installation on test was successful');
         assert.equal(result, '0', 'No errors were reported by the fake install');
 

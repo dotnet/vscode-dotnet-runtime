@@ -12,7 +12,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
     public async installDotnet(fullySpecifiedVersion : string): Promise<string>
     {
         const supportStatus = await this.getDotnetVersionSupportStatus(fullySpecifiedVersion);
-        if(supportStatus == DotnetDistroSupportStatus.Microsoft)
+        if(supportStatus === DotnetDistroSupportStatus.Microsoft)
         {
             const preinstallCommands = this.myVersionPackages()[this.preinstallCommandKey];
             const preparationResult = (await this.commandRunner.execute(preinstallCommands))[0];
@@ -20,7 +20,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
 
         let command = this.myDistroCommands()[this.installCommandKey];
         const sdkPackage = this.myDotnetVersionPackages(fullySpecifiedVersion)[this.sdkKey];
-        command = command.replace("{0}", sdkPackage);
+        command = command.replace('{0}', sdkPackage);
         const commandResult = await this.commandRunner.execute(command);
 
         return commandResult[0];
@@ -36,7 +36,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
     {
         let command = this.myDistroCommands()[this.packageLookupCommandKey];
         const sdkPackage = this.myDotnetVersionPackages(this.JsonDotnetVersion(fullySpecifiedDotnetVersion))[this.sdkKey];
-        command = command.replace("{0}", sdkPackage);
+        command = command.replace('{0}', sdkPackage);
         const commandResult = await this.commandRunner.execute(command);
 
         const noPackageResult = 'no packages found';
@@ -57,7 +57,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
     {
         let command = this.myDistroCommands()[this.updateCommandKey];
         const sdkPackage = this.myDotnetVersionPackages(versionToUpgrade)[this.sdkKey];
-        command = command.replace("{0}", sdkPackage);
+        command = command.replace('{0}', sdkPackage);
         const commandResult = await this.commandRunner.execute(command);
 
         return commandResult[0];
@@ -67,7 +67,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
     {
         let command = this.myDistroCommands()[this.uninstallCommandKey];
         const sdkPackage = this.myDotnetVersionPackages(versionToUninstall)[this.sdkKey];
-        command = command.replace("{0}", sdkPackage);
+        command = command.replace('{0}', sdkPackage);
         const commandResult = await this.commandRunner.execute(command);
 
         return commandResult[0];
@@ -85,7 +85,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
         {
             const splitLine = line.split(/\s+/);
             // list sdk lines shows in the form: version [path], so the version is the 2nd item
-            if(splitLine.length == 2)
+            if(splitLine.length === 2)
             {
                 versions.push(splitLine[0]);
             }
@@ -98,14 +98,14 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
         const command = this.myDistroCommands()[this.installedRuntimeVersionsCommandKey];
         const commandResult = await this.commandRunner.execute(command);
 
-        const outputLines : string[] = commandResult[0].split("\n");
+        const outputLines : string[] = commandResult[0].split('\n');
         const versions : string[]  = [];
 
         for(const line of outputLines)
         {
             const splitLine = line.split(/\s+/);
             // list runtimes lines shows in the form: runtime version [path], so the version is the 3rd item
-            if(splitLine.length == 3)
+            if(splitLine.length === 3)
             {
                 versions.push(splitLine[1]);
             }
@@ -133,7 +133,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
 
     public getDotnetVersionSupportStatus(fullySpecifiedVersion: string): Promise<DotnetDistroSupportStatus>
     {
-        if(VersionResolver.getFeatureBandFromVersion(fullySpecifiedVersion) != '1')
+        if(VersionResolver.getFeatureBandFromVersion(fullySpecifiedVersion) !== '1')
         {
             return Promise.resolve(DotnetDistroSupportStatus.Unsupported);
         }
@@ -173,7 +173,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
         }
 
         // Most distros support only 100 band .NET versions, so we default to that here.
-        return this.JsonDotnetVersion(maxVersion) + '.1xx';
+        return `${this.JsonDotnetVersion(maxVersion)}.1xx`;
     }
 
     public JsonDotnetVersion(fullySpecifiedDotnetVersion : string) : string

@@ -42,7 +42,7 @@ suite('Linux Version Resolver Tests', () =>
         if(shouldRun)
         {
             const distroVersion = await resolver.getRunningDistro();
-            assert.equal(mockExecutor.attemptedCommand, "cat /etc/os-release");
+            assert.equal(mockExecutor.attemptedCommand, 'cat /etc/os-release');
             assert.exists(distroVersion.distro);
             assert.exists(distroVersion.version);
         }
@@ -54,7 +54,7 @@ suite('Linux Version Resolver Tests', () =>
             mockDistroProvider.distroFeedReturnValue = `/`;
             // We pass root as the directory where we'd expect a copy of dotnet if it were installed thru the package manager.
             // Root must exist so we should fail. This is not where dotnet would really go.
-            assert.isRejected(resolver.ValidateAndInstallSDK(mockVersion), Error, resolver.conflictingInstallErrorMessage + '/');
+            assert.isRejected(resolver.ValidateAndInstallSDK(mockVersion), Error, `${resolver.conflictingInstallErrorMessage}/`);
             mockDistroProvider.distroFeedReturnValue = ``;
         }
     });
@@ -63,7 +63,7 @@ suite('Linux Version Resolver Tests', () =>
         if(shouldRun)
         {
             mockDistroProvider.microsoftFeedReturnValue = `/`;
-            assert.isRejected(resolver.ValidateAndInstallSDK(mockVersion), Error, resolver.conflictingInstallErrorMessage + '/');
+            assert.isRejected(resolver.ValidateAndInstallSDK(mockVersion), Error, `${resolver.conflictingInstallErrorMessage}/`);
             mockDistroProvider.microsoftFeedReturnValue = ``;
         }
     });
@@ -84,14 +84,14 @@ suite('Linux Version Resolver Tests', () =>
         if(shouldRun)
         {
             mockDistroProvider.globalPathReturnValue = `/`;
-            assert.isRejected(resolver.ValidateAndInstallSDK(mockVersion), Error, resolver.conflictingInstallErrorMessage + '/');
+            assert.isRejected(resolver.ValidateAndInstallSDK(mockVersion), Error, `${resolver.conflictingInstallErrorMessage}/`);
             mockDistroProvider.globalPathReturnValue = null;
 
             const expectedOKResult = resolver.ValidateAndInstallSDK(mockVersion);
             assert.exists(expectedOKResult);
 
             mockDistroProvider.globalVersionReturnValue = `5.0.100`; // less than any in distro major or minor
-            assert.isRejected(resolver.ValidateAndInstallSDK(mockVersion), Error, resolver.conflictingInstallErrorMessage + '/');
+            assert.isRejected(resolver.ValidateAndInstallSDK(mockVersion), Error, `${resolver.conflictingInstallErrorMessage}/`);
             mockDistroProvider.globalVersionReturnValue = null;
         }
     });

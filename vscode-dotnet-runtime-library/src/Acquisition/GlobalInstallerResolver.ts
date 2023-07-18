@@ -1,3 +1,7 @@
+/* --------------------------------------------------------------------------------------------
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See License.txt in the project root for license information.
+ * ------------------------------------------------------------------------------------------ */
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { IEventStream } from '../EventStream/EventStream';
 import { IExtensionState } from '../IExtensionState';
@@ -79,7 +83,7 @@ export class GlobalInstallerResolver {
         if(VersionResolver.isNonSpecificMajorOrMajorMinorVersion(version))
         {
             const numberOfPeriods = version.split('.').length - 1;
-            const indexUrl = this.getIndexUrl(numberOfPeriods == 0 ? version + '.0' : version);
+            const indexUrl = this.getIndexUrl(numberOfPeriods === 0 ? version + '.0' : version);
             const indexJsonData = await this.fetchJsonObjectFromUrl(indexUrl);
             this.fullySpecifiedVersionRequested = indexJsonData['latest-sdk'];
             return await this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, indexUrl);

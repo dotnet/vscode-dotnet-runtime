@@ -4,7 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 
 import path = require("path");
-import { IAcquisitionWorkerContext } from "./IAcquisitionWorkerContext";
+import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 
 export abstract class IGlobalInstaller {
 

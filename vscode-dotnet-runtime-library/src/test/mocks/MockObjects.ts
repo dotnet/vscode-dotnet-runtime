@@ -180,8 +180,8 @@ export class MockInstallScriptWorker extends InstallScriptAcquisitionWorker {
 export class MockCommandExecutor extends ICommandExecutor
 {
     private trueExecutor : CommandExecutor;
-    public fakeReturnValue : string = '';
-    public attemptedCommand : string = '';
+    public fakeReturnValue = '';
+    public attemptedCommand = '';
 
     // If you expect several commands to be run and want to specify unique outputs for each, describe them in the same order using the below two arrays.
     // We will check for an includes match and not an exact match!
@@ -199,7 +199,7 @@ export class MockCommandExecutor extends ICommandExecutor
         this.attemptedCommand = command;
         let commandResults : string[] = [];
 
-        if(!command.includes("sudo") && this.fakeReturnValue === '')
+        if(!command.includes('sudo') && this.fakeReturnValue === '')
         {
             commandResults = await this.trueExecutor.execute(command, workingDirectory ? null : {cwd : path.resolve(workingDirectory!)});
         }
@@ -222,18 +222,18 @@ export class MockCommandExecutor extends ICommandExecutor
  */
 export class MockDistroProvider extends IDistroDotnetSDKProvider
 {
-    public installReturnValue : string = '';
-    public installedSDKsReturnValue : string[] = [];
+    public installReturnValue = '';
+    public installedSDKsReturnValue = [];
     public installedRuntimesReturnValue : string[] = [];
     public globalPathReturnValue : string | null = '';
     public globalVersionReturnValue : string | null = '';
-    public distroFeedReturnValue : string = '';
-    public microsoftFeedReturnValue : string = '';
-    public packageExistsReturnValue : boolean = false;
+    public distroFeedReturnValue = '';
+    public microsoftFeedReturnValue = '';
+    public packageExistsReturnValue = false;
     public supportStatusReturnValue : DotnetDistroSupportStatus = DotnetDistroSupportStatus.Distro;
-    public recommendedVersionReturnValue : string = '';
-    public upgradeReturnValue : string = '';
-    public uninstallReturnValue : string = '';
+    public recommendedVersionReturnValue = '';
+    public upgradeReturnValue = '';
+    public uninstallReturnValue = '';
 
     constructor(version : DistroVersionPair, commandRunner : ICommandExecutor)
     {

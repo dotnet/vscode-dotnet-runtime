@@ -235,9 +235,10 @@ export class VersionResolver implements IVersionResolver {
       {
           const numberOfPeriods = fullySpecifiedVersion.split('.').length - 1;
           // 9 is used to prevent bad versions (current expectation is 7 but we want to support .net 10 etc)
-          if(numberOfPeriods == 2 && fullySpecifiedVersion.length < 11)
+          if(numberOfPeriods === 2 && fullySpecifiedVersion.length < 11)
           {
-            if(this.isNonSpecificFeatureBandedVersion(fullySpecifiedVersion) || (this.getPatchVersionString(fullySpecifiedVersion).length <= 2 && this.getPatchVersionString(fullySpecifiedVersion).length > 1))
+            if(this.isNonSpecificFeatureBandedVersion(fullySpecifiedVersion) ||
+                (this.getPatchVersionString(fullySpecifiedVersion).length <= 2 && this.getPatchVersionString(fullySpecifiedVersion).length > 1))
             {
                 return true;
             }
@@ -253,7 +254,7 @@ export class VersionResolver implements IVersionResolver {
     public static isNonSpecificFeatureBandedVersion(version : string) : boolean
     {
         const numberOfPeriods = version.split('.').length - 1;
-        return version.split(".").slice(0, 2).every(x => this.isNumber(x)) && version.endsWith('x') && numberOfPeriods === 2;
+        return version.split('.').slice(0, 2).every(x => this.isNumber(x)) && version.endsWith('x') && numberOfPeriods === 2;
     }
 
     /**

@@ -14,7 +14,7 @@ import { VersionResolver } from './VersionResolver';
 import { DotnetConflictingGlobalWindowsInstallError, DotnetCustomLinuxInstallExistsError, DotnetUnexpectedInstallerOSError } from '../EventStream/EventStreamEvents';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { CommandExecutor } from '../Utils/CommandExecutor';
-import { valid } from 'semver';
+/* tslint:disable:only-arrow-functions */
 
 /**
  * @remarks
@@ -109,7 +109,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
                 resolve();
             }
 
-            const file = fs.createWriteStream(dest, { flags: "wx" });
+            const file = fs.createWriteStream(dest, { flags: 'wx' });
 
             const request = https.get(url, response => {
                 if (response.statusCode === 200)
@@ -124,7 +124,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
                 }
             });
 
-            request.on("error", err =>
+            request.on('error', err =>
             {
                 file.close();
                 fs.unlink(dest, () => {}); // Delete incomplete file download
@@ -231,11 +231,11 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
             return registryQueryResult.split(" ")
             .filter
             (
-                function(value : string, i : number) { return value != '' && i != 0; } // Filter out the whitespace & query as the query return value starts with the query.
+                function(value : string, i : number) { return value !== '' && i !== 0; } // Filter out the whitespace & query as the query return value starts with the query.
             )
             .filter
             (
-                function(value : string, i : number) { return i % 3 == 0; } // Every 0th, 4th, etc item will be a value name AKA the SDK version. The rest will be REGTYPE and REGHEXVALUE.
+                function(value : string, i : number) { return i % 3 === 0; } // Every 0th, 4th, etc item will be a value name AKA the SDK version. The rest will be REGTYPE and REGHEXVALUE.
             );
         }
     }
@@ -251,11 +251,12 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
     {
         // Note that we could be more intelligent here and consider only if the SDKs conflict within an architecture, but for now we won't do this.
         const sdks : Array<string> = await this.getGlobalSdkVersionsInstalledOnMachine();
-        for (let sdk of sdks)
+        for (const sdk of sdks)
         {
             if
             ( // Side by side installs of the same major.minor and band can cause issues in some cases. So we decided to just not allow it unless upgrading to a newer patch version.
-              // The installer can catch this but we can avoid unnecessary work this way, and for windows the installer may never appear to the user. With this approach, we don't need to handle installer error codes.
+              // The installer can catch this but we can avoid unnecessary work this way,
+              // and for windows the installer may never appear to the user. With this approach, we don't need to handle installer error codes.
                 Number(VersionResolver.getMajorMinor(requestedVersion)) === Number(VersionResolver.getMajorMinor(sdk)) &&
                 Number(VersionResolver.getFeatureBandFromVersion(requestedVersion)) === Number(VersionResolver.getFeatureBandFromVersion(sdk)) &&
                 Number(VersionResolver.getFeatureBandPatchVersion(requestedVersion)) <= Number(VersionResolver.getFeatureBandPatchVersion(sdk))
@@ -283,7 +284,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
             const sdkInstallRecords32Bit = sdkInstallRecords64Bit.replace('x64', 'x86');
 
             const queries = [sdkInstallRecords32Bit, sdkInstallRecords64Bit];
-            for ( let query of queries)
+            for ( const query of queries)
             {
                 try
                 {
