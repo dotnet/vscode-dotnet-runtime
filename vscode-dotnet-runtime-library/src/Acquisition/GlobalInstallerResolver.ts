@@ -9,6 +9,8 @@ import * as os from 'os';
 import * as path from 'path';
 import { VersionResolver } from './VersionResolver';
 import { DotnetFeatureBandDoesNotExistError, DotnetInvalidReleasesJSONError, DotnetNoInstallerFileExistsError, DotnetUnexpectedInstallerOSError, DotnetVersionResolutionError, WebRequestError } from '../EventStream/EventStreamEvents';
+/* tslint:disable:no-any */
+/* tslint:disable:only-arrow-functions */
 
 /**
  * @remarks
@@ -28,6 +30,14 @@ export class GlobalInstallerResolver {
     private fullySpecifiedVersionRequested : string;
 
     private releasesJsonErrorString = `The API hosting the dotnet releases.json is invalid or has changed and the extension needs to be updated. Invalid API URL: `;
+    private releasesJsonKey = 'releases';
+    private releasesSdksKey = 'sdks';
+    private releasesSdkRidKey = 'rid';
+    private releasesSdkFileKey = 'files';
+    private releasesSdkVersionKey = 'version';
+    private releasesSdkNameKey = 'name';
+    private releasesUrlKey = 'url';
+    private releasesLatestSdkKey = 'latest-sdk';
 
     /**
      * @remarks Do NOT set this unless you are testing.
@@ -83,21 +93,21 @@ export class GlobalInstallerResolver {
         if(VersionResolver.isNonSpecificMajorOrMajorMinorVersion(version))
         {
             const numberOfPeriods = version.split('.').length - 1;
-            const indexUrl = this.getIndexUrl(numberOfPeriods === 0 ? version + '.0' : version);
+            const indexUrl = this.getIndexUrl(numberOfPeriods === 0 ? `${version}.0` : version);
             const indexJsonData = await this.fetchJsonObjectFromUrl(indexUrl);
-            this.fullySpecifiedVersionRequested = indexJsonData['latest-sdk'];
-            return await this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, indexUrl);
+            this.fullySpecifiedVersionRequested = indexJsonData[this.releasesLatestSdkKey];
+            return this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, indexUrl);
         }
         else if(VersionResolver.isNonSpecificFeatureBandedVersion(version))
         {
             this.fullySpecifiedVersionRequested = await this.getNewestSpecificVersionFromFeatureBand(version);
-            return await this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, this.getIndexUrl(VersionResolver.getMajorMinor(this.fullySpecifiedVersionRequested)));
+            return this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, this.getIndexUrl(VersionResolver.getMajorMinor(this.fullySpecifiedVersionRequested)));
         }
         else if(VersionResolver.isFullySpecifiedVersion(version))
         {
             this.fullySpecifiedVersionRequested = version;
             const indexUrl = this.getIndexUrl(VersionResolver.getMajorMinor(this.fullySpecifiedVersionRequested));
-            return await this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, indexUrl);
+            return this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, indexUrl);
         }
 
         const err = new DotnetVersionResolutionError(new Error(`The requested version resolved version is invalid.`), version);
@@ -114,18 +124,18 @@ export class GlobalInstallerResolver {
      */
     private async findCorrectInstallerUrl(specificVersion : string, indexUrl : string) : Promise<string>
     {
-        if(specificVersion === null || specificVersion === undefined || specificVersion == "")
+        if(specificVersion === null || specificVersion === undefined || specificVersion === '')
         {
-            const err = new DotnetVersionResolutionError(new Error(`The requested version resolved version is invalid.`), specificVersion);
-            this.eventStream.post(err);
-            throw err;
+            const versionErr = new DotnetVersionResolutionError(new Error(`The requested version resolved version is invalid.`), specificVersion);
+            this.eventStream.post(versionErr);
+            throw versionErr;
         }
 
         const operatingSys : string = os.platform();
         const operatingArch : string = os.arch();
 
-        let convertedOs = "";
-        let convertedArch = "";
+        let convertedOs = '';
+        let convertedArch = '';
 
         switch(operatingSys)
         {
@@ -143,9 +153,9 @@ export class GlobalInstallerResolver {
             }
             default:
             {
-                const err = new DotnetUnexpectedInstallerOSError(new Error(`The OS ${operatingSys} is currently unsupported or unknown.`));
-                this.eventStream.post(err);
-                throw err;
+                const osErr = new DotnetUnexpectedInstallerOSError(new Error(`The OS ${operatingSys} is currently unsupported or unknown.`));
+                this.eventStream.post(osErr);
+                throw osErr;
             }
         }
 
@@ -169,58 +179,61 @@ export class GlobalInstallerResolver {
             }
             default:
             {
-                const err = new DotnetUnexpectedInstallerOSError(new Error(`The architecture ${operatingArch} is currently unsupported or unknown.`));
-                this.eventStream.post(err);
-                throw err;
+                const archErr = new DotnetUnexpectedInstallerOSError(new Error(`The architecture ${operatingArch} is currently unsupported or unknown.`));
+                this.eventStream.post(archErr);
+                throw archErr;
             }
         }
 
-        const desiredRidPackage = convertedOs + '-' + convertedArch;
+        const desiredRidPackage = `${convertedOs}-${convertedArch}`;
 
         const indexJson =  await this.fetchJsonObjectFromUrl(indexUrl);
-        const releases = indexJson['releases'];
-        if(releases.length == 0)
+        const releases = indexJson[this.releasesJsonKey];
+        if(releases.length === 0)
         {
-            const err = new DotnetInvalidReleasesJSONError(new Error(this.releasesJsonErrorString + `${indexUrl}`));
-            this.eventStream.post(err);
-            throw err;
+            const jsonErr = new DotnetInvalidReleasesJSONError(new Error(`${this.releasesJsonErrorString}${indexUrl}`));
+            this.eventStream.post(jsonErr);
+            throw jsonErr;
         }
 
-        let sdks: any[] = [];
+        const sdks: any[] = [];
+        const releasesKeyAlias = this.releasesSdksKey; // the forEach creates a separate 'this', so we introduce this copy to reduce ambiguity to the compiler
+
         releases.forEach(function (release : any) {
-            sdks.push.apply(sdks, release['sdks']);
+            sdks.push.apply(sdks, release[releasesKeyAlias]);
         });
 
-        for (let sdk of sdks)
+        for (const sdk of sdks)
         {
-            const thisSDKVersion : string = sdk['version'];
+            const thisSDKVersion : string = sdk[this.releasesSdkVersionKey];
             if(thisSDKVersion === specificVersion) // NOTE that this will not catch things like -preview or build number suffixed versions.
             {
-               const thisSDKFiles = sdk['files'];
-               for (let installer of thisSDKFiles)
+               const thisSDKFiles = sdk[this.releasesSdkFileKey];
+               for (const installer of thisSDKFiles)
                {
-                    if(installer['rid'] == desiredRidPackage && this.installerMatchesDesiredFileExtension(installer, convertedOs))
+                    if(installer[this.releasesSdkRidKey] === desiredRidPackage && this.installerMatchesDesiredFileExtension(installer, convertedOs))
                     {
-                        const installerUrl = installer['url'];
+                        const installerUrl = installer[this.releasesUrlKey];
                         if(installerUrl === undefined)
                         {
-                            const err = new DotnetInvalidReleasesJSONError(new Error(`URL for ${desiredRidPackage} on ${specificVersion} is unavailable: The version may be Out of Support, or the releases json format used by ${indexUrl} may be invalid and the extension needs to be updated.`));
-                            this.eventStream.post(err);
-                            throw err;
+                            const releaseJsonErr = new DotnetInvalidReleasesJSONError(new Error(`URL for ${desiredRidPackage} on ${specificVersion} is unavailable:
+                                The version may be Out of Support, or the releases json format used by ${indexUrl} may be invalid and the extension needs to be updated.`));
+                            this.eventStream.post(releaseJsonErr);
+                            throw releaseJsonErr;
                         }
                         return installerUrl;
                     }
                 }
 
-                const err = new DotnetNoInstallerFileExistsError(new Error(`An installer for the runtime ${desiredRidPackage} could not be found for version ${specificVersion}.`));
-                this.eventStream.post(err);
-                throw err;
+                const installerErr = new DotnetNoInstallerFileExistsError(new Error(`An installer for the runtime ${desiredRidPackage} could not be found for version ${specificVersion}.`));
+                this.eventStream.post(installerErr);
+                throw installerErr;
             }
         }
 
-        const err = new DotnetNoInstallerFileExistsError(new Error(`The SDK installation files for version ${specificVersion} running on ${desiredRidPackage} couldn't be found. Is the version in support? Note that -preview versions or versions with build numbers aren't yet supported.`));
-        this.eventStream.post(err);
-        throw err;
+        const fileErr = new DotnetNoInstallerFileExistsError(new Error(`The SDK installation files for version ${specificVersion} running on ${desiredRidPackage} couldn't be found. Is the version in support? Note that -preview versions or versions with build numbers aren't yet supported.`));
+        this.eventStream.post(fileErr);
+        throw fileErr;
     }
 
     /**
@@ -230,7 +243,7 @@ export class GlobalInstallerResolver {
      */
     private getIndexUrl(majorMinor : string ) : string
     {
-        return 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/' + majorMinor + '/releases.json';
+        return `https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/'${majorMinor}'/releases.json`;
     }
 
     /**
@@ -242,15 +255,15 @@ export class GlobalInstallerResolver {
      */
     private installerMatchesDesiredFileExtension(installerJson : any, operatingSystemInDotnetFormat : string) : boolean
     {
-        const installerFileName = installerJson['name'];
+        const installerFileName = installerJson[this.releasesSdkNameKey];
         if(installerFileName === undefined)
         {
-            const err = new DotnetInvalidReleasesJSONError(new Error(this.releasesJsonErrorString + `${installerJson}`));
+            const err = new DotnetInvalidReleasesJSONError(new Error(`${this.releasesJsonErrorString}${installerJson}`));
             this.eventStream.post(err);
             throw err;
         }
 
-        let desiredFileExtension = "";
+        let desiredFileExtension = '';
 
         switch(operatingSystemInDotnetFormat)
         {
@@ -289,22 +302,22 @@ export class GlobalInstallerResolver {
 
         // Get the sdks
         const indexJson =  await this.fetchJsonObjectFromUrl(indexUrl);
-        const releases = indexJson['releases']
+        const releases = indexJson[this.releasesJsonKey]
 
-        if(releases.length == 0)
+        if(releases.length === 0)
         {
-            const err = new DotnetInvalidReleasesJSONError(new Error(this.releasesJsonErrorString + `${indexUrl}`));
-            this.eventStream.post(err);
-            throw err;
+            const badJsonErr = new DotnetInvalidReleasesJSONError(new Error(`${this.releasesJsonErrorString}${indexUrl}`));
+            this.eventStream.post(badJsonErr);
+            throw badJsonErr;
         }
 
         // Assumption: The first release in releases will be the newest release and contain the newest sdk for each feature band. This has been 'confirmed' with the releases team.
-        const sdks = releases[0]['sdks'];
-        for (let sdk of sdks)
+        const sdks = releases[0][this.releasesSdksKey];
+        for (const sdk of sdks)
         {
             // The SDKs in the index should be in-order, so we can rely on that property.
             // The first one we find with the given feature band will also be the 'newest.'
-            const thisSDKVersion : string = sdk['version'];
+            const thisSDKVersion : string = sdk[this.releasesSdkVersionKey];
             if(VersionResolver.getFeatureBandFromVersion(thisSDKVersion) === band)
             {
                 return thisSDKVersion;

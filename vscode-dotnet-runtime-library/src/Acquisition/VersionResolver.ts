@@ -181,7 +181,7 @@ export class VersionResolver implements IVersionResolver {
             throw err;
         }
 
-        const majorMinor = fullySpecifiedVersion.split('.').at(0) + '.' + fullySpecifiedVersion.split('.').at(1);
+        const majorMinor = `${fullySpecifiedVersion.split('.').at(0)}.${fullySpecifiedVersion.split('.').at(1)}`;
         return majorMinor;
     }
 
@@ -195,7 +195,7 @@ export class VersionResolver implements IVersionResolver {
         const band : string | undefined = fullySpecifiedVersion.split('.')?.at(2)?.charAt(0);
         if(band === undefined)
         {
-            const err = new DotnetFeatureBandDoesNotExistError(new Error(VersionResolver.invalidFeatureBandErrorString + `${fullySpecifiedVersion}.`));
+            const err = new DotnetFeatureBandDoesNotExistError(new Error(`${VersionResolver.invalidFeatureBandErrorString}${fullySpecifiedVersion}.`));
             throw err;
         }
         return band;
@@ -221,7 +221,7 @@ export class VersionResolver implements IVersionResolver {
         const patch : string | undefined = fullySpecifiedVersion.split('.')?.at(2)?.substring(1);
         if(patch === undefined || !this.isNumber(patch))
         {
-            const err = new DotnetFeatureBandDoesNotExistError(new Error(VersionResolver.invalidFeatureBandErrorString + `${fullySpecifiedVersion}.`));
+            const err = new DotnetFeatureBandDoesNotExistError(new Error(`${VersionResolver.invalidFeatureBandErrorString}${fullySpecifiedVersion}.`));
             throw err;
         }
         return patch
@@ -264,7 +264,7 @@ export class VersionResolver implements IVersionResolver {
      */
     public static isFullySpecifiedVersion(version : string) : boolean
     {
-        return version.split(".").every(x => this.isNumber(x)) && this.isValidLongFormVersionFormat(version) && !this.isNonSpecificFeatureBandedVersion(version);
+        return version.split('.').every(x => this.isNumber(x)) && this.isValidLongFormVersionFormat(version) && !this.isNonSpecificFeatureBandedVersion(version);
     }
 
     /**

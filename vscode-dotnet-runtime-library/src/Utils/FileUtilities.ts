@@ -7,11 +7,11 @@
  import * as path from 'path';
  import * as os from 'os';
  import * as proc from 'child_process';
+/* tslint:disable:no-empty */ // allow empty constructor
 
 export class FileUtilities {
     constructor()
     {
-
     }
 
     public static writeFileOntoDisk(scriptContent: string, filePath: string)

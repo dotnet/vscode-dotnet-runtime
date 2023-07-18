@@ -35,7 +35,7 @@ suite('Linux Version Resolver Tests', () =>
     const mockExecutor = new MockCommandExecutor();
     const pair : DistroVersionPair = { distro : 'Ubuntu', version : '22.04' };
     const shouldRun = os.platform() === 'linux';
-    let mockDistroProvider = new MockDistroProvider(pair, mockExecutor);
+    const mockDistroProvider = new MockDistroProvider(pair, mockExecutor);
     const resolver : LinuxVersionResolver = new LinuxVersionResolver(mockContext(false), mockExecutor, mockDistroProvider);
 
     test('It can determine the running distro', async () => {

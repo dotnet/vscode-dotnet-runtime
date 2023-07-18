@@ -95,7 +95,7 @@ export class CommandExecutor extends ICommandExecutor
             const rootCommand = isolatedCommand.split(' ')[0];
             const commandFollowUps : string[] = isolatedCommand.split(' ').slice(1);
 
-            if(rootCommand === "sudo")
+            if(rootCommand === 'sudo')
             {
                 const commandResult = await this.ExecSudoAsync(commandFollowUps);
                 commandResults.push(commandResult);
@@ -103,7 +103,9 @@ export class CommandExecutor extends ICommandExecutor
             else
             {
                 const commandResult = proc.spawnSync(rootCommand, commandFollowUps, options);
-                commandResults.push(this.returnStatus ? (commandResult.status ? commandResult.status.toString() : commandResult.signal!.toString()) : commandResult.stdout.toString() + commandResult.stderr.toString());
+                commandResults.push(this.returnStatus ?
+                    (commandResult.status ? commandResult.status.toString() : commandResult.signal!.toString())
+                    : commandResult.stdout.toString() + commandResult.stderr.toString());
             }
         }
 

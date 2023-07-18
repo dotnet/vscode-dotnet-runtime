@@ -15,6 +15,7 @@ import { DotnetConflictingGlobalWindowsInstallError, DotnetCustomLinuxInstallExi
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 /* tslint:disable:only-arrow-functions */
+/* tslint:disable:no-empty */
 
 /**
  * @remarks
@@ -131,12 +132,12 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
                 reject(err.message);
             });
 
-            file.on("finish", () =>
+            file.on('finish', () =>
             {
                 resolve();
             });
 
-            file.on("error", err =>
+            file.on('error', err =>
             {
                 file.close();
 
@@ -222,13 +223,13 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
      */
     private extractVersionsOutOfRegistryKeyStrings(registryQueryResult : string) : string[]
     {
-        if(registryQueryResult.includes("ERROR") || registryQueryResult === '')
+        if(registryQueryResult.includes('ERROR') || registryQueryResult === '')
         {
                 return [];
         }
         else
         {
-            return registryQueryResult.split(" ")
+            return registryQueryResult.split(' ')
             .filter
             (
                 function(value : string, i : number) { return value !== '' && i !== 0; } // Filter out the whitespace & query as the query return value starts with the query.

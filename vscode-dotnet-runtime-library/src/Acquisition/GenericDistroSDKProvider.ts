@@ -78,7 +78,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
         const command = this.myDistroCommands()[this.installedSDKVersionsCommandKey];
         const commandResult = await this.commandRunner.execute(command);
 
-        const outputLines : string[] = commandResult[0].split("\n");
+        const outputLines : string[] = commandResult[0].split('\n');
         const versions : string[]  = [];
 
         for(const line of outputLines)

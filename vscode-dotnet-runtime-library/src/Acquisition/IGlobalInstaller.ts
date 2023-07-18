@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-import path = require("path");
+import path = require('path');
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 
 export abstract class IGlobalInstaller {

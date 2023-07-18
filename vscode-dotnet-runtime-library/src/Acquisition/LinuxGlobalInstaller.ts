@@ -22,7 +22,7 @@ export class LinuxGlobalInstaller extends IGlobalInstaller {
 
     public async installSDK(): Promise<string>
     {
-        return await this.linuxSDKResolver.ValidateAndInstallSDK(this.version);
+        return this.linuxSDKResolver.ValidateAndInstallSDK(this.version);
     }
 
     public async getExpectedGlobalSDKPath(specificSDKVersionInstalled : string, installedArch : string) : Promise<string>

@@ -9,7 +9,7 @@ import { DotnetAcquisitionDistroUnknownError } from '../EventStream/EventStreamE
 import { VersionResolver } from './VersionResolver';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { CommandExecutor } from '../Utils/CommandExecutor';
-/* eslint no-any: 0 */  // --> OFF
+/* tslint:disable:no-any */
 
 /**
  * This interface describes the functionality needed to manage the .NET SDK on a specific distro and version of Linux.

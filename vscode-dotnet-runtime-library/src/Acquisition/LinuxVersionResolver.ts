@@ -1,3 +1,7 @@
+/* --------------------------------------------------------------------------------------------
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See License.txt in the project root for license information.
+ * ------------------------------------------------------------------------------------------ */
 import { DotnetAcquisitionDistroUnknownError, DotnetConflictingLinuxInstallTypesError, DotnetCustomLinuxInstallExistsError } from '../EventStream/EventStreamEvents';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
@@ -88,7 +92,7 @@ export class LinuxVersionResolver
 
         try
         {
-            const stdOut = commandResult.toString().split("\n");
+            const stdOut = commandResult.toString().split('\n');
             // We need to remove the quotes from the KEY="VALUE"\n pairs returned by the command stdout, and then turn it into a dictionary. We can't use replaceAll for older browsers.
             // Replace only replaces one quote, so we remove the 2nd one later.
             const stdOutWithQuotesRemoved = stdOut.map( x => x.replace('"', ''));
@@ -99,19 +103,19 @@ export class LinuxVersionResolver
             const distroName : string = keyValueMap[distroNameKey]?.replace('"', '') ?? '';
             const distroVersion : string = keyValueMap[distroVersionKey]?.replace('"', '') ?? '';
 
-            if(distroName == '' || distroVersion == '')
+            if(distroName === '' || distroVersion === '')
             {
                 const error = new DotnetAcquisitionDistroUnknownError(new Error(this.baseUnsupportedDistroErrorMessage));
                 this.acquisitionContext.eventStream.post(error);
                 throw error;
             }
 
-            let pair : DistroVersionPair = { distro : distroName, version : distroVersion };
+            const pair : DistroVersionPair = { distro : distroName, version : distroVersion };
             return pair;
         }
         catch(error)
         {
-            const err = new DotnetAcquisitionDistroUnknownError(new Error(this.baseUnsupportedDistroErrorMessage + ' ... does /etc/os-release exist?'));
+            const err = new DotnetAcquisitionDistroUnknownError(new Error(`${this.baseUnsupportedDistroErrorMessage} ... does /etc/os-release exist?`));
             this.acquisitionContext.eventStream.post(err);
             throw err;
         }
@@ -137,7 +141,7 @@ export class LinuxVersionResolver
 
         if(!this.distro || !this.distroSDKProvider)
         {
-            const error = new DotnetAcquisitionDistroUnknownError(new Error(this.baseUnsupportedDistroErrorMessage + ' ... we cannot initialize.'));
+            const error = new DotnetAcquisitionDistroUnknownError(new Error(`${this.baseUnsupportedDistroErrorMessage} ... we cannot initialize.`));
             this.acquisitionContext.eventStream.post(error);
             throw error;
         }
@@ -201,7 +205,9 @@ export class LinuxVersionResolver
     {
         await this.Initialize();
 
-        if(existingInstall && path.resolve(existingInstall) !== path.resolve(supportStatus === DotnetDistroSupportStatus.Distro ? await this.distroSDKProvider!.getExpectedDotnetDistroFeedInstallationDirectory() : await this.distroSDKProvider!.getExpectedDotnetMicrosoftFeedInstallationDirectory() ))
+        if(existingInstall && path.resolve(existingInstall) !== path.resolve(
+            supportStatus === DotnetDistroSupportStatus.Distro ? await this.distroSDKProvider!.getExpectedDotnetDistroFeedInstallationDirectory()
+            : await this.distroSDKProvider!.getExpectedDotnetMicrosoftFeedInstallationDirectory() ))
         {
             const err = new DotnetCustomLinuxInstallExistsError(new Error(this.conflictingCustomInstallErrorMessage + existingInstall),
             fullySpecifiedDotnetVersion);
@@ -272,7 +278,7 @@ export class LinuxVersionResolver
 
         // Check if we need to install or not, if we can install (if the version conflicts with an existing one), or if we can just update the existing install.
         const updateOrRejectState = await this.UpdateOrRejectIfVersionRequestDoesNotRequireInstall(fullySpecifiedDotnetVersion, existingInstall);
-        if(updateOrRejectState == '0')
+        if(updateOrRejectState === '0')
         {
             return await this.distroSDKProvider!.installDotnet(fullySpecifiedDotnetVersion) ? '0' : '1';
         }
