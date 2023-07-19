@@ -66,7 +66,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
             FileUtilities.wipeDirectory(path.dirname(installerFile));
         }
 
-        const validInstallerStatusCodes = ['0', '1641', '3010']; // Ok, Pending Update, + Update Starting Now
+        const validInstallerStatusCodes = ['0', '1641', '3010']; // Ok, Pending Reboot, + Reboot Starting Now
         if(validInstallerStatusCodes.includes(installerResult))
         {
             return '0'; // These statuses are a success, we dont want to throw.
@@ -159,13 +159,14 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
     {
         if(os.platform() === 'win32')
         {
-            if(installedArch === 'x32')
+            if(installedArch === 'ia32')
             {
-                return path.resolve(`C:\\Program Files (x86)\\dotnet\\sdk\\`);
+                // The program files should always be set, but in the off chance they are wiped, we can try to use the default as backup.
+                return path.resolve(process.env['programfiles(x86)'] ?? `C:\\Program Files (x86)\\dotnet\\sdk\\`);
             }
             else if(installedArch === 'x64')
             {
-                return path.resolve(`C:\\Program Files\\dotnet\\sdk\\`);
+                return path.resolve(process.env.programfiles ?? `C:\\Program Files\\dotnet\\sdk\\`);
             }
         }
         else if(os.platform() === 'darwin')

@@ -165,7 +165,7 @@ export class GlobalInstallerResolver {
                 convertedArch = operatingArch;
                 break;
             }
-            case 'x32': {
+            case 'ia32': {
                 convertedArch = 'x86';
                 break;
             }

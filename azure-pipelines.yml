@@ -134,7 +134,7 @@ stages:
       displayName: 'Get Version'
       workingDirectory: $(dir-name)
     - bash: |
-          npm install rimraf -g --reg https://registry.npmjs.org/ --verbose
+          npm install rimraf --reg https://registry.npmjs.org/ --verbose
           npm install vsce -g --reg https://registry.npmjs.org/ --verbose
           vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
       displayName: Package Artifact
