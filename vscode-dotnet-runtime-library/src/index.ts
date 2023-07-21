@@ -20,6 +20,7 @@ export * from './EventStream/IWindowDisplayWorker';
 export * from './EventStream/WindowDisplayWorker';
 export * from './EventStream/EventStreamEvents';
 export * from './Utils/CommandExecutor';
+export * from './Utils/Debugging';
 export * from './Utils/ErrorHandler';
 export * from './Utils/FileUtilities';
 export * from './Utils/ICommandExecutor';

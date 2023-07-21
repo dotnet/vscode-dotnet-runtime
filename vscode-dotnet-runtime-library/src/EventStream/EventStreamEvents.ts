@@ -152,6 +152,20 @@ export class DotnetConflictingGlobalWindowsInstallError extends DotnetAcquisitio
     public readonly eventName = 'DotnetConflictingGlobalWindowsInstallError';
 }
 
+export class DotnetDebuggingMessage extends IEvent {
+    public readonly eventName = 'DotnetDebuggingMessage';
+    public readonly type = EventType.DotnetDebuggingMessage;
+
+    constructor(public readonly message: string) {
+        super();
+    }
+
+    public getProperties() {
+        return undefined;
+        return { message : this.message };
+    }
+}
+
 export class DotnetNonZeroInstallerExitCodeError extends DotnetAcquisitionError {
     public readonly eventName = 'DotnetNonZeroInstallerExitCodeError';
 }
