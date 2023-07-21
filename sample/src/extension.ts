@@ -7,10 +7,11 @@ import * as cp from 'child_process';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import {
+    Debugging,
     IDotnetAcquireContext,
     IDotnetAcquireResult,
     IDotnetListVersionsResult,
-    IDotnetVersion
+    IDotnetVersion,
 } from 'vscode-dotnet-runtime-library';
 import * as runtimeExtension from 'vscode-dotnet-runtime';
 import * as sdkExtension from 'vscode-dotnet-sdk';
@@ -114,7 +115,7 @@ ${stderr}`);
             vscode.window.showErrorMessage((error as Error).toString());
         }
     });
-    
+
     const sampleDotnetUninstallAllRegistration = vscode.commands.registerCommand('sample.dotnet.uninstallAll', async () => {
         try {
             await vscode.commands.executeCommand('dotnet.uninstallAll');
@@ -188,11 +189,18 @@ ${stderr}`);
             });
         }
 
-        try {
+        Debugging.log(`Sample Global Command Invoked`);
+
+        try
+        {
             await vscode.commands.executeCommand('dotnet-sdk.showAcquisitionLog');
             let commandContext : IDotnetAcquireContext = { version, requestingExtensionId, installType: 'global' };
+            Debugging.log(`Calling Acquire Command`);
             await vscode.commands.executeCommand('dotnet-sdk.acquire', commandContext);
-        } catch (error) {
+        }
+        catch (error)
+        {
+            Debugging.log(`An error occured in the execution of the command, see the error: ${(error as Error).toString()}`);
             vscode.window.showErrorMessage((error as Error).toString());
         }
     });

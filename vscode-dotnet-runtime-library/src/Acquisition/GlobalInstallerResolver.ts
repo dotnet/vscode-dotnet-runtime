@@ -9,6 +9,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { VersionResolver } from './VersionResolver';
 import { DotnetFeatureBandDoesNotExistError, DotnetInvalidReleasesJSONError, DotnetNoInstallerFileExistsError, DotnetUnexpectedInstallerOSError, DotnetVersionResolutionError, WebRequestError } from '../EventStream/EventStreamEvents';
+import { Debugging } from '../Utils/Debugging';
 /* tslint:disable:no-any */
 /* tslint:disable:only-arrow-functions */
 
@@ -89,9 +90,11 @@ export class GlobalInstallerResolver {
      * @param version The requested version given to the API.
      * @returns The installer download URL for the correct OS, Architecture, & Specific Version based on the given input version.
      */
-    private async routeRequestToProperVersionRequestType(version : string) : Promise<string> {
+    private async routeRequestToProperVersionRequestType(version : string) : Promise<string>
+    {
         if(VersionResolver.isNonSpecificMajorOrMajorMinorVersion(version))
         {
+            Debugging.log(`The VersionResolver resolved the version to be major, or major.minor.`, this.eventStream);
             const numberOfPeriods = version.split('.').length - 1;
             const indexUrl = this.getIndexUrl(numberOfPeriods === 0 ? `${version}.0` : version);
             const indexJsonData = await this.fetchJsonObjectFromUrl(indexUrl);
@@ -100,16 +103,19 @@ export class GlobalInstallerResolver {
         }
         else if(VersionResolver.isNonSpecificFeatureBandedVersion(version))
         {
+            Debugging.log(`The VersionResolver resolved the version to be a N.Y.XXX version.`, this.eventStream);
             this.fullySpecifiedVersionRequested = await this.getNewestSpecificVersionFromFeatureBand(version);
             return this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, this.getIndexUrl(VersionResolver.getMajorMinor(this.fullySpecifiedVersionRequested)));
         }
         else if(VersionResolver.isFullySpecifiedVersion(version))
         {
+            Debugging.log(`The VersionResolver resolved the version to be a fully specified version.`, this.eventStream);
             this.fullySpecifiedVersionRequested = version;
             const indexUrl = this.getIndexUrl(VersionResolver.getMajorMinor(this.fullySpecifiedVersionRequested));
             return this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, indexUrl);
         }
 
+        Debugging.log(`The VersionResolver could not resolve the version, version: ${version}.`, this.eventStream);
         const err = new DotnetVersionResolutionError(new Error(`The requested version resolved version is invalid.`), version);
         this.eventStream.post(err);
         throw err;

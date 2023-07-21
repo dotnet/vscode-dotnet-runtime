@@ -20,6 +20,7 @@ import { DotnetVersionSupportPhase,
     IDotnetListVersionsResult,
     IDotnetVersion
 } from '../IDotnetListVersionsContext';
+import { Debugging } from '../Utils/Debugging';
 
 export class VersionResolver implements IVersionResolver {
     protected webWorker: WebRequestWorker;
@@ -119,6 +120,7 @@ export class VersionResolver implements IVersionResolver {
     }
 
     private resolveVersion(version: string, releases: IDotnetListVersionsResult): string {
+        Debugging.log(`Resolving the version: ${version}`, this.eventStream);
         this.validateVersionInput(version);
 
         const matchingVersion = releases.filter((availableVersions : IDotnetVersion) => availableVersions.channelVersion === version);
@@ -136,10 +138,12 @@ export class VersionResolver implements IVersionResolver {
         const parsedVer = semver.coerce(version);
         if (version.split('.').length !== 2 || !parsedVer)
         {
+            Debugging.log(`Resolving the version: ${version} ... it is invalid!`, this.eventStream);
             const err = new DotnetVersionResolutionError(new Error(`An invalid version was requested. Version: ${version}`), version);
             this.eventStream.post(err);
             throw err;
         }
+        Debugging.log(`The version ${version} was determined to be valid.`, this.eventStream);
     }
 
     private async getReleasesInfo(getRuntimeVersion : boolean): Promise<IDotnetListVersionsResult>
@@ -242,7 +246,9 @@ export class VersionResolver implements IVersionResolver {
             {
                 return true;
             }
+            Debugging.log(`The version has a bad patch number: ${fullySpecifiedVersion}`);
           }
+          Debugging.log(`The version has more or less than two periods, or it is too long: ${fullySpecifiedVersion}`);
           return false;
       }
 

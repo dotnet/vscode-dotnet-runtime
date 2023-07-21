@@ -158,10 +158,10 @@ export class DotnetDebuggingMessage extends IEvent {
 
     constructor(public readonly message: string) {
         super();
+        this.message = message;
     }
 
     public getProperties() {
-        return undefined;
         return { message : this.message };
     }
 }

@@ -37,6 +37,7 @@ import {
     WebRequestWorker,
     IWindowDisplayWorker,
     WindowDisplayWorker,
+    Debugging,
 } from 'vscode-dotnet-runtime-library';
 
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquistionId';
@@ -134,17 +135,25 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     }
 
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) => {
-        if (commandContext.requestingExtensionId === undefined) {
+        Debugging.log(`The SDK Extension Acquire Command was Invoked.`, eventStream);
+
+        if (commandContext.requestingExtensionId === undefined)
+        {
             return Promise.reject('No requesting extension id was provided.');
-        } else if (!knownExtensionIds.includes(commandContext.requestingExtensionId!)) {
+        }
+        else if (!knownExtensionIds.includes(commandContext.requestingExtensionId!))
+        {
             return Promise.reject(`${commandContext.requestingExtensionId} is not a known requesting extension id. The vscode-dotnet-sdk extension can only be used by ms-dotnettools.vscode-dotnet-pack.`);
         }
 
         const pathResult = callWithErrorHandling(async () => {
+            Debugging.log(`Beginning Acquisition.`, eventStream);
             eventStream.post(new DotnetSDKAcquisitionStarted());
             eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
             if(commandContext.installType === 'global')
             {
+                Debugging.log(`Acquisition Request was remarked as Global.`, eventStream);
+
                 if(commandContext.version === '')
                 {
                     throw Error(`No version was defined to install.`);
@@ -154,10 +163,13 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
                 const dotnetPath = await acquisitionWorker.acquireGlobalSDK(globalInstallerResolver);
 
                 setPathEnvVar(dotnetPath.dotnetPath, displayWorker, context.environmentVariableCollection);
+                Debugging.log(`Returning path: ${dotnetPath}.`, eventStream);
                 return dotnetPath;
             }
             else
             {
+                Debugging.log(`Acquisition Request was remarked as local.`, eventStream);
+
                 const resolvedVersion = await versionResolver.getFullSDKVersion(commandContext.version);
                 const dotnetPath = await acquisitionWorker.acquireSDK(resolvedVersion);
 
@@ -166,6 +178,9 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
                 return dotnetPath;
             }
         }, issueContext(commandContext.errorConfiguration, 'acquireSDK'));
+
+        Debugging.log(`Returning Path Result ${pathResult}.`, eventStream);
+
         return pathResult;
     });
 
