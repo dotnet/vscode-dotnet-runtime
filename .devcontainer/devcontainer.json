@@ -7,3 +7,4 @@
 		"ms-vscode.vscode-typescript-tslint-plugin"
 	]
 }
+"ghcr.io/joshuanianji/devcontainer-features/github-cli-persistence:0": {}
