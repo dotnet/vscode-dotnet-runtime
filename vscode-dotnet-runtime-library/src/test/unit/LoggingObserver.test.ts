@@ -31,7 +31,7 @@ suite('LoggingObserver Unit Tests', () => {
 
         fs.readdirSync(tempPath).forEach(file => {
             const logContent = fs.readFileSync(path.join(tempPath, file)).toString();
-            assert.include(logContent, fakeEvent.eventName, 'Does not include');
+            assert.include(logContent, fakeEvent.eventName, 'The log file does not contain the expected content that should be written to it?');
         });
 
     });
