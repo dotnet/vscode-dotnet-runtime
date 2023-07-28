@@ -24,14 +24,13 @@ suite('LoggingObserver Unit Tests', () => {
 
         // Create a fake event and call the post/dispose function
         const fakeEvent = new DotnetUninstallAllStarted();
-
-        // Check if the log file content is same as expected content
         loggingObserver.post(fakeEvent);
         loggingObserver.dispose();
 
+        // Check if the log file content is same as expected content
         fs.readdirSync(tempPath).forEach(file => {
             const logContent = fs.readFileSync(path.join(tempPath, file)).toString();
-            assert.include(logContent, fakeEvent.eventName, 'Does not include');
+            assert.include(logContent, fakeEvent.eventName, 'The log file does not contain the expected content that should be written to it?');
         });
 
     });
