@@ -31,6 +31,7 @@ export class LoggingObserver implements ILoggingObserver {
     }
 
     private writeLine(line: string) {
-        this.log = this.log.concat(line);
+        //this.log = this.log.push(line);
+        this.log.push(line);
     }
 }
