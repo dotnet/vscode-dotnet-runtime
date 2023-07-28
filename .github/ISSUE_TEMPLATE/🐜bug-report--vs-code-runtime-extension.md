@@ -23,4 +23,6 @@ In addition, please attach the log file located at ${ context.logger.getFileLoca
 **Exceptions & Errors (if any)**
 
 **Further technical details**
-- The IDE (VS / VS Code/ VS4Mac) you're running on, and its version
+- Your VSCode Version,
+- The version of the extension that's on your machine.
+- Your operating system details.
