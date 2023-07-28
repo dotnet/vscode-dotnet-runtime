@@ -12,7 +12,7 @@ Privacy Alert! The contents copied to your clipboard may contain personal data. 
 -->
 
 **Describe the bug**
-The issue text was copied to the clipboard.  Please paste it into this window.
+Errors the extension may have encountered have been added to your clipboard. Please paste it here and describe what happened and the problem you are facing.
 
 Please attach the log file located at ${ context.logger.getFileLocation() }. Note that this file may contain personal data.
 
