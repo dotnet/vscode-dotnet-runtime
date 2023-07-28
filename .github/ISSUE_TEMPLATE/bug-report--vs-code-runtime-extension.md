@@ -1,3 +1,12 @@
+---
+name: "bug report: vs-code runtime extension"
+about: 'bug report: vs-code runtime extension'
+title: ''
+labels: ''
+assignees: ''
+---
+
+
 > ❗ Privacy Alert! The contents copied to your clipboard may contain personal data. Prior to posting to GitHub, please remove any personal data which should not be publicly viewable. https://privacy.microsoft.com/en-US/privacystatement
 
 **Describe the bug**
