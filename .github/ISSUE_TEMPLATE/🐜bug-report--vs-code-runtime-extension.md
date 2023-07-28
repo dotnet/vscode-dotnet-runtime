@@ -16,7 +16,7 @@ Errors the extension may have encountered have been added to your clipboard. Ple
 
 In addition, please attach the log file located at ${ context.logger.getFileLocation() }. Note that this file may contain personal data.
 
-**To Reproduce**
+**Reproduction Steps**
 
 **Expected behavior**
 
