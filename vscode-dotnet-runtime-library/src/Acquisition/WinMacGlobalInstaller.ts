@@ -159,15 +159,10 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
     {
         if(os.platform() === 'win32')
         {
-            if(installedArch === 'ia32')
-            {
-                // The program files should always be set, but in the off chance they are wiped, we can try to use the default as backup.
-                return path.resolve(process.env['programfiles(x86)'] ?? `C:\\Program Files (x86)\\dotnet\\sdk\\`);
-            }
-            else if(installedArch === 'x64')
-            {
-                return path.resolve(process.env.programfiles ?? `C:\\Program Files\\dotnet\\sdk\\`);
-            }
+            // The program files should always be set, but in the off chance they are wiped, we can try to use the default as backup.
+            // Both ia32 and x64 machines will use 'Program Files'
+            // We don't anticipate a user would need to install the x86 SDK, and we dont have any routes that support that yet.
+            return path.resolve(path.join(process.env.programfiles!, 'dotnet', 'sdk') ?? `C:\\Program Files\\dotnet\\sdk\\`);
         }
         else if(os.platform() === 'darwin')
         {
@@ -282,7 +277,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
 
         if (os.platform() === 'win32')
         {
-            const sdkInstallRecords64Bit = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\dotnet\\Setup\\InstalledVersions\\x64\\sdk';
+            const sdkInstallRecords64Bit = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\dotnet\\Setup\\InstalledVersions\\x64\\sdk';
             const sdkInstallRecords32Bit = sdkInstallRecords64Bit.replace('x64', 'x86');
 
             const queries = [sdkInstallRecords32Bit, sdkInstallRecords64Bit];
@@ -290,9 +285,10 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
             {
                 try
                 {
-                    const registryQueryCommand = `%SystemRoot%\\System32\\reg.exe`;
-                    // stdio settings: don't print registry key DNE warnings as they may not be on the machine if no SDKs are installed and we dont want to error.
-                    const installRecordKeysOfXBit = (await this.commandRunner.execute(`${registryQueryCommand} query "${query}"`, {stdio : ['pipe', 'ignore', 'ignore']}))[0];
+                    const registryQueryCommand = path.join(`${process.env.SystemRoot}`, `System32\\reg.exe`);
+                    // /reg:32 is added because all keys on 64 bit machines are all put into the WOW node. They won't be on the WOW node on a 32 bit machine.
+                    const fullQuery = `${registryQueryCommand} query ${query} \/reg:32`;
+                    const installRecordKeysOfXBit = (await this.commandRunner.execute(fullQuery))[0];
                     const installedSdks = this.extractVersionsOutOfRegistryKeyStrings(installRecordKeysOfXBit);
                     // Append any newly found sdk versions
                     sdks = sdks.concat(installedSdks.filter((item) => sdks.indexOf(item) < 0));

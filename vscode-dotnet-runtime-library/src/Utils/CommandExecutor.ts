@@ -103,9 +103,36 @@ export class CommandExecutor extends ICommandExecutor
             else
             {
                 const commandResult = proc.spawnSync(rootCommand, commandFollowUps, options);
-                commandResults.push(this.returnStatus ?
-                    (commandResult.status ? commandResult.status.toString() : commandResult.signal!.toString())
-                    : commandResult.stdout.toString() + commandResult.stderr.toString());
+                if(this.returnStatus)
+                {
+                    if(commandResult.status !== null)
+                    {
+                        commandResults.push(commandResult.status.toString());
+                    }
+                    else
+                    {
+                        // A signal is generally given if a status is not given, and they are equivalent
+                        if(commandResult.signal !== null)
+                        {
+                            commandResults.push(commandResult.signal.toString());
+                        }
+                        else
+                        {
+                            commandResults.push('000751'); // Error code 000751 : The command did not report an exit code upon completion. This is never expected
+                        }
+                    }
+                }
+                else
+                {
+                    if(commandResult.stdout === null && commandResult.stderr === null)
+                    {
+                        commandResults.push('');
+                    }
+                    else
+                    {
+                        commandResults.push(commandResult.stdout?.toString() + commandResult.stderr?.toString());
+                    }
+                }
             }
         }
 

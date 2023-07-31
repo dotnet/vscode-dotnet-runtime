@@ -8,5 +8,5 @@ import { IEventStream } from '../EventStream/EventStream';
 export abstract class IInstallationValidator {
     constructor(protected readonly eventStream: IEventStream) {}
 
-    public abstract validateDotnetInstall(version: string, dotnetPath: string): void;
+    public abstract validateDotnetInstall(version: string, dotnetPath: string, isDotnetFolder? : boolean): void;
 }

@@ -267,7 +267,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         const installedSDKPath : string = await installer.getExpectedGlobalSDKPath(await globalInstallerResolver.getFullVersion(), os.arch());
 
         Debugging.log(`Validating Dotnet Install.`, this.context.eventStream);
-        this.context.installationValidator.validateDotnetInstall(installingVersion, installedSDKPath);
+        this.context.installationValidator.validateDotnetInstall(installingVersion, installedSDKPath, true);
 
         this.context.eventStream.post(new DotnetAcquisitionCompleted(installingVersion, installedSDKPath));
 

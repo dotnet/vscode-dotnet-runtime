@@ -249,7 +249,7 @@ export class GlobalInstallerResolver {
      */
     private getIndexUrl(majorMinor : string ) : string
     {
-        return `https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/'${majorMinor}'/releases.json`;
+        return `https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/${majorMinor}/releases.json`;
     }
 
     /**
