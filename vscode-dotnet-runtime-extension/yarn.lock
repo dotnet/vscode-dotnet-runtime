@@ -220,7 +220,7 @@
     "@types/node" "*"
 
 "@types/vscode@1.74.0":
-  "integrity" "sha1-tNbRktWut16R0K3vaJw+zvmHnac="
+  "integrity" "sha1-StwhtOf1J7iT3jQYwhqR8eUDvc0="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/vscode/-/vscode-1.74.0.tgz"
   "version" "1.74.0"
 

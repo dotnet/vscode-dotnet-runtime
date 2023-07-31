@@ -8,6 +8,7 @@ import {
     DotnetAcquisitionError,
     DotnetAcquisitionStarted,
     DotnetAcquisitionVersionError,
+    DotnetDebuggingMessage,
     DotnetExistingPathResolutionCompleted,
 } from './EventStreamEvents';
 import { EventType } from './EventType';
@@ -22,8 +23,10 @@ export class OutputChannelObserver implements IEventStreamObserver {
     constructor(private readonly outputChannel: vscode.OutputChannel) {
     }
 
-    public post(event: IEvent): void {
-        switch (event.type) {
+    public post(event: IEvent): void
+    {
+        switch (event.type)
+        {
             case EventType.DotnetRuntimeAcquisitionStart:
                 this.outputChannel.append('Downloading the .NET Runtime.');
                 this.outputChannel.appendLine('');
@@ -87,6 +90,10 @@ export class OutputChannelObserver implements IEventStreamObserver {
                 } else {
                     this.stopDownloadIndicator();
                 }
+                break;
+            case EventType.DotnetDebuggingMessage:
+                const loggedMessage = event as DotnetDebuggingMessage;
+                this.outputChannel.appendLine(loggedMessage.message);
                 break;
         }
     }

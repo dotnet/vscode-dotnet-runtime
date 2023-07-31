@@ -148,10 +148,10 @@
   dependencies:
     "@types/node" "*"
 
-"@types/retry@0.12.0":
-  "integrity" "sha1-KzXsz87n04zXKtmSMvvVi/+zyE0="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/retry/-/retry-0.12.0.tgz"
-  "version" "0.12.0"
+"@types/retry@^0.12.0":
+  "integrity" "sha1-2PHA0Nwjr61twWqemToIZXdLQGU="
+  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/retry/-/retry-0.12.1.tgz"
+  "version" "0.12.1"
 
 "@types/rimraf@3.0.2":
   "integrity" "sha1-pj0XWzMXSOUiCtSMkB17vx9E7vg="
@@ -180,7 +180,7 @@
   "version" "4.0.2"
 
 "@types/vscode@1.74.0":
-  "integrity" "sha1-tNbRktWut16R0K3vaJw+zvmHnac="
+  "integrity" "sha1-StwhtOf1J7iT3jQYwhqR8eUDvc0="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/vscode/-/vscode-1.74.0.tgz"
   "version" "1.74.0"
 
@@ -1589,11 +1589,11 @@
     "p-limit" "^3.0.2"
 
 "p-retry@^4.6.1":
-  "integrity" "sha1-m6rnGEBX7dThcjHO4EJkEG4JKhY="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/p-retry/-/p-retry-4.6.2.tgz"
-  "version" "4.6.2"
+  "integrity" "sha1-j83dXN96Z6CRGpzy7w5d9/YCMWw="
+  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/p-retry/-/p-retry-4.6.1.tgz"
+  "version" "4.6.1"
   dependencies:
-    "@types/retry" "0.12.0"
+    "@types/retry" "^0.12.0"
     "retry" "^0.13.1"
 
 "p-some@^5.0.0":

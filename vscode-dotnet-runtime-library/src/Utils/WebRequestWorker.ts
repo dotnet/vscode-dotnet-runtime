@@ -75,7 +75,7 @@ export class WebRequestWorker {
     private async makeWebRequestWithRetries(url : string, throwOnError: boolean, retriesCount: number): Promise<string | undefined> {
         return retry(async () => {
             return this.makeWebRequest(url, throwOnError);
-        }, { retries: retriesCount, onFailedAttempt: async (error) => {
+        }, { retries: retriesCount, onFailedAttempt: async (error: { attemptNumber: number; }) => {
             await this.delay(Math.pow(2, error.attemptNumber));
         }});
     }
