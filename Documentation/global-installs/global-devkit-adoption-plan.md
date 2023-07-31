@@ -130,6 +130,7 @@ It should be clear that admin/elevation is required to install globally. We want
 If VSCode is under admin, the user should not see anything from our extension. If it is not however, on windows and mac they will see the actual installer manifest itself on top of vscode like so:
 
 Linux users would see a sudo prompter such as pkexec asking for permissions.
+
 ![MicrosoftTeams-image](https://user-images.githubusercontent.com/23152278/248009734-d8b9e7a3-7e6d-46e7-badc-36e2f2c3893e.png)
 
 

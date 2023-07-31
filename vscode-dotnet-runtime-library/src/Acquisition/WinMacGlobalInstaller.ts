@@ -52,7 +52,8 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
                     return '0';
                 }
                 const err = new DotnetConflictingGlobalWindowsInstallError(new Error(`An global install is already on the machine: version ${conflictingVersion}, that conflicts with the requested version.
-                    Please uninstall this version first if you would like to continue.`));
+                    Please uninstall this version first if you would like to continue.
+                    If Visual Studio is installed, you may need to use the VS Setup Window to uninstall the SDK component.`));
                 this.acquisitionContext.eventStream.post(err);
                 throw err;
             }

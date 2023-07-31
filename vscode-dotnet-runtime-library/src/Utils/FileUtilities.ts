@@ -7,14 +7,10 @@
  import * as path from 'path';
  import * as os from 'os';
  import * as proc from 'child_process';
-/* tslint:disable:no-empty */ // allow empty constructor
 
 export class FileUtilities {
-    constructor()
-    {
-    }
 
-    public static writeFileOntoDisk(scriptContent: string, filePath: string)
+    public writeFileOntoDisk(scriptContent: string, filePath: string)
     {
         if (!fs.existsSync(path.dirname(filePath))) {
             fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -27,7 +23,7 @@ export class FileUtilities {
     /**
      * @param directoryToWipe the directory to delete all of the files in if privellege to do so exists.
      */
-    public static wipeDirectory(directoryToWipe : string)
+    public wipeDirectory(directoryToWipe : string)
     {
         if(!fs.existsSync(directoryToWipe))
         {
@@ -42,7 +38,7 @@ export class FileUtilities {
      *
      * @returns true if the process is running with admin privelleges on windows.
      */
-    public static isElevated() : boolean
+    public isElevated() : boolean
     {
         if(os.platform() !== 'win32')
         {

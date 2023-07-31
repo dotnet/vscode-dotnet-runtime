@@ -294,6 +294,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
       // We cannot use the describe pattern to restore the environment variables using vscodes extension testing infrastructure.
       // So we must set and unset it ourselves, which isn't ideal as this variable could remain.
       let result;
+      let error : any;
       // We cannot test much as we don't want to leave global installs on devboxes. But we do want to make sure the e-2-e goes through the right path. Vendors can test the rest.
       // So we have this environment variable that tells us to stop before running any real install.
       process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH = 'true';
@@ -303,10 +304,19 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
       }
       catch(err)
       {
+        error = err;
+      }
+      finally
+      {
         process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH = undefined;
         process.env.PATH = originalPath;
-        throw(new Error(`The test failed to run the acquire command successfully. Error: ${err}`));
+
+        if(error)
+        {
+          throw(new Error(`The test failed to run the acquire command successfully. Error: ${error}`));
+        }
       }
+
       const pathAfterInstall = process.env.PATH;
 
       assert.exists(result, 'The global acquisition command did not provide a result?');

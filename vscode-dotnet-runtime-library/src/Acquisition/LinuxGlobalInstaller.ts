@@ -22,6 +22,8 @@ export class LinuxGlobalInstaller extends IGlobalInstaller {
 
     public async installSDK(): Promise<string>
     {
+        await this.linuxSDKResolver.Initialize();
+
         return this.linuxSDKResolver.ValidateAndInstallSDK(this.version);
     }
 
@@ -29,16 +31,17 @@ export class LinuxGlobalInstaller extends IGlobalInstaller {
     {
         await this.linuxSDKResolver.Initialize();
 
-        const dotnetFolder = await this.linuxSDKResolver.distroSDKProvider!.getDotnetVersionSupportStatus(specificSDKVersionInstalled) === DotnetDistroSupportStatus.Distro ?
-            await this.linuxSDKResolver.distroSDKProvider!.getExpectedDotnetDistroFeedInstallationDirectory() :
-            await this.linuxSDKResolver.distroSDKProvider!.getExpectedDotnetMicrosoftFeedInstallationDirectory();
+        const dotnetFolder = await (await this.linuxSDKResolver.distroCall()).getDotnetVersionSupportStatus(specificSDKVersionInstalled) === DotnetDistroSupportStatus.Distro ?
+            await (await this.linuxSDKResolver.distroCall()).getExpectedDotnetDistroFeedInstallationDirectory() :
+            await (await this.linuxSDKResolver.distroCall()).getExpectedDotnetMicrosoftFeedInstallationDirectory();
         return dotnetFolder;
     }
 
     public async getGlobalSdkVersionsInstalledOnMachine(): Promise<string[]>
     {
         await this.linuxSDKResolver.Initialize();
-        return this.linuxSDKResolver.distroSDKProvider!.getInstalledDotnetSDKVersions();
+
+        return (await this.linuxSDKResolver.distroCall()).getInstalledDotnetSDKVersions();
     }
 
 }

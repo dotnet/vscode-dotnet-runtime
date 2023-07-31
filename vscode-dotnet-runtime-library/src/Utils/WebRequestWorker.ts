@@ -37,6 +37,24 @@ export class WebRequestWorker {
         return this.cachedData;
     }
 
+    /**
+     *
+     * @param url The url containing raw json data to parse.
+     * @returns a serizled JSON object.
+     */
+    public async fetchJsonObjectFromUrl(url : string)
+    {
+        const jsonStringData = await this.getCachedData(url, 1); // 1 retry should be good enough.
+        if(jsonStringData === undefined)
+        {
+            const err = new WebRequestError(new Error(`The requested url ${url} is unreachable. Please check your internet connection?`));
+            this.eventStream.post(err);
+            throw err;
+        }
+
+        return JSON.parse(jsonStringData);
+    }
+
     // Protected for ease of testing
     protected async makeWebRequest(desiredUrl : string, throwOnError: boolean): Promise<string | undefined> {
         const options =

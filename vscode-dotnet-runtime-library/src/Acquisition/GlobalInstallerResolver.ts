@@ -10,6 +10,7 @@ import * as path from 'path';
 import { VersionResolver } from './VersionResolver';
 import { DotnetFeatureBandDoesNotExistError, DotnetInvalidReleasesJSONError, DotnetNoInstallerFileExistsError, DotnetUnexpectedInstallerOSError, DotnetVersionResolutionError, WebRequestError } from '../EventStream/EventStreamEvents';
 import { Debugging } from '../Utils/Debugging';
+import { IVersionResolver } from './IVersionResolver';
 /* tslint:disable:no-any */
 /* tslint:disable:only-arrow-functions */
 
@@ -29,6 +30,8 @@ export class GlobalInstallerResolver {
 
     // The properly resolved version that was requested in the fully-specified 3-part semver version of the .NET SDK.
     private fullySpecifiedVersionRequested : string;
+
+    private versionResolver : VersionResolver;
 
     private releasesJsonErrorString = `The API hosting the dotnet releases.json is invalid or has changed and the extension needs to be updated. Invalid API URL: `;
     private releasesJsonKey = 'releases';
@@ -55,6 +58,7 @@ export class GlobalInstallerResolver {
         this.requestedVersion = requestedVersion;
         this.discoveredInstallerUrl = '';
         this.fullySpecifiedVersionRequested = '';
+        this.versionResolver = new VersionResolver(extensionState, eventStream);
     }
 
 
@@ -64,10 +68,7 @@ export class GlobalInstallerResolver {
      */
     public async getInstallerUrl(): Promise<string>
     {
-        if(this.discoveredInstallerUrl === '')
-        {
-            this.discoveredInstallerUrl = await this.routeRequestToProperVersionRequestType(this.requestedVersion);
-        }
+        await this.determineVersionAndInstallerUrl();
         return this.discoveredInstallerUrl;
     }
 
@@ -77,42 +78,50 @@ export class GlobalInstallerResolver {
      */
     public async getFullVersion(): Promise<string>
     {
-        if(this.fullySpecifiedVersionRequested === '')
-        {
-            this.discoveredInstallerUrl = await this.routeRequestToProperVersionRequestType(this.requestedVersion);
-        }
+        await this.determineVersionAndInstallerUrl();
         return this.fullySpecifiedVersionRequested;
+    }
+
+    private async determineVersionAndInstallerUrl()
+    {
+        if(this.fullySpecifiedVersionRequested === '' || this.discoveredInstallerUrl === '')
+        {
+            [this.discoveredInstallerUrl, this.fullySpecifiedVersionRequested] = await this.routeRequestToProperVersionRequestType(this.requestedVersion);
+        }
     }
 
     /**
      *
      * @remarks this function maps the input version to a singular, specific and correct format based on the accepted version formats for global sdk installs.
      * @param version The requested version given to the API.
-     * @returns The installer download URL for the correct OS, Architecture, & Specific Version based on the given input version.
+     * @returns The installer download URL for the correct OS, Architecture, & Specific Version based on the given input version, and then the resolved version we determined to install.
      */
-    private async routeRequestToProperVersionRequestType(version : string) : Promise<string>
+    private async routeRequestToProperVersionRequestType(version : string) : Promise<[string, string]>
     {
-        if(VersionResolver.isNonSpecificMajorOrMajorMinorVersion(version))
+        if(this.versionResolver.isNonSpecificMajorOrMajorMinorVersion(version))
         {
             Debugging.log(`The VersionResolver resolved the version to be major, or major.minor.`, this.eventStream);
             const numberOfPeriods = version.split('.').length - 1;
             const indexUrl = this.getIndexUrl(numberOfPeriods === 0 ? `${version}.0` : version);
             const indexJsonData = await this.fetchJsonObjectFromUrl(indexUrl);
-            this.fullySpecifiedVersionRequested = indexJsonData[this.releasesLatestSdkKey];
-            return this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, indexUrl);
+            const fullySpecifiedVersionRequested = indexJsonData[this.releasesLatestSdkKey];
+            return [await this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, indexUrl), fullySpecifiedVersionRequested];
         }
-        else if(VersionResolver.isNonSpecificFeatureBandedVersion(version))
+        else if(this.versionResolver.isNonSpecificFeatureBandedVersion(version))
         {
             Debugging.log(`The VersionResolver resolved the version to be a N.Y.XXX version.`, this.eventStream);
-            this.fullySpecifiedVersionRequested = await this.getNewestSpecificVersionFromFeatureBand(version);
-            return this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, this.getIndexUrl(VersionResolver.getMajorMinor(this.fullySpecifiedVersionRequested)));
+            const fullySpecifiedVersion = await this.getNewestSpecificVersionFromFeatureBand(version);
+            return [
+                await this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, this.getIndexUrl(this.versionResolver.getMajorMinor(this.fullySpecifiedVersionRequested))),
+                fullySpecifiedVersion
+            ];
         }
-        else if(VersionResolver.isFullySpecifiedVersion(version))
+        else if(this.versionResolver.isFullySpecifiedVersion(version))
         {
             Debugging.log(`The VersionResolver resolved the version to be a fully specified version.`, this.eventStream);
-            this.fullySpecifiedVersionRequested = version;
-            const indexUrl = this.getIndexUrl(VersionResolver.getMajorMinor(this.fullySpecifiedVersionRequested));
-            return this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, indexUrl);
+            const fullySpecifiedVersionRequested = version;
+            const indexUrl = this.getIndexUrl(this.versionResolver.getMajorMinor(this.fullySpecifiedVersionRequested));
+            return [await this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, indexUrl), fullySpecifiedVersionRequested];
         }
 
         Debugging.log(`The VersionResolver could not resolve the version, version: ${version}.`, this.eventStream);
@@ -237,7 +246,7 @@ export class GlobalInstallerResolver {
             }
         }
 
-        const fileErr = new DotnetNoInstallerFileExistsError(new Error(`The SDK installation files for version ${specificVersion} running on ${desiredRidPackage} couldn't be found. Is the version in support? Note that -preview versions or versions with build numbers aren't yet supported.`));
+        const fileErr = new DotnetNoInstallerFileExistsError(new Error(`The SDK installation files for version ${specificVersion} running on ${desiredRidPackage} couldn't be found. Is the version in support? Note that -preview versions or versions with build numbers aren't yet supported. Visit https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core for support information.`));
         this.eventStream.post(fileErr);
         throw fileErr;
     }
@@ -303,8 +312,8 @@ export class GlobalInstallerResolver {
      */
     private async getNewestSpecificVersionFromFeatureBand(version : string) : Promise<string>
     {
-        const band : string = VersionResolver.getFeatureBandFromVersion(version);
-        const indexUrl : string = this.getIndexUrl(VersionResolver.getMajorMinor(version));
+        const band : string = this.versionResolver.getFeatureBandFromVersion(version);
+        const indexUrl : string = this.getIndexUrl(this.versionResolver.getMajorMinor(version));
 
         // Get the sdks
         const indexJson =  await this.fetchJsonObjectFromUrl(indexUrl);
@@ -324,14 +333,15 @@ export class GlobalInstallerResolver {
             // The SDKs in the index should be in-order, so we can rely on that property.
             // The first one we find with the given feature band will also be the 'newest.'
             const thisSDKVersion : string = sdk[this.releasesSdkVersionKey];
-            if(VersionResolver.getFeatureBandFromVersion(thisSDKVersion) === band)
+            if(this.versionResolver.getFeatureBandFromVersion(thisSDKVersion) === band)
             {
                 return thisSDKVersion;
             }
         }
 
-
-        const err = new DotnetFeatureBandDoesNotExistError(new Error(`A version for the requested feature band ${band} under the series ${version} couldn't be found.`));
+        // TODO: make a test for this error msg
+        const availableBands = Array.from(new Set(sdks.map((x : any) => this.versionResolver.getFeatureBandFromVersion(x[this.releasesSdkVersionKey]))));
+        const err = new DotnetFeatureBandDoesNotExistError(new Error(`The feature band '${band}' doesn't exist for the SDK major version '${version}'. Available feature bands for this SDK version are ${availableBands}.`));
         this.eventStream.post(err);
         throw err;
     }
@@ -340,18 +350,11 @@ export class GlobalInstallerResolver {
      *
      * @param url The url containing raw json data to parse.
      * @returns a serizled JSON object.
+     * @remarks A wrapper around the real web request worker class to call into either the mock or real web worker. The main point of this function is  to dedupe logic.
      */
     private async fetchJsonObjectFromUrl(url : string)
     {
         const webWorker = this.customWebRequestWorker ? this.customWebRequestWorker : new WebRequestWorker(this.extensionState, this.eventStream);
-        const jsonStringData = await webWorker.getCachedData(url, 1); // 1 retry should be good enough.
-        if(jsonStringData === undefined)
-        {
-            const err = new WebRequestError(new Error(`The requested url ${url} is unreachable. Please check your internet connection?`));
-            this.eventStream.post(err);
-            throw err;
-        }
-
-        return JSON.parse(jsonStringData);
+        return webWorker.fetchJsonObjectFromUrl(url);
     }
 }

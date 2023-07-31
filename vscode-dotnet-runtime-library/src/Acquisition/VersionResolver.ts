@@ -153,7 +153,7 @@ export class VersionResolver implements IVersionResolver {
         const response = await this.GetAvailableDotnetVersions(apiContext);
         if (!response)
         {
-            const err = new DotnetInvalidReleasesJSONError(new Error(`We could not reach the releases API to download dotnet, is your machine offline?`));
+            const err = new DotnetInvalidReleasesJSONError(new Error(`We could not reach the releases API ${this.releasesUrl} to download dotnet, is your machine offline or is this website down?`));
             this.eventStream.post(err);
             throw err;
         }
@@ -166,10 +166,10 @@ export class VersionResolver implements IVersionResolver {
      * @param fullySpecifiedVersion the fully specified version of the sdk, e.g. 7.0.301 to get the major from.
      * @returns the major.minor in the form of '3', etc.
      */
-    public static getMajor(fullySpecifiedVersion : string) : string
+    public getMajor(fullySpecifiedVersion : string) : string
     {
         // The called function will check that we can do the split, so we dont need to check again.
-        return VersionResolver.getMajorMinor(fullySpecifiedVersion).split('.')[0];
+        return this.getMajorMinor(fullySpecifiedVersion).split('.')[0];
     }
 
     /**
@@ -177,11 +177,11 @@ export class VersionResolver implements IVersionResolver {
      * @param fullySpecifiedVersion the fully specified version, e.g. 7.0.301 to get the major minor from.
      * @returns the major.minor in the form of '3.1', etc.
      */
-    public static getMajorMinor(fullySpecifiedVersion : string) : string
+    public getMajorMinor(fullySpecifiedVersion : string) : string
     {
         if(fullySpecifiedVersion.split('.').length < 2)
         {
-            const err = new DotnetVersionResolutionError(new Error(`The requested version is invalid.`), fullySpecifiedVersion);
+            const err = new DotnetVersionResolutionError(new Error(`The requested version ${fullySpecifiedVersion} is invalid.`), fullySpecifiedVersion);
             throw err;
         }
 
@@ -194,7 +194,7 @@ export class VersionResolver implements IVersionResolver {
      * @param fullySpecifiedVersion the version of the sdk, either fully specified or not, but containing a band definition.
      * @returns a single string representing the band number, e.g. 3 in 7.0.301.
      */
-    public static getFeatureBandFromVersion(fullySpecifiedVersion : string) : string
+    public getFeatureBandFromVersion(fullySpecifiedVersion : string) : string
     {
         const band : string | undefined = fullySpecifiedVersion.split('.')?.at(2)?.charAt(0);
         if(band === undefined)
@@ -210,7 +210,7 @@ export class VersionResolver implements IVersionResolver {
      * @param fullySpecifiedVersion the version of the sdk, either fully specified or not, but containing a band definition.
      * @returns a single string representing the band patch version, e.g. 12 in 7.0.312.
      */
-    public static getFeatureBandPatchVersion(fullySpecifiedVersion : string) : string
+    public getFeatureBandPatchVersion(fullySpecifiedVersion : string) : string
     {
         return Number(this.getPatchVersionString(fullySpecifiedVersion)).toString();
     }
@@ -220,7 +220,7 @@ export class VersionResolver implements IVersionResolver {
      * @remarks the logic for getFeatureBandPatchVersion, except that it returns '01' or '00' instead of the patch number.
      * Not meant for public use.
      */
-    private static getPatchVersionString(fullySpecifiedVersion : string) : string
+    private getPatchVersionString(fullySpecifiedVersion : string) : string
     {
         const patch : string | undefined = fullySpecifiedVersion.split('.')?.at(2)?.substring(1);
         if(patch === undefined || !this.isNumber(patch))
@@ -235,7 +235,7 @@ export class VersionResolver implements IVersionResolver {
      * @param fullySpecifiedVersion the requested version to analyze.
      * @returns true IFF version is of an expected length and format.
      */
-      public static isValidLongFormVersionFormat(fullySpecifiedVersion : string) : boolean
+      public isValidLongFormVersionFormat(fullySpecifiedVersion : string) : boolean
       {
           const numberOfPeriods = fullySpecifiedVersion.split('.').length - 1;
           // 9 is used to prevent bad versions (current expectation is 7 but we want to support .net 10 etc)
@@ -257,7 +257,7 @@ export class VersionResolver implements IVersionResolver {
      * @param version the requested version to analyze.
      * @returns true IFF version is a feature band with an unspecified sub-version was given e.g. 6.0.4xx or 6.0.40x
      */
-    public static isNonSpecificFeatureBandedVersion(version : string) : boolean
+    public isNonSpecificFeatureBandedVersion(version : string) : boolean
     {
         const numberOfPeriods = version.split('.').length - 1;
         return version.split('.').slice(0, 2).every(x => this.isNumber(x)) && version.endsWith('x') && numberOfPeriods === 2;
@@ -268,7 +268,7 @@ export class VersionResolver implements IVersionResolver {
      * @param version the requested version to analyze.
      * @returns true IFF version is a specific version e.g. 7.0.301.
      */
-    public static isFullySpecifiedVersion(version : string) : boolean
+    public isFullySpecifiedVersion(version : string) : boolean
     {
         return version.split('.').every(x => this.isNumber(x)) && this.isValidLongFormVersionFormat(version) && !this.isNonSpecificFeatureBandedVersion(version);
     }
@@ -278,7 +278,7 @@ export class VersionResolver implements IVersionResolver {
      * @param version the requested version to analyze.
      * @returns true IFF a major release represented as an integer was given. e.g. 6, which we convert to 6.0, OR a major minor was given, e.g. 6.1.
      */
-    public static isNonSpecificMajorOrMajorMinorVersion(version : string) : boolean
+    public isNonSpecificMajorOrMajorMinorVersion(version : string) : boolean
     {
         const numberOfPeriods = version.split('.').length - 1;
         return this.isNumber(version) && numberOfPeriods >= 0 && numberOfPeriods < 2;
@@ -289,7 +289,7 @@ export class VersionResolver implements IVersionResolver {
      * @param value the string to check and see if it's a valid number.
      * @returns true if it's a valid number.
      */
-    private static isNumber(value: string | number): boolean
+    private isNumber(value: string | number): boolean
     {
         return (
             (value != null) &&

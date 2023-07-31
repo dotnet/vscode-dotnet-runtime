@@ -9,6 +9,7 @@ import { DotnetAcquisitionDistroUnknownError } from '../EventStream/EventStreamE
 import { VersionResolver } from './VersionResolver';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 /* tslint:disable:no-any */
 
 /**
@@ -22,6 +23,7 @@ export abstract class IDistroDotnetSDKProvider {
 
     protected commandRunner : ICommandExecutor;
     protected distroVersion : DistroVersionPair;
+    protected versionResolver : VersionResolver;
     protected distroJson : any | null = null;
 
     protected preinstallCommandKey = 'preInstallCommands';
@@ -44,10 +46,11 @@ export abstract class IDistroDotnetSDKProvider {
     protected runtimeKey = 'runtime';
     protected aspNetKey = 'aspnetcore';
 
-    constructor(distroVersion : DistroVersionPair, executor : ICommandExecutor | null = null)
+    constructor(distroVersion : DistroVersionPair, context : IAcquisitionWorkerContext, executor : ICommandExecutor | null = null)
     {
         this.commandRunner = executor ?? new CommandExecutor();
         this.distroVersion = distroVersion;
+        this.versionResolver = new VersionResolver(context.extensionState, context.eventStream);
         // Hard-code to the upper path (lib/dist/acquisition) from __dirname to the lib folder, as webpack-copy doesn't seem to copy the distro-support.json
         const distroDataFile = path.join(path.dirname(path.dirname(__dirname)), 'distro-data', 'distro-support.json');
         this.distroJson = JSON.parse(fs.readFileSync(distroDataFile, 'utf8'));
@@ -151,7 +154,7 @@ export abstract class IDistroDotnetSDKProvider {
     {
         const supportStatus = await this.getDotnetVersionSupportStatus(fullySpecifiedVersion);
         const supportedType : boolean = supportStatus === DotnetDistroSupportStatus.Distro || supportStatus === DotnetDistroSupportStatus.Microsoft;
-        return supportedType && VersionResolver.getFeatureBandFromVersion(fullySpecifiedVersion) === '1';
+        return supportedType && this.versionResolver.getFeatureBandFromVersion(fullySpecifiedVersion) === '1';
     }
 
     protected myVersionPackages() : any

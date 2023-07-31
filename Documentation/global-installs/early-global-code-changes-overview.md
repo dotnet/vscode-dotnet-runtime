@@ -26,7 +26,8 @@ For Windows, if we are already running VS Code with admin, we can simply downloa
 
 In any other case on windows, and always on mac, we can make the .NET Installer appear above VS Code. That will handle any elevation/UAC prompts for us. It also will handle conflicting SDKs that could be on the machine, setup issues with currently running versions of dotnet, etc, and provides a consistent already-built user experience. We have greatly simplified our job by just downloading the correct installer file from your machine using data available from our releases APIs, and then executing said installer.
 
-> :fire: For Linux we essentially had to write our own installer. We have a separate linux document, `[here](linux-global-install-design.md)` which I would suggest checking out.
+> :fire: For Linux we essentially had to write our own installer. We have a separate linux document which you can click ... :
+> [`here`](linux-global-install-design.md).
 
 The TLDR is the following: It uses the distro package manager to install the dotnet package on the system using commands such as `apt-get`. It will use the dotnet packages provided by the distro if it's version includes such packages, otherwise it will attempt to use the Microsoft feed packages.
 

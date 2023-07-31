@@ -52,9 +52,10 @@ export const enum DotnetDistroSupportStatus {
 export class LinuxVersionResolver
 {
     private distro : DistroVersionPair | null = null;
-    public distroSDKProvider : IDistroDotnetSDKProvider | null = null;
+    protected distroSDKProvider : IDistroDotnetSDKProvider | null = null;
     protected commandRunner : ICommandExecutor;
     protected acquisitionContext : IAcquisitionWorkerContext;
+    protected versionResolver : VersionResolver;
 
     public conflictingInstallErrorMessage = `A dotnet installation was found which indicates dotnet that was installed via Microsoft package feeds. But for this distro and version, we only acquire .NET via the distro feeds.
     You should not mix distro feed and microsoft feed installations. To continue, please completely remove this version of dotnet to continue by following https://learn.microsoft.com/dotnet/core/install/remove-runtime-sdk-versions?pivots=os-linux.
@@ -69,6 +70,7 @@ export class LinuxVersionResolver
     {
         this.commandRunner = executor ?? new CommandExecutor();
         this.acquisitionContext = acquisitionContext;
+        this.versionResolver = new VersionResolver(acquisitionContext.extensionState, acquisitionContext.eventStream);
         if(distroProvider)
         {
             this.distroSDKProvider = distroProvider;
@@ -157,7 +159,7 @@ export class LinuxVersionResolver
                 this.acquisitionContext.eventStream.post(error);
                 throw error;
             default:
-                return new GenericDistroSDKProvider(distroAndVersion);
+                return new GenericDistroSDKProvider(distroAndVersion, this.acquisitionContext);
         }
     }
 
@@ -230,9 +232,9 @@ export class LinuxVersionResolver
         if(existingInstall)
         {
             const existingGlobalInstallSDKVersion = await this.distroSDKProvider!.getInstalledGlobalDotnetVersionIfExists();
-            if(existingGlobalInstallSDKVersion && Number(VersionResolver.getMajorMinor(existingGlobalInstallSDKVersion)) === Number(VersionResolver.getMajorMinor(fullySpecifiedDotnetVersion)))
+            if(existingGlobalInstallSDKVersion && Number(this.versionResolver.getMajorMinor(existingGlobalInstallSDKVersion)) === Number(this.versionResolver.getMajorMinor(fullySpecifiedDotnetVersion)))
             {
-                if(Number(VersionResolver.getMajorMinor(existingGlobalInstallSDKVersion)) > Number(VersionResolver.getMajorMinor(fullySpecifiedDotnetVersion)))
+                if(Number(this.versionResolver.getMajorMinor(existingGlobalInstallSDKVersion)) > Number(this.versionResolver.getMajorMinor(fullySpecifiedDotnetVersion)))
                 {
                     // We shouldn't downgrade to a lower patch
                     const err = new DotnetCustomLinuxInstallExistsError(new Error(`An installation of ${fullySpecifiedDotnetVersion} was requested but ${existingGlobalInstallSDKVersion} is already available.`),
@@ -241,7 +243,7 @@ export class LinuxVersionResolver
                     throw err;
                 }
                 else if(await this.distroSDKProvider!.dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion) ||
-                    Number(VersionResolver.getFeatureBandPatchVersion(existingGlobalInstallSDKVersion)) < Number(VersionResolver.getFeatureBandPatchVersion(fullySpecifiedDotnetVersion)))
+                    Number(this.versionResolver.getFeatureBandPatchVersion(existingGlobalInstallSDKVersion)) < Number(this.versionResolver.getFeatureBandPatchVersion(fullySpecifiedDotnetVersion)))
                 {
                     // We can update instead of doing an install
                     return (await this.distroSDKProvider!.upgradeDotnet(existingGlobalInstallSDKVersion)) ? '1' : '1';
@@ -285,4 +287,14 @@ export class LinuxVersionResolver
         return updateOrRejectState;
     }
 
+    /**
+     * This exposes the class member that may or may not be initialized before execution of this function
+     * ... so other's can use it. (It is a terrible pattern but used because the ctor cannot be async.)
+     * @returns the distroSDKProvider to call distro related functions on top of.
+     */
+    public async distroCall() : Promise<IDistroDotnetSDKProvider>
+    {
+        await this.Initialize();
+        return this.distroSDKProvider!;
+    }
 }
