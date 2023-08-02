@@ -42,6 +42,7 @@ const standardTimeoutTime = 100000;
 const assert = chai.assert;
 chai.use(chaiAsPromised);
 /* tslint:disable:no-any */
+/* tslint:disable:no-unsafe-finally */
 
 const mockReleasesData = `{
   "releases-index": [
@@ -295,6 +296,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
       // So we must set and unset it ourselves, which isn't ideal as this variable could remain.
       let result : IDotnetAcquireResult;
       let error : any;
+      let pathAfterInstall;
+
       // We cannot test much as we don't want to leave global installs on devboxes. But we do want to make sure the e-2-e goes through the right path. Vendors can test the rest.
       // So we have this environment variable that tells us to stop before running any real install.
       process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH = 'true';
@@ -308,6 +311,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
       }
       finally
       {
+        pathAfterInstall = process.env.PATH;
         process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH = undefined;
         process.env.PATH = originalPath;
 
@@ -317,10 +321,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
         }
       }
 
-      const pathAfterInstall = process.env.PATH;
-
       assert.exists(result!, 'The global acquisition command did not provide a result?');
-
       assert.exists(result!.dotnetPath);
       assert.equal(result!.dotnetPath, 'fake-sdk');
       assert.exists(pathAfterInstall, 'The environment variable PATH for DOTNET was not found?');

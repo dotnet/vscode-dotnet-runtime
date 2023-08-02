@@ -8,7 +8,13 @@ import { IExtensionState } from '../IExtensionState';
 import * as os from 'os';
 import * as path from 'path';
 import { VersionResolver } from './VersionResolver';
-import { DotnetFeatureBandDoesNotExistError, DotnetInvalidReleasesJSONError, DotnetNoInstallerFileExistsError, DotnetUnexpectedInstallerArchitectureError, DotnetUnexpectedInstallerOSError, DotnetVersionResolutionError, WebRequestError } from '../EventStream/EventStreamEvents';
+import { DotnetFeatureBandDoesNotExistError,
+        DotnetInvalidReleasesJSONError,
+        DotnetNoInstallerFileExistsError,
+        DotnetUnexpectedInstallerArchitectureError,
+        DotnetUnexpectedInstallerOSError,
+        DotnetVersionResolutionError
+} from '../EventStream/EventStreamEvents';
 import { Debugging } from '../Utils/Debugging';
 import { IVersionResolver } from './IVersionResolver';
 /* tslint:disable:no-any */
@@ -111,14 +117,14 @@ export class GlobalInstallerResolver {
             const indexUrl = this.getIndexUrl(numberOfPeriods === 0 ? `${version}.0` : version);
             const indexJsonData = await this.fetchJsonObjectFromUrl(indexUrl);
             const fullySpecifiedVersionRequested = indexJsonData[this.releasesLatestSdkKey];
-            return [await this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, indexUrl), fullySpecifiedVersionRequested];
+            return [await this.findCorrectInstallerUrl(fullySpecifiedVersionRequested, indexUrl), fullySpecifiedVersionRequested];
         }
         else if(this.versionResolver.isNonSpecificFeatureBandedVersion(version))
         {
             Debugging.log(`The VersionResolver resolved the version to be a N.Y.XXX version.`, this.eventStream);
             const fullySpecifiedVersion = await this.getNewestSpecificVersionFromFeatureBand(version);
             return [
-                await this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, this.getIndexUrl(this.versionResolver.getMajorMinor(this.fullySpecifiedVersionRequested))),
+                await this.findCorrectInstallerUrl(fullySpecifiedVersion, this.getIndexUrl(this.versionResolver.getMajorMinor(fullySpecifiedVersion))),
                 fullySpecifiedVersion
             ];
         }
@@ -126,8 +132,8 @@ export class GlobalInstallerResolver {
         {
             Debugging.log(`The VersionResolver resolved the version to be a fully specified version.`, this.eventStream);
             const fullySpecifiedVersionRequested = version;
-            const indexUrl = this.getIndexUrl(this.versionResolver.getMajorMinor(this.fullySpecifiedVersionRequested));
-            return [await this.findCorrectInstallerUrl(this.fullySpecifiedVersionRequested, indexUrl), fullySpecifiedVersionRequested];
+            const indexUrl = this.getIndexUrl(this.versionResolver.getMajorMinor(fullySpecifiedVersionRequested));
+            return [await this.findCorrectInstallerUrl(fullySpecifiedVersionRequested, indexUrl), fullySpecifiedVersionRequested];
         }
 
         Debugging.log(`The VersionResolver could not resolve the version, version: ${version}.`, this.eventStream);
@@ -233,7 +239,7 @@ export class GlobalInstallerResolver {
                const thisSDKFiles = sdk[this.releasesSdkFileKey];
                for (const installer of thisSDKFiles)
                {
-                    if(installer[this.releasesSdkRidKey] === desiredRidPackage && this.installerMatchesDesiredFileExtension(installer, convertedOs))
+                    if(installer[this.releasesSdkRidKey] === desiredRidPackage && this.installerMatchesDesiredFileExtension(specificVersion, installer, convertedOs))
                     {
                         const installerUrl = installer[this.releasesUrlKey];
                         if(installerUrl === undefined)
@@ -275,13 +281,13 @@ export class GlobalInstallerResolver {
      * @returns true if the filetype of the installer json entry containing the installer file name in the key 'name' is of a desired installer file extension type.
      * (e.g. EXE on windows or PKG on mac.)
      */
-    private installerMatchesDesiredFileExtension(installerJson : any, operatingSystemInDotnetFormat : string) : boolean
+    private installerMatchesDesiredFileExtension(version : string, installerJson : any, operatingSystemInDotnetFormat : string) : boolean
     {
         const installerFileName = installerJson[this.releasesSdkNameKey];
         if(installerFileName === undefined)
         {
             const err = new DotnetInvalidReleasesJSONError(new Error(`${this.releasesJsonErrorString}
-                ${this.getIndexUrl(this.versionResolver.getMajorMinor(this.fullySpecifiedVersionRequested))}.
+                ${this.getIndexUrl(this.versionResolver.getMajorMinor(version))}.
                 The json does not have the parameter ${this.releasesSdkNameKey} which means the API publisher has published invalid dotnet release data. Please file an issue at https://github.com/dotnet/vscode-dotnet-runtime.`));
             this.eventStream.post(err);
             throw err;

@@ -232,7 +232,8 @@ export class LinuxVersionResolver
         if(existingInstall)
         {
             const existingGlobalInstallSDKVersion = await this.distroSDKProvider!.getInstalledGlobalDotnetVersionIfExists();
-            if(existingGlobalInstallSDKVersion && Number(this.versionResolver.getMajorMinor(existingGlobalInstallSDKVersion)) === Number(this.versionResolver.getMajorMinor(fullySpecifiedDotnetVersion)))
+            if(existingGlobalInstallSDKVersion && Number(this.versionResolver.getMajorMinor(existingGlobalInstallSDKVersion)) ===
+                Number(this.versionResolver.getMajorMinor(fullySpecifiedDotnetVersion)))
             {
                 if(Number(this.versionResolver.getMajorMinor(existingGlobalInstallSDKVersion)) > Number(this.versionResolver.getMajorMinor(fullySpecifiedDotnetVersion)))
                 {
