@@ -1,5 +1,5 @@
 ---
-name: "bug-report"
+name: "Bug report"
 about: 'Create a report about something that is potential buggy'
 title: ''
 labels: ''

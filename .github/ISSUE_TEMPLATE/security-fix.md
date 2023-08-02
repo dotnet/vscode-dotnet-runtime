@@ -1,6 +1,6 @@
 ---
-name: "security fix"
-about: 'Please review our <a href="https://github.com/dotnet/sdk/security/policy">security policy</a> for more details'
+name: "Security fix"
+about: 'Report a security vulnerability'
 title: ''
 labels: ''
 assignees: ''
