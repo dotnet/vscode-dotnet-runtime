@@ -22,6 +22,7 @@ import { CommandExecutor } from '../../Utils/CommandExecutor';
 import { IDistroDotnetSDKProvider } from '../../Acquisition/IDistroDotnetSDKProvider';
 import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
 import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProvider';
+import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
 /* tslint:disable:no-any */
 
 export class MockExtensionContext implements IExtensionState {
@@ -234,10 +235,12 @@ export class MockDistroProvider extends IDistroDotnetSDKProvider
     public recommendedVersionReturnValue = '';
     public upgradeReturnValue = '';
     public uninstallReturnValue = '';
+    public context: IAcquisitionWorkerContext;
 
-    constructor(version : DistroVersionPair, commandRunner : ICommandExecutor)
+    constructor(version : DistroVersionPair, context : IAcquisitionWorkerContext, commandRunner : ICommandExecutor)
     {
-        super(version, commandRunner);
+        super(version, context, commandRunner);
+        this.context = context;
     }
 
     public installDotnet(fullySpecifiedVersion: string): Promise<string> {
@@ -301,7 +304,7 @@ export class MockDistroProvider extends IDistroDotnetSDKProvider
     }
 
     public JsonDotnetVersion(fullySpecifiedDotnetVersion: string): string {
-        return new GenericDistroSDKProvider(this.distroVersion).JsonDotnetVersion(fullySpecifiedDotnetVersion);
+        return new GenericDistroSDKProvider(this.distroVersion, this.context).JsonDotnetVersion(fullySpecifiedDotnetVersion);
     }
 }
 

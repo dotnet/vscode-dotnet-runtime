@@ -4,30 +4,16 @@
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
 import * as os from 'os';
-import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProvider';
+import * as util from './TestUtility'
 import { MockCommandExecutor, MockDistroProvider, MockEventStream, MockExtensionContext, MockInstallationValidator, NoInstallAcquisitionInvoker } from '../mocks/MockObjects';
-import { DistroVersionPair, DotnetDistroSupportStatus, LinuxVersionResolver } from '../../Acquisition/LinuxVersionResolver';
+import { DistroVersionPair, LinuxVersionResolver } from '../../Acquisition/LinuxVersionResolver';
 import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
 import { RuntimeInstallationDirectoryProvider } from '../../Acquisition/RuntimeInstallationDirectoryProvider';
 import { SdkInstallationDirectoryProvider } from '../../Acquisition/SdkInstallationDirectoryProvider';
 const assert = chai.assert;
-const standardTimeoutTime = 100000;
 
 
-function mockContext(runtimeInstall: boolean): IAcquisitionWorkerContext {
-    const extensionContext = new MockExtensionContext();
-    const eventStream = new MockEventStream();
-    const workerContext : IAcquisitionWorkerContext = {
-        storagePath: '',
-        extensionState: extensionContext,
-        eventStream,
-        acquisitionInvoker: new NoInstallAcquisitionInvoker(eventStream),
-        installationValidator: new MockInstallationValidator(eventStream),
-        timeoutValue: standardTimeoutTime,
-        installDirectoryProvider: runtimeInstall ? new RuntimeInstallationDirectoryProvider('') : new SdkInstallationDirectoryProvider(''),
-    };
-    return workerContext;
-}
+
 
 suite('Linux Version Resolver Tests', () =>
 {
@@ -35,8 +21,9 @@ suite('Linux Version Resolver Tests', () =>
     const mockExecutor = new MockCommandExecutor();
     const pair : DistroVersionPair = { distro : 'Ubuntu', version : '22.04' };
     const shouldRun = os.platform() === 'linux';
-    const mockDistroProvider = new MockDistroProvider(pair, mockExecutor);
-    const resolver : LinuxVersionResolver = new LinuxVersionResolver(mockContext(false), mockExecutor, mockDistroProvider);
+    const context = util.getMockAcquiringContext(false);
+    const mockDistroProvider = new MockDistroProvider(pair, context, mockExecutor);
+    const resolver : LinuxVersionResolver = new LinuxVersionResolver(context, mockExecutor, mockDistroProvider);
 
     if(shouldRun)
     {
@@ -45,7 +32,7 @@ suite('Linux Version Resolver Tests', () =>
             assert.equal(mockExecutor.attemptedCommand, 'cat /etc/os-release');
             assert.exists(distroVersion.distro);
             assert.exists(distroVersion.version);
-        
+
         });
 
         test('It rejects distro install if microsoft install exists', async () => {

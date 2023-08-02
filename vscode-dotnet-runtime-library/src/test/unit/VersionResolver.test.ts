@@ -57,67 +57,67 @@ suite('VersionResolver Unit Tests', () => {
     });
 
     test('Get Major from SDK Version', async () => {
-        assert.equal(VersionResolver.getMajor(fullySpecifiedVersion), '7');
-        assert.equal(VersionResolver.getMajor(featureBandVersion), '7');
-        assert.equal(VersionResolver.getMajor(uniqueMajorMinorVersion), '7');
-        assert.equal(VersionResolver.getMajor(twoDigitMajorVersion), '10');
+        assert.equal(resolver.getMajor(fullySpecifiedVersion), '7');
+        assert.equal(resolver.getMajor(featureBandVersion), '7');
+        assert.equal(resolver.getMajor(uniqueMajorMinorVersion), '7');
+        assert.equal(resolver.getMajor(twoDigitMajorVersion), '10');
     });
 
     test('Get Major.Minor from SDK Version', async () => {
-        assert.equal(VersionResolver.getMajorMinor(fullySpecifiedVersion), '7.0');
-        assert.equal(VersionResolver.getMajorMinor(featureBandVersion), '7.0');
-        assert.equal(VersionResolver.getMajorMinor(uniqueMajorMinorVersion), '7.1');
-        assert.equal(VersionResolver.getMajorMinor(twoDigitMajorVersion), '10.0');
+        assert.equal(resolver.getMajorMinor(fullySpecifiedVersion), '7.0');
+        assert.equal(resolver.getMajorMinor(featureBandVersion), '7.0');
+        assert.equal(resolver.getMajorMinor(uniqueMajorMinorVersion), '7.1');
+        assert.equal(resolver.getMajorMinor(twoDigitMajorVersion), '10.0');
     });
 
     test('Get Feature Band from SDK Version', async () => {
-        assert.equal(VersionResolver.getFeatureBandFromVersion(fullySpecifiedVersion), '2');
-        assert.equal(VersionResolver.getFeatureBandFromVersion(featureBandVersion), '2');
-        assert.equal(VersionResolver.getFeatureBandFromVersion(uniqueMajorMinorVersion), '3');
-        assert.equal(VersionResolver.getFeatureBandFromVersion(twoDigitMajorVersion), '1');
+        assert.equal(resolver.getFeatureBandFromVersion(fullySpecifiedVersion), '2');
+        assert.equal(resolver.getFeatureBandFromVersion(featureBandVersion), '2');
+        assert.equal(resolver.getFeatureBandFromVersion(uniqueMajorMinorVersion), '3');
+        assert.equal(resolver.getFeatureBandFromVersion(twoDigitMajorVersion), '1');
     });
 
     test('Get Patch from SDK Version', async () => {
-        assert.equal(VersionResolver.getFeatureBandPatchVersion(fullySpecifiedVersion), '1');
-        assert.equal(VersionResolver.getFeatureBandPatchVersion(uniqueMajorMinorVersion), '0');
-        assert.equal(VersionResolver.getFeatureBandPatchVersion(twoDigitMajorVersion), '2');
-        assert.equal(VersionResolver.getFeatureBandPatchVersion(twoDigitPatchVersion), '21');
+        assert.equal(resolver.getFeatureBandPatchVersion(fullySpecifiedVersion), '1');
+        assert.equal(resolver.getFeatureBandPatchVersion(uniqueMajorMinorVersion), '0');
+        assert.equal(resolver.getFeatureBandPatchVersion(twoDigitMajorVersion), '2');
+        assert.equal(resolver.getFeatureBandPatchVersion(twoDigitPatchVersion), '21');
     });
 
     test('Detects Unspecified Patch Version', async () => {
-        assert.equal(VersionResolver.isNonSpecificFeatureBandedVersion(fullySpecifiedVersion), false, 'It detects versions with patches');
-        assert.equal(VersionResolver.isNonSpecificFeatureBandedVersion(featureBandVersion), true, 'It detects versions with xx');
-        assert.equal(VersionResolver.isNonSpecificFeatureBandedVersion(twoDigitMajorVersion), false, 'It doesnt error for non xx containing version');
+        assert.equal(resolver.isNonSpecificFeatureBandedVersion(fullySpecifiedVersion), false, 'It detects versions with patches');
+        assert.equal(resolver.isNonSpecificFeatureBandedVersion(featureBandVersion), true, 'It detects versions with xx');
+        assert.equal(resolver.isNonSpecificFeatureBandedVersion(twoDigitMajorVersion), false, 'It doesnt error for non xx containing version');
     });
 
     test('Detects if Fully Specified Version', async () => {
-        assert.equal(VersionResolver.isFullySpecifiedVersion(fullySpecifiedVersion), true, 'It passes basic fully specified version');
-        assert.equal(VersionResolver.isFullySpecifiedVersion(uniqueMajorMinorVersion), true);
-        assert.equal(VersionResolver.isFullySpecifiedVersion(twoDigitMajorVersion), true, 'It works for 2+ digit major versions');
-        assert.equal(VersionResolver.isFullySpecifiedVersion(majorOnly), false, 'It detects major only versions arent fully specified');
-        assert.equal(VersionResolver.isFullySpecifiedVersion(featureBandVersion), false, 'It counts feature band only with xxx as not fully specified');
-        assert.equal(VersionResolver.isFullySpecifiedVersion(majorMinorOnly), false, 'It detects major.minor as not fully specified');
+        assert.equal(resolver.isFullySpecifiedVersion(fullySpecifiedVersion), true, 'It passes basic fully specified version');
+        assert.equal(resolver.isFullySpecifiedVersion(uniqueMajorMinorVersion), true);
+        assert.equal(resolver.isFullySpecifiedVersion(twoDigitMajorVersion), true, 'It works for 2+ digit major versions');
+        assert.equal(resolver.isFullySpecifiedVersion(majorOnly), false, 'It detects major only versions arent fully specified');
+        assert.equal(resolver.isFullySpecifiedVersion(featureBandVersion), false, 'It counts feature band only with xxx as not fully specified');
+        assert.equal(resolver.isFullySpecifiedVersion(majorMinorOnly), false, 'It detects major.minor as not fully specified');
     });
 
     test('Detects if Only Major or Minor Given', async () => {
-        assert.equal(VersionResolver.isNonSpecificMajorOrMajorMinorVersion(fullySpecifiedVersion), false, 'It doesnt think a fully specified version is major.minor only');
-        assert.equal(VersionResolver.isNonSpecificMajorOrMajorMinorVersion(uniqueMajorMinorVersion), false);
-        assert.equal(VersionResolver.isNonSpecificMajorOrMajorMinorVersion(twoDigitMajorVersion), false);
-        assert.equal(VersionResolver.isNonSpecificMajorOrMajorMinorVersion(majorOnly), true, 'It detects major only versions as major only versions');
-        assert.equal(VersionResolver.isNonSpecificMajorOrMajorMinorVersion(featureBandVersion), false, 'It doesnt think xx versions are major minor versions');
-        assert.equal(VersionResolver.isNonSpecificMajorOrMajorMinorVersion(majorMinorOnly), true, 'It can determine if the version is only major.minor');
+        assert.equal(resolver.isNonSpecificMajorOrMajorMinorVersion(fullySpecifiedVersion), false, 'It doesnt think a fully specified version is major.minor only');
+        assert.equal(resolver.isNonSpecificMajorOrMajorMinorVersion(uniqueMajorMinorVersion), false);
+        assert.equal(resolver.isNonSpecificMajorOrMajorMinorVersion(twoDigitMajorVersion), false);
+        assert.equal(resolver.isNonSpecificMajorOrMajorMinorVersion(majorOnly), true, 'It detects major only versions as major only versions');
+        assert.equal(resolver.isNonSpecificMajorOrMajorMinorVersion(featureBandVersion), false, 'It doesnt think xx versions are major minor versions');
+        assert.equal(resolver.isNonSpecificMajorOrMajorMinorVersion(majorMinorOnly), true, 'It can determine if the version is only major.minor');
     });
 
     test('Detects if Version is Valid', async () => {
-        assert.equal(VersionResolver.isValidLongFormVersionFormat(fullySpecifiedVersion), true, 'It detects a full version as valid');
-        assert.equal(VersionResolver.isValidLongFormVersionFormat(uniqueMajorMinorVersion), true);
-        assert.equal(VersionResolver.isValidLongFormVersionFormat(twoDigitMajorVersion), true);
-        assert.equal(VersionResolver.isValidLongFormVersionFormat(featureBandVersion), true);
-        assert.equal(VersionResolver.isValidLongFormVersionFormat(majorOnly), false, 'It detects a major only version as not a full version');
-        assert.equal(VersionResolver.isValidLongFormVersionFormat(majorMinorOnly), false, 'It detects a major minor as not a full version');
-        assert.equal(VersionResolver.isValidLongFormVersionFormat(badSDKVersionLongPatch), false, 'It detects a version with a patch thats too large');
-        assert.equal(VersionResolver.isValidLongFormVersionFormat(badSDKVersionPatch), false, 'It detects a version that has a too short patch');
-        assert.equal(VersionResolver.isValidLongFormVersionFormat(badSDKVersionPeriods), false, 'It detects a version with a bad number of periods');
+        assert.equal(resolver.isValidLongFormVersionFormat(fullySpecifiedVersion), true, 'It detects a full version as valid');
+        assert.equal(resolver.isValidLongFormVersionFormat(uniqueMajorMinorVersion), true);
+        assert.equal(resolver.isValidLongFormVersionFormat(twoDigitMajorVersion), true);
+        assert.equal(resolver.isValidLongFormVersionFormat(featureBandVersion), true);
+        assert.equal(resolver.isValidLongFormVersionFormat(majorOnly), false, 'It detects a major only version as not a full version');
+        assert.equal(resolver.isValidLongFormVersionFormat(majorMinorOnly), false, 'It detects a major minor as not a full version');
+        assert.equal(resolver.isValidLongFormVersionFormat(badSDKVersionLongPatch), false, 'It detects a version with a patch thats too large');
+        assert.equal(resolver.isValidLongFormVersionFormat(badSDKVersionPatch), false, 'It detects a version that has a too short patch');
+        assert.equal(resolver.isValidLongFormVersionFormat(badSDKVersionPeriods), false, 'It detects a version with a bad number of periods');
     });
 });
 

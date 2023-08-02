@@ -122,7 +122,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
         let commandResult = (await this.commandRunner.execute(command, rootDir))[0];
 
         commandResult = commandResult.replace('\n', '');
-        if(!VersionResolver.isValidLongFormVersionFormat(commandResult))
+        if(!this.versionResolver.isValidLongFormVersionFormat(commandResult))
         {
             return null;
         }
@@ -133,7 +133,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
 
     public getDotnetVersionSupportStatus(fullySpecifiedVersion: string): Promise<DotnetDistroSupportStatus>
     {
-        if(VersionResolver.getFeatureBandFromVersion(fullySpecifiedVersion) !== '1')
+        if(this.versionResolver.getFeatureBandFromVersion(fullySpecifiedVersion) !== '1')
         {
             return Promise.resolve(DotnetDistroSupportStatus.Unsupported);
         }
@@ -178,6 +178,6 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
 
     public JsonDotnetVersion(fullySpecifiedDotnetVersion : string) : string
     {
-        return VersionResolver.getMajorMinor(fullySpecifiedDotnetVersion);
+        return this.versionResolver.getMajorMinor(fullySpecifiedDotnetVersion);
     }
 }

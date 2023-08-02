@@ -234,7 +234,7 @@ ${stderr}`);
 
         try {
             const result : IDotnetListVersionsResult | undefined = await vscode.commands.executeCommand('dotnet-sdk.listVersions', { listRuntimes: getRuntimes });
-            vscode.window.showInformationMessage(`Available ${getRuntimes == false ? 'SDKS' : 'Runtimes'}: ${result?.map(x => x.version).join(", ")}`);
+            vscode.window.showInformationMessage(`Available ${getRuntimes == false ? 'SDKS' : 'Runtimes'}: ${result?.map((x : any) => x.version).join(", ")}`);
         } catch (error) {
             vscode.window.showErrorMessage((error as Error).toString());
         }

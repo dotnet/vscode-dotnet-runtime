@@ -8,7 +8,7 @@ import { IExtensionState } from '../IExtensionState';
 import * as os from 'os';
 import * as path from 'path';
 import { VersionResolver } from './VersionResolver';
-import { DotnetFeatureBandDoesNotExistError, DotnetInvalidReleasesJSONError, DotnetNoInstallerFileExistsError, DotnetUnexpectedInstallerOSError, DotnetVersionResolutionError, WebRequestError } from '../EventStream/EventStreamEvents';
+import { DotnetFeatureBandDoesNotExistError, DotnetInvalidReleasesJSONError, DotnetNoInstallerFileExistsError, DotnetUnexpectedInstallerArchitectureError, DotnetUnexpectedInstallerOSError, DotnetVersionResolutionError, WebRequestError } from '../EventStream/EventStreamEvents';
 import { Debugging } from '../Utils/Debugging';
 import { IVersionResolver } from './IVersionResolver';
 /* tslint:disable:no-any */
@@ -34,6 +34,12 @@ export class GlobalInstallerResolver {
     private versionResolver : VersionResolver;
 
     private releasesJsonErrorString = `The API hosting the dotnet releases.json is invalid or has changed and the extension needs to be updated. Invalid API URL: `;
+    private badResolvedVersionErrorString = `The requested version was not in the correct format. Allowable formats are
+        * <MAJOR> (for example '6')
+        * <MAJOR>.<minor> (for example '6.0')
+        * <MAJOR>.<minor>.<feature band without patch version> (for example '6.0.4xx')
+        * <MAJOR>.<minor>.<patch> (for example '6.0.402')
+        * Your version was resolved to: `;
     private releasesJsonKey = 'releases';
     private releasesSdksKey = 'sdks';
     private releasesSdkRidKey = 'rid';
@@ -125,7 +131,7 @@ export class GlobalInstallerResolver {
         }
 
         Debugging.log(`The VersionResolver could not resolve the version, version: ${version}.`, this.eventStream);
-        const err = new DotnetVersionResolutionError(new Error(`The requested version resolved version is invalid.`), version);
+        const err = new DotnetVersionResolutionError(new Error(`${this.badResolvedVersionErrorString} ${version}`), version);
         this.eventStream.post(err);
         throw err;
     }
@@ -141,7 +147,7 @@ export class GlobalInstallerResolver {
     {
         if(specificVersion === null || specificVersion === undefined || specificVersion === '')
         {
-            const versionErr = new DotnetVersionResolutionError(new Error(`The requested version resolved version is invalid.`), specificVersion);
+            const versionErr = new DotnetVersionResolutionError(new Error(`${this.badResolvedVersionErrorString} ${specificVersion}.`), specificVersion);
             this.eventStream.post(versionErr);
             throw versionErr;
         }
@@ -194,7 +200,8 @@ export class GlobalInstallerResolver {
             }
             default:
             {
-                const archErr = new DotnetUnexpectedInstallerOSError(new Error(`The architecture ${operatingArch} is currently unsupported or unknown.`));
+                const archErr = new DotnetUnexpectedInstallerArchitectureError(new Error(`The architecture ${operatingArch} is currently unsupported or unknown.
+                    Your architecture: ${os.arch()}. Your OS: ${os.platform()}.`));
                 this.eventStream.post(archErr);
                 throw archErr;
             }
@@ -273,7 +280,9 @@ export class GlobalInstallerResolver {
         const installerFileName = installerJson[this.releasesSdkNameKey];
         if(installerFileName === undefined)
         {
-            const err = new DotnetInvalidReleasesJSONError(new Error(`${this.releasesJsonErrorString}${installerJson}`));
+            const err = new DotnetInvalidReleasesJSONError(new Error(`${this.releasesJsonErrorString}
+                ${this.getIndexUrl(this.versionResolver.getMajorMinor(this.fullySpecifiedVersionRequested))}.
+                The json does not have the parameter ${this.releasesSdkNameKey} which means the API publisher has published invalid dotnet release data. Please file an issue at https://github.com/dotnet/vscode-dotnet-runtime.`));
             this.eventStream.post(err);
             throw err;
         }
@@ -296,7 +305,8 @@ export class GlobalInstallerResolver {
             }
             default:
             {
-                const err = new DotnetUnexpectedInstallerOSError(new Error(`The SDK Extension failed to map the OS ${operatingSystemInDotnetFormat} to a proper package type.`));
+                const err = new DotnetUnexpectedInstallerOSError(new Error(`The SDK Extension failed to map the OS ${operatingSystemInDotnetFormat} to a proper package type.
+                    Your architecture: ${os.arch()}. Your OS: ${os.platform()}.`));
                 this.eventStream.post(err);
                 throw err;
             }

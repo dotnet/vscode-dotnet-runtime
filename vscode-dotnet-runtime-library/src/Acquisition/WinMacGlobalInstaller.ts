@@ -11,7 +11,7 @@ import { FileUtilities } from '../Utils/FileUtilities';
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { VersionResolver } from './VersionResolver';
-import { DotnetConflictingGlobalWindowsInstallError, DotnetCustomLinuxInstallExistsError, DotnetUnexpectedInstallerOSError } from '../EventStream/EventStreamEvents';
+import { DotnetConflictingGlobalWindowsInstallError, DotnetUnexpectedInstallerOSError } from '../EventStream/EventStreamEvents';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 /* tslint:disable:only-arrow-functions */
@@ -29,6 +29,8 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
     private installingVersion : string;
     protected commandRunner : ICommandExecutor;
     public cleanupInstallFiles = true;
+    protected versionResolver : VersionResolver;
+    protected file : FileUtilities;
 
     constructor(context : IAcquisitionWorkerContext, installingVersion : string, installerUrl : string, executor : ICommandExecutor | null = null)
     {
@@ -36,6 +38,8 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         this.installerUrl = installerUrl
         this.installingVersion = installingVersion;
         this.commandRunner = executor ?? new CommandExecutor();
+        this.versionResolver = new VersionResolver(context.extensionState, context.eventStream);
+        this.file = new FileUtilities();
     }
 
     public async installSDK(): Promise<string>
@@ -64,7 +68,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
 
         if(this.cleanupInstallFiles)
         {
-            FileUtilities.wipeDirectory(path.dirname(installerFile));
+            this.file.wipeDirectory(path.dirname(installerFile));
         }
 
         const validInstallerStatusCodes = ['0', '1641', '3010']; // Ok, Pending Reboot, + Reboot Starting Now
@@ -86,7 +90,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
     private async downloadInstaller(installerUrl : string) : Promise<string>
     {
         const ourInstallerDownloadFolder = IGlobalInstaller.getDownloadedInstallFilesFolder();
-        FileUtilities.wipeDirectory(ourInstallerDownloadFolder);
+        this.file.wipeDirectory(ourInstallerDownloadFolder);
         const installerPath = path.join(ourInstallerDownloadFolder, `${installerUrl.split('/').slice(-1)}`);
         await this.download(installerUrl, installerPath);
         return installerPath;
@@ -203,7 +207,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         else
         {
             let command = `${path.resolve(installerPath)}`;
-            if(FileUtilities.isElevated())
+            if(this.file.isElevated())
             {
                 command += ' /quiet /install /norestart';
             }
@@ -255,9 +259,9 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
             ( // Side by side installs of the same major.minor and band can cause issues in some cases. So we decided to just not allow it unless upgrading to a newer patch version.
               // The installer can catch this but we can avoid unnecessary work this way,
               // and for windows the installer may never appear to the user. With this approach, we don't need to handle installer error codes.
-                Number(VersionResolver.getMajorMinor(requestedVersion)) === Number(VersionResolver.getMajorMinor(sdk)) &&
-                Number(VersionResolver.getFeatureBandFromVersion(requestedVersion)) === Number(VersionResolver.getFeatureBandFromVersion(sdk)) &&
-                Number(VersionResolver.getFeatureBandPatchVersion(requestedVersion)) <= Number(VersionResolver.getFeatureBandPatchVersion(sdk))
+                Number(this.versionResolver.getMajorMinor(requestedVersion)) === Number(this.versionResolver.getMajorMinor(sdk)) &&
+                Number(this.versionResolver.getFeatureBandFromVersion(requestedVersion)) === Number(this.versionResolver.getFeatureBandFromVersion(sdk)) &&
+                Number(this.versionResolver.getFeatureBandPatchVersion(requestedVersion)) <= Number(this.versionResolver.getFeatureBandPatchVersion(sdk))
             )
             {
                 return sdk;

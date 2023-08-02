@@ -126,6 +126,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
     const getAvailableVersions = async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) : Promise<IDotnetListVersionsResult | undefined> =>
     {
+
         const versionsResult = await callWithErrorHandling(async () => {
             const customVersionResolver = new VersionResolver(context.globalState, eventStream, customWebWorker);
             return customVersionResolver.GetAvailableDotnetVersions(commandContext);

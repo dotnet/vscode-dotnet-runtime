@@ -285,7 +285,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
 
   test('Install Globally E2E (Requires Admin)', async () => {
     // We only test if the process is running under ADMIN because non-admin requires user-intervention.
-    if(FileUtilities.isElevated())
+    if(new FileUtilities().isElevated())
     {
       const originalPath = process.env.PATH;
       const sdkVersion = '7.0.103';
@@ -293,7 +293,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
 
       // We cannot use the describe pattern to restore the environment variables using vscodes extension testing infrastructure.
       // So we must set and unset it ourselves, which isn't ideal as this variable could remain.
-      let result;
+      let result : IDotnetAcquireResult;
       let error : any;
       // We cannot test much as we don't want to leave global installs on devboxes. But we do want to make sure the e-2-e goes through the right path. Vendors can test the rest.
       // So we have this environment variable that tells us to stop before running any real install.
@@ -319,7 +319,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
 
       const pathAfterInstall = process.env.PATH;
 
-      assert.exists(result, 'The global acquisition command did not provide a result?');
+      assert.exists(result!, 'The global acquisition command did not provide a result?');
 
       assert.exists(result!.dotnetPath);
       assert.equal(result!.dotnetPath, 'fake-sdk');

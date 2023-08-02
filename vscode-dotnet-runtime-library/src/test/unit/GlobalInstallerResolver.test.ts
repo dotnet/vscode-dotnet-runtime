@@ -4,9 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
 import * as os from 'os';
-import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProvider';
-import { FileWebRequestWorker, MockCommandExecutor, MockEventStream, MockExtensionContext, MockWebRequestWorker } from '../mocks/MockObjects';
-import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
+import { FileWebRequestWorker, MockEventStream, MockExtensionContext } from '../mocks/MockObjects';
 import { GlobalInstallerResolver } from '../../Acquisition/GlobalInstallerResolver';
 import path = require('path');
 const assert = chai.assert;
@@ -55,5 +53,12 @@ suite('Global Installer Resolver Tests', () =>
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullVersion(), mockVersion);
+    });
+
+    test('It rejects correctly with undiscoverable feature band', async () => {
+        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, '7.0.500');
+        provider.customWebRequestWorker = webWorker;
+
+        assert.isRejected(provider.getFullVersion());
     });
 });

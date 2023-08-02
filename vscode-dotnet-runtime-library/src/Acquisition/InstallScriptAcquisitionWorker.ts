@@ -22,6 +22,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
     private readonly scriptAcquisitionUrl: string = 'https://dot.net/v1/dotnet-install.';
     private readonly scriptFilePath: string;
     private readonly scriptFileEnding: string;
+    private readonly fileUtilities: FileUtilities;
 
 
     constructor(extensionState: IExtensionState, private readonly eventStream: IEventStream) {
@@ -29,6 +30,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
         const scriptFileName = 'dotnet-install';
         this.scriptFilePath = path.join(__dirname, 'install scripts', `${scriptFileName}.${this.scriptFileEnding}`);
         this.webWorker = new WebRequestWorker(extensionState, eventStream);
+        this.fileUtilities = new FileUtilities();
     }
 
     public async getDotnetInstallScriptPath(): Promise<string> {
@@ -38,7 +40,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
                 throw new Error('Unable to get script path.');
             }
 
-            FileUtilities.writeFileOntoDisk(script, this.scriptFilePath);
+            this.fileUtilities.writeFileOntoDisk(script, this.scriptFilePath);
             this.eventStream.post(new DotnetInstallScriptAcquisitionCompleted());
             return this.scriptFilePath;
         } catch (error) {

@@ -114,6 +114,10 @@ export class DotnetUnexpectedInstallerOSError extends DotnetAcquisitionError {
     public readonly eventName = 'DotnetUnexpectedInstallerOSError';
 }
 
+export class DotnetUnexpectedInstallerArchitectureError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetUnexpectedInstallerArchitectureError';
+}
+
 export class DotnetFeatureBandDoesNotExistError extends DotnetAcquisitionError {
     public readonly eventName = 'DotnetFeatureBandDoesNotExistError';
 }

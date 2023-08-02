@@ -53,7 +53,7 @@ suite('Windows & Mac Global Installer Tests', () =>
         `;
             let foundVersions = await installer.getGlobalSdkVersionsInstalledOnMachine();
             assert.deepStrictEqual(foundVersions, ['5.0.416', '8.0.100-preview.5.23265.7', '7.0.301', '6.0.416', '7.0.109', '7.0.304']);
-            assert.include(mockExecutor.attemptedCommand, 'reg.exe query "HKEY');
+            assert.include(mockExecutor.attemptedCommand, 'query "HKEY');
 
             // only 1 64 bit sdks exist
             mockExecutor.fakeReturnValue = `
@@ -91,7 +91,7 @@ suite('Windows & Mac Global Installer Tests', () =>
            let conflictExists = await installer.GlobalWindowsInstallWithConflictingVersionAlreadyExists(mockVersion);
            // The existing install is of a higher patch version than the attempted install, but the same band and major.minor.
            assert.deepStrictEqual(conflictExists, '7.0.307');
-           assert.include(mockExecutor.attemptedCommand, 'reg.exe query "HKEY');
+           assert.include(mockExecutor.attemptedCommand, 'query "HKEY');
            mockExecutor.fakeReturnValue = ``;
 
            // The major.minor is the same, but the band is not, so there is no conflict.
@@ -118,7 +118,7 @@ suite('Windows & Mac Global Installer Tests', () =>
            assert.equal(result, '0');
 
            // Assert the reg query was the last command, aka it never attempted to install because it didn't need to
-           assert.include(mockExecutor.attemptedCommand, 'reg.exe query "HKEY');
+           assert.include(mockExecutor.attemptedCommand, 'query "HKEY');
         }
     });
 
@@ -137,7 +137,7 @@ suite('Windows & Mac Global Installer Tests', () =>
         else if(os.platform() === 'win32')
         {
             assert.isTrue(fs.existsSync(mockExecutor.attemptedCommand.split(' ')[0]), 'It ran a command to an executable that exists');
-            if(FileUtilities.isElevated())
+            if(new FileUtilities().isElevated())
             {
                 assert.include(mockExecutor.attemptedCommand, ' /quiet /install /norestart', 'It ran under the hood if it had privelleges already');
             }
@@ -168,7 +168,7 @@ suite('Windows & Mac Global Installer Tests', () =>
         await installer.installSDK();
         // The installer files should be removed. Note this doesnt really check the default as we changed it manually
 
-        if(FileUtilities.isElevated())
+        if(new FileUtilities().isElevated())
         {
             assert.equal(fs.readdirSync(installerDownloadFolder).length, 0, 'the installer file was deleted upon exit');
             mockExecutor.fakeReturnValue = ``;
@@ -177,5 +177,5 @@ suite('Windows & Mac Global Installer Tests', () =>
         {
             console.warn('The check for installer file deletion cannot run without elevation.');
         }
-    }).timeout(15000);;
+    }).timeout(15000 * 3);
 });

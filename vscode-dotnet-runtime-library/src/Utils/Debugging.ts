@@ -16,7 +16,7 @@ import * as fs from 'fs';
 export class Debugging
 {
     static logFile = path.join('C:', 'VsDotnetDebuggingLog.txt');
-    static debugOn = true;
+    static debugOn = false;
     static logToVS = true;
     static logToFile = true;
 
@@ -28,12 +28,12 @@ export class Debugging
             {
                 eventStream?.post(new DotnetDebuggingMessage(message));
             }
-            
+
             console.log(message);
-            
+
 
             if(Debugging.logFile)
-            
+
             {
                 console.log(`Writing to ${Debugging.logFile}`);
                 if(Debugging.logToVS)
