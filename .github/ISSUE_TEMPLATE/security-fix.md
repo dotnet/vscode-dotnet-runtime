@@ -1,6 +1,6 @@
 ---
 name: "security fix"
-about: 'security fix: vs-code runtime extension'
+about: 'Please review our [security policy](https://github.com/dotnet/sdk/security/policy) for more details'
 title: ''
 labels: ''
 assignees: ''
