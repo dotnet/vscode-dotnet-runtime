@@ -1,5 +1,5 @@
 ---
-name: "security fix: vs-code runtime extension"
+name: "security fix"
 about: 'security fix: vs-code runtime extension'
 title: ''
 labels: ''

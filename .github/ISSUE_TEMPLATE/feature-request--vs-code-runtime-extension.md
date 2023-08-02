@@ -1,5 +1,5 @@
 ---
-name: "feature request: vs-code runtime extension"
+name: "feature request"
 about: 'feature request: vs-code runtime extension'
 title: ''
 labels: ''
