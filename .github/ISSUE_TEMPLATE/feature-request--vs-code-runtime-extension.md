@@ -1,6 +1,6 @@
 ---
 name: "feature request"
-about: 'feature request: vs-code runtime extension'
+about: 'Request a new feature for this project'
 title: ''
 labels: ''
 assignees: ''

@@ -1,6 +1,6 @@
 ---
 name: "bug-report"
-about: 'bug-report: vs-code runtime extension'
+about: 'Create a report about something that is potential buggy'
 title: ''
 labels: ''
 assignees: ''
