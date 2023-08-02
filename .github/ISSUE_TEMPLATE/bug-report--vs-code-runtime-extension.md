@@ -6,7 +6,7 @@ labels: ''
 assignees: ''
 ---
 
-❗ Privacy Alert! The contents copied to your clipboard may contain personal data. Prior to posting to GitHub, please remove any personal data which should not be publicly viewable. https://privacy.microsoft.com/en-US/privacystatement
+>❗ Privacy Alert! The contents copied to your clipboard may contain personal data. Prior to posting to GitHub, please remove any personal data which should not be publicly viewable. https://privacy.microsoft.com/en-US/privacystatement
 
 **Describe the bug**
 Errors the extension may have encountered have been added to your clipboard. Please paste it here and describe what happened and the problem you are facing.
