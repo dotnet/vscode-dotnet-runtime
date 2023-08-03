@@ -88,7 +88,7 @@ export class GlobalInstallerResolver {
      *
      * @returns The fully specified version in a standardized format that was requested.
      */
-    public async getFullVersion(): Promise<string>
+    public async getFullySpecifiedVersion(): Promise<string>
     {
         await this.determineVersionAndInstallerUrl();
         return this.fullySpecifiedVersionRequested;

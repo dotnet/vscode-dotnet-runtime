@@ -134,8 +134,20 @@ export class VersionResolver implements IVersionResolver {
         return matchingVersion[0].version;
     }
 
-    private validateVersionInput(version: string) {
-        const parsedVer = semver.coerce(version);
+    private validateVersionInput(version: string)
+    {
+        Debugging.log(`Parsing version via semver: ${version}.`, this.eventStream);
+        let parsedVer;
+        try
+        {
+            parsedVer = semver.coerce(version);
+        }
+        catch(err)
+        {
+            parsedVer = null;
+        }
+        Debugging.log(`Semver parsing passed: ${version}.`, this.eventStream);
+
         if (version.split('.').length !== 2 || !parsedVer)
         {
             Debugging.log(`Resolving the version: ${version} ... it is invalid!`, this.eventStream);

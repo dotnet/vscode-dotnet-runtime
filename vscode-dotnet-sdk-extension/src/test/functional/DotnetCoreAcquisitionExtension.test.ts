@@ -253,15 +253,15 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
 
     let resolver : GlobalInstallerResolver = new GlobalInstallerResolver(mockExtensionContext, eventStream, majorOnlyVersion);
     resolver.customWebRequestWorker = webWorker;
-    assert.strictEqual(await resolver.getFullVersion(), newestVersion);
+    assert.strictEqual(await resolver.getFullySpecifiedVersion(), newestVersion);
 
     resolver = new GlobalInstallerResolver(mockExtensionContext, eventStream, majorMinorVersion);
     resolver.customWebRequestWorker = webWorker;
-    assert.strictEqual(await resolver.getFullVersion(), newestVersion);
+    assert.strictEqual(await resolver.getFullySpecifiedVersion(), newestVersion);
 
     resolver = new GlobalInstallerResolver(mockExtensionContext, eventStream, featureBandOnlyVersion);
     resolver.customWebRequestWorker = webWorker;
-    assert.strictEqual(await resolver.getFullVersion(), newestBandedVersion);
+    assert.strictEqual(await resolver.getFullySpecifiedVersion(), newestBandedVersion);
 
     if(os.arch() === 'x64')
     {
@@ -280,7 +280,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
 
     resolver = new GlobalInstallerResolver(mockExtensionContext, eventStream, fullVersion);
     resolver.customWebRequestWorker = webWorker;
-    assert.strictEqual(await resolver.getFullVersion(), fullVersion);
+    assert.strictEqual(await resolver.getFullySpecifiedVersion(), fullVersion);
   }).timeout(standardTimeoutTime);
 
 

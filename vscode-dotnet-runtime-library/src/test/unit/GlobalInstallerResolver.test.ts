@@ -27,14 +27,14 @@ suite('Global Installer Resolver Tests', () =>
         const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, featureBandVersion);
         provider.customWebRequestWorker = webWorker;
 
-        assert.equal(await provider.getFullVersion(), newestFeatureBandedVersion);
+        assert.equal(await provider.getFullySpecifiedVersion(), newestFeatureBandedVersion);
     });
 
     test('It finds the correct installer download url for the os', async () => {
         const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, mockVersion);
         provider.customWebRequestWorker = webWorker;
 
-        assert.equal(await provider.getFullVersion(), mockVersion);
+        assert.equal(await provider.getFullySpecifiedVersion(), mockVersion);
         const installerUrl = await provider.getInstallerUrl();
         assert.include(installerUrl, (os.platform() === 'win32' ? 'exe' : 'pkg'));
         // The architecture in the installer file will match unless its x32, in which case itll be called x86.
@@ -45,20 +45,20 @@ suite('Global Installer Resolver Tests', () =>
         const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, majorMinorOnly);
         provider.customWebRequestWorker = webWorker;
 
-        assert.equal(await provider.getFullVersion(), mockVersion);
+        assert.equal(await provider.getFullySpecifiedVersion(), mockVersion);
     });
 
     test('It parses the major.minor format', async () => {
         const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, majorOnly);
         provider.customWebRequestWorker = webWorker;
 
-        assert.equal(await provider.getFullVersion(), mockVersion);
+        assert.equal(await provider.getFullySpecifiedVersion(), mockVersion);
     });
 
     test('It rejects correctly with undiscoverable feature band', async () => {
         const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, '7.0.500');
         provider.customWebRequestWorker = webWorker;
 
-        assert.isRejected(provider.getFullVersion());
+        assert.isRejected(provider.getFullySpecifiedVersion());
     });
 });

@@ -72,7 +72,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     public async acquireGlobalSDK(installerResolver: GlobalInstallerResolver): Promise<IDotnetAcquireResult>
     {
         Debugging.log(`Acquire Global SDK Invoked.`, this.context.eventStream);
-        return this.acquire(await installerResolver.getFullVersion(), false, installerResolver);
+        return this.acquire(await installerResolver.getFullySpecifiedVersion(), false, installerResolver);
     }
 
     /**
@@ -234,7 +234,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
     private async acquireGlobalCore(globalInstallerResolver : GlobalInstallerResolver, installPromiseVersionKey : string): Promise<string>
     {
-        const installingVersion = await globalInstallerResolver.getFullVersion();
+        const installingVersion = await globalInstallerResolver.getFullySpecifiedVersion();
         Debugging.log(`The version we resolved that was requested is: ${installingVersion}.`, this.context.eventStream);
         this.checkForPartialInstalls(installPromiseVersionKey, false, false);
         Debugging.log(`Partial install check has completed.`, this.context.eventStream);
