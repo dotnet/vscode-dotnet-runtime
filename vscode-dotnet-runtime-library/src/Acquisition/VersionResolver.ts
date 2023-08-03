@@ -128,7 +128,7 @@ export class VersionResolver implements IVersionResolver {
         {
             const err = new DotnetVersionResolutionError(new Error(`The requested and or resolved version is invalid.`), version);
             this.eventStream.post(err);
-            throw err;
+            throw err.error;
         }
 
         return matchingVersion[0].version;
@@ -141,7 +141,7 @@ export class VersionResolver implements IVersionResolver {
             Debugging.log(`Resolving the version: ${version} ... it is invalid!`, this.eventStream);
             const err = new DotnetVersionResolutionError(new Error(`An invalid version was requested. Version: ${version}`), version);
             this.eventStream.post(err);
-            throw err;
+            throw err.error;
         }
         Debugging.log(`The version ${version} was determined to be valid.`, this.eventStream);
     }
@@ -155,7 +155,7 @@ export class VersionResolver implements IVersionResolver {
         {
             const err = new DotnetInvalidReleasesJSONError(new Error(`We could not reach the releases API ${this.releasesUrl} to download dotnet, is your machine offline or is this website down?`));
             this.eventStream.post(err);
-            throw err;
+            throw err.error;
         }
 
         return response;
@@ -182,7 +182,7 @@ export class VersionResolver implements IVersionResolver {
         if(fullySpecifiedVersion.split('.').length < 2)
         {
             const err = new DotnetVersionResolutionError(new Error(`The requested version ${fullySpecifiedVersion} is invalid.`), fullySpecifiedVersion);
-            throw err;
+            throw err.error;
         }
 
         const majorMinor = `${fullySpecifiedVersion.split('.').at(0)}.${fullySpecifiedVersion.split('.').at(1)}`;
@@ -200,7 +200,7 @@ export class VersionResolver implements IVersionResolver {
         if(band === undefined)
         {
             const err = new DotnetFeatureBandDoesNotExistError(new Error(`${VersionResolver.invalidFeatureBandErrorString}${fullySpecifiedVersion}.`));
-            throw err;
+            throw err.error;
         }
         return band;
     }
@@ -226,7 +226,7 @@ export class VersionResolver implements IVersionResolver {
         if(patch === undefined || !this.isNumber(patch))
         {
             const err = new DotnetFeatureBandDoesNotExistError(new Error(`${VersionResolver.invalidFeatureBandErrorString}${fullySpecifiedVersion}.`));
-            throw err;
+            throw err.error;
         }
         return patch
     }

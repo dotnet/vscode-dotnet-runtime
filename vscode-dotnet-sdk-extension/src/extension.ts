@@ -155,7 +155,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             {
                 Debugging.log(`Acquisition Request was remarked as Global.`, eventStream);
 
-                if(commandContext.version === '')
+                if(commandContext.version === '' || !commandContext.version)
                 {
                     throw Error(`No version was defined to install.`);
                 }

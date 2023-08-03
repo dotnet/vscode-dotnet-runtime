@@ -40,7 +40,7 @@ export class CommandExecutor extends ICommandExecutor
             // We can open a vscode box and get the user password, but that will require more security analysis.
 
             const err = new DotnetWSLSecurityError(new Error(`Automatic SDK Acqusition is not yet supported in WSL due to security concerns.`));
-            throw err;
+            throw err.error;
         }
 
         // We wrap the exec in a promise because there is no synchronous version of the sudo exec command for vscode/sudo

@@ -109,7 +109,7 @@ export class LinuxVersionResolver
             {
                 const error = new DotnetAcquisitionDistroUnknownError(new Error(this.baseUnsupportedDistroErrorMessage));
                 this.acquisitionContext.eventStream.post(error);
-                throw error;
+                throw error.error;
             }
 
             const pair : DistroVersionPair = { distro : distroName, version : distroVersion };
@@ -119,7 +119,7 @@ export class LinuxVersionResolver
         {
             const err = new DotnetAcquisitionDistroUnknownError(new Error(`${this.baseUnsupportedDistroErrorMessage} ... does /etc/os-release exist?`));
             this.acquisitionContext.eventStream.post(err);
-            throw err;
+            throw err.error;
         }
     }
 
@@ -145,7 +145,7 @@ export class LinuxVersionResolver
         {
             const error = new DotnetAcquisitionDistroUnknownError(new Error(`${this.baseUnsupportedDistroErrorMessage} ... we cannot initialize.`));
             this.acquisitionContext.eventStream.post(error);
-            throw error;
+            throw error.error;
         }
     }
 
@@ -157,7 +157,7 @@ export class LinuxVersionResolver
             case null:
                 const error = new DotnetAcquisitionDistroUnknownError(new Error(this.baseUnsupportedDistroErrorMessage));
                 this.acquisitionContext.eventStream.post(error);
-                throw error;
+                throw error.error;
             default:
                 return new GenericDistroSDKProvider(distroAndVersion, this.acquisitionContext);
         }
@@ -183,7 +183,7 @@ export class LinuxVersionResolver
                 const err = new DotnetConflictingLinuxInstallTypesError(new Error(this.conflictingInstallErrorMessage + microsoftFeedDir),
                     fullySpecifiedDotnetVersion);
                 this.acquisitionContext.eventStream.post(err);
-                throw err;
+                throw err.error;
             }
         }
         else if(supportStatus === DotnetDistroSupportStatus.Microsoft)
@@ -194,7 +194,7 @@ export class LinuxVersionResolver
                 const err = new DotnetConflictingLinuxInstallTypesError(new Error(this.conflictingInstallErrorMessage + distroFeedDir),
                     fullySpecifiedDotnetVersion);
                 this.acquisitionContext.eventStream.post(err);
-                throw err;
+                throw err.error;
             }
         }
     }
@@ -214,7 +214,7 @@ export class LinuxVersionResolver
             const err = new DotnetCustomLinuxInstallExistsError(new Error(this.conflictingCustomInstallErrorMessage + existingInstall),
             fullySpecifiedDotnetVersion);
             this.acquisitionContext.eventStream.post(err);
-            throw err;
+            throw err.error;
         }
     }
 
@@ -241,7 +241,7 @@ export class LinuxVersionResolver
                     const err = new DotnetCustomLinuxInstallExistsError(new Error(`An installation of ${fullySpecifiedDotnetVersion} was requested but ${existingGlobalInstallSDKVersion} is already available.`),
                         fullySpecifiedDotnetVersion);
                     this.acquisitionContext.eventStream.post(err);
-                    throw err;
+                    throw err.error;
                 }
                 else if(await this.distroSDKProvider!.dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion) ||
                     Number(this.versionResolver.getFeatureBandPatchVersion(existingGlobalInstallSDKVersion)) < Number(this.versionResolver.getFeatureBandPatchVersion(fullySpecifiedDotnetVersion)))

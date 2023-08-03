@@ -49,7 +49,7 @@ export class WebRequestWorker {
         {
             const err = new WebRequestError(new Error(`The requested url ${url} is unreachable. Please check your internet connection?`));
             this.eventStream.post(err);
-            throw err;
+            throw err.error;
         }
 
         return JSON.parse(jsonStringData);

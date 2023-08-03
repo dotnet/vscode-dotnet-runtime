@@ -58,7 +58,7 @@ export abstract class IDistroDotnetSDKProvider {
         if(!distroVersion || !this.distroJson || !((this.distroJson as any)[this.distroVersion.distro]))
         {
             const error = new DotnetAcquisitionDistroUnknownError(new Error('We are unable to detect the distro or version of your machine'));
-            throw error;
+            throw error.error;
         }
     }
 

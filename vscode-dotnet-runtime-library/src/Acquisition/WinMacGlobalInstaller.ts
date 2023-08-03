@@ -59,7 +59,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
                     Please uninstall this version first if you would like to continue.
                     If Visual Studio is installed, you may need to use the VS Setup Window to uninstall the SDK component.`));
                 this.acquisitionContext.eventStream.post(err);
-                throw err;
+                throw err.error;
             }
         }
 
@@ -184,7 +184,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
 
         const err = new DotnetUnexpectedInstallerOSError(new Error(`The operating system ${os.platform()} is unsupported.`));
         this.acquisitionContext.eventStream.post(err);
-        throw err;
+        throw err.error;
     }
 
     /**

@@ -139,7 +139,7 @@ export class GlobalInstallerResolver {
         Debugging.log(`The VersionResolver could not resolve the version, version: ${version}.`, this.eventStream);
         const err = new DotnetVersionResolutionError(new Error(`${this.badResolvedVersionErrorString} ${version}`), version);
         this.eventStream.post(err);
-        throw err;
+        throw err.error;
     }
 
     /**
@@ -155,7 +155,7 @@ export class GlobalInstallerResolver {
         {
             const versionErr = new DotnetVersionResolutionError(new Error(`${this.badResolvedVersionErrorString} ${specificVersion}.`), specificVersion);
             this.eventStream.post(versionErr);
-            throw versionErr;
+            throw versionErr.error;
         }
 
         const operatingSys : string = os.platform();
@@ -182,7 +182,7 @@ export class GlobalInstallerResolver {
             {
                 const osErr = new DotnetUnexpectedInstallerOSError(new Error(`The OS ${operatingSys} is currently unsupported or unknown.`));
                 this.eventStream.post(osErr);
-                throw osErr;
+                throw osErr.error;
             }
         }
 
@@ -209,7 +209,7 @@ export class GlobalInstallerResolver {
                 const archErr = new DotnetUnexpectedInstallerArchitectureError(new Error(`The architecture ${operatingArch} is currently unsupported or unknown.
                     Your architecture: ${os.arch()}. Your OS: ${os.platform()}.`));
                 this.eventStream.post(archErr);
-                throw archErr;
+                throw archErr.error;
             }
         }
 
@@ -221,7 +221,7 @@ export class GlobalInstallerResolver {
         {
             const jsonErr = new DotnetInvalidReleasesJSONError(new Error(`${this.releasesJsonErrorString}${indexUrl}`));
             this.eventStream.post(jsonErr);
-            throw jsonErr;
+            throw jsonErr.error;
         }
 
         const sdks: any[] = [];
@@ -247,7 +247,7 @@ export class GlobalInstallerResolver {
                             const releaseJsonErr = new DotnetInvalidReleasesJSONError(new Error(`URL for ${desiredRidPackage} on ${specificVersion} is unavailable:
                                 The version may be Out of Support, or the releases json format used by ${indexUrl} may be invalid and the extension needs to be updated.`));
                             this.eventStream.post(releaseJsonErr);
-                            throw releaseJsonErr;
+                            throw releaseJsonErr.error;
                         }
                         return installerUrl;
                     }
@@ -255,13 +255,13 @@ export class GlobalInstallerResolver {
 
                 const installerErr = new DotnetNoInstallerFileExistsError(new Error(`An installer for the runtime ${desiredRidPackage} could not be found for version ${specificVersion}.`));
                 this.eventStream.post(installerErr);
-                throw installerErr;
+                throw installerErr.error;
             }
         }
 
         const fileErr = new DotnetNoInstallerFileExistsError(new Error(`The SDK installation files for version ${specificVersion} running on ${desiredRidPackage} couldn't be found. Is the version in support? Note that -preview versions or versions with build numbers aren't yet supported. Visit https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core for support information.`));
         this.eventStream.post(fileErr);
-        throw fileErr;
+        throw fileErr.error;
     }
 
     /**
@@ -290,7 +290,7 @@ export class GlobalInstallerResolver {
                 ${this.getIndexUrl(this.versionResolver.getMajorMinor(version))}.
                 The json does not have the parameter ${this.releasesSdkNameKey} which means the API publisher has published invalid dotnet release data. Please file an issue at https://github.com/dotnet/vscode-dotnet-runtime.`));
             this.eventStream.post(err);
-            throw err;
+            throw err.error;
         }
 
         let desiredFileExtension = '';
@@ -314,7 +314,7 @@ export class GlobalInstallerResolver {
                 const err = new DotnetUnexpectedInstallerOSError(new Error(`The SDK Extension failed to map the OS ${operatingSystemInDotnetFormat} to a proper package type.
                     Your architecture: ${os.arch()}. Your OS: ${os.platform()}.`));
                 this.eventStream.post(err);
-                throw err;
+                throw err.error;
             }
         }
 
@@ -339,7 +339,7 @@ export class GlobalInstallerResolver {
         {
             const badJsonErr = new DotnetInvalidReleasesJSONError(new Error(`${this.releasesJsonErrorString}${indexUrl}`));
             this.eventStream.post(badJsonErr);
-            throw badJsonErr;
+            throw badJsonErr.error;
         }
 
         // Assumption: The first release in releases will be the newest release and contain the newest sdk for each feature band. This has been 'confirmed' with the releases team.
@@ -359,7 +359,7 @@ export class GlobalInstallerResolver {
         const availableBands = Array.from(new Set(sdks.map((x : any) => this.versionResolver.getFeatureBandFromVersion(x[this.releasesSdkVersionKey]))));
         const err = new DotnetFeatureBandDoesNotExistError(new Error(`The feature band '${band}' doesn't exist for the SDK major version '${version}'. Available feature bands for this SDK version are ${availableBands}.`));
         this.eventStream.post(err);
-        throw err;
+        throw err.error;
     }
 
     /**

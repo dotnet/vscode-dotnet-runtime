@@ -7,7 +7,6 @@ import * as cp from 'child_process';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import {
-    Debugging,
     IDotnetAcquireContext,
     IDotnetAcquireResult,
     IDotnetListVersionsResult,
@@ -189,18 +188,14 @@ ${stderr}`);
             });
         }
 
-        Debugging.log(`Sample Global Command Invoked`);
-
         try
         {
             await vscode.commands.executeCommand('dotnet-sdk.showAcquisitionLog');
             let commandContext : IDotnetAcquireContext = { version, requestingExtensionId, installType: 'global' };
-            Debugging.log(`Calling Acquire Command`);
             await vscode.commands.executeCommand('dotnet-sdk.acquire', commandContext);
         }
         catch (error)
         {
-            Debugging.log(`An error occured in the execution of the command, see the error: ${(error as Error).toString()}`);
             vscode.window.showErrorMessage((error as Error).toString());
         }
     });
