@@ -52,7 +52,7 @@ export abstract class IDistroDotnetSDKProvider {
         this.distroVersion = distroVersion;
         this.versionResolver = new VersionResolver(context.extensionState, context.eventStream);
         // Hard-code to the upper path (lib/dist/acquisition) from __dirname to the lib folder, as webpack-copy doesn't seem to copy the distro-support.json
-        const distroDataFile = path.join(path.dirname(path.dirname(__dirname)), 'distro-data', 'distro-support.json');
+        const distroDataFile = path.join(__dirname, 'distro-data', `distro-support.json`);
         this.distroJson = JSON.parse(fs.readFileSync(distroDataFile, 'utf8'));
 
         if(!distroVersion || !this.distroJson || !((this.distroJson as any)[this.distroVersion.distro]))
