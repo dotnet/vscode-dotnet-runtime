@@ -7,6 +7,7 @@ assignees: ''
 ---
 
 >❗ Privacy Alert! The contents copied to your clipboard may contain personal data. Prior to posting to GitHub, please remove any personal data which should not be publicly viewable. https://privacy.microsoft.com/en-US/privacystatement
+
 > The issue text was copied to the clipboard.  Please paste it into this window. Please attach the log file located at the location from the clipboard. Note that this file may contain personal data.
 
 **Describe the bug**
