@@ -15,8 +15,8 @@ import * as fs from 'fs';
  */
 export class Debugging
 {
-    static logFile = path.join('C:', 'VsDotnetDebuggingLog.txt');
-    static debugOn = true;
+    static logFile = path.join(__dirname, 'VsDotnetDebuggingLog.txt');
+    static debugOn = false;
     static logToVS = true;
     static logToFile = true;
 

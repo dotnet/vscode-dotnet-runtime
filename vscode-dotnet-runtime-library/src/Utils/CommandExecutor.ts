@@ -90,8 +90,9 @@ export class CommandExecutor extends ICommandExecutor
         const splitCommands : string[] = command.split('&&');
         const commandResults : string[] = [];
 
-        for (const isolatedCommand of splitCommands)
+        for (let isolatedCommand of splitCommands)
         {
+            isolatedCommand = isolatedCommand.trim();
             const rootCommand = isolatedCommand.split(' ')[0];
             const commandFollowUps : string[] = isolatedCommand.split(' ').slice(1);
 
