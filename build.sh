@@ -86,5 +86,10 @@ fi
 popd
 
 echo ""
+echo "----------- Copying Library Webpacked Dependencies -----------"
+echo "" # See the build.ps1 for more details on why we do this
+cp -ar ./vscode-dotnet-runtime-library/distro-data/ ./vscode-dotnet-runtime-library/dist/
+
+echo ""
 echo "${GREEN}Build succeeded!${NC}"
 exit 0
