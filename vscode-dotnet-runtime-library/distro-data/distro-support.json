@@ -1,4 +1,5 @@
 {
+	"$schema": "../../Documentation/json-schema/distro-support-schema.json",
 	"Ubuntu": {
 		"installCommand": "sudo apt-get update && sudo apt-get install -y {0}",
 		"uninstallCommand": "sudo apt-get remove {0}",

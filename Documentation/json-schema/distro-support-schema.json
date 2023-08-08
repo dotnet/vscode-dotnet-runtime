@@ -1,0 +1,120 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+      "DISTRO": {
+        "description": "The Distro name as in cat etc/os-release. Multiple distros are added to the same file.",
+        "type": "object",
+        "properties":
+        {
+            "installCommand": {
+                "type": "string",
+                "description": "The command(s) needed to install dotnet for this distro. Use {0} for the package to install"
+            },
+            "uninstallCommand": {
+                "type": "string",
+                "description": "The command(s) needed to uninstall dotnet. Use {0} for the package"
+            },
+            "updateCommand": {
+                "type": "string",
+                "description": "The command(s) needed to update dotnet. Use {0} for the package"
+            },
+            "isInstalledCommand": {
+                "type": "string",
+                "description": "The command(s) needed that will return true if dotnet is installed on the machine"
+            },
+            "packageLookupCommand": {
+                "type": "string",
+                "description": "The command(s) needed that will return true if a given package is installed on the machine"
+            },
+            "expectedDistroFeedInstallDirectory": {
+                "type": "string",
+                "description": "The path that dotnet would be installed if installed via the distro feed"
+            },
+            "expectedMicrosoftFeedInstallDirectory": {
+                "type": "string",
+                "description": "The path that dotnet would be installed if installed via the microsoft feed"
+            },
+            "installedSDKVersionsCommand": {
+                "type": "string",
+                "description": "The command needed to get all installed dotnet sdk versions on the machine"
+            },
+            "installedRuntimeVersionsCommand": {
+                "type": "string",
+                "description": "The command needed to get all installed dotnet runtime versions on the machine"
+            },
+            "currentInstallationVersionCommand": {
+                "type": "string",
+                "description": "The command needed to get the version of the installed dotnet on the machine if available"
+            },
+            "currentInstallPathCommand": {
+                "type": "string",
+                "description": "The command needed to get the path of the installed dotnet on the machine if available"
+            },
+            "versions":
+            {
+                "type": "array",
+                "description": "The versions of the distro that we support as in etc/os-release or similar. Each one has info on what dotnet versions are supported",
+                "items": [
+                {
+                    "type": "object",
+                    "description": "An object representing a version of the distro and which package names it supports",
+                    "properties": {
+                    "version": {
+                        "type": "string",
+                        "description": "The distro version mapped to this object"
+                    },
+                    "dotnet": {
+                        "type": "array",
+                        "description": "An array of the supported versions of dotnet and their package names",
+                        "items": [
+                        {
+                            "type": "object",
+                            "description": "this object represents one version of dotnet thats supported, each version will have its own object",
+                            "properties": {
+                            "version": {
+                                "type": "string",
+                                "description": "the version of dotnet"
+                            },
+                            "sdk": {
+                                "type": "string",
+                                "description": "the string of the package name for the sdk of this version"
+                            },
+                            "runtime": {
+                                "type": "string"
+                            },
+                            "aspnetcore": {
+                                "type": "string"
+                            }
+                            },
+                            "required": [
+                            "version",
+                            "sdk",
+                            "runtime",
+                            "aspnetcore"
+                            ]
+                        }
+                        ]
+                    },
+                    "preInstallCommands":
+                    {
+                        "type": "array",
+                        "description": "A set of commands needed to install microsoft package feeds if needed",
+                        "items": [
+                        {
+                            "type": "string"
+                        }
+                        ]
+                    }
+                    },
+                    "required": [
+                    "version",
+                    "dotnet",
+                    "preInstallCommands"
+                    ]
+                 }]
+            }
+        }
+    }
+  }
+}
