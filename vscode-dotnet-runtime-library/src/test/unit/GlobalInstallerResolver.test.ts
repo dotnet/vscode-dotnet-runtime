@@ -36,7 +36,14 @@ suite('Global Installer Resolver Tests', () =>
 
         assert.equal(await provider.getFullySpecifiedVersion(), mockVersion);
         const installerUrl = await provider.getInstallerUrl();
-        assert.include(installerUrl, (os.platform() === 'win32' ? 'exe' : 'pkg'));
+        if(os.platform() === 'win32')
+        {
+            assert.include(installerUrl, 'exe');
+        }
+        else if(os.platform() === 'darwin')
+        {
+            assert.include(installerUrl, 'pkg');
+        }
         // The architecture in the installer file will match unless its x32, in which case itll be called x86.
         assert.include(installerUrl, (os.arch() === 'x32' ? 'x86' : os.arch()));
     });

@@ -72,7 +72,7 @@
 		"vscode:uninstall": "node ./dist/ExtensionUninstall",
 		"compile": "npm run clean && tsc -p ./ && npm run mockPack",
 		"mockPack": "run-script-os",
-		"mockPack:darwin:linux": "pushd .. && sh ./mock-webpack.sh && popd",
+		"mockPack:darwin:linux": "cd .. && sh ./mock-webpack.sh && cd vscode-dotnet-sdk-extension",
 		"mockPack:win32": "pushd .. && @powershell -NoProfile -ExecutionPolicy Unrestricted -Command ./mock-webpack.ps1 && popd",
 		"watch": "npm run compile && tsc -watch -p ./",
 		"test": "npm run compile --silent && node ./dist/test/functional/runTest.js",

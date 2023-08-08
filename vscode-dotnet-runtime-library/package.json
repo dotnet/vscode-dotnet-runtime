@@ -16,7 +16,7 @@
 		"vscode:prepublish": "npm run compile",
 		"compile": "npm run clean && tsc -p ./ && npm run mockPack",
 		"mockPack": "run-script-os",
-		"mockPack:darwin:linux": "pushd .. && sh ./mock-webpack.sh && popd",
+		"mockPack:darwin:linux": "cd .. && sh ./mock-webpack.sh && cd vscode-dotnet-runtime-library",
 		"mockPack:win32": "pushd .. && @powershell -NoProfile -ExecutionPolicy Unrestricted -Command ./mock-webpack.ps1 && popd",
 		"watch": "npm run clean && tsc -watch -p ./",
 		"test": "npm run compile --silent && npm run unit-test",
