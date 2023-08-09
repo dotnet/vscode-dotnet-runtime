@@ -195,14 +195,14 @@ export class MockCommandExecutor extends ICommandExecutor
         this.trueExecutor = new CommandExecutor();
     }
 
-    public async execute(command: string, workingDirectory : string | null = null): Promise<string[]>
+    public async execute(command: string, options : object | null = null): Promise<string[]>
     {
         this.attemptedCommand = command;
         let commandResults : string[] = [];
 
         if(!command.includes('sudo') && this.fakeReturnValue === '')
         {
-            commandResults = await this.trueExecutor.execute(command, workingDirectory ? null : {cwd : path.resolve(workingDirectory!)});
+            commandResults = await this.trueExecutor.execute(command, options);
         }
         else if(this.otherCommandsToMock.some(x => x.includes(command)))
         {
