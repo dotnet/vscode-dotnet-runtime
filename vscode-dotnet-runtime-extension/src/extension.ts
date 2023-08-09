@@ -60,7 +60,7 @@ namespace commandKeys {
 const commandPrefix = 'dotnet';
 const configPrefix = 'dotnetAcquisitionExtension';
 const displayChannelName = '.NET Runtime';
-const defaultTimeoutValue = 120;
+const defaultTimeoutValue = 300;
 const moreInfoUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md';
 
 export function activate(context: vscode.ExtensionContext, extensionContext?: IExtensionContext) {
