@@ -12,8 +12,8 @@ import {
     IDotnetListVersionsResult,
     IDotnetVersion,
 } from 'vscode-dotnet-runtime-library';
-//import * as runtimeExtension from 'vscode-dotnet-runtime';
-//import * as sdkExtension from 'vscode-dotnet-sdk';
+import * as runtimeExtension from 'vscode-dotnet-runtime';
+import * as sdkExtension from 'vscode-dotnet-sdk';
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -26,18 +26,12 @@ export function activate(context: vscode.ExtensionContext) {
     "extensionDependencies": [
         "ms-dotnettools.vscode-dotnet-runtime",
         "ms-dotnettools.vscode-dotnet-sdk"
-    ]
-
-    This would enable the sample to require the vscode-dotnet-runtime extension
-    at which point VSCode would ensure that extension dependencies were satisfied
-    on install and it would take care of activating it. Since we can't make that
-    work fluently at dev time we manually activate it here.
-
+    ]   
     */
 
     const requestingExtensionId = 'ms-dotnettools.sample-extension';
-    //runtimeExtension.activate(context);
-    //sdkExtension.activate(context);
+    runtimeExtension.activate(context);
+    sdkExtension.activate(context);
 
 
     // --------------------------------------------------------------------------

@@ -171,15 +171,9 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         }
         else if(os.platform() === 'darwin')
         {
-            if(installedArch !== 'x64')
-            {
-                return path.resolve(`/usr/local/share/dotnet/sdk`);
-            }
-            else
-            {
-                // We only know this to be correct in the ARM scenarios but I decided to assume the default is the same elsewhere.
-                return path.resolve(`/usr/local/share/dotnet/x64/dotnet/sdk`);
-            }
+            // On an arm machine we would install to /usr/local/share/dotnet/x64/dotnet/sdk` for a 64 bit sdk
+            // but we dont currently allow customizing the install architecture so that would never happen.
+            return path.resolve(`/usr/local/share/dotnet/sdk`);
         }
 
         const err = new DotnetUnexpectedInstallerOSError(new Error(`The operating system ${os.platform()} is unsupported.`));

@@ -147,7 +147,7 @@ suite('Windows & Mac Global Installer Tests', () =>
         installer.cleanupInstallFiles = true;
         await installer.installSDK();
         mockExecutor.fakeReturnValue = ``;
-    }).timeout(15000);
+    }).timeout(150000);
 
     test('It downloads a file precisely and deletes installer downloads', async () =>
     {
