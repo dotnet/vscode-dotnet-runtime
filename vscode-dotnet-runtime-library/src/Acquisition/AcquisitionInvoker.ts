@@ -109,7 +109,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
     }
 
     /**
-     * 
+     *
      * @remarks Some users have reported not having powershell.exe or having execution policy that fails property evaluation functions in powershell install scripts.
      * We use this function to throw better errors if powershell is not configured correctly.
      */
@@ -122,18 +122,18 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         {
             // Check if PowerShell exists and is on the path.
             const exeFoundOutput = cp.spawnSync(`powershell`);
-            if(exeFoundOutput.status != 0)
+            if(exeFoundOutput.status !== 0)
             {
                 knownError = true;
                 const err = Error(this.noPowershellError);
                 error = err;
             }
-            
+
             // Check Execution Policy
             const execPolicyOutput = cp.spawnSync(`powershell`, [`-command`, `$ExecutionContext.SessionState.LanguageMode`]);
-            let languageMode = execPolicyOutput.stdout.toString().trim();
+            const languageMode = execPolicyOutput.stdout.toString().trim();
             if(languageMode === 'ConstrainedLanguage' || languageMode === 'NoLanguage')
-            { 
+            {
                 knownError = true;
                 const err = Error(`Your machine policy disables PowerShell language features that may be needed to install .NET. Read more at: https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_language_modes?view=powershell-7.3.
 If you cannot safely and confidently change the execution policy, try setting a custom existingDotnetPath following our instructions here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`);
