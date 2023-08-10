@@ -34,24 +34,21 @@ then
 fi
 popd
 
-if [[ -n "$1" ]] && [[ "${1#*.}" != "nornt" ]];
+echo ""
+echo "----------- Compiling vscode-dotnet-runtime-extension -----------"
+echo ""
+pushd vscode-dotnet-runtime-extension
+rm -rf node_modules
+npm ci
+npm run compile
+
+if [ $? -ne 0 ];
 then
     echo ""
-    echo "----------- Compiling vscode-dotnet-runtime-extension -----------"
-    echo ""
-    pushd vscode-dotnet-runtime-extension
-    rm -rf node_modules
-    npm ci
-    npm run compile
-
-    if [ $? -ne 0 ];
-    then
-        echo ""
-        echo "${RED}Build failed!${NC}"
-        exit 1
-    fi
-    popd
+    echo "${RED}Build failed!${NC}"
+    exit 1
 fi
+popd
 
 echo ""
 echo "----------- Compiling vscode-dotnet-sdk-extension -----------"
@@ -85,7 +82,7 @@ then
 fi
 popd
 
-/bin/bash /mock-webpack.sh
+/bin/bash ./mock-webpack.sh
 
 echo ""
 echo "${GREEN}Build succeeded!${NC}"
