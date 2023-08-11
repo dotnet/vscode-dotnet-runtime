@@ -114,6 +114,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         const dotnetPath = await callWithErrorHandling<Promise<IDotnetAcquireResult>>(async () => {
             eventStream.post(new DotnetRuntimeAcquisitionStarted());
             eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
+            acquisitionWorker.setAcquisitionContext(commandContext);
 
             if (!commandContext.version || commandContext.version === 'latest') {
                 throw new Error(`Cannot acquire .NET version "${commandContext.version}". Please provide a valid version.`);

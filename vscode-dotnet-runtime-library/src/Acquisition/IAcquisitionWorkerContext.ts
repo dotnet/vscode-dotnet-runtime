@@ -2,6 +2,7 @@
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
+import { IDotnetAcquireContext } from '..';
 import { IEventStream } from '../EventStream/EventStream';
 import { IExtensionState } from '../IExtensionState';
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';
@@ -16,4 +17,5 @@ export interface IAcquisitionWorkerContext {
     installationValidator: IInstallationValidator;
     timeoutValue: number;
     installDirectoryProvider: IInstallationDirectoryProvider;
+    acquisitionContext? : IDotnetAcquireContext | null;
 }
