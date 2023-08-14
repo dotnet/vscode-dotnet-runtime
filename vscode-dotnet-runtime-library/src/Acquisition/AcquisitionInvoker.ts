@@ -25,6 +25,9 @@ import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker
 export class AcquisitionInvoker extends IAcquisitionInvoker {
     private readonly scriptWorker: IInstallScriptAcquisitionWorker;
 
+    private noPowershellError = `powershell.exe is not discoverable on your system. Is PowerShell added to your PATH and correctly installed? Please visit: https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows.
+You will need to restart VS Code after these changes. If PowerShell is still not discoverable, try setting a custom existingDotnetPath following our instructions here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`
+
     constructor(extensionState: IExtensionState, eventStream: IEventStream) {
         super(eventStream);
         this.scriptWorker = new InstallScriptAcquisitionWorker(extensionState, eventStream);
@@ -36,6 +39,11 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
         return new Promise<void>((resolve, reject) => {
             try {
                 const windowsFullCommand = `powershell.exe -NoProfile -ExecutionPolicy unrestricted -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 ; & ${installCommand} }`;
+                if(winOS)
+                {
+                    this.verifyPowershellCanRun(installContext);
+                }
+
                 cp.exec(winOS ? windowsFullCommand : installCommand,
                         { cwd: process.cwd(), maxBuffer: 500 * 1024, timeout: 1000 * installContext.timeoutValue, killSignal: 'SIGKILL' },
                         async (error, stdout, stderr) => {
@@ -97,6 +105,53 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
             return `'${dotnetInstallDirEscaped}'`;
         } else {
             return `"${path}"`;
+        }
+    }
+
+    /**
+     *
+     * @remarks Some users have reported not having powershell.exe or having execution policy that fails property evaluation functions in powershell install scripts.
+     * We use this function to throw better errors if powershell is not configured correctly.
+     */
+    private async verifyPowershellCanRun(installContext : IDotnetInstallationContext)
+    {
+        let knownError = false;
+        let error = null;
+
+        try
+        {
+            // Check if PowerShell exists and is on the path.
+            const exeFoundOutput = cp.spawnSync(`powershell`);
+            if(exeFoundOutput.status !== 0)
+            {
+                knownError = true;
+                const err = Error(this.noPowershellError);
+                error = err;
+            }
+
+            // Check Execution Policy
+            const execPolicyOutput = cp.spawnSync(`powershell`, [`-command`, `$ExecutionContext.SessionState.LanguageMode`]);
+            const languageMode = execPolicyOutput.stdout.toString().trim();
+            if(languageMode === 'ConstrainedLanguage' || languageMode === 'NoLanguage')
+            {
+                knownError = true;
+                const err = Error(`Your machine policy disables PowerShell language features that may be needed to install .NET. Read more at: https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_language_modes?view=powershell-7.3.
+If you cannot safely and confidently change the execution policy, try setting a custom existingDotnetPath following our instructions here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`);
+                error = err;
+            }
+        }
+        catch(err)
+        {
+            if(!knownError)
+            {
+                error = new Error(`${this.noPowershellError} More details: ${(err as Error).message}`);
+            }
+        }
+
+        if(error != null)
+        {
+            this.eventStream.post(new DotnetAcquisitionScriptError(error as Error, installContext.version));
+            throw error;
         }
     }
 }
