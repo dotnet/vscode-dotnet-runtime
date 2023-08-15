@@ -120,6 +120,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         installationValidator: new InstallationValidator(eventStream),
         timeoutValue: timeoutValue === undefined ? defaultTimeoutValue : timeoutValue,
         installDirectoryProvider: new SdkInstallationDirectoryProvider(storagePath),
+        acquisitionContext : null
     });
 
     const versionResolver = new VersionResolver(context.globalState, eventStream);
@@ -151,6 +152,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             Debugging.log(`Beginning Acquisition.`, eventStream);
             eventStream.post(new DotnetSDKAcquisitionStarted());
             eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
+            acquisitionWorker.setAcquisitionContext(commandContext);
             if(commandContext.installType === 'global')
             {
                 Debugging.log(`Acquisition Request was remarked as Global.`, eventStream);

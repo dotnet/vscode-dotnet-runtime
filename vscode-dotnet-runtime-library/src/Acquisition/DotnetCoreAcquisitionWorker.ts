@@ -31,6 +31,7 @@ import { WinMacGlobalInstaller } from './WinMacGlobalInstaller';
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { LinuxGlobalInstaller } from './LinuxGlobalInstaller';
 import { Debugging } from '../Utils/Debugging';
+import { IDotnetAcquireContext } from '..';
 
 export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker {
     private readonly installingVersionsKey = 'installing';
@@ -128,7 +129,9 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         if (existingAcquisitionPromise)
         {
             // This version of dotnet is already being acquired. Memoize the promise.
-            this.context.eventStream.post(new DotnetAcquisitionInProgress(acquisitionPromiseKey));
+            this.context.eventStream.post(new DotnetAcquisitionInProgress(version,
+                    (this.context.acquisitionContext && this.context.acquisitionContext.requestingExtensionId)
+                    ? this.context.acquisitionContext!.requestingExtensionId : null));
             return existingAcquisitionPromise.then((res) => ({ dotnetPath: res }));
         }
         else
@@ -185,7 +188,9 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         if (installedVersions.includes(version) && fs.existsSync(dotnetPath)) {
             // Version requested has already been installed.
             this.context.installationValidator.validateDotnetInstall(version, dotnetPath);
-            this.context.eventStream.post(new DotnetAcquisitionAlreadyInstalled(version));
+            this.context.eventStream.post(new DotnetAcquisitionAlreadyInstalled(version,
+                (this.context.acquisitionContext && this.context.acquisitionContext.requestingExtensionId)
+                ? this.context.acquisitionContext!.requestingExtensionId : null));
             return dotnetPath;
         }
 
@@ -279,6 +284,11 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         Debugging.log(`Global Acquisition has Completed.`, this.context.eventStream);
         return installedSDKPath;
+    }
+
+    public setAcquisitionContext(context : IDotnetAcquireContext)
+    {
+        this.context.acquisitionContext = context;
     }
 
     private async uninstallRuntime(version: string) {

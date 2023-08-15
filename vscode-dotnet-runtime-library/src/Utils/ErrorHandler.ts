@@ -38,8 +38,8 @@ export namespace errorConstants {
 }
 
 export namespace timeoutConstants {
-    export const timeoutMessage = '.NET installation timed out.';
-    export const moreInfoOption = 'More information';
+    export const timeoutMessage = `.NET installation timed out. You may need to change the timeout time if you have a slow connection. Please see: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#install-script-timeouts.`;
+    export const moreInfoOption = 'Change Timeout Value';
 }
 
 let showMessage = true;
@@ -53,7 +53,8 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
         const error = caughtError as Error;
         context.eventStream.post(new DotnetCommandFailed(error, context.commandName));
         if (context.errorConfiguration === AcquireErrorConfiguration.DisplayAllErrorPopups) {
-            if ((error.message as string).includes(timeoutConstants.timeoutMessage)) {
+            if ((error.message as string).includes(timeoutConstants.timeoutMessage))
+            {
                 context.displayWorker.showErrorMessage(`${errorConstants.errorMessage}${ context.version ? ` (${context.version})` : '' }: ${ error.message }`,
                                                         async (response: string | undefined) => {
                     if (response === timeoutConstants.moreInfoOption) {

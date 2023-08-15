@@ -1406,8 +1406,8 @@ util-deprecate@^1.0.1:
     fsevents "^2.3.2"
 
 "vscode-dotnet-runtime@file:../vscode-dotnet-runtime-extension":
-  version "1.6.1"
-  resolved "file:../vscode-dotnet-runtime-extension"
+  "resolved" "file:../vscode-dotnet-runtime-extension"
+  "version" "1.7.0"
   dependencies:
     chai "4.3.4"
     child_process "^1.0.2"

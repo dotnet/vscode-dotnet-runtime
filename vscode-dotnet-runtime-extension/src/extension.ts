@@ -60,7 +60,7 @@ namespace commandKeys {
 const commandPrefix = 'dotnet';
 const configPrefix = 'dotnetAcquisitionExtension';
 const displayChannelName = '.NET Runtime';
-const defaultTimeoutValue = 120;
+const defaultTimeoutValue = 300;
 const moreInfoUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md';
 
 export function activate(context: vscode.ExtensionContext, extensionContext?: IExtensionContext) {
@@ -114,6 +114,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         const dotnetPath = await callWithErrorHandling<Promise<IDotnetAcquireResult>>(async () => {
             eventStream.post(new DotnetRuntimeAcquisitionStarted());
             eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
+            acquisitionWorker.setAcquisitionContext(commandContext);
 
             if (!commandContext.version || commandContext.version === 'latest') {
                 throw new Error(`Cannot acquire .NET version "${commandContext.version}". Please provide a valid version.`);

@@ -1,6 +1,6 @@
 # .NET Install Tool for Extension Authors
 
-[![Version](https://ms-dotnettools.gallerycdn.vsassets.io/extensions/ms-dotnettools/vscode-dotnet-runtime/1.6.0/1667237254317/Microsoft.VisualStudio.Services.Icons.Default)](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.vscode-dotnet-runtime) [![Installs](https://ms-dotnettools.gallerycdn.vsassets.io/extensions/ms-dotnettools/vscode-dotnet-runtime/1.6.0/1667237254317/Microsoft.VisualStudio.Services.Icons.Default)](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.vscode-dotnet-runtime)
+ [![Installs](https://ms-dotnettools.gallerycdn.vsassets.io/extensions/ms-dotnettools/vscode-dotnet-runtime/1.6.0/1667237254317/Microsoft.VisualStudio.Services.Icons.Default)](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.vscode-dotnet-runtime)
 
 This extension allows acquisition of the .NET runtime specifically for Visual Studio Code extension authors. This tool is intended to be leveraged in extensions that are written in .NET and require .NET to boot pieces of the extension (e.g. a language server). The extension is not intended to be used directly by users to install .NET for development.
 
