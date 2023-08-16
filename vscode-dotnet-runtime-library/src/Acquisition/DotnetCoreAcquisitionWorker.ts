@@ -246,7 +246,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         const installer : IGlobalInstaller = os.platform() === 'linux' ?
             new LinuxGlobalInstaller(this.context, installingVersion) :
-            new WinMacGlobalInstaller(this.context, installingVersion, await globalInstallerResolver.getInstallerUrl());
+            new WinMacGlobalInstaller(this.context, installingVersion, await globalInstallerResolver.getInstallerUrl(), await globalInstallerResolver.getInstallerHash());
 
         // Indicate that we're beginning to do the install.
         await this.addVersionToExtensionState(this.installingVersionsKey, installPromiseVersionKey);

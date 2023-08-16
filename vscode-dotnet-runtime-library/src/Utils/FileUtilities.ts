@@ -7,9 +7,10 @@
  import * as path from 'path';
  import * as os from 'os';
  import * as proc from 'child_process';
-
-export class FileUtilities {
-
+ import * as crypto from 'crypto';
+import { IFileUtilities } from './IFileUtilities';
+export class FileUtilities extends IFileUtilities
+{
     public writeFileOntoDisk(scriptContent: string, filePath: string)
     {
         if (!fs.existsSync(path.dirname(filePath))) {
@@ -20,9 +21,6 @@ export class FileUtilities {
         fs.chmodSync(filePath, 0o700);
     }
 
-    /**
-     * @param directoryToWipe the directory to delete all of the files in if privellege to do so exists.
-     */
     public wipeDirectory(directoryToWipe : string)
     {
         if(!fs.existsSync(directoryToWipe))
@@ -34,10 +32,6 @@ export class FileUtilities {
         fs.readdirSync(directoryToWipe).forEach(f => fs.rmSync(`${directoryToWipe}/${f}`));
     }
 
-    /**
-     *
-     * @returns true if the process is running with admin privelleges on windows.
-     */
     public isElevated() : boolean
     {
         if(os.platform() !== 'win32')
@@ -56,6 +50,25 @@ export class FileUtilities {
         {
             return false;
         }
+    }
+
+    private sha512Hasher(filePath : string)
+    {
+        return new Promise<string>((resolve, reject) =>
+        {
+            const hash = crypto.createHash('sha512');
+            const fileStream = fs.createReadStream(filePath);
+            fileStream.on('error', err => reject(err));
+            fileStream.on('data', chunk => hash.update(chunk));
+            fileStream.on('end', () => resolve(hash.digest('hex')));
+        })
+    };
+
+    public async getFileHash(filePath : string) : Promise<string | null>
+    {
+        // to do : make file read only?
+        const res = await this.sha512Hasher(filePath);
+        return res;
     }
 }
 

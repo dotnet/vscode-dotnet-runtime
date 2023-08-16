@@ -37,6 +37,8 @@ export class GlobalInstallerResolver {
     // The properly resolved version that was requested in the fully-specified 3-part semver version of the .NET SDK.
     private fullySpecifiedVersionRequested : string;
 
+    private expectedInstallerHash : string;
+
     private versionResolver : VersionResolver;
 
     private releasesJsonErrorString = `The API hosting the dotnet releases.json is invalid or has changed and the extension needs to be updated. Invalid API URL: `;
@@ -53,6 +55,7 @@ export class GlobalInstallerResolver {
     private releasesSdkVersionKey = 'version';
     private releasesSdkNameKey = 'name';
     private releasesUrlKey = 'url';
+    private releasesHashKey = 'hash';
     private releasesLatestSdkKey = 'latest-sdk';
 
     /**
@@ -70,6 +73,7 @@ export class GlobalInstallerResolver {
         this.requestedVersion = requestedVersion;
         this.discoveredInstallerUrl = '';
         this.fullySpecifiedVersionRequested = '';
+        this.expectedInstallerHash = '';
         this.versionResolver = new VersionResolver(extensionState, eventStream);
     }
 
@@ -94,11 +98,22 @@ export class GlobalInstallerResolver {
         return this.fullySpecifiedVersionRequested;
     }
 
+    /**
+     *
+     * @returns The url to the installer for the sdk that matches the machine os and architecture, as well as for the requestedVersion.
+     */
+    public async getInstallerHash(): Promise<string>
+    {
+        await this.determineVersionAndInstallerUrl();
+        return this.expectedInstallerHash;
+    }
+
+
     private async determineVersionAndInstallerUrl()
     {
         if(this.fullySpecifiedVersionRequested === '' || this.discoveredInstallerUrl === '')
         {
-            [this.discoveredInstallerUrl, this.fullySpecifiedVersionRequested] = await this.routeRequestToProperVersionRequestType(this.requestedVersion);
+            [this.discoveredInstallerUrl, this.fullySpecifiedVersionRequested, this.expectedInstallerHash] = await this.routeRequestToProperVersionRequestType(this.requestedVersion);
         }
     }
 
@@ -108,7 +123,7 @@ export class GlobalInstallerResolver {
      * @param version The requested version given to the API.
      * @returns The installer download URL for the correct OS, Architecture, & Specific Version based on the given input version, and then the resolved version we determined to install.
      */
-    private async routeRequestToProperVersionRequestType(version : string) : Promise<[string, string]>
+    private async routeRequestToProperVersionRequestType(version : string) : Promise<[string, string, string]>
     {
         if(this.versionResolver.isNonSpecificMajorOrMajorMinorVersion(version))
         {
@@ -117,23 +132,23 @@ export class GlobalInstallerResolver {
             const indexUrl = this.getIndexUrl(numberOfPeriods === 0 ? `${version}.0` : version);
             const indexJsonData = await this.fetchJsonObjectFromUrl(indexUrl);
             const fullySpecifiedVersionRequested = indexJsonData[this.releasesLatestSdkKey];
-            return [await this.findCorrectInstallerUrl(fullySpecifiedVersionRequested, indexUrl), fullySpecifiedVersionRequested];
+            const installerUrlAndHash = await this.findCorrectInstallerUrlAndHash(fullySpecifiedVersionRequested, indexUrl);
+            return [installerUrlAndHash[0], fullySpecifiedVersionRequested, installerUrlAndHash[1]];
         }
         else if(this.versionResolver.isNonSpecificFeatureBandedVersion(version))
         {
             Debugging.log(`The VersionResolver resolved the version to be a N.Y.XXX version.`, this.eventStream);
             const fullySpecifiedVersion = await this.getNewestSpecificVersionFromFeatureBand(version);
-            return [
-                await this.findCorrectInstallerUrl(fullySpecifiedVersion, this.getIndexUrl(this.versionResolver.getMajorMinor(fullySpecifiedVersion))),
-                fullySpecifiedVersion
-            ];
+            const installerUrlAndHash = await this.findCorrectInstallerUrlAndHash(fullySpecifiedVersion, this.getIndexUrl(this.versionResolver.getMajorMinor(fullySpecifiedVersion)));
+            return [installerUrlAndHash[0], fullySpecifiedVersion, installerUrlAndHash[1]];
         }
         else if(this.versionResolver.isFullySpecifiedVersion(version))
         {
             Debugging.log(`The VersionResolver resolved the version to be a fully specified version.`, this.eventStream);
             const fullySpecifiedVersionRequested = version;
             const indexUrl = this.getIndexUrl(this.versionResolver.getMajorMinor(fullySpecifiedVersionRequested));
-            return [await this.findCorrectInstallerUrl(fullySpecifiedVersionRequested, indexUrl), fullySpecifiedVersionRequested];
+            const installerUrlAndHash = await this.findCorrectInstallerUrlAndHash(fullySpecifiedVersionRequested, indexUrl);
+            return [installerUrlAndHash[0], fullySpecifiedVersionRequested, installerUrlAndHash[1]];
         }
 
         Debugging.log(`The VersionResolver could not resolve the version, version: ${version}.`, this.eventStream);
@@ -147,9 +162,9 @@ export class GlobalInstallerResolver {
      * @remarks this function handles finding the right os, arch url for the installer.
      * @param specificVersion the full, specific version, e.g. 7.0.301 to get.
      * @param indexUrl The url of the index server that hosts installer downlod links.
-     * @returns The installer url to download.
+     * @returns The installer url to download as the first item of a tuple and then the expected hash of said installer
      */
-    private async findCorrectInstallerUrl(specificVersion : string, indexUrl : string) : Promise<string>
+    private async findCorrectInstallerUrlAndHash(specificVersion : string, indexUrl : string) : Promise<[string, string]>
     {
         if(specificVersion === null || specificVersion === undefined || specificVersion === '')
         {
@@ -249,7 +264,21 @@ export class GlobalInstallerResolver {
                             this.eventStream.post(releaseJsonErr);
                             throw releaseJsonErr.error;
                         }
-                        return installerUrl;
+                        if(!(installerUrl as string).startsWith('https://download.visualstudio.microsoft.com/'))
+                        {
+                            const releaseJsonErr = new DotnetInvalidReleasesJSONError(new Error(`The url: ${installerUrl} is hosted on an unexpected domain.
+We cannot verify that .NET downloads are hosted in a secure location, so we have rejected .NET. The url should be download.visualstudio.microsoft.com.
+Please report this issue so it can be remedied or investigated.`));
+                            this.eventStream.post(releaseJsonErr);
+                            throw releaseJsonErr.error;
+                        }
+
+                        let installerHash = installer[this.releasesHashKey];
+                        if(!installerHash)
+                        {
+                            installerHash = null;
+                        }
+                        return [installerUrl, installerHash];
                     }
                 }
 

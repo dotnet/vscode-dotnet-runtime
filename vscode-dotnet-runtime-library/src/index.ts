@@ -24,6 +24,7 @@ export * from './Utils/Debugging';
 export * from './Utils/ErrorHandler';
 export * from './Utils/FileUtilities';
 export * from './Utils/ICommandExecutor';
+export * from './Utils/IFileUtilities';
 export * from './Utils/IIssueContext';
 export * from './Utils/IssueReporter';
 export * from './Utils/WebRequestWorker';

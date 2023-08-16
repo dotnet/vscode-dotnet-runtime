@@ -6,7 +6,7 @@ import * as chai from 'chai';
 import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
-import { MockCommandExecutor, MockEventStream, MockExtensionContext, MockInstallationValidator, NoInstallAcquisitionInvoker } from '../mocks/MockObjects';
+import { MockCommandExecutor, MockEventStream, MockExtensionContext, MockFileUtilities, MockInstallationValidator, NoInstallAcquisitionInvoker } from '../mocks/MockObjects';
 import { WinMacGlobalInstaller } from '../../Acquisition/WinMacGlobalInstaller';
 import { RuntimeInstallationDirectoryProvider } from '../../Acquisition/RuntimeInstallationDirectoryProvider';
 import { SdkInstallationDirectoryProvider } from '../../Acquisition/SdkInstallationDirectoryProvider';
@@ -34,8 +34,11 @@ suite('Windows & Mac Global Installer Tests', () =>
 
     const mockVersion = '7.0.306';
     const mockUrl = 'https://download.visualstudio.microsoft.com/download/pr/4c0aaf08-3fa1-4fa0-8435-73b85eee4b32/e8264b3530b03b74b04ecfcf1666fe93/dotnet-sdk-7.0.306-win-x64.exe';
+    const mockHash = '';
     const mockExecutor = new MockCommandExecutor();
-    const installer : WinMacGlobalInstaller = new WinMacGlobalInstaller(mockContext(false), mockVersion, mockUrl, mockExecutor);
+    const mockFileUtils = new MockFileUtilities();
+    const installer : WinMacGlobalInstaller = new WinMacGlobalInstaller(mockContext(false), mockVersion, mockUrl, mockHash, mockExecutor);
+    installer.file = mockFileUtils;
 
     test('It reads SDK registry entries correctly on windows', async () =>
     {

@@ -23,6 +23,8 @@ import { IDistroDotnetSDKProvider } from '../../Acquisition/IDistroDotnetSDKProv
 import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
 import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProvider';
 import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
+import { FileUtilities } from '../../Utils/FileUtilities';
+import { IFileUtilities } from '../../Utils/IFileUtilities';
 /* tslint:disable:no-any */
 
 export class MockExtensionContext implements IExtensionState {
@@ -216,6 +218,32 @@ export class MockCommandExecutor extends ICommandExecutor
         }
         return commandResults;
     }
+}
+
+export class MockFileUtilities extends IFileUtilities
+{
+    private trueUtilities = new FileUtilities();
+
+    public writeFileOntoDisk(content : string, path : string)
+    {
+        return this.trueUtilities.writeFileOntoDisk(content, path);
+    }
+
+    public wipeDirectory(directoryToWipe : string)
+    {
+        return this.trueUtilities.wipeDirectory(directoryToWipe);
+    }
+
+    public isElevated()
+    {
+        return this.trueUtilities.isElevated();
+    }
+
+    public async getFileHash(filePath : string)
+    {
+        return '';
+    }
+
 }
 
 /**
