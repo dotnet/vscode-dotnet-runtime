@@ -66,7 +66,7 @@ export class FileUtilities extends IFileUtilities
 
     public async getFileHash(filePath : string) : Promise<string | null>
     {
-        // to do : make file read only?
+        fs.chmodSync(filePath, fs.constants.O_RDONLY);
         const res = await this.sha512Hasher(filePath);
         return res;
     }
