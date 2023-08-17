@@ -31,7 +31,7 @@ suite('IssueReporter Unit Tests', () => {
             assert.include(issueBody, expected);
         }
 
-        const expectedUrlContent = ['bug-report--vs-code-runtime-extension.md', 'vscode-dotnet-runtime', 'issues'];
+        const expectedUrlContent = ['new', 'vscode-dotnet-runtime', 'issues'];
         for (const expected of expectedUrlContent) {
             assert.include(url, expected);
         }
