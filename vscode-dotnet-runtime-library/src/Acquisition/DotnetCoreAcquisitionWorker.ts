@@ -273,6 +273,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         const installedSDKPath : string = await installer.getExpectedGlobalSDKPath(installingVersion, os.arch());
 
+        this.setSDKTelemetryPolicy();
+
         Debugging.log(`Validating Dotnet Install.`, this.context.eventStream);
         this.context.installationValidator.validateDotnetInstall(installingVersion, installedSDKPath, true);
 
@@ -289,6 +291,14 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     public setAcquisitionContext(context : IDotnetAcquireContext)
     {
         this.context.acquisitionContext = context;
+    }
+
+    private setSDKTelemetryPolicy()
+    {
+        const vsCodeTelemetryOk = process.env.isTelemetryEnabled;
+        const extensionTelemetryOk = '';
+
+    );
     }
 
     private async uninstallRuntime(version: string) {
