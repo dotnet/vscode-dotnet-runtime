@@ -112,6 +112,12 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         }
     }
 
+    vscode.env.onDidChangeTelemetryEnabled((_: boolean) =>
+    {
+        console.log('foo');
+    });
+
+
     const acquisitionWorker = new DotnetCoreAcquisitionWorker({
         storagePath,
         extensionState: context.globalState,
