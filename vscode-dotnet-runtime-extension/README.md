@@ -10,7 +10,7 @@ Prior to the release of this extension, extension authors had no way of knowing 
 
 1. **Duplication of .NET runtimes and slow updates**: Each extension was acquiring its own copy of .NET at ~30mb each.
 2. **Clean up**: When extensions installed .NET in a non-VSCode folder location it was likely to be left behind.
-3. **Servicing and floating versions**: It was difficult to ensure that extensions would use the latest releases, particuarly without re-shipping.
+3. **Servicing and floating versions**: It was difficult to ensure that extensions would use the latest releases, particularly without re-shipping.
 4. **Corrupted installations**: Corrupted installations could arise when VS Code was shut down mid-download or unzip.
 5. **Network security policies**: Alternative installation methods could have resulted in errors due to blocking from network security policies.
 6. **Locked down environments**: Some developers are unable to freely install software, requiring the ability to install extensions manually via a VSIX.
