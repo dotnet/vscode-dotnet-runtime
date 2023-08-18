@@ -13,7 +13,7 @@
 	"description": "This extension installs and manages different versions of the .NET Runtime.",
 	"appInsightsKey": "02dc18e0-7494-43b2-b2a3-18ada5fcb522",
 	"icon": "images/dotnetIcon.png",
-	"version": "1.6.0",
+	"version": "1.7.0",
 	"publisher": "ms-dotnettools",
 	"engines": {
 		"vscode": "^1.72.0"
@@ -61,7 +61,7 @@
 				},
 				"dotnetAcquisitionExtension.installTimeoutValue": {
 					"type": "number",
-					"default": 120,
+					"default": 300,
 					"description": "Timeout for installing .NET in seconds."
 				},
 				"dotnetAcquisitionExtension.existingDotnetPath": {
