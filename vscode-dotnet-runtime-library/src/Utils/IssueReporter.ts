@@ -7,7 +7,7 @@ import { IIssueContext } from './IIssueContext';
 // tslint:disable no-var-requires
 const packageJson = require('../../package.json');
 
-const issuesUrl = `https://github.com/dotnet/vscode-dotnet-runtime/issues/new`;
+const issuesUrl = `https://github.com/dotnet/vscode-dotnet-runtime/issues/new/choose`;
 
 export function formatIssueUrl(error: Error | undefined, context: IIssueContext): [ string, string ] {
     context.logger.dispose(); // Ensure log file is up to date
