@@ -2,7 +2,7 @@
 
 [![Version](https://img.shields.io/visual-studio-marketplace/v/ms-dotnettools.vscode-dotnet-runtime?style=for-the-badge)](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.vscode-dotnet-runtime) [![Installs](https://img.shields.io/visual-studio-marketplace/i/ms-dotnettools.vscode-dotnet-runtime?style=for-the-badge)](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.vscode-dotnet-runtime)
 
-This extension provides a unified way for other extensions like the [C#] and [C# Dev Kit] extensions to install local, private version of the .NET Runtime. This extension is not intended to be used directly by users to install .NET for development purposes because it only includes the .NET Runtime and not the entire .NET SDK.
+This extension provides a unified way for other extensions like the [C#] and [C# Dev Kit] extensions to install local, private versions of the .NET Runtime. This extension is not intended to be used directly by users to install .NET for development purposes because it only includes the .NET Runtime and not the entire .NET SDK.
 
 ## Troubleshooting
 
