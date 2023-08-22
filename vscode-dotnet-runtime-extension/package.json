@@ -60,7 +60,7 @@
 				},
 				"dotnetAcquisitionExtension.installTimeoutValue": {
 					"type": "number",
-					"default": 300,
+					"default": 600,
 					"description": "Timeout for installing .NET in seconds."
 				},
 				"dotnetAcquisitionExtension.existingDotnetPath": {

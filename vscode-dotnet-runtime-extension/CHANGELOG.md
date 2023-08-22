@@ -9,7 +9,9 @@ and this project adheres to [Semantic Versioning].
 
 ## [1.7.1] - 2023-08-14
 
-This is a small release that changes the error handling and issue reporting experience to make it easier to submit issues with the information we need to properly triage them. It also updates some package dependencies.
+This release changes the error handling and issue reporting experience to make it easier to submit issues with the information we need to properly triage them. It also updates some package dependencies.
+It also completely revamps the web request handling to a new library (axios).
+It increases the timeout time to 10 minutes.
 
 ## [1.7.0] - 2023-08-14
 

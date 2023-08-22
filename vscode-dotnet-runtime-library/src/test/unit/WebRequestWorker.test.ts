@@ -28,7 +28,11 @@ import {
 const assert = chai.assert;
 chai.use(chaiAsPromised);
 
-const maxTimeoutTime = 3000;
+const maxTimeoutTime = 10000;
+// Website used for the sake of it returning the same response always (tm)
+const staticWebsiteUrl = 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/2.1/releases.json';
+// The first website gets cached into the extension state so we need to use a different url
+const secondStaticWebsiteUrl = 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/2.2/releases.json';
 
 suite('WebRequestWorker Unit Tests', () => {
     function getTestContext(): [MockEventStream, MockExtensionContext] {
@@ -86,9 +90,8 @@ suite('WebRequestWorker Unit Tests', () => {
 
     test('Web Requests Cached on Repeated calls', async () => {
         const [eventStream, context] = getTestContext();
-        const webWorker = new MockTrackingWebRequestWorker(context, eventStream, 'https://httpstat.us/200'); // Website used for the sake of it returning the same response always (tm)
+        const webWorker = new MockTrackingWebRequestWorker(context, eventStream, staticWebsiteUrl);
 
-        // Make a request to cache the data.
         const uncachedResult = await webWorker.getCachedData();
         // The data should now be cached.
         const cachedResult = await webWorker.getCachedData();
@@ -99,4 +102,18 @@ suite('WebRequestWorker Unit Tests', () => {
         const requestCount = webWorker.getRequestCount();
         assert.isAtMost(requestCount, 1);
     }).timeout(maxTimeoutTime);
+
+    test('Web Requests Cached Does Not Live Forever', async () => {
+        const [eventStream, context] = getTestContext();
+        const webWorker = new MockTrackingWebRequestWorker(context, eventStream, secondStaticWebsiteUrl, true, maxTimeoutTime, 0);
+
+        const uncachedResult = await webWorker.getCachedData();
+        const cachedResult = await webWorker.getCachedData();
+
+        assert.exists(uncachedResult);
+        assert.deepEqual(uncachedResult, cachedResult);
+
+        const requestCount = webWorker.getRequestCount();
+        assert.isAtLeast(requestCount, 2);
+    }).timeout(maxTimeoutTime * 4);
 });

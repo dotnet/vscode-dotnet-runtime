@@ -19,6 +19,8 @@ import { IExtensionState } from '../../IExtensionState';
 import { WebRequestWorker } from '../../Utils/WebRequestWorker';
 /* tslint:disable:no-any */
 
+const testDefaultTimeoutTimeMs = 60000;
+
 export class MockExtensionContext implements IExtensionState {
     private values: { [n: string]: any; } = {};
 
@@ -80,7 +82,7 @@ export const versionPairs = [['1.0', '1.0.16'], ['1.1', '1.1.13'], ['2.0', '2.0.
 export class FileWebRequestWorker extends WebRequestWorker {
     constructor(extensionState: IExtensionState, eventStream: IEventStream, uri: string, extensionStateKey: string,
                 private readonly mockFilePath: string) {
-        super(extensionState, eventStream, uri);
+        super(extensionState, eventStream, uri, testDefaultTimeoutTimeMs);
     }
 
     protected async makeWebRequest(): Promise<string | undefined> {
@@ -91,7 +93,7 @@ export class FileWebRequestWorker extends WebRequestWorker {
 
 export class FailingWebRequestWorker extends WebRequestWorker {
     constructor(extensionState: IExtensionState, eventStream: IEventStream, uri: string) {
-        super(extensionState, eventStream, ''); // Empty string as uri to cause failure. Uri is required to match the interface even though it's unused.
+        super(extensionState, eventStream, '', testDefaultTimeoutTimeMs); // Empty string as uri to cause failure. Uri is required to match the interface even though it's unused.
     }
 
     public async getCachedData(): Promise<string | undefined> {
@@ -103,8 +105,8 @@ export class MockTrackingWebRequestWorker extends WebRequestWorker {
     private requestCount = 0;
     public response = 'Mock Web Request Result';
 
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, url: string, protected readonly succeed = true) {
-        super(extensionState, eventStream, url);
+    constructor(extensionState: IExtensionState, eventStream: IEventStream, url: string, protected readonly succeed = true, webTimeToLive = testDefaultTimeoutTimeMs, cacheTimetoLive = testDefaultTimeoutTimeMs) {
+        super(extensionState, eventStream, url, webTimeToLive, cacheTimetoLive);
     }
 
     public getRequestCount() {
@@ -153,14 +155,14 @@ export class MockVersionResolver extends VersionResolver {
     private readonly filePath = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-releases.json');
 
     constructor(extensionState: IExtensionState, eventStream: IEventStream) {
-        super(extensionState, eventStream);
+        super(extensionState, eventStream, testDefaultTimeoutTimeMs);
         this.webWorker = new FileWebRequestWorker(extensionState, eventStream, '', 'releases', this.filePath);
     }
 }
 
 export class MockInstallScriptWorker extends InstallScriptAcquisitionWorker {
     constructor(extensionState: IExtensionState, eventStream: IEventStream, failing: boolean, private fallback = false) {
-        super(extensionState, eventStream);
+        super(extensionState, eventStream, testDefaultTimeoutTimeMs);
         this.webWorker = failing ?
             new FailingWebRequestWorker(extensionState, eventStream, '') :
             new MockWebRequestWorker(extensionState, eventStream, '');
@@ -177,7 +179,7 @@ export class MockInstallScriptWorker extends InstallScriptAcquisitionWorker {
 
 export class FailingInstallScriptWorker extends InstallScriptAcquisitionWorker {
     constructor(extensionState: IExtensionState, eventStream: IEventStream) {
-        super(extensionState, eventStream);
+        super(extensionState, eventStream, testDefaultTimeoutTimeMs);
         this.webWorker = new MockWebRequestWorker(extensionState, eventStream, '');
     }
 

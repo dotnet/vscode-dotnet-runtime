@@ -43,10 +43,11 @@ export class WebRequestWorker {
         private readonly extensionState: IExtensionState,
         private readonly eventStream: IEventStream,
         private readonly url: string,
-        private readonly cacheTimeToLive = 1000 * 60 * 5, // 5 minutes
-        private readonly websiteTimeoutMs = 1000 // 900 ms timeout is arbitrary but the expected worst case.
+        private readonly websiteTimeoutMs: number, // Match the default timeout time of 10 minutes.
+        private cacheTimeToLive = -1
         )
         {
+            this.cacheTimeToLive = this.cacheTimeToLive === -1 ? this.websiteTimeoutMs * 5 : this.cacheTimeToLive; // make things live 5x (arbitrary) as long as it takes to maximally acquire them
             const uncachedAxiosClient = axios.create({});
             Debugging.log(`Axios client instantiated: ${uncachedAxiosClient}`);
 
@@ -178,5 +179,4 @@ export class WebRequestWorker {
             return undefined;
         }
     }
-
 }

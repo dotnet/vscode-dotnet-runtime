@@ -60,7 +60,7 @@ namespace commandKeys {
 const commandPrefix = 'dotnet';
 const configPrefix = 'dotnetAcquisitionExtension';
 const displayChannelName = '.NET Runtime';
-const defaultTimeoutValue = 300;
+const defaultTimeoutValue = 600;
 const moreInfoUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md';
 
 export function activate(context: vscode.ExtensionContext, extensionContext?: IExtensionContext) {
@@ -98,17 +98,19 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     if (!fs.existsSync(context.globalStoragePath)) {
         fs.mkdirSync(context.globalStoragePath);
     }
+    const finalTimeoutValue = timeoutValue === undefined ? defaultTimeoutValue : timeoutValue;
+
     const acquisitionWorker = new DotnetCoreAcquisitionWorker({
         storagePath: context.globalStoragePath,
         extensionState: context.globalState,
         eventStream,
-        acquisitionInvoker: new AcquisitionInvoker(context.globalState, eventStream),
+        acquisitionInvoker: new AcquisitionInvoker(context.globalState, eventStream, finalTimeoutValue),
         installationValidator: new InstallationValidator(eventStream),
-        timeoutValue: timeoutValue === undefined ? defaultTimeoutValue : timeoutValue,
+        timeoutValue: finalTimeoutValue,
         installDirectoryProvider: new RuntimeInstallationDirectoryProvider(context.globalStoragePath),
     });
     const existingPathResolver = new ExistingPathResolver();
-    const versionResolver = new VersionResolver(context.globalState, eventStream);
+    const versionResolver = new VersionResolver(context.globalState, eventStream, finalTimeoutValue);
 
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) => {
         const dotnetPath = await callWithErrorHandling<Promise<IDotnetAcquireResult>>(async () => {
