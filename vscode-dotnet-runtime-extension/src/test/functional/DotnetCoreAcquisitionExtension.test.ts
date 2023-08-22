@@ -17,7 +17,7 @@ import {
   MockWindowDisplayWorker,
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
-const assert = chai.assert;
+const assert : any = chai.assert;
 /* tslint:disable:no-any */
 
 suite('DotnetCoreAcquisitionExtension End to End', function() {
@@ -131,7 +131,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     const context: IDotnetAcquireContext = { version: 'foo', requestingExtensionId };
     try {
       await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
-      assert(false); // An error should have been thrown
+      assert.isTrue(false); // An error should have been thrown
     } catch (error) {
       const versionError = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === '[ERROR]:DotnetVersionResolutionError');
       assert.exists(versionError);
