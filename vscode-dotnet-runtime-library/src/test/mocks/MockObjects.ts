@@ -91,7 +91,7 @@ export class FileWebRequestWorker extends WebRequestWorker {
 
 export class FailingWebRequestWorker extends WebRequestWorker {
     constructor(extensionState: IExtensionState, eventStream: IEventStream, uri: string) {
-        super(extensionState, eventStream, ''); // Empty string as uri
+        super(extensionState, eventStream, ''); // Empty string as uri to cause failure. Uri is required to match the interface even though it's unused.
     }
 
     public async getCachedData(): Promise<string | undefined> {
@@ -101,8 +101,10 @@ export class FailingWebRequestWorker extends WebRequestWorker {
 
 export class MockTrackingWebRequestWorker extends WebRequestWorker {
     private requestCount = 0;
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, uri: string, ttl = 1) {
-        super(extensionState, eventStream, uri, ttl); // time to live is very small so tests do not fail on rerun as cache state changes.
+    public response = 'Mock Web Request Result';
+
+    constructor(extensionState: IExtensionState, eventStream: IEventStream, url: string, protected readonly succeed = true) {
+        super(extensionState, eventStream, url);
     }
 
     public getRequestCount() {
@@ -124,9 +126,9 @@ export class MockTrackingWebRequestWorker extends WebRequestWorker {
 
 export class MockWebRequestWorker extends MockTrackingWebRequestWorker {
     public readonly errorMessage = 'Web Request Failed';
-    public readonly response = 'Mock Web Request Result';
+    public response = 'Mock Web Request Result';
 
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, url: string, private readonly succeed = true) {
+    constructor(extensionState: IExtensionState, eventStream: IEventStream, url: string) {
         super(extensionState, eventStream, url);
     }
 

@@ -37,9 +37,10 @@
 	"activationEvents": [
 		"onCommand:dotnet-sdk.acquire",
 		"onCommand:dotnet-sdk.acquireStatus",
+		"onCommand:dotnet-sdk.listVersions",
+		"onCommand:dotnet-sdk.recommendedVersion",
 		"onCommand:dotnet-sdk.uninstallAll",
-		"onCommand:dotnet-sdk.showAcquisitionLog",
-		"onCommand:dotnet-sdk.reportIssue"
+		"onCommand:dotnet-sdk.showAcquisitionLog"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {

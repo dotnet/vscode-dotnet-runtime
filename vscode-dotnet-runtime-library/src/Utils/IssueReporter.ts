@@ -7,7 +7,7 @@ import { IIssueContext } from './IIssueContext';
 // tslint:disable no-var-requires
 const packageJson = require('../../package.json');
 
-const issuesUrl = `https://github.com/dotnet/vscode-dotnet-runtime/issues`;
+const issuesUrl = `https://github.com/dotnet/vscode-dotnet-runtime/issues/new/choose`;
 
 export function formatIssueUrl(error: Error | undefined, context: IIssueContext): [ string, string ] {
     context.logger.dispose(); // Ensure log file is up to date
@@ -16,18 +16,10 @@ export function formatIssueUrl(error: Error | undefined, context: IIssueContext)
 **Error Stack:** ${ error.stack === undefined ? '' : sanitize(error!.stack!) }`;
     const issueBody = `<!-- IMPORTANT: Please be sure to remove any private information before submitting. -->
 
-**Repro steps:**
-
-1.
+Please attach the log file located at ${ context.logger.getFileLocation() }. Note that this file may contain personal data.
 
 **Extension Version:** ${ packageJson.version }
 ${ errorMessage }`;
 
-    const issueMessage = `The issue text was copied to the clipboard.  Please paste it into this window.
-
-Please attach the log file located at ${ context.logger.getFileLocation() }. Note that this file may contain personal data.
-
-Privacy Alert! The contents copied to your clipboard may contain personal data. Prior to posting to GitHub, please remove any personal data which should not be publicly viewable. https://privacy.microsoft.com/en-US/privacystatement`;
-    const url = `${issuesUrl}/new?body=${encodeURIComponent(issueMessage)}`;
-    return [url, issueBody];
+    return [issuesUrl, issueBody];
 }

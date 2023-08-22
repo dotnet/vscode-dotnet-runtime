@@ -86,7 +86,7 @@ suite('WebRequestWorker Unit Tests', () => {
 
     test('Web Requests Cached on Repeated calls', async () => {
         const [eventStream, context] = getTestContext();
-        const webWorker = new MockTrackingWebRequestWorker(context, eventStream, 'https://httpstat.us/200', maxTimeoutTime); // Website used for the sake of it returning the same response always (tm)
+        const webWorker = new MockTrackingWebRequestWorker(context, eventStream, 'https://httpstat.us/200'); // Website used for the sake of it returning the same response always (tm)
 
         // Make a request to cache the data.
         const uncachedResult = await webWorker.getCachedData();
