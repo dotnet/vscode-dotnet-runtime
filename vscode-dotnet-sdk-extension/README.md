@@ -13,3 +13,7 @@ See the [.NET home repo](https://github.com/Microsoft/dotnet) to find other .NE
 ## License
 
 .NET Core (including this repo) is licensed under the MIT license.
+
+## Telemetry Notice
+
+Please note that this extension collects telemetry by default and aims to follow the [VS Code Telemetry Policy](https://code.visualstudio.com/api/extension-guides/telemetry). You may disable this telemetry in the extension settings.
