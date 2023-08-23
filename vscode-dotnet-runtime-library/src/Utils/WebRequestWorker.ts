@@ -2,7 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import axios from 'axios';
+import Axios from 'axios';
 import axiosRetry from 'axios-retry';
 import { AxiosCacheInstance, buildStorage, setupCache, StorageValue } from 'axios-cache-interceptor';
 import { IEventStream } from '../EventStream/EventStream';
@@ -48,7 +48,7 @@ export class WebRequestWorker {
         )
         {
             this.cacheTimeToLive = this.cacheTimeToLive === -1 ? this.websiteTimeoutMs * 5 : this.cacheTimeToLive; // make things live 5x (arbitrary) as long as it takes to maximally acquire them
-            const uncachedAxiosClient = axios.create({});
+            const uncachedAxiosClient = Axios.create({});
             Debugging.log(`Axios client instantiated: ${uncachedAxiosClient}`);
 
             // Wrap the client with a retry interceptor. We don't need to return a new client, it should be applied automatically.
@@ -82,11 +82,11 @@ export class WebRequestWorker {
      */
     private async axiosGet(url : string, options = {})
     {
-        if(url === '' || url === undefined || url === null)
+        if(url === '' || !url)
         {
             throw new Error(`Request to the url ${this.url} failed, as the URL is invalid.`);
         }
-        const abort = axios.CancelToken.source()
+        const abort = Axios.CancelToken.source()
         const response = await this.client.get(url, { cancelToken: abort.token, ...options });
         return response;
     }
@@ -96,29 +96,28 @@ export class WebRequestWorker {
      * @remarks This function is no longer needed as the data is cached either way if you call makeWebRequest, but it was kept to prevent breaking APIs.
      */
     public async getCachedData(retriesCount = 2): Promise<string | undefined> {
-        Debugging.log(`getCachedData() Invoked.`);
-        Debugging.log(`Cached value state: ${await this.isUrlCached()}`);
         return this.makeWebRequest(true, retriesCount);
     }
 
     /**
      *
-     * @param cachedUrl
+     * @param urlInQuestion
      * @returns true if the url was in the cache before this function executes, false elsewise.
      *
      * @remarks Calling this WILL put the url data in the cache as we need to poke the cache to properly get the information.
      * (Checking the storage cache state results in invalid results.)
      * Returns false if the url is unavailable.
      */
-    public async isUrlCached(cachedUrl : string = this.url) : Promise<boolean>
+    protected async isUrlCached(urlInQuestion : string = this.url) : Promise<boolean>
     {
-        if(cachedUrl === '')
+        if(urlInQuestion === '' || !urlInQuestion)
         {
             return false;
         }
         try
         {
-            const requestResult = await this.axiosGet(cachedUrl, {timeout: this.websiteTimeoutMs});
+            const requestFunction = this.axiosGet(urlInQuestion,  {timeout: this.websiteTimeoutMs});
+            const requestResult = await Promise.resolve(requestFunction);
             const cachedState = requestResult.cached;
             return cachedState;
         }
@@ -136,7 +135,6 @@ export class WebRequestWorker {
      * @remarks protected for ease of testing.
      */
     protected async makeWebRequest(throwOnError: boolean, numRetries: number): Promise<string | undefined> {
-        Debugging.log(`makeWebRequest Invoked. Requested URL: ${this.url}`);
         try
         {
             this.eventStream.post(new WebRequestSent(this.url));
@@ -149,29 +147,23 @@ export class WebRequestWorker {
                 }
             );
 
-            Debugging.log(`Response: ${response}.`);
             return response.data;
         }
         catch (error)
         {
-            Debugging.log(`Error submitting request: ${error}.`);
-
-            if (throwOnError) {
+            if (throwOnError)
+            {
                 let formattedError = error as Error;
                 if ((formattedError.message as string).toLowerCase().includes('block')) {
-                    Debugging.log(`Software policy is blocking the request.`);
                     formattedError = new Error(`Software restriction policy is blocking .NET installation: Request to ${this.url} Failed: ${formattedError.message}`);
                 }
                 else
                 {
-                    Debugging.log(`A request was made but the request failed.`);
                     formattedError = new Error(`Please ensure that you are online: Request to ${this.url} Failed: ${formattedError.message}`);
                 }
                 this.eventStream.post(new WebRequestError(formattedError));
                 throw formattedError;
             }
-
-            Debugging.log(`Returning undefined result.`);
             return undefined;
         }
     }

@@ -298,9 +298,9 @@ aws4@^1.8.0:
   integrity sha1-1h9G2DslGSUOJ4Ta9bCUeai0HFk=
 
 axios-cache-interceptor@^1.0.1:
-  version "1.0.1"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/axios-cache-interceptor/-/axios-cache-interceptor-1.0.1.tgz"
-  integrity sha1-U6brdfYgZFbXBiK3Kfj2Pcvbp3s=
+  version "1.2.0"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/axios-cache-interceptor/-/axios-cache-interceptor-1.2.0.tgz"
+  integrity sha1-xsSK1iMogg2VaycwJwhQVw+zkN0=
   dependencies:
     cache-parser "^1.2.4"
     fast-defer "^1.1.7"
@@ -315,9 +315,9 @@ axios-retry@^3.4.0:
     is-retry-allowed "^2.2.0"
 
 axios@^1, axios@^1.3.4:
-  version "1.3.4"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/axios/-/axios-1.3.4.tgz"
-  integrity sha1-9XYM79nPtR/SSBrPiMBfZ8RSMCQ=
+  version "1.4.0"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/axios/-/axios-1.4.0.tgz"
+  integrity sha1-OKe/EiTNMI3icRRgOLVR1yXwvh8=
   dependencies:
     follow-redirects "^1.15.0"
     form-data "^4.0.0"
