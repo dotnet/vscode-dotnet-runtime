@@ -61,7 +61,7 @@ namespace commandKeys {
 const commandPrefix = 'dotnet-sdk';
 const configPrefix = 'dotnetSDKAcquisitionExtension';
 const displayChannelName = '.NET SDK';
-const defaultTimeoutValue = 300;
+const defaultTimeoutValue = 600;
 const pathTroubleshootingOption = 'Troubleshoot';
 const troubleshootingUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-sdk.md';
 const knownExtensionIds = ['ms-dotnettools.sample-extension', 'ms-dotnettools.vscode-dotnet-pack'];

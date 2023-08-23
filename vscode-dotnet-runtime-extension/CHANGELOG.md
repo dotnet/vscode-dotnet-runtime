@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning].
 
 ## [1.7.1] - 2023-08-14
 
-This is a small release that changes the error handling and issue reporting experience to make it easier to submit issues with the information we need to properly triage them. It also updates some package dependencies.
+This is a small release that changes the error handling and issue reporting experience to make it easier to submit issues with the information we need to properly triage them. It also updates some package dependencies and increases timeout time.
 
 ## [1.7.0] - 2023-08-14
 
