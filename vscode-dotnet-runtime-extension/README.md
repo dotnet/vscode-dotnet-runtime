@@ -6,7 +6,16 @@ This extension provides a unified way for other extensions like the [C#] and [C#
 
 ## Why do I have this extension?
 
-This extension was probably included as a dependency of the [C#] or [C# Dev Kit] extensions (though [Unity] and [.NET MAUI] extensions might also be the cause). These extensions call into this extension to provide a unified way of downloading per-extension copies of the .NET Runtime for those extensions to use internally. If you already have an installation of .NET that you'd like to use, see [the troubleshooting section below](#i-already-have-a-net-runtime-or-sdk-installed-and-i-want-to-use-it). If you want to remove this extension completely, you will need to uninstall any extensions that depend on it first. If this extension is uninstalled, any .NET Runtimes installed by it will also be removed.
+This extension was probably included as a dependency of one of the following extensions, though this list is not exhaustive:
+
+* [C#] 
+* [C# Dev Kit] 
+* [Unity] 
+* [.NET MAUI] 
+* [CMake]
+* [Bicep]
+
+These extensions call into this extension to provide a unified way of downloading per-extension copies of the .NET Runtime for those extensions to use internally. If you already have an installation of .NET that you'd like to use, see [the troubleshooting section below](#i-already-have-a-net-runtime-or-sdk-installed-and-i-want-to-use-it). If you want to remove this extension completely, you will need to uninstall any extensions that depend on it first. If this extension is uninstalled, any .NET Runtimes installed by it will also be removed.
 
 ## Troubleshooting
 
@@ -77,3 +86,5 @@ Please note that this extension collects telemetry by default and aims to follow
 [changing the installation timeout]: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#install-script-timeouts
 [Unity]: https://marketplace.visualstudio.com/items?itemName=VisualStudioToolsForUnity.vstuc
 [.NET MAUI]: https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.dotnet-maui
+[CMake]: https://marketplace.visualstudio.com/items?itemName=twxs.cmake
+[Bicep]: https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-bicep
