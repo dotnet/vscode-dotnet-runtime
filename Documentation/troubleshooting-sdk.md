@@ -1,4 +1,4 @@
-# Troubleshooting Issues with .NET Install Tool for Extension Authors
+# Troubleshooting Issues with .NET SDK Install Tool
 
 ## Unable to add to PATH
 

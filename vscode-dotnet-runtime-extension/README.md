@@ -4,6 +4,10 @@
 
 This extension provides a unified way for other extensions like the [C#] and [C# Dev Kit] extensions to install local, private versions of the .NET Runtime. This extension is not intended to be used directly by users to install .NET for development purposes because it only includes the .NET Runtime and not the entire .NET SDK.
 
+## Why do I have this extension?
+
+This extension was probably included as a dependency of the [C#] or [C# Dev Kit] extensions (though [Unity] and [.NET MAUI] extensions might also be the cause). These extensions call into this extension to provide a unified way of downloading per-extension copies of the .NET Runtime for those extensions to use internally. If you already have an installation of .NET that you'd like to use, see [the troubleshooting section below](#i-already-have-a-net-runtime-or-sdk-installed-and-i-want-to-use-it). If you want to remove this extension completely, you will need to uninstall any extensions that depend on it first. If this extension is uninstalled, any .NET Runtimes installed by it will also be removed.
+
 ## Troubleshooting
 
 ### I already have a .NET Runtime or SDK installed, and I want to use it
@@ -63,11 +67,13 @@ See the [.NET home repo](https://github.com/Microsoft/dotnet) to find other .NE
 
 .NET (including this repo) is licensed under the MIT license.
 
+## Telemetry Notice
+
+Please note that this extension collects telemetry by default and aims to follow the [VS Code Telemetry Policy](https://code.visualstudio.com/api/extension-guides/telemetry). You may disable this telemetry in the extension settings.
+
 [C#]: https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csharp
 [C# Dev Kit]: https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csdevkit
 [using external installations]: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#manually-installing-net
 [changing the installation timeout]: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#install-script-timeouts
-
-## Telemetry Notice
-
-Please note that this extension collects telemetry by default and aims to follow the [VS Code Telemetry Policy](https://code.visualstudio.com/api/extension-guides/telemetry). You may disable this telemetry in the extension settings.
+[Unity]: https://marketplace.visualstudio.com/items?itemName=VisualStudioToolsForUnity.vstuc
+[.NET MAUI]: https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.dotnet-maui
