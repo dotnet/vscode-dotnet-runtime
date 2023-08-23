@@ -87,5 +87,61 @@
 				]
 			}
 		]
+	},
+	"rhel": {
+		"installCommand": "sudo dnf install {0}",
+		"uninstallCommand": "sudo dnf remove {0}",
+		"updateCommand": "sudo dnf list --installed {0}",
+		"isInstalledCommand": "sudo dnf update {0}",
+		"packageLookupCommand": "yum list installed {0}",
+		"expectedDistroFeedInstallDirectory" : "/usr/lib64/dotnet/sdk",
+        "expectedMicrosoftFeedInstallDirectory" : "/usr/bin/dotnet",
+		"installedSDKVersionsCommand": "dotnet --list-sdks",
+		"installedRuntimeVersionsCommand": "dotnet --list-runtimes",
+		"currentInstallationVersionCommand": "dotnet --version",
+		"currentInstallPathCommand" : "which dotnet",
+		"versions": [{
+				"version": "9.1",
+				"dotnet": [{
+						"version": "6.0",
+						"sdk": "dotnet-sdk-6.0",
+						"runtime": "dotnet-runtime-6.0",
+						"aspnetcore": "aspnetcore-runtime-6.0"
+					},
+					{
+						"version": "7.0",
+						"sdk": "dotnet-sdk-7.0",
+						"runtime": "dotnet-runtime-7.0",
+						"aspnetcore": "aspnetcore-runtime-7.0"
+					}
+				]
+			},
+			{
+				"version": "8.7",
+				"dotnet": [{
+						"version": "6.0",
+						"sdk": "dotnet-sdk-6.0",
+						"runtime": "dotnet-runtime-6.0",
+						"aspnetcore": "aspnetcore-runtime-6.0"
+					},
+					{
+						"version": "7.0",
+						"sdk": "dotnet-sdk-7.0",
+						"runtime": "dotnet-runtime-7.0",
+						"aspnetcore": "aspnetcore-runtime-7.0"
+					}
+				]
+			},
+			{
+				"version": "7.0",
+				"dotnet": [{
+						"version": "6.0",
+						"sdk": "dotnet-sdk-6.0",
+						"runtime": "dotnet-runtime-6.0",
+						"aspnetcore": "aspnetcore-runtime-6.0"
+					}
+				]
+			}
+		]
 	}
 }
