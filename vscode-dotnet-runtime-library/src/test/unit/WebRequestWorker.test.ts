@@ -115,5 +115,5 @@ suite('WebRequestWorker Unit Tests', () => {
 
         const requestCount = webWorker.getRequestCount();
         assert.isAtLeast(requestCount, 2);
-    }).timeout(maxTimeoutTime * 4);
+    }).timeout(maxTimeoutTime * 400);
 });

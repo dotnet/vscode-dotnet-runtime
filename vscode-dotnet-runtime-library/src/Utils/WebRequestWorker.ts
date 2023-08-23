@@ -61,10 +61,12 @@ export class WebRequestWorker {
 
             Debugging.log(`Axios client wrapped around axios-retry: ${uncachedAxiosClient}`);
 
-            this.client = setupCache(uncachedAxiosClient, {
-                storage: mementoStorage(this.extensionState),
-                ttl: this.cacheTimeToLive
-            });
+            this.client = setupCache(uncachedAxiosClient,
+                {
+                    storage: mementoStorage(this.extensionState),
+                    ttl: this.cacheTimeToLive
+                }
+            );
 
             Debugging.log(`Cached Axios Client Created: ${this.client}`);
     }
@@ -85,16 +87,8 @@ export class WebRequestWorker {
             throw new Error(`Request to the url ${this.url} failed, as the URL is invalid.`);
         }
         const abort = axios.CancelToken.source()
-        const id = setTimeout(
-            () => abort.cancel(`Timeout, ${url} is unavailable.`),
-            this.websiteTimeoutMs
-        )
-        return this.client
-            .get(url, { cancelToken: abort.token, ...options })
-            .then(response => {
-            clearTimeout(id)
-            return response
-            })
+        const response = await this.client.get(url, { cancelToken: abort.token, ...options });
+        return response;
     }
 
     /**
@@ -118,13 +112,14 @@ export class WebRequestWorker {
      */
     public async isUrlCached(cachedUrl : string = this.url) : Promise<boolean>
     {
-        if(this.url === '')
+        if(cachedUrl === '')
         {
             return false;
         }
         try
         {
-            const cachedState : boolean = (await this.axiosGet(cachedUrl, {timeout: this.websiteTimeoutMs})).cached;
+            const requestResult = await this.axiosGet(cachedUrl, {timeout: this.websiteTimeoutMs});
+            const cachedState = requestResult.cached;
             return cachedState;
         }
         catch (error) // The url was unavailable.
@@ -148,6 +143,7 @@ export class WebRequestWorker {
             const response = await this.axiosGet(
                 this.url,
                 {
+                    timeout: this.websiteTimeoutMs,
                     headers: { 'Connection': 'keep-alive' },
                     'axios-retry': { retries: numRetries }
                 }
