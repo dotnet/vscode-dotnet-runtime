@@ -551,14 +551,14 @@ sax@>=0.6.0:
   integrity sha1-KBYjTiN4vdxOU1T6tcqold9xANk=
 
 semver@^5.1.0:
-  version "5.7.1"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/semver/-/semver-5.7.1.tgz#a954f931aeba508d307bbf069eff0c01c96116f7"
-  integrity sha1-qVT5Ma66UI0we78Gnv8MAclhFvc=
+  version "5.7.2"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/semver/-/semver-5.7.2.tgz#48d55db737c3287cd4835e17fa13feace1c41ef8"
+  integrity sha1-SNVdtzfDKHzUg14X+hP+rOHEHvg=
 
 semver@^7.3.5:
-  version "7.3.7"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/semver/-/semver-7.3.7.tgz#12c5b649afdbf9049707796e22a4028814ce523f"
-  integrity sha1-EsW2Sa/b+QSXB3luIqQCiBTOUj8=
+  version "7.5.4"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/semver/-/semver-7.5.4.tgz#483986ec4ed38e1c6c48c34894a9182dbff68a6e"
+  integrity sha1-SDmG7E7TjhxsSMNIlKkYLb/2im4=
   dependencies:
     lru-cache "^6.0.0"
 
