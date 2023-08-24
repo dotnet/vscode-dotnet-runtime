@@ -12,7 +12,6 @@ import {
 import { IExtensionState } from '../IExtensionState';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { IVersionResolver } from './IVersionResolver';
-import { ReleasesResult } from './ReleasesResult';
 import { Debugging } from '../Utils/Debugging';
 import { DotnetVersionSupportPhase,
     DotnetVersionSupportStatus,
@@ -20,6 +19,7 @@ import { DotnetVersionSupportPhase,
     IDotnetListVersionsResult,
     IDotnetVersion
 } from '../IDotnetListVersionsContext';
+/* tslint:disable:no-any */
 
 export class VersionResolver implements IVersionResolver {
     protected webWorker: WebRequestWorker;

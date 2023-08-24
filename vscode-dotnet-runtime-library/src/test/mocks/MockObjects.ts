@@ -105,7 +105,9 @@ export class MockTrackingWebRequestWorker extends WebRequestWorker {
     private requestCount = 0;
     public response = 'Mock Web Request Result';
 
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, url: string, protected readonly succeed = true, webTimeToLive = testDefaultTimeoutTimeMs, cacheTimetoLive = testDefaultTimeoutTimeMs) {
+    constructor(extensionState: IExtensionState, eventStream: IEventStream, url: string,
+            protected readonly succeed = true, webTimeToLive = testDefaultTimeoutTimeMs, cacheTimetoLive = testDefaultTimeoutTimeMs)
+    {
         super(extensionState, eventStream, url, webTimeToLive, cacheTimetoLive);
     }
 

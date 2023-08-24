@@ -2,6 +2,8 @@
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
+/* tslint:disable:no-any */
+/* tslint:disable:only-arrow-functions */
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as cp from 'child_process';
@@ -11,7 +13,6 @@ import * as path from 'path';
 import rimraf = require('rimraf');
 import * as vscode from 'vscode';
 import {
-  Debugging,
   DotnetAcquisitionAlreadyInstalled,
   DotnetCoreAcquisitionWorker,
   DotnetPreinstallDetected,
@@ -38,11 +39,11 @@ import { warn } from 'console';
 const standardTimeoutTime = 100000;
 const assert = chai.assert;
 chai.use(chaiAsPromised);
-/* tslint:disable:no-any */
 
 const currentSDKVersion = '6.0';
 
-suite('DotnetCoreAcquisitionExtension End to End', function () {
+suite('DotnetCoreAcquisitionExtension End to End', function ()
+{
 const mockReleasesData = `{
   "releases-index": [
     {

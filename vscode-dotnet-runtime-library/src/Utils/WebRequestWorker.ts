@@ -95,7 +95,8 @@ export class WebRequestWorker {
      * @returns The data from a web request that was hopefully cached. Even if it wasn't cached, we will make an attempt to get the data.
      * @remarks This function is no longer needed as the data is cached either way if you call makeWebRequest, but it was kept to prevent breaking APIs.
      */
-    public async getCachedData(retriesCount = 2): Promise<string | undefined> {
+    public async getCachedData(retriesCount = 2): Promise<string | undefined>
+    {
         return this.makeWebRequest(true, retriesCount);
     }
 
