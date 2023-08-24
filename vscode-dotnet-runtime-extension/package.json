@@ -9,8 +9,8 @@
 	},
 	"license": "MIT",
 	"author": "Microsoft Corporation",
-	"displayName": ".NET Install Tool for Extension Authors",
-	"description": "Allows acquisition of the .NET runtime specifically for VS Code extension authors.",
+	"displayName": ".NET Runtime Install Tool",
+	"description": "This extension installs and manages different versions of the .NET Runtime.",
 	"appInsightsKey": "02dc18e0-7494-43b2-b2a3-18ada5fcb522",
 	"icon": "images/dotnetIcon.png",
 	"version": "1.7.2",
@@ -25,7 +25,8 @@
 		".NET",
 		".NET Core",
 		"dotnet",
-		"Extension Authoring"
+		"Extension Authoring",
+		"runtime"
 	],
 	"capabilities": {
 		"untrustedWorkspaces": {
@@ -46,17 +47,17 @@
 		"commands": [
 			{
 				"command": "dotnet.reportIssue",
-				"title": "Report an issue with the .NET Install Tool for Extension Authors.",
-				"category": ".NET Install Tool"
+				"title": "Report an issue with the .NET Runtime Install Tool.",
+				"category": ".NET Runtime Install Tool"
 			}
 		],
 		"configuration": {
-			"title": ".NET Install Tool",
+			"title": ".NET Runtime Install Tool",
 			"properties": {
 				"dotnetAcquisitionExtension.enableTelemetry": {
 					"type": "boolean",
 					"default": true,
-					"description": "Enable Telemetry for the .NET install tool."
+					"description": "Enable Telemetry for the .NET Runtime Install Tool"
 				},
 				"dotnetAcquisitionExtension.installTimeoutValue": {
 					"type": "number",
