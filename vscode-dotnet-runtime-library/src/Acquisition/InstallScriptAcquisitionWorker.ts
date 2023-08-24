@@ -59,7 +59,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
         }
         scriptContent = eol.auto(scriptContent);
         fs.writeFileSync(filePath, scriptContent);
-        fs.chmodSync(filePath, 0o700);
+        fs.chmodSync(filePath, 0o744);
     }
 
     // Protected for testing purposes
