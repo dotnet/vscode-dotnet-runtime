@@ -99,7 +99,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     };
 
     const timeoutValue = extensionConfiguration.get<number>(configKeys.installTimeoutValue);
-    const finalTimeoutValue = timeoutValue === undefined ? defaultTimeoutValue : timeoutValue;
+    const resolvedTimeoutSeconds = timeoutValue === undefined ? defaultTimeoutValue : timeoutValue;
     let storagePath: string;
     if (os.platform() === 'win32') {
         // Install to %AppData% on windows to avoid running into long path errors
@@ -115,19 +115,19 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         storagePath,
         extensionState: context.globalState,
         eventStream,
-        acquisitionInvoker: new AcquisitionInvoker(context.globalState, eventStream, finalTimeoutValue),
+        acquisitionInvoker: new AcquisitionInvoker(context.globalState, eventStream, resolvedTimeoutSeconds),
         installationValidator: new InstallationValidator(eventStream),
-        timeoutValue: finalTimeoutValue,
+        timeoutValue: resolvedTimeoutSeconds,
         installDirectoryProvider: new SdkInstallationDirectoryProvider(storagePath),
         acquisitionContext : null
     });
 
-    const versionResolver = new VersionResolver(context.globalState, eventStream, finalTimeoutValue);
+    const versionResolver = new VersionResolver(context.globalState, eventStream, resolvedTimeoutSeconds);
 
     const getAvailableVersions = async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) : Promise<IDotnetListVersionsResult | undefined> =>
     {
         const versionsResult = await callWithErrorHandling(async () => {
-            const customVersionResolver = new VersionResolver(context.globalState, eventStream, finalTimeoutValue, customWebWorker);
+            const customVersionResolver = new VersionResolver(context.globalState, eventStream, resolvedTimeoutSeconds, customWebWorker);
             return customVersionResolver.GetAvailableDotnetVersions(commandContext);
         }, issueContext(commandContext?.errorConfiguration, 'listVersions'));
 
