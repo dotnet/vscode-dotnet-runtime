@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-## [1.7.1] - 2023-08-14
+## [1.7.2] - 2023-08-24
+
+This release completely revamps the web request handling to a new library (axios).
+
+## [1.7.1] - 2023-08-24
 
 This is a small release that changes the error handling and issue reporting experience to make it easier to submit issues with the information we need to properly triage them. It also updates some package dependencies and increases timeout time.
 

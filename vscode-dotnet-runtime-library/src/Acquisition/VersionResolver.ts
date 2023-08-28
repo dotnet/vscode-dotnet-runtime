@@ -12,24 +12,26 @@ import {
 import { IExtensionState } from '../IExtensionState';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { IVersionResolver } from './IVersionResolver';
+import { Debugging } from '../Utils/Debugging';
 import { DotnetVersionSupportPhase,
     DotnetVersionSupportStatus,
     IDotnetListVersionsContext,
     IDotnetListVersionsResult,
     IDotnetVersion
 } from '../IDotnetListVersionsContext';
+/* tslint:disable:no-any */
 
 export class VersionResolver implements IVersionResolver {
     protected webWorker: WebRequestWorker;
-    private readonly releasesKey = 'releases';
     private readonly releasesUrl = 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json';
 
     constructor(extensionState: IExtensionState,
                 private readonly eventStream: IEventStream,
+                private readonly timeoutTime : number,
                 webWorker?: WebRequestWorker
     )
     {
-        this.webWorker = webWorker ?? new WebRequestWorker(extensionState, eventStream, this.releasesUrl, this.releasesKey);
+        this.webWorker = webWorker ?? new WebRequestWorker(extensionState, eventStream, this.releasesUrl, this.timeoutTime * 1000);
     }
 
     /**
@@ -52,7 +54,7 @@ export class VersionResolver implements IVersionResolver {
         const shouldObtainSdkVersions : boolean = !commandContext?.listRuntimes;
         const availableVersions : IDotnetListVersionsResult = [];
 
-        const response = await this.webWorker.getCachedData();
+        const response : any = await this.webWorker.getCachedData();
 
 
         return new Promise<IDotnetListVersionsResult>((resolve, reject) =>
@@ -65,7 +67,7 @@ export class VersionResolver implements IVersionResolver {
             }
             else
             {
-                const sdkDetailsJson = JSON.parse(response)['releases-index'];
+                const sdkDetailsJson = response['releases-index'];
 
                 for(const availableSdk of sdkDetailsJson)
                 {
@@ -87,10 +89,12 @@ export class VersionResolver implements IVersionResolver {
     }
 
     public async getFullRuntimeVersion(version: string): Promise<string> {
+        Debugging.log(`Request: Get full runtime version for: ${version}`);
         return this.getFullVersion(version, true);
     }
 
     public async getFullSDKVersion(version: string): Promise<string> {
+        Debugging.log(`Request: Get full SDK version for: ${version}`);
         return this.getFullVersion(version, false);
     }
 

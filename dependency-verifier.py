@@ -77,7 +77,7 @@ def NpmChangesMirrorYarnChanges(changedFiles, packageLockPath, targetBranch):
     else:
         outOfDateYarnLocks.append(yarnLockPath)
     if(outOfDateYarnLocks != []):
-        sys.exit(f"The yarn.lock and package-lock appear to be out of sync with the changes made after {targetBranch}. Update by doing yarn import or yarn add dep@package-lock-version for {outOfDateYarnLocks}. For sub-dependencies, try adding just the main dependency first.")
+        sys.exit(f"The yarn.lock and package-lock appear to be out of sync with the changes made after {targetBranch}. Update by first using npm to push to the registry, doing npm install package@version. Then, do yarn add package@version for {outOfDateYarnLocks}. During the yarn add process, you may need to npm install specific dependencies that yarn will flag to allow yarn to proceed. You may consider (yarn import). Note this tool will list dependencies of packages, but you should try adding just the main package first. If you can confirm the new changes are in sync, then you may ignore this failure.")
     else:
         return 0 # OK, status here is not used
     
