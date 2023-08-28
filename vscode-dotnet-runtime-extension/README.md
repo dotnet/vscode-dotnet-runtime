@@ -8,10 +8,10 @@ This extension provides a unified way for other extensions like the [C#] and [C#
 
 This extension was probably included as a dependency of one of the following extensions, though this list is not exhaustive:
 
-* [C#] 
-* [C# Dev Kit] 
-* [Unity] 
-* [.NET MAUI] 
+* [C#]
+* [C# Dev Kit]
+* [Unity]
+* [.NET MAUI]
 * [CMake]
 * [Bicep]
 
@@ -40,11 +40,11 @@ For [C# Dev Kit] you would use the same thing, but with the extension ID `ms-dot
 
 ### Downloading the .NET Runtime times out
 
-It can sometimes take a while to download the .NET Runtime. While the default download time is 300 seconds, if you need more time you can set the `dotnetAcquisitionExtension.installTimeoutValue` setting to change that timeout. Here's an example of increasing the download timeout to 10 minutes:
+It can sometimes take a while to download the .NET Runtime. While the default download time is 600 seconds, if you need more time you can set the `dotnetAcquisitionExtension.installTimeoutValue` setting to change that timeout. Here's an example of increasing the download timeout to 11 minutes:
 
 ```json
 {
-    "dotnetAcquisitionExtension.installTimeoutValue": 600
+    "dotnetAcquisitionExtension.installTimeoutValue": 660
 }
 ```
 
