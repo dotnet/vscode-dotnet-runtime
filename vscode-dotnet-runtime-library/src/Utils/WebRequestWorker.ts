@@ -47,7 +47,7 @@ export class WebRequestWorker {
         private cacheTimeToLive = -1
         )
         {
-            this.cacheTimeToLive = this.cacheTimeToLive === -1 ? this.websiteTimeoutMs * 5 : this.cacheTimeToLive; // make things live 5x (arbitrary) as long as it takes to maximally acquire them
+            this.cacheTimeToLive = this.cacheTimeToLive === -1 ? this.websiteTimeoutMs * 100 : this.cacheTimeToLive; // make things live 100x the default time, which is ~16 hrs
             const uncachedAxiosClient = Axios.create({});
             Debugging.log(`Axios client instantiated: ${uncachedAxiosClient}`);
 
@@ -86,8 +86,19 @@ export class WebRequestWorker {
         {
             throw new Error(`Request to the url ${this.url} failed, as the URL is invalid.`);
         }
-        const abort = Axios.CancelToken.source()
-        const response = await this.client.get(url, { cancelToken: abort.token, ...options });
+        const timeoutCancelTokenHook = new AbortController();
+        const timeout = setTimeout(() =>
+        {
+            timeoutCancelTokenHook.abort();
+            const formattedError = new Error(`TIMEOUT: The request to ${this.url} timed out at ${this.websiteTimeoutMs} ms. This only occurs if your internet
+ or the url are experiencing connection difficulties; not if the server is being slow to respond. Check your connection, the url, and or increase the timeout value here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#install-script-timeouts`);
+            this.eventStream.post(new WebRequestError(formattedError));
+            throw formattedError;
+        }, this.websiteTimeoutMs);
+
+        const response = await this.client.get(url, { signal: timeoutCancelTokenHook.signal, ...options });
+        clearTimeout(timeout);
+
         return response;
     }
 

@@ -15,9 +15,5 @@ export class Debugging {
         {
             console.log(message);
         }
-        else
-        {
-            ; // do nothing to appease ansync?
-        }
     }
 };
