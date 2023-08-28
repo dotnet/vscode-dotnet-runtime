@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as cp from 'child_process';
-import * as isOnline from 'is-online';
+import isOnline from 'is-online';
 import * as os from 'os';
 import { IEventStream } from '../EventStream/EventStream';
 import {
