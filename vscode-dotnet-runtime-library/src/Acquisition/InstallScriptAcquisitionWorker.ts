@@ -6,11 +6,17 @@ import * as eol from 'eol';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import * as lockfile from 'proper-lockfile';
 import { IEventStream } from '../EventStream/EventStream';
 import {
     DotnetFallbackInstallScriptUsed,
+    DotnetFileWriteRequestEvent,
     DotnetInstallScriptAcquisitionCompleted,
     DotnetInstallScriptAcquisitionError,
+    DotnetLockAcquiredEvent,
+    DotnetLockAttemptingAcquireEvent,
+    DotnetLockErrorEvent,
+    DotnetLockReleasedEvent,
 } from '../EventStream/EventStreamEvents';
 import { IExtensionState } from '../IExtensionState';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
@@ -40,7 +46,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
             }
 
             Debugging.log('Writing the dotnet install script into a file.');
-            this.writeScriptAsFile(script, this.scriptFilePath);
+            await this.writeScriptAsFile(script, this.scriptFilePath);
 
             Debugging.log('The dotnet install script has been successfully written to disk. Returning the path.');
             this.eventStream.post(new DotnetInstallScriptAcquisitionCompleted());
@@ -64,13 +70,55 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
     }
 
     // Protected for testing purposes
-    protected writeScriptAsFile(scriptContent: string, filePath: string) {
+    protected async writeScriptAsFile(scriptContent: string, filePath: string)
+    {
+        this.eventStream.post(new DotnetFileWriteRequestEvent(`Request to write: ${filePath}`, new Date().toISOString()));
+
         if (!fs.existsSync(path.dirname(filePath))) {
             fs.mkdirSync(path.dirname(filePath), { recursive: true });
         }
-        scriptContent = eol.auto(scriptContent);
-        fs.writeFileSync(filePath, scriptContent);
-        fs.chmodSync(filePath, 0o744);
+        // Prepare to lock directory so we can check file exists atomically
+        const directoryLock = 'dir.lock';
+        const directoryLockPath = path.join(path.dirname(filePath), directoryLock);
+
+        // Begin Critical Section
+        // This check is part of a RACE CONDITION, it is technically part of the critical section as you will fail if the file DNE,
+        //  but you cant lock the file until it exists. Since there is no context in which files written by this are deleted while this can run,
+        //  theoretically, this ok. The library SHOULD provide a RAII based system for locks, but it does not.
+        if(!fs.existsSync(filePath))
+        {
+            // Create an empty file, as proper-lockfile fails to lock a file if file dne
+            fs.writeFileSync(filePath, '');
+        }
+
+        this.eventStream.post(new DotnetLockAttemptingAcquireEvent(`Lock Acqusition request to begin: ${directoryLockPath} for ${filePath}`, new Date().toISOString()));
+        await lockfile.lock(filePath, { lockfilePath: directoryLockPath, retries: { retries: 10, maxTimeout: 1000 } } )
+        .then(async (release) =>
+        {
+            this.eventStream.post(new DotnetLockAcquiredEvent(`Lock Acquired: ${directoryLockPath} for ${filePath}`, new Date().toISOString()));
+
+            // We would like to unlock the directory, but we can't grab a lock on the file if the directory is locked.
+            // Theoretically you could: add a new filewriter lock as a 3rd party lock ...
+            // Then, lock the filewriter, unlock the directory, then lock the file, then unlock filewriter, ...
+            // operate, then unlock file once the operation is done.
+            // For now, keep the entire directory locked.
+
+            scriptContent = eol.auto(scriptContent);
+
+            // fs.writeFile will replace the file if it exists.
+            // https://nodejs.org/api/fs.html#fswritefilefile-data-options-callback
+            fs.writeFileSync(filePath, scriptContent);
+            fs.chmodSync(filePath, 0o744);
+
+            this.eventStream.post(new DotnetLockReleasedEvent(`Lock about to be released: ${directoryLockPath} for ${filePath}`, new Date().toISOString()));
+            return release();
+        })
+        .catch((e) =>
+        {
+            // Either the lock could not be acquired or releasing it failed
+            this.eventStream.post(new DotnetLockErrorEvent(e));
+        });
+        // End Critical Section
     }
 
     // Protected for testing purposes

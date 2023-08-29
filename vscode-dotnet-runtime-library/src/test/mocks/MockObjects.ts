@@ -185,7 +185,7 @@ export class FailingInstallScriptWorker extends InstallScriptAcquisitionWorker {
         this.webWorker = new MockWebRequestWorker(extensionState, eventStream, '');
     }
 
-    protected writeScriptAsFile(scriptContent: string, filePath: string) {
+    protected async writeScriptAsFile(scriptContent: string, filePath: string) {
         throw new Error('Failed to write file');
     }
 }

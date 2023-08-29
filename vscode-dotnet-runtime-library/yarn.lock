@@ -133,6 +133,13 @@
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/node/-/node-16.11.7.tgz"
   "version" "16.11.7"
 
+"@types/proper-lockfile@^4.1.2":
+  "integrity" "sha1-SVN87nE0BV7hOhgzt2ocKY85uyY="
+  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/proper-lockfile/-/proper-lockfile-4.1.2.tgz"
+  "version" "4.1.2"
+  dependencies:
+    "@types/retry" "*"
+
 "@types/responselike@^1.0.0":
   "integrity" "sha1-JR9P59FU0rrRJavhtCmyOv0mLik="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/responselike/-/responselike-1.0.0.tgz"
@@ -140,7 +147,7 @@
   dependencies:
     "@types/node" "*"
 
-"@types/retry@0.12.0":
+"@types/retry@*", "@types/retry@0.12.0":
   "integrity" "sha1-KzXsz87n04zXKtmSMvvVi/+zyE0="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/retry/-/retry-0.12.0.tgz"
   "version" "0.12.0"
@@ -932,7 +939,7 @@
     "to-readable-stream" "^1.0.0"
     "url-parse-lax" "^3.0.0"
 
-"graceful-fs@^4.1.2", "graceful-fs@^4.2.2":
+"graceful-fs@^4.1.2", "graceful-fs@^4.2.2", "graceful-fs@^4.2.4":
   "integrity" "sha1-FH06AG2kyjzhRyjHrvwofDZ9emw="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/graceful-fs/-/graceful-fs-4.2.10.tgz"
   "version" "4.2.10"
@@ -1578,6 +1585,15 @@
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/process-nextick-args/-/process-nextick-args-2.0.1.tgz"
   "version" "2.0.1"
 
+"proper-lockfile@^4.1.2":
+  "integrity" "sha1-yLneKvay8WAQZ/mOAaxmuqIjFB8="
+  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/proper-lockfile/-/proper-lockfile-4.1.2.tgz"
+  "version" "4.1.2"
+  dependencies:
+    "graceful-fs" "^4.2.4"
+    "retry" "^0.12.0"
+    "signal-exit" "^3.0.2"
+
 "proxy-from-env@^1.1.0":
   "integrity" "sha1-4QLxbKNVQkhldV0sno6k8k1Yw+I="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/proxy-from-env/-/proxy-from-env-1.1.0.tgz"
@@ -1702,6 +1718,11 @@
   dependencies:
     "lowercase-keys" "^3.0.0"
 
+"retry@^0.12.0":
+  "integrity" "sha1-G0KmJmoh8HQh0bC1S33BZ7AcATs="
+  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/retry/-/retry-0.12.0.tgz"
+  "version" "0.12.0"
+
 "retry@^0.13.1":
   "integrity" "sha1-GFsVh6z2eRnWOzVzSeA1N7JIRlg="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/retry/-/retry-0.13.1.tgz"
@@ -1770,6 +1791,11 @@
     "call-bind" "^1.0.0"
     "get-intrinsic" "1.1.2"
     "object-inspect" "^1.9.0"
+
+"signal-exit@^3.0.2":
+  "integrity" "sha1-qaF2f4r4QVURTqq9c/mSc8j1mtk="
+  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/signal-exit/-/signal-exit-3.0.7.tgz"
+  "version" "3.0.7"
 
 "sprintf-js@~1.0.2":
   "integrity" "sha1-BOaSb2YolTVPPdAVIDYzuFcpfiw="

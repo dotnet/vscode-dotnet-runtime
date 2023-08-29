@@ -260,6 +260,35 @@ export class DotnetFallbackInstallScriptUsed extends DotnetAcquisitionMessage {
     public readonly eventName = 'DotnetFallbackInstallScriptUsed';
 }
 
+export abstract class DotnetFileEvent extends DotnetAcquisitionMessage
+{
+    constructor(public readonly eventMessage: string, public readonly time: string) { super(); }
+
+    public getProperties() {
+        return {Message: this.eventMessage, Time: this.time};
+    }
+}
+
+export class DotnetLockAcquiredEvent extends DotnetFileEvent {
+    public readonly eventName = 'DotnetLockAcquiredEvent';
+}
+
+export class DotnetLockReleasedEvent extends DotnetFileEvent {
+    public readonly eventName = 'DotnetLockReleasedEvent';
+}
+
+export class DotnetLockErrorEvent extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetLockErrorEvent';
+}
+
+export class DotnetLockAttemptingAcquireEvent extends DotnetFileEvent {
+    public readonly eventName = 'DotnetLockAttemptingAcquireEvent';
+}
+
+export class DotnetFileWriteRequestEvent extends DotnetFileEvent {
+    public readonly eventName = 'DotnetFileWriteRequestEvent';
+}
+
 export class DotnetAcquisitionPartialInstallation extends DotnetAcquisitionMessage {
     public readonly eventName = 'DotnetAcquisitionPartialInstallation';
     constructor(public readonly version: string) { super(); }
