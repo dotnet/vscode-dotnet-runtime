@@ -87,6 +87,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         let args = [
             '-InstallDir', this.escapeFilePath(dotnetInstallDir),
             '-Version', version,
+            '-Verbose'
         ];
         if (installRuntime) {
             args = args.concat('-Runtime', 'dotnet');
