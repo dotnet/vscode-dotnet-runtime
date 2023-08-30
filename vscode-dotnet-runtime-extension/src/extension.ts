@@ -114,7 +114,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) => {
         const dotnetPath = await callWithErrorHandling<Promise<IDotnetAcquireResult>>(async () => {
-            eventStream.post(new DotnetRuntimeAcquisitionStarted());
+            eventStream.post(new DotnetRuntimeAcquisitionStarted(commandContext.requestingExtensionId));
             eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
             acquisitionWorker.setAcquisitionContext(commandContext);
 

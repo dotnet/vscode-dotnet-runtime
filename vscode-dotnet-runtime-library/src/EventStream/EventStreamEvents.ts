@@ -14,12 +14,12 @@ export class DotnetAcquisitionStarted extends IEvent {
     public readonly eventName = 'DotnetAcquisitionStarted';
     public readonly type = EventType.DotnetAcquisitionStart;
 
-    constructor(public readonly version: string) {
+    constructor(public readonly version: string, public readonly requestingExtensionId = '') {
         super();
     }
 
     public getProperties() {
-        return {AcquisitionStartVersion : this.version};
+        return {AcquisitionStartVersion : this.version, extensionId : this.requestingExtensionId};
     }
 }
 
@@ -27,8 +27,12 @@ export class DotnetRuntimeAcquisitionStarted extends IEvent {
     public readonly eventName = 'DotnetRuntimeAcquisitionStarted';
     public readonly type = EventType.DotnetRuntimeAcquisitionStart;
 
+    constructor(public readonly requestingExtensionId = '') {
+        super();
+    }
+
     public getProperties() {
-        return undefined;
+        return {extensionId : this.requestingExtensionId};
     }
 }
 
@@ -36,8 +40,12 @@ export class DotnetSDKAcquisitionStarted extends IEvent {
     public readonly eventName = 'DotnetSDKAcquisitionStarted';
     public readonly type = EventType.DotnetSDKAcquisitionStart;
 
+    constructor(public readonly requestingExtensionId = '') {
+        super();
+    }
+
     public getProperties() {
-        return undefined;
+        return {extensionId : this.requestingExtensionId};
     }
 }
 

@@ -151,7 +151,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             timeoutValue: this.timeoutValue,
             installRuntime,
         } as IDotnetInstallationContext;
-        this.context.eventStream.post(new DotnetAcquisitionStarted(version));
+        this.context.eventStream.post(new DotnetAcquisitionStarted(version, this.context.acquisitionContext?.requestingExtensionId));
         await this.context.acquisitionInvoker.installDotnet(installContext).catch((reason) => {
             throw Error(`Installation failed: ${reason}`);
         });
