@@ -12,7 +12,7 @@ import { VersionResolver } from '../../Acquisition/VersionResolver';
 import { IEventStream } from '../../EventStream/EventStream';
 import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStream/EventStreamEvents';
 import { IEvent } from '../../EventStream/IEvent';
-import { ILoggingObserver } from '../../EventStream/ILoggingObserver';
+import { ILoggingObserver } from '../ILoggingObserver';
 import { ITelemetryReporter } from '../../EventStream/TelemetryObserver';
 import { IExistingPath, IExtensionConfiguration } from '../../IExtensionContext';
 import { IExtensionState } from '../../IExtensionState';

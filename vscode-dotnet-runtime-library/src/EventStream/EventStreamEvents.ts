@@ -7,6 +7,7 @@ import * as path from 'path';
 import { IDotnetInstallationContext } from '../Acquisition/IDotnetInstallationContext';
 import { EventType } from './EventType';
 import { IEvent } from './IEvent';
+import { TelemetryUtilities } from './FileUtilities';
 
 // tslint:disable max-classes-per-file
 
@@ -19,7 +20,7 @@ export class DotnetAcquisitionStarted extends IEvent {
     }
 
     public getProperties() {
-        return {AcquisitionStartVersion : this.version, extensionId : this.requestingExtensionId};
+        return {AcquisitionStartVersion : this.version, extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
     }
 }
 
@@ -32,7 +33,7 @@ export class DotnetRuntimeAcquisitionStarted extends IEvent {
     }
 
     public getProperties() {
-        return {extensionId : this.requestingExtensionId};
+        return {extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
     }
 }
 
@@ -45,7 +46,7 @@ export class DotnetSDKAcquisitionStarted extends IEvent {
     }
 
     public getProperties() {
-        return {extensionId : this.requestingExtensionId};
+        return {extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
     }
 }
 
@@ -313,7 +314,8 @@ export class DotnetAcquisitionInProgress extends IEvent {
     constructor(public readonly version: string, public readonly requestingExtensionId: string | null) { super(); }
 
     public getProperties() {
-        return {InProgressInstallationVersion : this.version, extensionId : this.requestingExtensionId != null ? this.requestingExtensionId : ''};
+        return {InProgressInstallationVersion : this.version, extensionId : this.requestingExtensionId != null ?
+            TelemetryUtilities.HashData(this.requestingExtensionId) : ''};
     }
 }
 
@@ -324,7 +326,8 @@ export class DotnetAcquisitionAlreadyInstalled extends IEvent {
     constructor(public readonly version: string, public readonly requestingExtensionId: string | null) { super(); }
 
     public getProperties() {
-        return {AlreadyInstalledVersion : this.version, extensionId : this.requestingExtensionId != null ? this.requestingExtensionId : ''};
+        return {AlreadyInstalledVersion : this.version, extensionId : this.requestingExtensionId != null ?
+            TelemetryUtilities.HashData(this.requestingExtensionId) : ''};
     }
 }
 
@@ -362,7 +365,7 @@ export class DotnetAcquisitionRequested extends DotnetAcquisitionMessage {
 
     public getProperties() {
         return {AcquisitionStartVersion : this.version,
-                RequestingExtensionId: this.requestingId};
+                RequestingExtensionId: TelemetryUtilities.HashData(this.requestingId)};
     }
 }
 
@@ -376,7 +379,7 @@ export class DotnetAcquisitionStatusRequested extends DotnetAcquisitionMessage {
 
     public getProperties() {
         return {AcquisitionStartVersion : this.version,
-                RequestingExtensionId: this.requestingId};
+                RequestingExtensionId: TelemetryUtilities.HashData(this.requestingId)};
     }
 }
 

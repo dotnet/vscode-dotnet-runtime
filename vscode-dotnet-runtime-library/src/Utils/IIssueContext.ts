@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import { IEventStream } from '../EventStream/EventStream';
-import { ILoggingObserver } from '../EventStream/ILoggingObserver';
+import { ILoggingObserver } from '../test/ILoggingObserver';
 import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
 import { ErrorConfiguration } from './ErrorHandler';
 import { IExtensionConfigurationWorker } from './IExtensionConfigurationWorker';
