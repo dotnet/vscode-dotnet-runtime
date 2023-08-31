@@ -108,7 +108,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
             const existingScriptContent = fs.readFileSync(filePath).toString();
             // fs.writeFile will replace the file if it exists.
             // https://nodejs.org/api/fs.html#fswritefilefile-data-options-callback
-            if(scriptContent != existingScriptContent)
+            if(scriptContent !== existingScriptContent)
             {
                 fs.writeFileSync(filePath, scriptContent);
                 fs.chmodSync(filePath, 0o744);
