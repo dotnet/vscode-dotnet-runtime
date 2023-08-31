@@ -7,7 +7,7 @@ import * as path from 'path';
 import { IDotnetInstallationContext } from '../Acquisition/IDotnetInstallationContext';
 import { EventType } from './EventType';
 import { IEvent } from './IEvent';
-import { TelemetryUtilities } from './FileUtilities';
+import { TelemetryUtilities } from './TelemetryUtilities';
 
 // tslint:disable max-classes-per-file
 
@@ -271,26 +271,42 @@ export class DotnetFallbackInstallScriptUsed extends DotnetAcquisitionMessage {
 
 export abstract class DotnetFileEvent extends DotnetAcquisitionMessage
 {
-    constructor(public readonly eventMessage: string, public readonly time: string) { super(); }
+    constructor(public readonly eventMessage: string, public readonly time: string, public readonly file: string) { super(); }
 
     public getProperties() {
-        return {Message: this.eventMessage, Time: this.time};
+        return {Message: this.eventMessage, Time: this.time, File: TelemetryUtilities.HashData(this.file)};
     }
 }
 
-export class DotnetLockAcquiredEvent extends DotnetFileEvent {
+export abstract class DotnetLockEvent extends DotnetFileEvent
+{
+    constructor(public readonly eventMessage: string, public readonly time: string, public readonly lock: string, public readonly file: string) { super(eventMessage, time, file); }
+
+    public getProperties() {
+        return {Message: this.eventMessage, Time: this.time, Lock: TelemetryUtilities.HashData(this.lock), File: TelemetryUtilities.HashData(this.file)};
+    }
+}
+
+export class DotnetLockAcquiredEvent extends DotnetLockEvent {
     public readonly eventName = 'DotnetLockAcquiredEvent';
 }
 
-export class DotnetLockReleasedEvent extends DotnetFileEvent {
+export class DotnetLockReleasedEvent extends DotnetLockEvent {
     public readonly eventName = 'DotnetLockReleasedEvent';
 }
 
-export class DotnetLockErrorEvent extends DotnetAcquisitionError {
+export class DotnetLockErrorEvent extends DotnetLockEvent {
     public readonly eventName = 'DotnetLockErrorEvent';
+    constructor(public readonly error : Error,
+        public readonly eventMessage: string, public readonly time: string, public readonly lock: string, public readonly file: string) { super(eventMessage, time, lock, file); }
+
+    public getProperties() {
+        return {Error: this.error.toString(), Message: this.eventMessage, Time: this.time, Lock: TelemetryUtilities.HashData(this.lock), File: TelemetryUtilities.HashData(this.file)};
+    }
+
 }
 
-export class DotnetLockAttemptingAcquireEvent extends DotnetFileEvent {
+export class DotnetLockAttemptingAcquireEvent extends DotnetLockEvent {
     public readonly eventName = 'DotnetLockAttemptingAcquireEvent';
 }
 

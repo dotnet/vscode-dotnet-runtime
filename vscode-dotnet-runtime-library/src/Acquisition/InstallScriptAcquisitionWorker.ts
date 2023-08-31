@@ -72,7 +72,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
     // Protected for testing purposes
     protected async writeScriptAsFile(scriptContent: string, filePath: string)
     {
-        this.eventStream.post(new DotnetFileWriteRequestEvent(`Request to write: ${filePath}`, new Date().toISOString()));
+        this.eventStream.post(new DotnetFileWriteRequestEvent(`Request to write`, new Date().toISOString(), filePath));
 
         if (!fs.existsSync(path.dirname(filePath))) {
             fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -88,14 +88,15 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
         if(!fs.existsSync(filePath))
         {
             // Create an empty file, as proper-lockfile fails to lock a file if file dne
+            this.eventStream.post(new DotnetFileWriteRequestEvent(`File did not exist upon write request.`, new Date().toISOString(), filePath));
             fs.writeFileSync(filePath, '');
         }
 
-        this.eventStream.post(new DotnetLockAttemptingAcquireEvent(`Lock Acqusition request to begin: ${directoryLockPath} for ${filePath}`, new Date().toISOString()));
+        this.eventStream.post(new DotnetLockAttemptingAcquireEvent(`Lock Acqusition request to begin.`, new Date().toISOString(), directoryLockPath, filePath));
         await lockfile.lock(filePath, { lockfilePath: directoryLockPath, retries: { retries: 10, maxTimeout: 1000 } } )
         .then(async (release) =>
         {
-            this.eventStream.post(new DotnetLockAcquiredEvent(`Lock Acquired: ${directoryLockPath} for ${filePath}`, new Date().toISOString()));
+            this.eventStream.post(new DotnetLockAcquiredEvent(`Lock Acquired.`, new Date().toISOString(), directoryLockPath, filePath));
 
             // We would like to unlock the directory, but we can't grab a lock on the file if the directory is locked.
             // Theoretically you could: add a new filewriter lock as a 3rd party lock ...
@@ -104,19 +105,27 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
             // For now, keep the entire directory locked.
 
             scriptContent = eol.auto(scriptContent);
-
+            const existingScriptContent = fs.readFileSync(filePath).toString();
             // fs.writeFile will replace the file if it exists.
             // https://nodejs.org/api/fs.html#fswritefilefile-data-options-callback
-            fs.writeFileSync(filePath, scriptContent);
-            fs.chmodSync(filePath, 0o744);
+            if(scriptContent != existingScriptContent)
+            {
+                fs.writeFileSync(filePath, scriptContent);
+                fs.chmodSync(filePath, 0o744);
+                this.eventStream.post(new DotnetFileWriteRequestEvent(`File content needed to be updated.`, new Date().toISOString(), filePath));
+            }
+            else
+            {
+                this.eventStream.post(new DotnetFileWriteRequestEvent(`File content is an exact match, not writing file.`, new Date().toISOString(), filePath));
+            }
 
-            this.eventStream.post(new DotnetLockReleasedEvent(`Lock about to be released: ${directoryLockPath} for ${filePath}`, new Date().toISOString()));
+            this.eventStream.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), directoryLockPath, filePath));
             return release();
         })
-        .catch((e) =>
+        .catch((e : Error) =>
         {
             // Either the lock could not be acquired or releasing it failed
-            this.eventStream.post(new DotnetLockErrorEvent(e));
+            this.eventStream.post(new DotnetLockErrorEvent(e, e.message, new Date().toISOString(), directoryLockPath, filePath));
         });
         // End Critical Section
     }
