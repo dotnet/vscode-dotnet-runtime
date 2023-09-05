@@ -4,7 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 import * as fs from 'fs';
 import { IEvent } from './IEvent';
-import { ILoggingObserver } from './ILoggingObserver';
+import { ILoggingObserver } from '../test/ILoggingObserver';
 
 export class LoggingObserver implements ILoggingObserver {
     private log: string[] = [];

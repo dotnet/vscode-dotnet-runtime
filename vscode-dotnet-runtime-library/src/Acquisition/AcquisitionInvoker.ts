@@ -21,6 +21,7 @@ import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
 import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker';
+import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
 
 export class AcquisitionInvoker extends IAcquisitionInvoker {
     private readonly scriptWorker: IInstallScriptAcquisitionWorker;
@@ -49,10 +50,10 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                         async (error, stdout, stderr) => {
                     if (error) {
                         if (stdout) {
-                            this.eventStream.post(new DotnetAcquisitionScriptOuput(installContext.version, stdout));
+                            this.eventStream.post(new DotnetAcquisitionScriptOuput(installContext.version, TelemetryUtilities.HashAllPaths(stdout)));
                         }
                         if (stderr) {
-                            this.eventStream.post(new DotnetAcquisitionScriptOuput(installContext.version, `STDERR: ${stderr}`));
+                            this.eventStream.post(new DotnetAcquisitionScriptOuput(installContext.version, `STDERR: ${TelemetryUtilities.HashAllPaths(stderr)}`));
                         }
 
                         const online = await isOnline();
@@ -69,7 +70,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                             reject(error);
                         }
                     } else if (stderr && stderr.length > 0) {
-                        this.eventStream.post(new DotnetAcquisitionScriptError(new Error(stderr), installContext.version));
+                        this.eventStream.post(new DotnetAcquisitionScriptError(new Error(TelemetryUtilities.HashAllPaths(stderr)), installContext.version));
                         reject(stderr);
                     } else {
                         this.eventStream.post(new DotnetAcquisitionCompleted(installContext.version, installContext.dotnetPath));
@@ -87,6 +88,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         let args = [
             '-InstallDir', this.escapeFilePath(dotnetInstallDir),
             '-Version', version,
+            '-Verbose'
         ];
         if (installRuntime) {
             args = args.concat('-Runtime', 'dotnet');

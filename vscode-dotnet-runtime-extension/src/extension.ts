@@ -98,23 +98,23 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     if (!fs.existsSync(context.globalStoragePath)) {
         fs.mkdirSync(context.globalStoragePath);
     }
-    const finalTimeoutValue = timeoutValue === undefined ? defaultTimeoutValue : timeoutValue;
+    const resolvedTimeoutSeconds = timeoutValue === undefined ? defaultTimeoutValue : timeoutValue;
 
     const acquisitionWorker = new DotnetCoreAcquisitionWorker({
         storagePath: context.globalStoragePath,
         extensionState: context.globalState,
         eventStream,
-        acquisitionInvoker: new AcquisitionInvoker(context.globalState, eventStream, finalTimeoutValue),
+        acquisitionInvoker: new AcquisitionInvoker(context.globalState, eventStream, resolvedTimeoutSeconds),
         installationValidator: new InstallationValidator(eventStream),
-        timeoutValue: finalTimeoutValue,
+        timeoutValue: resolvedTimeoutSeconds,
         installDirectoryProvider: new RuntimeInstallationDirectoryProvider(context.globalStoragePath),
     });
     const existingPathResolver = new ExistingPathResolver();
-    const versionResolver = new VersionResolver(context.globalState, eventStream, finalTimeoutValue);
+    const versionResolver = new VersionResolver(context.globalState, eventStream, resolvedTimeoutSeconds);
 
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) => {
         const dotnetPath = await callWithErrorHandling<Promise<IDotnetAcquireResult>>(async () => {
-            eventStream.post(new DotnetRuntimeAcquisitionStarted());
+            eventStream.post(new DotnetRuntimeAcquisitionStarted(commandContext.requestingExtensionId));
             eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
             acquisitionWorker.setAcquisitionContext(commandContext);
 

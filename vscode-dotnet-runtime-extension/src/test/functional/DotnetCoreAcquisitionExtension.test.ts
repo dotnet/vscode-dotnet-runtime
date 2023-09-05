@@ -108,7 +108,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     const requestedEvent = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === 'DotnetAcquisitionRequested');
     assert.exists(requestedEvent);
     assert.include(requestedEvent!.properties!.AcquisitionStartVersion, '2.2');
-    assert.include(requestedEvent!.properties!.RequestingExtensionId, requestingExtensionId);
+    assert.notInclude(requestedEvent!.properties!.RequestingExtensionId, requestingExtensionId); // assert that the extension id is hashed
     const startedEvent = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === 'DotnetAcquisitionStarted');
     assert.exists(startedEvent);
     assert.include(startedEvent!.properties!.AcquisitionStartVersion, '2.2');

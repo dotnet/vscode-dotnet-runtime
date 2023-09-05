@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+## [1.7.3] - 2023-08-24
+
+Fixes an issue where install script files could have race conditions by introducing file locking mechanisms.
+
 ## [1.7.2] - 2023-08-24
 
 This release completely revamps the web request handling to a new library (axios).
