@@ -9,8 +9,13 @@ import { TextEncoder } from 'util';
 
 export class TelemetryUtilities
 {
-    public static HashData(dataToHash: string) : string
+    public static HashData(dataToHash: string | null) : string
     {
+        if(!dataToHash)
+        {
+            return '';
+        }
+
         const hasher = crypto.createHash('sha256');
         const utf8Bytes = new TextEncoder().encode(dataToHash.toUpperCase());
         const hashedData = hasher.update(utf8Bytes).digest('hex').toLowerCase();

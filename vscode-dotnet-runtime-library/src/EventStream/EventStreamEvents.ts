@@ -330,8 +330,7 @@ export class DotnetAcquisitionInProgress extends IEvent {
     constructor(public readonly version: string, public readonly requestingExtensionId: string | null) { super(); }
 
     public getProperties() {
-        return {InProgressInstallationVersion : this.version, extensionId : this.requestingExtensionId != null ?
-            TelemetryUtilities.HashData(this.requestingExtensionId) : ''};
+        return {InProgressInstallationVersion : this.version, extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
     }
 }
 
@@ -342,8 +341,7 @@ export class DotnetAcquisitionAlreadyInstalled extends IEvent {
     constructor(public readonly version: string, public readonly requestingExtensionId: string | null) { super(); }
 
     public getProperties() {
-        return {AlreadyInstalledVersion : this.version, extensionId : this.requestingExtensionId != null ?
-            TelemetryUtilities.HashData(this.requestingExtensionId) : ''};
+        return {AlreadyInstalledVersion : this.version, extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
     }
 }
 
