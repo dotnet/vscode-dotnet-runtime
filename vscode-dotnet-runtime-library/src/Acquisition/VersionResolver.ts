@@ -28,10 +28,11 @@ export class VersionResolver implements IVersionResolver {
     constructor(extensionState: IExtensionState,
                 private readonly eventStream: IEventStream,
                 private readonly timeoutTime : number,
+                private readonly proxy?: string,
                 webWorker?: WebRequestWorker
     )
     {
-        this.webWorker = webWorker ?? new WebRequestWorker(extensionState, eventStream, this.releasesUrl, this.timeoutTime * 1000);
+        this.webWorker = webWorker ?? new WebRequestWorker(extensionState, eventStream, this.releasesUrl, this.timeoutTime * 1000, this.proxy);
     }
 
     /**

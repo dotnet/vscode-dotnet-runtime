@@ -4,6 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 import Axios from 'axios';
 import axiosRetry from 'axios-retry';
+import { HttpsProxyAgent } from 'https-proxy-agent';
+import { getProxySettings, getAndTestProxySettings } from "get-proxy-settings";
 import { AxiosCacheInstance, buildStorage, setupCache, StorageValue } from 'axios-cache-interceptor';
 import { IEventStream } from '../EventStream/EventStream';
 import { WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
@@ -31,7 +33,8 @@ const mementoStorage = (extensionStorage: IExtensionState) => {
     });
 }
 
-export class WebRequestWorker {
+export class WebRequestWorker
+{
     /**
      * @remarks
      * An interface for sending get requests to APIS.
@@ -39,11 +42,14 @@ export class WebRequestWorker {
      */
     private client: AxiosCacheInstance;
 
+    private proxyAgent : HttpsProxyAgent<string> | null = null;
+
     constructor(
         private readonly extensionState: IExtensionState,
         private readonly eventStream: IEventStream,
         private readonly url: string,
         private readonly websiteTimeoutMs: number, // Match the default timeout time of 10 minutes.
+        private proxy = '',
         private cacheTimeToLive = -1
         )
         {
@@ -139,6 +145,26 @@ export class WebRequestWorker {
         }
     }
 
+    private async ActivateProxyAgentIfFound()
+    {
+        if(!this.proxyEnabled())
+        {
+            const autoDetectProxies = await getProxySettings();
+            if(autoDetectProxies?.https)
+            {
+                this.proxy = autoDetectProxies.https.toString();
+            }
+            else if(autoDetectProxies?.http)
+            {
+                this.proxy = autoDetectProxies.http.toString();
+            }
+        }
+        if(this.proxyEnabled())
+        {
+            this.proxyAgent = new HttpsProxyAgent(this.proxy);
+        }
+    }
+
     /**
      *
      * @param throwOnError Should we throw if the connection fails, there's a bad URL passed in, or something else goes wrong?
@@ -146,17 +172,24 @@ export class WebRequestWorker {
      * @returns The data returned from a get request to the url. It may be of string type, but it may also be of another type if the return result is convertable (e.g. JSON.)
      * @remarks protected for ease of testing.
      */
-    protected async makeWebRequest(throwOnError: boolean, numRetries: number): Promise<string | undefined> {
+    protected async makeWebRequest(throwOnError: boolean, numRetries: number): Promise<string | undefined>
+    {
+        await this.ActivateProxyAgentIfFound();
+
         try
         {
             this.eventStream.post(new WebRequestSent(this.url));
+            const options = {
+                timeout: this.websiteTimeoutMs,
+                headers: { 'Connection': 'keep-alive' },
+                'axios-retry': { retries: numRetries },
+                ...(this.proxyEnabled() && {proxy : false}),
+                ...(this.proxyEnabled() && {httpsAgent : this.proxyAgent}),
+            };
+
             const response = await this.axiosGet(
                 this.url,
-                {
-                    timeout: this.websiteTimeoutMs,
-                    headers: { 'Connection': 'keep-alive' },
-                    'axios-retry': { retries: numRetries }
-                }
+                options
             );
 
             return response.data;
@@ -171,12 +204,19 @@ export class WebRequestWorker {
                 }
                 else
                 {
-                    formattedError = new Error(`Please ensure that you are online: Request to ${this.url} Failed: ${formattedError.message}`);
+                    formattedError = new Error(`Please ensure that you are online: Request to ${this.url} Failed: ${formattedError.message}.
+If you are on a corporate proxy with a result of 400, you may need to manually set the proxy in our extension settings: Please see: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md
+If your proxy requires credentials and the result is 407: we cannot currently handle your request, and you should configure dotnet manually following the above link.`);
                 }
                 this.eventStream.post(new WebRequestError(formattedError));
                 throw formattedError;
             }
             return undefined;
         }
+    }
+
+    private proxyEnabled() : boolean
+    {
+        return this.proxy != '';
     }
 }

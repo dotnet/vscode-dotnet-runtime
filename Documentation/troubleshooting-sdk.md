@@ -30,6 +30,16 @@ Learn more about configuring Visual Studio Code settings [here](https://code.vis
 }
 ```
 
+## The extension thinks you are offline with error response of 400, and you have a proxy.
+
+This is a known issue with axios, the system we use to request urls from.
+Your corporate proxy may deny us service unless we forward it correctly through the proxy.
+
+```json
+{
+    "dotnetSDKAcquisitionExtension.proxyUrl": 'https://your_proxy_url:port'
+}
+
 ## Other Issues
 
 Haven't found a solution? Check out our [open issues](https://github.com/dotnet/vscode-dotnet-runtime/issues). If you don't see your issue there, please file a new issue by evoking the `.NET SDK Install Tool: Report an issue with the .NET SDK Install Tool` command from Visual Studio Code.
