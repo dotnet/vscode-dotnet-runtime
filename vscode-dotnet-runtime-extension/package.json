@@ -67,6 +67,10 @@
 				"dotnetAcquisitionExtension.existingDotnetPath": {
 					"type": "array",
 					"description": "File Path to an existing installation of .NET."
+				},
+				"dotnetAcquisitionExtension.proxyUrl": {
+					"type": "string",
+					"description": "URL to a proxy if you use one, such as: https://proxy:port"
 				}
 			}
 		}

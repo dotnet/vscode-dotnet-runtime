@@ -48,6 +48,16 @@ It can sometimes take a while to download the .NET Runtime. While the default do
 }
 ```
 
+## The extension thinks you are offline with error response of 400, and you have a proxy.
+
+This is a known issue with axios, the system we use to request urls from.
+Your corporate proxy may deny us service unless we forward it correctly through the proxy.
+
+```json
+{
+    "dotnetAcquisitionExtension.proxyUrl": 'https://your_proxy_url:port'
+}
+
 You can read more about [changing the installation timeout] in our documentation.
 
 ## Information for repo contributors
