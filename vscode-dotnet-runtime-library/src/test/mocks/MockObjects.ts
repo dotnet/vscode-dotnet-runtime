@@ -12,12 +12,14 @@ import { VersionResolver } from '../../Acquisition/VersionResolver';
 import { IEventStream } from '../../EventStream/EventStream';
 import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStream/EventStreamEvents';
 import { IEvent } from '../../EventStream/IEvent';
-import { ILoggingObserver } from '../../EventStream/ILoggingObserver';
+import { ILoggingObserver } from '../ILoggingObserver';
 import { ITelemetryReporter } from '../../EventStream/TelemetryObserver';
 import { IExistingPath, IExtensionConfiguration } from '../../IExtensionContext';
 import { IExtensionState } from '../../IExtensionState';
 import { WebRequestWorker } from '../../Utils/WebRequestWorker';
 /* tslint:disable:no-any */
+
+const testDefaultTimeoutTimeMs = 60000;
 
 export class MockExtensionContext implements IExtensionState {
     private values: { [n: string]: any; } = {};
@@ -38,7 +40,7 @@ export class MockExtensionContext implements IExtensionState {
         this.values = {};
     }
     public keys(): readonly string[] {
-        return this.values.keys;
+        return Object.keys(this.values);
     }
 }
 
@@ -80,43 +82,71 @@ export const versionPairs = [['1.0', '1.0.16'], ['1.1', '1.1.13'], ['2.0', '2.0.
 export class FileWebRequestWorker extends WebRequestWorker {
     constructor(extensionState: IExtensionState, eventStream: IEventStream, uri: string, extensionStateKey: string,
                 private readonly mockFilePath: string) {
-        super(extensionState, eventStream, uri, extensionStateKey);
+        super(extensionState, eventStream, uri, testDefaultTimeoutTimeMs);
     }
 
     protected async makeWebRequest(): Promise<string | undefined> {
-        const result =  fs.readFileSync(this.mockFilePath, 'utf8');
+        const result =  JSON.parse(fs.readFileSync(this.mockFilePath, 'utf8'));
         return result;
     }
 }
 
 export class FailingWebRequestWorker extends WebRequestWorker {
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, uri: string, extensionStateKey: string) {
-        super(extensionState, eventStream, '', extensionStateKey); // Empty string as uri to cause failure. Uri is required to match the interface even though it's unused.
+    constructor(extensionState: IExtensionState, eventStream: IEventStream, uri: string) {
+        super(extensionState, eventStream, '', testDefaultTimeoutTimeMs); // Empty string as uri to cause failure. Uri is required to match the interface even though it's unused.
     }
 
     public async getCachedData(): Promise<string | undefined> {
-        return super.getCachedData(0); // Don't retry
+        throw new Error('Fail!');
     }
 }
 
-export class MockWebRequestWorker extends WebRequestWorker {
-    public readonly errorMessage = 'Web Request Failed';
+export class MockTrackingWebRequestWorker extends WebRequestWorker {
     private requestCount = 0;
     public response = 'Mock Web Request Result';
 
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, url: string, extensionStateKey: string, private readonly succeed = true) {
-        super(extensionState, eventStream, url, extensionStateKey);
+    constructor(extensionState: IExtensionState, eventStream: IEventStream, url: string,
+            protected readonly succeed = true, webTimeToLive = testDefaultTimeoutTimeMs, cacheTimetoLive = testDefaultTimeoutTimeMs)
+    {
+        super(extensionState, eventStream, url, webTimeToLive, cacheTimetoLive);
     }
 
     public getRequestCount() {
         return this.requestCount;
     }
 
-    protected async makeWebRequest(): Promise<string | undefined> {
+    public incrementRequestCount() {
         this.requestCount++;
+    }
+
+    protected async makeWebRequest(shouldThrow = false, retries = 2): Promise<string | undefined> {
+        if ( !(await this.isUrlCached()) )
+        {
+            this.incrementRequestCount();
+        }
+        return super.makeWebRequest(shouldThrow, retries);
+    }
+}
+
+export class MockWebRequestWorker extends MockTrackingWebRequestWorker {
+    public readonly errorMessage = 'Web Request Failed';
+    public response = 'Mock Web Request Result';
+
+    constructor(extensionState: IExtensionState, eventStream: IEventStream, url: string) {
+        super(extensionState, eventStream, url);
+    }
+
+    protected async makeWebRequest(): Promise<string | undefined> {
+        this.incrementRequestCount()
         if (this.succeed) {
-            this.cacheResults(this.response);
-            return this.response;
+            try // axios will return a json object instead of a string if the object is json. mimic this.
+            {
+                JSON.parse(this.response);
+            }
+            catch (e)
+            {
+                return this.response;
+            }
         } else {
             throw new Error(this.errorMessage);
         }
@@ -127,17 +157,17 @@ export class MockVersionResolver extends VersionResolver {
     private readonly filePath = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-releases.json');
 
     constructor(extensionState: IExtensionState, eventStream: IEventStream) {
-        super(extensionState, eventStream);
+        super(extensionState, eventStream, testDefaultTimeoutTimeMs);
         this.webWorker = new FileWebRequestWorker(extensionState, eventStream, '', 'releases', this.filePath);
     }
 }
 
 export class MockInstallScriptWorker extends InstallScriptAcquisitionWorker {
     constructor(extensionState: IExtensionState, eventStream: IEventStream, failing: boolean, private fallback = false) {
-        super(extensionState, eventStream);
+        super(extensionState, eventStream, testDefaultTimeoutTimeMs);
         this.webWorker = failing ?
-            new FailingWebRequestWorker(extensionState, eventStream, '', '') :
-            new MockWebRequestWorker(extensionState, eventStream, '', '');
+            new FailingWebRequestWorker(extensionState, eventStream, '') :
+            new MockWebRequestWorker(extensionState, eventStream, '');
     }
 
     protected getFallbackScriptPath(): string {
@@ -151,11 +181,11 @@ export class MockInstallScriptWorker extends InstallScriptAcquisitionWorker {
 
 export class FailingInstallScriptWorker extends InstallScriptAcquisitionWorker {
     constructor(extensionState: IExtensionState, eventStream: IEventStream) {
-        super(extensionState, eventStream);
-        this.webWorker = new MockWebRequestWorker(extensionState, eventStream, '', '');
+        super(extensionState, eventStream, testDefaultTimeoutTimeMs);
+        this.webWorker = new MockWebRequestWorker(extensionState, eventStream, '');
     }
 
-    protected writeScriptAsFile(scriptContent: string, filePath: string) {
+    protected async writeScriptAsFile(scriptContent: string, filePath: string) {
         throw new Error('Failed to write file');
     }
 }

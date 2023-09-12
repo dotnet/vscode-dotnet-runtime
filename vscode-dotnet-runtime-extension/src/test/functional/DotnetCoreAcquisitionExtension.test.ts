@@ -17,8 +17,8 @@ import {
   MockWindowDisplayWorker,
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
-const assert = chai.assert;
 /* tslint:disable:no-any */
+const assert : any = chai.assert;
 
 suite('DotnetCoreAcquisitionExtension End to End', function() {
   this.retries(3);
@@ -108,7 +108,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     const requestedEvent = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === 'DotnetAcquisitionRequested');
     assert.exists(requestedEvent);
     assert.include(requestedEvent!.properties!.AcquisitionStartVersion, '2.2');
-    assert.include(requestedEvent!.properties!.RequestingExtensionId, requestingExtensionId);
+    assert.notInclude(requestedEvent!.properties!.RequestingExtensionId, requestingExtensionId); // assert that the extension id is hashed
     const startedEvent = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === 'DotnetAcquisitionStarted');
     assert.exists(startedEvent);
     assert.include(startedEvent!.properties!.AcquisitionStartVersion, '2.2');
@@ -131,7 +131,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     const context: IDotnetAcquireContext = { version: 'foo', requestingExtensionId };
     try {
       await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
-      assert(false); // An error should have been thrown
+      assert.isTrue(false); // An error should have been thrown
     } catch (error) {
       const versionError = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === '[ERROR]:DotnetVersionResolutionError');
       assert.exists(versionError);

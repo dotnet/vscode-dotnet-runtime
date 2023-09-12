@@ -1,6 +1,6 @@
 # Commands
 
-This article outlines the commands exposed by the .NET Install Tool for Extension Authors. To see these commands used in an extension, check out the [sample extension](https://github.com/dotnet/vscode-dotnet-runtime/tree/main/sample) in this repository. Note that the majority of these commands are not user facing, meaning they can only be called programatically using the [VSCode API](https://code.visualstudio.com/api/extension-guides/command#programmatically-executing-a-command) by other extensions.
+This article outlines the commands exposed by the .NET Install Tool. To see these commands used in an extension, check out the [sample extension](https://github.com/dotnet/vscode-dotnet-runtime/tree/main/sample) in this repository. Note that the majority of these commands are not user facing, meaning they can only be called programatically using the [VSCode API](https://code.visualstudio.com/api/extension-guides/command#programmatically-executing-a-command) by other extensions.
 
 ## dotnet.acquire
 

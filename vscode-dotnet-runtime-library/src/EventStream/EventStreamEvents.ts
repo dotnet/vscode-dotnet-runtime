@@ -7,6 +7,7 @@ import * as path from 'path';
 import { IDotnetInstallationContext } from '../Acquisition/IDotnetInstallationContext';
 import { EventType } from './EventType';
 import { IEvent } from './IEvent';
+import { TelemetryUtilities } from './TelemetryUtilities';
 
 // tslint:disable max-classes-per-file
 
@@ -14,12 +15,12 @@ export class DotnetAcquisitionStarted extends IEvent {
     public readonly eventName = 'DotnetAcquisitionStarted';
     public readonly type = EventType.DotnetAcquisitionStart;
 
-    constructor(public readonly version: string) {
+    constructor(public readonly version: string, public readonly requestingExtensionId = '') {
         super();
     }
 
     public getProperties() {
-        return {AcquisitionStartVersion : this.version};
+        return {AcquisitionStartVersion : this.version, extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
     }
 }
 
@@ -27,8 +28,12 @@ export class DotnetRuntimeAcquisitionStarted extends IEvent {
     public readonly eventName = 'DotnetRuntimeAcquisitionStarted';
     public readonly type = EventType.DotnetRuntimeAcquisitionStart;
 
+    constructor(public readonly requestingExtensionId = '') {
+        super();
+    }
+
     public getProperties() {
-        return undefined;
+        return {extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
     }
 }
 
@@ -36,8 +41,12 @@ export class DotnetSDKAcquisitionStarted extends IEvent {
     public readonly eventName = 'DotnetSDKAcquisitionStarted';
     public readonly type = EventType.DotnetSDKAcquisitionStart;
 
+    constructor(public readonly requestingExtensionId = '') {
+        super();
+    }
+
     public getProperties() {
-        return undefined;
+        return {extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
     }
 }
 
@@ -260,6 +269,51 @@ export class DotnetFallbackInstallScriptUsed extends DotnetAcquisitionMessage {
     public readonly eventName = 'DotnetFallbackInstallScriptUsed';
 }
 
+export abstract class DotnetFileEvent extends DotnetAcquisitionMessage
+{
+    constructor(public readonly eventMessage: string, public readonly time: string, public readonly file: string) { super(); }
+
+    public getProperties() {
+        return {Message: this.eventMessage, Time: this.time, File: TelemetryUtilities.HashData(this.file)};
+    }
+}
+
+export abstract class DotnetLockEvent extends DotnetFileEvent
+{
+    constructor(public readonly eventMessage: string, public readonly time: string, public readonly lock: string, public readonly file: string) { super(eventMessage, time, file); }
+
+    public getProperties() {
+        return {Message: this.eventMessage, Time: this.time, Lock: TelemetryUtilities.HashData(this.lock), File: TelemetryUtilities.HashData(this.file)};
+    }
+}
+
+export class DotnetLockAcquiredEvent extends DotnetLockEvent {
+    public readonly eventName = 'DotnetLockAcquiredEvent';
+}
+
+export class DotnetLockReleasedEvent extends DotnetLockEvent {
+    public readonly eventName = 'DotnetLockReleasedEvent';
+}
+
+export class DotnetLockErrorEvent extends DotnetLockEvent {
+    public readonly eventName = 'DotnetLockErrorEvent';
+    constructor(public readonly error : Error,
+        public readonly eventMessage: string, public readonly time: string, public readonly lock: string, public readonly file: string) { super(eventMessage, time, lock, file); }
+
+    public getProperties() {
+        return {Error: this.error.toString(), Message: this.eventMessage, Time: this.time, Lock: TelemetryUtilities.HashData(this.lock), File: TelemetryUtilities.HashData(this.file)};
+    }
+
+}
+
+export class DotnetLockAttemptingAcquireEvent extends DotnetLockEvent {
+    public readonly eventName = 'DotnetLockAttemptingAcquireEvent';
+}
+
+export class DotnetFileWriteRequestEvent extends DotnetFileEvent {
+    public readonly eventName = 'DotnetFileWriteRequestEvent';
+}
+
 export class DotnetAcquisitionPartialInstallation extends DotnetAcquisitionMessage {
     public readonly eventName = 'DotnetAcquisitionPartialInstallation';
     constructor(public readonly version: string) { super(); }
@@ -269,21 +323,25 @@ export class DotnetAcquisitionPartialInstallation extends DotnetAcquisitionMessa
     }
 }
 
-export class DotnetAcquisitionInProgress extends DotnetAcquisitionMessage {
+export class DotnetAcquisitionInProgress extends IEvent {
+    public readonly type = EventType.DotnetAcquisitionInProgress;
+
     public readonly eventName = 'DotnetAcquisitionInProgress';
-    constructor(public readonly version: string) { super(); }
+    constructor(public readonly version: string, public readonly requestingExtensionId: string | null) { super(); }
 
     public getProperties() {
-        return {InProgressInstallationVersion : this.version};
+        return {InProgressInstallationVersion : this.version, extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
     }
 }
 
-export class DotnetAcquisitionAlreadyInstalled extends DotnetAcquisitionMessage {
+export class DotnetAcquisitionAlreadyInstalled extends IEvent {
     public readonly eventName = 'DotnetAcquisitionAlreadyInstalled';
-    constructor(public readonly version: string) { super(); }
+    public readonly type = EventType.DotnetAcquisitionAlreadyInstalled;
+
+    constructor(public readonly version: string, public readonly requestingExtensionId: string | null) { super(); }
 
     public getProperties() {
-        return {AlreadyInstalledVersion : this.version};
+        return {AlreadyInstalledVersion : this.version, extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
     }
 }
 
@@ -321,7 +379,7 @@ export class DotnetAcquisitionRequested extends DotnetAcquisitionMessage {
 
     public getProperties() {
         return {AcquisitionStartVersion : this.version,
-                RequestingExtensionId: this.requestingId};
+                RequestingExtensionId: TelemetryUtilities.HashData(this.requestingId)};
     }
 }
 
@@ -335,7 +393,7 @@ export class DotnetAcquisitionStatusRequested extends DotnetAcquisitionMessage {
 
     public getProperties() {
         return {AcquisitionStartVersion : this.version,
-                RequestingExtensionId: this.requestingId};
+                RequestingExtensionId: TelemetryUtilities.HashData(this.requestingId)};
     }
 }
 

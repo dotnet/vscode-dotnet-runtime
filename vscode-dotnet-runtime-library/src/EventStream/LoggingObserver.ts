@@ -4,10 +4,10 @@
  * ------------------------------------------------------------------------------------------ */
 import * as fs from 'fs';
 import { IEvent } from './IEvent';
-import { ILoggingObserver } from './ILoggingObserver';
+import { ILoggingObserver } from '../test/ILoggingObserver';
 
 export class LoggingObserver implements ILoggingObserver {
-    private readonly log: string[] = [];
+    private log: string[] = [];
 
     constructor(private readonly logFilePath: string) {}
 
@@ -31,6 +31,6 @@ export class LoggingObserver implements ILoggingObserver {
     }
 
     private writeLine(line: string) {
-        this.log.concat(line);
+        this.log.push(line);
     }
 }
