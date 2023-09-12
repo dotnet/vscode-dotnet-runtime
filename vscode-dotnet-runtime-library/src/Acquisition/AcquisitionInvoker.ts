@@ -39,7 +39,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         const installCommand = await this.getInstallCommand(installContext.version, installContext.installDir, installContext.installRuntime);
         return new Promise<void>((resolve, reject) => {
             try {
-                const windowsFullCommand = `powershell.exe -NoProfile -ExecutionPolicy unrestricted -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 ; & ${installCommand} }`;
+                const windowsFullCommand = `powershell.exe -NoProfile -ExecutionPolicy unrestricted -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 ; & ${installCommand} }"`;
                 if(winOS)
                 {
                     this.verifyPowershellCanRun(installContext);
@@ -101,7 +101,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
     private escapeFilePath(path: string): string {
         if (os.platform() === 'win32') {
             // Need to escape apostrophes with two apostrophes
-            const dotnetInstallDirEscaped = path.replace(/'/g, `\'`);
+            const dotnetInstallDirEscaped = path.replace(/'/g, `''`);
             // Surround with single quotes instead of double quotes (see https://github.com/dotnet/cli/issues/11521)
             return `'${dotnetInstallDirEscaped}'`;
         } else {
