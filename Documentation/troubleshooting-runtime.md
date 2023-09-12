@@ -8,7 +8,7 @@ Learn more about configuring Visual Studio Code settings [here](https://code.vis
 
 ```json
 {
-    "dotnetAcquisitionExtension.installTimeoutValue": 180
+    "dotnetAcquisitionExtension.installTimeoutValue": 10
 }
 ```
 
