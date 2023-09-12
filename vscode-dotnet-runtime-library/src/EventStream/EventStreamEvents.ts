@@ -269,6 +269,22 @@ export class DotnetFallbackInstallScriptUsed extends DotnetAcquisitionMessage {
     public readonly eventName = 'DotnetFallbackInstallScriptUsed';
 }
 
+export abstract class DotnetCustomMessageEvent extends DotnetAcquisitionMessage {
+    constructor(public readonly eventMessage: string) { super(); }
+
+    public getProperties() {
+        return { Message: this.eventMessage };
+    }
+}
+
+export class DotnetCommandNotFoundEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetCommandNotFoundEvent';
+}
+
+export class DotnetAltnerativeCommandFoundEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetAltnerativeCommandFoundEvent';
+}
+
 export abstract class DotnetFileEvent extends DotnetAcquisitionMessage
 {
     constructor(public readonly eventMessage: string, public readonly time: string, public readonly file: string) { super(); }

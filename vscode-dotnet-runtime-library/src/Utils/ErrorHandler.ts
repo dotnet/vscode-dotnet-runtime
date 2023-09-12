@@ -38,7 +38,8 @@ export namespace errorConstants {
 }
 
 export namespace timeoutConstants {
-    export const timeoutMessage = `.NET installation timed out. You may need to change the timeout time if you have a slow connection. Please see: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#install-script-timeouts.`;
+    export const timeoutMessage = `.NET installation timed out. You may need to change the timeout time if you have a slow connection. Please see: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#install-script-timeouts.
+Note that our websites may be blocked in China or experience significant timeouts, and you may want to install .NET manually.`;
     export const moreInfoOption = 'Change Timeout Value';
 }
 

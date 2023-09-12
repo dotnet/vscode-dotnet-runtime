@@ -13,6 +13,8 @@ import {
     DotnetAcquisitionScriptOuput,
     DotnetAcquisitionTimeoutError,
     DotnetAcquisitionUnexpectedError,
+    DotnetAltnerativeCommandFoundEvent,
+    DotnetCommandNotFoundEvent,
     DotnetOfflineFailure,
 } from '../EventStream/EventStreamEvents';
 import { IExtensionState } from '../IExtensionState';
@@ -43,7 +45,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                 if(winOS)
                 {
                     const powershellReference =  this.verifyPowershellCanRun(installContext);
-                    windowsFullCommand.replace('powershell.exe', powershellReference);
+                    windowsFullCommand = windowsFullCommand.replace('powershell.exe', powershellReference);
                 }
 
                 cp.exec(winOS ? windowsFullCommand : installCommand,
@@ -120,12 +122,18 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                 const cmdFoundOutput = cp.spawnSync(command);
                 if(cmdFoundOutput.status === 0)
                 {
+                    this.eventStream.post(new DotnetAltnerativeCommandFoundEvent(`The command ${command} was found.`));
                     return [command, true];
+                }
+                else
+                {
+                    this.eventStream.post(new DotnetCommandNotFoundEvent(`The command ${command} was NOT found, no error was thrown.`));
                 }
             }
             catch(err)
             {
                 // Do nothing. The error should be raised higher up.
+                this.eventStream.post(new DotnetCommandNotFoundEvent(`The command ${command} was NOT found, and we caught any errors.`));
             }
         }
         return ['', false];
@@ -145,7 +153,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         try
         {
             // Check if PowerShell exists and is on the path.
-            const commandWorking = this.TryFindWorkingCommand([`powershell`, `powershell.exe`, `pwsh`, `pwsh.exe`]);
+            const commandWorking = this.TryFindWorkingCommand([`powershell.exe`, `pwsh`, `powershell`, `pwsh.exe`]);
             if(!commandWorking[1])
             {
                 knownError = true;
