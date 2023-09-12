@@ -23,6 +23,7 @@ import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetCoreAcquisitionWorker } from './IDotnetCoreAcquisitionWorker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
+import { IDotnetAcquireContext } from '..';
 
 export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker {
     private readonly installingVersionsKey = 'installing';
@@ -92,7 +93,9 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         const existingAcquisitionPromise = this.acquisitionPromises[version];
         if (existingAcquisitionPromise) {
             // This version of dotnet is already being acquired. Memoize the promise.
-            this.context.eventStream.post(new DotnetAcquisitionInProgress(version));
+            this.context.eventStream.post(new DotnetAcquisitionInProgress(version,
+                    (this.context.acquisitionContext && this.context.acquisitionContext.requestingExtensionId)
+                    ? this.context.acquisitionContext!.requestingExtensionId : null));
             return existingAcquisitionPromise.then((res) => ({ dotnetPath: res }));
         } else {
             // We're the only one acquiring this version of dotnet, start the acquisition process.
@@ -132,7 +135,9 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         if (installedVersions.includes(version) && fs.existsSync(dotnetPath)) {
             // Version requested has already been installed.
             this.context.installationValidator.validateDotnetInstall(version, dotnetPath);
-            this.context.eventStream.post(new DotnetAcquisitionAlreadyInstalled(version));
+            this.context.eventStream.post(new DotnetAcquisitionAlreadyInstalled(version,
+                (this.context.acquisitionContext && this.context.acquisitionContext.requestingExtensionId)
+                ? this.context.acquisitionContext!.requestingExtensionId : null));
             return dotnetPath;
         }
 
@@ -146,7 +151,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             timeoutValue: this.timeoutValue,
             installRuntime,
         } as IDotnetInstallationContext;
-        this.context.eventStream.post(new DotnetAcquisitionStarted(version));
+        this.context.eventStream.post(new DotnetAcquisitionStarted(version, this.context.acquisitionContext?.requestingExtensionId));
         await this.context.acquisitionInvoker.installDotnet(installContext).catch((reason) => {
             throw Error(`Installation failed: ${reason}`);
         });
@@ -156,6 +161,11 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         await this.addVersionToExtensionState(this.installedVersionsKey, version);
 
         return dotnetPath;
+    }
+
+    public setAcquisitionContext(context : IDotnetAcquireContext)
+    {
+        this.context.acquisitionContext = context;
     }
 
     private async uninstallRuntime(version: string) {

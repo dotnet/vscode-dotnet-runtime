@@ -4,8 +4,10 @@
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
 import {
+    DotnetAcquisitionAlreadyInstalled,
     DotnetAcquisitionCompleted,
     DotnetAcquisitionError,
+    DotnetAcquisitionInProgress,
     DotnetAcquisitionStarted,
     DotnetAcquisitionVersionError,
     DotnetExistingPathResolutionCompleted,
@@ -25,11 +27,13 @@ export class OutputChannelObserver implements IEventStreamObserver {
     public post(event: IEvent): void {
         switch (event.type) {
             case EventType.DotnetRuntimeAcquisitionStart:
-                this.outputChannel.append('Downloading the .NET Runtime.');
+                const runtimeAcquisitionStarted = event as DotnetAcquisitionStarted;
+                this.outputChannel.append(`${runtimeAcquisitionStarted.requestingExtensionId} requested to download the .NET Runtime.`);
                 this.outputChannel.appendLine('');
                 break;
             case EventType.DotnetSDKAcquisitionStart:
-                this.outputChannel.append('Downloading the .NET SDK.');
+                const sdkAcquisitionStarted = event as DotnetAcquisitionStarted;
+                this.outputChannel.append(`${sdkAcquisitionStarted.requestingExtensionId} requested to download the .NET SDK.`);
                 this.outputChannel.appendLine('');
                 break;
             case EventType.DotnetAcquisitionStart:
@@ -66,6 +70,26 @@ export class OutputChannelObserver implements IEventStreamObserver {
             case EventType.DotnetAcquisitionSuccessEvent:
                 if (event instanceof DotnetExistingPathResolutionCompleted) {
                     this.outputChannel.append(`Using configured .NET path: ${ (event as DotnetExistingPathResolutionCompleted).resolvedPath }\n`);
+                }
+                break;
+            case EventType.DotnetAcquisitionAlreadyInstalled:
+                if(event instanceof DotnetAcquisitionAlreadyInstalled)
+                {
+                    this.outputChannel.append(`${
+                        (event as DotnetAcquisitionAlreadyInstalled).requestingExtensionId
+                    } wants to install .NET ${
+                        (event as DotnetAcquisitionAlreadyInstalled).version
+                    } but it already exists. No downloads or changes were made.\n`);
+                }
+                break;
+            case EventType.DotnetAcquisitionInProgress:
+                if(event instanceof DotnetAcquisitionInProgress)
+                {
+                    this.outputChannel.append(`${
+                        (event as DotnetAcquisitionInProgress).requestingExtensionId
+                    } tried to install .NET ${
+                        (event as DotnetAcquisitionInProgress).version
+                    } but that install had already been requested. No downloads or changes were made.\n`);
                 }
                 break;
             case EventType.DotnetAcquisitionError:

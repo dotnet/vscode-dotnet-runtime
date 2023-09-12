@@ -17,6 +17,7 @@ export * from './EventStream/EventStreamRegistration';
 export * from './EventStream/IWindowDisplayWorker';
 export * from './EventStream/WindowDisplayWorker';
 export * from './EventStream/EventStreamEvents';
+export * from './Utils/Debugging';
 export * from './Utils/ErrorHandler';
 export * from './Utils/IIssueContext';
 export * from './Utils/IssueReporter';

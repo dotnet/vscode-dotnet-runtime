@@ -21,7 +21,14 @@ We use and recommend the following workflow:
 4. Make and commit your changes.
     - Please follow our [Commit Messages](contributing.md#commit-messages) guidance.
 5. Add new tests corresponding to your change, if applicable.
-If you are having difficulty debugging changes, note that you can add breakpoints into the tests for the library, runtime, or SDK by opening their corresponding workspace folder and launching the debug tab for their tests in VS Code. If you want to breakpoint the code, you'll need to breakpoint the test in typescript, but then every reload add breakpoints to the JS code generated from the typescript code if you want to debug code outside of the tests thesmelves that the tests run.
+
+If you are having difficulty debugging changes to the library, you may want to incorporate the logging messages into your test session. To do so, set the debugOn flag to true [Here](../vscode-dotnet-runtime-library/src/Utils/Debugging.ts).
+Note that the runtime and sdk extensions can be tested (with breakpoints as well, through the .js files) using their corresponding workspace and launch profiles by opening their root folders in vscode.
+For the library, those tests are reachable by going through the runtime extension workspace and adding the runtime-library folder to the workspace. But logging may be a better approach to debug this code.
+
+
+If you are having difficulty debugging all other changes, note that you can add breakpoints into the tests for the library, runtime, or SDK by opening their corresponding workspace folder and launching the debug tab for their tests in VS Code. If you want to breakpoint the code, you'll need to breakpoint the test in typescript, but then every reload add breakpoints to the JS code generated from the typescript code if you want to debug code outside of the tests thesmelves that the tests run.
+
 6. Build the repository with your changes.
     - Make sure that the builds are clean.
     - Make sure that the tests are all passing, including your new tests.
