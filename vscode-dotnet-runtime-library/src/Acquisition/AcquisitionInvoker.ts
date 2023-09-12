@@ -91,8 +91,7 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
     private escapeFilePath(path: string): string {
         if (os.platform() === 'win32') {
             // Need to escape apostrophes with two apostrophes
-            const dotnetInstallDirEscaped = path.replace(/'/g, `''`);
-
+            const dotnetInstallDirEscaped = path.replace(/'/g, `\'`);
             // Surround with single quotes instead of double quotes (see https://github.com/dotnet/cli/issues/11521)
             return `'${dotnetInstallDirEscaped}'`;
         } else {
