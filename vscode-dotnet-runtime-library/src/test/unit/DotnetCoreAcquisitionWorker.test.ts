@@ -213,4 +213,11 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function() {
         const events = eventStream.events.filter(event => event instanceof DotnetAcquisitionStarted);
         assert.equal(events.length, 1);
     });
+
+    test('Get Expected Path', async () => {
+        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(true);
+        const result = await acquisitionWorker.acquireRuntime('1.0');
+        const expectedPath = getExpectedPath('1.0', true);
+        assert.equal(result.dotnetPath, expectedPath);
+    });
 });
