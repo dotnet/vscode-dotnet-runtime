@@ -41,7 +41,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         const installCommand = await this.getInstallCommand(installContext.version, installContext.installDir, installContext.installRuntime);
         return new Promise<void>((resolve, reject) => {
             try {
-                let windowsFullCommand = `powershell.exe -NoProfile -ExecutionPolicy unrestricted -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 ; & ${installCommand} }`;
+                let windowsFullCommand = `powershell.exe -NoProfile -NonInteractive -NoLogo -ExecutionPolicy unrestricted -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 ; & ${installCommand} }`;
                 if(winOS)
                 {
                     const powershellReference =  this.verifyPowershellCanRun(installContext);
@@ -153,7 +153,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         try
         {
             // Check if PowerShell exists and is on the path.
-            const commandWorking = this.TryFindWorkingCommand([`powershell.exe`, `pwsh`, `powershell`, `pwsh.exe`]);
+            const commandWorking = this.TryFindWorkingCommand([`powershell.exe`, `%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`, `pwsh`, `powershell`, `pwsh.exe`]);
             if(!commandWorking[1])
             {
                 knownError = true;
