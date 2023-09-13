@@ -285,6 +285,10 @@ export class DotnetAltnerativeCommandFoundEvent extends DotnetCustomMessageEvent
     public readonly eventName = 'DotnetAltnerativeCommandFoundEvent';
 }
 
+export class DotnetCommandFallbackArchitectureEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetCommandFallbackArchitectureEvent';
+}
+
 export abstract class DotnetFileEvent extends DotnetAcquisitionMessage
 {
     constructor(public readonly eventMessage: string, public readonly time: string, public readonly file: string) { super(); }

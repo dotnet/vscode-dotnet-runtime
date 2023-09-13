@@ -28,6 +28,7 @@ import { IDotnetAcquireContext } from '..';
 export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker {
     private readonly installingVersionsKey = 'installing';
     private readonly installedVersionsKey = 'installed';
+    private readonly installingArchitecture : string;
     private readonly dotnetExecutable: string;
     private readonly timeoutValue: number;
 
@@ -38,6 +39,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         this.dotnetExecutable = `dotnet${dotnetExtension}`;
         this.timeoutValue = context.timeoutValue;
         this.acquisitionPromises = {};
+        this.installingArchitecture = os.arch();
     }
 
     public async uninstallAll() {
@@ -89,8 +91,10 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         return undefined;
     }
 
-    private async acquire(version: string, installRuntime: boolean): Promise<IDotnetAcquireResult> {
-        const existingAcquisitionPromise = this.acquisitionPromises[version];
+    private async acquire(version: string, installRuntime: boolean): Promise<IDotnetAcquireResult>
+    {
+        const acquisitionPromiseKey = `${version}-${this.installingArchitecture}`;
+        const existingAcquisitionPromise = this.acquisitionPromises[acquisitionPromiseKey];
         if (existingAcquisitionPromise) {
             // This version of dotnet is already being acquired. Memoize the promise.
             this.context.eventStream.post(new DotnetAcquisitionInProgress(version,

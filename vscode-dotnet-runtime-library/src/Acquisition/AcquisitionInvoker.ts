@@ -14,6 +14,7 @@ import {
     DotnetAcquisitionTimeoutError,
     DotnetAcquisitionUnexpectedError,
     DotnetAltnerativeCommandFoundEvent,
+    DotnetCommandFallbackArchitectureEvent,
     DotnetCommandNotFoundEvent,
     DotnetOfflineFailure,
 } from '../EventStream/EventStreamEvents';
@@ -38,7 +39,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
 
     public async installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
         const winOS = os.platform() === 'win32';
-        const installCommand = await this.getInstallCommand(installContext.version, installContext.installDir, installContext.installRuntime);
+        const installCommand = await this.getInstallCommand(installContext.version, installContext.installDir, installContext.installRuntime, installContext.architecture);
         return new Promise<void>((resolve, reject) => {
             try {
                 let windowsFullCommand = `powershell.exe -NoProfile -NonInteractive -NoLogo -ExecutionPolicy unrestricted -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 ; & ${installCommand} }`;
@@ -87,10 +88,11 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         });
     }
 
-    private async getInstallCommand(version: string, dotnetInstallDir: string, installRuntime: boolean): Promise<string> {
+    private async getInstallCommand(version: string, dotnetInstallDir: string, installRuntime: boolean, architecture: string): Promise<string> {
         let args = [
             '-InstallDir', this.escapeFilePath(dotnetInstallDir),
             '-Version', version,
+            '-Architecture', this.nodeArchToDotnetArch(architecture),
             '-Verbose'
         ];
         if (installRuntime) {
@@ -99,6 +101,44 @@ You will need to restart VS Code after these changes. If PowerShell is still not
 
         const scriptPath = await this.scriptWorker.getDotnetInstallScriptPath();
         return `${ this.escapeFilePath(scriptPath) } ${ args.join(' ') }`;
+    }
+
+    /**
+     *
+     * @param nodeArchitecture the architecture in node style string of what to install
+     * @returns the architecture in the style that .net / the .net install scripts expect
+     *
+     * Node - amd64 is documented as an option for install scripts but its no longer used.
+     * s390x is also no longer used.
+     * ppc64le is supported but this version of node has no distinction of the endianness of the process.
+     * It has no mapping to mips or other node architectures.
+     *
+     * @remarks Falls back to x64 if a mapping does not exist.
+     */
+    private nodeArchToDotnetArch(nodeArchitecture : string)
+    {
+        switch(nodeArchitecture)
+        {
+            case 'x64': {
+                return nodeArchitecture;
+            }
+            case 'ia32': {
+                return 'x86';
+            }
+            case 'arm': {
+                return nodeArchitecture;
+            }
+            case 'arm64': {
+                return nodeArchitecture;
+            }
+            case 's390x': {
+                return 's390x';
+            }
+            default: {
+                this.eventStream.post(new DotnetCommandFallbackArchitectureEvent(`The architecture ${os.arch()} of the platform is unexpected, falling back to x64.`));
+                return 'x64';
+            }
+        }
     }
 
     private escapeFilePath(path: string): string {

@@ -9,4 +9,5 @@ export interface IDotnetInstallationContext {
     dotnetPath: string;
     timeoutValue: number;
     installRuntime: boolean;
+    architecture: string;
 }
