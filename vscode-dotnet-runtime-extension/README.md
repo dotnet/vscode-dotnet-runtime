@@ -62,7 +62,7 @@ Note: GFW / China also blocks some of our requests, which may be why our extensi
 You can add the proxy in the extension settings like following the advice above for timeouts.
 ```json
 {
-    "dotnetSDKAcquisitionExtension.proxyUrl": 'https://your_proxy_url:port'
+    "dotnetSDKAcquisitionExtension.proxyUrl": "https://your_proxy_url:port"
 }
 ```
 
