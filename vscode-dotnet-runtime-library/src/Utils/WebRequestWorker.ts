@@ -5,7 +5,7 @@
 import Axios from 'axios';
 import axiosRetry from 'axios-retry';
 import { HttpsProxyAgent } from 'https-proxy-agent';
-import { getProxySettings, getAndTestProxySettings } from "get-proxy-settings";
+import { getProxySettings } from 'get-proxy-settings';
 import { AxiosCacheInstance, buildStorage, setupCache, StorageValue } from 'axios-cache-interceptor';
 import { IEventStream } from '../EventStream/EventStream';
 import { WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
@@ -217,6 +217,6 @@ If your proxy requires credentials and the result is 407: we cannot currently ha
 
     private proxyEnabled() : boolean
     {
-        return this.proxy != '';
+        return this.proxy !== '';
     }
 }
