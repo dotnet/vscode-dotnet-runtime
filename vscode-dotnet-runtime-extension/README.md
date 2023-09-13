@@ -55,6 +55,7 @@ You can read more about [changing the installation timeout] in our documentation
 This is a known issue with axios, the system we use to make web-requests.
 The requests we make need to be routed through the proxy. We have logic to try to detect your proxy automatically.
 If your proxy does not get detected by us, please try adding it here.
+You may want to consider temporarily switching to version 1.7.2 of the runtime extension if you are still experiencing issues as this version does not use axios. Note that proxies that require additional credentials are not yet supported.
 
 Note: GFW / China also blocks some of our requests, which may be why our extension thinks you are offline or times out.
 
