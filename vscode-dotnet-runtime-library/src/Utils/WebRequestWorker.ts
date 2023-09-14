@@ -205,7 +205,7 @@ export class WebRequestWorker
                 else
                 {
                     formattedError = new Error(`Please ensure that you are online: Request to ${this.url} Failed: ${formattedError.message}.
-If you are on a corporate proxy with a result of 400, you may need to manually set the proxy in our extension settings: Please see: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md
+If you are on a corporate proxy with a result of 400, you may need to manually set the proxy in our extension settings. Please see https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md for more details.
 If your proxy requires credentials and the result is 407: we cannot currently handle your request, and you should configure dotnet manually following the above link.`);
                 }
                 this.eventStream.post(new WebRequestError(formattedError));
