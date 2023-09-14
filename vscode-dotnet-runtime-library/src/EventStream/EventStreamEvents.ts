@@ -226,10 +226,10 @@ export class DotnetUninstallAllCompleted extends DotnetAcquisitionSuccessEvent {
 export class DotnetVersionResolutionCompleted extends DotnetAcquisitionSuccessEvent {
     public readonly eventName = 'DotnetVersionResolutionCompleted';
 
-    constructor(public readonly requestedVerion: string, public readonly resolvedVersion: string) { super(); }
+    constructor(public readonly requestedVersion: string, public readonly resolvedVersion: string) { super(); }
 
     public getProperties() {
-        return {RequestedVersion : this.requestedVerion,
+        return {RequestedVersion : this.requestedVersion,
                 ResolvedVersion : this.resolvedVersion};
     }
 }
@@ -281,8 +281,8 @@ export class DotnetCommandNotFoundEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetCommandNotFoundEvent';
 }
 
-export class DotnetAltnerativeCommandFoundEvent extends DotnetCustomMessageEvent {
-    public readonly eventName = 'DotnetAltnerativeCommandFoundEvent';
+export class DotnetAlternativeCommandFoundEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetAlternativeCommandFoundEvent';
 }
 
 export abstract class DotnetFileEvent extends DotnetAcquisitionMessage
@@ -365,8 +365,8 @@ export class DotnetAcquisitionMissingLinuxDependencies extends DotnetAcquisition
     public readonly eventName = 'DotnetAcquisitionMissingLinuxDependencies';
 }
 
-export class DotnetAcquisitionScriptOuput extends DotnetAcquisitionMessage {
-    public readonly eventName = 'DotnetAcquisitionScriptOuput';
+export class DotnetAcquisitionScriptOutput extends DotnetAcquisitionMessage {
+    public readonly eventName = 'DotnetAcquisitionScriptOutput';
     public isError = true;
     constructor(public readonly version: string, public readonly output: string) { super(); }
 
