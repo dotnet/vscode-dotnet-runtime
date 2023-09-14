@@ -123,13 +123,13 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             // uninstall everything and then re-install.
             this.context.eventStream.post(new DotnetAcquisitionPartialInstallation(installKey));
 
-            await this.uninstallRuntimeOrSDK(installKey);
+            await this.uninstallRuntimeOrSDK(version, installKey);
         } else if (partialInstall) {
             this.context.eventStream.post(new DotnetAcquisitionPartialInstallation(installKey));
             await this.uninstallAll();
         }
 
-        await this.removeAnyLegacyInstalls(installedVersions, version);
+        await this.removeMatchingLegacyInstall(installedVersions, version);
 
         const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(installKey);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
@@ -149,7 +149,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         }
 
         // We update the extension state to indicate we're starting a .NET Core installation.
-        await this.addVersionToExtensionState(this.installingVersionsKey, version);
+        await this.addVersionToExtensionState(this.installingVersionsKey, installKey);
 
         const installContext = {
             installDir: dotnetInstallDir,
@@ -196,14 +196,14 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      *
      * Note : only local installs were ever 'legacy.'
      */
-    private async removeAnyLegacyInstalls(installedVersions : string[], version : string)
+    private async removeMatchingLegacyInstall(installedVersions : string[], version : string)
     {
         const legacyInstalls = this.existingLegacyInstalls(installedVersions);
         for(const legacyInstall of legacyInstalls)
         {
             if(legacyInstall.includes(version))
             {
-                await this.uninstallRuntimeOrSDK(legacyInstall);
+                await this.uninstallRuntimeOrSDK(version, legacyInstall);
             }
         }
     }
@@ -227,28 +227,28 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         return legacyInstalls;
     }
 
-    private async uninstallRuntimeOrSDK(version: string) {
-        delete this.acquisitionPromises[version];
+    private async uninstallRuntimeOrSDK(version: string, installKey : string) {
+        delete this.acquisitionPromises[installKey];
 
-        const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(version);
+        const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(installKey);
         this.removeFolderRecursively(dotnetInstallDir);
 
-        await this.removeVersionFromExtensionState(this.installedVersionsKey, version);
-        await this.removeVersionFromExtensionState(this.installingVersionsKey, version);
+        await this.removeVersionFromExtensionState(this.installedVersionsKey, installKey);
+        await this.removeVersionFromExtensionState(this.installingVersionsKey, installKey);
     }
 
-    private async removeVersionFromExtensionState(key: string, version: string) {
+    private async removeVersionFromExtensionState(key: string, installKey: string) {
         const state = this.context.extensionState.get<string[]>(key, []);
-        const versionIndex = state.indexOf(version);
+        const versionIndex = state.indexOf(installKey);
         if (versionIndex >= 0) {
             state.splice(versionIndex, 1);
             await this.context.extensionState.update(key, state);
         }
     }
 
-    private async addVersionToExtensionState(key: string, version: string) {
+    private async addVersionToExtensionState(key: string, installKey: string) {
         const state = this.context.extensionState.get<string[]>(key, []);
-        state.push(version);
+        state.push(installKey);
         await this.context.extensionState.update(key, state);
     }
 

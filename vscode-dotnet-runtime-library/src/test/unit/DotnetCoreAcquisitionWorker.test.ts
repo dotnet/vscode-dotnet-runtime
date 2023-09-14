@@ -62,8 +62,10 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         exePath: string,
         eventStream: MockEventStream,
         context: MockExtensionContext,
-        isRuntimeInstall = true) {
-        const expectedPath = getExpectedPath(version, isRuntimeInstall);
+        isRuntimeInstall = true)
+    {
+        const installKey = `${version}-${os.arch()}`
+        const expectedPath = getExpectedPath(installKey, isRuntimeInstall);
 
         // Path to exe should be correct
         assert.equal(exePath, expectedPath);
@@ -71,7 +73,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         // Should be finished installing
         assert.isEmpty(context.get<string[]>(installingVersionsKey, []));
         assert.isNotEmpty(context.get<string[]>(installedVersionsKey, []));
-        assert.include(context.get<string[]>(installedVersionsKey, []), version);
+        assert.include(context.get<string[]>(installedVersionsKey, []), installKey);
 
         //  No errors in event stream
         assert.notExists(eventStream.events.find(event => event.type === EventType.DotnetAcquisitionError));
