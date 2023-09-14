@@ -10,9 +10,11 @@ import {
     DotnetAcquisitionCompleted,
     DotnetAcquisitionInstallError,
     DotnetAcquisitionScriptError,
-    DotnetAcquisitionScriptOuput,
+    DotnetAcquisitionScriptOutput,
     DotnetAcquisitionTimeoutError,
     DotnetAcquisitionUnexpectedError,
+    DotnetAlternativeCommandFoundEvent as DotnetAlternativeCommandFoundEvent,
+    DotnetCommandNotFoundEvent,
     DotnetOfflineFailure,
 } from '../EventStream/EventStreamEvents';
 import { IExtensionState } from '../IExtensionState';
@@ -39,10 +41,11 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         const installCommand = await this.getInstallCommand(installContext.version, installContext.installDir, installContext.installRuntime);
         return new Promise<void>((resolve, reject) => {
             try {
-                const windowsFullCommand = `powershell.exe -NoProfile -ExecutionPolicy unrestricted -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 ; & ${installCommand} }`;
+                let windowsFullCommand = `powershell.exe -NoProfile -NonInteractive -NoLogo -ExecutionPolicy unrestricted -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; & ${installCommand} }`;
                 if(winOS)
                 {
-                    this.verifyPowershellCanRun(installContext);
+                    const powershellReference =  this.verifyPowershellCanRun(installContext);
+                    windowsFullCommand = windowsFullCommand.replace('powershell.exe', powershellReference);
                 }
 
                 cp.exec(winOS ? windowsFullCommand : installCommand,
@@ -50,10 +53,10 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                         async (error, stdout, stderr) => {
                     if (error) {
                         if (stdout) {
-                            this.eventStream.post(new DotnetAcquisitionScriptOuput(installContext.version, TelemetryUtilities.HashAllPaths(stdout)));
+                            this.eventStream.post(new DotnetAcquisitionScriptOutput(installContext.version, TelemetryUtilities.HashAllPaths(stdout)));
                         }
                         if (stderr) {
-                            this.eventStream.post(new DotnetAcquisitionScriptOuput(installContext.version, `STDERR: ${TelemetryUtilities.HashAllPaths(stderr)}`));
+                            this.eventStream.post(new DotnetAcquisitionScriptOutput(installContext.version, `STDERR: ${TelemetryUtilities.HashAllPaths(stderr)}`));
                         }
 
                         const online = await isOnline();
@@ -110,29 +113,60 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         }
     }
 
+    private TryFindWorkingCommand(commands : string[]) : [string, boolean]
+    {
+        for(const command of commands)
+        {
+            try
+            {
+                const cmdFoundOutput = cp.spawnSync(command);
+                if(cmdFoundOutput.status === 0)
+                {
+                    this.eventStream.post(new DotnetAlternativeCommandFoundEvent(`The command ${command} was found.`));
+                    return [command, true];
+                }
+                else
+                {
+                    this.eventStream.post(new DotnetCommandNotFoundEvent(`The command ${command} was NOT found, no error was thrown.`));
+                }
+            }
+            catch(err)
+            {
+                // Do nothing. The error should be raised higher up.
+                this.eventStream.post(new DotnetCommandNotFoundEvent(`The command ${command} was NOT found, and we caught any errors.`));
+            }
+        }
+        return ['', false];
+    }
+
     /**
      *
      * @remarks Some users have reported not having powershell.exe or having execution policy that fails property evaluation functions in powershell install scripts.
      * We use this function to throw better errors if powershell is not configured correctly.
      */
-    private async verifyPowershellCanRun(installContext : IDotnetInstallationContext)
+    private verifyPowershellCanRun(installContext : IDotnetInstallationContext) : string
     {
         let knownError = false;
         let error = null;
+        let command = '';
 
         try
         {
             // Check if PowerShell exists and is on the path.
-            const exeFoundOutput = cp.spawnSync(`powershell`);
-            if(exeFoundOutput.status !== 0)
+            const commandWorking = this.TryFindWorkingCommand([`powershell.exe`, `%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`, `pwsh`, `powershell`, `pwsh.exe`]);
+            if(!commandWorking[1])
             {
                 knownError = true;
                 const err = Error(this.noPowershellError);
                 error = err;
             }
+            else
+            {
+                command = commandWorking[0];
+            }
 
             // Check Execution Policy
-            const execPolicyOutput = cp.spawnSync(`powershell`, [`-command`, `$ExecutionContext.SessionState.LanguageMode`]);
+            const execPolicyOutput = cp.spawnSync(command, [`-command`, `$ExecutionContext.SessionState.LanguageMode`]);
             const languageMode = execPolicyOutput.stdout.toString().trim();
             if(languageMode === 'ConstrainedLanguage' || languageMode === 'NoLanguage')
             {
@@ -155,5 +189,7 @@ If you cannot safely and confidently change the execution policy, try setting a 
             this.eventStream.post(new DotnetAcquisitionScriptError(error as Error, installContext.version));
             throw error;
         }
+
+        return command;
     }
 }

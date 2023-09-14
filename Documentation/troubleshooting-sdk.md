@@ -30,6 +30,19 @@ Learn more about configuring Visual Studio Code settings [here](https://code.vis
 }
 ```
 
+## The extension thinks you are offline with error response of 400 or 407, and you have a proxy.
+
+This is a known issue with axios, the system we use to make web-requests.
+The requests we make need to be routed through the proxy. We have logic to try to detect your proxy automatically.
+If your proxy does not get detected by us, please try adding it here.
+
+Note: GFW / China also blocks some of our requests, which may be why our extension thinks you are offline or times out.
+
+```json
+{
+    "dotnetSDKAcquisitionExtension.proxyUrl": "https://your_proxy_url:port"
+}
+
 ## Other Issues
 
 Haven't found a solution? Check out our [open issues](https://github.com/dotnet/vscode-dotnet-runtime/issues). If you don't see your issue there, please file a new issue by evoking the `.NET SDK Install Tool: Report an issue with the .NET SDK Install Tool` command from Visual Studio Code.
