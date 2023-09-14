@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning].
 ## [1.7.3] - 2023-08-24
 
 Fixes an issue where install script files could have race conditions by introducing file locking mechanisms.
+Adds proxy detection & support that forwards calls through a proxy to axios. This is to fix a bug in axios where it does not handle proxies correctly.
+Attempts to discover powershell in more ways in case it's been removed from the PATH, or try using powershell core if only that is available.
+Improves file permissions handling to prevent issues on mac and linux where install script files may not have the correct permissions to execute.
+Remarks in error messages how users in China may experience timeouts or offline errors due to GFW blocking our download pages.
 
 ## [1.7.2] - 2023-08-24
 
