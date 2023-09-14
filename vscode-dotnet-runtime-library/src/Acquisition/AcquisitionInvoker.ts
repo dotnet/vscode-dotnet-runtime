@@ -89,14 +89,18 @@ You will need to restart VS Code after these changes. If PowerShell is still not
     }
 
     private async getInstallCommand(version: string, dotnetInstallDir: string, installRuntime: boolean, architecture: string): Promise<string> {
+        const arch = this.nodeArchToDotnetArch(architecture);
         let args = [
             '-InstallDir', this.escapeFilePath(dotnetInstallDir),
             '-Version', version,
-            '-Architecture', this.nodeArchToDotnetArch(architecture),
             '-Verbose'
         ];
         if (installRuntime) {
             args = args.concat('-Runtime', 'dotnet');
+        }
+        if(arch !== 'auto')
+        {
+            args = args.concat('-Architecture', arch);
         }
 
         const scriptPath = await this.scriptWorker.getDotnetInstallScriptPath();
@@ -113,7 +117,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
      * ppc64le is supported but this version of node has no distinction of the endianness of the process.
      * It has no mapping to mips or other node architectures.
      *
-     * @remarks Falls back to x64 if a mapping does not exist.
+     * @remarks Falls back to string 'auto' if a mapping does not exist which is not a valid architecture.
      */
     private nodeArchToDotnetArch(nodeArchitecture : string)
     {
@@ -123,6 +127,10 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                 return nodeArchitecture;
             }
             case 'ia32': {
+                return 'x86';
+            }
+            case 'x86': {
+                // In case the function is called twice
                 return 'x86';
             }
             case 'arm': {
@@ -135,8 +143,8 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                 return 's390x';
             }
             default: {
-                this.eventStream.post(new DotnetCommandFallbackArchitectureEvent(`The architecture ${os.arch()} of the platform is unexpected, falling back to x64.`));
-                return 'x64';
+                this.eventStream.post(new DotnetCommandFallbackArchitectureEvent(`The architecture ${os.arch()} of the platform is unexpected, falling back to auto-arch.`));
+                return 'auto';
             }
         }
     }

@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog],
 and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
+## [1.7.4] - 2023-09-18
+
+Relies on node.arch() to determine .NET installation architecture for local runtimes instead of Architecture environment variables.
+This is to fix ia32/32-bit VS Code versions having an x64 terminal and then installing x64 dotnet when x32 dotnet runtimes are desired.
 
 ## [1.7.3] - 2023-08-24
 

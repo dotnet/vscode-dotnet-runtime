@@ -103,32 +103,35 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             return existingAcquisitionPromise.then((res) => ({ dotnetPath: res }));
         } else {
             // We're the only one acquiring this version of dotnet, start the acquisition process.
-            const acquisitionPromise = this.acquireCore(version, installRuntime).catch((error: Error) => {
-                delete this.acquisitionPromises[version];
+            const acquisitionPromise = this.acquireCore(version, installRuntime, acquisitionPromiseKey).catch((error: Error) => {
+                delete this.acquisitionPromises[acquisitionPromiseKey];
                 throw new Error(`.NET Acquisition Failed: ${error.message}`);
             });
 
-            this.acquisitionPromises[version] = acquisitionPromise;
+            this.acquisitionPromises[acquisitionPromiseKey] = acquisitionPromise;
             return acquisitionPromise.then((res) => ({ dotnetPath: res }));
         }
     }
 
-    private async acquireCore(version: string, installRuntime: boolean): Promise<string> {
+    private async acquireCore(version: string, installRuntime: boolean, installKey : string): Promise<string> {
         const installingVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
         let installedVersions = this.context.extensionState.get<string[]>(this.installedVersionsKey, []);
-        const partialInstall = installingVersions.indexOf(version) >= 0;
+        const partialInstall = installingVersions.indexOf(installKey) >= 0;
+
         if (partialInstall && installRuntime) {
             // Partial install, we never updated our extension to no longer be 'installing'.
             // uninstall everything and then re-install.
-            this.context.eventStream.post(new DotnetAcquisitionPartialInstallation(version));
+            this.context.eventStream.post(new DotnetAcquisitionPartialInstallation(installKey));
 
-            await this.uninstallRuntime(version);
+            await this.uninstallRuntimeOrSDK(installKey);
         } else if (partialInstall) {
-            this.context.eventStream.post(new DotnetAcquisitionPartialInstallation(version));
+            this.context.eventStream.post(new DotnetAcquisitionPartialInstallation(installKey));
             await this.uninstallAll();
         }
 
-        const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(version);
+        await this.removeAnyLegacyInstalls(installedVersions, version);
+
+        const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(installKey);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
 
         if (fs.existsSync(dotnetPath) && installedVersions.length === 0) {
@@ -136,10 +139,10 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             installedVersions = await this.managePreinstalledVersion(dotnetInstallDir, installedVersions);
         }
 
-        if (installedVersions.includes(version) && fs.existsSync(dotnetPath)) {
+        if (installedVersions.includes(installKey) && fs.existsSync(dotnetPath)) {
             // Version requested has already been installed.
-            this.context.installationValidator.validateDotnetInstall(version, dotnetPath);
-            this.context.eventStream.post(new DotnetAcquisitionAlreadyInstalled(version,
+            this.context.installationValidator.validateDotnetInstall(installKey, dotnetPath);
+            this.context.eventStream.post(new DotnetAcquisitionAlreadyInstalled(installKey,
                 (this.context.acquisitionContext && this.context.acquisitionContext.requestingExtensionId)
                 ? this.context.acquisitionContext!.requestingExtensionId : null));
             return dotnetPath;
@@ -154,15 +157,16 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             dotnetPath,
             timeoutValue: this.timeoutValue,
             installRuntime,
+            architecture: this.installingArchitecture
         } as IDotnetInstallationContext;
-        this.context.eventStream.post(new DotnetAcquisitionStarted(version, this.context.acquisitionContext?.requestingExtensionId));
+        this.context.eventStream.post(new DotnetAcquisitionStarted(installKey, this.context.acquisitionContext?.requestingExtensionId));
         await this.context.acquisitionInvoker.installDotnet(installContext).catch((reason) => {
             throw Error(`Installation failed: ${reason}`);
         });
-        this.context.installationValidator.validateDotnetInstall(version, dotnetPath);
+        this.context.installationValidator.validateDotnetInstall(installKey, dotnetPath);
 
-        await this.removeVersionFromExtensionState(this.installingVersionsKey, version);
-        await this.addVersionToExtensionState(this.installedVersionsKey, version);
+        await this.removeVersionFromExtensionState(this.installingVersionsKey, installKey);
+        await this.addVersionToExtensionState(this.installedVersionsKey, installKey);
 
         return dotnetPath;
     }
@@ -172,7 +176,58 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         this.context.acquisitionContext = context;
     }
 
-    private async uninstallRuntime(version: string) {
+    /**
+     *
+     * @param installedVersions
+     * @param version
+     *
+     * @remarks Before, installed versions used their version as the 'install key' in the promises and folder structure.
+     * We changed this install key to include architecture so different architectures could be installed side-by-side.
+     * This means any installs that were made before version 1.7.4 will not have the architecture in their install key.
+     * They should be removed. This is what makes an install 'legacy'.
+     *
+     * This function only removes the legacy install with the same version as 'version'.
+     * That's because removing other legacy installs may cause a breaking change.
+     * Assuming the install succeeds, this will not break as the legacy install of 'version' will be replaced by a non-legacy one upon completion.
+     *
+     * Many (if not most) legacy installs will actually hold the same content as the newly installed runtime/sdk.
+     * But since we don't want to be in the business of detecting their architecture, we chose this option as opposed to renaming and install key and folder
+     * ... for the legacy install.
+     *
+     * Note : only local installs were ever 'legacy.'
+     */
+    private async removeAnyLegacyInstalls(installedVersions : string[], version : string)
+    {
+        const legacyInstalls = this.existingLegacyInstalls(installedVersions);
+        for(const legacyInstall of legacyInstalls)
+        {
+            if(legacyInstall.includes(version))
+            {
+                await this.uninstallRuntimeOrSDK(legacyInstall);
+            }
+        }
+    }
+
+    /**
+     *
+     * @param allInstalls all of the existing installs.
+     * @returns All existing installs made by the extension that dont include a - for the architecture.
+     */
+    private existingLegacyInstalls(allInstalls : string[]) : string[]
+    {
+        let legacyInstalls : string[] = [];
+        for(const install of allInstalls)
+        {
+            if(!install.includes('-'))
+            {
+                // Check if sdk installs are counted here.
+                legacyInstalls.concat(install);
+            }
+        }
+        return legacyInstalls;
+    }
+
+    private async uninstallRuntimeOrSDK(version: string) {
         delete this.acquisitionPromises[version];
 
         const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(version);
