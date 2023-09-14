@@ -178,8 +178,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
     /**
      *
-     * @param installedVersions
-     * @param version
+     * @param installedVersions - all of the currently installed versions of dotnet managed by the extension
+     * @param version - the version that is about to be installed
      *
      * @remarks Before, installed versions used their version as the 'install key' in the promises and folder structure.
      * We changed this install key to include architecture so different architectures could be installed side-by-side.
