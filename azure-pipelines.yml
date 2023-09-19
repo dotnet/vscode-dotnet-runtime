@@ -77,7 +77,6 @@ stages:
       inputs:
         versionSpec: '16.10.0'
       displayName: 'Install Node.js'
-      continueOnError: true
     - bash: |
         npm install --cache /temp/empty-cache
         npm install tslint --reg https://registry.npmjs.org/ --verbose
@@ -100,6 +99,7 @@ stages:
         scriptPath: 'dependency-verifier.py'
         arguments: '$(System.PullRequest.TargetBranch)'
         failOnStderr: true
+        continueOnError: true
   ##### Package and Publish #####
   - job: Package
     displayName: 'Package and Publish'
