@@ -8,7 +8,7 @@ import { HttpsProxyAgent } from 'https-proxy-agent';
 import { getProxySettings } from 'get-proxy-settings';
 import { AxiosCacheInstance, buildStorage, setupCache, StorageValue } from 'axios-cache-interceptor';
 import { IEventStream } from '../EventStream/EventStream';
-import { WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
+import { DotnetAcquisitionError, DotnetCommandFailed, SuppressedAcquisitionError, WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
 import { IExtensionState } from '../IExtensionState';
 import { Debugging } from '../Utils/Debugging';
 
@@ -149,14 +149,21 @@ export class WebRequestWorker
     {
         if(!this.proxyEnabled())
         {
-            const autoDetectProxies = await getProxySettings();
-            if(autoDetectProxies?.https)
+            try
             {
-                this.proxy = autoDetectProxies.https.toString();
+                const autoDetectProxies = await getProxySettings();
+                if(autoDetectProxies?.https)
+                {
+                    this.proxy = autoDetectProxies.https.toString();
+                }
+                else if(autoDetectProxies?.http)
+                {
+                    this.proxy = autoDetectProxies.http.toString();
+                }
             }
-            else if(autoDetectProxies?.http)
+            catch(error : any)
             {
-                this.proxy = autoDetectProxies.http.toString();
+                this.eventStream.post(new SuppressedAcquisitionError(error, `The proxy lookup failed, most likely due to limited registry access. Skipping automatic proxy lookup.`));
             }
         }
         if(this.proxyEnabled())
@@ -205,7 +212,7 @@ export class WebRequestWorker
                 else
                 {
                     formattedError = new Error(`Please ensure that you are online: Request to ${this.url} Failed: ${formattedError.message}.
-If you are on a corporate proxy with a result of 400, you may need to manually set the proxy in our extension settings: Please see: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md
+If you are on a corporate proxy with a result of 400, you may need to manually set the proxy in our extension settings. Please see https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md for more details.
 If your proxy requires credentials and the result is 407: we cannot currently handle your request, and you should configure dotnet manually following the above link.`);
                 }
                 this.eventStream.post(new WebRequestError(formattedError));

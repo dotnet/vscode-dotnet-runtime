@@ -10,10 +10,10 @@ import {
     DotnetAcquisitionCompleted,
     DotnetAcquisitionInstallError,
     DotnetAcquisitionScriptError,
-    DotnetAcquisitionScriptOuput,
+    DotnetAcquisitionScriptOutput,
     DotnetAcquisitionTimeoutError,
     DotnetAcquisitionUnexpectedError,
-    DotnetAltnerativeCommandFoundEvent,
+    DotnetAlternativeCommandFoundEvent,
     DotnetCommandFallbackArchitectureEvent,
     DotnetCommandNotFoundEvent,
     DotnetOfflineFailure,
@@ -42,7 +42,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         const installCommand = await this.getInstallCommand(installContext.version, installContext.installDir, installContext.installRuntime, installContext.architecture);
         return new Promise<void>((resolve, reject) => {
             try {
-                let windowsFullCommand = `powershell.exe -NoProfile -NonInteractive -NoLogo -ExecutionPolicy unrestricted -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 ; & ${installCommand} }`;
+                let windowsFullCommand = `powershell.exe -NoProfile -NonInteractive -NoLogo -ExecutionPolicy unrestricted -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; & ${installCommand} }`;
                 if(winOS)
                 {
                     const powershellReference =  this.verifyPowershellCanRun(installContext);
@@ -54,10 +54,10 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                         async (error, stdout, stderr) => {
                     if (error) {
                         if (stdout) {
-                            this.eventStream.post(new DotnetAcquisitionScriptOuput(installContext.version, TelemetryUtilities.HashAllPaths(stdout)));
+                            this.eventStream.post(new DotnetAcquisitionScriptOutput(installContext.version, TelemetryUtilities.HashAllPaths(stdout)));
                         }
                         if (stderr) {
-                            this.eventStream.post(new DotnetAcquisitionScriptOuput(installContext.version, `STDERR: ${TelemetryUtilities.HashAllPaths(stderr)}`));
+                            this.eventStream.post(new DotnetAcquisitionScriptOutput(installContext.version, `STDERR: ${TelemetryUtilities.HashAllPaths(stderr)}`));
                         }
 
                         const online = await isOnline();
@@ -170,7 +170,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                 const cmdFoundOutput = cp.spawnSync(command);
                 if(cmdFoundOutput.status === 0)
                 {
-                    this.eventStream.post(new DotnetAltnerativeCommandFoundEvent(`The command ${command} was found.`));
+                    this.eventStream.post(new DotnetAlternativeCommandFoundEvent(`The command ${command} was found.`));
                     return [command, true];
                 }
                 else

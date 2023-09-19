@@ -11,9 +11,18 @@ and this project adheres to [Semantic Versioning].
 Relies on node.arch() to determine .NET installation architecture for local runtimes instead of Architecture environment variables.
 This is to fix ia32/32-bit VS Code versions having an x64 terminal and then installing x64 dotnet when x32 dotnet runtimes are desired.
 
+## [1.7.4] - 2023-08-24
+
+Install using node.arch() instead of environment variable architecture from root terminal to prevent mismatching shell architecture with vs code architecture.
+Don't read registry for proxy lookup if permission is unavailable to do so, requires manual proxy setting in this case.
+
 ## [1.7.3] - 2023-08-24
 
 Fixes an issue where install script files could have race conditions by introducing file locking mechanisms.
+Adds proxy detection & support that forwards calls through a proxy to axios. This is to fix a bug in axios where it does not handle proxies correctly.
+Attempts to discover powershell in more ways in case it's been removed from the PATH, or try using powershell core if only that is available.
+Improves file permissions handling to prevent issues on mac and linux where install script files may not have the correct permissions to execute.
+Remarks in error messages how users in China may experience timeouts or offline errors due to GFW blocking our download pages.
 
 ## [1.7.2] - 2023-08-24
 
