@@ -28,7 +28,7 @@ import { IDotnetAcquireContext } from '..';
 export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker {
     private readonly installingVersionsKey = 'installing';
     private readonly installedVersionsKey = 'installed';
-    private readonly installingArchitecture : string;
+    private readonly installingArchitecture : string | null;
     private readonly dotnetExecutable: string;
     private readonly timeoutValue: number;
 
@@ -39,7 +39,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         this.dotnetExecutable = `dotnet${dotnetExtension}`;
         this.timeoutValue = context.timeoutValue;
         this.acquisitionPromises = {};
-        this.installingArchitecture = os.arch();
+        // null deliberately allowed to use old behavior below
+        this.installingArchitecture = this.context.installingArchitecture === undefined ? os.arch() : this.context.installingArchitecture;
     }
 
     public async uninstallAll() {
@@ -63,15 +64,17 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         return this.acquire(version, true);
     }
 
-    public async acquireStatus(version: string, installRuntime: boolean): Promise<IDotnetAcquireResult | undefined> {
-        const existingAcquisitionPromise = this.acquisitionPromises[version];
+    public async acquireStatus(version: string, installRuntime: boolean, architecture? : string): Promise<IDotnetAcquireResult | undefined> {
+        const installKey = this.getInstallKeyCustomArchitecture(version, architecture ? architecture : this.installingArchitecture)
+
+        const existingAcquisitionPromise = this.acquisitionPromises[installKey];
         if (existingAcquisitionPromise) {
             // Requested version is being acquired
-            this.context.eventStream.post(new DotnetAcquisitionStatusResolved(version));
+            this.context.eventStream.post(new DotnetAcquisitionStatusResolved(installKey));
             return existingAcquisitionPromise.then((res) => ({ dotnetPath: res }));
         }
 
-        const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(version);
+        const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(installKey);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
         let installedVersions = this.context.extensionState.get<string[]>(this.installedVersionsKey, []);
 
@@ -80,21 +83,21 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             installedVersions = await this.managePreinstalledVersion(dotnetInstallDir, installedVersions);
         }
 
-        if (installedVersions.includes(version) && fs.existsSync(dotnetPath)) {
+        if (installedVersions.includes(installKey) && fs.existsSync(dotnetPath)) {
             // Requested version has already been installed.
-            this.context.eventStream.post(new DotnetAcquisitionStatusResolved(version));
+            this.context.eventStream.post(new DotnetAcquisitionStatusResolved(installKey));
             return { dotnetPath };
         }
 
         // Version is not installed
-        this.context.eventStream.post(new DotnetAcquisitionStatusUndefined(version));
+        this.context.eventStream.post(new DotnetAcquisitionStatusUndefined(installKey));
         return undefined;
     }
 
     private async acquire(version: string, installRuntime: boolean): Promise<IDotnetAcquireResult>
     {
-        const acquisitionPromiseKey = `${version}-${this.installingArchitecture}`;
-        const existingAcquisitionPromise = this.acquisitionPromises[acquisitionPromiseKey];
+        const installKey = this.getInstallKey(version);
+        const existingAcquisitionPromise = this.acquisitionPromises[installKey];
         if (existingAcquisitionPromise) {
             // This version of dotnet is already being acquired. Memoize the promise.
             this.context.eventStream.post(new DotnetAcquisitionInProgress(version,
@@ -103,14 +106,31 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             return existingAcquisitionPromise.then((res) => ({ dotnetPath: res }));
         } else {
             // We're the only one acquiring this version of dotnet, start the acquisition process.
-            const acquisitionPromise = this.acquireCore(version, installRuntime, acquisitionPromiseKey).catch((error: Error) => {
-                delete this.acquisitionPromises[acquisitionPromiseKey];
+            const acquisitionPromise = this.acquireCore(version, installRuntime, installKey).catch((error: Error) => {
+                delete this.acquisitionPromises[installKey];
                 throw new Error(`.NET Acquisition Failed: ${error.message}`);
             });
 
-            this.acquisitionPromises[acquisitionPromiseKey] = acquisitionPromise;
+            this.acquisitionPromises[installKey] = acquisitionPromise;
             return acquisitionPromise.then((res) => ({ dotnetPath: res }));
         }
+    }
+
+    public getInstallKeyCustomArchitecture(version : string, architecture: string | null | undefined) : string
+    {
+        if(!architecture)
+        {
+            return version;
+        }
+        else
+        {
+            return `${version}-${architecture}`;
+        }
+    }
+
+    public getInstallKey(version : string) : string
+    {
+        return this.getInstallKeyCustomArchitecture(version, this.installingArchitecture);
     }
 
     private async acquireCore(version: string, installRuntime: boolean, installKey : string): Promise<string> {
@@ -211,7 +231,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     /**
      *
      * @param allInstalls all of the existing installs.
-     * @returns All existing installs made by the extension that dont include a - for the architecture.
+     * @returns All existing installs made by the extension that don't include a - for the architecture.
      */
     private existingLegacyInstalls(allInstalls : string[]) : string[]
     {
