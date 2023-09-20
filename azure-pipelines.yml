@@ -98,7 +98,6 @@ stages:
         scriptSource: 'filePath'
         scriptPath: 'dependency-verifier.py'
         arguments: '$(System.PullRequest.TargetBranch)'
-        failOnStderr: true
         continueOnError: true
   ##### Package and Publish #####
   - job: Package
