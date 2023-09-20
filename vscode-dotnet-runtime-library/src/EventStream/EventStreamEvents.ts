@@ -80,7 +80,25 @@ export abstract class DotnetAcquisitionError extends IEvent {
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
         return {ErrorName : this.error.name,
                 ErrorMessage : this.error.message,
-                StackTrace : this.error.stack ? this.error.stack : ''};
+                StackTrace : this.error.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : ''};
+    }
+}
+
+
+export class SuppressedAcquisitionError extends IEvent {
+    public readonly eventName = 'SuppressedAcquisitionError';
+    public readonly type = EventType.SuppressedAcquisitionError;
+
+    constructor(public readonly error: Error, public readonly supplementalMessage : string) {
+        super();
+    }
+
+    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+        return {
+                SupplementMessage : this.supplementalMessage,
+                ErrorName : this.error.name,
+                ErrorMessage : telemetry ? 'redacted' : TelemetryUtilities.HashAllPaths(this.error.message),
+                StackTrace : telemetry ? 'redacted' : (this.error.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : '')};
     }
 }
 

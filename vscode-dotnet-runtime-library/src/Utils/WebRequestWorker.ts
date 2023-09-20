@@ -8,9 +8,10 @@ import { HttpsProxyAgent } from 'https-proxy-agent';
 import { getProxySettings } from 'get-proxy-settings';
 import { AxiosCacheInstance, buildStorage, setupCache, StorageValue } from 'axios-cache-interceptor';
 import { IEventStream } from '../EventStream/EventStream';
-import { WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
+import { SuppressedAcquisitionError, WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
 import { IExtensionState } from '../IExtensionState';
 import { Debugging } from '../Utils/Debugging';
+/* tslint:disable:no-any */
 
 /*
 This wraps the VSCode memento state blob into an axios-cache-interceptor-compatible Storage.
@@ -149,14 +150,21 @@ export class WebRequestWorker
     {
         if(!this.proxyEnabled())
         {
-            const autoDetectProxies = await getProxySettings();
-            if(autoDetectProxies?.https)
+            try
             {
-                this.proxy = autoDetectProxies.https.toString();
+                const autoDetectProxies = await getProxySettings();
+                if(autoDetectProxies?.https)
+                {
+                    this.proxy = autoDetectProxies.https.toString();
+                }
+                else if(autoDetectProxies?.http)
+                {
+                    this.proxy = autoDetectProxies.http.toString();
+                }
             }
-            else if(autoDetectProxies?.http)
+            catch(error : any)
             {
-                this.proxy = autoDetectProxies.http.toString();
+                this.eventStream.post(new SuppressedAcquisitionError(error, `The proxy lookup failed, most likely due to limited registry access. Skipping automatic proxy lookup.`));
             }
         }
         if(this.proxyEnabled())

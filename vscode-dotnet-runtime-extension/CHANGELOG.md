@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+## [1.7.4] - 2023-08-24
+
+Install using node.arch() instead of environment variable architecture from root terminal to prevent mismatching shell architecture with vs code architecture.
+Don't read registry for proxy lookup if permission is unavailable to do so, requires manual proxy setting in this case.
+
 ## [1.7.3] - 2023-08-24
 
 Fixes an issue where install script files could have race conditions by introducing file locking mechanisms.
