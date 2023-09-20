@@ -94,11 +94,11 @@ stages:
         addToPath: true
         architecture: 'x64'
     - task: PythonScript@0
+      continueOnError: true
       inputs:
         scriptSource: 'filePath'
         scriptPath: 'dependency-verifier.py'
         arguments: '$(System.PullRequest.TargetBranch)'
-        continueOnError: true
   ##### Package and Publish #####
   - job: Package
     displayName: 'Package and Publish'
