@@ -39,11 +39,11 @@ export class OutputChannelObserver implements IEventStreamObserver {
             case EventType.DotnetAcquisitionStart:
                 const acquisitionStarted = event as DotnetAcquisitionStarted;
 
-                this.inProgressDownloads.push(acquisitionStarted.version);
+                this.inProgressDownloads.push(acquisitionStarted.installKey);
 
                 if (this.inProgressDownloads.length > 1) {
                     // Already a download in progress
-                    this.outputChannel.appendLine(` -- Concurrent download of '${acquisitionStarted.version}' started!`);
+                    this.outputChannel.appendLine(` -- Concurrent download of '${acquisitionStarted.installKey}' started!`);
                     this.outputChannel.appendLine('');
                 } else {
                     this.startDownloadIndicator();
@@ -55,10 +55,10 @@ export class OutputChannelObserver implements IEventStreamObserver {
             case EventType.DotnetAcquisitionCompleted:
                 const acquisitionCompleted = event as DotnetAcquisitionCompleted;
                 this.outputChannel.appendLine(' Done!');
-                this.outputChannel.appendLine(`.NET ${acquisitionCompleted.version} executable path: ${acquisitionCompleted.dotnetPath}`);
+                this.outputChannel.appendLine(`.NET ${acquisitionCompleted.installKey} executable path: ${acquisitionCompleted.dotnetPath}`);
                 this.outputChannel.appendLine('');
 
-                this.inProgressVersionDone(acquisitionCompleted.version);
+                this.inProgressVersionDone(acquisitionCompleted.installKey);
 
                 if (this.inProgressDownloads.length > 0) {
                     const completedVersionString = `'${this.inProgressDownloads.join('\', \'')}'`;
@@ -96,13 +96,13 @@ export class OutputChannelObserver implements IEventStreamObserver {
                 const error = event as DotnetAcquisitionError;
                 this.outputChannel.appendLine(' Error!');
                 if (error instanceof DotnetAcquisitionVersionError) {
-                    this.outputChannel.appendLine(`Failed to download .NET ${error.version}:`);
+                    this.outputChannel.appendLine(`Failed to download .NET ${error.installKey}:`);
                 }
                 this.outputChannel.appendLine(error.error.message);
                 this.outputChannel.appendLine('');
 
                 if (error instanceof DotnetAcquisitionVersionError) {
-                    this.inProgressVersionDone(error.version);
+                    this.inProgressVersionDone(error.installKey);
                 }
 
                 if (this.inProgressDownloads.length > 0) {

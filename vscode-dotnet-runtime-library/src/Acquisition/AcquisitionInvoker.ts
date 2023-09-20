@@ -25,6 +25,7 @@ import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
 import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker';
 import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
+import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 
 export class AcquisitionInvoker extends IAcquisitionInvoker {
     private readonly scriptWorker: IInstallScriptAcquisitionWorker;
@@ -40,6 +41,8 @@ You will need to restart VS Code after these changes. If PowerShell is still not
     public async installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
         const winOS = os.platform() === 'win32';
         const installCommand = await this.getInstallCommand(installContext.version, installContext.installDir, installContext.installRuntime, installContext.architecture);
+        const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(installContext.version, installContext.architecture);
+
         return new Promise<void>((resolve, reject) => {
             try {
                 let windowsFullCommand = `powershell.exe -NoProfile -NonInteractive -NoLogo -ExecutionPolicy unrestricted -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; & ${installCommand} }`;
@@ -54,35 +57,35 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                         async (error, stdout, stderr) => {
                     if (error) {
                         if (stdout) {
-                            this.eventStream.post(new DotnetAcquisitionScriptOutput(installContext.version, TelemetryUtilities.HashAllPaths(stdout)));
+                            this.eventStream.post(new DotnetAcquisitionScriptOutput(installKey, TelemetryUtilities.HashAllPaths(stdout)));
                         }
                         if (stderr) {
-                            this.eventStream.post(new DotnetAcquisitionScriptOutput(installContext.version, `STDERR: ${TelemetryUtilities.HashAllPaths(stderr)}`));
+                            this.eventStream.post(new DotnetAcquisitionScriptOutput(installKey, `STDERR: ${TelemetryUtilities.HashAllPaths(stderr)}`));
                         }
 
                         const online = await isOnline();
                         if (!online) {
                             const offlineError = new Error('No internet connection: Cannot install .NET');
-                            this.eventStream.post(new DotnetOfflineFailure(offlineError, installContext.version));
+                            this.eventStream.post(new DotnetOfflineFailure(offlineError, installKey));
                             reject(offlineError);
                         } else if (error.signal === 'SIGKILL') {
                             error.message = timeoutConstants.timeoutMessage;
-                            this.eventStream.post(new DotnetAcquisitionTimeoutError(error, installContext.version, installContext.timeoutValue));
+                            this.eventStream.post(new DotnetAcquisitionTimeoutError(error, installKey, installContext.timeoutValue));
                             reject(error);
                         } else {
-                            this.eventStream.post(new DotnetAcquisitionInstallError(error, installContext.version));
+                            this.eventStream.post(new DotnetAcquisitionInstallError(error, installKey));
                             reject(error);
                         }
                     } else if (stderr && stderr.length > 0) {
-                        this.eventStream.post(new DotnetAcquisitionScriptError(new Error(TelemetryUtilities.HashAllPaths(stderr)), installContext.version));
+                        this.eventStream.post(new DotnetAcquisitionScriptError(new Error(TelemetryUtilities.HashAllPaths(stderr)), installKey));
                         reject(stderr);
                     } else {
-                        this.eventStream.post(new DotnetAcquisitionCompleted(installContext.version, installContext.dotnetPath));
+                        this.eventStream.post(new DotnetAcquisitionCompleted(installKey, installContext.dotnetPath));
                         resolve();
                     }
                 });
             } catch (error) {
-                this.eventStream.post(new DotnetAcquisitionUnexpectedError(error as Error, installContext.version));
+                this.eventStream.post(new DotnetAcquisitionUnexpectedError(error as Error, installKey));
                 reject(error);
             }
         });
@@ -234,7 +237,8 @@ If you cannot safely and confidently change the execution policy, try setting a 
 
         if(error != null)
         {
-            this.eventStream.post(new DotnetAcquisitionScriptError(error as Error, installContext.version));
+            const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(installContext.version, installContext.architecture);
+            this.eventStream.post(new DotnetAcquisitionScriptError(error as Error, installKey));
             throw error;
         }
 

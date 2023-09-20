@@ -15,12 +15,12 @@ export class DotnetAcquisitionStarted extends IEvent {
     public readonly eventName = 'DotnetAcquisitionStarted';
     public readonly type = EventType.DotnetAcquisitionStart;
 
-    constructor(public readonly version: string, public readonly requestingExtensionId = '') {
+    constructor(public readonly installKey: string, public readonly requestingExtensionId = '') {
         super();
     }
 
     public getProperties() {
-        return {AcquisitionStartVersion : this.version, extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
+        return {AcquisitionStartVersion : this.installKey, extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
     }
 }
 
@@ -54,15 +54,15 @@ export class DotnetAcquisitionCompleted extends IEvent {
     public readonly eventName = 'DotnetAcquisitionCompleted';
     public readonly type = EventType.DotnetAcquisitionCompleted;
 
-    constructor(public readonly version: string, public readonly dotnetPath: string) {
+    constructor(public readonly installKey: string, public readonly dotnetPath: string) {
         super();
     }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
         if (telemetry) {
-            return {AcquisitionCompletedVersion : this.version};
+            return {AcquisitionCompletedVersion : this.installKey};
         } else {
-            return {AcquisitionCompletedVersion : this.version,
+            return {AcquisitionCompletedVersion : this.installKey,
                     AcquisitionCompletedDotnetPath : this.dotnetPath};
         }
 
@@ -130,13 +130,13 @@ export class DotnetCommandFailed extends DotnetAcquisitionError {
 }
 
 export abstract class DotnetAcquisitionVersionError extends DotnetAcquisitionError {
-    constructor(error: Error, public readonly version: string) {
+    constructor(error: Error, public readonly installKey: string) {
         super(error);
     }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
         return {ErrorMessage : this.error.message,
-            AcquisitionErrorVersion : this.version,
+            AcquisitionErrorVersion : this.installKey,
             ErrorName : this.error.name,
             StackTrace : this.error.stack ? this.error.stack : ''};
     }
@@ -161,14 +161,14 @@ export class DotnetOfflineFailure extends DotnetAcquisitionVersionError {
 export class DotnetAcquisitionTimeoutError extends DotnetAcquisitionVersionError {
     public readonly eventName = 'DotnetAcquisitionTimeoutError';
 
-    constructor(error: Error, version: string, public readonly timeoutValue: number) {
-        super(error, version);
+    constructor(error: Error, installKey: string, public readonly timeoutValue: number) {
+        super(error, installKey);
     }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
         return {ErrorMessage : this.error.message,
             TimeoutValue : this.timeoutValue.toString(),
-            Version : this.version,
+            Version : this.installKey,
             ErrorName : this.error.name,
             StackTrace : this.error.stack ? this.error.stack : ''};
     }
@@ -188,7 +188,7 @@ export class DotnetInstallationValidationError extends DotnetAcquisitionVersionE
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
         return {ErrorMessage : this.error.message,
-            AcquisitionErrorVersion : this.version,
+            AcquisitionErrorVersion : this.installKey,
             ErrorName : this.error.name,
             StackTrace : this.error.stack ? this.error.stack : '',
             FileStructure : this.fileStructure};

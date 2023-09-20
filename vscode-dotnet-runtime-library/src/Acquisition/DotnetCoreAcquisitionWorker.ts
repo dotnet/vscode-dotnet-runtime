@@ -28,7 +28,7 @@ import { IDotnetAcquireContext } from '..';
 export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker {
     private readonly installingVersionsKey = 'installing';
     private readonly installedVersionsKey = 'installed';
-    private readonly installingArchitecture : string | null;
+    public installingArchitecture : string | null;
     private readonly dotnetExecutable: string;
     private readonly timeoutValue: number;
 
@@ -65,7 +65,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     }
 
     public async acquireStatus(version: string, installRuntime: boolean, architecture? : string): Promise<IDotnetAcquireResult | undefined> {
-        const installKey = this.getInstallKeyCustomArchitecture(version, architecture ? architecture : this.installingArchitecture)
+        const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, architecture ? architecture : this.installingArchitecture)
 
         const existingAcquisitionPromise = this.acquisitionPromises[installKey];
         if (existingAcquisitionPromise) {
@@ -116,7 +116,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         }
     }
 
-    public getInstallKeyCustomArchitecture(version : string, architecture: string | null | undefined) : string
+    public static getInstallKeyCustomArchitecture(version : string, architecture: string | null | undefined) : string
     {
         if(!architecture)
         {
@@ -130,7 +130,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
     public getInstallKey(version : string) : string
     {
-        return this.getInstallKeyCustomArchitecture(version, this.installingArchitecture);
+        return DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, this.installingArchitecture);
     }
 
     private async acquireCore(version: string, installRuntime: boolean, installKey : string): Promise<string> {
@@ -241,13 +241,13 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             if(!install.includes('-'))
             {
                 // Check if sdk installs are counted here.
-                legacyInstalls.concat(install);
+                legacyInstalls = legacyInstalls.concat(install);
             }
         }
         return legacyInstalls;
     }
 
-    private async uninstallRuntimeOrSDK(version: string, installKey : string) {
+    public async uninstallRuntimeOrSDK(version: string, installKey : string) {
         delete this.acquisitionPromises[installKey];
 
         const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(installKey);
@@ -277,20 +277,20 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         rimraf.sync(folderPath);
     }
 
-    private async managePreinstalledVersion(dotnetInstallDir: string, installedVersions: string[]): Promise<string[]> {
+    private async managePreinstalledVersion(dotnetInstallDir: string, installedInstallKeys: string[]): Promise<string[]> {
         try {
             // Determine installed version(s)
-            const versions = fs.readdirSync(path.join(dotnetInstallDir, 'sdk'));
+            const installKeys = fs.readdirSync(path.join(dotnetInstallDir, 'sdk'));
 
             // Update extension state
-            for (const version of versions) {
-                this.context.eventStream.post(new DotnetPreinstallDetected(version));
-                await this.addVersionToExtensionState(this.installedVersionsKey, version);
-                installedVersions.push(version);
+            for (const installKey of installKeys) {
+                this.context.eventStream.post(new DotnetPreinstallDetected(installKey));
+                await this.addVersionToExtensionState(this.installedVersionsKey, installKey);
+                installedInstallKeys.push(installKey);
             }
         } catch (error) {
             this.context.eventStream.post(new DotnetPreinstallDetectionError(error as Error));
         }
-        return installedVersions;
+        return installedInstallKeys;
     }
 }
