@@ -203,7 +203,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      *
      * @remarks Before, installed versions used their version as the 'install key' in the promises and folder structure.
      * We changed this install key to include architecture so different architectures could be installed side-by-side.
-     * This means any installs that were made before version 1.7.4 will not have the architecture in their install key.
+     * This means any installs that were made before version 1.8.0 will not have the architecture in their install key.
      * They should be removed. This is what makes an install 'legacy'.
      *
      * This function only removes the legacy install with the same version as 'version'.

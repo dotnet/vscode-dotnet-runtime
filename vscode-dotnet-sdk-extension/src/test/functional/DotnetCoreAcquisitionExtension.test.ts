@@ -299,29 +299,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     assert.isFalse(fs.existsSync(result!.dotnetPath));
   }).timeout(standardTimeoutTime);
 
-  test('Uninstalls Legacy Upon Reinstall, Does Not Remove Runtime', async () => {
-    // Install Legacy SDK
-    const context: IDotnetAcquireContext = { version: '3.1', requestingExtensionId: 'ms-dotnettools.sample-extension' };
-    const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context);
-    assert.exists(result);
-    assert.exists(result!.dotnetPath);
-
-    // Install Legacy Runtime
-
-
-    // Install Non-Legacy SDK
-
-
-    // Make sure legacy runtime and non-legacy sdk only exist
-    assert.isTrue(fs.existsSync(result!.dotnetPath));
-    assert.isTrue(fs.existsSync(result!.dotnetPath));
-    assert.isFalse(fs.existsSync(result!.dotnetPath));
-
-    await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
-    assert.isFalse(fs.existsSync(result!.dotnetPath));
-  }).timeout(standardTimeoutTime);
-
-
   test('Install Multiple Versions', async () => {
     // Install 6.0
     let version = currentSDKVersion;

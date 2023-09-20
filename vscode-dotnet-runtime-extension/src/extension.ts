@@ -134,6 +134,10 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             }
 
             const version = await versionResolver.getFullRuntimeVersion(commandContext.version);
+            if(commandContext.architecture !== undefined)
+            {
+                acquisitionWorker.installingArchitecture = commandContext.architecture;
+            }
             return acquisitionWorker.acquireRuntime(version);
         }, issueContext(commandContext.errorConfiguration, 'acquire', commandContext.version), commandContext.requestingExtensionId);
         return dotnetPath;
