@@ -187,7 +187,7 @@ export class MockApostropheScriptAcquisitionWorker extends MockInstallScriptWork
         super(extensionState, eventStream, false);
         const scriptFileEnding = 'win32';
         const scriptFileName = 'dotnet-install';
-        this.scriptFilePath = path.join(`.dotnet O'Hare O'Donald`, 'install scripts', `${scriptFileName}.${scriptFileEnding}`);
+        this.scriptFilePath = path.join(`test' for' apostrophe`, 'install scripts', `${scriptFileName}.${scriptFileEnding}`);
     }
 }
 
