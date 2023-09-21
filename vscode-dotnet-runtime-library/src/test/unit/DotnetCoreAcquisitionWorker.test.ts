@@ -227,7 +227,6 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         await AssertInstallRuntime(runtimeWorker, context, events, runtimeV5);
 
         // 5.0 legacy runtime should be replaced, but 6.0 runtime should remain, and all SDK items should remain.
-        // todo: make test so install keys use fll version via extension e2e
         let remainingInstalls = context.get<string[]>(installedVersionsKey, []).concat(sdkContext.get<string[]>(installedVersionsKey, []));
         assert.deepStrictEqual(remainingInstalls, [runtimeV6, '5.0.00-x64', sdkV5, sdkV6],
             'Only The Requested Legacy Runtime is replaced when new runtime is installed');
