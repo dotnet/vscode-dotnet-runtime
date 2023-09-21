@@ -111,7 +111,6 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
             if(scriptContent !== existingScriptContent)
             {
                 fs.writeFileSync(filePath, scriptContent);
-                fs.chmodSync(filePath, 0o744);
                 this.eventStream.post(new DotnetFileWriteRequestEvent(`File content needed to be updated.`, new Date().toISOString(), filePath));
             }
             else
@@ -119,6 +118,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
                 this.eventStream.post(new DotnetFileWriteRequestEvent(`File content is an exact match, not writing file.`, new Date().toISOString(), filePath));
             }
 
+            fs.chmodSync(filePath, 0o744);
             this.eventStream.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), directoryLockPath, filePath));
             return release();
         })

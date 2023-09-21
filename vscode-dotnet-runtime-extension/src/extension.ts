@@ -47,6 +47,7 @@ namespace configKeys {
     export const installTimeoutValue = 'installTimeoutValue';
     export const enableTelemetry = 'enableTelemetry';
     export const existingPath = 'existingDotnetPath';
+    export const proxyUrl = 'proxyUrl';
 }
 namespace commandKeys {
     export const acquire = 'acquire';
@@ -100,6 +101,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     }
     const resolvedTimeoutSeconds = timeoutValue === undefined ? defaultTimeoutValue : timeoutValue;
 
+    const proxyUrl = extensionConfiguration.get<string>(configKeys.proxyUrl);
+
     const acquisitionWorker = new DotnetCoreAcquisitionWorker({
         storagePath: context.globalStoragePath,
         extensionState: context.globalState,
@@ -110,7 +113,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         installDirectoryProvider: new RuntimeInstallationDirectoryProvider(context.globalStoragePath),
     });
     const existingPathResolver = new ExistingPathResolver();
-    const versionResolver = new VersionResolver(context.globalState, eventStream, resolvedTimeoutSeconds);
+    const versionResolver = new VersionResolver(context.globalState, eventStream, resolvedTimeoutSeconds, proxyUrl);
 
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) => {
         const dotnetPath = await callWithErrorHandling<Promise<IDotnetAcquireResult>>(async () => {

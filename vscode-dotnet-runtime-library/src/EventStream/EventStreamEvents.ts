@@ -80,7 +80,25 @@ export abstract class DotnetAcquisitionError extends IEvent {
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
         return {ErrorName : this.error.name,
                 ErrorMessage : this.error.message,
-                StackTrace : this.error.stack ? this.error.stack : ''};
+                StackTrace : this.error.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : ''};
+    }
+}
+
+
+export class SuppressedAcquisitionError extends IEvent {
+    public readonly eventName = 'SuppressedAcquisitionError';
+    public readonly type = EventType.SuppressedAcquisitionError;
+
+    constructor(public readonly error: Error, public readonly supplementalMessage : string) {
+        super();
+    }
+
+    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+        return {
+                SupplementMessage : this.supplementalMessage,
+                ErrorName : this.error.name,
+                ErrorMessage : telemetry ? 'redacted' : TelemetryUtilities.HashAllPaths(this.error.message),
+                StackTrace : telemetry ? 'redacted' : (this.error.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : '')};
     }
 }
 
@@ -226,10 +244,10 @@ export class DotnetUninstallAllCompleted extends DotnetAcquisitionSuccessEvent {
 export class DotnetVersionResolutionCompleted extends DotnetAcquisitionSuccessEvent {
     public readonly eventName = 'DotnetVersionResolutionCompleted';
 
-    constructor(public readonly requestedVerion: string, public readonly resolvedVersion: string) { super(); }
+    constructor(public readonly requestedVersion: string, public readonly resolvedVersion: string) { super(); }
 
     public getProperties() {
-        return {RequestedVersion : this.requestedVerion,
+        return {RequestedVersion : this.requestedVersion,
                 ResolvedVersion : this.resolvedVersion};
     }
 }
@@ -267,6 +285,22 @@ export class DotnetAcquisitionDeletion extends DotnetAcquisitionMessage {
 
 export class DotnetFallbackInstallScriptUsed extends DotnetAcquisitionMessage {
     public readonly eventName = 'DotnetFallbackInstallScriptUsed';
+}
+
+export abstract class DotnetCustomMessageEvent extends DotnetAcquisitionMessage {
+    constructor(public readonly eventMessage: string) { super(); }
+
+    public getProperties() {
+        return { Message: this.eventMessage };
+    }
+}
+
+export class DotnetCommandNotFoundEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetCommandNotFoundEvent';
+}
+
+export class DotnetAlternativeCommandFoundEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetAlternativeCommandFoundEvent';
 }
 
 export abstract class DotnetFileEvent extends DotnetAcquisitionMessage
@@ -349,8 +383,8 @@ export class DotnetAcquisitionMissingLinuxDependencies extends DotnetAcquisition
     public readonly eventName = 'DotnetAcquisitionMissingLinuxDependencies';
 }
 
-export class DotnetAcquisitionScriptOuput extends DotnetAcquisitionMessage {
-    public readonly eventName = 'DotnetAcquisitionScriptOuput';
+export class DotnetAcquisitionScriptOutput extends DotnetAcquisitionMessage {
+    public readonly eventName = 'DotnetAcquisitionScriptOutput';
     public isError = true;
     constructor(public readonly version: string, public readonly output: string) { super(); }
 

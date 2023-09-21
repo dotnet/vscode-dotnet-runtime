@@ -14,10 +14,10 @@ def main():
 
 def VerifyDependencies(targetBranch):
     """Enumerate through all changed files to check diffs."""
-    # origin/ requires origin/ to be up to date. 
+    # origin/ requires origin/ to be up to date.
     changedFiles = [Path(path) for path in subprocess.getoutput(f"git diff --name-only origin/{targetBranch}..").splitlines()]
     npmLockFile = "package-lock.json"
-    
+
     for file in changedFiles:
         fileName = os.path.basename(os.path.realpath(file))
         if fileName == npmLockFile:
@@ -48,7 +48,7 @@ def GetYarnDependencyUpdates(yarnLockDiffLines):
     return dependencies
 
 def GetUnmatchedDiffs(yarnDiff, npmDiff):
-    """Returns [] if dependency updates are reflected in both diffs, elsewise the dependencies out of sync."""
+    """Returns [] if dependency updates are reflected in both diffs, else the dependencies out of sync."""
                                         # v Remove + or - from diff and additional git diff context lines
     yarnDeps = GetYarnDependencyUpdates([line[1:] for line in yarnDiff.splitlines() if line.startswith("+") or line.startswith("-")])
     npmDeps = GetNpmDependencyUpdates([line[1:] for line in npmDiff.splitlines() if line.startswith("+") or line.startswith("-")])
@@ -61,11 +61,11 @@ def GetUnmatchedDiffs(yarnDiff, npmDiff):
     return outOfSyncDependencies
 
 def NpmChangesMirrorYarnChanges(changedFiles, packageLockPath, targetBranch):
-    """Returns successfully if yarn.lock matches packagelock changes, if not, throws exit code"""
+    """Returns successfully if yarn.lock matches package lock changes, if not, throws exit code"""
     yarnLockFile = "yarn.lock"
     yarnLockPath = Path(os.path.join(os.path.dirname(packageLockPath), yarnLockFile))
     outOfDateYarnLocks = []
-    
+
     if yarnLockPath in changedFiles:
         yarnDiff = subprocess.getoutput(f"git diff origin/{targetBranch}.. -- {str(yarnLockPath)}")
         npmDiff = subprocess.getoutput(f"git diff origin/{targetBranch}..  -- {packageLockPath}")
@@ -77,9 +77,13 @@ def NpmChangesMirrorYarnChanges(changedFiles, packageLockPath, targetBranch):
     else:
         outOfDateYarnLocks.append(yarnLockPath)
     if(outOfDateYarnLocks != []):
-        sys.exit(f"The yarn.lock and package-lock appear to be out of sync with the changes made after {targetBranch}. Update by first using npm to push to the registry, doing npm install package@version. Then, do yarn add package@version for {outOfDateYarnLocks}. During the yarn add process, you may need to npm install specific dependencies that yarn will flag to allow yarn to proceed. You may consider (yarn import). Note this tool will list dependencies of packages, but you should try adding just the main package first. If you can confirm the new changes are in sync, then you may ignore this failure.")
+        sys.exit(f"""{outOfDateYarnLocks} may be out of sync with node.
+
+        The yarn.lock and package-lock appear to be out of sync with the changes made after {targetBranch}.
+        Update by first using npm to push to the registry, doing npm install package@version. Then, do yarn add package@version for each primary package. During the yarn add process, you may need to npm install specific dependencies that yarn will flag to allow yarn to proceed. You may consider (yarn import). Note this tool will list dependencies of packages, but you should try adding just the main package first.
+        If you can confirm the new changes are in sync, then you may ignore this failure.""")
     else:
         return 0 # OK, status here is not used
-    
+
 if __name__ == "__main__":
     main()
