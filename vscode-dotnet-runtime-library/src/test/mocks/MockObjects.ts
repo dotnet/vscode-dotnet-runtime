@@ -17,6 +17,7 @@ import { ITelemetryReporter } from '../../EventStream/TelemetryObserver';
 import { IExistingPath, IExtensionConfiguration } from '../../IExtensionContext';
 import { IExtensionState } from '../../IExtensionState';
 import { WebRequestWorker } from '../../Utils/WebRequestWorker';
+import { AcquisitionInvoker } from '../../Acquisition/AcquisitionInvoker';
 /* tslint:disable:no-any */
 
 const testDefaultTimeoutTimeMs = 60000;
@@ -177,6 +178,25 @@ export class MockInstallScriptWorker extends InstallScriptAcquisitionWorker {
             return super.getFallbackScriptPath();
         }
     }
+}
+
+export class MockApostropheScriptAcquisitionWorker extends MockInstallScriptWorker {
+    protected readonly scriptFilePath: string;
+
+    constructor(extensionState: IExtensionState, eventStream: IEventStream) {
+        super(extensionState, eventStream, false);
+        const scriptFileEnding = 'win32';
+        const scriptFileName = 'dotnet-install';
+        this.scriptFilePath = path.join(`.dotnet O'Hare O'Donald`, 'install scripts', `${scriptFileName}.${scriptFileEnding}`);
+    }
+}
+
+export class MockAcquisitionInvoker extends AcquisitionInvoker{
+    protected readonly scriptWorker: MockApostropheScriptAcquisitionWorker
+    constructor(extensionState: IExtensionState, eventStream: IEventStream, timeoutTime : number) {
+        super(extensionState, eventStream, timeoutTime);
+        this.scriptWorker = new MockApostropheScriptAcquisitionWorker(extensionState, eventStream);
+    }   
 }
 
 export class FailingInstallScriptWorker extends InstallScriptAcquisitionWorker {

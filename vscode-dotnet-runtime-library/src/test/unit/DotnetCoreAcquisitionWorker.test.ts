@@ -23,6 +23,7 @@ import {
 import { EventType } from '../../EventStream/EventType';
 import {
     ErrorAcquisitionInvoker,
+    MockAcquisitionInvoker,
     MockEventStream,
     MockExtensionContext,
     MockInstallationValidator,
@@ -45,6 +46,21 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
             extensionState: context,
             eventStream,
             acquisitionInvoker: new NoInstallAcquisitionInvoker(eventStream),
+            installationValidator: new MockInstallationValidator(eventStream),
+            timeoutValue: 10,
+            installDirectoryProvider: runtimeInstall ? new RuntimeInstallationDirectoryProvider('') : new SdkInstallationDirectoryProvider(''),
+        });
+        return [acquisitionWorker, eventStream, context];
+    }
+
+    function getTestApostropheAcquisitionWorker(runtimeInstall: boolean): [DotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext] {
+        const context = new MockExtensionContext();
+        const eventStream = new MockEventStream();
+        const acquisitionWorker = new DotnetCoreAcquisitionWorker({
+            storagePath: '',
+            extensionState: context,
+            eventStream,
+            acquisitionInvoker: new MockAcquisitionInvoker(context, eventStream, 10),
             installationValidator: new MockInstallationValidator(eventStream),
             timeoutValue: 10,
             installDirectoryProvider: runtimeInstall ? new RuntimeInstallationDirectoryProvider('') : new SdkInstallationDirectoryProvider(''),
@@ -216,8 +232,8 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         assert.equal(events.length, 1);
     });
 
-    test('Get Expected Path', async () => {
-        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(true);
+    test('Get Expected Path With Apostrophe In Install path', async () => {
+        const [acquisitionWorker, eventStream, context] = getTestApostropheAcquisitionWorker(true);
         const result = await acquisitionWorker.acquireRuntime('1.0');
         const expectedPath = getExpectedPath('1.0', true);
         assert.equal(result.dotnetPath, expectedPath);

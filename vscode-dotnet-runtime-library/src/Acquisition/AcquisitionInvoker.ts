@@ -24,7 +24,7 @@ import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker
 import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
 
 export class AcquisitionInvoker extends IAcquisitionInvoker {
-    private readonly scriptWorker: IInstallScriptAcquisitionWorker;
+    protected readonly scriptWorker: IInstallScriptAcquisitionWorker;
 
     private noPowershellError = `powershell.exe is not discoverable on your system. Is PowerShell added to your PATH and correctly installed? Please visit: https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows.
 You will need to restart VS Code after these changes. If PowerShell is still not discoverable, try setting a custom existingDotnetPath following our instructions here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`
