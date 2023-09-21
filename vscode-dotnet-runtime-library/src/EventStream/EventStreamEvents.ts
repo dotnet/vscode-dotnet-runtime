@@ -15,12 +15,14 @@ export class DotnetAcquisitionStarted extends IEvent {
     public readonly eventName = 'DotnetAcquisitionStarted';
     public readonly type = EventType.DotnetAcquisitionStart;
 
-    constructor(public readonly installKey: string, public readonly requestingExtensionId = '') {
+    constructor(public readonly installKey: string, public readonly startingVersion: string, public readonly requestingExtensionId = '') {
         super();
     }
 
     public getProperties() {
-        return {AcquisitionStartInstallKey : this.installKey, extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
+        return {AcquisitionInstallKey : this.installKey,
+                AcquisitionStartVersion : this.installKey,
+                extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
     }
 }
 
@@ -68,6 +70,26 @@ export class DotnetAcquisitionCompleted extends IEvent {
                     AcquisitionCompletedDotnetPath : this.dotnetPath};
         }
 
+    }
+}
+
+export class DotnetRuntimeAcquisitionTotalSuccessEvent extends IEvent
+{
+    public readonly eventName = 'DotnetRuntimeAcquisitionTotalSuccessEvent';
+    public readonly type = EventType.DotnetTotalSuccessEvent;
+
+
+    constructor(public readonly startingVersion: string, public readonly installKey: string, public readonly requestingExtensionId = '', public readonly finalPath: string) {
+        super();
+    }
+
+    public getProperties() {
+        return {
+                AcquisitionStartVersion : this.startingVersion,
+                AcquisitionInstallKey : this.installKey,
+                ExtensionId : TelemetryUtilities.HashData(this.requestingExtensionId),
+                FinalPath : this.finalPath,
+            };
     }
 }
 

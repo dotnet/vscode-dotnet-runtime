@@ -183,7 +183,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             installRuntime,
             architecture: this.installingArchitecture
         } as IDotnetInstallationContext;
-        this.context.eventStream.post(new DotnetAcquisitionStarted(installKey, this.context.acquisitionContext?.requestingExtensionId));
+        this.context.eventStream.post(new DotnetAcquisitionStarted(installKey, version, this.context.acquisitionContext?.requestingExtensionId));
         await this.context.acquisitionInvoker.installDotnet(installContext).catch((reason) => {
             throw Error(`Installation failed: ${reason}`);
         });
