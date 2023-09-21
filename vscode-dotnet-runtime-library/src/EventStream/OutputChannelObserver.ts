@@ -78,7 +78,7 @@ export class OutputChannelObserver implements IEventStreamObserver {
                     this.outputChannel.append(`${
                         (event as DotnetAcquisitionAlreadyInstalled).requestingExtensionId
                     } wants to install .NET ${
-                        (event as DotnetAcquisitionAlreadyInstalled).version
+                        (event as DotnetAcquisitionAlreadyInstalled).installKey
                     } but it already exists. No downloads or changes were made.\n`);
                 }
                 break;
@@ -88,7 +88,7 @@ export class OutputChannelObserver implements IEventStreamObserver {
                     this.outputChannel.append(`${
                         (event as DotnetAcquisitionInProgress).requestingExtensionId
                     } tried to install .NET ${
-                        (event as DotnetAcquisitionInProgress).version
+                        (event as DotnetAcquisitionInProgress).installKey
                     } but that install had already been requested. No downloads or changes were made.\n`);
                 }
                 break;

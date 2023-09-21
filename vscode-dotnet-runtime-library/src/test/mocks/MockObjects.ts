@@ -58,7 +58,7 @@ export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker {
             this.eventStream.post(new TestAcquireCalled(installContext));
             this.eventStream.post(new DotnetAcquisitionCompleted(
                 DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(installContext.version, installContext.architecture),
-                installContext.dotnetPath));
+                installContext.dotnetPath, installContext.version));
             resolve();
 
         });

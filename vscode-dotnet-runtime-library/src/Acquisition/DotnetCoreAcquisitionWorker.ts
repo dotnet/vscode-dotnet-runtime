@@ -14,6 +14,10 @@ import {
     DotnetAcquisitionStarted,
     DotnetAcquisitionStatusResolved,
     DotnetAcquisitionStatusUndefined,
+    DotnetCustomMessageEvent,
+    DotnetInstallKeyCreatedEvent,
+    DotnetLegacyInstallDetectedEvent,
+    DotnetLegacyInstallRemovalRequestEvent,
     DotnetPreinstallDetected,
     DotnetPreinstallDetectionError,
     DotnetUninstallAllCompleted,
@@ -70,7 +74,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         const existingAcquisitionPromise = this.acquisitionPromises[installKey];
         if (existingAcquisitionPromise) {
             // Requested version is being acquired
-            this.context.eventStream.post(new DotnetAcquisitionStatusResolved(installKey));
+            this.context.eventStream.post(new DotnetAcquisitionStatusResolved(installKey, version));
             return existingAcquisitionPromise.then((res) => ({ dotnetPath: res }));
         }
 
@@ -85,7 +89,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         if (installedVersions.includes(installKey) && fs.existsSync(dotnetPath)) {
             // Requested version has already been installed.
-            this.context.eventStream.post(new DotnetAcquisitionStatusResolved(installKey));
+            this.context.eventStream.post(new DotnetAcquisitionStatusResolved(installKey, version));
             return { dotnetPath };
         }
 
@@ -97,10 +101,12 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     private async acquire(version: string, installRuntime: boolean): Promise<IDotnetAcquireResult>
     {
         const installKey = this.getInstallKey(version);
+        this.context.eventStream.post(new DotnetInstallKeyCreatedEvent(`The requested version ${version} is now marked under the install key: ${installKey}.`));
+
         const existingAcquisitionPromise = this.acquisitionPromises[installKey];
         if (existingAcquisitionPromise) {
             // This version of dotnet is already being acquired. Memoize the promise.
-            this.context.eventStream.post(new DotnetAcquisitionInProgress(version,
+            this.context.eventStream.post(new DotnetAcquisitionInProgress(installKey,
                     (this.context.acquisitionContext && this.context.acquisitionContext.requestingExtensionId)
                     ? this.context.acquisitionContext!.requestingExtensionId : null));
             return existingAcquisitionPromise.then((res) => ({ dotnetPath: res }));
@@ -149,8 +155,6 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             await this.uninstallAll();
         }
 
-        await this.removeMatchingLegacyInstall(installedVersions, version);
-
         const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(installKey);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
 
@@ -184,6 +188,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             throw Error(`Installation failed: ${reason}`);
         });
         this.context.installationValidator.validateDotnetInstall(installKey, dotnetPath);
+
+        await this.removeMatchingLegacyInstall(installedVersions, version);
 
         await this.removeVersionFromExtensionState(this.installingVersionsKey, installKey);
         await this.addVersionToExtensionState(this.installedVersionsKey, installKey);
@@ -223,6 +229,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         {
             if(legacyInstall.includes(version))
             {
+                this.context.eventStream.post(new DotnetLegacyInstallRemovalRequestEvent(`Trying to remove legacy install: ${legacyInstall} of ${version}.`));
                 await this.uninstallRuntimeOrSDK(version, legacyInstall);
             }
         }
@@ -240,7 +247,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         {
             if(!install.includes('-'))
             {
-                // Check if sdk installs are counted here.
+                this.context.eventStream.post(new DotnetLegacyInstallDetectedEvent(`A legacy install was detected -- ${install}.`));
                 legacyInstalls = legacyInstalls.concat(install);
             }
         }

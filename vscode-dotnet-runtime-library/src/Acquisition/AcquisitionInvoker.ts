@@ -80,7 +80,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                         this.eventStream.post(new DotnetAcquisitionScriptError(new Error(TelemetryUtilities.HashAllPaths(stderr)), installKey));
                         reject(stderr);
                     } else {
-                        this.eventStream.post(new DotnetAcquisitionCompleted(installKey, installContext.dotnetPath));
+                        this.eventStream.post(new DotnetAcquisitionCompleted(installKey, installContext.dotnetPath, installContext.version));
                         resolve();
                     }
                 });
