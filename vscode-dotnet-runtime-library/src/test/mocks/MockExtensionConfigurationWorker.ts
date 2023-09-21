@@ -1,8 +1,7 @@
-/* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ */
-import { ExistingPathKeys, IExistingPath } from '../../IExtensionContext';
+/*---------------------------------------------------------------------------------------------
+*  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
+*--------------------------------------------------------------------------------------------*/import { ExistingPathKeys, IExistingPath } from '../../IExtensionContext';
 import { IExtensionConfigurationWorker } from '../../Utils/IExtensionConfigurationWorker';
 
 export class MockExtensionConfigurationWorker implements IExtensionConfigurationWorker {
