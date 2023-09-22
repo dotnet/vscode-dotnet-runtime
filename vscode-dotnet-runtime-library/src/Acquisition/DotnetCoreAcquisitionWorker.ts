@@ -130,7 +130,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         }
         else
         {
-            return `${version}-${architecture}`;
+            return `${version}~${architecture}`;
         }
     }
 
@@ -245,7 +245,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         let legacyInstalls : string[] = [];
         for(const install of allInstalls)
         {
-            if(!install.includes('-'))
+            // Assumption: .NET versions so far did not include ~ in them, but we do for our non-legacy keys.
+            if(!install.includes('~'))
             {
                 this.context.eventStream.post(new DotnetLegacyInstallDetectedEvent(`A legacy install was detected -- ${install}.`));
                 legacyInstalls = legacyInstalls.concat(install);

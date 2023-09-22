@@ -228,7 +228,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
 
         // 5.0 legacy runtime should be replaced, but 6.0 runtime should remain, and all SDK items should remain.
         let remainingInstalls = context.get<string[]>(installedVersionsKey, []).concat(sdkContext.get<string[]>(installedVersionsKey, []));
-        assert.deepStrictEqual(remainingInstalls, [runtimeV6, '5.0.00-x64', sdkV5, sdkV6],
+        assert.deepStrictEqual(remainingInstalls, [runtimeV6, '5.0.00~x64', sdkV5, sdkV6],
             'Only The Requested Legacy Runtime is replaced when new runtime is installed');
 
         // Install a legacy runtime again to make sure its not removed when installing a new SDK with the same version
@@ -241,7 +241,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
 
         // 6.0 sdk legacy should remain, as well as 5.0 and 6.0 runtime. 5.0 SDK should be removed.
         remainingInstalls = context.get<string[]>(installedVersionsKey, []).concat(sdkContext.get<string[]>(installedVersionsKey, []));
-        assert.deepStrictEqual(remainingInstalls, [runtimeV6, '5.0.00-x64', runtimeV5, sdkV6, '5.0.100-x64'],
+        assert.deepStrictEqual(remainingInstalls, [runtimeV6, '5.0.00~x64', runtimeV5, sdkV6, '5.0.100~x64'],
             'Only The Requested Legacy SDK is replaced when new SDK is installed');
     });
 

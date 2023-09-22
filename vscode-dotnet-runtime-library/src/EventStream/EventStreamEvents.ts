@@ -21,7 +21,7 @@ export class DotnetAcquisitionStarted extends IEvent {
 
     public getProperties() {
         return {AcquisitionInstallKey : this.installKey,
-                AcquisitionStartVersion : this.installKey,
+                AcquisitionStartVersion : this.startingVersion,
                 extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
     }
 }
