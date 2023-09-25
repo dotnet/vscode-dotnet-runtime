@@ -299,9 +299,11 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
 
     test('Get Expected Path With Apostrophe In Install path', async () => {
         if(os.platform() === 'win32'){
-            const [acquisitionWorker, eventStream, context] = getTestApostropheAcquisitionWorker(true);
-            const result = await acquisitionWorker.acquireRuntime('1.0');
-            const expectedPath = getExpectedPath('1.0', true);
+            const [acquisitionWorker, _, __] = getTestApostropheAcquisitionWorker(true);
+            const version = '1.0';
+            const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, os.arch());
+            const result = await acquisitionWorker.acquireRuntime(version);
+            const expectedPath = getExpectedPath(installKey, true);
             assert.equal(result.dotnetPath, expectedPath);
         }
     });
