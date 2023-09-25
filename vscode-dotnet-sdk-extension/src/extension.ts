@@ -39,7 +39,7 @@ import {
     WindowDisplayWorker,
 } from 'vscode-dotnet-runtime-library';
 
-import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquistionId';
+import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 
 // tslint:disable no-var-requires
 const packageJson = require('../package.json');

@@ -19,6 +19,7 @@ import {
     DotnetCoreDependencyInstaller,
     DotnetExistingPathResolutionCompleted,
     DotnetRuntimeAcquisitionStarted,
+    DotnetRuntimeAcquisitionTotalSuccessEvent,
     enableExtensionTelemetry,
     ErrorConfiguration,
     ExistingPathResolver,
@@ -37,7 +38,7 @@ import {
     VersionResolver,
     WindowDisplayWorker,
 } from 'vscode-dotnet-runtime-library';
-import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquistionId';
+import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 
 // tslint:disable no-var-requires
 const packageJson = require('../package.json');
@@ -116,6 +117,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     const versionResolver = new VersionResolver(context.globalState, eventStream, resolvedTimeoutSeconds, proxyUrl);
 
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) => {
+        let fullyResolvedVersion = '';
         const dotnetPath = await callWithErrorHandling<Promise<IDotnetAcquireResult>>(async () => {
             eventStream.post(new DotnetRuntimeAcquisitionStarted(commandContext.requestingExtensionId));
             eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
@@ -134,8 +136,17 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             }
 
             const version = await versionResolver.getFullRuntimeVersion(commandContext.version);
+            fullyResolvedVersion = version;
+
+            if(commandContext.architecture !== undefined)
+            {
+                acquisitionWorker.installingArchitecture = commandContext.architecture;
+            }
             return acquisitionWorker.acquireRuntime(version);
         }, issueContext(commandContext.errorConfiguration, 'acquire', commandContext.version), commandContext.requestingExtensionId);
+
+        const installKey = acquisitionWorker.getInstallKey(fullyResolvedVersion);
+        eventStream.post(new DotnetRuntimeAcquisitionTotalSuccessEvent(commandContext.version, installKey, commandContext.requestingExtensionId ?? '', dotnetPath?.dotnetPath ?? ''));
         return dotnetPath;
     });
 

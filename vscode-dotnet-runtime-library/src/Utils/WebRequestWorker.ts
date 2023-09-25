@@ -60,7 +60,7 @@ export class WebRequestWorker
 
             // Wrap the client with a retry interceptor. We don't need to return a new client, it should be applied automatically.
             axiosRetry(uncachedAxiosClient, {
-                // Inject a custom retry delay to expoentially increase the time until we retry.
+                // Inject a custom retry delay to exponentially increase the time until we retry.
                 retryDelay(retryCount: number) {
                     return Math.pow(2, retryCount); // Takes in the int as (ms) to delay.
                 }
@@ -81,7 +81,7 @@ export class WebRequestWorker
     /**
      *
      * @param url The URL of the website to send a get request to.
-     * @param options The AXIOS flavor options dictonary which will be forwarded to an axios call.
+     * @param options The AXIOS flavor options dictionary which will be forwarded to an axios call.
      * @returns The response from AXIOS. The response may be in ANY type, string by default, but maybe even JSON ...
      * depending on whatever the request return content can be casted to.
      * @remarks This function is used as a custom axios.get with a timeout because axios does not correctly handle CONNECTION-based timeouts:
@@ -121,7 +121,7 @@ export class WebRequestWorker
     /**
      *
      * @param urlInQuestion
-     * @returns true if the url was in the cache before this function executes, false elsewise.
+     * @returns true if the url was in the cache before this function executes, false else.
      *
      * @remarks Calling this WILL put the url data in the cache as we need to poke the cache to properly get the information.
      * (Checking the storage cache state results in invalid results.)
@@ -177,7 +177,7 @@ export class WebRequestWorker
      *
      * @param throwOnError Should we throw if the connection fails, there's a bad URL passed in, or something else goes wrong?
      * @param numRetries The number of retry attempts if the url is not giving a good response.
-     * @returns The data returned from a get request to the url. It may be of string type, but it may also be of another type if the return result is convertable (e.g. JSON.)
+     * @returns The data returned from a get request to the url. It may be of string type, but it may also be of another type if the return result is convert-able (e.g. JSON.)
      * @remarks protected for ease of testing.
      */
     protected async makeWebRequest(throwOnError: boolean, numRetries: number): Promise<string | undefined>

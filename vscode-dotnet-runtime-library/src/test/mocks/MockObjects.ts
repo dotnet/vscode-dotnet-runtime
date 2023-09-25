@@ -17,6 +17,7 @@ import { ITelemetryReporter } from '../../EventStream/TelemetryObserver';
 import { IExistingPath, IExtensionConfiguration } from '../../IExtensionContext';
 import { IExtensionState } from '../../IExtensionState';
 import { WebRequestWorker } from '../../Utils/WebRequestWorker';
+import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
 /* tslint:disable:no-any */
 
 const testDefaultTimeoutTimeMs = 60000;
@@ -55,7 +56,9 @@ export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker {
     public installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             this.eventStream.post(new TestAcquireCalled(installContext));
-            this.eventStream.post(new DotnetAcquisitionCompleted(installContext.version, installContext.dotnetPath));
+            this.eventStream.post(new DotnetAcquisitionCompleted(
+                DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(installContext.version, installContext.architecture),
+                installContext.dotnetPath, installContext.version));
             resolve();
 
         });

@@ -147,15 +147,21 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
       timeoutValue: 10,
       installDirectoryProvider,
     });
+
     const version = currentSDKVersion;
+    const earlierVersion = '3.1';
 
     // Write 'preinstalled' SDKs
     const dotnetDir = installDirectoryProvider.getInstallDir(version);
     const dotnetExePath = path.join(dotnetDir, `dotnet${os.platform() === 'win32' ? '.exe' : ''}`);
-    const sdkDir50 = path.join(dotnetDir, 'sdk', version);
-    const sdkDir31 = path.join(dotnetDir, 'sdk', '3.1');
-    fs.mkdirSync(sdkDir50, { recursive: true });
-    fs.mkdirSync(sdkDir31, { recursive: true });
+
+    const sdkCurrentInstallKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, os.arch());
+    const sdkDirCurrent = path.join(dotnetDir, 'sdk', sdkCurrentInstallKey);
+
+    const sdkEarlierInstallKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(earlierVersion, os.arch());
+    const sdkDirEarlier = path.join(dotnetDir, 'sdk', sdkEarlierInstallKey);
+    fs.mkdirSync(sdkDirCurrent, { recursive: true });
+    fs.mkdirSync(sdkDirEarlier, { recursive: true });
     fs.writeFileSync(dotnetExePath, '');
 
     // Assert preinstalled SDKs are detected
@@ -165,12 +171,12 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
       .filter(event => event instanceof DotnetPreinstallDetected)
       .map(event => event as DotnetPreinstallDetected);
     assert.equal(preinstallEvents.length, 2);
-    assert.exists(preinstallEvents.find(event => event.version === currentSDKVersion));
-    assert.exists(preinstallEvents.find(event => event.version === '3.1'));
+    assert.exists(preinstallEvents.find(event => event.installKey === sdkCurrentInstallKey));
+    assert.exists(preinstallEvents.find(event => event.installKey === sdkEarlierInstallKey));
     const alreadyInstalledEvent = eventStream.events
       .find(event => event instanceof DotnetAcquisitionAlreadyInstalled) as DotnetAcquisitionAlreadyInstalled;
     assert.exists(alreadyInstalledEvent);
-    assert.equal(alreadyInstalledEvent.version, currentSDKVersion);
+    assert.equal(alreadyInstalledEvent.installKey, sdkCurrentInstallKey);
 
     // Clean up storage
     rimraf.sync(dotnetDir);
@@ -190,8 +196,9 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
       timeoutValue: 10,
       installDirectoryProvider,
     });
-    const version = currentSDKVersion;
 
+    const version = currentSDKVersion;
+    const currentVersionInstallKey =  DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, os.arch());
     // Ensure nothing is returned when there is no preinstalled SDK
     const noPreinstallResult = await acquisitionWorker.acquireStatus(version, false);
     assert.isUndefined(noPreinstallResult);
@@ -199,7 +206,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     // Write 'preinstalled' SDK
     const dotnetDir = installDirectoryProvider.getInstallDir(version);
     const dotnetExePath = path.join(dotnetDir, `dotnet${os.platform() === 'win32' ? '.exe' : ''}`);
-    const sdkDir50 = path.join(dotnetDir, 'sdk', version);
+
+    const sdkDir50 = path.join(dotnetDir, 'sdk', currentVersionInstallKey);
     fs.mkdirSync(sdkDir50, { recursive: true });
     fs.writeFileSync(dotnetExePath, '');
 
