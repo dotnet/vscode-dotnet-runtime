@@ -28,7 +28,7 @@ import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 
 export class AcquisitionInvoker extends IAcquisitionInvoker {
-    private readonly scriptWorker: IInstallScriptAcquisitionWorker;
+    protected readonly scriptWorker: IInstallScriptAcquisitionWorker;
 
     private noPowershellError = `powershell.exe is not discoverable on your system. Is PowerShell added to your PATH and correctly installed? Please visit: https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows.
 You will need to restart VS Code after these changes. If PowerShell is still not discoverable, try setting a custom existingDotnetPath following our instructions here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`
@@ -45,7 +45,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
 
         return new Promise<void>((resolve, reject) => {
             try {
-                let windowsFullCommand = `powershell.exe -NoProfile -NonInteractive -NoLogo -ExecutionPolicy unrestricted -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; & ${installCommand} }`;
+                let windowsFullCommand = `powershell.exe -NoProfile -NonInteractive -NoLogo -ExecutionPolicy unrestricted -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; & ${installCommand} }"`;
                 if(winOS)
                 {
                     const powershellReference =  this.verifyPowershellCanRun(installContext);
@@ -156,7 +156,6 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         if (os.platform() === 'win32') {
             // Need to escape apostrophes with two apostrophes
             const dotnetInstallDirEscaped = path.replace(/'/g, `''`);
-
             // Surround with single quotes instead of double quotes (see https://github.com/dotnet/cli/issues/11521)
             return `'${dotnetInstallDirEscaped}'`;
         } else {

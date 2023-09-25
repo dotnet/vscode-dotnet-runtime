@@ -23,6 +23,7 @@ import {
 import { EventType } from '../../EventStream/EventType';
 import {
     ErrorAcquisitionInvoker,
+    MockAcquisitionInvoker,
     MockEventStream,
     MockExtensionContext,
     MockInstallationValidator,
@@ -51,6 +52,21 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
             timeoutValue: 10,
             installDirectoryProvider: runtimeInstall ? new RuntimeInstallationDirectoryProvider('') : new SdkInstallationDirectoryProvider(''),
             installingArchitecture: arch
+        });
+        return [acquisitionWorker, eventStream, context];
+    }
+
+    function getTestApostropheAcquisitionWorker(runtimeInstall: boolean): [DotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext] {
+        const context = new MockExtensionContext();
+        const eventStream = new MockEventStream();
+        const acquisitionWorker = new DotnetCoreAcquisitionWorker({
+            storagePath: '',
+            extensionState: context,
+            eventStream,
+            acquisitionInvoker: new MockAcquisitionInvoker(context, eventStream, 10),
+            installationValidator: new MockInstallationValidator(eventStream),
+            timeoutValue: 10,
+            installDirectoryProvider: runtimeInstall ? new RuntimeInstallationDirectoryProvider('') : new SdkInstallationDirectoryProvider(''),
         });
         return [acquisitionWorker, eventStream, context];
     }
@@ -279,5 +295,16 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         // We should only actually Acquire once
         const events = eventStream.events.filter(event => event instanceof DotnetAcquisitionStarted);
         assert.equal(events.length, 1);
+    });
+
+    test('Get Expected Path With Apostrophe In Install path', async () => {
+        if(os.platform() === 'win32'){
+            const [acquisitionWorker, _, __] = getTestApostropheAcquisitionWorker(true);
+            const version = '1.0';
+            const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, os.arch());
+            const result = await acquisitionWorker.acquireRuntime(version);
+            const expectedPath = getExpectedPath(installKey, true);
+            assert.equal(result.dotnetPath, expectedPath);
+        }
     });
 });
