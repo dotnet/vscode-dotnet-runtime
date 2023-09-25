@@ -1,7 +1,8 @@
 /*---------------------------------------------------------------------------------------------
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
-*--------------------------------------------------------------------------------------------*/import * as vscode from 'vscode';
+*--------------------------------------------------------------------------------------------*/
+import * as vscode from 'vscode';
 /* tslint:disable:no-any */
 
 export class MockEnvironmentVariableCollection implements vscode.EnvironmentVariableCollection {

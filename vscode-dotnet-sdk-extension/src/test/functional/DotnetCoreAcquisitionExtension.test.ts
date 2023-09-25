@@ -1,7 +1,8 @@
 /*---------------------------------------------------------------------------------------------
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
-*--------------------------------------------------------------------------------------------*//* tslint:disable:no-any */
+*--------------------------------------------------------------------------------------------*/
+/* tslint:disable:no-any */
 /* tslint:disable:only-arrow-functions */
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
