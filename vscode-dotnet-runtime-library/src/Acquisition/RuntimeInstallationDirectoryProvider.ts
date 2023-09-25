@@ -7,8 +7,8 @@ import * as path from 'path';
 import { IInstallationDirectoryProvider } from './IInstallationDirectoryProvider';
 
 export class RuntimeInstallationDirectoryProvider extends IInstallationDirectoryProvider {
-    public getInstallDir(version: string): string {
-        const dotnetInstallDir = path.join(this.getStoragePath(), version);
+    public getInstallDir(installKey: string): string {
+        const dotnetInstallDir = path.join(this.getStoragePath(), installKey);
         return dotnetInstallDir;
     }
 }

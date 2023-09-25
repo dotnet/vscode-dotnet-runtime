@@ -54,7 +54,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
         }
         catch (error)
         {
-            Debugging.log('An error occured processing the install script.');
+            Debugging.log('An error occurred processing the install script.');
             this.eventStream.post(new DotnetInstallScriptAcquisitionError(error as Error));
 
             // Try to use fallback install script
@@ -92,15 +92,15 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
             fs.writeFileSync(filePath, '');
         }
 
-        this.eventStream.post(new DotnetLockAttemptingAcquireEvent(`Lock Acqusition request to begin.`, new Date().toISOString(), directoryLockPath, filePath));
+        this.eventStream.post(new DotnetLockAttemptingAcquireEvent(`Lock Acquisition request to begin.`, new Date().toISOString(), directoryLockPath, filePath));
         await lockfile.lock(filePath, { lockfilePath: directoryLockPath, retries: { retries: 10, maxTimeout: 1000 } } )
         .then(async (release) =>
         {
             this.eventStream.post(new DotnetLockAcquiredEvent(`Lock Acquired.`, new Date().toISOString(), directoryLockPath, filePath));
 
             // We would like to unlock the directory, but we can't grab a lock on the file if the directory is locked.
-            // Theoretically you could: add a new filewriter lock as a 3rd party lock ...
-            // Then, lock the filewriter, unlock the directory, then lock the file, then unlock filewriter, ...
+            // Theoretically you could: add a new file-writer lock as a 3rd party lock ...
+            // Then, lock the file-writer, unlock the directory, then lock the file, then unlock file-writer, ...
             // operate, then unlock file once the operation is done.
             // For now, keep the entire directory locked.
 
