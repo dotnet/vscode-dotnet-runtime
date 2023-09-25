@@ -196,7 +196,7 @@ export class MockAcquisitionInvoker extends AcquisitionInvoker{
     constructor(extensionState: IExtensionState, eventStream: IEventStream, timeoutTime : number) {
         super(extensionState, eventStream, timeoutTime);
         this.scriptWorker = new MockApostropheScriptAcquisitionWorker(extensionState, eventStream);
-    }   
+    }
 }
 
 export class FailingInstallScriptWorker extends InstallScriptAcquisitionWorker {
