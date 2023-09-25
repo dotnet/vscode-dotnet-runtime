@@ -13,7 +13,8 @@ import {
     DotnetAcquisitionScriptOutput,
     DotnetAcquisitionTimeoutError,
     DotnetAcquisitionUnexpectedError,
-    DotnetAlternativeCommandFoundEvent as DotnetAlternativeCommandFoundEvent,
+    DotnetAlternativeCommandFoundEvent,
+    DotnetCommandFallbackArchitectureEvent,
     DotnetCommandNotFoundEvent,
     DotnetOfflineFailure,
 } from '../EventStream/EventStreamEvents';
@@ -24,6 +25,7 @@ import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
 import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker';
 import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
+import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 
 export class AcquisitionInvoker extends IAcquisitionInvoker {
     private readonly scriptWorker: IInstallScriptAcquisitionWorker;
@@ -38,7 +40,9 @@ You will need to restart VS Code after these changes. If PowerShell is still not
 
     public async installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
         const winOS = os.platform() === 'win32';
-        const installCommand = await this.getInstallCommand(installContext.version, installContext.installDir, installContext.installRuntime);
+        const installCommand = await this.getInstallCommand(installContext.version, installContext.installDir, installContext.installRuntime, installContext.architecture);
+        const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(installContext.version, installContext.architecture);
+
         return new Promise<void>((resolve, reject) => {
             try {
                 let windowsFullCommand = `powershell.exe -NoProfile -NonInteractive -NoLogo -ExecutionPolicy unrestricted -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; & ${installCommand} }`;
@@ -53,41 +57,42 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                         async (error, stdout, stderr) => {
                     if (error) {
                         if (stdout) {
-                            this.eventStream.post(new DotnetAcquisitionScriptOutput(installContext.version, TelemetryUtilities.HashAllPaths(stdout)));
+                            this.eventStream.post(new DotnetAcquisitionScriptOutput(installKey, TelemetryUtilities.HashAllPaths(stdout)));
                         }
                         if (stderr) {
-                            this.eventStream.post(new DotnetAcquisitionScriptOutput(installContext.version, `STDERR: ${TelemetryUtilities.HashAllPaths(stderr)}`));
+                            this.eventStream.post(new DotnetAcquisitionScriptOutput(installKey, `STDERR: ${TelemetryUtilities.HashAllPaths(stderr)}`));
                         }
 
                         const online = await isOnline();
                         if (!online) {
                             const offlineError = new Error('No internet connection: Cannot install .NET');
-                            this.eventStream.post(new DotnetOfflineFailure(offlineError, installContext.version));
+                            this.eventStream.post(new DotnetOfflineFailure(offlineError, installKey));
                             reject(offlineError);
                         } else if (error.signal === 'SIGKILL') {
                             error.message = timeoutConstants.timeoutMessage;
-                            this.eventStream.post(new DotnetAcquisitionTimeoutError(error, installContext.version, installContext.timeoutValue));
+                            this.eventStream.post(new DotnetAcquisitionTimeoutError(error, installKey, installContext.timeoutValue));
                             reject(error);
                         } else {
-                            this.eventStream.post(new DotnetAcquisitionInstallError(error, installContext.version));
+                            this.eventStream.post(new DotnetAcquisitionInstallError(error, installKey));
                             reject(error);
                         }
                     } else if (stderr && stderr.length > 0) {
-                        this.eventStream.post(new DotnetAcquisitionScriptError(new Error(TelemetryUtilities.HashAllPaths(stderr)), installContext.version));
+                        this.eventStream.post(new DotnetAcquisitionScriptError(new Error(TelemetryUtilities.HashAllPaths(stderr)), installKey));
                         reject(stderr);
                     } else {
-                        this.eventStream.post(new DotnetAcquisitionCompleted(installContext.version, installContext.dotnetPath));
+                        this.eventStream.post(new DotnetAcquisitionCompleted(installKey, installContext.dotnetPath, installContext.version));
                         resolve();
                     }
                 });
             } catch (error) {
-                this.eventStream.post(new DotnetAcquisitionUnexpectedError(error as Error, installContext.version));
+                this.eventStream.post(new DotnetAcquisitionUnexpectedError(error as Error, installKey));
                 reject(error);
             }
         });
     }
 
-    private async getInstallCommand(version: string, dotnetInstallDir: string, installRuntime: boolean): Promise<string> {
+    private async getInstallCommand(version: string, dotnetInstallDir: string, installRuntime: boolean, architecture: string): Promise<string> {
+        const arch = this.nodeArchToDotnetArch(architecture);
         let args = [
             '-InstallDir', this.escapeFilePath(dotnetInstallDir),
             '-Version', version,
@@ -96,9 +101,55 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         if (installRuntime) {
             args = args.concat('-Runtime', 'dotnet');
         }
+        if(arch !== 'auto')
+        {
+            args = args.concat('-Architecture', arch);
+        }
 
         const scriptPath = await this.scriptWorker.getDotnetInstallScriptPath();
         return `${ this.escapeFilePath(scriptPath) } ${ args.join(' ') }`;
+    }
+
+    /**
+     *
+     * @param nodeArchitecture the architecture in node style string of what to install
+     * @returns the architecture in the style that .net / the .net install scripts expect
+     *
+     * Node - amd64 is documented as an option for install scripts but its no longer used.
+     * s390x is also no longer used.
+     * ppc64le is supported but this version of node has no distinction of the endianness of the process.
+     * It has no mapping to mips or other node architectures.
+     *
+     * @remarks Falls back to string 'auto' if a mapping does not exist which is not a valid architecture.
+     */
+    private nodeArchToDotnetArch(nodeArchitecture : string)
+    {
+        switch(nodeArchitecture)
+        {
+            case 'x64': {
+                return nodeArchitecture;
+            }
+            case 'ia32': {
+                return 'x86';
+            }
+            case 'x86': {
+                // In case the function is called twice
+                return 'x86';
+            }
+            case 'arm': {
+                return nodeArchitecture;
+            }
+            case 'arm64': {
+                return nodeArchitecture;
+            }
+            case 's390x': {
+                return 's390x';
+            }
+            default: {
+                this.eventStream.post(new DotnetCommandFallbackArchitectureEvent(`The architecture ${os.arch()} of the platform is unexpected, falling back to auto-arch.`));
+                return 'auto';
+            }
+        }
     }
 
     private escapeFilePath(path: string): string {
@@ -186,7 +237,8 @@ If you cannot safely and confidently change the execution policy, try setting a 
 
         if(error != null)
         {
-            this.eventStream.post(new DotnetAcquisitionScriptError(error as Error, installContext.version));
+            const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(installContext.version, installContext.architecture);
+            this.eventStream.post(new DotnetAcquisitionScriptError(error as Error, installKey));
             throw error;
         }
 

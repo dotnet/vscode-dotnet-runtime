@@ -18,4 +18,5 @@ export interface IAcquisitionWorkerContext {
     timeoutValue: number;
     installDirectoryProvider: IInstallationDirectoryProvider;
     acquisitionContext? : IDotnetAcquireContext | null;
+    installingArchitecture? : string | undefined | null;
 }
