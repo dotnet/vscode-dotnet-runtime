@@ -315,7 +315,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         if (fs.existsSync(folderPath)) {
           fs.readdirSync(folderPath).forEach((file) => {
             const filePath = path.join(folderPath, file);
-
+ 
             if (fs.lstatSync(filePath).isDirectory()) {
               // If the item is a directory, recursively call deleteFolderRecursive
               deleteFolderRecursive(filePath);
