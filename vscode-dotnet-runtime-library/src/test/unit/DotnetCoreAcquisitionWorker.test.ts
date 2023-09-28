@@ -315,7 +315,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         if (fs.existsSync(folderPath)) {
           fs.readdirSync(folderPath).forEach((file) => {
             const filePath = path.join(folderPath, file);
-      
+
             if (fs.lstatSync(filePath).isDirectory()) {
               // If the item is a directory, recursively call deleteFolderRecursive
               deleteFolderRecursive(filePath);
@@ -324,7 +324,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
               fs.unlinkSync(filePath);
             }
           });
-      
+
           // After deleting all the files and subfolders, delete the folder itself
           fs.rmdirSync(folderPath);
         }
