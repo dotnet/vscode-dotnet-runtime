@@ -54,6 +54,9 @@ export class RedHatDistroSDKProvider extends GenericDistroSDKProvider {
     public async getInstalledGlobalDotnetPathIfExists() : Promise<string | null>
     {
         const commandResult = await this.commandRunner.execute(this.myDistroCommands()[this.currentInstallPathCommandKey]);
+        if(commandResult[0].includes("no dotnet")){
+            return "";
+        }
         return commandResult[0];
     }
 
@@ -75,7 +78,7 @@ export class RedHatDistroSDKProvider extends GenericDistroSDKProvider {
 
     public getExpectedDotnetMicrosoftFeedInstallationDirectory(): Promise<string>
     {
-        return this.myDistroCommands()[this.expectedMicrosoftFeedInstallDirKey];
+        return Promise.resolve("");
     }
 
     public async upgradeDotnet(versionToUpgrade : string): Promise<string>
