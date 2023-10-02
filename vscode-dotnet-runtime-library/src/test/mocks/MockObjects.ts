@@ -197,7 +197,7 @@ export class MockApostropheScriptAcquisitionWorker extends MockInstallScriptWork
 export class MockAcquisitionInvoker extends AcquisitionInvoker{
     protected readonly scriptWorker: MockApostropheScriptAcquisitionWorker
     constructor(extensionState: IExtensionState, eventStream: IEventStream, timeoutTime : number ,installFolder : string) {
-        super(extensionState, eventStream, timeoutTime, installFolder);
+        super(extensionState, eventStream, timeoutTime);
         this.scriptWorker = new MockApostropheScriptAcquisitionWorker(extensionState, eventStream, installFolder);
     }
 }
