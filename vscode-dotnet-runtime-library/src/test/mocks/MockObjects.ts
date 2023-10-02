@@ -186,19 +186,19 @@ export class MockInstallScriptWorker extends InstallScriptAcquisitionWorker {
 export class MockApostropheScriptAcquisitionWorker extends MockInstallScriptWorker {
     protected readonly scriptFilePath: string;
 
-    constructor(extensionState: IExtensionState, eventStream: IEventStream) {
+    constructor(extensionState: IExtensionState, eventStream: IEventStream, installFolder: string) {
         super(extensionState, eventStream, false);
         const scriptFileEnding = 'win32';
         const scriptFileName = 'dotnet-install';
-        this.scriptFilePath = path.join(`test' for' apostrophe`, 'install scripts', `${scriptFileName}.${scriptFileEnding}`);
+        this.scriptFilePath = path.join(installFolder, 'install scripts', `${scriptFileName}.${scriptFileEnding}`);
     }
 }
 
 export class MockAcquisitionInvoker extends AcquisitionInvoker{
     protected readonly scriptWorker: MockApostropheScriptAcquisitionWorker
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, timeoutTime : number) {
+    constructor(extensionState: IExtensionState, eventStream: IEventStream, timeoutTime : number ,installFolder : string) {
         super(extensionState, eventStream, timeoutTime);
-        this.scriptWorker = new MockApostropheScriptAcquisitionWorker(extensionState, eventStream);
+        this.scriptWorker = new MockApostropheScriptAcquisitionWorker(extensionState, eventStream, installFolder);
     }
 }
 

@@ -34,6 +34,7 @@ export class AcquisitionInvoker extends IAcquisitionInvoker {
 You will need to restart VS Code after these changes. If PowerShell is still not discoverable, try setting a custom existingDotnetPath following our instructions here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`
 
     constructor(extensionState: IExtensionState, eventStream: IEventStream, timeoutTime : number) {
+
         super(eventStream);
         this.scriptWorker = new InstallScriptAcquisitionWorker(extensionState, eventStream, timeoutTime);
     }

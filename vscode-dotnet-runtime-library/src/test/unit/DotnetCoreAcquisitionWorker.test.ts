@@ -6,6 +6,7 @@ import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as os from 'os';
 import * as path from 'path';
+import * as fs from 'fs';
 import { AcquisitionInvoker } from '../../Acquisition/AcquisitionInvoker';
 import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
 import { RuntimeInstallationDirectoryProvider } from '../../Acquisition/RuntimeInstallationDirectoryProvider';
@@ -56,14 +57,14 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         return [acquisitionWorker, eventStream, context];
     }
 
-    function getTestApostropheAcquisitionWorker(runtimeInstall: boolean): [DotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext] {
+    function getTestApostropheAcquisitionWorker(runtimeInstall: boolean, installApostropheFolder : string): [DotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext] {
         const context = new MockExtensionContext();
         const eventStream = new MockEventStream();
         const acquisitionWorker = new DotnetCoreAcquisitionWorker({
             storagePath: '',
             extensionState: context,
             eventStream,
-            acquisitionInvoker: new MockAcquisitionInvoker(context, eventStream, 10),
+            acquisitionInvoker: new MockAcquisitionInvoker(context, eventStream, 10, installApostropheFolder),
             installationValidator: new MockInstallationValidator(eventStream),
             timeoutValue: 10,
             installDirectoryProvider: runtimeInstall ? new RuntimeInstallationDirectoryProvider('') : new SdkInstallationDirectoryProvider(''),
@@ -299,12 +300,33 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
 
     test('Get Expected Path With Apostrophe In Install path', async () => {
         if(os.platform() === 'win32'){
-            const [acquisitionWorker, _, __] = getTestApostropheAcquisitionWorker(true);
+            const installApostropheFolder = `test' for' apostrophe`;
+            const [acquisitionWorker, _, context] = getTestApostropheAcquisitionWorker(true, installApostropheFolder);
             const version = '1.0';
             const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, os.arch());
             const result = await acquisitionWorker.acquireRuntime(version);
             const expectedPath = getExpectedPath(installKey, true);
             assert.equal(result.dotnetPath, expectedPath);
+            deleteFolderRecursive(path.join(process.cwd(), installApostropheFolder));
         }
     });
+
+    function deleteFolderRecursive(folderPath: string) {
+        if (fs.existsSync(folderPath)) {
+          fs.readdirSync(folderPath).forEach((file) => {
+            const filePath = path.join(folderPath, file);
+
+            if (fs.lstatSync(filePath).isDirectory()) {
+              // If the item is a directory, recursively call deleteFolderRecursive
+              deleteFolderRecursive(filePath);
+            } else {
+              // If the item is a file, delete it
+              fs.unlinkSync(filePath);
+            }
+          });
+
+          // After deleting all the files and subfolders, delete the folder itself
+          fs.rmdirSync(folderPath);
+        }
+      }
 });
