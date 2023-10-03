@@ -74,7 +74,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         const validInstallerStatusCodes = ['0', '1641', '3010']; // Ok, Pending Reboot, + Reboot Starting Now
         if(validInstallerStatusCodes.includes(installerResult))
         {
-            return '0'; // These statuses are a success, we dont want to throw.
+            return '0'; // These statuses are a success, we don't want to throw.
         }
         else
         {
@@ -109,7 +109,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
                 fs.mkdirSync(installerDir);
             }
 
-            // The file has already been downloaded before. Note that a user couldve added a file here. This is part of why we should sign check the file before launch.
+            // The file has already been downloaded before. Note that a user could've added a file here. This is part of why we should sign check the file before launch.
             if(fs.existsSync(dest))
             {
                 resolve();
@@ -166,13 +166,13 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         {
             // The program files should always be set, but in the off chance they are wiped, we can try to use the default as backup.
             // Both ia32 and x64 machines will use 'Program Files'
-            // We don't anticipate a user would need to install the x86 SDK, and we dont have any routes that support that yet.
+            // We don't anticipate a user would need to install the x86 SDK, and we don't have any routes that support that yet.
             return path.resolve(path.join(process.env.programfiles!, 'dotnet', 'sdk') ?? `C:\\Program Files\\dotnet\\sdk\\`);
         }
         else if(os.platform() === 'darwin')
         {
             // On an arm machine we would install to /usr/local/share/dotnet/x64/dotnet/sdk` for a 64 bit sdk
-            // but we dont currently allow customizing the install architecture so that would never happen.
+            // but we don't currently allow customizing the install architecture so that would never happen.
             return path.resolve(`/usr/local/share/dotnet/sdk`);
         }
 

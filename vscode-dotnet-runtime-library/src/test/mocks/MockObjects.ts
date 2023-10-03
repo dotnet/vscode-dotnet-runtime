@@ -112,6 +112,32 @@ export class FailingWebRequestWorker extends WebRequestWorker {
     }
 }
 
+export class MockTrackingWebRequestWorker extends WebRequestWorker {
+    private requestCount = 0;
+    public response = 'Mock Web Request Result';
+
+    constructor(extensionState: IExtensionState, eventStream: IEventStream, url: string,
+            protected readonly succeed = true, webTimeToLive = testDefaultTimeoutTimeMs, cacheTimeToLive = testDefaultTimeoutTimeMs)
+    {
+        super(extensionState, eventStream, url, webTimeToLive, '', cacheTimeToLive);
+    }
+
+    public getRequestCount() {
+        return this.requestCount;
+    }
+
+    public incrementRequestCount() {
+        this.requestCount++;
+    }
+    protected async makeWebRequest(shouldThrow = false, retries = 2): Promise<string | undefined> {
+        if ( !(await this.isUrlCached()) )
+        {
+            this.incrementRequestCount();
+        }
+        return super.makeWebRequest(shouldThrow, retries);
+    }
+}
+
 export class MockWebRequestWorker extends MockTrackingWebRequestWorker {
     public readonly errorMessage = 'Web Request Failed';
     public response = 'Mock Web Request Result';
@@ -137,33 +163,6 @@ export class MockWebRequestWorker extends MockTrackingWebRequestWorker {
     }
 }
 
-export class MockTrackingWebRequestWorker extends WebRequestWorker {
-    private requestCount = 0;
-    public response = 'Mock Web Request Result';
-
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, url: string,
-            protected readonly succeed = true, webTimeToLive = testDefaultTimeoutTimeMs, cacheTimetoLive = testDefaultTimeoutTimeMs)
-    {
-        super(extensionState, eventStream, url, webTimeToLive, '', cacheTimetoLive);
-    }
-
-    public getRequestCount() {
-        return this.requestCount;
-    }
-
-    public incrementRequestCount() {
-        this.requestCount++;
-    }
-    protected async makeWebRequest(shouldThrow = false, retries = 2): Promise<string | undefined> {
-        if ( !(await this.isUrlCached()) )
-        {
-            this.incrementRequestCount();
-        }
-        return super.makeWebRequest(shouldThrow, retries);
-    }
-}
-
-
 export class MockIndexWebRequestWorker extends WebRequestWorker {
     public knownUrls = ['Mock Web Request Result'];
     public matchingUrlResponses = [
@@ -171,9 +170,9 @@ export class MockIndexWebRequestWorker extends WebRequestWorker {
     ];
 
     constructor(extensionState: IExtensionState, eventStream: IEventStream, url: string,
-        protected readonly succeed = true, webTimeToLive = testDefaultTimeoutTimeMs, cacheTimetoLive = testDefaultTimeoutTimeMs)
+        protected readonly succeed = true, webTimeToLive = testDefaultTimeoutTimeMs, cacheTimeToLive = testDefaultTimeoutTimeMs)
     {
-            super(extensionState, eventStream, url, webTimeToLive, '', cacheTimetoLive);
+            super(extensionState, eventStream, url, webTimeToLive, '', cacheTimeToLive);
     }
 
     public async getCachedData(retriesCount = 2): Promise<string | undefined>
@@ -183,7 +182,7 @@ export class MockIndexWebRequestWorker extends WebRequestWorker {
         {
             throw Error(`The requested URL ${this.url} was not expected as the mock object did not have a set response for it.`)
         }
-        return this.matchingUrlResponses[urlResponseIndex];
+        return JSON.parse(this.matchingUrlResponses[urlResponseIndex]);
     }
 
 }
@@ -375,7 +374,7 @@ export class FailingInstallScriptWorker extends InstallScriptAcquisitionWorker {
         this.webWorker = new MockWebRequestWorker(extensionState, eventStream, '');
     }
 
-    public getDotnetInstallScriptPath(scriptContent: string, filePath: string) : Promise<string> {
+    public getDotnetInstallScriptPath() : Promise<string> {
         throw new Error('Failed to write file');
     }
 }

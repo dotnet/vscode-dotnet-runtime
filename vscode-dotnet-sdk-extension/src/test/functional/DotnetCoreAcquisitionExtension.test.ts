@@ -259,21 +259,22 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     const newestBandedVersion = '6.0.311';
     const newestVersion = '6.0.408';
 
-    const webWorker = new MockIndexWebRequestWorker(mockExtensionContext, eventStream);
-    webWorker.knownUrls.push('https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/6.0/releases.json');
+    const url = 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/6.0/releases.json'
+    const webWorker = new MockIndexWebRequestWorker(mockExtensionContext, eventStream, url);
+    webWorker.knownUrls.push(url);
     // Note that ZIPS in the data below come before EXEs to make sure the file extension check works.
     const mockJsonFile = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-releases.json');
     webWorker.matchingUrlResponses.push(fs.readFileSync(mockJsonFile, 'utf8'));
 
-    let resolver : GlobalInstallerResolver = new GlobalInstallerResolver(mockExtensionContext, eventStream, majorOnlyVersion);
+    let resolver : GlobalInstallerResolver = new GlobalInstallerResolver(mockExtensionContext, eventStream, majorOnlyVersion, standardTimeoutTime, undefined);
     resolver.customWebRequestWorker = webWorker;
     assert.strictEqual(await resolver.getFullySpecifiedVersion(), newestVersion);
 
-    resolver = new GlobalInstallerResolver(mockExtensionContext, eventStream, majorMinorVersion);
+    resolver = new GlobalInstallerResolver(mockExtensionContext, eventStream, majorMinorVersion, standardTimeoutTime, undefined);
     resolver.customWebRequestWorker = webWorker;
     assert.strictEqual(await resolver.getFullySpecifiedVersion(), newestVersion);
 
-    resolver = new GlobalInstallerResolver(mockExtensionContext, eventStream, featureBandOnlyVersion);
+    resolver = new GlobalInstallerResolver(mockExtensionContext, eventStream, featureBandOnlyVersion, standardTimeoutTime, undefined);
     resolver.customWebRequestWorker = webWorker;
     assert.strictEqual(await resolver.getFullySpecifiedVersion(), newestBandedVersion);
 
@@ -292,7 +293,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
       }
     }
 
-    resolver = new GlobalInstallerResolver(mockExtensionContext, eventStream, fullVersion);
+    resolver = new GlobalInstallerResolver(mockExtensionContext, eventStream, fullVersion, standardTimeoutTime, undefined);
     resolver.customWebRequestWorker = webWorker;
     assert.strictEqual(await resolver.getFullySpecifiedVersion(), fullVersion);
   }).timeout(standardTimeoutTime);
@@ -343,9 +344,9 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     }
     else
     {
-      // We could run the installer without privellege but it would require human interaction to use the UAC
-      // And we wouldn't be able to kill the process so the test would leave a lot of hanging procs on the machine
-      warn('The Global SDK E2E Install test cannot run as the machine is unprivelleged.');
+      // We could run the installer without privilege but it would require human interaction to use the UAC
+      // And we wouldn't be able to kill the process so the test would leave a lot of hanging processes on the machine
+      warn('The Global SDK E2E Install test cannot run as the machine is unprivileged.');
     }
   }).timeout(standardTimeoutTime*1000);
 

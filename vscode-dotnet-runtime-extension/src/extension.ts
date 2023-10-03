@@ -112,6 +112,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         installationValidator: new InstallationValidator(eventStream),
         timeoutValue: resolvedTimeoutSeconds,
         installDirectoryProvider: new RuntimeInstallationDirectoryProvider(context.globalStoragePath),
+        proxyUrl: proxyUrl
     });
     const existingPathResolver = new ExistingPathResolver();
     const versionResolver = new VersionResolver(context.globalState, eventStream, resolvedTimeoutSeconds, proxyUrl);

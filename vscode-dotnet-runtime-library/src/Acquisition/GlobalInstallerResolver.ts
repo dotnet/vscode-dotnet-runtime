@@ -37,7 +37,9 @@ export class GlobalInstallerResolver {
     // The properly resolved version that was requested in the fully-specified 3-part semver version of the .NET SDK.
     private fullySpecifiedVersionRequested : string;
 
-    private timeout : number;
+    private timeoutSecs : number;
+
+    private proxyUrl : string | undefined;
 
     private versionResolver : VersionResolver;
 
@@ -67,14 +69,16 @@ export class GlobalInstallerResolver {
         private readonly extensionState: IExtensionState,
         private readonly eventStream: IEventStream,
         requestedVersion : string,
-        timeoutTime : number
+        timeoutTime : number,
+        proxyUrl : string | undefined
     )
     {
         this.requestedVersion = requestedVersion;
         this.discoveredInstallerUrl = '';
         this.fullySpecifiedVersionRequested = '';
-        this.versionResolver = new VersionResolver(extensionState, eventStream, timeoutTime);
-        this.timeout = timeoutTime;
+        this.versionResolver = new VersionResolver(extensionState, eventStream, timeoutTime, proxyUrl);
+        this.timeoutSecs = timeoutTime;
+        this.proxyUrl = proxyUrl;
     }
 
 
@@ -120,7 +124,7 @@ export class GlobalInstallerResolver {
             const numberOfPeriods = version.split('.').length - 1;
             const indexUrl = this.getIndexUrl(numberOfPeriods === 0 ? `${version}.0` : version);
             const indexJsonData = await this.fetchJsonObjectFromUrl(indexUrl);
-            const fullySpecifiedVersionRequested = indexJsonData[this.releasesLatestSdkKey];
+            const fullySpecifiedVersionRequested = indexJsonData![<any>this.releasesLatestSdkKey];
             return [await this.findCorrectInstallerUrl(fullySpecifiedVersionRequested, indexUrl), fullySpecifiedVersionRequested];
         }
         else if(this.versionResolver.isNonSpecificFeatureBandedVersion(version))
@@ -150,7 +154,7 @@ export class GlobalInstallerResolver {
      *
      * @remarks this function handles finding the right os, arch url for the installer.
      * @param specificVersion the full, specific version, e.g. 7.0.301 to get.
-     * @param indexUrl The url of the index server that hosts installer downlod links.
+     * @param indexUrl The url of the index server that hosts installer download links.
      * @returns The installer url to download.
      */
     private async findCorrectInstallerUrl(specificVersion : string, indexUrl : string) : Promise<string>
@@ -220,7 +224,7 @@ export class GlobalInstallerResolver {
         const desiredRidPackage = `${convertedOs}-${convertedArch}`;
 
         const indexJson : any = await this.fetchJsonObjectFromUrl(indexUrl);
-        const releases = indexJson[this.releasesJsonKey];
+        const releases = indexJson![this.releasesJsonKey];
         if(releases.length === 0)
         {
             const jsonErr = new DotnetInvalidReleasesJSONError(new Error(`${this.releasesJsonErrorString}${indexUrl}`));
@@ -374,7 +378,7 @@ export class GlobalInstallerResolver {
      */
     private async fetchJsonObjectFromUrl(url : string)
     {
-        const webWorker = this.customWebRequestWorker ? this.customWebRequestWorker : new WebRequestWorker(this.extensionState, this.eventStream, url, this.timeout);
+        const webWorker = this.customWebRequestWorker ? this.customWebRequestWorker : new WebRequestWorker(this.extensionState, this.eventStream, url, this.timeoutSecs, this.proxyUrl);
         return webWorker.getCachedData();
     }
 }

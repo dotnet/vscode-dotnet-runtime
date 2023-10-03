@@ -27,7 +27,7 @@ import { FileUtilities } from '../Utils/FileUtilities';
 export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisitionWorker {
     protected webWorker: WebRequestWorker;
     private readonly scriptAcquisitionUrl: string = 'https://dot.net/v1/dotnet-install.';
-    private readonly scriptFilePath: string;
+    protected readonly scriptFilePath: string;
     private readonly fileUtilities: FileUtilities;
 
 

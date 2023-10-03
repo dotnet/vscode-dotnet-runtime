@@ -24,14 +24,14 @@ const timeoutTime = 10000;
 suite('Global Installer Resolver Tests', () =>
 {
     test('It finds the newest patch version given a feature band', async () => {
-        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, featureBandVersion, timeoutTime);
+        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, featureBandVersion, timeoutTime, undefined);
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullySpecifiedVersion(), newestFeatureBandedVersion);
     });
 
     test('It finds the correct installer download url for the os', async () => {
-        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, mockVersion, timeoutTime);
+        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, mockVersion, timeoutTime, undefined);
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullySpecifiedVersion(), mockVersion);
@@ -44,26 +44,26 @@ suite('Global Installer Resolver Tests', () =>
         {
             assert.include(installerUrl, 'pkg');
         }
-        // The architecture in the installer file will match unless its x32, in which case itll be called x86.
+        // The architecture in the installer file will match unless its x32, in which case it'll be called x86.
         assert.include(installerUrl, (os.arch() === 'x32' ? 'x86' : os.arch()));
     });
 
     test('It parses the major format', async () => {
-        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, majorMinorOnly, timeoutTime);
+        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, majorMinorOnly, timeoutTime, undefined);
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullySpecifiedVersion(), mockVersion);
     });
 
     test('It parses the major.minor format', async () => {
-        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, majorOnly, timeoutTime);
+        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, majorOnly, timeoutTime, undefined);
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullySpecifiedVersion(), mockVersion);
     });
 
     test('It rejects correctly with undiscoverable feature band', async () => {
-        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, '7.0.500', timeoutTime);
+        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, '7.0.500', timeoutTime, undefined);
         provider.customWebRequestWorker = webWorker;
 
         assert.isRejected(provider.getFullySpecifiedVersion());

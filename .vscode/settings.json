@@ -1,4 +1,16 @@
 // Ensure that we don't send telemetry when using the sample extension in this workspace
 {
-    "dotnetAcquisitionExtension.enableTelemetry": false
+    "dotnetAcquisitionExtension.enableTelemetry": false,
+    "cSpell.words": [
+        "APPDATA",
+        "aspnet",
+        "aspnetcore",
+        "distros",
+        "HKCU",
+        "HKEY",
+        "norestart",
+        "programfiles",
+        "REGHEXVALUE",
+        "REGTYPE"
+    ]
 }

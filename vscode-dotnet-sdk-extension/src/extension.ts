@@ -166,7 +166,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
                     throw Error(`No version was defined to install.`);
                 }
 
-                const globalInstallerResolver = new GlobalInstallerResolver(context.globalState, eventStream, commandContext.version);
+                const globalInstallerResolver = new GlobalInstallerResolver(context.globalState, eventStream, commandContext.version, resolvedTimeoutSeconds, proxyUrl);
                 const dotnetPath = await acquisitionWorker.acquireGlobalSDK(globalInstallerResolver);
 
                 setPathEnvVar(dotnetPath.dotnetPath, displayWorker, context.environmentVariableCollection);

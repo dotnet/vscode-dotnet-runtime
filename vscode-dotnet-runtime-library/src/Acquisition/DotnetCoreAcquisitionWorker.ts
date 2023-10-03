@@ -282,7 +282,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         // Indicate that we're beginning to do the install.
         await this.addVersionToExtensionState(this.installingVersionsKey, installKey);
-        this.context.eventStream.post(new DotnetAcquisitionStarted(installingVersion, this.context.acquisitionContext?.requestingExtensionId));
+        this.context.eventStream.post(new DotnetAcquisitionStarted(installKey, installingVersion, this.context.acquisitionContext?.requestingExtensionId));
 
         // See if we should return a fake path instead of running the install
         if(process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH && process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH === 'true')
@@ -308,7 +308,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         Debugging.log(`Validating Dotnet Install.`, this.context.eventStream);
         this.context.installationValidator.validateDotnetInstall(installingVersion, installedSDKPath, true);
 
-        this.context.eventStream.post(new DotnetAcquisitionCompleted(installKey, installedSDKPath));
+        this.context.eventStream.post(new DotnetAcquisitionCompleted(installKey, installedSDKPath, installingVersion));
 
         // Remove the indication that we're installing and replace it notifying of the real installation completion.
         await this.removeVersionFromExtensionState(this.installingVersionsKey, installKey);
