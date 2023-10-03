@@ -22,6 +22,7 @@ import {
     DotnetPreinstallDetectionError,
     DotnetUninstallAllCompleted,
     DotnetUninstallAllStarted,
+    SuppressedAcquisitionError,
 } from '../EventStream/EventStreamEvents';
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
@@ -256,13 +257,19 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     }
 
     public async uninstallRuntimeOrSDK(version: string, installKey : string) {
-        delete this.acquisitionPromises[installKey];
+        try
+        {
+            const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(installKey);
+            this.removeFolderRecursively(dotnetInstallDir);
 
-        const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(installKey);
-        this.removeFolderRecursively(dotnetInstallDir);
-
-        await this.removeVersionFromExtensionState(this.installedVersionsKey, installKey);
-        await this.removeVersionFromExtensionState(this.installingVersionsKey, installKey);
+            delete this.acquisitionPromises[installKey];
+            await this.removeVersionFromExtensionState(this.installedVersionsKey, installKey);
+            await this.removeVersionFromExtensionState(this.installingVersionsKey, installKey);
+        }
+        catch(error : any)
+        {
+            this.context.eventStream.post(new SuppressedAcquisitionError(error, `The attempt to uninstall .NET ${version} failed - was .NET in use?`))
+        }
     }
 
     private async removeVersionFromExtensionState(key: string, installKey: string) {

@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog],
 and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
+## [1.8.1] - 2023-09-18
+
+Don't report failure if the .NET we try to uninstall is in use, and mark it to be uninstalled again next time, as before, we would not attempt to uninstall again later.
+
 ## [1.8.0] - 2023-09-18
 
 Relies on node.arch() to determine .NET installation architecture for local runtimes instead of architecture-related environment variables.
