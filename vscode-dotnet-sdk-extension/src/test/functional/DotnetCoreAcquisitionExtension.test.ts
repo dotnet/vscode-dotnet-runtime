@@ -280,7 +280,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
 
     if(os.arch() === 'x64')
     {
-      // We check this only on x64 because that matches the build machines and we dont want to duplicate architecture mapping logic
+      // We check this only on x64 because that matches the build machines and we don't want to duplicate architecture mapping logic
       if(os.platform() === 'win32')
       {
         const expectedWinInstallerUrl = 'https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-win-x64.exe';
@@ -313,7 +313,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
       let error : any;
       let pathAfterInstall;
 
-      // We cannot test much as we don't want to leave global installs on devboxes. But we do want to make sure the e-2-e goes through the right path. Vendors can test the rest.
+      // We cannot test much as we don't want to leave global installs on dev boxes. But we do want to make sure the e-2-e goes through the right path. Vendors can test the rest.
       // So we have this environment variable that tells us to stop before running any real install.
       process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH = 'true';
       try

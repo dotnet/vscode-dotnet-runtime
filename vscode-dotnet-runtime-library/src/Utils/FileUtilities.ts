@@ -9,7 +9,14 @@
  import * as proc from 'child_process';
  import * as lockfile from 'proper-lockfile';
 import { IEventStream } from '../EventStream/EventStream';
-import { DotnetFileWriteRequestEvent, DotnetLockAcquiredEvent, DotnetLockAttemptingAcquireEvent, DotnetLockErrorEvent, DotnetLockReleasedEvent } from '../EventStream/EventStreamEvents';
+import { DotnetCommandFallbackArchitectureEvent,
+    DotnetCommandFallbackOSEvent,
+    DotnetFileWriteRequestEvent,
+    DotnetLockAcquiredEvent,
+    DotnetLockAttemptingAcquireEvent,
+    DotnetLockErrorEvent,
+    DotnetLockReleasedEvent
+} from '../EventStream/EventStreamEvents';
 
 export class FileUtilities {
 
@@ -74,7 +81,7 @@ export class FileUtilities {
     }
 
     /**
-     * @param directoryToWipe the directory to delete all of the files in if privellege to do so exists.
+     * @param directoryToWipe the directory to delete all of the files in if privilege to do so exists.
      */
     public wipeDirectory(directoryToWipe : string)
     {
@@ -89,7 +96,75 @@ export class FileUtilities {
 
     /**
      *
-     * @returns true if the process is running with admin privelleges on windows.
+     * @param nodeArchitecture the architecture in node style string of what to install
+     * @returns the architecture in the style that .net / the .net install scripts expect
+     *
+     * Node - amd64 is documented as an option for install scripts but its no longer used.
+     * s390x is also no longer used.
+     * ppc64le is supported but this version of node has no distinction of the endianness of the process.
+     * It has no mapping to mips or other node architectures.
+     *
+     * @remarks Falls back to string 'auto' if a mapping does not exist which is not a valid architecture.
+     */
+    public nodeArchToDotnetArch(nodeArchitecture : string, eventStream : IEventStream)
+    {
+        switch(nodeArchitecture)
+        {
+            case 'x64': {
+                return nodeArchitecture;
+            }
+            case 'ia32': {
+                return 'x86';
+            }
+            case 'x86': {
+                // In case the function is called twice
+                return 'x86';
+            }
+            case 'arm': {
+                return nodeArchitecture;
+            }
+            case 'arm64': {
+                return nodeArchitecture;
+            }
+            case 's390x': {
+                return 's390x';
+            }
+            default: {
+                eventStream.post(new DotnetCommandFallbackArchitectureEvent(`The architecture ${os.arch()} of the platform is unexpected, falling back to auto-arch.`));
+                return 'auto';
+            }
+        }
+    }
+
+    /**
+     *
+     * @param nodeOS the OS in node style string of what to install
+     * @returns the OS in the style that .net / the .net install scripts expect
+     *
+     */
+    public nodeOSToDotnetOS(nodeOS : string, eventStream : IEventStream)
+    {
+        switch(nodeOS)
+        {
+            case 'win32': {
+                return 'win';
+            }
+            case 'darwin': {
+                return 'osx';
+            }
+            case 'linux': {
+                return nodeOS;
+            }
+            default: {
+                eventStream.post(new DotnetCommandFallbackOSEvent(`The OS ${os.platform()} of the platform is unexpected, falling back to auto-os.`));
+                return 'auto'
+            }
+        }
+    }
+
+    /**
+     *
+     * @returns true if the process is running with admin privileges
      */
     public isElevated() : boolean
     {

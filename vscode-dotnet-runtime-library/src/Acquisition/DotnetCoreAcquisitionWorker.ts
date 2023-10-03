@@ -130,7 +130,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      *
      * @param version the version to get of the runtime or sdk.
      * @param installRuntime true for runtime acquisition, false for SDK.
-     * @param global false for local install, true for global SDK installs.
+     * @param globalInstallerResolver Create this and add it to install globally.
      * @returns the dotnet acquisition result.
      */
     private async acquire(version: string, installRuntime: boolean, globalInstallerResolver : GlobalInstallerResolver | null = null): Promise<IDotnetAcquireResult>
@@ -174,7 +174,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         }
     }
 
-    public static getInstallKeyCustomArchitecture(version : string, architecture: string | null | undefined, isGlobal : boolean = false) : string
+    public static getInstallKeyCustomArchitecture(version : string, architecture: string | null | undefined, isGlobal = false) : string
     {
         if(!architecture)
         {
@@ -196,7 +196,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      *
      * @param version The version of the object to acquire.
      * @param installRuntime true if the request is to install the runtime, false for the SDK.
-     * @param global false if we're doing a local install, true if we're doing a global install. Only supported for the SDK atm.
+     * @param installKey The install record / key of the version managed by us.
      * @returns the dotnet path of the acquired dotnet.
      *
      * @remarks it is called "core" because it is the meat of the actual acquisition work; this has nothing to do with .NET core vs framework.

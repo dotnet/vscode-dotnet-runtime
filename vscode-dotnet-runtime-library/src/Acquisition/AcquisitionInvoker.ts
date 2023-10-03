@@ -26,10 +26,11 @@ import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWork
 import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker';
 import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
+import { FileUtilities } from '../Utils/FileUtilities';
 
 export class AcquisitionInvoker extends IAcquisitionInvoker {
     protected readonly scriptWorker: IInstallScriptAcquisitionWorker;
-
+    protected fileUtilities : FileUtilities;
     private noPowershellError = `powershell.exe is not discoverable on your system. Is PowerShell added to your PATH and correctly installed? Please visit: https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows.
 You will need to restart VS Code after these changes. If PowerShell is still not discoverable, try setting a custom existingDotnetPath following our instructions here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`
 
@@ -37,6 +38,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
 
         super(eventStream);
         this.scriptWorker = new InstallScriptAcquisitionWorker(extensionState, eventStream, timeoutTime);
+        this.fileUtilities = new FileUtilities();
     }
 
     public async installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
@@ -93,7 +95,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
     }
 
     private async getInstallCommand(version: string, dotnetInstallDir: string, installRuntime: boolean, architecture: string): Promise<string> {
-        const arch = this.nodeArchToDotnetArch(architecture);
+        const arch = this.fileUtilities.nodeArchToDotnetArch(architecture, this.eventStream);
         let args = [
             '-InstallDir', this.escapeFilePath(dotnetInstallDir),
             '-Version', version,
@@ -109,48 +111,6 @@ You will need to restart VS Code after these changes. If PowerShell is still not
 
         const scriptPath = await this.scriptWorker.getDotnetInstallScriptPath();
         return `${ this.escapeFilePath(scriptPath) } ${ args.join(' ') }`;
-    }
-
-    /**
-     *
-     * @param nodeArchitecture the architecture in node style string of what to install
-     * @returns the architecture in the style that .net / the .net install scripts expect
-     *
-     * Node - amd64 is documented as an option for install scripts but its no longer used.
-     * s390x is also no longer used.
-     * ppc64le is supported but this version of node has no distinction of the endianness of the process.
-     * It has no mapping to mips or other node architectures.
-     *
-     * @remarks Falls back to string 'auto' if a mapping does not exist which is not a valid architecture.
-     */
-    private nodeArchToDotnetArch(nodeArchitecture : string)
-    {
-        switch(nodeArchitecture)
-        {
-            case 'x64': {
-                return nodeArchitecture;
-            }
-            case 'ia32': {
-                return 'x86';
-            }
-            case 'x86': {
-                // In case the function is called twice
-                return 'x86';
-            }
-            case 'arm': {
-                return nodeArchitecture;
-            }
-            case 'arm64': {
-                return nodeArchitecture;
-            }
-            case 's390x': {
-                return 's390x';
-            }
-            default: {
-                this.eventStream.post(new DotnetCommandFallbackArchitectureEvent(`The architecture ${os.arch()} of the platform is unexpected, falling back to auto-arch.`));
-                return 'auto';
-            }
-        }
     }
 
     private escapeFilePath(path: string): string {

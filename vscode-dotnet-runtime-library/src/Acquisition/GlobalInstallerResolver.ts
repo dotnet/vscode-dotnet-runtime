@@ -17,6 +17,7 @@ import { DotnetFeatureBandDoesNotExistError,
 } from '../EventStream/EventStreamEvents';
 import { Debugging } from '../Utils/Debugging';
 import { IVersionResolver } from './IVersionResolver';
+import { FileUtilities } from '../Utils/FileUtilities';
 /* tslint:disable:no-any */
 /* tslint:disable:only-arrow-functions */
 
@@ -40,6 +41,8 @@ export class GlobalInstallerResolver {
     private timeoutSecs : number;
 
     private proxyUrl : string | undefined;
+
+    protected fileUtilities : FileUtilities;
 
     private versionResolver : VersionResolver;
 
@@ -79,6 +82,7 @@ export class GlobalInstallerResolver {
         this.versionResolver = new VersionResolver(extensionState, eventStream, timeoutTime, proxyUrl);
         this.timeoutSecs = timeoutTime;
         this.proxyUrl = proxyUrl;
+        this.fileUtilities = new FileUtilities();
     }
 
 
@@ -124,7 +128,7 @@ export class GlobalInstallerResolver {
             const numberOfPeriods = version.split('.').length - 1;
             const indexUrl = this.getIndexUrl(numberOfPeriods === 0 ? `${version}.0` : version);
             const indexJsonData = await this.fetchJsonObjectFromUrl(indexUrl);
-            const fullySpecifiedVersionRequested = indexJsonData![<any>this.releasesLatestSdkKey];
+            const fullySpecifiedVersionRequested = indexJsonData![(this.releasesLatestSdkKey as any)];
             return [await this.findCorrectInstallerUrl(fullySpecifiedVersionRequested, indexUrl), fullySpecifiedVersionRequested];
         }
         else if(this.versionResolver.isNonSpecificFeatureBandedVersion(version))
@@ -166,59 +170,21 @@ export class GlobalInstallerResolver {
             throw versionErr.error;
         }
 
-        const operatingSys : string = os.platform();
-        const operatingArch : string = os.arch();
-
-        let convertedOs = '';
-        let convertedArch = '';
-
-        switch(operatingSys)
+        const convertedOs = this.fileUtilities.nodeOSToDotnetOS(os.platform(), this.eventStream);
+        if(convertedOs === 'auto')
         {
-            case 'win32': {
-                convertedOs = 'win';
-                break;
-            }
-            case 'darwin': {
-                convertedOs = 'osx';
-                break;
-            }
-            case 'linux': {
-                convertedOs = operatingSys;
-                break;
-            }
-            default:
-            {
-                const osErr = new DotnetUnexpectedInstallerOSError(new Error(`The OS ${operatingSys} is currently unsupported or unknown.`));
-                this.eventStream.post(osErr);
-                throw osErr.error;
-            }
+            const osErr = new DotnetUnexpectedInstallerOSError(new Error(`The OS ${os.platform()} is currently unsupported or unknown.`));
+            this.eventStream.post(osErr);
+            throw osErr.error;
         }
 
-        switch(operatingArch)
+        const convertedArch = this.fileUtilities.nodeArchToDotnetArch(os.arch(), this.eventStream);
+        if(convertedArch === 'auto')
         {
-            case 'x64': {
-                convertedArch = operatingArch;
-                break;
-            }
-            case 'ia32': {
-                convertedArch = 'x86';
-                break;
-            }
-            case 'arm': {
-                convertedArch = operatingArch;
-                break;
-            }
-            case 'arm64': {
-                convertedArch = operatingArch;
-                break;
-            }
-            default:
-            {
-                const archErr = new DotnetUnexpectedInstallerArchitectureError(new Error(`The architecture ${operatingArch} is currently unsupported or unknown.
-                    Your architecture: ${os.arch()}. Your OS: ${os.platform()}.`));
-                this.eventStream.post(archErr);
-                throw archErr.error;
-            }
+            const archErr = new DotnetUnexpectedInstallerArchitectureError(new Error(`The architecture ${os.arch()} is currently unsupported or unknown.
+                Your architecture: ${os.arch()}. Your OS: ${os.platform()}.`));
+            this.eventStream.post(archErr);
+            throw archErr.error;
         }
 
         const desiredRidPackage = `${convertedOs}-${convertedArch}`;
@@ -363,7 +329,6 @@ export class GlobalInstallerResolver {
             }
         }
 
-        // TODO: make a test for this error msg
         const availableBands = Array.from(new Set(sdks.map((x : any) => this.versionResolver.getFeatureBandFromVersion(x[this.releasesSdkVersionKey]))));
         const err = new DotnetFeatureBandDoesNotExistError(new Error(`The feature band '${band}' doesn't exist for the SDK major version '${version}'. Available feature bands for this SDK version are ${availableBands}.`));
         this.eventStream.post(err);

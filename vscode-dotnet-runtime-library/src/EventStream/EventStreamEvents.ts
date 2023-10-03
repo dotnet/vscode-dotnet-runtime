@@ -397,6 +397,10 @@ export class DotnetCommandFallbackArchitectureEvent extends DotnetCustomMessageE
     public readonly eventName = 'DotnetCommandFallbackArchitectureEvent';
 }
 
+export class DotnetCommandFallbackOSEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetCommandFallbackOSEvent';
+}
+
 export class DotnetInstallKeyCreatedEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetInstallKeyCreatedEvent';
 }

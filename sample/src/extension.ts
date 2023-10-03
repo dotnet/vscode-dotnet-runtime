@@ -26,7 +26,9 @@ export function activate(context: vscode.ExtensionContext) {
     "extensionDependencies": [
         "ms-dotnettools.vscode-dotnet-runtime",
         "ms-dotnettools.vscode-dotnet-sdk"
-    ]   
+    ]
+
+    This would enable the sample to require the vscode-dotnet-runtime extension
     */
 
     const requestingExtensionId = 'ms-dotnettools.sample-extension';

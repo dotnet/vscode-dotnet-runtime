@@ -45,7 +45,7 @@ suite('Global Installer Resolver Tests', () =>
             assert.include(installerUrl, 'pkg');
         }
         // The architecture in the installer file will match unless its x32, in which case it'll be called x86.
-        assert.include(installerUrl, (os.arch() === 'x32' ? 'x86' : os.arch()));
+        assert.include(installerUrl, (os.arch() === 'ia32' ? 'x86' : os.arch()));
     });
 
     test('It parses the major format', async () => {

@@ -102,7 +102,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     }
     const resolvedTimeoutSeconds = timeoutValue === undefined ? defaultTimeoutValue : timeoutValue;
 
-    const proxyUrl = extensionConfiguration.get<string>(configKeys.proxyUrl);
+    const proxyLink = extensionConfiguration.get<string>(configKeys.proxyUrl);
 
     const acquisitionWorker = new DotnetCoreAcquisitionWorker({
         storagePath: context.globalStoragePath,
@@ -112,10 +112,10 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         installationValidator: new InstallationValidator(eventStream),
         timeoutValue: resolvedTimeoutSeconds,
         installDirectoryProvider: new RuntimeInstallationDirectoryProvider(context.globalStoragePath),
-        proxyUrl: proxyUrl
+        proxyUrl: proxyLink
     });
     const existingPathResolver = new ExistingPathResolver();
-    const versionResolver = new VersionResolver(context.globalState, eventStream, resolvedTimeoutSeconds, proxyUrl);
+    const versionResolver = new VersionResolver(context.globalState, eventStream, resolvedTimeoutSeconds, proxyLink);
 
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) => {
         let fullyResolvedVersion = '';
