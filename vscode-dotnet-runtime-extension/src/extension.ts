@@ -1,7 +1,7 @@
-/* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ */
+/*---------------------------------------------------------------------------------------------
+*  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
+*--------------------------------------------------------------------------------------------*/
 
 import * as cp from 'child_process';
 import * as fs from 'fs';
@@ -19,6 +19,7 @@ import {
     DotnetCoreDependencyInstaller,
     DotnetExistingPathResolutionCompleted,
     DotnetRuntimeAcquisitionStarted,
+    DotnetRuntimeAcquisitionTotalSuccessEvent,
     enableExtensionTelemetry,
     ErrorConfiguration,
     ExistingPathResolver,
@@ -37,7 +38,7 @@ import {
     VersionResolver,
     WindowDisplayWorker,
 } from 'vscode-dotnet-runtime-library';
-import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquistionId';
+import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 
 // tslint:disable no-var-requires
 const packageJson = require('../package.json');
@@ -47,6 +48,7 @@ namespace configKeys {
     export const installTimeoutValue = 'installTimeoutValue';
     export const enableTelemetry = 'enableTelemetry';
     export const existingPath = 'existingDotnetPath';
+    export const proxyUrl = 'proxyUrl';
 }
 namespace commandKeys {
     export const acquire = 'acquire';
@@ -60,7 +62,7 @@ namespace commandKeys {
 const commandPrefix = 'dotnet';
 const configPrefix = 'dotnetAcquisitionExtension';
 const displayChannelName = '.NET Runtime';
-const defaultTimeoutValue = 300;
+const defaultTimeoutValue = 600;
 const moreInfoUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md';
 
 export function activate(context: vscode.ExtensionContext, extensionContext?: IExtensionContext) {
@@ -98,21 +100,26 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     if (!fs.existsSync(context.globalStoragePath)) {
         fs.mkdirSync(context.globalStoragePath);
     }
+    const resolvedTimeoutSeconds = timeoutValue === undefined ? defaultTimeoutValue : timeoutValue;
+
+    const proxyUrl = extensionConfiguration.get<string>(configKeys.proxyUrl);
+
     const acquisitionWorker = new DotnetCoreAcquisitionWorker({
         storagePath: context.globalStoragePath,
         extensionState: context.globalState,
         eventStream,
-        acquisitionInvoker: new AcquisitionInvoker(context.globalState, eventStream),
+        acquisitionInvoker: new AcquisitionInvoker(context.globalState, eventStream, resolvedTimeoutSeconds),
         installationValidator: new InstallationValidator(eventStream),
-        timeoutValue: timeoutValue === undefined ? defaultTimeoutValue : timeoutValue,
+        timeoutValue: resolvedTimeoutSeconds,
         installDirectoryProvider: new RuntimeInstallationDirectoryProvider(context.globalStoragePath),
     });
     const existingPathResolver = new ExistingPathResolver();
-    const versionResolver = new VersionResolver(context.globalState, eventStream);
+    const versionResolver = new VersionResolver(context.globalState, eventStream, resolvedTimeoutSeconds, proxyUrl);
 
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) => {
+        let fullyResolvedVersion = '';
         const dotnetPath = await callWithErrorHandling<Promise<IDotnetAcquireResult>>(async () => {
-            eventStream.post(new DotnetRuntimeAcquisitionStarted());
+            eventStream.post(new DotnetRuntimeAcquisitionStarted(commandContext.requestingExtensionId));
             eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
             acquisitionWorker.setAcquisitionContext(commandContext);
 
@@ -129,8 +136,17 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             }
 
             const version = await versionResolver.getFullRuntimeVersion(commandContext.version);
+            fullyResolvedVersion = version;
+
+            if(commandContext.architecture !== undefined)
+            {
+                acquisitionWorker.installingArchitecture = commandContext.architecture;
+            }
             return acquisitionWorker.acquireRuntime(version);
         }, issueContext(commandContext.errorConfiguration, 'acquire', commandContext.version), commandContext.requestingExtensionId);
+
+        const installKey = acquisitionWorker.getInstallKey(fullyResolvedVersion);
+        eventStream.post(new DotnetRuntimeAcquisitionTotalSuccessEvent(commandContext.version, installKey, commandContext.requestingExtensionId ?? '', dotnetPath?.dotnetPath ?? ''));
         return dotnetPath;
     });
 

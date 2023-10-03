@@ -18,20 +18,20 @@ const majorMinorOnly = '7.0';
 const context = new MockExtensionContext();
 const eventStream = new MockEventStream();
 const filePath = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-channel-7-index.json');
-const webWorker = new FileWebRequestWorker(context, eventStream, filePath);
-
+const webWorker = new FileWebRequestWorker(context, eventStream, '', '', filePath);
+const timeoutTime = 10000;
 
 suite('Global Installer Resolver Tests', () =>
 {
     test('It finds the newest patch version given a feature band', async () => {
-        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, featureBandVersion);
+        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, featureBandVersion, timeoutTime);
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullySpecifiedVersion(), newestFeatureBandedVersion);
     });
 
     test('It finds the correct installer download url for the os', async () => {
-        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, mockVersion);
+        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, mockVersion, timeoutTime);
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullySpecifiedVersion(), mockVersion);
@@ -49,21 +49,21 @@ suite('Global Installer Resolver Tests', () =>
     });
 
     test('It parses the major format', async () => {
-        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, majorMinorOnly);
+        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, majorMinorOnly, timeoutTime);
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullySpecifiedVersion(), mockVersion);
     });
 
     test('It parses the major.minor format', async () => {
-        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, majorOnly);
+        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, majorOnly, timeoutTime);
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullySpecifiedVersion(), mockVersion);
     });
 
     test('It rejects correctly with undiscoverable feature band', async () => {
-        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, '7.0.500');
+        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, '7.0.500', timeoutTime);
         provider.customWebRequestWorker = webWorker;
 
         assert.isRejected(provider.getFullySpecifiedVersion());

@@ -38,7 +38,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         this.installerUrl = installerUrl
         this.installingVersion = installingVersion;
         this.commandRunner = executor ?? new CommandExecutor();
-        this.versionResolver = new VersionResolver(context.extensionState, context.eventStream);
+        this.versionResolver = new VersionResolver(context.extensionState, context.eventStream, context.timeoutValue, context.proxyUrl);
         this.file = new FileUtilities();
     }
 

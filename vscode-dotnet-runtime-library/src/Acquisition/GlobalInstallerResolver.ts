@@ -23,7 +23,7 @@ import { IVersionResolver } from './IVersionResolver';
 /**
  * @remarks
  * This is similar to the version resolver but accepts a wider range of inputs such as '6', '6.1', or '6.0.3xx' or '6.0.301'.
- * It currently only is used for SDK Global acquistion to prevent breaking existing behaviors.
+ * It currently only is used for SDK Global acquisition to prevent breaking existing behaviors.
  * Throws various errors in the event that a version is incorrectly formatted, the sdk server is unavailable, etc.
  */
 export class GlobalInstallerResolver {
@@ -36,6 +36,8 @@ export class GlobalInstallerResolver {
 
     // The properly resolved version that was requested in the fully-specified 3-part semver version of the .NET SDK.
     private fullySpecifiedVersionRequested : string;
+
+    private timeout : number;
 
     private versionResolver : VersionResolver;
 
@@ -64,13 +66,15 @@ export class GlobalInstallerResolver {
     constructor(
         private readonly extensionState: IExtensionState,
         private readonly eventStream: IEventStream,
-        requestedVersion : string
+        requestedVersion : string,
+        timeoutTime : number
     )
     {
         this.requestedVersion = requestedVersion;
         this.discoveredInstallerUrl = '';
         this.fullySpecifiedVersionRequested = '';
-        this.versionResolver = new VersionResolver(extensionState, eventStream);
+        this.versionResolver = new VersionResolver(extensionState, eventStream, timeoutTime);
+        this.timeout = timeoutTime;
     }
 
 
@@ -215,7 +219,7 @@ export class GlobalInstallerResolver {
 
         const desiredRidPackage = `${convertedOs}-${convertedArch}`;
 
-        const indexJson =  await this.fetchJsonObjectFromUrl(indexUrl);
+        const indexJson : any = await this.fetchJsonObjectFromUrl(indexUrl);
         const releases = indexJson[this.releasesJsonKey];
         if(releases.length === 0)
         {
@@ -332,7 +336,7 @@ export class GlobalInstallerResolver {
         const indexUrl : string = this.getIndexUrl(this.versionResolver.getMajorMinor(version));
 
         // Get the sdks
-        const indexJson =  await this.fetchJsonObjectFromUrl(indexUrl);
+        const indexJson : any = await this.fetchJsonObjectFromUrl(indexUrl);
         const releases = indexJson[this.releasesJsonKey]
 
         if(releases.length === 0)
@@ -365,12 +369,12 @@ export class GlobalInstallerResolver {
     /**
      *
      * @param url The url containing raw json data to parse.
-     * @returns a serizled JSON object.
+     * @returns a serialized JSON object.
      * @remarks A wrapper around the real web request worker class to call into either the mock or real web worker. The main point of this function is  to dedupe logic.
      */
     private async fetchJsonObjectFromUrl(url : string)
     {
-        const webWorker = this.customWebRequestWorker ? this.customWebRequestWorker : new WebRequestWorker(this.extensionState, this.eventStream);
-        return webWorker.fetchJsonObjectFromUrl(url);
+        const webWorker = this.customWebRequestWorker ? this.customWebRequestWorker : new WebRequestWorker(this.extensionState, this.eventStream, url, this.timeout);
+        return webWorker.getCachedData();
     }
 }

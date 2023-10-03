@@ -1,7 +1,7 @@
-/* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ */
+/*---------------------------------------------------------------------------------------------
+*  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
+*--------------------------------------------------------------------------------------------*/
 
 import { AcquireErrorConfiguration } from './Utils/ErrorHandler';
 
@@ -25,11 +25,16 @@ export interface IDotnetAcquireContext {
      *
      * @property installType - For SDK installations, allows either global or local installs.
      * Do NOT use the local install feature with the global install feature or any global install as it is currently unsupported.
+     *
+     * @property architecture - null is for deliberate legacy install behavior that is not-architecture specific.
+     * undefined is for the default of node.arch().
+     * Does NOT impact global installs yet, it will be ignored. Follows node architecture terminology.
      */
     version: string;
     requestingExtensionId?: string;
     errorConfiguration?: AcquireErrorConfiguration;
     installType?: DotnetInstallType;
+    architecture?: string | null | undefined;
 }
 
 /**

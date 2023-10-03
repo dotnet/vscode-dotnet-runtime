@@ -31,7 +31,7 @@ export class DotnetVersionProvider {
 
         try
         {
-            response = await webWorker.getCachedData(DotnetVersionProvider.availableDontetVersionsUrl);
+            response = await webWorker.getCachedData();
         }
         catch(e)
         {
