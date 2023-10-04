@@ -45,7 +45,6 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     private acquisitionPromises: { [installKeys: string]: Promise<string> | undefined };
 
 
-
     constructor(private readonly context: IAcquisitionWorkerContext) {
         const dotnetExtension = os.platform() === 'win32' ? '.exe' : '';
         this.dotnetExecutable = `dotnet${dotnetExtension}`;
