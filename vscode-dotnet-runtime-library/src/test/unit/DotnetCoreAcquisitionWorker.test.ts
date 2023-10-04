@@ -41,8 +41,8 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
     const installedVersionsKey = 'installed';
     const dotnetFolderName = `.dotnet O'Hare O'Donald`;
 
-    function getTestAcquisitionWorker(runtimeInstall: boolean, arch : string | null | undefined = undefined,
-        customEventStream? : MockEventStream , customContext? : MockExtensionContext): [MockDotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext]
+    function getTestAcquisitionWorker(runtimeInstall: boolean, arch? : string | null,
+        customEventStream? : MockEventStream, customContext? : MockExtensionContext): [MockDotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext]
     {
         const context =  customContext ?? new MockExtensionContext();
         const eventStream = customEventStream ?? new MockEventStream();

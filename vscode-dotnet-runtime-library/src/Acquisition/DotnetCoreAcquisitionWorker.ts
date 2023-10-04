@@ -265,8 +265,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
     private async tryCleanUpInstallGraveyard() : Promise<void>
     {
-        let graveyard = this.getGraveyard();
-        for(const installKey in graveyard)
+        const graveyard = this.getGraveyard();
+        for(const installKey of Object.keys(graveyard))
         {
             this.context.eventStream.post(new DotnetInstallGraveyardEvent(
                 `Attempting to remove .NET at ${installKey} again, as it was left in the graveyard.`));
@@ -285,7 +285,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      */
     protected async updateGraveyard(installKey : string, newPath? : string | undefined)
     {
-        let graveyard = this.getGraveyard();
+        const graveyard = this.getGraveyard();
         if(newPath)
         {
             graveyard[installKey] = newPath;
