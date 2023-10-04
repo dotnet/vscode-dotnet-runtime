@@ -66,6 +66,14 @@ export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker {
     }
 }
 
+export class MockDotnetCoreAcquisitionWorker extends DotnetCoreAcquisitionWorker
+{
+    public AddToGraveyard(installKey : string, installPath : string)
+    {
+        this.updateGraveyard(installKey, installPath);
+    }
+}
+
 export class RejectingAcquisitionInvoker extends IAcquisitionInvoker {
     public installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
         return new Promise<void>((resolve, reject) => {
@@ -194,7 +202,8 @@ export class MockApostropheScriptAcquisitionWorker extends MockInstallScriptWork
     }
 }
 
-export class MockAcquisitionInvoker extends AcquisitionInvoker{
+export class MockAcquisitionInvoker extends AcquisitionInvoker
+{
     protected readonly scriptWorker: MockApostropheScriptAcquisitionWorker
     constructor(extensionState: IExtensionState, eventStream: IEventStream, timeoutTime : number ,installFolder : string) {
         super(extensionState, eventStream, timeoutTime);

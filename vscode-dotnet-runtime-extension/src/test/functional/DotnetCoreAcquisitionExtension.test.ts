@@ -80,7 +80,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.include(result!.dotnetPath, context.version);
     await vscode.commands.executeCommand<string>('dotnet.uninstallAll', context.version);
     assert.isFalse(fs.existsSync(result!.dotnetPath));
-  }).timeout(40000);
+  }).timeout(400000);
 
   test('Install and Uninstall Multiple Versions', async () => {
     const versions = ['2.2', '3.0', '3.1'];

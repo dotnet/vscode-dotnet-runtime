@@ -17,6 +17,7 @@ import {
     DotnetAcquisitionStarted,
     DotnetAcquisitionStatusResolved,
     DotnetAcquisitionStatusUndefined,
+    DotnetInstallGraveyardEvent,
     DotnetUninstallAllCompleted,
     DotnetUninstallAllStarted,
     TestAcquireCalled,
@@ -25,6 +26,7 @@ import { EventType } from '../../EventStream/EventType';
 import {
     ErrorAcquisitionInvoker,
     MockAcquisitionInvoker,
+    MockDotnetCoreAcquisitionWorker,
     MockEventStream,
     MockExtensionContext,
     MockInstallationValidator,
@@ -40,11 +42,11 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
     const dotnetFolderName = `.dotnet O'Hare O'Donald`;
 
     function getTestAcquisitionWorker(runtimeInstall: boolean, arch : string | null | undefined = undefined,
-        customEventStream? : MockEventStream , customContext? : MockExtensionContext): [DotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext]
+        customEventStream? : MockEventStream , customContext? : MockExtensionContext): [MockDotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext]
     {
         const context =  customContext ?? new MockExtensionContext();
         const eventStream = customEventStream ?? new MockEventStream();
-        const acquisitionWorker = new DotnetCoreAcquisitionWorker({
+        const acquisitionWorker = new MockDotnetCoreAcquisitionWorker({
             storagePath: '',
             extensionState: context,
             eventStream,
@@ -220,6 +222,23 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         assert.exists(eventStream.events.find(event => event instanceof DotnetUninstallAllCompleted));
         assert.isEmpty(context.get<string[]>(installingVersionsKey, []));
         assert.isEmpty(context.get<string[]>(installedVersionsKey, []));
+    });
+
+    test('Graveyard Removes Failed Uninstalls', async () => {
+        const [acquisitionWorker, eventStream, context] = getTestAcquisitionWorker(true);
+        const version = '1.0';
+        const installKey = acquisitionWorker.getInstallKey(version);
+        const res = await acquisitionWorker.acquireRuntime(version);
+        await assertAcquisitionSucceeded(installKey, res.dotnetPath, eventStream, context);
+        acquisitionWorker.AddToGraveyard(installKey, 'Not applicable');
+
+        const versionToKeep = '5.0';
+        const versionToKeepKey = acquisitionWorker.getInstallKey(versionToKeep);
+        await acquisitionWorker.acquireRuntime(versionToKeep);
+
+        assert.exists(eventStream.events.find(event => event instanceof DotnetInstallGraveyardEvent), 'The graveyard tried to uninstall .NET');
+        assert.isEmpty(context.get<string[]>(installingVersionsKey, []), 'We did not hang/ get interrupted during the install.');
+        assert.deepEqual(context.get<string[]>(installedVersionsKey, []), [versionToKeepKey], '.NET was successfully uninstalled and cleaned up properly when marked to be.');
     });
 
     test('Correctly Removes Legacy (No-Architecture) Installs', async () =>

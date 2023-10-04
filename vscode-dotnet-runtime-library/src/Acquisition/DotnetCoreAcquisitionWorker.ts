@@ -15,6 +15,7 @@ import {
     DotnetAcquisitionStatusResolved,
     DotnetAcquisitionStatusUndefined,
     DotnetCustomMessageEvent,
+    DotnetInstallGraveyardEvent,
     DotnetInstallKeyCreatedEvent,
     DotnetLegacyInstallDetectedEvent,
     DotnetLegacyInstallRemovalRequestEvent,
@@ -34,11 +35,16 @@ import { IDotnetAcquireContext } from '..';
 export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker {
     private readonly installingVersionsKey = 'installing';
     private readonly installedVersionsKey = 'installed';
+    // The 'graveyard' includes failed uninstall paths and their install key.
+    // These will become marked for attempted 'garbage collection' at the end of every acquisition.
+    private readonly installPathsGraveyardKey = 'installPathsGraveyard';
     public installingArchitecture : string | null;
     private readonly dotnetExecutable: string;
     private readonly timeoutValue: number;
 
-    private acquisitionPromises: { [version: string]: Promise<string> | undefined };
+    private acquisitionPromises: { [installKeys: string]: Promise<string> | undefined };
+
+
 
     constructor(private readonly context: IAcquisitionWorkerContext) {
         const dotnetExtension = os.platform() === 'win32' ? '.exe' : '';
@@ -51,7 +57,6 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
     public async uninstallAll() {
         this.context.eventStream.post(new DotnetUninstallAllStarted());
-
         this.acquisitionPromises = {};
 
         this.removeFolderRecursively(this.context.installDirectoryProvider.getStoragePath());
@@ -151,7 +156,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             // uninstall everything and then re-install.
             this.context.eventStream.post(new DotnetAcquisitionPartialInstallation(installKey));
 
-            await this.uninstallRuntimeOrSDK(version, installKey);
+            await this.uninstallRuntimeOrSDK(installKey);
         } else if (partialInstall) {
             this.context.eventStream.post(new DotnetAcquisitionPartialInstallation(installKey));
             await this.uninstallAll();
@@ -192,6 +197,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         this.context.installationValidator.validateDotnetInstall(installKey, dotnetPath);
 
         await this.removeMatchingLegacyInstall(installedVersions, version);
+        await this.tryCleanUpInstallGraveyard();
 
         await this.removeVersionFromExtensionState(this.installingVersionsKey, installKey);
         await this.addVersionToExtensionState(this.installedVersionsKey, installKey);
@@ -232,7 +238,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             if(legacyInstall.includes(version))
             {
                 this.context.eventStream.post(new DotnetLegacyInstallRemovalRequestEvent(`Trying to remove legacy install: ${legacyInstall} of ${version}.`));
-                await this.uninstallRuntimeOrSDK(version, legacyInstall);
+                await this.uninstallRuntimeOrSDK(legacyInstall);
             }
         }
     }
@@ -257,19 +263,60 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         return legacyInstalls;
     }
 
-    public async uninstallRuntimeOrSDK(version: string, installKey : string) {
+    private async tryCleanUpInstallGraveyard() : Promise<void>
+    {
+        let graveyard = this.getGraveyard();
+        for(const installKey in graveyard)
+        {
+            this.context.eventStream.post(new DotnetInstallGraveyardEvent(
+                `Attempting to remove .NET at ${installKey} again, as it was left in the graveyard.`));
+            await this.uninstallRuntimeOrSDK(installKey);
+        }
+    }
+
+    protected getGraveyard() : { [installKeys: string]: string }
+    {
+        return this.context.extensionState.get<{ [installKeys: string]: string }>(this.installPathsGraveyardKey, {});
+    }
+
+    /**
+     *
+     * @param newPath Leaving this empty will delete the key from the graveyard.
+     */
+    protected async updateGraveyard(installKey : string, newPath? : string | undefined)
+    {
+        let graveyard = this.getGraveyard();
+        if(newPath)
+        {
+            graveyard[installKey] = newPath;
+        }
+        else
+        {
+            delete graveyard[installKey];
+        }
+        await this.context.extensionState.update(this.installPathsGraveyardKey, graveyard);
+    }
+
+    public async uninstallRuntimeOrSDK(installKey : string) {
         try
         {
+            delete this.acquisitionPromises[installKey];
             const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(installKey);
+
+            this.updateGraveyard(installKey, dotnetInstallDir);
+            this.context.eventStream.post(new DotnetInstallGraveyardEvent(`Attempting to remove .NET at ${installKey} in path ${dotnetInstallDir}`));
+
             this.removeFolderRecursively(dotnetInstallDir);
 
-            delete this.acquisitionPromises[installKey];
             await this.removeVersionFromExtensionState(this.installedVersionsKey, installKey);
             await this.removeVersionFromExtensionState(this.installingVersionsKey, installKey);
+
+            this.updateGraveyard(installKey);
+            this.context.eventStream.post(new DotnetInstallGraveyardEvent(`Success at uninstalling ${installKey} in path ${dotnetInstallDir}`));
         }
         catch(error : any)
         {
-            this.context.eventStream.post(new SuppressedAcquisitionError(error, `The attempt to uninstall .NET ${version} failed - was .NET in use?`))
+            this.context.eventStream.post(new SuppressedAcquisitionError(error, `The attempt to uninstall .NET ${installKey} failed - was .NET in use?`))
         }
     }
 
@@ -290,7 +337,23 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
     private removeFolderRecursively(folderPath: string) {
         this.context.eventStream.post(new DotnetAcquisitionDeletion(folderPath));
-        rimraf.sync(folderPath);
+        try
+        {
+            fs.chmodSync(folderPath, 0o744);
+        }
+        catch(error : any)
+        {
+            this.context.eventStream.post(new SuppressedAcquisitionError(error, `Failed to chmod +x on .NET folder ${folderPath} when marked for deletion.`));
+        }
+
+        try
+        {
+            rimraf.sync(folderPath);
+        }
+        catch(error : any)
+        {
+            this.context.eventStream.post(new SuppressedAcquisitionError(error, `Failed to delete .NET folder ${folderPath} when marked for deletion.`));
+        }
     }
 
     private async managePreinstalledVersion(dotnetInstallDir: string, installedInstallKeys: string[]): Promise<string[]> {
