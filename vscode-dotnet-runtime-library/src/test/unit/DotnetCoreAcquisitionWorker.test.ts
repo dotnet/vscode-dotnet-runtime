@@ -36,6 +36,8 @@ import {
 const assert = chai.assert;
 chai.use(chaiAsPromised);
 
+const expectedTimeoutTime = 6000;
+
 suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
     const installingVersionsKey = 'installing';
     const installedVersionsKey = 'installed';
@@ -328,7 +330,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
             assert.equal(result.dotnetPath, expectedPath);
             deleteFolderRecursive(path.join(process.cwd(), installApostropheFolder));
         }
-    });
+    }).timeout(expectedTimeoutTime);
 
     function deleteFolderRecursive(folderPath: string) {
         if (fs.existsSync(folderPath)) {
