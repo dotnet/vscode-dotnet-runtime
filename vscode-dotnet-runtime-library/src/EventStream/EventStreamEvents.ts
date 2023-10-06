@@ -389,6 +389,29 @@ export class DotnetCommandNotFoundEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetCommandNotFoundEvent';
 }
 
+export class DotnetFakeSDKEnvironmentVariableTriggered extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFakeSDKEnvironmentVariableTriggered';
+}
+
+export class DotnetGlobalAcquisitionBeginEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetGlobalAcquisitionBeginEvent';
+}
+
+export class DotnetGlobalVersionResolutionCompletionEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetGlobalVersionResolutionCompletionEvent';
+}
+
+export class DotnetBeginGlobalInstallerExecution extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetBeginGlobalInstallerExecution';
+}
+
+export class DotnetCompletedGlobalInstallerExecution extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetCompletedGlobalInstallerExecution';
+}
+
+export class DotnetGlobalAcquisitionCompletionEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetGlobalAcquisitionCompletionEvent';
+}
 export class DotnetAlternativeCommandFoundEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetAlternativeCommandFoundEvent';
 }

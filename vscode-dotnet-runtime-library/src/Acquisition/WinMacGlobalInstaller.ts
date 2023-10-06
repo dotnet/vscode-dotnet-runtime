@@ -1,5 +1,6 @@
 /* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as fs from 'fs';
@@ -201,7 +202,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         else
         {
             let command = `${path.resolve(installerPath)}`;
-            if(this.file.isElevated())
+            if(this.file.isElevated(this.acquisitionContext.eventStream))
             {
                 command += ' /quiet /install /norestart';
             }

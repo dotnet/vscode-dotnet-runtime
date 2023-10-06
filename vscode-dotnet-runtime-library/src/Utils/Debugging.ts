@@ -12,19 +12,20 @@ import * as fs from 'fs';
 
 /**
  * A simple wrapper around console logging that can disable / enable all debugging or logging messages.
+ * Use EventStreamEvents for user facing debugging logs.
  */
 export class Debugging
 {
     static logFile = path.join(__dirname, 'VsDotnetDebuggingLog.txt');
     static debugOn = false;
-    static logToVS = true;
+    static logToTerminal = true;
     static logToFile = true;
 
     public static log(message : string, eventStream : IEventStream | null = null)
     {
         if(Debugging.debugOn)
         {
-            if(Debugging.logToVS)
+            if(Debugging.logToTerminal)
             {
                 eventStream?.post(new DotnetDebuggingMessage(message));
             }
@@ -36,7 +37,7 @@ export class Debugging
 
             {
                 console.log(`Writing to ${Debugging.logFile}`);
-                if(Debugging.logToVS)
+                if(Debugging.logToTerminal)
                 {
                     eventStream?.post(new DotnetDebuggingMessage(`Writing to ${Debugging.logFile}`));
                 }

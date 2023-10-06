@@ -1,5 +1,6 @@
  /* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
  import * as eol from 'eol';
@@ -15,8 +16,10 @@ import { DotnetCommandFallbackArchitectureEvent,
     DotnetLockAcquiredEvent,
     DotnetLockAttemptingAcquireEvent,
     DotnetLockErrorEvent,
-    DotnetLockReleasedEvent
+    DotnetLockReleasedEvent,
+    SuppressedAcquisitionError
 } from '../EventStream/EventStreamEvents';
+/* tslint:disable:no-any */
 
 export class FileUtilities {
 
@@ -166,12 +169,20 @@ export class FileUtilities {
      *
      * @returns true if the process is running with admin privileges
      */
-    public isElevated() : boolean
+    public isElevated(eventStream? : IEventStream) : boolean
     {
         if(os.platform() !== 'win32')
         {
-            const commandResult = proc.spawnSync('id', ['-u']);
-            return commandResult.status === 0;
+            try
+            {
+                const commandResult = proc.spawnSync('id', ['-u']);
+                return commandResult.status === 0;
+            }
+            catch(error : any)
+            {
+                eventStream?.post(new SuppressedAcquisitionError(error, `Failed to run 'id' to check for privellege, running without privellege.`))
+                return false;
+            }
         }
 
         try
@@ -180,8 +191,9 @@ export class FileUtilities {
             proc.execFileSync( 'net', ['session'], { 'stdio': 'ignore' } );
             return true;
         }
-        catch ( error )
+        catch ( error : any )
         {
+            eventStream?.post(new SuppressedAcquisitionError(error, `Failed to run 'net' to check for privellege, running without privellege.`))
             return false;
         }
     }

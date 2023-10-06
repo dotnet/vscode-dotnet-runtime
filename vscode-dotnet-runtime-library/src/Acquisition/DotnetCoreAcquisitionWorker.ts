@@ -25,6 +25,12 @@ import {
     DotnetPreinstallDetectionError,
     DotnetUninstallAllCompleted,
     DotnetUninstallAllStarted,
+    DotnetGlobalAcquisitionBeginEvent,
+    DotnetGlobalAcquisitionCompletionEvent,
+    DotnetGlobalVersionResolutionCompletionEvent,
+    DotnetBeginGlobalInstallerExecution,
+    DotnetCompletedGlobalInstallerExecution,
+    DotnetFakeSDKEnvironmentVariableTriggered,
 } from '../EventStream/EventStreamEvents';
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
@@ -271,10 +277,11 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
     private async acquireGlobalCore(globalInstallerResolver : GlobalInstallerResolver, installKey : string): Promise<string>
     {
+        this.context.eventStream.post(new DotnetGlobalAcquisitionBeginEvent(`The version we resolved that was requested is.`));
+
         const installingVersion = await globalInstallerResolver.getFullySpecifiedVersion();
-        Debugging.log(`The version we resolved that was requested is: ${installingVersion}.`, this.context.eventStream);
+        this.context.eventStream.post(new DotnetGlobalVersionResolutionCompletionEvent(`The version we resolved that was requested is: ${installingVersion}.`));
         this.checkForPartialInstalls(installKey, installingVersion, false, false);
-        Debugging.log(`Partial install check has completed.`, this.context.eventStream);
 
         const installer : IGlobalInstaller = os.platform() === 'linux' ?
             new LinuxGlobalInstaller(this.context, installingVersion) :
@@ -287,17 +294,16 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         // See if we should return a fake path instead of running the install
         if(process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH && process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH === 'true')
         {
+            this.context.eventStream.post(new DotnetFakeSDKEnvironmentVariableTriggered(`VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH has been set.`));
             return 'fake-sdk';
         }
 
-        Debugging.log(`The installation process has begun.`, this.context.eventStream);
+        this.context.eventStream.post(new DotnetBeginGlobalInstallerExecution(`Beginning to run installer for ${installKey} in ${os.platform()}.`))
         const installerResult = await installer.installSDK();
-        Debugging.log(`The installation process has completed.`, this.context.eventStream);
+        this.context.eventStream.post(new DotnetCompletedGlobalInstallerExecution(`Beginning to run installer for ${installKey} in ${os.platform()}.`))
 
         if(installerResult !== '0')
         {
-            Debugging.log(`The installation result is bad with result ${installerResult}.`, this.context.eventStream);
-
             const err = new DotnetNonZeroInstallerExitCodeError(new Error(`An error was raised by the .NET SDK installer. The exit code it gave us: ${installerResult}`));
             this.context.eventStream.post(err);
             throw err;
@@ -305,7 +311,6 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         const installedSDKPath : string = await installer.getExpectedGlobalSDKPath(installingVersion, os.arch());
 
-        Debugging.log(`Validating Dotnet Install.`, this.context.eventStream);
         this.context.installationValidator.validateDotnetInstall(installingVersion, installedSDKPath, true);
 
         this.context.eventStream.post(new DotnetAcquisitionCompleted(installKey, installedSDKPath, installingVersion));
@@ -314,7 +319,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         await this.removeVersionFromExtensionState(this.installingVersionsKey, installKey);
         await this.addVersionToExtensionState(this.installedVersionsKey, installKey);
 
-        Debugging.log(`Global Acquisition has Completed.`, this.context.eventStream);
+        this.context.eventStream.post(new DotnetGlobalAcquisitionCompletionEvent(`The version ${installKey} completed successfully.`));
         return installedSDKPath;
     }
 
