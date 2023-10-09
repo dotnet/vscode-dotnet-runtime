@@ -88,14 +88,14 @@
 			}
 		]
 	},
-	"rhel": {
-		"installCommand": "sudo dnf install {0}",
-		"uninstallCommand": "sudo dnf remove {0}",
-		"updateCommand": "sudo dnf list --installed {0}",
-		"isInstalledCommand": "sudo dnf update {0}",
+	"Red Hat Enterprise Linux": {
+		"installCommand": "sudo dnf install {0} -y",
+		"uninstallCommand": "sudo dnf remove {0} -y",
+		"updateCommand": "sudo dnf update {0} -y",
+		"isInstalledCommand": "sudo dnf list --installed {0}",
 		"packageLookupCommand": "yum list installed {0}",
 		"expectedDistroFeedInstallDirectory" : "/usr/lib64/dotnet/sdk",
-        "expectedMicrosoftFeedInstallDirectory" : "/usr/bin/dotnet",
+        "expectedMicrosoftFeedInstallDirectory" : "",
 		"installedSDKVersionsCommand": "dotnet --list-sdks",
 		"installedRuntimeVersionsCommand": "dotnet --list-runtimes",
 		"currentInstallationVersionCommand": "dotnet --version",
