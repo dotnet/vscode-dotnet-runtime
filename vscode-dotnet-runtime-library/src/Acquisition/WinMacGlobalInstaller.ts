@@ -1,5 +1,6 @@
 /* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as fs from 'fs';
@@ -38,7 +39,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         this.installerUrl = installerUrl
         this.installingVersion = installingVersion;
         this.commandRunner = executor ?? new CommandExecutor();
-        this.versionResolver = new VersionResolver(context.extensionState, context.eventStream);
+        this.versionResolver = new VersionResolver(context.extensionState, context.eventStream, context.timeoutValue, context.proxyUrl);
         this.file = new FileUtilities();
     }
 
@@ -74,7 +75,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         const validInstallerStatusCodes = ['0', '1641', '3010']; // Ok, Pending Reboot, + Reboot Starting Now
         if(validInstallerStatusCodes.includes(installerResult))
         {
-            return '0'; // These statuses are a success, we dont want to throw.
+            return '0'; // These statuses are a success, we don't want to throw.
         }
         else
         {
@@ -109,7 +110,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
                 fs.mkdirSync(installerDir);
             }
 
-            // The file has already been downloaded before. Note that a user couldve added a file here. This is part of why we should sign check the file before launch.
+            // The file has already been downloaded before. Note that a user could've added a file here. This is part of why we should sign check the file before launch.
             if(fs.existsSync(dest))
             {
                 resolve();
@@ -166,13 +167,13 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         {
             // The program files should always be set, but in the off chance they are wiped, we can try to use the default as backup.
             // Both ia32 and x64 machines will use 'Program Files'
-            // We don't anticipate a user would need to install the x86 SDK, and we dont have any routes that support that yet.
+            // We don't anticipate a user would need to install the x86 SDK, and we don't have any routes that support that yet.
             return path.resolve(path.join(process.env.programfiles!, 'dotnet', 'sdk') ?? `C:\\Program Files\\dotnet\\sdk\\`);
         }
         else if(os.platform() === 'darwin')
         {
             // On an arm machine we would install to /usr/local/share/dotnet/x64/dotnet/sdk` for a 64 bit sdk
-            // but we dont currently allow customizing the install architecture so that would never happen.
+            // but we don't currently allow customizing the install architecture so that would never happen.
             return path.resolve(`/usr/local/share/dotnet/sdk`);
         }
 
@@ -201,7 +202,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         else
         {
             let command = `${path.resolve(installerPath)}`;
-            if(this.file.isElevated())
+            if(this.file.isElevated(this.acquisitionContext.eventStream))
             {
                 command += ' /quiet /install /norestart';
             }

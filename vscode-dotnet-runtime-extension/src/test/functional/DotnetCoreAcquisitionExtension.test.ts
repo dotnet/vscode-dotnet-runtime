@@ -1,13 +1,15 @@
-/* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ */
+/*---------------------------------------------------------------------------------------------
+*  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
+*--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import * as rimraf from 'rimraf';
 import * as vscode from 'vscode';
 import {
+  DotnetCoreAcquisitionWorker,
   IDotnetAcquireContext,
   IDotnetAcquireResult,
   ITelemetryEvent,
@@ -17,8 +19,8 @@ import {
   MockWindowDisplayWorker,
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
-const assert = chai.assert;
 /* tslint:disable:no-any */
+const assert : any = chai.assert;
 
 suite('DotnetCoreAcquisitionExtension End to End', function() {
   this.retries(3);
@@ -99,42 +101,51 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   }).timeout(60000);
 
   test('Telemetry Sent During Install and Uninstall', async () => {
-    const context: IDotnetAcquireContext = { version: '2.2', requestingExtensionId };
+    const rntVersion = '2.2';
+    const fullyResolvedVersion = '2.2.8'; // 2.2 is very much out of support, so we don't expect this to change to a newer version
+    const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(fullyResolvedVersion, os.arch());
+
+    const context: IDotnetAcquireContext = { version: rntVersion, requestingExtensionId };
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
     assert.exists(result);
     assert.exists(result!.dotnetPath);
     assert.include(result!.dotnetPath, context.version);
     // Check that we got the expected telemetry
     const requestedEvent = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === 'DotnetAcquisitionRequested');
-    assert.exists(requestedEvent);
-    assert.include(requestedEvent!.properties!.AcquisitionStartVersion, '2.2');
-    assert.include(requestedEvent!.properties!.RequestingExtensionId, requestingExtensionId);
+    assert.exists(requestedEvent, 'The acquisition requested event is found');
+    assert.include(requestedEvent!.properties!.AcquisitionStartVersion, rntVersion, 'The acquisition requested event contains the version');
+    // assert that the extension id is hashed by checking that it DNE
+    assert.notInclude(requestedEvent!.properties!.RequestingExtensionId, requestingExtensionId, 'The extension id is hashed in telemetry');
+
     const startedEvent = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === 'DotnetAcquisitionStarted');
-    assert.exists(startedEvent);
-    assert.include(startedEvent!.properties!.AcquisitionStartVersion, '2.2');
+    assert.exists(startedEvent, 'Acquisition started event gets published');
+    assert.include(startedEvent!.properties!.AcquisitionStartVersion, rntVersion, 'Acquisition started event has a starting version');
+    assert.include(startedEvent!.properties!.AcquisitionInstallKey, installKey, 'Acquisition started event has a install key');
+
     const completedEvent = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === 'DotnetAcquisitionCompleted');
-    assert.exists(completedEvent);
-    assert.include(completedEvent!.properties!.AcquisitionCompletedVersion, '2.2');
+    assert.exists(completedEvent, 'Acquisition completed events exist');
+    assert.include(completedEvent!.properties!.AcquisitionCompletedVersion, rntVersion, 'Acquisition completed events have a version');
 
     await vscode.commands.executeCommand<string>('dotnet.uninstallAll');
-    assert.isFalse(fs.existsSync(result!.dotnetPath));
+    assert.isFalse(fs.existsSync(result!.dotnetPath), 'Dotnet is uninstalled correctly.');
     const uninstallStartedEvent = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === 'DotnetUninstallAllStarted');
-    assert.exists(uninstallStartedEvent);
+    assert.exists(uninstallStartedEvent, 'Uninstall All is reported in telemetry');
+
     const uninstallCompletedEvent = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === 'DotnetUninstallAllCompleted');
-    assert.exists(uninstallCompletedEvent);
+    assert.exists(uninstallCompletedEvent, 'Uninstall All success is reported in telemetry');
     // Check that no errors were reported
     const errors = MockTelemetryReporter.telemetryEvents.filter((event: ITelemetryEvent) => event.eventName.includes('Error'));
-    assert.isEmpty(errors);
+    assert.isEmpty(errors, 'No error events were reported in telemetry reporting');
   }).timeout(40000);
 
   test('Telemetry Sent on Error', async () => {
     const context: IDotnetAcquireContext = { version: 'foo', requestingExtensionId };
     try {
       await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
-      assert(false); // An error should have been thrown
+      assert.isTrue(false); // An error should have been thrown
     } catch (error) {
       const versionError = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === '[ERROR]:DotnetVersionResolutionError');
-      assert.exists(versionError);
+      assert.exists(versionError, 'The version resolution error appears in telemetry');
     }
   }).timeout(2000);
 

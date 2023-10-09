@@ -1,7 +1,7 @@
-/* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ */
+/*---------------------------------------------------------------------------------------------
+*  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
+*--------------------------------------------------------------------------------------------*/
 import * as fs from 'fs';
 import * as open from 'open';
 import {
@@ -38,7 +38,8 @@ export namespace errorConstants {
 }
 
 export namespace timeoutConstants {
-    export const timeoutMessage = `.NET installation timed out. You may need to change the timeout time if you have a slow connection. Please see: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#install-script-timeouts.`;
+    export const timeoutMessage = `.NET installation timed out. You may need to change the timeout time if you have a slow connection. Please see: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#install-script-timeouts.
+Note that our websites may be blocked in China or experience significant timeouts, and you may want to install .NET manually.`;
     export const moreInfoOption = 'Change Timeout Value';
 }
 

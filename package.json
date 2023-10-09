@@ -16,5 +16,8 @@
 	"dependencies": {
 		"rimraf": "^5.0.1",
 		"vsce": "2.11.0"
+	},
+	"devDependencies": {
+		"@types/source-map-support": "^0.5.6"
 	}
 }

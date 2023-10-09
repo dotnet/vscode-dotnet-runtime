@@ -1,5 +1,6 @@
 /* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
@@ -40,7 +41,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
         const commandResult = await this.commandRunner.execute(command);
 
         const noPackageResult = 'no packages found';
-        return commandResult[0].includes(noPackageResult);
+        return commandResult[0].toLowerCase().includes(noPackageResult);
     }
 
     public getExpectedDotnetDistroFeedInstallationDirectory(): Promise<string>

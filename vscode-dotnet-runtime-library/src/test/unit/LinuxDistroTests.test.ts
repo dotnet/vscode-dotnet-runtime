@@ -1,5 +1,6 @@
 /* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
@@ -32,7 +33,7 @@ suite('Linux Distro Logic Unit Tests', () =>
     test('Package Check Succeeds', async () => {
         if(shouldRun)
         {
-            // assert this passes : we dont want the test to be reliant on machine state for whether the package exists or not, so dont check output
+            // assert this passes : we don't want the test to be reliant on machine state for whether the package exists or not, so don't check output
             await provider.dotnetPackageExistsOnSystem(mockVersion);
             assert.equal(mockExecutor.attemptedCommand, 'dpkg -l dotnet-sdk-7.0');
         }
@@ -123,8 +124,8 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
     test('Recommends Correct Version', async () => {
         if(shouldRun)
         {
-            const recoVersion = provider.getRecommendedDotnetVersion();
-            assert.equal(recoVersion, '7.0.1xx');
+            const recVersion = provider.getRecommendedDotnetVersion();
+            assert.equal(recVersion, '7.0.1xx');
         }
     });
 
@@ -136,7 +137,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
             assert.equal(supported, false);
             supported = await provider.isDotnetVersionSupported('7.0.101');
             assert.equal(supported, true);
-            // this feature band isnt supported by most distros yet.
+            // this feature band isn't supported by most distros yet.
             supported = await provider.isDotnetVersionSupported('7.0.201');
             assert.equal(supported, false);
         }
