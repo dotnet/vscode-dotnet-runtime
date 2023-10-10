@@ -61,11 +61,11 @@ suite('Red Hat Distro Logic Unit Tests', () =>
         if(shouldRun)
         {
             mockExecutor.fakeReturnValue = `
-7.0.105 [/usr/lib/dotnet/sdk]
-7.0.104 [/usr/custom/dotnet/sdk]`;
+7.0.111 [/usr/lib64/dotnet/sdk]
+            `;
             let versions = await provider.getInstalledDotnetSDKVersions();
             mockExecutor.fakeReturnValue = '';
-            assert.deepStrictEqual(versions, ['7.0.105', '7.0.104']);
+            assert.deepStrictEqual(versions, ['7.0.111']);
 
             mockExecutor.fakeReturnValue = noDotnetString;
             versions = await provider.getInstalledDotnetSDKVersions();
@@ -78,11 +78,12 @@ suite('Red Hat Distro Logic Unit Tests', () =>
         if(shouldRun)
         {
             mockExecutor.fakeReturnValue = `
-Microsoft.NETCore.App 6.0.16 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]
-Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
+Microsoft.AspNetCore.App 7.0.11 [/usr/lib64/dotnet/shared/Microsoft.AspNetCore.App]
+Microsoft.NETCore.App 7.0.11 [/usr/lib64/dotnet/shared/Microsoft.NETCore.App]
+            `;
             let versions = await provider.getInstalledDotnetRuntimeVersions();
             mockExecutor.fakeReturnValue = '';
-            assert.deepStrictEqual(versions, ['6.0.16', '7.0.5']);
+            assert.deepStrictEqual(versions, ['7.0.11', '7.0.11']);
 
             mockExecutor.fakeReturnValue = noDotnetString;
             versions = await provider.getInstalledDotnetRuntimeVersions();
