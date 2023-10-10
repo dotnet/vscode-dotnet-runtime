@@ -7,6 +7,7 @@ import { GenericDistroSDKProvider } from './GenericDistroSDKProvider';
 import { DotnetDistroSupportStatus } from './LinuxVersionResolver';
 import * as path from 'path';
 import { version } from 'os';
+/* tslint:disable:no-any */
 
 export class RedHatDistroSDKProvider extends GenericDistroSDKProvider {
     private getCloestDistroVersion(distroVersions: any, versionTarget: number, versionKey: string)
@@ -54,8 +55,8 @@ export class RedHatDistroSDKProvider extends GenericDistroSDKProvider {
     public async getInstalledGlobalDotnetPathIfExists() : Promise<string | null>
     {
         const commandResult = await this.commandRunner.execute(this.myDistroCommands()[this.currentInstallPathCommandKey]);
-        if(commandResult[0].includes("no dotnet")){
-            return "";
+        if(commandResult[0].includes('no dotnet')){
+            return '';
         }
         return commandResult[0];
     }
@@ -78,7 +79,7 @@ export class RedHatDistroSDKProvider extends GenericDistroSDKProvider {
 
     public getExpectedDotnetMicrosoftFeedInstallationDirectory(): Promise<string>
     {
-        return Promise.resolve("");
+        return Promise.resolve('');
     }
 
     public async upgradeDotnet(versionToUpgrade : string): Promise<string>
