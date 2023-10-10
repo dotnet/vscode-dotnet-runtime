@@ -69,7 +69,7 @@ export class LinuxVersionResolver
 
     constructor(acquisitionContext : IAcquisitionWorkerContext, executor : ICommandExecutor | null = null, distroProvider : IDistroDotnetSDKProvider | null = null)
     {
-        this.commandRunner = executor ?? new CommandExecutor();
+        this.commandRunner = executor ?? new CommandExecutor(acquisitionContext.eventStream);
         this.acquisitionContext = acquisitionContext;
         this.versionResolver = new VersionResolver(acquisitionContext.extensionState, acquisitionContext.eventStream,
             acquisitionContext.timeoutValue, acquisitionContext.proxyUrl);

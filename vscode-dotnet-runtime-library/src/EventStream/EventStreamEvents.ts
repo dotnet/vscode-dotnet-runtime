@@ -130,6 +130,10 @@ export class DotnetInstallScriptAcquisitionError extends DotnetAcquisitionError 
     public readonly eventName = 'DotnetInstallScriptAcquisitionError';
 }
 
+export class OSXOpenNotAvailableError extends DotnetAcquisitionError {
+    public readonly eventName = 'OSXOpenNotAvailableError';
+}
+
 export class WebRequestError extends DotnetAcquisitionError {
     public readonly eventName = 'WebRequestError';
 }
@@ -383,6 +387,10 @@ export abstract class DotnetCustomMessageEvent extends DotnetAcquisitionMessage 
     public getProperties() {
         return { Message: this.eventMessage };
     }
+}
+
+export class DotnetVersionCategorizedEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetVersionCategorizedEvent';
 }
 
 export class DotnetCommandNotFoundEvent extends DotnetCustomMessageEvent {

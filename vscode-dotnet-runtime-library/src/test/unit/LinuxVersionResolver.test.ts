@@ -16,7 +16,7 @@ const assert = chai.assert;
 suite('Linux Version Resolver Tests', () =>
 {
     const mockVersion = '7.0.103';
-    const mockExecutor = new MockCommandExecutor();
+    const mockExecutor = new MockCommandExecutor(new MockEventStream());
     const pair : DistroVersionPair = { distro : 'Ubuntu', version : '22.04' };
     const shouldRun = os.platform() === 'linux';
     const context = util.getMockAcquiringContext(false);

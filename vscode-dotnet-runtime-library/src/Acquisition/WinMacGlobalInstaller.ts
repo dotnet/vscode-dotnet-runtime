@@ -12,7 +12,7 @@ import { FileUtilities } from '../Utils/FileUtilities';
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { VersionResolver } from './VersionResolver';
-import { DotnetConflictingGlobalWindowsInstallError, DotnetUnexpectedInstallerOSError } from '../EventStream/EventStreamEvents';
+import { DotnetAcquisitionDistroUnknownError, DotnetAcquisitionError, DotnetConflictingGlobalWindowsInstallError, DotnetUnexpectedInstallerOSError, OSXOpenNotAvailableError } from '../EventStream/EventStreamEvents';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 /* tslint:disable:only-arrow-functions */
@@ -38,7 +38,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         super(context);
         this.installerUrl = installerUrl
         this.installingVersion = installingVersion;
-        this.commandRunner = executor ?? new CommandExecutor();
+        this.commandRunner = executor ?? new CommandExecutor(context.eventStream);
         this.versionResolver = new VersionResolver(context.extensionState, context.eventStream, context.timeoutValue, context.proxyUrl);
         this.file = new FileUtilities();
     }
@@ -168,7 +168,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
             // The program files should always be set, but in the off chance they are wiped, we can try to use the default as backup.
             // Both ia32 and x64 machines will use 'Program Files'
             // We don't anticipate a user would need to install the x86 SDK, and we don't have any routes that support that yet.
-            return path.resolve(path.join(process.env.programfiles!, 'dotnet', 'sdk') ?? `C:\\Program Files\\dotnet\\sdk\\`);
+            return process.env.programfiles ? path.resolve(path.join(process.env.programfiles, 'dotnet', 'sdk')) : path.resolve(`C:\\Program Files\\dotnet\\sdk\\`);
         }
         else if(os.platform() === 'darwin')
         {
@@ -195,7 +195,22 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
             // For Mac:
             // We don't rely on the installer because it doesn't allow us to run without sudo, and we don't want to handle the user password.
             // The -W flag makes it so we wait for the installer .pkg to exit, though we are unable to get the exit code.
-            const commandResult = await this.commandRunner.execute(`open -W ${path.resolve(installerPath)}`);
+            let commandToExecute = `open`
+
+            const openAvailable = await this.commandRunner.TryFindWorkingCommand([`command -v open`, `/usr/bin/open`]);
+            if(openAvailable[1] && openAvailable[0] != 'command -v open')
+            {
+                commandToExecute = openAvailable[0];
+            }
+            else if(!openAvailable[1])
+            {
+                const error = new Error(`The 'open' command on OSX was not detected. This is likely due to the PATH environment variable on your system being clobbered by another program.
+Please correct your PATH variable or make sure the 'open' utility is installed so .NET can properly execute.`);
+                this.acquisitionContext.eventStream.post(new OSXOpenNotAvailableError(error));
+                throw error;
+            }
+
+            const commandResult = await this.commandRunner.execute(`${commandToExecute} -W ${path.resolve(installerPath)}`);
             this.commandRunner.returnStatus = false;
             return commandResult[0];
         }
