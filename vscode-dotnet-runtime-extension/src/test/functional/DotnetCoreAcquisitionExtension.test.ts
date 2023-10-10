@@ -82,6 +82,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.isFalse(fs.existsSync(result!.dotnetPath));
   }).timeout(40000);
 
+
   test('Install and Uninstall Multiple Versions', async () => {
     const versions = ['2.2', '3.0', '3.1'];
     let dotnetPaths: string[] = [];

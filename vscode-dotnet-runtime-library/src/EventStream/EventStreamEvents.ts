@@ -323,6 +323,10 @@ export class DotnetCommandNotFoundEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetCommandNotFoundEvent';
 }
 
+export class DotnetInstallGraveyardEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetInstallGraveyardEvent';
+}
+
 export class DotnetAlternativeCommandFoundEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetAlternativeCommandFoundEvent';
 }
