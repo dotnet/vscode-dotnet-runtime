@@ -397,8 +397,8 @@ export class DotnetCommandNotFoundEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetCommandNotFoundEvent';
 }
 
-export class DotnetFakeSDKEnvironmentVariableTriggered extends DotnetCustomMessageEvent {
-    public readonly eventName = 'DotnetFakeSDKEnvironmentVariableTriggered';
+export class CommandExecutionStdError extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionStdError';
 }
 
 export class DotnetGlobalAcquisitionBeginEvent extends DotnetCustomMessageEvent {
@@ -442,6 +442,34 @@ export class DotnetLegacyInstallDetectedEvent extends DotnetCustomMessageEvent {
 
 export class DotnetLegacyInstallRemovalRequestEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetLegacyInstallRemovalRequestEvent';
+}
+
+export class DotnetFakeSDKEnvironmentVariableTriggered extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFakeSDKEnvironmentVariableTriggered';
+}
+
+export class CommandExecutionNoStatusCodeWarning extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionNoStatusCodeWarning';
+}
+
+export class CommandExecutionSignalSentEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionSignalSentEvent';
+}
+
+export class CommandExecutionStatusEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionStatusEvent';
+}
+
+export class CommandExecutionEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionEvent';
+}
+
+export class CommandExecutionUserCompletedDialogueEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionUserCompletedDialogueEvent';
+}
+
+export class CommandExecutionUnderSudoEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionUnderSudoEvent';
 }
 
 export abstract class DotnetFileEvent extends DotnetAcquisitionMessage

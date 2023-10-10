@@ -4,7 +4,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as proc from 'child_process';
-import { DotnetAlternativeCommandFoundEvent, DotnetCommandNotFoundEvent, DotnetWSLSecurityError } from '../EventStream/EventStreamEvents';
+import { CommandExecutionEvent, CommandExecutionNoStatusCodeWarning, CommandExecutionSignalSentEvent, CommandExecutionStatusEvent, CommandExecutionStdError, CommandExecutionUnderSudoEvent, CommandExecutionUserCompletedDialogueEvent, DotnetAlternativeCommandFoundEvent, DotnetCommandNotFoundEvent, DotnetWSLSecurityError } from '../EventStream/EventStreamEvents';
 import {exec} from '@vscode/sudo-prompt';
 import { ICommandExecutor } from './ICommandExecutor';
 import path = require('path');
@@ -150,7 +150,7 @@ Please install the .NET SDK manually and add it to the path by following https:/
                     }
                     else
                     {
-                        this.eventStream.post(new CommandExecutionStdError(`The command ${commandFollowUps} encountered stdout and or stderr, continuing.
+                        this.eventStream.post(new CommandExecutionStdError(`The command ${command} with follow ups ${commandFollowUps} encountered stdout and or stderr, continuing.
 out: ${commandResult.stdout} err: ${commandResult.stderr}.`));
                         commandResults.push(commandResult.stdout?.toString() + commandResult.stderr?.toString());
                     }
