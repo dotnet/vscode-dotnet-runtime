@@ -198,7 +198,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
             let commandToExecute = `open`
 
             const openAvailable = await this.commandRunner.TryFindWorkingCommand([`command -v open`, `/usr/bin/open`]);
-            if(openAvailable[1] && openAvailable[0] != 'command -v open')
+            if(openAvailable[1] && openAvailable[0] !== 'command -v open')
             {
                 commandToExecute = openAvailable[0];
             }

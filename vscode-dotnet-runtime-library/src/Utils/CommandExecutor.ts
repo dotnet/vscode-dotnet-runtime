@@ -4,7 +4,18 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as proc from 'child_process';
-import { CommandExecutionEvent, CommandExecutionNoStatusCodeWarning, CommandExecutionSignalSentEvent, CommandExecutionStatusEvent, CommandExecutionStdError, CommandExecutionUnderSudoEvent, CommandExecutionUserCompletedDialogueEvent, DotnetAlternativeCommandFoundEvent, DotnetCommandNotFoundEvent, DotnetWSLSecurityError } from '../EventStream/EventStreamEvents';
+import {
+    CommandExecutionEvent,
+    CommandExecutionNoStatusCodeWarning,
+    CommandExecutionSignalSentEvent,
+    CommandExecutionStatusEvent,
+    CommandExecutionStdError,
+    CommandExecutionUnderSudoEvent,
+    CommandExecutionUserCompletedDialogueEvent,
+    DotnetAlternativeCommandFoundEvent,
+    DotnetCommandNotFoundEvent,
+    DotnetWSLSecurityError
+} from '../EventStream/EventStreamEvents';
 import {exec} from '@vscode/sudo-prompt';
 import { ICommandExecutor } from './ICommandExecutor';
 import path = require('path');
