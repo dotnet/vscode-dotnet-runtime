@@ -420,6 +420,10 @@ export class DotnetCompletedGlobalInstallerExecution extends DotnetCustomMessage
 export class DotnetGlobalAcquisitionCompletionEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetGlobalAcquisitionCompletionEvent';
 }
+export class DotnetInstallGraveyardEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetInstallGraveyardEvent';
+}
+
 export class DotnetAlternativeCommandFoundEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetAlternativeCommandFoundEvent';
 }

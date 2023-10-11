@@ -73,6 +73,14 @@ export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker {
     }
 }
 
+export class MockDotnetCoreAcquisitionWorker extends DotnetCoreAcquisitionWorker
+{
+    public AddToGraveyard(installKey : string, installPath : string)
+    {
+        this.updateGraveyard(installKey, installPath);
+    }
+}
+
 export class RejectingAcquisitionInvoker extends IAcquisitionInvoker {
     public installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
         return new Promise<void>((resolve, reject) => {

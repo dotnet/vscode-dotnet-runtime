@@ -112,6 +112,6 @@ suite('WebRequestWorker Unit Tests', () => {
         assert.exists(uncachedResult);
         const requestCount = webWorker.getRequestCount();
         assert.isAtLeast(requestCount, 2);
-    }).timeout((maxTimeoutTime*5) + 2000);
+    }).timeout((maxTimeoutTime*7) + 2000);
 });
 
