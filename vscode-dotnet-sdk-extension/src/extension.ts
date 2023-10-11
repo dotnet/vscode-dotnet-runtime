@@ -251,7 +251,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 }
 
 function setPathEnvVar(pathAddition: string, displayWorker: IWindowDisplayWorker, environmentVariables: vscode.EnvironmentVariableCollection, isGlobal : boolean) {
-    if(!isGlobal || os.platform() !== 'linux')
+    if(!isGlobal || os.platform() === 'linux')
     {
         // Set user PATH variable. The .NET SDK Installer does this for us on Win/Mac.
         let pathCommand: string | undefined;
