@@ -10,29 +10,36 @@ import { version } from 'os';
 /* tslint:disable:no-any */
 
 export class RedHatDistroSDKProvider extends GenericDistroSDKProvider {
-    private getCloestDistroVersion(distroVersions: any, versionTarget: number, versionKey: string)
+    /**
+     * 
+     * @param distroVersions - The available versions for .NET for given distribution
+     * @param versionTarget - The version targeted for .NET
+     * @param versionKey - The key to the version
+     * @returns The closest version available between the available versions of the distribution and the target SDK version
+     */
+    private getClosestDistroVersion(distroVersions: any, versionTarget: number, versionKey: string)
     {
         if(distroVersions.length === 0){
             return null;
         }
 
-        let cloestDistroVersion = distroVersions[0];
-        let cloestDifference = Math.abs(versionTarget - cloestDistroVersion[this.versionKey]);
+        let closestDistroVersion = distroVersions[0];
+        let closestDifference = Math.abs(versionTarget - closestDistroVersion[this.versionKey]);
 
         for(const num of distroVersions){
             const difference = Math.abs(versionTarget - num[this.versionKey]);
-            if(difference < cloestDifference){
-                cloestDistroVersion = num;
-                cloestDifference = difference;
+            if(difference < closestDifference){
+                closestDistroVersion = num;
+                closestDifference = difference;
             }
         }
-        return cloestDistroVersion;
+        return closestDistroVersion;
     }
 
     protected myVersionPackages() : any
     {
         const distroVersions = this.distroJson[this.distroVersion.distro][this.distroVersionsKey];
-        return this.getCloestDistroVersion(distroVersions, parseFloat(this.distroVersion.version), this.versionKey);
+        return this.getClosestDistroVersion(distroVersions, parseFloat(this.distroVersion.version), this.versionKey);
     }
 
     public async getInstalledGlobalDotnetPathIfExists() : Promise<string | null>
@@ -42,25 +49,5 @@ export class RedHatDistroSDKProvider extends GenericDistroSDKProvider {
             return '';
         }
         return commandResult[0];
-    }
-
-    public async getInstalledDotnetSDKVersions(): Promise<string[]>
-    {
-        const command = this.myDistroCommands()[this.installedSDKVersionsCommandKey];
-        const commandResult = await this.commandRunner.execute(command);
-
-        const outputLines : string[] = commandResult[0].split('\n');
-        const versions : string[]  = [];
-
-        for(const line of outputLines)
-        {
-            const splitLine = line.split(/\s+/);
-            // list sdk lines shows in the form: version [path], so the version is the 2nd item
-            if(splitLine.length === 2 && splitLine[0].length > 0)
-            {
-                versions.push(splitLine[0]);
-            }
-        }
-        return versions;
     }
 }

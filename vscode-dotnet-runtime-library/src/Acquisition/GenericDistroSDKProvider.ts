@@ -86,7 +86,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
         {
             const splitLine = line.split(/\s+/);
             // list sdk lines shows in the form: version [path], so the version is the 2nd item
-            if(splitLine.length === 2)
+            if(splitLine.length === 2 && splitLine[0].length > 0)
             {
                 versions.push(splitLine[0]);
             }
