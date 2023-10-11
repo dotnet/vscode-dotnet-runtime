@@ -139,7 +139,8 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         try
         {
             // Check if PowerShell exists and is on the path.
-            const commandWorking = await new CommandExecutor(this.eventStream).TryFindWorkingCommand([`command -v open`]);
+            const commandWorking = await new CommandExecutor(this.eventStream).TryFindWorkingCommand([`powershell.exe`,
+                `%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`, `pwsh`, `powershell`, `pwsh.exe`]);
             if(!commandWorking[1])
             {
                 knownError = true;
