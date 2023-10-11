@@ -284,8 +284,6 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
     private async acquireGlobalCore(globalInstallerResolver : GlobalInstallerResolver, installKey : string): Promise<string>
     {
-        this.context.eventStream.post(new DotnetGlobalAcquisitionBeginEvent(`The version we resolved that was requested is.`));
-
         const installingVersion = await globalInstallerResolver.getFullySpecifiedVersion();
         this.context.eventStream.post(new DotnetGlobalVersionResolutionCompletionEvent(`The version we resolved that was requested is: ${installingVersion}.`));
         this.checkForPartialInstalls(installKey, installingVersion, false, false);

@@ -15,6 +15,7 @@ import { VersionResolver } from './VersionResolver';
 import { DotnetAcquisitionDistroUnknownError, DotnetAcquisitionError, DotnetConflictingGlobalWindowsInstallError, DotnetUnexpectedInstallerOSError, OSXOpenNotAvailableError } from '../EventStream/EventStreamEvents';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+import { WebRequestWorker } from '../Utils/WebRequestWorker';
 /* tslint:disable:only-arrow-functions */
 /* tslint:disable:no-empty */
 
@@ -32,6 +33,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
     public cleanupInstallFiles = true;
     protected versionResolver : VersionResolver;
     protected file : FileUtilities;
+    protected webWorker : WebRequestWorker;
 
     constructor(context : IAcquisitionWorkerContext, installingVersion : string, installerUrl : string, executor : ICommandExecutor | null = null)
     {
@@ -41,6 +43,8 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         this.commandRunner = executor ?? new CommandExecutor(context.eventStream);
         this.versionResolver = new VersionResolver(context.extensionState, context.eventStream, context.timeoutValue, context.proxyUrl);
         this.file = new FileUtilities();
+        this.webWorker = new WebRequestWorker(context.extensionState, context.eventStream,
+            installerUrl, this.acquisitionContext.timeoutValue, this.acquisitionContext.proxyUrl);
     }
 
     public async installSDK(): Promise<string>
@@ -93,72 +97,14 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         const ourInstallerDownloadFolder = IGlobalInstaller.getDownloadedInstallFilesFolder();
         this.file.wipeDirectory(ourInstallerDownloadFolder);
         const installerPath = path.join(ourInstallerDownloadFolder, `${installerUrl.split('/').slice(-1)}`);
-        await this.download(installerUrl, installerPath);
+
+        const installerDir = path.dirname(installerPath);
+        if (!fs.existsSync(installerDir)){
+            fs.mkdirSync(installerDir);
+        }
+
+        await this.webWorker.downloadFile(installerUrl, installerPath);
         return installerPath;
-    }
-
-    /**
-     *
-     * @returns an empty promise. It will download the file from the url. The url is expected to be a file server that responds with the file directly.
-     * We cannot use a simpler download pattern because we need to download and match the installer file exactly as-is from the server as opposed to writing/copying the bits we are given.
-     */
-    private async download(url : string, dest : string) {
-        return new Promise<void>((resolve, reject) => {
-
-            const installerDir = path.dirname(dest);
-            if (!fs.existsSync(installerDir)){
-                fs.mkdirSync(installerDir);
-            }
-
-            // The file has already been downloaded before. Note that a user could've added a file here. This is part of why we should sign check the file before launch.
-            if(fs.existsSync(dest))
-            {
-                resolve();
-            }
-
-            const file = fs.createWriteStream(dest, { flags: 'wx' });
-
-            const request = https.get(url, response => {
-                if (response.statusCode === 200)
-                {
-                    response.pipe(file);
-                }
-                else
-                {
-                    file.close();
-                    fs.unlink(dest, () => {}); // Delete incomplete file download
-                    reject(`Server responded with ${response.statusCode}: ${response.statusMessage}`);
-                }
-            });
-
-            request.on('error', err =>
-            {
-                file.close();
-                fs.unlink(dest, () => {}); // Delete incomplete file download
-                reject(err.message);
-            });
-
-            file.on('finish', () =>
-            {
-                resolve();
-            });
-
-            file.on('error', err =>
-            {
-                file.close();
-
-                if (err.message.includes('EEXIST'))
-                {
-                    // 2+ concurrent requests to download the installer occurred and ours got to the race last.
-                    resolve();
-                }
-                else
-                {
-                    fs.unlink(dest, () => {}); // Delete incomplete file download
-                    reject(err.message);
-                }
-            });
-        });
     }
 
     public async getExpectedGlobalSDKPath(specificSDKVersionInstalled : string, installedArch : string) : Promise<string>
