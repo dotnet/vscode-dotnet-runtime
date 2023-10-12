@@ -4,9 +4,11 @@
  * ------------------------------------------------------------------------------------------ */
 /* tslint:disable:no-any */
 
+import { IEventStream } from "../EventStream/EventStream";
+
 export abstract class IFileUtilities
 {
-    public abstract writeFileOntoDisk(scriptContent: string, filePath: string) : void;
+    public abstract writeFileOntoDisk(scriptContent: string, filePath: string, eventStream : IEventStream) : void;
 
     /**
      * @param directoryToWipe the directory to delete all of the files in if privellege to do so exists.
@@ -17,7 +19,7 @@ export abstract class IFileUtilities
      *
      * @returns true if the process is running with admin privelleges on windows.
      */
-    public abstract isElevated() : boolean;
+    public abstract isElevated(eventStream? : IEventStream) : boolean;
 
     public abstract getFileHash(filePath : string) : Promise<string | null>;
 };
