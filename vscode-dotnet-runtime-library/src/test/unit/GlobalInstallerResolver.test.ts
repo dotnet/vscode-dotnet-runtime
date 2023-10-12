@@ -1,5 +1,6 @@
 /* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
@@ -18,20 +19,20 @@ const majorMinorOnly = '7.0';
 const context = new MockExtensionContext();
 const eventStream = new MockEventStream();
 const filePath = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-channel-7-index.json');
-const webWorker = new FileWebRequestWorker(context, eventStream, filePath);
-
+const webWorker = new FileWebRequestWorker(context, eventStream, '', '', filePath);
+const timeoutTime = 10000;
 
 suite('Global Installer Resolver Tests', () =>
 {
     test('It finds the newest patch version given a feature band', async () => {
-        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, featureBandVersion);
+        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, featureBandVersion, timeoutTime, undefined);
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullySpecifiedVersion(), newestFeatureBandedVersion);
     });
 
     test('It finds the correct installer download url for the os', async () => {
-        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, mockVersion);
+        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, mockVersion, timeoutTime, undefined);
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullySpecifiedVersion(), mockVersion);
@@ -44,26 +45,26 @@ suite('Global Installer Resolver Tests', () =>
         {
             assert.include(installerUrl, 'pkg');
         }
-        // The architecture in the installer file will match unless its x32, in which case itll be called x86.
-        assert.include(installerUrl, (os.arch() === 'x32' ? 'x86' : os.arch()));
+        // The architecture in the installer file will match unless its x32, in which case it'll be called x86.
+        assert.include(installerUrl, (os.arch() === 'ia32' ? 'x86' : os.arch()));
     });
 
     test('It parses the major format', async () => {
-        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, majorMinorOnly);
+        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, majorMinorOnly, timeoutTime, undefined);
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullySpecifiedVersion(), mockVersion);
     });
 
     test('It parses the major.minor format', async () => {
-        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, majorOnly);
+        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, majorOnly, timeoutTime, undefined);
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullySpecifiedVersion(), mockVersion);
     });
 
     test('It rejects correctly with undiscoverable feature band', async () => {
-        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, '7.0.500');
+        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, '7.0.500', timeoutTime, undefined);
         provider.customWebRequestWorker = webWorker;
 
         assert.isRejected(provider.getFullySpecifiedVersion());

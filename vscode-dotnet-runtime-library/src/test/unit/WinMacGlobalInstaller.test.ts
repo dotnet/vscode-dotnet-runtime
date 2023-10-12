@@ -1,5 +1,6 @@
 /* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
@@ -35,7 +36,7 @@ suite('Windows & Mac Global Installer Tests', () =>
     const mockVersion = '7.0.306';
     const mockUrl = 'https://download.visualstudio.microsoft.com/download/pr/4c0aaf08-3fa1-4fa0-8435-73b85eee4b32/e8264b3530b03b74b04ecfcf1666fe93/dotnet-sdk-7.0.306-win-x64.exe';
     const mockHash = '';
-    const mockExecutor = new MockCommandExecutor();
+    const mockExecutor = new MockCommandExecutor(new MockEventStream());
     const mockFileUtils = new MockFileUtilities();
     const installer : WinMacGlobalInstaller = new WinMacGlobalInstaller(mockContext(false), mockVersion, mockUrl, mockHash, mockExecutor);
     installer.file = mockFileUtils;

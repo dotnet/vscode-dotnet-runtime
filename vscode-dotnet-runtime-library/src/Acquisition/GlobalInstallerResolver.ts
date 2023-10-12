@@ -1,5 +1,6 @@
 /* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
@@ -13,17 +14,20 @@ import { DotnetFeatureBandDoesNotExistError,
         DotnetNoInstallerFileExistsError,
         DotnetUnexpectedInstallerArchitectureError,
         DotnetUnexpectedInstallerOSError,
+        DotnetVersionCategorizedEvent,
+        DotnetVersionResolutionCompleted,
         DotnetVersionResolutionError
 } from '../EventStream/EventStreamEvents';
 import { Debugging } from '../Utils/Debugging';
 import { IVersionResolver } from './IVersionResolver';
+import { FileUtilities } from '../Utils/FileUtilities';
 /* tslint:disable:no-any */
 /* tslint:disable:only-arrow-functions */
 
 /**
  * @remarks
  * This is similar to the version resolver but accepts a wider range of inputs such as '6', '6.1', or '6.0.3xx' or '6.0.301'.
- * It currently only is used for SDK Global acquistion to prevent breaking existing behaviors.
+ * It currently only is used for SDK Global acquisition to prevent breaking existing behaviors.
  * Throws various errors in the event that a version is incorrectly formatted, the sdk server is unavailable, etc.
  */
 export class GlobalInstallerResolver {
@@ -38,6 +42,12 @@ export class GlobalInstallerResolver {
     private fullySpecifiedVersionRequested : string;
 
     private expectedInstallerHash : string;
+
+    private timeoutSecs : number;
+
+    private proxyUrl : string | undefined;
+
+    protected fileUtilities : FileUtilities;
 
     private versionResolver : VersionResolver;
 
@@ -67,14 +77,19 @@ export class GlobalInstallerResolver {
     constructor(
         private readonly extensionState: IExtensionState,
         private readonly eventStream: IEventStream,
-        requestedVersion : string
+        requestedVersion : string,
+        timeoutTime : number,
+        proxyUrl : string | undefined
     )
     {
         this.requestedVersion = requestedVersion;
         this.discoveredInstallerUrl = '';
         this.fullySpecifiedVersionRequested = '';
         this.expectedInstallerHash = '';
-        this.versionResolver = new VersionResolver(extensionState, eventStream);
+        this.versionResolver = new VersionResolver(extensionState, eventStream, timeoutTime, proxyUrl);
+        this.timeoutSecs = timeoutTime;
+        this.proxyUrl = proxyUrl;
+        this.fileUtilities = new FileUtilities();
     }
 
 
@@ -121,37 +136,37 @@ export class GlobalInstallerResolver {
      *
      * @remarks this function maps the input version to a singular, specific and correct format based on the accepted version formats for global sdk installs.
      * @param version The requested version given to the API.
-     * @returns The installer download URL for the correct OS, Architecture, & Specific Version based on the given input version, and then the resolved version we determined to install.
+     * @returns The installer download URL for the correct OS, Architecture, & Specific Version based on the given input version, and then the resolved version we determined to install,
+     * ... followed by the expected hash.
      */
     private async routeRequestToProperVersionRequestType(version : string) : Promise<[string, string, string]>
     {
         if(this.versionResolver.isNonSpecificMajorOrMajorMinorVersion(version))
         {
-            Debugging.log(`The VersionResolver resolved the version to be major, or major.minor.`, this.eventStream);
+            this.eventStream.post(new DotnetVersionCategorizedEvent(`The VersionResolver resolved the version ${version} to be major, or major.minor.`));
             const numberOfPeriods = version.split('.').length - 1;
             const indexUrl = this.getIndexUrl(numberOfPeriods === 0 ? `${version}.0` : version);
             const indexJsonData = await this.fetchJsonObjectFromUrl(indexUrl);
-            const fullySpecifiedVersionRequested = indexJsonData[this.releasesLatestSdkKey];
+            const fullySpecifiedVersionRequested = indexJsonData![(this.releasesLatestSdkKey as any)];
             const installerUrlAndHash = await this.findCorrectInstallerUrlAndHash(fullySpecifiedVersionRequested, indexUrl);
             return [installerUrlAndHash[0], fullySpecifiedVersionRequested, installerUrlAndHash[1]];
         }
         else if(this.versionResolver.isNonSpecificFeatureBandedVersion(version))
         {
-            Debugging.log(`The VersionResolver resolved the version to be a N.Y.XXX version.`, this.eventStream);
+            this.eventStream.post(new DotnetVersionCategorizedEvent(`The VersionResolver resolved the version ${version} to be a N.Y.XXX version.`));
             const fullySpecifiedVersion = await this.getNewestSpecificVersionFromFeatureBand(version);
             const installerUrlAndHash = await this.findCorrectInstallerUrlAndHash(fullySpecifiedVersion, this.getIndexUrl(this.versionResolver.getMajorMinor(fullySpecifiedVersion)));
             return [installerUrlAndHash[0], fullySpecifiedVersion, installerUrlAndHash[1]];
         }
         else if(this.versionResolver.isFullySpecifiedVersion(version))
         {
-            Debugging.log(`The VersionResolver resolved the version to be a fully specified version.`, this.eventStream);
+            this.eventStream.post(new DotnetVersionCategorizedEvent(`The VersionResolver resolved the version ${version} to be a fully specified version.`));
             const fullySpecifiedVersionRequested = version;
             const indexUrl = this.getIndexUrl(this.versionResolver.getMajorMinor(fullySpecifiedVersionRequested));
             const installerUrlAndHash = await this.findCorrectInstallerUrlAndHash(fullySpecifiedVersionRequested, indexUrl);
             return [installerUrlAndHash[0], fullySpecifiedVersionRequested, installerUrlAndHash[1]];
         }
 
-        Debugging.log(`The VersionResolver could not resolve the version, version: ${version}.`, this.eventStream);
         const err = new DotnetVersionResolutionError(new Error(`${this.badResolvedVersionErrorString} ${version}`), version);
         this.eventStream.post(err);
         throw err.error;
@@ -161,7 +176,7 @@ export class GlobalInstallerResolver {
      *
      * @remarks this function handles finding the right os, arch url for the installer.
      * @param specificVersion the full, specific version, e.g. 7.0.301 to get.
-     * @param indexUrl The url of the index server that hosts installer downlod links.
+     * @param indexUrl The url of the index server that hosts installer download links.
      * @returns The installer url to download as the first item of a tuple and then the expected hash of said installer
      */
     private async findCorrectInstallerUrlAndHash(specificVersion : string, indexUrl : string) : Promise<[string, string]>
@@ -173,65 +188,27 @@ export class GlobalInstallerResolver {
             throw versionErr.error;
         }
 
-        const operatingSys : string = os.platform();
-        const operatingArch : string = os.arch();
-
-        let convertedOs = '';
-        let convertedArch = '';
-
-        switch(operatingSys)
+        const convertedOs = this.fileUtilities.nodeOSToDotnetOS(os.platform(), this.eventStream);
+        if(convertedOs === 'auto')
         {
-            case 'win32': {
-                convertedOs = 'win';
-                break;
-            }
-            case 'darwin': {
-                convertedOs = 'osx';
-                break;
-            }
-            case 'linux': {
-                convertedOs = operatingSys;
-                break;
-            }
-            default:
-            {
-                const osErr = new DotnetUnexpectedInstallerOSError(new Error(`The OS ${operatingSys} is currently unsupported or unknown.`));
-                this.eventStream.post(osErr);
-                throw osErr.error;
-            }
+            const osErr = new DotnetUnexpectedInstallerOSError(new Error(`The OS ${os.platform()} is currently unsupported or unknown.`));
+            this.eventStream.post(osErr);
+            throw osErr.error;
         }
 
-        switch(operatingArch)
+        const convertedArch = this.fileUtilities.nodeArchToDotnetArch(os.arch(), this.eventStream);
+        if(convertedArch === 'auto')
         {
-            case 'x64': {
-                convertedArch = operatingArch;
-                break;
-            }
-            case 'ia32': {
-                convertedArch = 'x86';
-                break;
-            }
-            case 'arm': {
-                convertedArch = operatingArch;
-                break;
-            }
-            case 'arm64': {
-                convertedArch = operatingArch;
-                break;
-            }
-            default:
-            {
-                const archErr = new DotnetUnexpectedInstallerArchitectureError(new Error(`The architecture ${operatingArch} is currently unsupported or unknown.
-                    Your architecture: ${os.arch()}. Your OS: ${os.platform()}.`));
-                this.eventStream.post(archErr);
-                throw archErr.error;
-            }
+            const archErr = new DotnetUnexpectedInstallerArchitectureError(new Error(`The architecture ${os.arch()} is currently unsupported or unknown.
+                Your architecture: ${os.arch()}. Your OS: ${os.platform()}.`));
+            this.eventStream.post(archErr);
+            throw archErr.error;
         }
 
         const desiredRidPackage = `${convertedOs}-${convertedArch}`;
 
-        const indexJson =  await this.fetchJsonObjectFromUrl(indexUrl);
-        const releases = indexJson[this.releasesJsonKey];
+        const indexJson : any = await this.fetchJsonObjectFromUrl(indexUrl);
+        const releases = indexJson![this.releasesJsonKey];
         if(releases.length === 0)
         {
             const jsonErr = new DotnetInvalidReleasesJSONError(new Error(`${this.releasesJsonErrorString}${indexUrl}`));
@@ -361,7 +338,7 @@ Please report this issue so it can be remedied or investigated.`));
         const indexUrl : string = this.getIndexUrl(this.versionResolver.getMajorMinor(version));
 
         // Get the sdks
-        const indexJson =  await this.fetchJsonObjectFromUrl(indexUrl);
+        const indexJson : any = await this.fetchJsonObjectFromUrl(indexUrl);
         const releases = indexJson[this.releasesJsonKey]
 
         if(releases.length === 0)
@@ -384,7 +361,6 @@ Please report this issue so it can be remedied or investigated.`));
             }
         }
 
-        // TODO: make a test for this error msg
         const availableBands = Array.from(new Set(sdks.map((x : any) => this.versionResolver.getFeatureBandFromVersion(x[this.releasesSdkVersionKey]))));
         const err = new DotnetFeatureBandDoesNotExistError(new Error(`The feature band '${band}' doesn't exist for the SDK major version '${version}'. Available feature bands for this SDK version are ${availableBands}.`));
         this.eventStream.post(err);
@@ -394,12 +370,12 @@ Please report this issue so it can be remedied or investigated.`));
     /**
      *
      * @param url The url containing raw json data to parse.
-     * @returns a serizled JSON object.
+     * @returns a serialized JSON object.
      * @remarks A wrapper around the real web request worker class to call into either the mock or real web worker. The main point of this function is  to dedupe logic.
      */
     private async fetchJsonObjectFromUrl(url : string)
     {
-        const webWorker = this.customWebRequestWorker ? this.customWebRequestWorker : new WebRequestWorker(this.extensionState, this.eventStream);
-        return webWorker.fetchJsonObjectFromUrl(url);
+        const webWorker = this.customWebRequestWorker ? this.customWebRequestWorker : new WebRequestWorker(this.extensionState, this.eventStream, url, this.timeoutSecs, this.proxyUrl);
+        return webWorker.getCachedData();
     }
 }

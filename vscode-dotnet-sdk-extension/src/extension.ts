@@ -1,7 +1,7 @@
-/* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ */
+/*---------------------------------------------------------------------------------------------
+*  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
+*--------------------------------------------------------------------------------------------*/
 
 import * as cp from 'child_process';
 import * as fs from 'fs';
@@ -40,7 +40,7 @@ import {
     Debugging,
 } from 'vscode-dotnet-runtime-library';
 
-import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquistionId';
+import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 import { GlobalInstallerResolver } from 'vscode-dotnet-runtime-library/dist/Acquisition/GlobalInstallerResolver';
 
 // tslint:disable no-var-requires
@@ -50,6 +50,7 @@ const packageJson = require('../package.json');
 namespace configKeys {
     export const installTimeoutValue = 'installTimeoutValue';
     export const enableTelemetry = 'enableTelemetry';
+    export const proxyUrl = 'proxyUrl';
 }
 namespace commandKeys {
     export const acquire = 'acquire';
@@ -63,7 +64,7 @@ namespace commandKeys {
 const commandPrefix = 'dotnet-sdk';
 const configPrefix = 'dotnetSDKAcquisitionExtension';
 const displayChannelName = '.NET SDK';
-const defaultTimeoutValue = 300;
+const defaultTimeoutValue = 600;
 const pathTroubleshootingOption = 'Troubleshoot';
 const troubleshootingUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-sdk.md';
 const knownExtensionIds = ['ms-dotnettools.sample-extension', 'ms-dotnettools.vscode-dotnet-pack'];
@@ -101,6 +102,9 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     };
 
     const timeoutValue = extensionConfiguration.get<number>(configKeys.installTimeoutValue);
+    const resolvedTimeoutSeconds = timeoutValue === undefined ? defaultTimeoutValue : timeoutValue;
+    const proxyUrl = extensionConfiguration.get<string>(configKeys.proxyUrl);
+
     let storagePath: string;
     if (os.platform() === 'win32') {
         // Install to %AppData% on windows to avoid running into long path errors
@@ -122,20 +126,20 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         storagePath,
         extensionState: context.globalState,
         eventStream,
-        acquisitionInvoker: new AcquisitionInvoker(context.globalState, eventStream),
+        acquisitionInvoker: new AcquisitionInvoker(context.globalState, eventStream, resolvedTimeoutSeconds),
         installationValidator: new InstallationValidator(eventStream),
-        timeoutValue: timeoutValue === undefined ? defaultTimeoutValue : timeoutValue,
+        timeoutValue: resolvedTimeoutSeconds,
         installDirectoryProvider: new SdkInstallationDirectoryProvider(storagePath),
         acquisitionContext : null
     });
 
-    const versionResolver = new VersionResolver(context.globalState, eventStream);
+    const versionResolver = new VersionResolver(context.globalState, eventStream, resolvedTimeoutSeconds);
 
     const getAvailableVersions = async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) : Promise<IDotnetListVersionsResult | undefined> =>
     {
 
         const versionsResult = await callWithErrorHandling(async () => {
-            const customVersionResolver = new VersionResolver(context.globalState, eventStream, customWebWorker);
+            const customVersionResolver = new VersionResolver(context.globalState, eventStream, resolvedTimeoutSeconds, proxyUrl, customWebWorker);
             return customVersionResolver.GetAvailableDotnetVersions(commandContext);
         }, issueContext(commandContext?.errorConfiguration, 'listVersions'));
 
@@ -155,8 +159,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         }
 
         const pathResult = callWithErrorHandling(async () => {
-            Debugging.log(`Beginning Acquisition.`, eventStream);
-            eventStream.post(new DotnetSDKAcquisitionStarted());
+            eventStream.post(new DotnetSDKAcquisitionStarted(commandContext.requestingExtensionId));
+
             eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
             acquisitionWorker.setAcquisitionContext(commandContext);
             if(commandContext.installType === 'global')
@@ -168,10 +172,10 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
                     throw Error(`No version was defined to install.`);
                 }
 
-                const globalInstallerResolver = new GlobalInstallerResolver(context.globalState, eventStream, commandContext.version);
+                const globalInstallerResolver = new GlobalInstallerResolver(context.globalState, eventStream, commandContext.version, resolvedTimeoutSeconds, proxyUrl);
                 const dotnetPath = await acquisitionWorker.acquireGlobalSDK(globalInstallerResolver);
 
-                setPathEnvVar(dotnetPath.dotnetPath, displayWorker, context.environmentVariableCollection);
+                setPathEnvVar(dotnetPath.dotnetPath, displayWorker, context.environmentVariableCollection, true);
                 Debugging.log(`Returning path: ${dotnetPath}.`, eventStream);
                 return dotnetPath;
             }
@@ -183,7 +187,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
                 const dotnetPath = await acquisitionWorker.acquireSDK(resolvedVersion);
 
                 const pathEnvVar = path.dirname(dotnetPath.dotnetPath);
-                setPathEnvVar(pathEnvVar, displayWorker, context.environmentVariableCollection);
+                setPathEnvVar(pathEnvVar, displayWorker, context.environmentVariableCollection, false);
                 return dotnetPath;
             }
         }, issueContext(commandContext.errorConfiguration, 'acquireSDK'));
@@ -252,17 +256,20 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         ...eventStreamObservers);
 }
 
-function setPathEnvVar(pathAddition: string, displayWorker: IWindowDisplayWorker, environmentVariables: vscode.EnvironmentVariableCollection) {
-    // Set user PATH variable
-    let pathCommand: string | undefined;
-    if (os.platform() === 'win32') {
-        pathCommand = getWindowsPathCommand(pathAddition);
-    } else {
-        pathCommand = getLinuxPathCommand(pathAddition);
-    }
+function setPathEnvVar(pathAddition: string, displayWorker: IWindowDisplayWorker, environmentVariables: vscode.EnvironmentVariableCollection, isGlobal : boolean) {
+    if(!isGlobal || os.platform() === 'linux')
+    {
+        // Set user PATH variable. The .NET SDK Installer does this for us on Win/Mac.
+        let pathCommand: string | undefined;
+        if (os.platform() === 'win32') {
+            pathCommand = getWindowsPathCommand(pathAddition);
+        } else {
+            pathCommand = getLinuxPathCommand(pathAddition);
+        }
 
-    if (pathCommand !== undefined) {
-        runPathCommand(pathCommand, displayWorker);
+        if (pathCommand !== undefined) {
+            runPathCommand(pathCommand, displayWorker);
+        }
     }
 
     // Set PATH for VSCode terminal instances

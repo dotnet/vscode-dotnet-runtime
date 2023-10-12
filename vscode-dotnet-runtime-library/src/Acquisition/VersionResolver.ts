@@ -1,7 +1,8 @@
-/* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ */
+/*---------------------------------------------------------------------------------------------
+*  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
+*--------------------------------------------------------------------------------------------*/
+
 import * as semver from 'semver';
 import { IEventStream } from '../EventStream/EventStream';
 import {
@@ -21,6 +22,7 @@ import { DotnetVersionSupportPhase,
     IDotnetVersion
 } from '../IDotnetListVersionsContext';
 import { Debugging } from '../Utils/Debugging';
+/* tslint:disable:no-any */
 
 export class VersionResolver implements IVersionResolver {
     protected webWorker: WebRequestWorker;
@@ -29,10 +31,12 @@ export class VersionResolver implements IVersionResolver {
 
     constructor(extensionState: IExtensionState,
                 private readonly eventStream: IEventStream,
+                private readonly timeoutTime : number,
+                private readonly proxy?: string,
                 webWorker?: WebRequestWorker
     )
     {
-        this.webWorker = webWorker ?? new WebRequestWorker(extensionState, eventStream);
+        this.webWorker = webWorker ?? new WebRequestWorker(extensionState, eventStream, this.releasesUrl, this.timeoutTime * 1000, this.proxy);
     }
 
     /**
@@ -55,8 +59,7 @@ export class VersionResolver implements IVersionResolver {
         const shouldObtainSdkVersions : boolean = !commandContext?.listRuntimes;
         const availableVersions : IDotnetListVersionsResult = [];
 
-        const response = await this.webWorker.getCachedData(this.releasesUrl);
-
+        const response : any = await this.webWorker.getCachedData();
 
         return new Promise<IDotnetListVersionsResult>((resolve, reject) =>
         {
@@ -68,7 +71,7 @@ export class VersionResolver implements IVersionResolver {
             }
             else
             {
-                const sdkDetailsJson = JSON.parse(response)['releases-index'];
+                const sdkDetailsJson = response['releases-index'];
 
                 for(const availableSdk of sdkDetailsJson)
                 {
@@ -102,7 +105,16 @@ export class VersionResolver implements IVersionResolver {
      */
     private async getFullVersion(version: string, getRuntimeVersion: boolean): Promise<string>
     {
-        const releasesVersions = await this.getReleasesInfo(getRuntimeVersion);
+        let releasesVersions : IDotnetListVersionsResult;
+        try
+        {
+            releasesVersions = await this.getReleasesInfo(getRuntimeVersion);
+        }
+        catch(error)
+        {
+            throw error;
+        }
+
         return new Promise<string>((resolve, reject) =>
         {
             try
@@ -136,7 +148,6 @@ export class VersionResolver implements IVersionResolver {
 
     private validateVersionInput(version: string)
     {
-        Debugging.log(`Parsing version via semver: ${version}.`, this.eventStream);
         let parsedVer;
         try
         {

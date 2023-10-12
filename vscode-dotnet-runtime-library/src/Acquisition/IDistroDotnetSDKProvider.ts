@@ -1,5 +1,6 @@
 /* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as fs from 'fs';
@@ -16,7 +17,7 @@ import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
  * This interface describes the functionality needed to manage the .NET SDK on a specific distro and version of Linux.
  *
  * @remarks We accept community contributions of this interface for each distro-version pair.
- * All calls which require sudo must leverage the vscode/sudo library. We will not accept contributions that use other methods to gain admin privellege.
+ * All calls which require sudo must leverage the vscode/sudo library. We will not accept contributions that use other methods to gain admin privilege.
  * Please see DotnetDistroVersion as well to add your version.
  */
 export abstract class IDistroDotnetSDKProvider {
@@ -48,9 +49,9 @@ export abstract class IDistroDotnetSDKProvider {
 
     constructor(distroVersion : DistroVersionPair, context : IAcquisitionWorkerContext, executor : ICommandExecutor | null = null)
     {
-        this.commandRunner = executor ?? new CommandExecutor();
+        this.commandRunner = executor ?? new CommandExecutor(context.eventStream);
         this.distroVersion = distroVersion;
-        this.versionResolver = new VersionResolver(context.extensionState, context.eventStream);
+        this.versionResolver = new VersionResolver(context.extensionState, context.eventStream, context.timeoutValue, context.proxyUrl);
         // Hard-code to the upper path (lib/dist/acquisition) from __dirname to the lib folder, as webpack-copy doesn't seem to copy the distro-support.json
         const distroDataFile = path.join(__dirname, 'distro-data', `distro-support.json`);
         this.distroJson = JSON.parse(fs.readFileSync(distroDataFile, 'utf8'));
@@ -105,7 +106,7 @@ export abstract class IDistroDotnetSDKProvider {
     public abstract getExpectedDotnetMicrosoftFeedInstallationDirectory() : Promise<string>;
 
     /**
-     * Return true if theres a package for the dotnet version on the system with the same major as the requested fullySpecifiedVersion, false elsewise.
+     * Return true if theres a package for the dotnet version on the system with the same major as the requested fullySpecifiedVersion, false else.
      */
     public abstract dotnetPackageExistsOnSystem(fullySpecifiedVersion : string) : Promise<boolean>;
 
@@ -147,7 +148,7 @@ export abstract class IDistroDotnetSDKProvider {
     /**
      *
      * @param fullySpecifiedVersion The version of dotnet to check support for in the 3-part semver version.
-     * @returns true if the version is supported by default within the distro, false elsewise.
+     * @returns true if the version is supported by default within the distro, false else.
      */
     public async isDotnetVersionSupported(fullySpecifiedVersion : string) : Promise<boolean>
     {

@@ -1,7 +1,7 @@
-/* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ */
+/*---------------------------------------------------------------------------------------------
+*  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
+*--------------------------------------------------------------------------------------------*/
 
 import * as cp from 'child_process';
 import * as path from 'path';
@@ -26,7 +26,9 @@ export function activate(context: vscode.ExtensionContext) {
     "extensionDependencies": [
         "ms-dotnettools.vscode-dotnet-runtime",
         "ms-dotnettools.vscode-dotnet-sdk"
-    ]   
+    ]
+
+    This would enable the sample to require the vscode-dotnet-runtime extension
     */
 
     const requestingExtensionId = 'ms-dotnettools.sample-extension';

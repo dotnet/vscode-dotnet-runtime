@@ -1,5 +1,6 @@
 /* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as fs from 'fs';
@@ -12,12 +13,13 @@ import { FileUtilities } from '../Utils/FileUtilities';
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { VersionResolver } from './VersionResolver';
-import { DotnetConflictingGlobalWindowsInstallError, DotnetUnexpectedInstallerOSError } from '../EventStream/EventStreamEvents';
+import { DotnetAcquisitionDistroUnknownError, DotnetAcquisitionError, DotnetConflictingGlobalWindowsInstallError, DotnetUnexpectedInstallerOSError, OSXOpenNotAvailableError } from '../EventStream/EventStreamEvents';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import exp = require('constants');
 import { expect } from 'chai';
 import { IFileUtilities } from '../Utils/IFileUtilities';
+import { WebRequestWorker } from '../Utils/WebRequestWorker';
 /* tslint:disable:only-arrow-functions */
 /* tslint:disable:no-empty */
 
@@ -43,6 +45,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
     public cleanupInstallFiles = true;
     protected versionResolver : VersionResolver;
     public file : IFileUtilities;
+    protected webWorker : WebRequestWorker;
 
     constructor(context : IAcquisitionWorkerContext, installingVersion : string, installerUrl : string, installerHash : string, executor : ICommandExecutor | null = null)
     {
@@ -50,9 +53,11 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         this.installerUrl = installerUrl;
         this.installingVersion = installingVersion;
         this.installerHash = installerHash;
-        this.commandRunner = executor ?? new CommandExecutor();
-        this.versionResolver = new VersionResolver(context.extensionState, context.eventStream);
+        this.commandRunner = executor ?? new CommandExecutor(context.eventStream);
+        this.versionResolver = new VersionResolver(context.extensionState, context.eventStream, context.timeoutValue, context.proxyUrl);
         this.file = new FileUtilities();
+        this.webWorker = new WebRequestWorker(context.extensionState, context.eventStream,
+            installerUrl, this.acquisitionContext.timeoutValue, this.acquisitionContext.proxyUrl);
     }
 
     public async installSDK(): Promise<string>
@@ -95,7 +100,7 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
         const validInstallerStatusCodes = ['0', '1641', '3010']; // Ok, Pending Reboot, + Reboot Starting Now
         if(validInstallerStatusCodes.includes(installerResult))
         {
-            return '0'; // These statuses are a success, we dont want to throw.
+            return '0'; // These statuses are a success, we don't want to throw.
         }
         else
         {
@@ -113,72 +118,14 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
         const ourInstallerDownloadFolder = IGlobalInstaller.getDownloadedInstallFilesFolder();
         this.file.wipeDirectory(ourInstallerDownloadFolder);
         const installerPath = path.join(ourInstallerDownloadFolder, `${installerUrl.split('/').slice(-1)}`);
-        await this.download(installerUrl, installerPath);
+
+        const installerDir = path.dirname(installerPath);
+        if (!fs.existsSync(installerDir)){
+            fs.mkdirSync(installerDir);
+        }
+
+        await this.webWorker.downloadFile(installerUrl, installerPath);
         return installerPath;
-    }
-
-    /**
-     *
-     * @returns an empty promise. It will download the file from the url. The url is expected to be a file server that responds with the file directly.
-     * We cannot use a simpler download pattern because we need to download and match the installer file exactly as-is from the server as opposed to writing/copying the bits we are given.
-     */
-    private async download(url : string, dest : string) {
-        return new Promise<void>((resolve, reject) => {
-
-            const installerDir = path.dirname(dest);
-            if (!fs.existsSync(installerDir)){
-                fs.mkdirSync(installerDir);
-            }
-
-            // The file has already been downloaded before. Note that a user couldve added a file here. This is part of why we should sign check the file before launch.
-            if(fs.existsSync(dest))
-            {
-                resolve();
-            }
-
-            const file = fs.createWriteStream(dest, { flags: 'wx' });
-
-            const request = https.get(url, response => {
-                if (response.statusCode === 200)
-                {
-                    response.pipe(file);
-                }
-                else
-                {
-                    file.close();
-                    fs.unlink(dest, () => {}); // Delete incomplete file download
-                    reject(`Server responded with ${response.statusCode}: ${response.statusMessage}`);
-                }
-            });
-
-            request.on('error', err =>
-            {
-                file.close();
-                fs.unlink(dest, () => {}); // Delete incomplete file download
-                reject(err.message);
-            });
-
-            file.on('finish', () =>
-            {
-                resolve();
-            });
-
-            file.on('error', err =>
-            {
-                file.close();
-
-                if (err.message.includes('EEXIST'))
-                {
-                    // 2+ concurrent requests to download the installer occurred and ours got to the race last.
-                    resolve();
-                }
-                else
-                {
-                    fs.unlink(dest, () => {}); // Delete incomplete file download
-                    reject(err.message);
-                }
-            });
-        });
     }
 
     private async installerFileHasValidIntegrity(installerFile : string) : Promise<boolean>
@@ -213,13 +160,13 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
         {
             // The program files should always be set, but in the off chance they are wiped, we can try to use the default as backup.
             // Both ia32 and x64 machines will use 'Program Files'
-            // We don't anticipate a user would need to install the x86 SDK, and we dont have any routes that support that yet.
-            return path.resolve(path.join(process.env.programfiles!, 'dotnet', 'sdk') ?? `C:\\Program Files\\dotnet\\sdk\\`);
+            // We don't anticipate a user would need to install the x86 SDK, and we don't have any routes that support that yet.
+            return process.env.programfiles ? path.resolve(path.join(process.env.programfiles, 'dotnet', 'sdk')) : path.resolve(`C:\\Program Files\\dotnet\\sdk\\`);
         }
         else if(os.platform() === 'darwin')
         {
             // On an arm machine we would install to /usr/local/share/dotnet/x64/dotnet/sdk` for a 64 bit sdk
-            // but we dont currently allow customizing the install architecture so that would never happen.
+            // but we don't currently allow customizing the install architecture so that would never happen.
             return path.resolve(`/usr/local/share/dotnet/sdk`);
         }
 
@@ -241,14 +188,29 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
             // For Mac:
             // We don't rely on the installer because it doesn't allow us to run without sudo, and we don't want to handle the user password.
             // The -W flag makes it so we wait for the installer .pkg to exit, though we are unable to get the exit code.
-            const commandResult = await this.commandRunner.execute(`open -W ${path.resolve(installerPath)}`);
+            let commandToExecute = `open`
+
+            const openAvailable = await this.commandRunner.TryFindWorkingCommand([`command -v open`, `/usr/bin/open`]);
+            if(openAvailable[1] && openAvailable[0] !== 'command -v open')
+            {
+                commandToExecute = openAvailable[0];
+            }
+            else if(!openAvailable[1])
+            {
+                const error = new Error(`The 'open' command on OSX was not detected. This is likely due to the PATH environment variable on your system being clobbered by another program.
+Please correct your PATH variable or make sure the 'open' utility is installed so .NET can properly execute.`);
+                this.acquisitionContext.eventStream.post(new OSXOpenNotAvailableError(error));
+                throw error;
+            }
+
+            const commandResult = await this.commandRunner.execute(`${commandToExecute} -W ${path.resolve(installerPath)}`);
             this.commandRunner.returnStatus = false;
             return commandResult[0];
         }
         else
         {
             let command = `${path.resolve(installerPath)}`;
-            if(this.file.isElevated())
+            if(this.file.isElevated(this.acquisitionContext.eventStream))
             {
                 command += ' /quiet /install /norestart';
             }

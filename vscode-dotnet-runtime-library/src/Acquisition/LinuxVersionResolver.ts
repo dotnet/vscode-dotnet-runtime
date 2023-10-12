@@ -1,5 +1,6 @@
 /* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import { DotnetAcquisitionDistroUnknownError, DotnetConflictingLinuxInstallTypesError, DotnetCustomLinuxInstallExistsError } from '../EventStream/EventStreamEvents';
@@ -68,9 +69,10 @@ export class LinuxVersionResolver
 
     constructor(acquisitionContext : IAcquisitionWorkerContext, executor : ICommandExecutor | null = null, distroProvider : IDistroDotnetSDKProvider | null = null)
     {
-        this.commandRunner = executor ?? new CommandExecutor();
+        this.commandRunner = executor ?? new CommandExecutor(acquisitionContext.eventStream);
         this.acquisitionContext = acquisitionContext;
-        this.versionResolver = new VersionResolver(acquisitionContext.extensionState, acquisitionContext.eventStream);
+        this.versionResolver = new VersionResolver(acquisitionContext.extensionState, acquisitionContext.eventStream,
+            acquisitionContext.timeoutValue, acquisitionContext.proxyUrl);
         if(distroProvider)
         {
             this.distroSDKProvider = distroProvider;
@@ -168,7 +170,7 @@ export class LinuxVersionResolver
      * @param supportStatus The support status of this distro and version pair.
      * @param fullySpecifiedDotnetVersion The version of dotnet requested to install, upgrade, etc.
      * @remarks Throws a specific error below if a conflicting install type of dotnet exists on linux.
-     * Microsoft and distro feed packages together cause system instability with dotnet, so we dont want to let people get into those states.
+     * Microsoft and distro feed packages together cause system instability with dotnet, so we don't want to let people get into those states.
      * Eventually, we could add logic to remove them for users, but that may require consent first.
      */
     public async VerifyNoConflictInstallTypeExists(supportStatus : DotnetDistroSupportStatus, fullySpecifiedDotnetVersion : string) : Promise<void>
@@ -200,7 +202,7 @@ export class LinuxVersionResolver
     }
 
     /**
-     * Similar to VerifyNoConflictInstallTypeExists, but checks if a custom install exists. We dont want to override that.
+     * Similar to VerifyNoConflictInstallTypeExists, but checks if a custom install exists. We don't want to override that.
      * It could also cause unstable behavior and break a users current setup.
      */
     private async VerifyNoCustomInstallExists(supportStatus : DotnetDistroSupportStatus, fullySpecifiedDotnetVersion : string, existingInstall : string | null) : Promise<void>
