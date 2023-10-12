@@ -284,8 +284,8 @@ export class MockCommandExecutor extends ICommandExecutor
         return commandResults;
     }
 
-    public TryFindWorkingCommand(_: string[]): Promise<[string, boolean]> {
-        throw new Error('Method not implemented.');
+    public async TryFindWorkingCommand(commands: string[]): Promise<[string, boolean]> {
+        return [commands[0], true];
     }
 }
 
