@@ -44,6 +44,7 @@ import { IGlobalInstaller } from './IGlobalInstaller';
 import { LinuxGlobalInstaller } from './LinuxGlobalInstaller';
 import { Debugging } from '../Utils/Debugging';
 import { IDotnetAcquireContext } from '..';
+import { TelemetryObserver } from '../EventStream/TelemetryObserver';
 /* tslint:disable:no-any */
 
 export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker {
@@ -316,7 +317,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         const installedSDKPath : string = await installer.getExpectedGlobalSDKPath(installingVersion, os.arch());
 
-        this.setSDKTelemetryPolicy();
+        TelemetryObserver.setDotnetSDKTelemetryToMatch(this.context.isExtensionTelemetryInitiallyEnabled, this.context.eventStream);
 
         this.context.installationValidator.validateDotnetInstall(installingVersion, installedSDKPath, true);
 
@@ -333,12 +334,6 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     public setAcquisitionContext(context : IDotnetAcquireContext)
     {
         this.context.acquisitionContext = context;
-    }
-
-    private setSDKTelemetryPolicy()
-    {
-        const vsCodeTelemetryOk = process.env.isTelemetryEnabled;
-        const extensionTelemetryOk = '';
     }
 
     /**

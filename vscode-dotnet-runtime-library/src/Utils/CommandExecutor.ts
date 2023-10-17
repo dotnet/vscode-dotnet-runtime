@@ -20,6 +20,9 @@ import {exec} from '@vscode/sudo-prompt';
 import { ICommandExecutor } from './ICommandExecutor';
 import path = require('path');
 import { IEventStream } from '../EventStream/EventStream';
+import * as vscode from 'vscode';
+import * as os from 'os';
+
 /* tslint:disable:no-any */
 
 export class CommandExecutor extends ICommandExecutor
@@ -206,5 +209,23 @@ out: ${commandResult.stdout} err: ${commandResult.stderr}.`));
 
         this.returnStatus = oldReturnStatusSetting;
         return [workingCommand, working];
+    }
+
+    public async setEnvironmentVariable(variable : string, value : string)
+    {
+        // todo: verify this works on all os
+        process.env[variable] = value;
+        if(os.platform() === 'win32')
+        {
+            const setShellVariable = `set ${variable}=${value}`;
+            const setSystemVariable = `setx ${variable} "${value}"`;
+            await this.execute(setShellVariable);
+            await this.execute(setSystemVariable);
+        }
+        else
+        {
+            const setVariable = `${variable}=${value} && export ${variable}`
+            await this.execute(setVariable);
+        }
     }
 }

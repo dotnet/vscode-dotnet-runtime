@@ -20,4 +20,5 @@ export interface IAcquisitionWorkerContext {
     acquisitionContext? : IDotnetAcquireContext | null;
     installingArchitecture? : string | undefined | null;
     proxyUrl? : string | undefined;
+    isExtensionTelemetryInitiallyEnabled : boolean;
 }
