@@ -17,7 +17,8 @@ export class TelemetryObserver implements IEventStreamObserver {
     private readonly telemetryReporter: ITelemetryReporter;
 
     constructor(packageJson: IPackageJson, telemetryReporter?: ITelemetryReporter) {
-        if (telemetryReporter === undefined) {
+        if (telemetryReporter === undefined)
+        {
             const extensionVersion = packageJson.version;
             const appInsightsKey = packageJson.appInsightsKey;
             const extensionId = packageJson.name;

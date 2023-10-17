@@ -61,7 +61,7 @@ export class CommandExecutor extends ICommandExecutor
             // We had a working implementation that opens a vscode box and gets the user password, but that will require more security analysis.
 
             const err = new DotnetWSLSecurityError(new Error(`Automatic .NET SDK Installation is not yet supported in WSL due to VS Code & WSL limitations.
-Please install the .NET SDK manually and add it to the path by following https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#manually-installing-net`));
+Please install the .NET SDK manually by following https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu. Then, add it to the path by following https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#manually-installing-net`));
             this.eventStream.post(err);
             throw err.error;
         }

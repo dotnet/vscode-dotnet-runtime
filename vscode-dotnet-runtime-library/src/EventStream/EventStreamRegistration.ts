@@ -61,3 +61,20 @@ export function enableExtensionTelemetry(extensionConfiguration: IExtensionConfi
     const enableVSCodeTelemetry = vscodeTelemetry === undefined ? true : vscodeTelemetry;
     return enableVSCodeTelemetry && enableDotnetTelemetry;
 }
+
+export function isTelemetryEnabled(context: IEventStreamContext) : boolean
+{
+    return context.enableTelemetry;
+}
+
+vscode.env.onDidChangeTelemetryEnabled((newIsTelemetryEnabledSetting: boolean) =>
+{
+    if(newIsTelemetryEnabledSetting)
+    {
+
+    }
+    else
+    {
+
+    }
+});
