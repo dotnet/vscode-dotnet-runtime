@@ -214,7 +214,6 @@ export class FileUtilities extends IFileUtilities
 
     public async getFileHash(filePath : string) : Promise<string | null>
     {
- 
         const res = await this.sha512Hasher(filePath);
         return res;
     }

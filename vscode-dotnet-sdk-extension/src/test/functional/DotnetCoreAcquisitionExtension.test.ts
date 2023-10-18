@@ -153,6 +153,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
       installationValidator: new MockInstallationValidator(eventStream),
       timeoutValue: 10,
       installDirectoryProvider,
+      isExtensionTelemetryInitiallyEnabled: true
     });
 
     const version = currentSDKVersion;
@@ -202,6 +203,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
       installationValidator: new MockInstallationValidator(eventStream),
       timeoutValue: 10,
       installDirectoryProvider,
+      isExtensionTelemetryInitiallyEnabled: true,
     });
 
     const version = currentSDKVersion;

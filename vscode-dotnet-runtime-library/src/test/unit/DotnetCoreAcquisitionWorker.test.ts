@@ -56,7 +56,8 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
             installationValidator: new MockInstallationValidator(eventStream),
             timeoutValue: 10,
             installDirectoryProvider: runtimeInstall ? new RuntimeInstallationDirectoryProvider('') : new SdkInstallationDirectoryProvider(''),
-            installingArchitecture: arch
+            installingArchitecture: arch,
+            isExtensionTelemetryInitiallyEnabled: true
         });
         return [acquisitionWorker, eventStream, context];
     }
@@ -72,6 +73,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
             installationValidator: new MockInstallationValidator(eventStream),
             timeoutValue: 10,
             installDirectoryProvider: runtimeInstall ? new RuntimeInstallationDirectoryProvider('') : new SdkInstallationDirectoryProvider(''),
+            isExtensionTelemetryInitiallyEnabled: true
         });
         return [acquisitionWorker, eventStream, context];
     }
@@ -304,6 +306,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
             installationValidator: new MockInstallationValidator(eventStream),
             timeoutValue: 10,
             installDirectoryProvider: new RuntimeInstallationDirectoryProvider(''),
+            isExtensionTelemetryInitiallyEnabled: true
         });
 
         return assert.isRejected(acquisitionWorker.acquireRuntime('1.0'), '.NET Acquisition Failed: Installation failed: Rejecting message');

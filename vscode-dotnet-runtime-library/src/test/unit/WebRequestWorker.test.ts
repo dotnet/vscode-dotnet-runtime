@@ -51,6 +51,7 @@ suite('WebRequestWorker Unit Tests', () => {
             installationValidator: new MockInstallationValidator(eventStream),
             timeoutValue: 10,
             installDirectoryProvider: new RuntimeInstallationDirectoryProvider(''),
+            isExtensionTelemetryInitiallyEnabled: true
         });
         return assert.isRejected(acquisitionWorker.acquireRuntime('1.0'), Error, '.NET Acquisition Failed');
     });

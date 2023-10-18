@@ -70,11 +70,13 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         extensionContext.extensionConfiguration :
         vscode.workspace.getConfiguration(configPrefix);
 
+    const extensionTelemetryEnabled = enableExtensionTelemetry(extensionConfiguration, configKeys.enableTelemetry);
+
     const eventStreamContext = {
         displayChannelName,
         logPath: context.logPath,
         extensionId: dotnetCoreAcquisitionExtensionId,
-        enableTelemetry: enableExtensionTelemetry(extensionConfiguration, configKeys.enableTelemetry),
+        enableTelemetry: extensionTelemetryEnabled,
         telemetryReporter: extensionContext ? extensionContext.telemetryReporter : undefined,
         showLogCommand: `${commandPrefix}.${commandKeys.showAcquisitionLog}`,
         packageJson,
@@ -112,7 +114,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         installationValidator: new InstallationValidator(eventStream),
         timeoutValue: resolvedTimeoutSeconds,
         installDirectoryProvider: new RuntimeInstallationDirectoryProvider(context.globalStoragePath),
-        proxyUrl: proxyLink
+        proxyUrl: proxyLink,
+        isExtensionTelemetryInitiallyEnabled: extensionTelemetryEnabled
     });
     const existingPathResolver = new ExistingPathResolver();
     const versionResolver = new VersionResolver(context.globalState, eventStream, resolvedTimeoutSeconds, proxyLink);
@@ -197,4 +200,5 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         ensureDependenciesRegistration,
         reportIssueRegistration,
         ...eventStreamObservers);
+
 }

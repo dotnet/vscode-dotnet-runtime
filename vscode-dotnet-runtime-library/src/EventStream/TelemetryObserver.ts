@@ -80,7 +80,11 @@ export class TelemetryObserver implements IEventStreamObserver {
         if(!TelemetryObserver.isTelemetryEnabled(isExtensionTelemetryEnabled))
         {
             TelemetryObserver.logTelemetryChange(`Before disabling .NET SDK telemetry:`, isExtensionTelemetryEnabled, eventStream);
-            new CommandExecutor(eventStream).setEnvironmentVariable('DOTNET_CLI_TELEMETRY_OPTOUT', 'true');
+
+            new CommandExecutor(eventStream).setEnvironmentVariable('DOTNET_CLI_TELEMETRY_OPTOUT', 'true',
+`Telemetry is disabled for VS Code & the .NET Install Tool Extension, but the .NET SDK extension may still collect telemetry and we may not have successfully turned it off.
+Please verify that .NET SDK telemetry is disabled by setting the environment variable DOTNET_CLI_TELEMETRY_OPTOUT to true.`);
+
             TelemetryObserver.logTelemetryChange(`After disabling .NET SDK telemetry:`, isExtensionTelemetryEnabled, eventStream);
         }
         else

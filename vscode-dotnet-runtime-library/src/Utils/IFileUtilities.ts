@@ -4,7 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 /* tslint:disable:no-any */
 
-import { IEventStream } from "../EventStream/EventStream";
+import { IEventStream } from '../EventStream/EventStream';
 
 export abstract class IFileUtilities
 {

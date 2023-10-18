@@ -189,14 +189,14 @@ export class WebRequestWorker
             return;
         }
 
-        const finished = promisify(stream.finished);
+        const isFinished = promisify(stream.finished);
         const file = fs.createWriteStream(dest, { flags: 'wx' });
         const options = await this.getAxiosOptions(3, {responseType: 'stream', transformResponse: (x : any) => x}, false);
         await this.axiosGet(url, options)
         .then(response =>
         {
             response.data.pipe(file);
-            return finished(file);
+            return isFinished(file);
         });
     }
 

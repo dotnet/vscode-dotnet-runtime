@@ -74,11 +74,12 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         extensionContext.extensionConfiguration :
         vscode.workspace.getConfiguration(configPrefix);
 
+    const isExtensionTelemetryEnabled = enableExtensionTelemetry(extensionConfiguration, configKeys.enableTelemetry);
     const eventStreamContext = {
         displayChannelName,
         logPath: context.logPath,
         extensionId: dotnetCoreAcquisitionExtensionId,
-        enableTelemetry: enableExtensionTelemetry(extensionConfiguration, configKeys.enableTelemetry),
+        enableTelemetry: isExtensionTelemetryEnabled,
         telemetryReporter: extensionContext ? extensionContext.telemetryReporter : undefined,
         showLogCommand: `${commandPrefix}.${commandKeys.showAcquisitionLog}`,
         packageJson,
@@ -116,12 +117,6 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         }
     }
 
-    vscode.env.onDidChangeTelemetryEnabled((_: boolean) =>
-    {
-        console.log('foo');
-    });
-
-
     const acquisitionWorker = new DotnetCoreAcquisitionWorker({
         storagePath,
         extensionState: context.globalState,
@@ -130,7 +125,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         installationValidator: new InstallationValidator(eventStream),
         timeoutValue: resolvedTimeoutSeconds,
         installDirectoryProvider: new SdkInstallationDirectoryProvider(storagePath),
-        acquisitionContext : null
+        acquisitionContext : null,
+        isExtensionTelemetryInitiallyEnabled : isExtensionTelemetryEnabled
     });
 
     const versionResolver = new VersionResolver(context.globalState, eventStream, resolvedTimeoutSeconds);

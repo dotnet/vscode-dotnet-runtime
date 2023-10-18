@@ -295,9 +295,9 @@ export class MockFileUtilities extends IFileUtilities
 {
     private trueUtilities = new FileUtilities();
 
-    public writeFileOntoDisk(content : string, path : string)
+    public writeFileOntoDisk(content : string, filePath : string)
     {
-        return this.trueUtilities.writeFileOntoDisk(content, path, new MockEventStream());
+        return this.trueUtilities.writeFileOntoDisk(content, filePath, new MockEventStream());
     }
 
     public wipeDirectory(directoryToWipe : string)

@@ -22,6 +22,7 @@ import path = require('path');
 import { IEventStream } from '../EventStream/EventStream';
 import * as vscode from 'vscode';
 import * as os from 'os';
+import { WindowDisplayWorker } from '../EventStream/WindowDisplayWorker';
 
 /* tslint:disable:no-any */
 
@@ -211,21 +212,51 @@ out: ${commandResult.stdout} err: ${commandResult.stderr}.`));
         return [workingCommand, working];
     }
 
-    public async setEnvironmentVariable(variable : string, value : string)
+    public async setEnvironmentVariable(variable : string, value : string, failureWarningMessage? : string)
     {
         // todo: verify this works on all os
+        const oldReturnStatusSetting = this.returnStatus;
+        this.returnStatus = true;
+        let environmentEditExitCode = 0;
+
         process.env[variable] = value;
         if(os.platform() === 'win32')
         {
             const setShellVariable = `set ${variable}=${value}`;
             const setSystemVariable = `setx ${variable} "${value}"`;
-            await this.execute(setShellVariable);
-            await this.execute(setSystemVariable);
+            try
+            {
+                environmentEditExitCode = environmentEditExitCode || Number((await this.execute(setShellVariable))[0]);
+                environmentEditExitCode = environmentEditExitCode || Number((await this.execute(setSystemVariable))[0]);
+            }
+            catch(error)
+            {
+                if(failureWarningMessage)
+                {
+                    new WindowDisplayWorker().showWarningMessage(failureWarningMessage, () => {/* No Callback */}, );
+                }
+            }
         }
         else
         {
             const setVariable = `${variable}=${value} && export ${variable}`
-            await this.execute(setVariable);
+            try
+            {
+                environmentEditExitCode = environmentEditExitCode || Number((await this.execute(setVariable))[0]);;
+            }
+            catch(error)
+            {
+                if(failureWarningMessage)
+                {
+                    new WindowDisplayWorker().showWarningMessage(failureWarningMessage, () => {/* No Callback */}, );
+                }
+            }
         }
+
+        if(environmentEditExitCode && failureWarningMessage)
+        {
+            new WindowDisplayWorker().showWarningMessage(failureWarningMessage, () => {/* No Callback */}, );
+        }
+        this.returnStatus = oldReturnStatusSetting;
     }
 }
