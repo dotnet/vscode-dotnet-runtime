@@ -114,7 +114,7 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
     {
         if(!options)
         {
-            options = {cwd : path.resolve(__dirname), shell: os.platform() === 'win32'};
+            options = {cwd : path.resolve(__dirname), shell: true};
         }
 
         const splitCommands : string[] = command.split('&&');
@@ -214,7 +214,6 @@ out: ${commandResult.stdout} err: ${commandResult.stderr}.`));
 
     public async setEnvironmentVariable(variable : string, value : string, failureWarningMessage? : string)
     {
-        // todo: verify this works on all os
         const oldReturnStatusSetting = this.returnStatus;
         this.returnStatus = true;
         let environmentEditExitCode = 0;
