@@ -57,7 +57,7 @@
 				"dotnetAcquisitionExtension.enableTelemetry": {
 					"type": "boolean",
 					"default": true,
-					"description": "Enable Telemetry for the .NET Runtime Install Tool"
+					"description": "Enable Telemetry for the .NET Runtime Install Tool. Restart VS Code to apply changes."
 				},
 				"dotnetAcquisitionExtension.installTimeoutValue": {
 					"type": "number",

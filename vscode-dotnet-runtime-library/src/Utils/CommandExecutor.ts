@@ -114,7 +114,7 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
     {
         if(!options)
         {
-            options = {cwd : path.resolve(__dirname)};
+            options = {cwd : path.resolve(__dirname), shell: os.platform() === 'win32'};
         }
 
         const splitCommands : string[] = command.split('&&');
@@ -226,15 +226,14 @@ out: ${commandResult.stdout} err: ${commandResult.stderr}.`));
             const setSystemVariable = `setx ${variable} "${value}"`;
             try
             {
-                environmentEditExitCode = environmentEditExitCode || Number((await this.execute(setShellVariable))[0]);
-                environmentEditExitCode = environmentEditExitCode || Number((await this.execute(setSystemVariable))[0]);
+                const shellEditResponse = await this.execute(setShellVariable);
+                environmentEditExitCode += Number(shellEditResponse[0]);
+                const systemEditResponse = await this.execute(setSystemVariable)
+                environmentEditExitCode += Number(systemEditResponse[0]);
             }
             catch(error)
             {
-                if(failureWarningMessage)
-                {
-                    new WindowDisplayWorker().showWarningMessage(failureWarningMessage, () => {/* No Callback */}, );
-                }
+                environmentEditExitCode = 1
             }
         }
         else
@@ -242,18 +241,16 @@ out: ${commandResult.stdout} err: ${commandResult.stderr}.`));
             const setVariable = `${variable}=${value} && export ${variable}`
             try
             {
-                environmentEditExitCode = environmentEditExitCode || Number((await this.execute(setVariable))[0]);;
+                const environmentEditResponse = await this.execute(setVariable)
+                environmentEditExitCode += Number(environmentEditResponse[0]);
             }
             catch(error)
             {
-                if(failureWarningMessage)
-                {
-                    new WindowDisplayWorker().showWarningMessage(failureWarningMessage, () => {/* No Callback */}, );
-                }
+                environmentEditExitCode = 1;
             }
         }
 
-        if(environmentEditExitCode && failureWarningMessage)
+        if(environmentEditExitCode !== 0 && failureWarningMessage)
         {
             new WindowDisplayWorker().showWarningMessage(failureWarningMessage, () => {/* No Callback */}, );
         }

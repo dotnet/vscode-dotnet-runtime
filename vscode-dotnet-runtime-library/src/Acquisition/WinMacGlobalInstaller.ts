@@ -13,7 +13,7 @@ import { FileUtilities } from '../Utils/FileUtilities';
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { VersionResolver } from './VersionResolver';
-import { DotnetAcquisitionDistroUnknownError, DotnetAcquisitionError, DotnetConflictingGlobalWindowsInstallError, DotnetUnexpectedInstallerOSError, OSXOpenNotAvailableError } from '../EventStream/EventStreamEvents';
+import { DotnetAcquisitionDistroUnknownError, DotnetAcquisitionError, DotnetConflictingGlobalWindowsInstallError, DotnetUnexpectedInstallerOSError, OSXOpenNotAvailableError, SuppressedAcquisitionError } from '../EventStream/EventStreamEvents';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import exp = require('constants');
@@ -125,6 +125,14 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
         }
 
         await this.webWorker.downloadFile(installerUrl, installerPath);
+        try
+        {
+            fs.chmodSync(installerPath, 0o744);
+        }
+        catch(error : any)
+        {
+            this.acquisitionContext.eventStream.post(new SuppressedAcquisitionError(error, `Failed to chmod +x on ${installerPath}.`));
+        }
         return installerPath;
     }
 

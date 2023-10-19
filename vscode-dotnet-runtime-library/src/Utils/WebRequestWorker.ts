@@ -210,7 +210,7 @@ export class WebRequestWorker
             ...(keepAlive && {headers: { 'Connection': 'keep-alive' }}),
             ...(this.proxyEnabled() && {proxy : false}),
             ...(this.proxyEnabled() && {httpsAgent : this.proxyAgent}),
-            ...furtherOptions,
+            ...furtherOptions
         };
 
         return options;

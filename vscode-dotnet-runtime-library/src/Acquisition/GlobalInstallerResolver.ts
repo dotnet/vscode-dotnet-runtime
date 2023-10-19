@@ -375,7 +375,7 @@ Please report this issue so it can be remedied or investigated.`));
      */
     private async fetchJsonObjectFromUrl(url : string)
     {
-        const webWorker = this.customWebRequestWorker ? this.customWebRequestWorker : new WebRequestWorker(this.extensionState, this.eventStream, url, this.timeoutSecs, this.proxyUrl);
+        const webWorker = this.customWebRequestWorker ? this.customWebRequestWorker : new WebRequestWorker(this.extensionState, this.eventStream, url, this.timeoutSecs * 1000, this.proxyUrl);
         return webWorker.getCachedData();
     }
 }
