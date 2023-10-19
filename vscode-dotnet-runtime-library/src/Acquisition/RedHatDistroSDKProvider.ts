@@ -44,10 +44,14 @@ export class RedHatDistroSDKProvider extends GenericDistroSDKProvider {
 
     public async getInstalledGlobalDotnetPathIfExists() : Promise<string | null>
     {
+        this.commandRunner.returnStatus = true;
         const commandResult = await this.commandRunner.execute(this.myDistroCommands()[this.currentInstallPathCommandKey]);
-        if(commandResult[0].includes('no dotnet')){
-            return '';
+        this.commandRunner.returnStatus = false;
+
+        if (commandResult[0] === '1'){
+            return ''
         }
-        return commandResult[0];
+        const verboseCommandResult = await this.commandRunner.execute(this.myDistroCommands()[this.currentInstallPathCommandKey]);
+        return verboseCommandResult[0];
     }
 }
