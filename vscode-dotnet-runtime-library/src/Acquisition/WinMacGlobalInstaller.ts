@@ -6,18 +6,15 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import * as https from 'https';
 import * as vscode from 'vscode';
 
 import { FileUtilities } from '../Utils/FileUtilities';
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { VersionResolver } from './VersionResolver';
-import { DotnetAcquisitionDistroUnknownError, DotnetAcquisitionError, DotnetConflictingGlobalWindowsInstallError, DotnetUnexpectedInstallerOSError, OSXOpenNotAvailableError, SuppressedAcquisitionError } from '../EventStream/EventStreamEvents';
+import { DotnetConflictingGlobalWindowsInstallError, DotnetUnexpectedInstallerOSError, OSXOpenNotAvailableError, SuppressedAcquisitionError } from '../EventStream/EventStreamEvents';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { CommandExecutor } from '../Utils/CommandExecutor';
-import exp = require('constants');
-import { expect } from 'chai';
 import { IFileUtilities } from '../Utils/IFileUtilities';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
 /* tslint:disable:only-arrow-functions */
