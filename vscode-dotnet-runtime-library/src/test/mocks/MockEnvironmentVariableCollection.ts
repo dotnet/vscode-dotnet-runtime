@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 /* tslint:disable:no-any */
 
 export class MockEnvironmentVariableCollection implements vscode.EnvironmentVariableCollection {
+    description: string | vscode.MarkdownString | undefined;
 
     public persistent =  true;
     public variables: {[variable: string]: string} = {};
