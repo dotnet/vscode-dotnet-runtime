@@ -237,7 +237,7 @@ out: ${commandResult.stdout} err: ${commandResult.stderr}.`));
         }
         else
         {
-            const setVariable = `${variable}=${value} && export ${variable}`
+            const setVariable = `export ${variable}=${value}`;
             try
             {
                 const environmentEditResponse = await this.execute(setVariable)
