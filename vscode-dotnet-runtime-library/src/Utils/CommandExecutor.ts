@@ -212,7 +212,7 @@ out: ${commandResult.stdout} err: ${commandResult.stderr}.`));
         return [workingCommand, working];
     }
 
-    public async setEnvironmentVariable(variable : string, value : string, failureWarningMessage? : string)
+    public async setEnvironmentVariable(variable : string, value : string, failureWarningMessage? : string, nonWinFailureMessage? : string)
     {
         const oldReturnStatusSetting = this.returnStatus;
         this.returnStatus = true;
@@ -237,16 +237,10 @@ out: ${commandResult.stdout} err: ${commandResult.stderr}.`));
         }
         else
         {
-            const setVariable = `export ${variable}=${value}`;
-            try
-            {
-                const environmentEditResponse = await this.execute(setVariable)
-                environmentEditExitCode += Number(environmentEditResponse[0]);
-            }
-            catch(error)
-            {
-                environmentEditExitCode = 1;
-            }
+            // export var=value does not do anything, because on osx and linux processes cannot edit above proc variables.
+            // We could try to edit etc/environment on ubuntu, then .profile/.bash_rc/.zsh etc on osx, but we'd like to avoid being intrusive.
+            failureWarningMessage = nonWinFailureMessage ? failureWarningMessage : nonWinFailureMessage;
+            environmentEditExitCode = 1;
         }
 
         if(environmentEditExitCode !== 0 && failureWarningMessage)
