@@ -5,6 +5,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import * as vscode from 'vscode';
 import rimraf = require('rimraf');
 
 import {
@@ -17,7 +18,6 @@ import {
     DotnetAcquisitionStatusResolved,
     DotnetAcquisitionStatusUndefined,
     DotnetNonZeroInstallerExitCodeError,
-    DotnetCustomMessageEvent,
     DotnetInstallGraveyardEvent,
     DotnetInstallKeyCreatedEvent,
     DotnetLegacyInstallDetectedEvent,
@@ -59,9 +59,9 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     private globalResolver: GlobalInstallerResolver | null;
 
     private acquisitionPromises: { [installKeys: string]: Promise<string> | undefined };
+    private extensionContext : vscode.ExtensionContext;
 
-
-    constructor(private readonly context: IAcquisitionWorkerContext) {
+    constructor(private readonly context: IAcquisitionWorkerContext, extensionContext : vscode.ExtensionContext) {
         const dotnetExtension = os.platform() === 'win32' ? '.exe' : '';
         this.dotnetExecutable = `dotnet${dotnetExtension}`;
         this.timeoutValue = context.timeoutValue;
@@ -69,6 +69,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         // null deliberately allowed to use old behavior below
         this.installingArchitecture = this.context.installingArchitecture === undefined ? os.arch() : this.context.installingArchitecture;
         this.globalResolver = null;
+        this.extensionContext = extensionContext;
     }
 
     public async uninstallAll() {
@@ -317,7 +318,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         const installedSDKPath : string = await installer.getExpectedGlobalSDKPath(installingVersion, os.arch());
 
-        TelemetryObserver.setDotnetSDKTelemetryToMatch(this.context.isExtensionTelemetryInitiallyEnabled, this.context.eventStream);
+        TelemetryObserver.setDotnetSDKTelemetryToMatch(this.context.isExtensionTelemetryInitiallyEnabled, this.extensionContext, this.context.eventStream);
 
         this.context.installationValidator.validateDotnetInstall(installingVersion, installedSDKPath, true);
 

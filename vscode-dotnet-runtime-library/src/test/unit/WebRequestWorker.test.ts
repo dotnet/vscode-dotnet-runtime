@@ -6,6 +6,7 @@ import * as chai from 'chai';
 
 import * as chaiAsPromised from 'chai-as-promised';
 import * as path from 'path';
+import * as vscode from 'vscode';
 import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
 import { IInstallScriptAcquisitionWorker } from '../../Acquisition/IInstallScriptAcquisitionWorker';
 import { RuntimeInstallationDirectoryProvider } from '../../Acquisition/RuntimeInstallationDirectoryProvider';
@@ -52,7 +53,7 @@ suite('WebRequestWorker Unit Tests', () => {
             timeoutValue: 10,
             installDirectoryProvider: new RuntimeInstallationDirectoryProvider(''),
             isExtensionTelemetryInitiallyEnabled: true
-        });
+        }, await vscode.commands.executeCommand("getContext") as vscode.ExtensionContext);
         return assert.isRejected(acquisitionWorker.acquireRuntime('1.0'), Error, '.NET Acquisition Failed');
     });
 

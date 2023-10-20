@@ -154,7 +154,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
       timeoutValue: 10,
       installDirectoryProvider,
       isExtensionTelemetryInitiallyEnabled: true
-    });
+    }, extensionContext);
 
     const version = currentSDKVersion;
     const earlierVersion = '3.1';
@@ -204,7 +204,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
       timeoutValue: 10,
       installDirectoryProvider,
       isExtensionTelemetryInitiallyEnabled: true,
-    });
+    }, extensionContext);
 
     const version = currentSDKVersion;
     const currentVersionInstallKey =  DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, os.arch());

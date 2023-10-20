@@ -212,13 +212,15 @@ out: ${commandResult.stdout} err: ${commandResult.stderr}.`));
         return [workingCommand, working];
     }
 
-    public async setEnvironmentVariable(variable : string, value : string, failureWarningMessage? : string, nonWinFailureMessage? : string)
+    public async setEnvironmentVariable(variable : string, value : string, vscodeEnvironment : vscode.EnvironmentVariableCollection, failureWarningMessage? : string, nonWinFailureMessage? : string)
     {
         const oldReturnStatusSetting = this.returnStatus;
         this.returnStatus = true;
         let environmentEditExitCode = 0;
 
         process.env[variable] = value;
+        vscodeEnvironment.replace(variable, value);
+
         if(os.platform() === 'win32')
         {
             const setShellVariable = `set ${variable}=${value}`;

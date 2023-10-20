@@ -84,7 +84,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         showLogCommand: `${commandPrefix}.${commandKeys.showAcquisitionLog}`,
         packageJson,
     } as IEventStreamContext;
-    const [eventStream, outputChannel, loggingObserver, eventStreamObservers] = registerEventStream(eventStreamContext);
+    const [eventStream, outputChannel, loggingObserver, eventStreamObservers] = registerEventStream(eventStreamContext, context);
 
     const displayWorker = extensionContext ? extensionContext.displayWorker : new WindowDisplayWorker();
     const extensionConfigWorker = new ExtensionConfigurationWorker(extensionConfiguration, undefined);
@@ -127,7 +127,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         installDirectoryProvider: new SdkInstallationDirectoryProvider(storagePath),
         acquisitionContext : null,
         isExtensionTelemetryInitiallyEnabled : isExtensionTelemetryEnabled
-    });
+    }, context);
 
     const versionResolver = new VersionResolver(context.globalState, eventStream, resolvedTimeoutSeconds);
 

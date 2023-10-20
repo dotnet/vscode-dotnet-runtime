@@ -81,7 +81,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         showLogCommand: `${commandPrefix}.${commandKeys.showAcquisitionLog}`,
         packageJson,
     } as IEventStreamContext;
-    const [eventStream, outputChannel, loggingObserver, eventStreamObservers] = registerEventStream(eventStreamContext);
+    const [eventStream, outputChannel, loggingObserver, eventStreamObservers] = registerEventStream(eventStreamContext, context);
 
     const displayWorker = extensionContext ? extensionContext.displayWorker : new WindowDisplayWorker();
     const extensionConfigWorker = new ExtensionConfigurationWorker(extensionConfiguration, configKeys.existingPath);
@@ -116,7 +116,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         installDirectoryProvider: new RuntimeInstallationDirectoryProvider(context.globalStoragePath),
         proxyUrl: proxyLink,
         isExtensionTelemetryInitiallyEnabled: extensionTelemetryEnabled
-    });
+    }, context);
     const existingPathResolver = new ExistingPathResolver();
     const versionResolver = new VersionResolver(context.globalState, eventStream, resolvedTimeoutSeconds, proxyLink);
 
@@ -191,6 +191,9 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         await vscode.env.clipboard.writeText(issueBody);
         open(url);
     });
+
+
+    context.subscriptions.push(vscode.commands.registerCommand('getContext', () => context));
 
     context.subscriptions.push(
         dotnetAcquireRegistration,
