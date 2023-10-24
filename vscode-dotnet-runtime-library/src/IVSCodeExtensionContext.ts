@@ -6,7 +6,6 @@
 export abstract class IVSCodeExtensionContext
 {
     /**
-     * @returns True on success of setting environment for vscode.
      */
     abstract setVSCodeEnvironmentVariable(variable : string, value : string) : void;
 }
