@@ -11,6 +11,7 @@ import { VersionResolver } from './VersionResolver';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { IUtilityContext } from '../Utils/IUtilityContext';
 /* tslint:disable:no-any */
 
 /**
@@ -47,9 +48,9 @@ export abstract class IDistroDotnetSDKProvider {
     protected runtimeKey = 'runtime';
     protected aspNetKey = 'aspnetcore';
 
-    constructor(distroVersion : DistroVersionPair, context : IAcquisitionWorkerContext, executor : ICommandExecutor | null = null)
+    constructor(distroVersion : DistroVersionPair, context : IAcquisitionWorkerContext, utilContext : IUtilityContext, executor : ICommandExecutor | null = null)
     {
-        this.commandRunner = executor ?? new CommandExecutor(context.eventStream);
+        this.commandRunner = executor ?? new CommandExecutor(context.eventStream, utilContext);
         this.distroVersion = distroVersion;
         this.versionResolver = new VersionResolver(context.extensionState, context.eventStream, context.timeoutValue, context.proxyUrl);
         // Hard-code to the upper path (lib/dist/acquisition) from __dirname to the lib folder, as webpack-copy doesn't seem to copy the distro-support.json

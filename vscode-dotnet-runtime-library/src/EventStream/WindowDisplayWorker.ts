@@ -18,6 +18,11 @@ export class WindowDisplayWorker implements IWindowDisplayWorker {
         window.showWarningMessage(message, ...items).then(async (response: string | undefined) => callback(response) );
     }
 
+    public async getModalWarningResponse(message : string, no : string, yes : string) : Promise<any>
+    {
+        return window.showWarningMessage(message, { modal: true }, no, yes);
+    }
+
     public showInformationMessage(message: string, callback: (response: string | undefined) => void, ...items: string[]): void {
         window.showInformationMessage(message).then(async (response: string | undefined) => callback(response) );
     }

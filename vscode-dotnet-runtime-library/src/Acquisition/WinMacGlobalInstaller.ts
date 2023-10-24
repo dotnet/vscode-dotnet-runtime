@@ -6,7 +6,6 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import * as vscode from 'vscode';
 /* tslint:disable:no-any */
 
 import { FileUtilities } from '../Utils/FileUtilities';
@@ -18,6 +17,8 @@ import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { IFileUtilities } from '../Utils/IFileUtilities';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
+import { util } from 'chai';
+import { IUtilityContext } from '../Utils/IUtilityContext';
 /* tslint:disable:only-arrow-functions */
 /* tslint:disable:no-empty */
 
@@ -45,13 +46,14 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
     public file : IFileUtilities;
     protected webWorker : WebRequestWorker;
 
-    constructor(context : IAcquisitionWorkerContext, installingVersion : string, installerUrl : string, installerHash : string, executor : ICommandExecutor | null = null)
+    constructor(context : IAcquisitionWorkerContext, utilContext : IUtilityContext, installingVersion : string, installerUrl : string,
+        installerHash : string, executor : ICommandExecutor | null = null)
     {
-        super(context);
+        super(context, utilContext);
         this.installerUrl = installerUrl;
         this.installingVersion = installingVersion;
         this.installerHash = installerHash;
-        this.commandRunner = executor ?? new CommandExecutor(context.eventStream);
+        this.commandRunner = executor ?? new CommandExecutor(context.eventStream, utilContext);
         this.versionResolver = new VersionResolver(context.extensionState, context.eventStream, context.timeoutValue, context.proxyUrl);
         this.file = new FileUtilities();
         this.webWorker = new WebRequestWorker(context.extensionState, context.eventStream,
@@ -145,7 +147,7 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
             const no = validationPromptConstants.cancelOption;
             const message = validationPromptConstants.noSignatureMessage;
 
-            const pick = await vscode.window.showWarningMessage(message, { modal: true }, no, yes);
+            const pick = await this.utilityContext.ui.getModalWarningResponse(message, no, yes);
             const userConsentsToContinue = pick === yes;
             return userConsentsToContinue;
         }

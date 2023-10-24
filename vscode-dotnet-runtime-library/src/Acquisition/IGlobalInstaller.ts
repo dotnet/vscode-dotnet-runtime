@@ -6,13 +6,16 @@
 
 import path = require('path');
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { IUtilityContext } from '../Utils/IUtilityContext';
 
 export abstract class IGlobalInstaller {
 
     protected acquisitionContext : IAcquisitionWorkerContext;
+    protected utilityContext : IUtilityContext;
 
-    constructor(acquisitionContext : IAcquisitionWorkerContext) {
+    constructor(acquisitionContext : IAcquisitionWorkerContext, utilContext : IUtilityContext) {
         this.acquisitionContext = acquisitionContext;
+        this.utilityContext = utilContext;
     }
 
     public abstract installSDK() : Promise<string>

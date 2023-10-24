@@ -13,6 +13,8 @@ import { LoggingObserver } from './LoggingObserver';
 import { OutputChannelObserver } from './OutputChannelObserver';
 import { StatusBarObserver } from './StatusBarObserver';
 import { ITelemetryReporter, TelemetryObserver } from './TelemetryObserver';
+import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
+import { IUtilityContext } from '../Utils/IUtilityContext';
 
 export interface IPackageJson {
     version: string;
@@ -30,7 +32,7 @@ export interface IEventStreamContext {
     packageJson: IPackageJson;
 }
 
-export function registerEventStream(context: IEventStreamContext, extensionContext : vscode.ExtensionContext): [EventStream, vscode.OutputChannel, LoggingObserver, IEventStreamObserver[]]
+export function registerEventStream(context: IEventStreamContext, extensionContext : IVSCodeExtensionContext, utilityContext : IUtilityContext): [EventStream, vscode.OutputChannel, LoggingObserver, IEventStreamObserver[]]
 {
     const outputChannel = vscode.window.createOutputChannel(context.displayChannelName);
     if (!fs.existsSync(context.logPath))
@@ -54,7 +56,7 @@ export function registerEventStream(context: IEventStreamContext, extensionConte
     }
 
     if (context.enableTelemetry) {
-        const telemetryObserver = new TelemetryObserver(context.packageJson, context.enableTelemetry, eventStream, extensionContext, context.telemetryReporter);
+        const telemetryObserver = new TelemetryObserver(context.packageJson, context.enableTelemetry, eventStream, extensionContext, utilityContext, context.telemetryReporter);
         eventStream.subscribe(event => telemetryObserver.post(event));
     }
 

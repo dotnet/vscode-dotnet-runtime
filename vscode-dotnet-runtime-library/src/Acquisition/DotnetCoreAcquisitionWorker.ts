@@ -43,8 +43,9 @@ import { WinMacGlobalInstaller } from './WinMacGlobalInstaller';
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { LinuxGlobalInstaller } from './LinuxGlobalInstaller';
 import { Debugging } from '../Utils/Debugging';
-import { IDotnetAcquireContext } from '..';
-import { TelemetryObserver } from '../EventStream/TelemetryObserver';
+import { IDotnetAcquireContext, IVSCodeExtensionContext } from '..';
+import { IUtilityContext } from '../Utils/IUtilityContext';
+import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
 /* tslint:disable:no-any */
 
 export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker {
@@ -59,9 +60,9 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     private globalResolver: GlobalInstallerResolver | null;
 
     private acquisitionPromises: { [installKeys: string]: Promise<string> | undefined };
-    private extensionContext : vscode.ExtensionContext;
+    private extensionContext : IVSCodeExtensionContext;
 
-    constructor(private readonly context: IAcquisitionWorkerContext, extensionContext : vscode.ExtensionContext) {
+    constructor(private readonly context: IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext, extensionContext : IVSCodeExtensionContext) {
         const dotnetExtension = os.platform() === 'win32' ? '.exe' : '';
         this.dotnetExecutable = `dotnet${dotnetExtension}`;
         this.timeoutValue = context.timeoutValue;
@@ -291,8 +292,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         this.checkForPartialInstalls(installKey, installingVersion, false, false);
 
         const installer : IGlobalInstaller = os.platform() === 'linux' ?
-            new LinuxGlobalInstaller(this.context, installingVersion) :
-            new WinMacGlobalInstaller(this.context, installingVersion, await globalInstallerResolver.getInstallerUrl(), await globalInstallerResolver.getInstallerHash());
+            new LinuxGlobalInstaller(this.context, this.utilityContext, installingVersion) :
+            new WinMacGlobalInstaller(this.context, this.utilityContext, installingVersion, await globalInstallerResolver.getInstallerUrl(), await globalInstallerResolver.getInstallerHash());
 
         // Indicate that we're beginning to do the install.
         await this.addVersionToExtensionState(this.installingVersionsKey, installKey);
@@ -318,7 +319,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         const installedSDKPath : string = await installer.getExpectedGlobalSDKPath(installingVersion, os.arch());
 
-        TelemetryObserver.setDotnetSDKTelemetryToMatch(this.context.isExtensionTelemetryInitiallyEnabled, this.extensionContext, this.context.eventStream);
+        TelemetryUtilities.setDotnetSDKTelemetryToMatch(this.context.isExtensionTelemetryInitiallyEnabled, this.extensionContext, this.context.eventStream, this.utilityContext);
 
         this.context.installationValidator.validateDotnetInstall(installingVersion, installedSDKPath, true);
 

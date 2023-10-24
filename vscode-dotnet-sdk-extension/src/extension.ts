@@ -34,6 +34,8 @@ import {
     registerEventStream,
     SdkInstallationDirectoryProvider,
     VersionResolver,
+    VSCodeExtensionContext,
+    VSCodeEnvironment,
     WebRequestWorker,
     IWindowDisplayWorker,
     WindowDisplayWorker,
@@ -74,6 +76,13 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         extensionContext.extensionConfiguration :
         vscode.workspace.getConfiguration(configPrefix);
 
+    const displayWorker = extensionContext ? extensionContext.displayWorker : new WindowDisplayWorker();
+    const utilContext =
+    {
+        ui: displayWorker,
+        vsCodeEnv: new VSCodeEnvironment()
+    }
+
     const isExtensionTelemetryEnabled = enableExtensionTelemetry(extensionConfiguration, configKeys.enableTelemetry);
     const eventStreamContext = {
         displayChannelName,
@@ -84,9 +93,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         showLogCommand: `${commandPrefix}.${commandKeys.showAcquisitionLog}`,
         packageJson,
     } as IEventStreamContext;
-    const [eventStream, outputChannel, loggingObserver, eventStreamObservers] = registerEventStream(eventStreamContext, context);
+    const [eventStream, outputChannel, loggingObserver, eventStreamObservers] = registerEventStream(eventStreamContext, new VSCodeExtensionContext(context), utilContext);
 
-    const displayWorker = extensionContext ? extensionContext.displayWorker : new WindowDisplayWorker();
     const extensionConfigWorker = new ExtensionConfigurationWorker(extensionConfiguration, undefined);
     const issueContext = (errorConfiguration: ErrorConfiguration | undefined, commandName: string, version?: string) => {
         return {
@@ -121,13 +129,13 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         storagePath,
         extensionState: context.globalState,
         eventStream,
-        acquisitionInvoker: new AcquisitionInvoker(context.globalState, eventStream, resolvedTimeoutSeconds),
+        acquisitionInvoker: new AcquisitionInvoker(context.globalState, eventStream, resolvedTimeoutSeconds, utilContext),
         installationValidator: new InstallationValidator(eventStream),
         timeoutValue: resolvedTimeoutSeconds,
         installDirectoryProvider: new SdkInstallationDirectoryProvider(storagePath),
         acquisitionContext : null,
-        isExtensionTelemetryInitiallyEnabled : isExtensionTelemetryEnabled
-    }, context);
+        isExtensionTelemetryInitiallyEnabled : isExtensionTelemetryEnabled,
+    }, utilContext, new VSCodeExtensionContext(context));
 
     const versionResolver = new VersionResolver(context.globalState, eventStream, resolvedTimeoutSeconds);
 

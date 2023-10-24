@@ -2,7 +2,7 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
-import { IDotnetAcquireContext } from '..';
+import { IDotnetAcquireContext, IWindowDisplayWorker } from '..';
 import { IEventStream } from '../EventStream/EventStream';
 import { IExtensionState } from '../IExtensionState';
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';

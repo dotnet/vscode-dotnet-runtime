@@ -7,7 +7,9 @@
 import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
 import { RuntimeInstallationDirectoryProvider } from '../../Acquisition/RuntimeInstallationDirectoryProvider';
 import { SdkInstallationDirectoryProvider } from '../../Acquisition/SdkInstallationDirectoryProvider';
-import { MockEventStream, MockExtensionContext, MockInstallationValidator, NoInstallAcquisitionInvoker } from '../mocks/MockObjects';
+import { IUtilityContext } from '../../Utils/IUtilityContext';
+import { MockEventStream, MockExtensionContext, MockInstallationValidator, MockVSCodeEnvironment, NoInstallAcquisitionInvoker } from '../mocks/MockObjects';
+import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
 const standardTimeoutTime = 100000;
 
 export function getMockAcquiringContext(runtimeInstall: boolean, timeoutTime : number = standardTimeoutTime): IAcquisitionWorkerContext{
@@ -21,7 +23,16 @@ export function getMockAcquiringContext(runtimeInstall: boolean, timeoutTime : n
         installationValidator: new MockInstallationValidator(eventStream),
         timeoutValue: timeoutTime,
         installDirectoryProvider: runtimeInstall ? new RuntimeInstallationDirectoryProvider('') : new SdkInstallationDirectoryProvider(''),
-        isExtensionTelemetryInitiallyEnabled: true
+        isExtensionTelemetryInitiallyEnabled: true,
     };
     return workerContext;
+}
+
+export function getMockUtilityContext()
+{
+    const utilityContext : IUtilityContext = {
+        ui : new MockWindowDisplayWorker(),
+        vsCodeEnv : new MockVSCodeEnvironment()
+    }
+    return utilityContext;
 }

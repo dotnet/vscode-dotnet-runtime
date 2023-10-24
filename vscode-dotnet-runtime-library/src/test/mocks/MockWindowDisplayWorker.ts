@@ -35,6 +35,10 @@ export class MockWindowDisplayWorker implements IWindowDisplayWorker {
         this.clipboardText = text;
     }
 
+    public async getModalWarningResponse(message: string, no: string, yes: string): Promise<any> {
+        return true;
+    }
+
     public displayPathConfigPopUp(): Promise<string> {
         return new Promise((resolve) => { resolve(this.mockPath); });
     }

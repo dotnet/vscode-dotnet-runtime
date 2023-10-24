@@ -33,7 +33,9 @@ import {
   NoInstallAcquisitionInvoker,
   SdkInstallationDirectoryProvider,
   WinMacGlobalInstaller,
-  MockIndexWebRequestWorker
+  MockIndexWebRequestWorker,
+  MockVSCodeExtensionContext,
+  getMockUtilityContext
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { uninstallSDKExtension } from '../../ExtensionUninstall';
@@ -153,8 +155,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
       installationValidator: new MockInstallationValidator(eventStream),
       timeoutValue: 10,
       installDirectoryProvider,
-      isExtensionTelemetryInitiallyEnabled: true
-    }, extensionContext);
+      isExtensionTelemetryInitiallyEnabled: true,
+    }, getMockUtilityContext(), new MockVSCodeExtensionContext());
 
     const version = currentSDKVersion;
     const earlierVersion = '3.1';
@@ -204,7 +206,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
       timeoutValue: 10,
       installDirectoryProvider,
       isExtensionTelemetryInitiallyEnabled: true,
-    }, extensionContext);
+    }, getMockUtilityContext(), new MockVSCodeExtensionContext());
 
     const version = currentSDKVersion;
     const currentVersionInstallKey =  DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, os.arch());

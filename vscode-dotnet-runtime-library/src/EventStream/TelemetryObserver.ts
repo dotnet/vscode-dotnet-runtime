@@ -12,6 +12,10 @@ import { DotnetTelemetrySettingEvent } from './EventStreamEvents';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IExtensionContext } from '../IExtensionContext';
+import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
+import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
+import { IUtilityContext } from '../Utils/IUtilityContext';
+import { TelemetryUtilities } from './TelemetryUtilities';
 
 export interface ITelemetryReporter {
     sendTelemetryEvent(eventName: string, properties?: { [key: string]: string }, measures?: { [key: string]: number }): void;
@@ -23,9 +27,11 @@ export class TelemetryObserver implements IEventStreamObserver {
     private readonly telemetryReporter: ITelemetryReporter;
     private isExtensionTelemetryEnabled = false;
     private eventStream : IEventStream;
-    private extensionContext : vscode.ExtensionContext;
+    private extensionContext : IVSCodeExtensionContext;
+    private utilityContext : IUtilityContext;
 
-    constructor(packageJson: IPackageJson, isExtensionTelemetryEnabled : boolean, eventStream : IEventStream, extensionContext : vscode.ExtensionContext, telemetryReporter?: ITelemetryReporter, ) {
+    constructor(packageJson: IPackageJson, isExtensionTelemetryEnabled : boolean, eventStream : IEventStream,
+        extensionContext : IVSCodeExtensionContext, utilContext : IUtilityContext, telemetryReporter?: ITelemetryReporter) {
         if (telemetryReporter === undefined)
         {
             const extensionVersion = packageJson.version;
@@ -41,11 +47,12 @@ export class TelemetryObserver implements IEventStreamObserver {
         this.isExtensionTelemetryEnabled = isExtensionTelemetryEnabled;
         this.eventStream = eventStream;
         this.extensionContext = extensionContext;
+        this.utilityContext = utilContext;
 
         vscode.env.onDidChangeTelemetryEnabled((newIsTelemetryEnabledSetting: boolean) =>
         {
             this.isExtensionTelemetryEnabled = newIsTelemetryEnabledSetting;
-            TelemetryObserver.setDotnetSDKTelemetryToMatch(this.isExtensionTelemetryEnabled, this.extensionContext, this.eventStream);
+            TelemetryUtilities.setDotnetSDKTelemetryToMatch(this.isExtensionTelemetryEnabled, this.extensionContext, this.eventStream, this.utilityContext);
         });
     }
 
@@ -60,7 +67,7 @@ export class TelemetryObserver implements IEventStreamObserver {
      */
     public post(event: IEvent): void
     {
-        if(TelemetryObserver.isTelemetryEnabled(this.isExtensionTelemetryEnabled))
+        if(TelemetryUtilities.isTelemetryEnabled(this.isExtensionTelemetryEnabled, this.utilityContext))
         {
             const properties = event.getSanitizedProperties(); // Get properties that don't contain personally identifiable data
             if (!properties) {
@@ -76,50 +83,5 @@ export class TelemetryObserver implements IEventStreamObserver {
     public dispose(): void
     {
         this.telemetryReporter.dispose();
-    }
-
-    static setDotnetSDKTelemetryToMatch(isExtensionTelemetryEnabled : boolean, extensionContext : vscode.ExtensionContext, eventStream : IEventStream)
-    {
-        if(!TelemetryObserver.isTelemetryEnabled(isExtensionTelemetryEnabled))
-        {
-            TelemetryObserver.logTelemetryChange(`Before disabling .NET SDK telemetry:`, isExtensionTelemetryEnabled, eventStream);
-
-            new CommandExecutor(eventStream).setEnvironmentVariable(
-                'DOTNET_CLI_TELEMETRY_OPTOUT',
-                'true',
-                extensionContext.environmentVariableCollection,
-
-`Telemetry is disabled for the .NET Install Tool, but we were unable to turn off the .NET SDK telemetry.
-Please verify that .NET SDK telemetry is disabled as well by setting the environment variable DOTNET_CLI_TELEMETRY_OPTOUT to true.`,
-
-`The .NET Install Tool will not collect telemetry. However, the .NET SDK does collect telemetry.
-To disable .NET SDK telemetry, please set the environment variable DOTNET_CLI_TELEMETRY_OPTOUT to true.`);
-
-            TelemetryObserver.logTelemetryChange(`After disabling .NET SDK telemetry:`, isExtensionTelemetryEnabled, eventStream);
-        }
-        else
-        {
-            TelemetryObserver.logTelemetryChange(`Unchanged Telemetry Settings.`, isExtensionTelemetryEnabled, eventStream);
-        }
-    }
-
-    static isDotnetSDKTelemetryDisabled()
-    {
-        const optOut = process.env.DOTNET_CLI_TELEMETRY_OPTOUT;
-        return optOut && optOut !== 'false' && optOut !== '0';
-    }
-
-    static isTelemetryEnabled(isExtensionTelemetryEnabled : boolean)
-    {
-        const isVSCodeTelemetryEnabled = vscode.env.isTelemetryEnabled;
-        return isVSCodeTelemetryEnabled && isExtensionTelemetryEnabled;
-    }
-
-    static logTelemetryChange(changeMessage : string, isExtensionTelemetryEnabled : boolean, eventStream : IEventStream) : void
-    {
-        eventStream.post(new DotnetTelemetrySettingEvent(`Telemetry Setting Change: ${changeMessage}
-.NET SDK Setting: ${!TelemetryObserver.isDotnetSDKTelemetryDisabled()},
-Extension Setting: ${isExtensionTelemetryEnabled}
-VS Code Setting: ${vscode.env.isTelemetryEnabled}.`))
     }
 }

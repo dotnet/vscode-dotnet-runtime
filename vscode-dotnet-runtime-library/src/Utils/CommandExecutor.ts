@@ -20,18 +20,20 @@ import {exec} from '@vscode/sudo-prompt';
 import { ICommandExecutor } from './ICommandExecutor';
 import path = require('path');
 import { IEventStream } from '../EventStream/EventStream';
-import * as vscode from 'vscode';
 import * as os from 'os';
 import { WindowDisplayWorker } from '../EventStream/WindowDisplayWorker';
+import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
+import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
+import { IUtilityContext } from './IUtilityContext';
 
 /* tslint:disable:no-any */
 
 export class CommandExecutor extends ICommandExecutor
 {
 
-    constructor(eventStream : IEventStream)
+    constructor(eventStream : IEventStream, utilContext : IUtilityContext)
     {
-        super(eventStream);
+        super(eventStream, utilContext);
     }
 
     /**
@@ -212,14 +214,14 @@ out: ${commandResult.stdout} err: ${commandResult.stderr}.`));
         return [workingCommand, working];
     }
 
-    public async setEnvironmentVariable(variable : string, value : string, vscodeEnvironment : vscode.EnvironmentVariableCollection, failureWarningMessage? : string, nonWinFailureMessage? : string)
+    public async setEnvironmentVariable(variable : string, value : string, vscodeContext : IVSCodeExtensionContext, failureWarningMessage? : string, nonWinFailureMessage? : string)
     {
         const oldReturnStatusSetting = this.returnStatus;
         this.returnStatus = true;
         let environmentEditExitCode = 0;
 
         process.env[variable] = value;
-        vscodeEnvironment.replace(variable, value);
+        vscodeContext.setVSCodeEnvironmentVariable(variable, value);
 
         if(os.platform() === 'win32')
         {
@@ -247,7 +249,7 @@ out: ${commandResult.stdout} err: ${commandResult.stderr}.`));
 
         if(environmentEditExitCode !== 0 && failureWarningMessage)
         {
-            new WindowDisplayWorker().showWarningMessage(failureWarningMessage, () => {/* No Callback */}, );
+            this.utilityContext.ui.showWarningMessage(failureWarningMessage, () => {/* No Callback */}, );
         }
         this.returnStatus = oldReturnStatusSetting;
     }
