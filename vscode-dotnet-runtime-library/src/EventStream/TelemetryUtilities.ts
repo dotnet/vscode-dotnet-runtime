@@ -61,15 +61,17 @@ export class TelemetryUtilities
 `Telemetry is disabled for the .NET Install Tool, but we were unable to turn off the .NET SDK telemetry.
 To disable .NET SDK telemetry, set the environment variable DOTNET_CLI_TELEMETRY_OPTOUT to true.`,
 
-
 `The .NET Install Tool will not collect telemetry. However, the .NET SDK does collect telemetry.
 To disable .NET SDK telemetry, set the environment variable DOTNET_CLI_TELEMETRY_OPTOUT to true.`);
-
 
             TelemetryUtilities.logTelemetryChange(`After disabling .NET SDK telemetry:`, isExtensionTelemetryEnabled, eventStream, utilityContext);
         }
         else
         {
+            utilityContext.ui.showWarningMessage(
+`The .NET tools collect usage data in order to help us improve your experience. It is collected by Microsoft and shared with the community. You can opt-out of telemetry by setting the DOTNET_CLI_TELEMETRY_OPTOUT environment variable to '1' or 'true' using your favorite shell.
+Read more about .NET CLI Tools telemetry: https://aka.ms/dotnet-cli-telemetry`,
+            () => {/* No Callback */}, );
             TelemetryUtilities.logTelemetryChange(`Unchanged Telemetry Settings.`, isExtensionTelemetryEnabled, eventStream, utilityContext);
         }
     }
