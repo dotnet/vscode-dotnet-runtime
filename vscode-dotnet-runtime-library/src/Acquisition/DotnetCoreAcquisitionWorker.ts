@@ -5,7 +5,6 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import * as vscode from 'vscode';
 import rimraf = require('rimraf');
 
 import {
@@ -32,7 +31,7 @@ import {
     DotnetBeginGlobalInstallerExecution,
     DotnetCompletedGlobalInstallerExecution,
     DotnetFakeSDKEnvironmentVariableTriggered,
-    SuppressedAcquisitionError,
+    SuppressedAcquisitionError
 } from '../EventStream/EventStreamEvents';
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';

@@ -23,7 +23,7 @@ export function getMockAcquiringContext(runtimeInstall: boolean, timeoutTime : n
         installationValidator: new MockInstallationValidator(eventStream),
         timeoutValue: timeoutTime,
         installDirectoryProvider: runtimeInstall ? new RuntimeInstallationDirectoryProvider('') : new SdkInstallationDirectoryProvider(''),
-        isExtensionTelemetryInitiallyEnabled: true,
+        isExtensionTelemetryInitiallyEnabled: true
     };
     return workerContext;
 }

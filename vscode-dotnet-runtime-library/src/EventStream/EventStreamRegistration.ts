@@ -47,7 +47,7 @@ export function registerEventStream(context: IEventStreamContext, extensionConte
     [
         new StatusBarObserver(vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, Number.MIN_VALUE), context.showLogCommand),
         new OutputChannelObserver(outputChannel),
-        loggingObserver,
+        loggingObserver
     ];
 
     const eventStream = new EventStream();

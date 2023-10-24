@@ -11,7 +11,6 @@ import { IEventStream } from '../EventStream/EventStream';
 import {SuppressedAcquisitionError, WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
 import { IExtensionState } from '../IExtensionState';
 import { Debugging } from '../Utils/Debugging';
-import { finished } from 'stream';
 import * as fs from 'fs';
 import { promisify } from 'util';
 import stream = require('stream');
@@ -188,14 +187,14 @@ export class WebRequestWorker
             return;
         }
 
-        const isFinished = promisify(stream.finished);
+        const finished = promisify(stream.finished);
         const file = fs.createWriteStream(dest, { flags: 'wx' });
         const options = await this.getAxiosOptions(3, {responseType: 'stream', transformResponse: (x : any) => x}, false);
         await this.axiosGet(url, options)
         .then(response =>
         {
             response.data.pipe(file);
-            return isFinished(file);
+            return finished(file);
         });
     }
 

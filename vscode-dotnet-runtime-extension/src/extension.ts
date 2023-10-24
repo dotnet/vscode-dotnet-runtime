@@ -87,7 +87,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         enableTelemetry: extensionTelemetryEnabled,
         telemetryReporter: extensionContext ? extensionContext.telemetryReporter : undefined,
         showLogCommand: `${commandPrefix}.${commandKeys.showAcquisitionLog}`,
-        packageJson,
+        packageJson
     } as IEventStreamContext;
     const [eventStream, outputChannel, loggingObserver, eventStreamObservers] = registerEventStream(eventStreamContext, new VSCodeExtensionContext(context), utilContext);
 
@@ -102,7 +102,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             commandName,
             version,
             moreInfoUrl,
-            timeoutInfoUrl: `${moreInfoUrl}#install-script-timeouts`,
+            timeoutInfoUrl: `${moreInfoUrl}#install-script-timeouts`
         } as IIssueContext;
     };
     const timeoutValue = extensionConfiguration.get<number>(configKeys.installTimeoutValue);
@@ -122,7 +122,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         timeoutValue: resolvedTimeoutSeconds,
         installDirectoryProvider: new RuntimeInstallationDirectoryProvider(context.globalStoragePath),
         proxyUrl: proxyLink,
-        isExtensionTelemetryInitiallyEnabled: extensionTelemetryEnabled,
+        isExtensionTelemetryInitiallyEnabled: extensionTelemetryEnabled
     }, utilContext, new VSCodeExtensionContext(context));
     const existingPathResolver = new ExistingPathResolver();
     const versionResolver = new VersionResolver(context.globalState, eventStream, resolvedTimeoutSeconds, proxyLink);

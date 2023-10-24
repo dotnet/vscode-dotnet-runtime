@@ -8,12 +8,7 @@ import { IEvent } from './IEvent';
 import { IEventStreamObserver } from './IEventStreamObserver';
 import * as vscode from 'vscode';
 import { IEventStream } from './EventStream';
-import { DotnetTelemetrySettingEvent } from './EventStreamEvents';
-import { CommandExecutor } from '../Utils/CommandExecutor';
-import { ICommandExecutor } from '../Utils/ICommandExecutor';
-import { IExtensionContext } from '../IExtensionContext';
 import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
-import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { TelemetryUtilities } from './TelemetryUtilities';
 

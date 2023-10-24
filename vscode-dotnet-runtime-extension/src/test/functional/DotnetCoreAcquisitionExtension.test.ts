@@ -16,8 +16,7 @@ import {
   MockExtensionConfiguration,
   MockExtensionContext,
   MockTelemetryReporter,
-  MockWindowDisplayWorker,
-  getMockUtilityContext,
+  MockWindowDisplayWorker
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 /* tslint:disable:no-any */
