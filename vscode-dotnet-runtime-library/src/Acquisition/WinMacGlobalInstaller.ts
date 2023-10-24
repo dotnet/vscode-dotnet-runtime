@@ -6,8 +6,6 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-/* tslint:disable:no-any */
-
 import { FileUtilities } from '../Utils/FileUtilities';
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
@@ -17,10 +15,10 @@ import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { IFileUtilities } from '../Utils/IFileUtilities';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
-import { util } from 'chai';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 /* tslint:disable:only-arrow-functions */
 /* tslint:disable:no-empty */
+/* tslint:disable:no-any */
 
 namespace validationPromptConstants
 {
