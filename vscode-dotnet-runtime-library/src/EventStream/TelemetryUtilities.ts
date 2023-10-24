@@ -63,7 +63,8 @@ To disable .NET SDK telemetry, set the environment variable DOTNET_CLI_TELEMETRY
 
 
 `The .NET Install Tool will not collect telemetry. However, the .NET SDK does collect telemetry.
-To disable .NET SDK telemetry, please set the environment variable DOTNET_CLI_TELEMETRY_OPTOUT to true.`);
+To disable .NET SDK telemetry, set the environment variable DOTNET_CLI_TELEMETRY_OPTOUT to true.`);
+
 
             TelemetryUtilities.logTelemetryChange(`After disabling .NET SDK telemetry:`, isExtensionTelemetryEnabled, eventStream, utilityContext);
         }
