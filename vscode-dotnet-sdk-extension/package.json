@@ -16,7 +16,7 @@
 	"version": "2.0.0",
 	"publisher": "ms-dotnettools",
 	"engines": {
-		"vscode": "^1.83.1"
+		"vscode": "^1.74.0"
 	},
 	"preview": true,
 	"categories": [
@@ -91,7 +91,7 @@
 		"@types/mocha": "^9.0.0",
 		"@types/node": "16.11.7",
 		"@types/rimraf": "3.0.2",
-		"@types/vscode": "1.83.1",
+		"@types/vscode": "1.74.0",
 		"array-buffer-byte-length": "^1.0.0",
 		"aws4": "^1.12.0",
 		"axios": "^1.3.4",
