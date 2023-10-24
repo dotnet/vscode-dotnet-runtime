@@ -59,7 +59,8 @@ export class TelemetryUtilities
                 extensionContext,
 
 `Telemetry is disabled for the .NET Install Tool, but we were unable to turn off the .NET SDK telemetry.
-Please verify that .NET SDK telemetry is disabled as well by setting the environment variable DOTNET_CLI_TELEMETRY_OPTOUT to true.`,
+To disable .NET SDK telemetry, set the environment variable DOTNET_CLI_TELEMETRY_OPTOUT to true.`,
+
 
 `The .NET Install Tool will not collect telemetry. However, the .NET SDK does collect telemetry.
 To disable .NET SDK telemetry, please set the environment variable DOTNET_CLI_TELEMETRY_OPTOUT to true.`);
