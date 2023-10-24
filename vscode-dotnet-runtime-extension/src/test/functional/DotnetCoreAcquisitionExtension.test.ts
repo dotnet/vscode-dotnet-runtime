@@ -60,7 +60,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     // Commands should now be registered
     assert.exists(extensionContext);
     assert.isAbove(extensionContext.subscriptions.length, 0);
-  }).timeout(standardTimeoutTime);;
+  }).timeout(standardTimeoutTime);
 
   test('Install Command', async () => {
     const context: IDotnetAcquireContext = { version: '2.2', requestingExtensionId };
