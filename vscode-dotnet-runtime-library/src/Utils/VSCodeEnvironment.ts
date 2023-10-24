@@ -3,7 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-import { IVSCodeEnvironment } from "./IVSCodeEnvironment";
+import { IVSCodeEnvironment } from './IVSCodeEnvironment';
 import * as vscode from 'vscode';
 
 export class VSCodeEnvironment extends IVSCodeEnvironment

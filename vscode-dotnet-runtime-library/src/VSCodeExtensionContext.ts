@@ -3,7 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-import { IVSCodeExtensionContext } from "./IVSCodeExtensionContext";
+import { IVSCodeExtensionContext } from './IVSCodeExtensionContext';
 import * as vscode from 'vscode';
 
 export class VSCodeExtensionContext extends IVSCodeExtensionContext

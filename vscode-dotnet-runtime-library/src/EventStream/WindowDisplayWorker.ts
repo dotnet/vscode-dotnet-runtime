@@ -5,6 +5,7 @@
 import * as os from 'os';
 import { env, window } from 'vscode';
 import { IWindowDisplayWorker } from './IWindowDisplayWorker';
+/* tslint:disable:no-any */
 
 export class WindowDisplayWorker implements IWindowDisplayWorker {
     private readonly pathPlaceholder = os.platform() === 'win32' ? 'C:\\Program Files\\dotnet\\dotnet.exe' : '/usr/local/share/dotnet/dotnet';

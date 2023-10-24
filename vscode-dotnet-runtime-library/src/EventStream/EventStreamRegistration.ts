@@ -32,7 +32,8 @@ export interface IEventStreamContext {
     packageJson: IPackageJson;
 }
 
-export function registerEventStream(context: IEventStreamContext, extensionContext : IVSCodeExtensionContext, utilityContext : IUtilityContext): [EventStream, vscode.OutputChannel, LoggingObserver, IEventStreamObserver[]]
+export function registerEventStream(context: IEventStreamContext, extensionContext : IVSCodeExtensionContext,
+    utilityContext : IUtilityContext): [EventStream, vscode.OutputChannel, LoggingObserver, IEventStreamObserver[]]
 {
     const outputChannel = vscode.window.createOutputChannel(context.displayChannelName);
     if (!fs.existsSync(context.logPath))
