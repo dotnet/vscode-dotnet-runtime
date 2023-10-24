@@ -44,7 +44,7 @@ def GetYarnDependencyUpdates(yarnLockDiffLines):
             for dependencyAtVers in depsAtVers:
                 dep = dependencyAtVers.rsplit("@", 1)[0]
                 vers = dependencyAtVers.rsplit("@", 1)[1]
-                dependencies[dep] = [] # Could add version here later. (TODO) that will probably not happen
+                dependencies[dep] = [] # Could add version here later. That will probably not happen
     return dependencies
 
 def GetUnmatchedDiffs(yarnDiff, npmDiff):

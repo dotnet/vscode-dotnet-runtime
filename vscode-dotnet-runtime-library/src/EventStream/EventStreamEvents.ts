@@ -130,6 +130,10 @@ export class DotnetInstallScriptAcquisitionError extends DotnetAcquisitionError 
     public readonly eventName = 'DotnetInstallScriptAcquisitionError';
 }
 
+export class OSXOpenNotAvailableError extends DotnetAcquisitionError {
+    public readonly eventName = 'OSXOpenNotAvailableError';
+}
+
 export class WebRequestError extends DotnetAcquisitionError {
     public readonly eventName = 'WebRequestError';
 }
@@ -150,8 +154,33 @@ export class DotnetCommandFailed extends DotnetAcquisitionError {
             CommandName : this.command,
             ErrorName : this.error.name,
             StackTrace : this.error.stack ? this.error.stack : ''};
+        }
     }
+
+export class DotnetInvalidReleasesJSONError extends DotnetAcquisitionError {
+        public readonly eventName = 'DotnetInvalidReleasesJSONError';
 }
+
+export class DotnetNoInstallerFileExistsError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetNoInstallerFileExistsError';
+}
+
+export class DotnetUnexpectedInstallerOSError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetUnexpectedInstallerOSError';
+}
+
+export class DotnetUnexpectedInstallerArchitectureError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetUnexpectedInstallerArchitectureError';
+}
+
+export class DotnetFeatureBandDoesNotExistError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetFeatureBandDoesNotExistError';
+}
+
+export class DotnetWSLSecurityError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetWSLSecurityError';
+}
+
 
 export abstract class DotnetAcquisitionVersionError extends DotnetAcquisitionError {
     constructor(error: Error, public readonly installKey: string) {
@@ -163,8 +192,8 @@ export abstract class DotnetAcquisitionVersionError extends DotnetAcquisitionErr
             AcquisitionErrorInstallKey : this.installKey,
             ErrorName : this.error.name,
             StackTrace : this.error.stack ? this.error.stack : ''};
+        }
     }
-}
 
 export class DotnetAcquisitionUnexpectedError extends DotnetAcquisitionVersionError {
     public readonly eventName = 'DotnetAcquisitionUnexpectedError';
@@ -176,6 +205,28 @@ export class DotnetAcquisitionInstallError extends DotnetAcquisitionVersionError
 
 export class DotnetAcquisitionScriptError extends DotnetAcquisitionVersionError {
     public readonly eventName = 'DotnetAcquisitionScriptError';
+}
+
+export class DotnetConflictingGlobalWindowsInstallError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetConflictingGlobalWindowsInstallError';
+}
+
+export class DotnetDebuggingMessage extends IEvent {
+    public readonly eventName = 'DotnetDebuggingMessage';
+    public readonly type = EventType.DotnetDebuggingMessage;
+
+    constructor(public readonly message: string) {
+        super();
+        this.message = message;
+    }
+
+    public getProperties() {
+        return { message : this.message };
+    }
+}
+
+export class DotnetNonZeroInstallerExitCodeError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetNonZeroInstallerExitCodeError';
 }
 
 export class DotnetOfflineFailure extends DotnetAcquisitionVersionError {
@@ -200,6 +251,14 @@ export class DotnetAcquisitionTimeoutError extends DotnetAcquisitionVersionError
 
 export class DotnetVersionResolutionError extends DotnetAcquisitionVersionError {
     public readonly eventName = 'DotnetVersionResolutionError';
+}
+
+export class DotnetConflictingLinuxInstallTypesError extends DotnetAcquisitionVersionError {
+    public readonly eventName = 'DotnetConflictingLinuxInstallTypesError';
+}
+
+export class DotnetCustomLinuxInstallExistsError extends DotnetAcquisitionVersionError {
+    public readonly eventName = 'DotnetCustomLinuxInstallExistsError';
 }
 
 export class DotnetInstallationValidationError extends DotnetAcquisitionVersionError {
@@ -238,6 +297,17 @@ export class DotnetInstallationValidationError extends DotnetAcquisitionVersionE
         return relativeFiles.join('\n');
     }
 }
+
+export class DotnetAcquisitionDistroUnknownError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetAcquisitionDistroUnknownError';
+
+    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+        return {ErrorMessage : this.error.message,
+            ErrorName : this.error.name,
+            StackTrace : this.error.stack ? this.error.stack : ''};
+    }
+}
+
 
 export abstract class DotnetAcquisitionSuccessEvent extends IEvent {
     public readonly type = EventType.DotnetAcquisitionSuccessEvent;
@@ -319,10 +389,37 @@ export abstract class DotnetCustomMessageEvent extends DotnetAcquisitionMessage 
     }
 }
 
+export class DotnetVersionCategorizedEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetVersionCategorizedEvent';
+}
+
 export class DotnetCommandNotFoundEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetCommandNotFoundEvent';
 }
 
+export class CommandExecutionStdError extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionStdError';
+}
+
+export class DotnetGlobalAcquisitionBeginEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetGlobalAcquisitionBeginEvent';
+}
+
+export class DotnetGlobalVersionResolutionCompletionEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetGlobalVersionResolutionCompletionEvent';
+}
+
+export class DotnetBeginGlobalInstallerExecution extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetBeginGlobalInstallerExecution';
+}
+
+export class DotnetCompletedGlobalInstallerExecution extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetCompletedGlobalInstallerExecution';
+}
+
+export class DotnetGlobalAcquisitionCompletionEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetGlobalAcquisitionCompletionEvent';
+}
 export class DotnetInstallGraveyardEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetInstallGraveyardEvent';
 }
@@ -335,6 +432,10 @@ export class DotnetCommandFallbackArchitectureEvent extends DotnetCustomMessageE
     public readonly eventName = 'DotnetCommandFallbackArchitectureEvent';
 }
 
+export class DotnetCommandFallbackOSEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetCommandFallbackOSEvent';
+}
+
 export class DotnetInstallKeyCreatedEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetInstallKeyCreatedEvent';
 }
@@ -345,6 +446,34 @@ export class DotnetLegacyInstallDetectedEvent extends DotnetCustomMessageEvent {
 
 export class DotnetLegacyInstallRemovalRequestEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetLegacyInstallRemovalRequestEvent';
+}
+
+export class DotnetFakeSDKEnvironmentVariableTriggered extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFakeSDKEnvironmentVariableTriggered';
+}
+
+export class CommandExecutionNoStatusCodeWarning extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionNoStatusCodeWarning';
+}
+
+export class CommandExecutionSignalSentEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionSignalSentEvent';
+}
+
+export class CommandExecutionStatusEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionStatusEvent';
+}
+
+export class CommandExecutionEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionEvent';
+}
+
+export class CommandExecutionUserCompletedDialogueEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionUserCompletedDialogueEvent';
+}
+
+export class CommandExecutionUnderSudoEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionUnderSudoEvent';
 }
 
 export abstract class DotnetFileEvent extends DotnetAcquisitionMessage

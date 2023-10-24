@@ -11,18 +11,29 @@ import {
 import { IInstallationValidator } from './IInstallationValidator';
 
 export class InstallationValidator extends IInstallationValidator {
-    public validateDotnetInstall(installKey: string, dotnetPath: string): void {
+    public validateDotnetInstall(installKey: string, dotnetPath: string, isDotnetFolder = false): void {
         const dotnetValidationFailed = `Validation of .dotnet installation for version ${installKey} failed:`;
         const folder = path.dirname(dotnetPath);
 
-        this.assertOrThrowError(fs.existsSync(folder),
+        if(!isDotnetFolder)
+        {
+            this.assertOrThrowError(fs.existsSync(folder),
             `${dotnetValidationFailed} Expected installation folder ${folder} does not exist.`, installKey, dotnetPath);
 
-        this.assertOrThrowError(fs.existsSync(dotnetPath),
-            `${dotnetValidationFailed} Expected executable does not exist at "${dotnetPath}"`, installKey, dotnetPath);
+            this.assertOrThrowError(fs.existsSync(dotnetPath),
+                `${dotnetValidationFailed} Expected executable does not exist at "${dotnetPath}"`, installKey, dotnetPath);
 
-        this.assertOrThrowError(fs.lstatSync(dotnetPath).isFile(),
-            `${dotnetValidationFailed} Expected executable file exists but is not a file: "${dotnetPath}"`, installKey, dotnetPath);
+            this.assertOrThrowError(fs.lstatSync(dotnetPath).isFile(),
+                `${dotnetValidationFailed} Expected executable file exists but is not a file: "${dotnetPath}"`, installKey, dotnetPath);
+        }
+        else
+        {
+            this.assertOrThrowError(fs.existsSync(folder),
+            `${dotnetValidationFailed} Expected dotnet folder ${dotnetPath} does not exist.`, installKey, dotnetPath);
+
+            this.assertOrThrowError(fs.readdirSync(folder).length !== 0,
+            `${dotnetValidationFailed} The dotnet folder is empty "${dotnetPath}"`, installKey, dotnetPath);
+        }
 
         this.eventStream.post(new DotnetInstallationValidated(installKey));
     }

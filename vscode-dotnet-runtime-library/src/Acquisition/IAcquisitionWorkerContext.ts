@@ -19,4 +19,5 @@ export interface IAcquisitionWorkerContext {
     installDirectoryProvider: IInstallationDirectoryProvider;
     acquisitionContext? : IDotnetAcquireContext | null;
     installingArchitecture? : string | undefined | null;
+    proxyUrl? : string | undefined;
 }

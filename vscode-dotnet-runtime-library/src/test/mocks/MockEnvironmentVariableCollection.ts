@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 /* tslint:disable:no-any */
 
 export class MockEnvironmentVariableCollection implements vscode.EnvironmentVariableCollection {
+
     public persistent =  true;
     public variables: {[variable: string]: string} = {};
 
@@ -39,6 +40,10 @@ export class MockEnvironmentVariableCollection implements vscode.EnvironmentVari
     }
 
     public clear(): void {
+        throw new Error('Method not implemented.');
+    }
+
+    [Symbol.iterator](): Iterator<[variable: string, mutator: vscode.EnvironmentVariableMutator], any, undefined> {
         throw new Error('Method not implemented.');
     }
 }

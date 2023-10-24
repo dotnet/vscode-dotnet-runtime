@@ -2,6 +2,7 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
+
 import * as fs from 'fs';
 import * as path from 'path';
 import { IAcquisitionInvoker } from '../../Acquisition/IAcquisitionInvoker';
@@ -12,16 +13,22 @@ import { VersionResolver } from '../../Acquisition/VersionResolver';
 import { IEventStream } from '../../EventStream/EventStream';
 import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStream/EventStreamEvents';
 import { IEvent } from '../../EventStream/IEvent';
-import { ILoggingObserver } from '../ILoggingObserver';
+import { ILoggingObserver } from '../../EventStream/ILoggingObserver';
 import { ITelemetryReporter } from '../../EventStream/TelemetryObserver';
 import { IExistingPath, IExtensionConfiguration } from '../../IExtensionContext';
 import { IExtensionState } from '../../IExtensionState';
 import { WebRequestWorker } from '../../Utils/WebRequestWorker';
+import { ICommandExecutor } from '../../Utils/ICommandExecutor';
+import { CommandExecutor } from '../../Utils/CommandExecutor';
+import { IDistroDotnetSDKProvider } from '../../Acquisition/IDistroDotnetSDKProvider';
+import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
+import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProvider';
+import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
 import { AcquisitionInvoker } from '../../Acquisition/AcquisitionInvoker';
 import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
-/* tslint:disable:no-any */
 
 const testDefaultTimeoutTimeMs = 60000;
+/* tslint:disable:no-any */
 
 export class MockExtensionContext implements IExtensionState {
     private values: { [n: string]: any; } = {};
@@ -118,9 +125,9 @@ export class MockTrackingWebRequestWorker extends WebRequestWorker {
     public response = 'Mock Web Request Result';
 
     constructor(extensionState: IExtensionState, eventStream: IEventStream, url: string,
-            protected readonly succeed = true, webTimeToLive = testDefaultTimeoutTimeMs, cacheTimetoLive = testDefaultTimeoutTimeMs)
+            protected readonly succeed = true, webTimeToLive = testDefaultTimeoutTimeMs, cacheTimeToLive = testDefaultTimeoutTimeMs)
     {
-        super(extensionState, eventStream, url, webTimeToLive, '', cacheTimetoLive);
+        super(extensionState, eventStream, url, webTimeToLive, '', cacheTimeToLive);
     }
 
     public getRequestCount() {
@@ -130,7 +137,6 @@ export class MockTrackingWebRequestWorker extends WebRequestWorker {
     public incrementRequestCount() {
         this.requestCount++;
     }
-
     protected async makeWebRequest(shouldThrow = false, retries = 2): Promise<string | undefined> {
         if ( !(await this.isUrlCached()) )
         {
@@ -165,6 +171,30 @@ export class MockWebRequestWorker extends MockTrackingWebRequestWorker {
     }
 }
 
+export class MockIndexWebRequestWorker extends WebRequestWorker {
+    public knownUrls = ['Mock Web Request Result'];
+    public matchingUrlResponses = [
+        ``
+    ];
+
+    constructor(extensionState: IExtensionState, eventStream: IEventStream, url: string,
+        protected readonly succeed = true, webTimeToLive = testDefaultTimeoutTimeMs, cacheTimeToLive = testDefaultTimeoutTimeMs)
+    {
+            super(extensionState, eventStream, url, webTimeToLive, '', cacheTimeToLive);
+    }
+
+    public async getCachedData(retriesCount = 2): Promise<string | undefined>
+    {
+        const urlResponseIndex = this.knownUrls.indexOf(this.url);
+        if(urlResponseIndex === -1)
+        {
+            throw Error(`The requested URL ${this.url} was not expected as the mock object did not have a set response for it.`)
+        }
+        return JSON.parse(this.matchingUrlResponses[urlResponseIndex]);
+    }
+
+}
+
 export class MockVersionResolver extends VersionResolver {
     private readonly filePath = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-releases.json');
 
@@ -191,9 +221,9 @@ export class MockInstallScriptWorker extends InstallScriptAcquisitionWorker {
     }
 }
 
-export class MockApostropheScriptAcquisitionWorker extends MockInstallScriptWorker {
+export class MockApostropheScriptAcquisitionWorker extends MockInstallScriptWorker
+{
     protected readonly scriptFilePath: string;
-
     constructor(extensionState: IExtensionState, eventStream: IEventStream, installFolder: string) {
         super(extensionState, eventStream, false);
         const scriptFileEnding = 'win32';
@@ -202,14 +232,153 @@ export class MockApostropheScriptAcquisitionWorker extends MockInstallScriptWork
     }
 }
 
+
 export class MockAcquisitionInvoker extends AcquisitionInvoker
 {
     protected readonly scriptWorker: MockApostropheScriptAcquisitionWorker
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, timeoutTime : number ,installFolder : string) {
+    constructor(extensionState: IExtensionState, eventStream: IEventStream, timeoutTime : number, installFolder : string) {
         super(extensionState, eventStream, timeoutTime);
         this.scriptWorker = new MockApostropheScriptAcquisitionWorker(extensionState, eventStream, installFolder);
     }
 }
+
+/**
+ * @remarks does NOT run the commands (if they have sudo), but records them to verify the correct command should've been run.
+ */
+export class MockCommandExecutor extends ICommandExecutor
+{
+    private trueExecutor : CommandExecutor;
+    public fakeReturnValue = '';
+    public attemptedCommand = '';
+
+    // If you expect several commands to be run and want to specify unique outputs for each, describe them in the same order using the below two arrays.
+    // We will check for an includes match and not an exact match!
+    public otherCommandsToMock : string[] = [];
+    public otherCommandsReturnValues : string[] = [];
+
+    constructor(eventStream : IEventStream)
+    {
+        super(eventStream);
+        this.trueExecutor = new CommandExecutor(eventStream);
+    }
+
+    public async execute(command: string, options : object | null = null): Promise<string[]>
+    {
+        this.attemptedCommand = command;
+        let commandResults : string[] = [];
+
+        if(!command.includes('sudo') && this.fakeReturnValue === '')
+        {
+            commandResults = await this.trueExecutor.execute(command, options);
+        }
+        else if(this.otherCommandsToMock.some(x => x.includes(command)))
+        {
+            const fakeResultIndex = this.otherCommandsToMock.findIndex(x => x.includes(command));
+            // We don't need to verify the index since this is test code!
+            commandResults.push(this.otherCommandsReturnValues[fakeResultIndex]);
+        }
+        else
+        {
+            commandResults.push(this.fakeReturnValue);
+        }
+        return commandResults;
+    }
+
+    public async TryFindWorkingCommand(commands: string[]): Promise<[string, boolean]> {
+        return [commands[0], true];
+    }
+}
+
+/**
+ * @remarks does NOT run the commands (if they have sudo), but records them to verify the correct command should've been run.
+ */
+export class MockDistroProvider extends IDistroDotnetSDKProvider
+{
+    public installReturnValue = '';
+    public installedSDKsReturnValue = [];
+    public installedRuntimesReturnValue : string[] = [];
+    public globalPathReturnValue : string | null = '';
+    public globalVersionReturnValue : string | null = '';
+    public distroFeedReturnValue = '';
+    public microsoftFeedReturnValue = '';
+    public packageExistsReturnValue = false;
+    public supportStatusReturnValue : DotnetDistroSupportStatus = DotnetDistroSupportStatus.Distro;
+    public recommendedVersionReturnValue = '';
+    public upgradeReturnValue = '';
+    public uninstallReturnValue = '';
+    public context: IAcquisitionWorkerContext;
+
+    constructor(version : DistroVersionPair, context : IAcquisitionWorkerContext, commandRunner : ICommandExecutor)
+    {
+        super(version, context, commandRunner);
+        this.context = context;
+    }
+
+    public installDotnet(fullySpecifiedVersion: string): Promise<string> {
+        this.commandRunner.execute('install dotnet');
+        return Promise.resolve(this.installReturnValue);
+    }
+
+    public getInstalledDotnetSDKVersions(): Promise<string[]> {
+        this.commandRunner.execute('get sdk versions');
+        return Promise.resolve(this.installedSDKsReturnValue);
+    }
+
+    public getInstalledDotnetRuntimeVersions(): Promise<string[]> {
+        this.commandRunner.execute('get runtime versions');
+        return Promise.resolve(this.installedRuntimesReturnValue);
+    }
+
+    public getInstalledGlobalDotnetPathIfExists(): Promise<string | null> {
+        this.commandRunner.execute('global path');
+        return Promise.resolve(this.globalPathReturnValue);
+    }
+
+    public getInstalledGlobalDotnetVersionIfExists(): Promise<string | null> {
+        this.commandRunner.execute('global version');
+        return Promise.resolve(this.globalVersionReturnValue);
+    }
+
+    public getExpectedDotnetDistroFeedInstallationDirectory(): Promise<string> {
+        this.commandRunner.execute('distro feed dir');
+        return Promise.resolve(this.distroFeedReturnValue);
+    }
+
+    public getExpectedDotnetMicrosoftFeedInstallationDirectory(): Promise<string> {
+        this.commandRunner.execute('microsoft feed dir');
+        return Promise.resolve(this.microsoftFeedReturnValue);
+    }
+
+    public dotnetPackageExistsOnSystem(fullySpecifiedVersion: string): Promise<boolean> {
+        this.commandRunner.execute('package check');
+        return Promise.resolve(this.packageExistsReturnValue);
+    }
+
+    public getDotnetVersionSupportStatus(fullySpecifiedVersion: string): Promise<DotnetDistroSupportStatus> {
+        this.commandRunner.execute('support status');
+        return Promise.resolve(this.supportStatusReturnValue);
+    }
+
+    public getRecommendedDotnetVersion(): string {
+        this.commandRunner.execute('recommended version');
+        return this.recommendedVersionReturnValue;
+    }
+
+    public upgradeDotnet(versionToUpgrade: string): Promise<string> {
+        this.commandRunner.execute('upgrade update dotnet');
+        return Promise.resolve(this.upgradeReturnValue);
+    }
+
+    public uninstallDotnet(versionToUninstall: string): Promise<string> {
+        this.commandRunner.execute('uninstall dotnet');
+        return Promise.resolve(this.uninstallReturnValue);
+    }
+
+    public JsonDotnetVersion(fullySpecifiedDotnetVersion: string): string {
+        return new GenericDistroSDKProvider(this.distroVersion, this.context).JsonDotnetVersion(fullySpecifiedDotnetVersion);
+    }
+}
+
 
 export class FailingInstallScriptWorker extends InstallScriptAcquisitionWorker {
     constructor(extensionState: IExtensionState, eventStream: IEventStream) {
@@ -217,7 +386,7 @@ export class FailingInstallScriptWorker extends InstallScriptAcquisitionWorker {
         this.webWorker = new MockWebRequestWorker(extensionState, eventStream, '');
     }
 
-    protected async writeScriptAsFile(scriptContent: string, filePath: string) {
+    public getDotnetInstallScriptPath() : Promise<string> {
         throw new Error('Failed to write file');
     }
 }

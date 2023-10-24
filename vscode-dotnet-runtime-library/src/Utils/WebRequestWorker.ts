@@ -8,9 +8,14 @@ import { HttpsProxyAgent } from 'https-proxy-agent';
 import { getProxySettings } from 'get-proxy-settings';
 import { AxiosCacheInstance, buildStorage, setupCache, StorageValue } from 'axios-cache-interceptor';
 import { IEventStream } from '../EventStream/EventStream';
-import { SuppressedAcquisitionError, WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
+import { DotnetLockAttemptingAcquireEvent, DotnetLockReleasedEvent, SuppressedAcquisitionError, WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
 import { IExtensionState } from '../IExtensionState';
 import { Debugging } from '../Utils/Debugging';
+import { finished } from 'stream';
+import * as lockfile from 'proper-lockfile';
+import * as fs from 'fs';
+import { promisify } from 'util';
+import stream = require('stream');
 /* tslint:disable:no-any */
 
 /*
@@ -48,7 +53,7 @@ export class WebRequestWorker
     constructor(
         private readonly extensionState: IExtensionState,
         private readonly eventStream: IEventStream,
-        private readonly url: string,
+        protected readonly url: string,
         private readonly websiteTimeoutMs: number, // Match the default timeout time of 10 minutes.
         private proxy = '',
         private cacheTimeToLive = -1
@@ -135,7 +140,7 @@ export class WebRequestWorker
         }
         try
         {
-            const requestFunction = this.axiosGet(urlInQuestion,  {timeout: this.websiteTimeoutMs});
+            const requestFunction = this.axiosGet(urlInQuestion, await this.getAxiosOptions(3));
             const requestResult = await Promise.resolve(requestFunction);
             const cachedState = requestResult.cached;
             return cachedState;
@@ -174,6 +179,44 @@ export class WebRequestWorker
     }
 
     /**
+     * @returns an empty promise. It will download the file from the url. The url is expected to be a file server that responds with the file directly.
+     * We cannot use a simpler download pattern because we need to download the byte stream 1-1.
+     */
+    public async downloadFile(url : string, dest : string)
+    {
+        if(fs.existsSync(dest))
+        {
+            return;
+        }
+
+        const finished = promisify(stream.finished);
+        const file = fs.createWriteStream(dest, { flags: 'wx' });
+        const options = await this.getAxiosOptions(3, {responseType: 'stream', transformResponse: (x : any) => x}, false);
+        await this.axiosGet(url, options)
+        .then(response =>
+        {
+            response.data.pipe(file);
+            return finished(file);
+        });
+    }
+
+    private async getAxiosOptions(numRetries: number, furtherOptions? : {}, keepAlive = true)
+    {
+        await this.ActivateProxyAgentIfFound();
+
+        const options = {
+            timeout: this.websiteTimeoutMs,
+            'axios-retry': { retries: numRetries },
+            ...(keepAlive && {headers: { 'Connection': 'keep-alive' }}),
+            ...(this.proxyEnabled() && {proxy : false}),
+            ...(this.proxyEnabled() && {httpsAgent : this.proxyAgent}),
+            ...furtherOptions,
+        };
+
+        return options;
+    }
+
+    /**
      *
      * @param throwOnError Should we throw if the connection fails, there's a bad URL passed in, or something else goes wrong?
      * @param numRetries The number of retry attempts if the url is not giving a good response.
@@ -182,19 +225,11 @@ export class WebRequestWorker
      */
     protected async makeWebRequest(throwOnError: boolean, numRetries: number): Promise<string | undefined>
     {
-        await this.ActivateProxyAgentIfFound();
+        const options = await this.getAxiosOptions(numRetries);
 
         try
         {
             this.eventStream.post(new WebRequestSent(this.url));
-            const options = {
-                timeout: this.websiteTimeoutMs,
-                headers: { 'Connection': 'keep-alive' },
-                'axios-retry': { retries: numRetries },
-                ...(this.proxyEnabled() && {proxy : false}),
-                ...(this.proxyEnabled() && {httpsAgent : this.proxyAgent}),
-            };
-
             const response = await this.axiosGet(
                 this.url,
                 options

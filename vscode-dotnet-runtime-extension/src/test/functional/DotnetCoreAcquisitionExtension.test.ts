@@ -120,7 +120,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
 
     const startedEvent = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === 'DotnetAcquisitionStarted');
     assert.exists(startedEvent, 'Acquisition started event gets published');
-    assert.include(startedEvent!.properties!.AcquisitionStartVersion, '2.2', 'Acquisition started event has a starting version');
+    assert.include(startedEvent!.properties!.AcquisitionStartVersion, rntVersion, 'Acquisition started event has a starting version');
     assert.include(startedEvent!.properties!.AcquisitionInstallKey, installKey, 'Acquisition started event has a install key');
 
     const completedEvent = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === 'DotnetAcquisitionCompleted');

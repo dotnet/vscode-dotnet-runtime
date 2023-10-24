@@ -14,6 +14,7 @@ export enum EventType {
     DotnetAcquisitionTest,
     DotnetAcquisitionAlreadyInstalled,
     DotnetAcquisitionInProgress,
+    DotnetDebuggingMessage,
     DotnetTotalSuccessEvent,
     SuppressedAcquisitionError,
 }

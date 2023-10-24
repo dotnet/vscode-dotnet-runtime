@@ -20,6 +20,8 @@ import {
   IDotnetAcquireResult,
   IDotnetListVersionsContext,
   IDotnetListVersionsResult,
+  FileUtilities,
+  GlobalInstallerResolver,
   MockEnvironmentVariableCollection,
   MockEventStream,
   MockExtensionConfiguration,
@@ -30,6 +32,8 @@ import {
   MockWindowDisplayWorker,
   NoInstallAcquisitionInvoker,
   SdkInstallationDirectoryProvider,
+  WinMacGlobalInstaller,
+  MockIndexWebRequestWorker
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { uninstallSDKExtension } from '../../ExtensionUninstall';
@@ -39,6 +43,8 @@ import { warn } from 'console';
 const standardTimeoutTime = 100000;
 const assert = chai.assert;
 chai.use(chaiAsPromised);
+/* tslint:disable:no-any */
+/* tslint:disable:no-unsafe-finally */
 
 const currentSDKVersion = '6.0';
 
@@ -93,13 +99,14 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     });
   });
 
+
   test('Activate', async () => {
     // Commands should now be registered
     assert.exists(extensionContext);
     assert.isAbove(extensionContext.subscriptions.length, 0);
   });
 
-  test('List Sdks & Runtimes (API Correctly Returns Sdks & Runtimes)', async () => {
+  test('List Sdks & Runtimes', async () => {
     const mockWebContext = new MockExtensionContext();
     const eventStream = new MockEventStream();
     const webWorker = new MockWebRequestWorker(mockWebContext, eventStream, '');
@@ -240,12 +247,115 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     return assert.isRejected(vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context));
   }).timeout(standardTimeoutTime);
 
+  test('Global Install Version Parsing Handles Different Version Formats Correctly and Gives Expected Installer URL', async () => {
+    const mockExtensionContext = new MockExtensionContext();
+    const eventStream = new MockEventStream();
+
+    const majorOnlyVersion = '6';
+    const majorMinorVersion = '6.0';
+    const featureBandOnlyVersion = '6.0.3xx'; // this should be a full version thats lower than the newest version available.
+    const fullVersion = '6.0.311'; // this should be a full version thats lower than the newest version available.
+
+    const newestBandedVersion = '6.0.311';
+    const newestVersion = '6.0.408';
+
+    const url = 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/6.0/releases.json'
+    const webWorker = new MockIndexWebRequestWorker(mockExtensionContext, eventStream, url);
+    webWorker.knownUrls.push(url);
+    // Note that ZIPS in the data below come before EXEs to make sure the file extension check works.
+    const mockJsonFile = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-releases.json');
+    webWorker.matchingUrlResponses.push(fs.readFileSync(mockJsonFile, 'utf8'));
+
+    let resolver : GlobalInstallerResolver = new GlobalInstallerResolver(mockExtensionContext, eventStream, majorOnlyVersion, standardTimeoutTime, undefined);
+    resolver.customWebRequestWorker = webWorker;
+    assert.strictEqual(await resolver.getFullySpecifiedVersion(), newestVersion);
+
+    resolver = new GlobalInstallerResolver(mockExtensionContext, eventStream, majorMinorVersion, standardTimeoutTime, undefined);
+    resolver.customWebRequestWorker = webWorker;
+    assert.strictEqual(await resolver.getFullySpecifiedVersion(), newestVersion);
+
+    resolver = new GlobalInstallerResolver(mockExtensionContext, eventStream, featureBandOnlyVersion, standardTimeoutTime, undefined);
+    resolver.customWebRequestWorker = webWorker;
+    assert.strictEqual(await resolver.getFullySpecifiedVersion(), newestBandedVersion);
+
+    if(os.arch() === 'x64')
+    {
+      // We check this only on x64 because that matches the build machines and we don't want to duplicate architecture mapping logic
+      if(os.platform() === 'win32')
+      {
+        const expectedWinInstallerUrl = 'https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-win-x64.exe';
+        assert.strictEqual(await resolver.getInstallerUrl(), expectedWinInstallerUrl);
+      }
+      else if(os.platform() === 'darwin')
+      {
+        const expectedMacInstallerUrl = 'https://download.visualstudio.microsoft.com/download/pr/dotnet-sdk-6.0.311-osx-x64.pkg';
+        assert.strictEqual(await resolver.getInstallerUrl(), expectedMacInstallerUrl);
+      }
+    }
+
+    resolver = new GlobalInstallerResolver(mockExtensionContext, eventStream, fullVersion, standardTimeoutTime, undefined);
+    resolver.customWebRequestWorker = webWorker;
+    assert.strictEqual(await resolver.getFullySpecifiedVersion(), fullVersion);
+  }).timeout(standardTimeoutTime);
+
+
+  test('Install Globally E2E (Requires Admin)', async () => {
+    // We only test if the process is running under ADMIN because non-admin requires user-intervention.
+    if(new FileUtilities().isElevated())
+    {
+      const originalPath = process.env.PATH;
+      const sdkVersion = '7.0.103';
+      const context : IDotnetAcquireContext = { version: sdkVersion, requestingExtensionId: 'ms-dotnettools.sample-extension', installType: 'global' };
+
+      // We cannot use the describe pattern to restore the environment variables using vscodes extension testing infrastructure.
+      // So we must set and unset it ourselves, which isn't ideal as this variable could remain.
+      let result : IDotnetAcquireResult;
+      let error : any;
+      let pathAfterInstall;
+
+      // We cannot test much as we don't want to leave global installs on dev boxes. But we do want to make sure the e-2-e goes through the right path. Vendors can test the rest.
+      // So we have this environment variable that tells us to stop before running any real install.
+      process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH = 'true';
+      try
+      {
+        result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context);
+      }
+      catch(err)
+      {
+        error = err;
+      }
+      finally
+      {
+        pathAfterInstall = process.env.PATH;
+        process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH = undefined;
+        process.env.PATH = originalPath;
+
+        if(error)
+        {
+          throw(new Error(`The test failed to run the acquire command successfully. Error: ${error}`));
+        }
+      }
+
+      assert.exists(result!, 'The global acquisition command did not provide a result?');
+      assert.exists(result!.dotnetPath);
+      assert.equal(result!.dotnetPath, 'fake-sdk');
+      assert.exists(pathAfterInstall, 'The environment variable PATH for DOTNET was not found?');
+      assert.include(pathAfterInstall, result!.dotnetPath, 'Is the PATH correctly set by the global installer?');
+    }
+    else
+    {
+      // We could run the installer without privilege but it would require human interaction to use the UAC
+      // And we wouldn't be able to kill the process so the test would leave a lot of hanging processes on the machine
+      warn('The Global SDK E2E Install test cannot run as the machine is unprivileged.');
+    }
+  }).timeout(standardTimeoutTime*1000);
+
   test('Install Command Sets the PATH', async () =>
   {
     const existingPath = process.env.PATH;
     const context: IDotnetAcquireContext = { version: currentSDKVersion, requestingExtensionId: 'ms-dotnettools.sample-extension' };
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context);
-    assert.exists(result);
+    assert.exists(result, 'The acquisition command did not provide a valid result?');
     assert.exists(result!.dotnetPath);
 
     const expectedPath = path.dirname(result!.dotnetPath);

@@ -37,9 +37,11 @@ import {
     WebRequestWorker,
     IWindowDisplayWorker,
     WindowDisplayWorker,
+    Debugging,
 } from 'vscode-dotnet-runtime-library';
 
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
+import { GlobalInstallerResolver } from 'vscode-dotnet-runtime-library/dist/Acquisition/GlobalInstallerResolver';
 
 // tslint:disable no-var-requires
 const packageJson = require('../package.json');
@@ -129,6 +131,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
     const getAvailableVersions = async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) : Promise<IDotnetListVersionsResult | undefined> =>
     {
+
         const versionsResult = await callWithErrorHandling(async () => {
             const customVersionResolver = new VersionResolver(context.globalState, eventStream, resolvedTimeoutSeconds, proxyUrl, customWebWorker);
             return customVersionResolver.GetAvailableDotnetVersions(commandContext);
@@ -138,9 +141,14 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     }
 
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) => {
-        if (commandContext.requestingExtensionId === undefined) {
+        Debugging.log(`The SDK Extension Acquire Command was Invoked.`, eventStream);
+
+        if (commandContext.requestingExtensionId === undefined)
+        {
             return Promise.reject('No requesting extension id was provided.');
-        } else if (!knownExtensionIds.includes(commandContext.requestingExtensionId!)) {
+        }
+        else if (!knownExtensionIds.includes(commandContext.requestingExtensionId!))
+        {
             return Promise.reject(`${commandContext.requestingExtensionId} is not a known requesting extension id. The vscode-dotnet-sdk extension can only be used by ms-dotnettools.vscode-dotnet-pack.`);
         }
 
@@ -148,13 +156,38 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             eventStream.post(new DotnetSDKAcquisitionStarted(commandContext.requestingExtensionId));
 
             eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
-            const resolvedVersion = await versionResolver.getFullSDKVersion(commandContext.version);
             acquisitionWorker.setAcquisitionContext(commandContext);
-            const dotnetPath = await acquisitionWorker.acquireSDK(resolvedVersion);
-            const pathEnvVar = path.dirname(dotnetPath.dotnetPath);
-            setPathEnvVar(pathEnvVar, displayWorker, context.environmentVariableCollection);
-            return dotnetPath;
+            if(commandContext.installType === 'global')
+            {
+                Debugging.log(`Acquisition Request was remarked as Global.`, eventStream);
+
+                if(commandContext.version === '' || !commandContext.version)
+                {
+                    throw Error(`No version was defined to install.`);
+                }
+
+                const globalInstallerResolver = new GlobalInstallerResolver(context.globalState, eventStream, commandContext.version, resolvedTimeoutSeconds, proxyUrl);
+                const dotnetPath = await acquisitionWorker.acquireGlobalSDK(globalInstallerResolver);
+
+                setPathEnvVar(dotnetPath.dotnetPath, displayWorker, context.environmentVariableCollection, true);
+                Debugging.log(`Returning path: ${dotnetPath}.`, eventStream);
+                return dotnetPath;
+            }
+            else
+            {
+                Debugging.log(`Acquisition Request was remarked as local.`, eventStream);
+
+                const resolvedVersion = await versionResolver.getFullSDKVersion(commandContext.version);
+                const dotnetPath = await acquisitionWorker.acquireSDK(resolvedVersion);
+
+                const pathEnvVar = path.dirname(dotnetPath.dotnetPath);
+                setPathEnvVar(pathEnvVar, displayWorker, context.environmentVariableCollection, false);
+                return dotnetPath;
+            }
         }, issueContext(commandContext.errorConfiguration, 'acquireSDK'));
+
+        Debugging.log(`Returning Path Result ${pathResult}.`, eventStream);
+
         return pathResult;
     });
 
@@ -217,17 +250,20 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         ...eventStreamObservers);
 }
 
-function setPathEnvVar(pathAddition: string, displayWorker: IWindowDisplayWorker, environmentVariables: vscode.EnvironmentVariableCollection) {
-    // Set user PATH variable
-    let pathCommand: string | undefined;
-    if (os.platform() === 'win32') {
-        pathCommand = getWindowsPathCommand(pathAddition);
-    } else {
-        pathCommand = getLinuxPathCommand(pathAddition);
-    }
+function setPathEnvVar(pathAddition: string, displayWorker: IWindowDisplayWorker, environmentVariables: vscode.EnvironmentVariableCollection, isGlobal : boolean) {
+    if(!isGlobal || os.platform() === 'linux')
+    {
+        // Set user PATH variable. The .NET SDK Installer does this for us on Win/Mac.
+        let pathCommand: string | undefined;
+        if (os.platform() === 'win32') {
+            pathCommand = getWindowsPathCommand(pathAddition);
+        } else {
+            pathCommand = getLinuxPathCommand(pathAddition);
+        }
 
-    if (pathCommand !== undefined) {
-        runPathCommand(pathCommand, displayWorker);
+        if (pathCommand !== undefined) {
+            runPathCommand(pathCommand, displayWorker);
+        }
     }
 
     // Set PATH for VSCode terminal instances
