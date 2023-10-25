@@ -6,18 +6,26 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import * as https from 'https';
-
 import { FileUtilities } from '../Utils/FileUtilities';
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { VersionResolver } from './VersionResolver';
-import { DotnetAcquisitionDistroUnknownError, DotnetAcquisitionError, DotnetConflictingGlobalWindowsInstallError, DotnetUnexpectedInstallerOSError, OSXOpenNotAvailableError } from '../EventStream/EventStreamEvents';
+import { DotnetConflictingGlobalWindowsInstallError, DotnetUnexpectedInstallerOSError, OSXOpenNotAvailableError, SuppressedAcquisitionError } from '../EventStream/EventStreamEvents';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+import { IFileUtilities } from '../Utils/IFileUtilities';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
+import { IUtilityContext } from '../Utils/IUtilityContext';
 /* tslint:disable:only-arrow-functions */
 /* tslint:disable:no-empty */
+/* tslint:disable:no-any */
+
+namespace validationPromptConstants
+{
+    export const noSignatureMessage = `The .NET install file could not be validated. It may be insecure or too new to verify. Would you like to continue installing .NET and accept the risks?`;
+    export const cancelOption = 'Cancel Install';
+    export const allowOption = 'Install Anyways';
+}
 
 /**
  * @remarks
@@ -29,18 +37,21 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
 
     private installerUrl : string;
     private installingVersion : string;
+    private installerHash : string;
     protected commandRunner : ICommandExecutor;
     public cleanupInstallFiles = true;
     protected versionResolver : VersionResolver;
-    protected file : FileUtilities;
+    public file : IFileUtilities;
     protected webWorker : WebRequestWorker;
 
-    constructor(context : IAcquisitionWorkerContext, installingVersion : string, installerUrl : string, executor : ICommandExecutor | null = null)
+    constructor(context : IAcquisitionWorkerContext, utilContext : IUtilityContext, installingVersion : string, installerUrl : string,
+        installerHash : string, executor : ICommandExecutor | null = null)
     {
-        super(context);
-        this.installerUrl = installerUrl
+        super(context, utilContext);
+        this.installerUrl = installerUrl;
         this.installingVersion = installingVersion;
-        this.commandRunner = executor ?? new CommandExecutor(context.eventStream);
+        this.installerHash = installerHash;
+        this.commandRunner = executor ?? new CommandExecutor(context.eventStream, utilContext);
         this.versionResolver = new VersionResolver(context.extensionState, context.eventStream, context.timeoutValue, context.proxyUrl);
         this.file = new FileUtilities();
         this.webWorker = new WebRequestWorker(context.extensionState, context.eventStream,
@@ -69,6 +80,14 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         }
 
         const installerFile : string = await this.downloadInstaller(this.installerUrl);
+        const canContinue = await this.installerFileHasValidIntegrity(installerFile);
+        if(!canContinue)
+        {
+            const err = new DotnetConflictingGlobalWindowsInstallError(new Error(`The integrity of the .NET install file is invalid, or there was no integrity to check and you denied the request to continue with those risks.
+We cannot verify .NET is safe to download at this time. Please try again later.`));
+        this.acquisitionContext.eventStream.post(err);
+        throw err.error;
+        }
         const installerResult : string = await this.executeInstall(installerFile);
 
         if(this.cleanupInstallFiles)
@@ -104,7 +123,41 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         }
 
         await this.webWorker.downloadFile(installerUrl, installerPath);
+        try
+        {
+            fs.chmodSync(installerPath, 0o744);
+        }
+        catch(error : any)
+        {
+            this.acquisitionContext.eventStream.post(new SuppressedAcquisitionError(error, `Failed to chmod +x on ${installerPath}.`));
+        }
         return installerPath;
+    }
+
+    private async installerFileHasValidIntegrity(installerFile : string) : Promise<boolean>
+    {
+        const realFileHash = await this.file.getFileHash(installerFile);
+        const expectedFileHash = this.installerHash;
+
+        if(expectedFileHash === null)
+        {
+            const yes = validationPromptConstants.allowOption
+            const no = validationPromptConstants.cancelOption;
+            const message = validationPromptConstants.noSignatureMessage;
+
+            const pick = await this.utilityContext.ui.getModalWarningResponse(message, no, yes);
+            const userConsentsToContinue = pick === yes;
+            return userConsentsToContinue;
+        }
+
+        if(realFileHash !== expectedFileHash)
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
     }
 
     public async getExpectedGlobalSDKPath(specificSDKVersionInstalled : string, installedArch : string) : Promise<string>

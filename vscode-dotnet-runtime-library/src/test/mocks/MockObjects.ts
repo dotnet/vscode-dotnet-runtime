@@ -24,8 +24,14 @@ import { IDistroDotnetSDKProvider } from '../../Acquisition/IDistroDotnetSDKProv
 import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
 import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProvider';
 import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
+import { FileUtilities } from '../../Utils/FileUtilities';
+import { IFileUtilities } from '../../Utils/IFileUtilities';
 import { AcquisitionInvoker } from '../../Acquisition/AcquisitionInvoker';
 import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
+import { IVSCodeExtensionContext } from '../../IVSCodeExtensionContext';
+import { IUtilityContext } from '../../Utils/IUtilityContext';
+import { getMockUtilityContext } from '../unit/TestUtility';
+import { IVSCodeEnvironment } from '../../Utils/IVSCodeEnvironment';
 
 const testDefaultTimeoutTimeMs = 60000;
 /* tslint:disable:no-any */
@@ -195,6 +201,21 @@ export class MockIndexWebRequestWorker extends WebRequestWorker {
 
 }
 
+export class MockVSCodeExtensionContext extends IVSCodeExtensionContext
+{
+    setVSCodeEnvironmentVariable(variable: string, value: string): void {
+        // Do nothing.
+    }
+}
+
+export class MockVSCodeEnvironment extends IVSCodeEnvironment
+{
+    isTelemetryEnabled(): boolean
+    {
+        return true;
+    }
+}
+
 export class MockVersionResolver extends VersionResolver {
     private readonly filePath = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-releases.json');
 
@@ -237,7 +258,7 @@ export class MockAcquisitionInvoker extends AcquisitionInvoker
 {
     protected readonly scriptWorker: MockApostropheScriptAcquisitionWorker
     constructor(extensionState: IExtensionState, eventStream: IEventStream, timeoutTime : number, installFolder : string) {
-        super(extensionState, eventStream, timeoutTime);
+        super(extensionState, eventStream, timeoutTime, getMockUtilityContext());
         this.scriptWorker = new MockApostropheScriptAcquisitionWorker(extensionState, eventStream, installFolder);
     }
 }
@@ -256,10 +277,10 @@ export class MockCommandExecutor extends ICommandExecutor
     public otherCommandsToMock : string[] = [];
     public otherCommandsReturnValues : string[] = [];
 
-    constructor(eventStream : IEventStream)
+    constructor(eventStream : IEventStream, utilContext : IUtilityContext)
     {
-        super(eventStream);
-        this.trueExecutor = new CommandExecutor(eventStream);
+        super(eventStream, utilContext);
+        this.trueExecutor = new CommandExecutor(eventStream, utilContext);
     }
 
     public async execute(command: string, options : object | null = null): Promise<string[]>
@@ -289,6 +310,32 @@ export class MockCommandExecutor extends ICommandExecutor
     }
 }
 
+export class MockFileUtilities extends IFileUtilities
+{
+    private trueUtilities = new FileUtilities();
+
+    public writeFileOntoDisk(content : string, filePath : string)
+    {
+        return this.trueUtilities.writeFileOntoDisk(content, filePath, new MockEventStream());
+    }
+
+    public wipeDirectory(directoryToWipe : string)
+    {
+        return this.trueUtilities.wipeDirectory(directoryToWipe);
+    }
+
+    public isElevated()
+    {
+        return this.trueUtilities.isElevated();
+    }
+
+    public async getFileHash(filePath : string)
+    {
+        return '';
+    }
+
+}
+
 /**
  * @remarks does NOT run the commands (if they have sudo), but records them to verify the correct command should've been run.
  */
@@ -308,9 +355,9 @@ export class MockDistroProvider extends IDistroDotnetSDKProvider
     public uninstallReturnValue = '';
     public context: IAcquisitionWorkerContext;
 
-    constructor(version : DistroVersionPair, context : IAcquisitionWorkerContext, commandRunner : ICommandExecutor)
+    constructor(version : DistroVersionPair, context : IAcquisitionWorkerContext, utilContext : IUtilityContext, commandRunner : ICommandExecutor)
     {
-        super(version, context, commandRunner);
+        super(version, context, utilContext, commandRunner);
         this.context = context;
     }
 
@@ -375,7 +422,7 @@ export class MockDistroProvider extends IDistroDotnetSDKProvider
     }
 
     public JsonDotnetVersion(fullySpecifiedDotnetVersion: string): string {
-        return new GenericDistroSDKProvider(this.distroVersion, this.context).JsonDotnetVersion(fullySpecifiedDotnetVersion);
+        return new GenericDistroSDKProvider(this.distroVersion, this.context, getMockUtilityContext()).JsonDotnetVersion(fullySpecifiedDotnetVersion);
     }
 }
 

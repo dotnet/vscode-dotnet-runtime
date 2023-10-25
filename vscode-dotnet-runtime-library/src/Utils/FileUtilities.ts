@@ -8,6 +8,8 @@
  import * as path from 'path';
  import * as os from 'os';
  import * as proc from 'child_process';
+ import * as crypto from 'crypto';
+import { IFileUtilities } from './IFileUtilities';
  import * as lockfile from 'proper-lockfile';
 import { IEventStream } from '../EventStream/EventStream';
 import { DotnetCommandFallbackArchitectureEvent,
@@ -21,8 +23,8 @@ import { DotnetCommandFallbackArchitectureEvent,
 } from '../EventStream/EventStreamEvents';
 /* tslint:disable:no-any */
 
-export class FileUtilities {
-
+export class FileUtilities extends IFileUtilities
+{
     public async writeFileOntoDisk(scriptContent: string, filePath: string, eventStream : IEventStream)
     {
         eventStream.post(new DotnetFileWriteRequestEvent(`Request to write`, new Date().toISOString(), filePath));
@@ -196,6 +198,24 @@ export class FileUtilities {
             eventStream?.post(new SuppressedAcquisitionError(error, `Failed to run 'net' to check for privilege, running without privilege.`))
             return false;
         }
+    }
+
+    private sha512Hasher(filePath : string)
+    {
+        return new Promise<string>((resolve, reject) =>
+        {
+            const hash = crypto.createHash('sha512');
+            const fileStream = fs.createReadStream(filePath);
+            fileStream.on('error', err => reject(err));
+            fileStream.on('data', chunk => hash.update(chunk));
+            fileStream.on('end', () => resolve(hash.digest('hex')));
+        })
+    };
+
+    public async getFileHash(filePath : string) : Promise<string | null>
+    {
+        const res = await this.sha512Hasher(filePath);
+        return res;
     }
 }
 

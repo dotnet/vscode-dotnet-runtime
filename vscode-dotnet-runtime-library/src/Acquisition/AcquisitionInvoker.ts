@@ -28,16 +28,19 @@ import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+import { IUtilityContext } from '../Utils/IUtilityContext';
 
 export class AcquisitionInvoker extends IAcquisitionInvoker {
     protected readonly scriptWorker: IInstallScriptAcquisitionWorker;
     protected fileUtilities : FileUtilities;
+    protected utilityContext : IUtilityContext;
     private noPowershellError = `powershell.exe is not discoverable on your system. Is PowerShell added to your PATH and correctly installed? Please visit: https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows.
 You will need to restart VS Code after these changes. If PowerShell is still not discoverable, try setting a custom existingDotnetPath following our instructions here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`
 
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, timeoutTime : number) {
+    constructor(extensionState: IExtensionState, eventStream: IEventStream, timeoutTime : number, utilContext : IUtilityContext) {
 
         super(eventStream);
+        this.utilityContext = utilContext;
         this.scriptWorker = new InstallScriptAcquisitionWorker(extensionState, eventStream, timeoutTime);
         this.fileUtilities = new FileUtilities();
     }
@@ -139,7 +142,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         try
         {
             // Check if PowerShell exists and is on the path.
-            const commandWorking = await new CommandExecutor(this.eventStream).TryFindWorkingCommand([`powershell.exe`,
+            const commandWorking = await new CommandExecutor(this.eventStream, this.utilityContext).TryFindWorkingCommand([`powershell.exe`,
                 `%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`, `pwsh`, `powershell`, `pwsh.exe`]);
             if(!commandWorking[1])
             {

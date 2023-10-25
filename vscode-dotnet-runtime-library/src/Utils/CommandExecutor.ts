@@ -20,14 +20,20 @@ import {exec} from '@vscode/sudo-prompt';
 import { ICommandExecutor } from './ICommandExecutor';
 import path = require('path');
 import { IEventStream } from '../EventStream/EventStream';
+import * as os from 'os';
+import { WindowDisplayWorker } from '../EventStream/WindowDisplayWorker';
+import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
+import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
+import { IUtilityContext } from './IUtilityContext';
+
 /* tslint:disable:no-any */
 
 export class CommandExecutor extends ICommandExecutor
 {
 
-    constructor(eventStream : IEventStream)
+    constructor(eventStream : IEventStream, utilContext : IUtilityContext)
     {
-        super(eventStream);
+        super(eventStream, utilContext);
     }
 
     /**
@@ -61,7 +67,7 @@ export class CommandExecutor extends ICommandExecutor
             // We had a working implementation that opens a vscode box and gets the user password, but that will require more security analysis.
 
             const err = new DotnetWSLSecurityError(new Error(`Automatic .NET SDK Installation is not yet supported in WSL due to VS Code & WSL limitations.
-Please install the .NET SDK manually and add it to the path by following https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#manually-installing-net`));
+Please install the .NET SDK manually by following https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu. Then, add it to the path by following https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#manually-installing-net`));
             this.eventStream.post(err);
             throw err.error;
         }
@@ -110,7 +116,7 @@ Please install the .NET SDK manually and add it to the path by following https:/
     {
         if(!options)
         {
-            options = {cwd : path.resolve(__dirname)};
+            options = {cwd : path.resolve(__dirname), shell: true};
         }
 
         const splitCommands : string[] = command.split('&&');
@@ -206,5 +212,45 @@ out: ${commandResult.stdout} err: ${commandResult.stderr}.`));
 
         this.returnStatus = oldReturnStatusSetting;
         return [workingCommand, working];
+    }
+
+    public async setEnvironmentVariable(variable : string, value : string, vscodeContext : IVSCodeExtensionContext, failureWarningMessage? : string, nonWinFailureMessage? : string)
+    {
+        const oldReturnStatusSetting = this.returnStatus;
+        this.returnStatus = true;
+        let environmentEditExitCode = 0;
+
+        process.env[variable] = value;
+        vscodeContext.setVSCodeEnvironmentVariable(variable, value);
+
+        if(os.platform() === 'win32')
+        {
+            const setShellVariable = `set ${variable}=${value}`;
+            const setSystemVariable = `setx ${variable} "${value}"`;
+            try
+            {
+                const shellEditResponse = await this.execute(setShellVariable);
+                environmentEditExitCode += Number(shellEditResponse[0]);
+                const systemEditResponse = await this.execute(setSystemVariable)
+                environmentEditExitCode += Number(systemEditResponse[0]);
+            }
+            catch(error)
+            {
+                environmentEditExitCode = 1
+            }
+        }
+        else
+        {
+            // export var=value does not do anything, because on osx and linux processes cannot edit above proc variables.
+            // We could try to edit etc/environment on ubuntu, then .profile/.bash_rc/.zsh etc on osx, but we'd like to avoid being intrusive.
+            failureWarningMessage = nonWinFailureMessage ? failureWarningMessage : nonWinFailureMessage;
+            environmentEditExitCode = 1;
+        }
+
+        if(environmentEditExitCode !== 0 && failureWarningMessage)
+        {
+            this.utilityContext.ui.showWarningMessage(failureWarningMessage, () => {/* No Callback */}, );
+        }
+        this.returnStatus = oldReturnStatusSetting;
     }
 }

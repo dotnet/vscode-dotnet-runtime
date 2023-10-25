@@ -16,7 +16,10 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
         if(supportStatus === DotnetDistroSupportStatus.Microsoft)
         {
             const preinstallCommands = this.myVersionPackages()[this.preinstallCommandKey];
-            const preparationResult = (await this.commandRunner.execute(preinstallCommands))[0];
+            for(const feedCommand of preinstallCommands)
+            {
+                const preparationResult = (await this.commandRunner.execute(feedCommand))[0];
+            }
         }
 
         let command = this.myDistroCommands()[this.installCommandKey];

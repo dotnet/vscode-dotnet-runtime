@@ -20,11 +20,14 @@ import {
     MockInstallationValidator,
     MockInstallScriptWorker,
     MockTrackingWebRequestWorker,
+    MockVSCodeExtensionContext,
 } from '../mocks/MockObjects';
 
 import {
     Debugging
 } from '../../Utils/Debugging';
+import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
+import { getMockUtilityContext } from './TestUtility';
 
 const assert = chai.assert;
 chai.use(chaiAsPromised);
@@ -51,7 +54,8 @@ suite('WebRequestWorker Unit Tests', () => {
             installationValidator: new MockInstallationValidator(eventStream),
             timeoutValue: 10,
             installDirectoryProvider: new RuntimeInstallationDirectoryProvider(''),
-        });
+            isExtensionTelemetryInitiallyEnabled: true
+        }, getMockUtilityContext(), new MockVSCodeExtensionContext());
         return assert.isRejected(acquisitionWorker.acquireRuntime('1.0'), Error, '.NET Acquisition Failed');
     });
 
