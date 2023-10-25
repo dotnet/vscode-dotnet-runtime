@@ -6,14 +6,14 @@
 import * as chai from 'chai';
 import * as os from 'os';
 import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProvider';
-import { MockCommandExecutor } from '../mocks/MockObjects';
+import { MockCommandExecutor, MockEventStream } from '../mocks/MockObjects';
 import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
 import { getMockAcquiringContext } from './TestUtility';
 const assert = chai.assert;
 const standardTimeoutTime = 100000;
 
 const mockVersion = '7.0.103';
-const mockExecutor = new MockCommandExecutor();
+const mockExecutor = new MockCommandExecutor(new MockEventStream());
 const pair : DistroVersionPair = { distro : 'Ubuntu', version : '22.04' };
 const provider : GenericDistroSDKProvider = new GenericDistroSDKProvider(pair, getMockAcquiringContext(false), mockExecutor);
 const shouldRun = os.platform() === 'linux';

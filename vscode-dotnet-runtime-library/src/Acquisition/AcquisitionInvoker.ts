@@ -27,6 +27,7 @@ import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker
 import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { FileUtilities } from '../Utils/FileUtilities';
+import { CommandExecutor } from '../Utils/CommandExecutor';
 
 export class AcquisitionInvoker extends IAcquisitionInvoker {
     protected readonly scriptWorker: IInstallScriptAcquisitionWorker;
@@ -46,12 +47,12 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         const installCommand = await this.getInstallCommand(installContext.version, installContext.installDir, installContext.installRuntime, installContext.architecture);
         const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(installContext.version, installContext.architecture);
 
-        return new Promise<void>((resolve, reject) => {
+        return new Promise<void>(async (resolve, reject) => {
             try {
                 let windowsFullCommand = `powershell.exe -NoProfile -NonInteractive -NoLogo -ExecutionPolicy unrestricted -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; & ${installCommand} }"`;
                 if(winOS)
                 {
-                    const powershellReference =  this.verifyPowershellCanRun(installContext);
+                    const powershellReference = await this.verifyPowershellCanRun(installContext);
                     windowsFullCommand = windowsFullCommand.replace('powershell.exe', powershellReference);
                 }
 
@@ -124,38 +125,12 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         }
     }
 
-    private TryFindWorkingCommand(commands : string[]) : [string, boolean]
-    {
-        for(const command of commands)
-        {
-            try
-            {
-                const cmdFoundOutput = cp.spawnSync(command);
-                if(cmdFoundOutput.status === 0)
-                {
-                    this.eventStream.post(new DotnetAlternativeCommandFoundEvent(`The command ${command} was found.`));
-                    return [command, true];
-                }
-                else
-                {
-                    this.eventStream.post(new DotnetCommandNotFoundEvent(`The command ${command} was NOT found, no error was thrown.`));
-                }
-            }
-            catch(err)
-            {
-                // Do nothing. The error should be raised higher up.
-                this.eventStream.post(new DotnetCommandNotFoundEvent(`The command ${command} was NOT found, and we caught any errors.`));
-            }
-        }
-        return ['', false];
-    }
-
     /**
      *
      * @remarks Some users have reported not having powershell.exe or having execution policy that fails property evaluation functions in powershell install scripts.
      * We use this function to throw better errors if powershell is not configured correctly.
      */
-    private verifyPowershellCanRun(installContext : IDotnetInstallationContext) : string
+    private async verifyPowershellCanRun(installContext : IDotnetInstallationContext) : Promise<string>
     {
         let knownError = false;
         let error = null;
@@ -164,7 +139,8 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         try
         {
             // Check if PowerShell exists and is on the path.
-            const commandWorking = this.TryFindWorkingCommand([`powershell.exe`, `%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`, `pwsh`, `powershell`, `pwsh.exe`]);
+            const commandWorking = await new CommandExecutor(this.eventStream).TryFindWorkingCommand([`powershell.exe`,
+                `%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`, `pwsh`, `powershell`, `pwsh.exe`]);
             if(!commandWorking[1])
             {
                 knownError = true;

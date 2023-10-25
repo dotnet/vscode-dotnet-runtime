@@ -73,6 +73,14 @@ export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker {
     }
 }
 
+export class MockDotnetCoreAcquisitionWorker extends DotnetCoreAcquisitionWorker
+{
+    public AddToGraveyard(installKey : string, installPath : string)
+    {
+        this.updateGraveyard(installKey, installPath);
+    }
+}
+
 export class RejectingAcquisitionInvoker extends IAcquisitionInvoker {
     public installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
         return new Promise<void>((resolve, reject) => {
@@ -248,10 +256,10 @@ export class MockCommandExecutor extends ICommandExecutor
     public otherCommandsToMock : string[] = [];
     public otherCommandsReturnValues : string[] = [];
 
-    constructor()
+    constructor(eventStream : IEventStream)
     {
-        super();
-        this.trueExecutor = new CommandExecutor();
+        super(eventStream);
+        this.trueExecutor = new CommandExecutor(eventStream);
     }
 
     public async execute(command: string, options : object | null = null): Promise<string[]>
@@ -274,6 +282,10 @@ export class MockCommandExecutor extends ICommandExecutor
             commandResults.push(this.fakeReturnValue);
         }
         return commandResults;
+    }
+
+    public async TryFindWorkingCommand(commands: string[]): Promise<[string, boolean]> {
+        return [commands[0], true];
     }
 }
 

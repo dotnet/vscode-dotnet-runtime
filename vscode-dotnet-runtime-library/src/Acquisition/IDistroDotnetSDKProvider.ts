@@ -49,7 +49,7 @@ export abstract class IDistroDotnetSDKProvider {
 
     constructor(distroVersion : DistroVersionPair, context : IAcquisitionWorkerContext, executor : ICommandExecutor | null = null)
     {
-        this.commandRunner = executor ?? new CommandExecutor();
+        this.commandRunner = executor ?? new CommandExecutor(context.eventStream);
         this.distroVersion = distroVersion;
         this.versionResolver = new VersionResolver(context.extensionState, context.eventStream, context.timeoutValue, context.proxyUrl);
         // Hard-code to the upper path (lib/dist/acquisition) from __dirname to the lib folder, as webpack-copy doesn't seem to copy the distro-support.json

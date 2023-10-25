@@ -130,6 +130,10 @@ export class DotnetInstallScriptAcquisitionError extends DotnetAcquisitionError 
     public readonly eventName = 'DotnetInstallScriptAcquisitionError';
 }
 
+export class OSXOpenNotAvailableError extends DotnetAcquisitionError {
+    public readonly eventName = 'OSXOpenNotAvailableError';
+}
+
 export class WebRequestError extends DotnetAcquisitionError {
     public readonly eventName = 'WebRequestError';
 }
@@ -385,12 +389,16 @@ export abstract class DotnetCustomMessageEvent extends DotnetAcquisitionMessage 
     }
 }
 
+export class DotnetVersionCategorizedEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetVersionCategorizedEvent';
+}
+
 export class DotnetCommandNotFoundEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetCommandNotFoundEvent';
 }
 
-export class DotnetFakeSDKEnvironmentVariableTriggered extends DotnetCustomMessageEvent {
-    public readonly eventName = 'DotnetFakeSDKEnvironmentVariableTriggered';
+export class CommandExecutionStdError extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionStdError';
 }
 
 export class DotnetGlobalAcquisitionBeginEvent extends DotnetCustomMessageEvent {
@@ -412,6 +420,10 @@ export class DotnetCompletedGlobalInstallerExecution extends DotnetCustomMessage
 export class DotnetGlobalAcquisitionCompletionEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetGlobalAcquisitionCompletionEvent';
 }
+export class DotnetInstallGraveyardEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetInstallGraveyardEvent';
+}
+
 export class DotnetAlternativeCommandFoundEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetAlternativeCommandFoundEvent';
 }
@@ -434,6 +446,34 @@ export class DotnetLegacyInstallDetectedEvent extends DotnetCustomMessageEvent {
 
 export class DotnetLegacyInstallRemovalRequestEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetLegacyInstallRemovalRequestEvent';
+}
+
+export class DotnetFakeSDKEnvironmentVariableTriggered extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFakeSDKEnvironmentVariableTriggered';
+}
+
+export class CommandExecutionNoStatusCodeWarning extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionNoStatusCodeWarning';
+}
+
+export class CommandExecutionSignalSentEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionSignalSentEvent';
+}
+
+export class CommandExecutionStatusEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionStatusEvent';
+}
+
+export class CommandExecutionEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionEvent';
+}
+
+export class CommandExecutionUserCompletedDialogueEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionUserCompletedDialogueEvent';
+}
+
+export class CommandExecutionUnderSudoEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionUnderSudoEvent';
 }
 
 export abstract class DotnetFileEvent extends DotnetAcquisitionMessage

@@ -180,7 +180,7 @@ export class FileUtilities {
             }
             catch(error : any)
             {
-                eventStream?.post(new SuppressedAcquisitionError(error, `Failed to run 'id' to check for privellege, running without privellege.`))
+                eventStream?.post(new SuppressedAcquisitionError(error, `Failed to run 'id' to check for privilege, running without privilege.`))
                 return false;
             }
         }
@@ -193,7 +193,7 @@ export class FileUtilities {
         }
         catch ( error : any )
         {
-            eventStream?.post(new SuppressedAcquisitionError(error, `Failed to run 'net' to check for privellege, running without privellege.`))
+            eventStream?.post(new SuppressedAcquisitionError(error, `Failed to run 'net' to check for privilege, running without privilege.`))
             return false;
         }
     }

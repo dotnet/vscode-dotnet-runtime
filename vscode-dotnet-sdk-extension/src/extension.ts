@@ -169,7 +169,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
                 const globalInstallerResolver = new GlobalInstallerResolver(context.globalState, eventStream, commandContext.version, resolvedTimeoutSeconds, proxyUrl);
                 const dotnetPath = await acquisitionWorker.acquireGlobalSDK(globalInstallerResolver);
 
-                setPathEnvVar(dotnetPath.dotnetPath, displayWorker, context.environmentVariableCollection);
+                setPathEnvVar(dotnetPath.dotnetPath, displayWorker, context.environmentVariableCollection, true);
                 Debugging.log(`Returning path: ${dotnetPath}.`, eventStream);
                 return dotnetPath;
             }
@@ -181,7 +181,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
                 const dotnetPath = await acquisitionWorker.acquireSDK(resolvedVersion);
 
                 const pathEnvVar = path.dirname(dotnetPath.dotnetPath);
-                setPathEnvVar(pathEnvVar, displayWorker, context.environmentVariableCollection);
+                setPathEnvVar(pathEnvVar, displayWorker, context.environmentVariableCollection, false);
                 return dotnetPath;
             }
         }, issueContext(commandContext.errorConfiguration, 'acquireSDK'));
@@ -250,17 +250,20 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         ...eventStreamObservers);
 }
 
-function setPathEnvVar(pathAddition: string, displayWorker: IWindowDisplayWorker, environmentVariables: vscode.EnvironmentVariableCollection) {
-    // Set user PATH variable
-    let pathCommand: string | undefined;
-    if (os.platform() === 'win32') {
-        pathCommand = getWindowsPathCommand(pathAddition);
-    } else {
-        pathCommand = getLinuxPathCommand(pathAddition);
-    }
+function setPathEnvVar(pathAddition: string, displayWorker: IWindowDisplayWorker, environmentVariables: vscode.EnvironmentVariableCollection, isGlobal : boolean) {
+    if(!isGlobal || os.platform() === 'linux')
+    {
+        // Set user PATH variable. The .NET SDK Installer does this for us on Win/Mac.
+        let pathCommand: string | undefined;
+        if (os.platform() === 'win32') {
+            pathCommand = getWindowsPathCommand(pathAddition);
+        } else {
+            pathCommand = getLinuxPathCommand(pathAddition);
+        }
 
-    if (pathCommand !== undefined) {
-        runPathCommand(pathCommand, displayWorker);
+        if (pathCommand !== undefined) {
+            runPathCommand(pathCommand, displayWorker);
+        }
     }
 
     // Set PATH for VSCode terminal instances

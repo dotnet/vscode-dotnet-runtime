@@ -14,6 +14,8 @@ import { DotnetFeatureBandDoesNotExistError,
         DotnetNoInstallerFileExistsError,
         DotnetUnexpectedInstallerArchitectureError,
         DotnetUnexpectedInstallerOSError,
+        DotnetVersionCategorizedEvent,
+        DotnetVersionResolutionCompleted,
         DotnetVersionResolutionError
 } from '../EventStream/EventStreamEvents';
 import { Debugging } from '../Utils/Debugging';
@@ -125,7 +127,7 @@ export class GlobalInstallerResolver {
     {
         if(this.versionResolver.isNonSpecificMajorOrMajorMinorVersion(version))
         {
-            Debugging.log(`The VersionResolver resolved the version to be major, or major.minor.`, this.eventStream);
+            this.eventStream.post(new DotnetVersionCategorizedEvent(`The VersionResolver resolved the version ${version} to be major, or major.minor.`));
             const numberOfPeriods = version.split('.').length - 1;
             const indexUrl = this.getIndexUrl(numberOfPeriods === 0 ? `${version}.0` : version);
             const indexJsonData = await this.fetchJsonObjectFromUrl(indexUrl);
@@ -134,7 +136,7 @@ export class GlobalInstallerResolver {
         }
         else if(this.versionResolver.isNonSpecificFeatureBandedVersion(version))
         {
-            Debugging.log(`The VersionResolver resolved the version to be a N.Y.XXX version.`, this.eventStream);
+            this.eventStream.post(new DotnetVersionCategorizedEvent(`The VersionResolver resolved the version ${version} to be a N.Y.XXX version.`));
             const fullySpecifiedVersion = await this.getNewestSpecificVersionFromFeatureBand(version);
             return [
                 await this.findCorrectInstallerUrl(fullySpecifiedVersion, this.getIndexUrl(this.versionResolver.getMajorMinor(fullySpecifiedVersion))),
@@ -143,13 +145,12 @@ export class GlobalInstallerResolver {
         }
         else if(this.versionResolver.isFullySpecifiedVersion(version))
         {
-            Debugging.log(`The VersionResolver resolved the version to be a fully specified version.`, this.eventStream);
+            this.eventStream.post(new DotnetVersionCategorizedEvent(`The VersionResolver resolved the version ${version} to be a fully specified version.`));
             const fullySpecifiedVersionRequested = version;
             const indexUrl = this.getIndexUrl(this.versionResolver.getMajorMinor(fullySpecifiedVersionRequested));
             return [await this.findCorrectInstallerUrl(fullySpecifiedVersionRequested, indexUrl), fullySpecifiedVersionRequested];
         }
 
-        Debugging.log(`The VersionResolver could not resolve the version, version: ${version}.`, this.eventStream);
         const err = new DotnetVersionResolutionError(new Error(`${this.badResolvedVersionErrorString} ${version}`), version);
         this.eventStream.post(err);
         throw err.error;

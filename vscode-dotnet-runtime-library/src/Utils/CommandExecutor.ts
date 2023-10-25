@@ -4,16 +4,34 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as proc from 'child_process';
-import { DotnetWSLSecurityError } from '../EventStream/EventStreamEvents';
+import {
+    CommandExecutionEvent,
+    CommandExecutionNoStatusCodeWarning,
+    CommandExecutionSignalSentEvent,
+    CommandExecutionStatusEvent,
+    CommandExecutionStdError,
+    CommandExecutionUnderSudoEvent,
+    CommandExecutionUserCompletedDialogueEvent,
+    DotnetAlternativeCommandFoundEvent,
+    DotnetCommandNotFoundEvent,
+    DotnetWSLSecurityError
+} from '../EventStream/EventStreamEvents';
 import {exec} from '@vscode/sudo-prompt';
 import { ICommandExecutor } from './ICommandExecutor';
 import path = require('path');
+import { IEventStream } from '../EventStream/EventStream';
 /* tslint:disable:no-any */
 
 export class CommandExecutor extends ICommandExecutor
 {
+
+    constructor(eventStream : IEventStream)
+    {
+        super(eventStream);
+    }
+
     /**
-     * Returns true if the linux agent is running under WSL, false elsewise.
+     * Returns true if the linux agent is running under WSL, else false.
      */
     private isRunningUnderWSL() : boolean
     {
@@ -33,14 +51,18 @@ export class CommandExecutor extends ICommandExecutor
      */
     private async ExecSudoAsync(commandFollowUps : string[]) : Promise<string>
     {
+        this.eventStream.post(new CommandExecutionUnderSudoEvent(`The command ${commandFollowUps} is being ran under sudo.`));
+
         if(this.isRunningUnderWSL())
         {
             // For WSL, vscode/sudo-prompt does not work.
-            // This is because it relies on pkexec or a GUI app to popup and request sudo privellege.
+            // This is because it relies on pkexec or a GUI app to popup and request sudo privilege.
             // GUI in WSL is not supported, so it will fail.
-            // We can open a vscode box and get the user password, but that will require more security analysis.
+            // We had a working implementation that opens a vscode box and gets the user password, but that will require more security analysis.
 
-            const err = new DotnetWSLSecurityError(new Error(`Automatic SDK Acqusition is not yet supported in WSL due to security concerns.`));
+            const err = new DotnetWSLSecurityError(new Error(`Automatic .NET SDK Installation is not yet supported in WSL due to VS Code & WSL limitations.
+Please install the .NET SDK manually and add it to the path by following https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#manually-installing-net`));
+            this.eventStream.post(err);
             throw err.error;
         }
 
@@ -59,15 +81,18 @@ export class CommandExecutor extends ICommandExecutor
                 }
                 if (stderr)
                 {
+                    this.eventStream.post(new CommandExecutionStdError(`The command ${commandFollowUps} encountered stderr, continuing. ${stderr}.`));
                     commandResultString += stderr;
                 }
 
                 if (error)
                 {
+                    this.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The command ${commandFollowUps} failed to run under sudo.`));
                     reject(error);
                 }
                 else
                 {
+                    this.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The command ${commandFollowUps} successfully ran under sudo.`));
                     resolve(commandResultString);
                 }
             });
@@ -104,11 +129,13 @@ export class CommandExecutor extends ICommandExecutor
             }
             else
             {
+                this.eventStream.post(new CommandExecutionEvent(`The command ${command} is being executed with options ${splitCommands} and ${options}.`));
                 const commandResult = proc.spawnSync(rootCommand, commandFollowUps, options);
                 if(this.returnStatus)
                 {
                     if(commandResult.status !== null)
                     {
+                        this.eventStream.post(new CommandExecutionStatusEvent(`The command ${command} exited with status: ${commandResult.status.toString()}.`));
                         commandResults.push(commandResult.status.toString());
                     }
                     else
@@ -116,10 +143,12 @@ export class CommandExecutor extends ICommandExecutor
                         // A signal is generally given if a status is not given, and they are equivalent
                         if(commandResult.signal !== null)
                         {
+                            this.eventStream.post(new CommandExecutionSignalSentEvent(`The command ${command} exited with signal: ${commandResult.signal.toString()}.`));
                             commandResults.push(commandResult.signal.toString());
                         }
                         else
                         {
+                            this.eventStream.post(new CommandExecutionNoStatusCodeWarning(`The command ${command} with ${commandResult} had no status or signal.`));
                             commandResults.push('000751'); // Error code 000751 : The command did not report an exit code upon completion. This is never expected
                         }
                     }
@@ -132,6 +161,8 @@ export class CommandExecutor extends ICommandExecutor
                     }
                     else
                     {
+                        this.eventStream.post(new CommandExecutionStdError(`The command ${command} with follow ups ${commandFollowUps} encountered stdout and or stderr, continuing.
+out: ${commandResult.stdout} err: ${commandResult.stderr}.`));
                         commandResults.push(commandResult.stdout?.toString() + commandResult.stderr?.toString());
                     }
                 }
@@ -139,5 +170,41 @@ export class CommandExecutor extends ICommandExecutor
         }
 
         return commandResults;
+    }
+
+    public async TryFindWorkingCommand(commands : string[]) : Promise<[string, boolean]>
+    {
+        let workingCommand = '';
+        let working = false;
+
+        const oldReturnStatusSetting = this.returnStatus;
+        this.returnStatus = true;
+
+        for(const command of commands)
+        {
+            try
+            {
+                const cmdFoundOutput = (await this.execute(command))[0];
+                if(cmdFoundOutput === '0')
+                {
+                    working = true;
+                    workingCommand = command;
+                    this.eventStream.post(new DotnetAlternativeCommandFoundEvent(`The command ${command} was found.`));
+                    break;
+                }
+                else
+                {
+                    this.eventStream.post(new DotnetCommandNotFoundEvent(`The command ${command} was NOT found, no error was thrown.`));
+                }
+            }
+            catch(err)
+            {
+                // Do nothing. The error should be raised higher up.
+                this.eventStream.post(new DotnetCommandNotFoundEvent(`The command ${command} was NOT found, and we caught any errors.`));
+            }
+        }
+
+        this.returnStatus = oldReturnStatusSetting;
+        return [workingCommand, working];
     }
 }
