@@ -3,7 +3,6 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-import * as cp from 'child_process';
 import * as fs from 'fs';
 import open = require('open');
 import * as os from 'os';
@@ -40,6 +39,7 @@ import {
     IWindowDisplayWorker,
     WindowDisplayWorker,
     Debugging,
+    CommandExecutor,
 } from 'vscode-dotnet-runtime-library';
 
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
@@ -67,7 +67,6 @@ const commandPrefix = 'dotnet-sdk';
 const configPrefix = 'dotnetSDKAcquisitionExtension';
 const displayChannelName = '.NET SDK';
 const defaultTimeoutValue = 600;
-const pathTroubleshootingOption = 'Troubleshoot';
 const troubleshootingUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-sdk.md';
 const knownExtensionIds = ['ms-dotnettools.sample-extension', 'ms-dotnettools.vscode-dotnet-pack'];
 
@@ -83,6 +82,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         vsCodeEnv: new VSCodeEnvironment()
     }
 
+    const vsCodeExtensionContext = new VSCodeExtensionContext(context);
+
     const isExtensionTelemetryEnabled = enableExtensionTelemetry(extensionConfiguration, configKeys.enableTelemetry);
     const eventStreamContext = {
         displayChannelName,
@@ -93,7 +94,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         showLogCommand: `${commandPrefix}.${commandKeys.showAcquisitionLog}`,
         packageJson,
     } as IEventStreamContext;
-    const [eventStream, outputChannel, loggingObserver, eventStreamObservers] = registerEventStream(eventStreamContext, new VSCodeExtensionContext(context), utilContext);
+    const [eventStream, outputChannel, loggingObserver, eventStreamObservers] = registerEventStream(eventStreamContext, vsCodeExtensionContext, utilContext);
 
     const extensionConfigWorker = new ExtensionConfigurationWorker(extensionConfiguration, undefined);
     const issueContext = (errorConfiguration: ErrorConfiguration | undefined, commandName: string, version?: string) => {
@@ -135,7 +136,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         installDirectoryProvider: new SdkInstallationDirectoryProvider(storagePath),
         acquisitionContext : null,
         isExtensionTelemetryInitiallyEnabled : isExtensionTelemetryEnabled,
-    }, utilContext, new VSCodeExtensionContext(context));
+    }, utilContext, vsCodeExtensionContext);
 
     const versionResolver = new VersionResolver(context.globalState, eventStream, resolvedTimeoutSeconds);
 
@@ -179,7 +180,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
                 const globalInstallerResolver = new GlobalInstallerResolver(context.globalState, eventStream, commandContext.version, resolvedTimeoutSeconds, proxyUrl);
                 const dotnetPath = await acquisitionWorker.acquireGlobalSDK(globalInstallerResolver);
 
-                setPathEnvVar(dotnetPath.dotnetPath, displayWorker, context.environmentVariableCollection, true);
+                new CommandExecutor(eventStream, utilContext).setPathEnvVar(dotnetPath.dotnetPath, troubleshootingUrl, displayWorker, vsCodeExtensionContext, true);
                 Debugging.log(`Returning path: ${dotnetPath}.`, eventStream);
                 return dotnetPath;
             }
@@ -191,7 +192,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
                 const dotnetPath = await acquisitionWorker.acquireSDK(resolvedVersion);
 
                 const pathEnvVar = path.dirname(dotnetPath.dotnetPath);
-                setPathEnvVar(pathEnvVar, displayWorker, context.environmentVariableCollection, false);
+                new CommandExecutor(eventStream, utilContext).setPathEnvVar(pathEnvVar, troubleshootingUrl, displayWorker, vsCodeExtensionContext, false);
                 return dotnetPath;
             }
         }, issueContext(commandContext.errorConfiguration, 'acquireSDK'));
@@ -258,58 +259,4 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         showOutputChannelRegistration,
         reportIssueRegistration,
         ...eventStreamObservers);
-}
-
-function setPathEnvVar(pathAddition: string, displayWorker: IWindowDisplayWorker, environmentVariables: vscode.EnvironmentVariableCollection, isGlobal : boolean) {
-    if(!isGlobal || os.platform() === 'linux')
-    {
-        // Set user PATH variable. The .NET SDK Installer does this for us on Win/Mac.
-        let pathCommand: string | undefined;
-        if (os.platform() === 'win32') {
-            pathCommand = getWindowsPathCommand(pathAddition);
-        } else {
-            pathCommand = getLinuxPathCommand(pathAddition);
-        }
-
-        if (pathCommand !== undefined) {
-            runPathCommand(pathCommand, displayWorker);
-        }
-    }
-
-    // Set PATH for VSCode terminal instances
-    if (!process.env.PATH!.includes(pathAddition)) {
-        environmentVariables.append('PATH', path.delimiter + pathAddition);
-        process.env.PATH += path.delimiter + pathAddition;
-    }
-}
-
-function getLinuxPathCommand(pathAddition: string): string | undefined {
-    const profileFile = os.platform() === 'darwin' ? path.join(os.homedir(), '.zshrc') : path.join(os.homedir(), '.profile');
-    if (fs.existsSync(profileFile) && fs.readFileSync(profileFile).toString().includes(pathAddition)) {
-        // No need to add to PATH again
-        return undefined;
-    }
-    return `echo 'export PATH="${pathAddition}:$PATH"' >> ${profileFile}`;
-}
-
-function getWindowsPathCommand(pathAddition: string): string | undefined {
-    if (process.env.PATH && process.env.PATH.includes(pathAddition)) {
-        // No need to add to PATH again
-        return undefined;
-    }
-    return `for /F "skip=2 tokens=1,2*" %A in ('%SystemRoot%\\System32\\reg.exe query "HKCU\\Environment" /v "Path" 2^>nul') do ` +
-        `(%SystemRoot%\\System32\\reg.exe ADD "HKCU\\Environment" /v Path /t REG_SZ /f /d "${pathAddition};%C")`;
-}
-
-function runPathCommand(pathCommand: string, displayWorker: IWindowDisplayWorker) {
-    try {
-        cp.execSync(pathCommand);
-    } catch (error) {
-        displayWorker.showWarningMessage(`Unable to add SDK to the PATH: ${error}`,
-            async (response: string | undefined) => {
-                if (response === pathTroubleshootingOption) {
-                    open(`${troubleshootingUrl}#unable-to-add-to-path`);
-                }
-            }, pathTroubleshootingOption);
-    }
 }

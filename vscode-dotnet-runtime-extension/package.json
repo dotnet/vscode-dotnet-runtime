@@ -37,6 +37,7 @@
 	"activationEvents": [
 		"onCommand:dotnet.acquire",
 		"onCommand:dotnet.acquireStatus",
+		"onCommand:dotnet.acquireGlobalSDK",
 		"onCommand:dotnet.uninstallAll",
 		"onCommand:dotnet.showAcquisitionLog",
 		"onCommand:dotnet.ensureDotnetDependencies"
@@ -66,7 +67,11 @@
 				},
 				"dotnetAcquisitionExtension.existingDotnetPath": {
 					"type": "array",
-					"description": "File Path to an existing installation of .NET."
+					"description": "File Path to an existing installation of a .NET Runtime."
+				},
+				"dotnetAcquisitionExtension.existingDotnetSDKPath": {
+					"type": "array",
+					"description": "File Path to an existing installation of a .NET SDK Folder."
 				},
 				"dotnetAcquisitionExtension.proxyUrl": {
 					"type": "string",
