@@ -1,8 +1,8 @@
-# .NET Runtime Install Tool
+# .NET Install Tool
 
 [![Version](https://img.shields.io/visual-studio-marketplace/v/ms-dotnettools.vscode-dotnet-runtime?style=for-the-badge)](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.vscode-dotnet-runtime) [![Installs](https://img.shields.io/visual-studio-marketplace/i/ms-dotnettools.vscode-dotnet-runtime?style=for-the-badge)](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.vscode-dotnet-runtime)
 
-This extension provides a unified way for other extensions like the [C#] and [C# Dev Kit] extensions to install local, private versions of the .NET Runtime. This extension is not intended to be used directly by users to install .NET for development purposes because it only includes the .NET Runtime and not the entire .NET SDK.
+This extension provides a unified way for other extensions like the [C#] and [C# Dev Kit] extensions to install local versions of the .NET Runtime, and machine-wide versions of the .NET SDK. Those extensions tell the .NET Install Tool when they would like a .NET SDK to be on the machine, and we install one for them if there's not already one that matches the SDK they need to run properly. In the future, this tool may support allowing users to call the API via VS Code to install .NET and pick a version of the SDK to install themselves.
 
 ## Why do I have this extension?
 
@@ -15,7 +15,7 @@ This extension was probably included as a dependency of one of the following ext
 * [CMake]
 * [Bicep]
 
-These extensions call into this extension to provide a unified way of downloading per-extension copies of the .NET Runtime for those extensions to use internally. If you already have an installation of .NET that you'd like to use, see [the troubleshooting section below](#i-already-have-a-net-runtime-or-sdk-installed-and-i-want-to-use-it). If you want to remove this extension completely, you will need to uninstall any extensions that depend on it first. If this extension is uninstalled, any .NET Runtimes installed by it will also be removed.
+The above extensions call into this extension to provide a unified way of downloading shared .NET Runtimes or .NET SDKs. If you already have an installation of .NET that you'd like to use, see [the troubleshooting section below](#i-already-have-a-net-runtime-or-sdk-installed-and-i-want-to-use-it). If you want to remove this extension completely, you will need to uninstall any extensions that depend on it first. If this extension is uninstalled, any .NET Runtimes installed by it will also be removed.
 
 ## Troubleshooting
 
@@ -38,9 +38,9 @@ For [C# Dev Kit] you would use the same thing, but with the extension ID `ms-dot
 > You'll need to make a new item in the settings array for each extension that uses this extension to acquire .NET.
 
 
-### Downloading the .NET Runtime times out
+### Downloading .NET times out
 
-It can sometimes take a while to download the .NET Runtime. While the default download time is 600 seconds, if you need more time you can set the `dotnetAcquisitionExtension.installTimeoutValue` setting to change that timeout. Here's an example of increasing the download timeout to 11 minutes:
+It can sometimes take a while to download .NET. While the default download time is 600 seconds, if you need more time you can set the `dotnetAcquisitionExtension.installTimeoutValue` setting to change that timeout. Here's an example of increasing the download timeout to 11 minutes:
 
 ```json
 {
@@ -84,7 +84,7 @@ This extension attempts to solve the above issues.
 
 ## .NET Foundation
 
-The .NET Runtime Install Tool is a [.NET Foundation](https://www.dotnetfoundation.org/projects) project.
+The .NET Install Tool is a [.NET Foundation](https://www.dotnetfoundation.org/projects) project.
 
 See the [.NET home repo](https://github.com/Microsoft/dotnet) to find other .NET-related projects.
 
