@@ -118,14 +118,14 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         return `${ this.escapeFilePath(scriptPath) } ${ args.join(' ') }`;
     }
 
-    private escapeFilePath(path: string): string {
+    private escapeFilePath(pathToEsc: string): string {
         if (os.platform() === 'win32') {
             // Need to escape apostrophes with two apostrophes
-            const dotnetInstallDirEscaped = path.replace(/'/g, `''`);
+            const dotnetInstallDirEscaped = pathToEsc.replace(/'/g, `''`);
             // Surround with single quotes instead of double quotes (see https://github.com/dotnet/cli/issues/11521)
             return `'${dotnetInstallDirEscaped}'`;
         } else {
-            return `"${path}"`;
+            return `"${pathToEsc}"`;
         }
     }
 
