@@ -40,6 +40,7 @@ export abstract class IDistroDotnetSDKProvider {
     protected installedSDKVersionsCommandKey = 'installedSDKVersionsCommand';
     protected installedRuntimeVersionsCommandKey = 'installedRuntimeVersionsCommand';
     protected currentInstallVersionCommandKey = 'currentInstallationVersionCommand';
+    protected missingPackageNameKey = '{packageName}';
 
     protected distroVersionsKey = 'versions';
     protected versionKey = 'version';

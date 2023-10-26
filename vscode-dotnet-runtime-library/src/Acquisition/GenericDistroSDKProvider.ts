@@ -25,7 +25,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
 
         let command = this.myDistroCommands(this.installCommandKey);
         const sdkPackage = this.myDotnetVersionPackages(fullySpecifiedVersion)[this.sdkKey];
-        command = CommandExecutor.replaceSubstringsInCommands(command, '{0}', sdkPackage);
+        command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, sdkPackage);
         const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
         return commandResult[0];
@@ -41,7 +41,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
     {
         let command = this.myDistroCommands(this.packageLookupCommandKey);
         const sdkPackage = this.myDotnetVersionPackages(this.JsonDotnetVersion(fullySpecifiedDotnetVersion))[this.sdkKey];
-        command = CommandExecutor.replaceSubstringsInCommands(command, '{0}', sdkPackage);
+        command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, sdkPackage);
         const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
         const noPackageResult = 'no packages found';
@@ -62,7 +62,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
     {
         let command = this.myDistroCommands(this.updateCommandKey);
         const sdkPackage = this.myDotnetVersionPackages(versionToUpgrade)[this.sdkKey];
-        command = CommandExecutor.replaceSubstringsInCommands(command, '{0}',sdkPackage);
+        command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, sdkPackage);
         const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
         return commandResult[0];
@@ -72,7 +72,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
     {
         let command = this.myDistroCommands(this.uninstallCommandKey);
         const sdkPackage = this.myDotnetVersionPackages(versionToUninstall)[this.sdkKey];
-        command = CommandExecutor.replaceSubstringsInCommands(command, '{0}', sdkPackage);
+        command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, sdkPackage);
         const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
         return commandResult[0];
