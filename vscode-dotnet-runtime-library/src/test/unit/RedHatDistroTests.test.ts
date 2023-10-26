@@ -6,7 +6,7 @@
 import * as chai from 'chai';
 import * as os from 'os';
 import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProvider';
-import { MockCommandExecutor } from '../mocks/MockObjects';
+import { MockCommandExecutor, MockEventStream } from '../mocks/MockObjects';
 import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
 import { getMockAcquiringContext } from './TestUtility';
 import { RedHatDistroSDKProvider } from '../../Acquisition/RedHatDistroSDKProvider';
@@ -14,7 +14,7 @@ const assert = chai.assert;
 const standardTimeoutTime = 100000;
 
 const mockVersion = '7.0.103';
-const mockExecutor = new MockCommandExecutor();
+const mockExecutor = new MockCommandExecutor(new MockEventStream());
 const pair : DistroVersionPair = { distro : 'Red Hat Enterprise Linux', version : '9.1' };
 const provider : RedHatDistroSDKProvider = new RedHatDistroSDKProvider(pair, getMockAcquiringContext(false), mockExecutor);
 const shouldRun = os.platform() === 'linux';
