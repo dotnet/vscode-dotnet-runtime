@@ -194,14 +194,14 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
             // For Mac:
             // We don't rely on the installer because it doesn't allow us to run without sudo, and we don't want to handle the user password.
             // The -W flag makes it so we wait for the installer .pkg to exit, though we are unable to get the exit code.
-            let commandToExecute = `open`
+            const possibleCommands =
+            [
+                CommandExecutor.makeCommand(`command`, [`-v`, `open`]),
+                CommandExecutor.makeCommand(`/usr/bin/open`, [])
+            ];
 
-            const openAvailable = await this.commandRunner.TryFindWorkingCommand([`command -v open`, `/usr/bin/open`]);
-            if(openAvailable[1] && openAvailable[0] !== 'command -v open')
-            {
-                commandToExecute = openAvailable[0];
-            }
-            else if(!openAvailable[1])
+            const workingCommandIndex = await this.commandRunner.tryFindWorkingCommand(possibleCommands);
+            if(workingCommandIndex === -1)
             {
                 const error = new Error(`The 'open' command on OSX was not detected. This is likely due to the PATH environment variable on your system being clobbered by another program.
 Please correct your PATH variable or make sure the 'open' utility is installed so .NET can properly execute.`);
@@ -209,18 +209,24 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
                 throw error;
             }
 
-            const commandResult = await this.commandRunner.execute(`${commandToExecute} -W ${path.resolve(installerPath)}`);
+            const commandResult = await this.commandRunner.execute(
+                CommandExecutor.makeCommand(`${possibleCommands[workingCommandIndex].commandRoot}`,
+                possibleCommands[workingCommandIndex].commandFollowUps.concat([`-W`, `${path.resolve(installerPath)}`]))
+            );
             this.commandRunner.returnStatus = false;
             return commandResult[0];
         }
         else
         {
-            let command = `${path.resolve(installerPath)}`;
+            const command = `${path.resolve(installerPath)}`;
+            let commandOptions : string[] = [];
             if(this.file.isElevated(this.acquisitionContext.eventStream))
             {
-                command += ' /quiet /install /norestart';
+                commandOptions = [`/quiet`, `/install`, `/norestart`];
             }
-            const commandResult = await this.commandRunner.execute(command);
+            const commandResult = await this.commandRunner.execute(
+                CommandExecutor.makeCommand(command, commandOptions)
+            );
             this.commandRunner.returnStatus = false;
             return commandResult[0];
         }
@@ -301,8 +307,8 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
                 {
                     const registryQueryCommand = path.join(`${process.env.SystemRoot}`, `System32\\reg.exe`);
                     // /reg:32 is added because all keys on 64 bit machines are all put into the WOW node. They won't be on the WOW node on a 32 bit machine.
-                    const fullQuery = `${registryQueryCommand} query ${query} \/reg:32`;
-                    const installRecordKeysOfXBit = (await this.commandRunner.execute(fullQuery))[0];
+                    const fullQuery = `${registryQueryCommand}`;
+                    const installRecordKeysOfXBit = await this.commandRunner.execute(CommandExecutor.makeCommand(registryQueryCommand, [`query`, `${query}`, `\/reg:32`]));
                     const installedSdks = this.extractVersionsOutOfRegistryKeyStrings(installRecordKeysOfXBit);
                     // Append any newly found sdk versions
                     sdks = sdks.concat(installedSdks.filter((item) => sdks.indexOf(item) < 0));

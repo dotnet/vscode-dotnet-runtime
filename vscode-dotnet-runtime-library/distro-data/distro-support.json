@@ -1,17 +1,90 @@
 {
 	"$schema": "../../Documentation/json-schema/distro-support-schema.json",
 	"Ubuntu": {
-		"installCommand": "sudo apt-get update && sudo apt-get install -y {0}",
-		"uninstallCommand": "sudo apt-get remove {0}",
-		"updateCommand": "sudo apt-get update && apt-get upgrade -y {0}",
-		"isInstalledCommand": "sudo apt list --installed {0}",
-		"packageLookupCommand": "dpkg -l {0}",
+		"installCommand":
+		[
+			{
+				"runUnderSudo": true,
+				"commandRoot": "apt-get",
+				"commandParts": ["update"]
+			},
+			{
+				"runUnderSudo": true,
+				"commandRoot": "apt-get",
+				"commandParts": ["install", "-y", "{0}"]
+			}
+		],
+		"uninstallCommand":
+		[
+			{
+				"runUnderSudo": true,
+				"commandRoot": "apt-get",
+				"commandParts": ["remove", "{0}"]
+			}
+		],
+		"updateCommand":
+		[
+			{
+				"runUnderSudo": true,
+				"commandRoot": "apt-get",
+				"commandParts": ["update"]
+			},
+			{
+				"runUnderSudo": true,
+				"commandRoot": "apt-get",
+				"commandParts": ["upgrade", "-y", "{0}"]
+			}
+		],
+		"isInstalledCommand":
+		[
+			{
+				"runUnderSudo": true,
+				"commandRoot": "apt",
+				"commandParts": ["list", "--installed", "{0}"]
+			}
+		],
+		"packageLookupCommand":
+		[
+			{
+				"runUnderSudo": false,
+				"commandRoot": "dpkg",
+				"commandParts": ["-l", "{0}"]
+			}
+		],
 		"expectedDistroFeedInstallDirectory" : "/usr/lib/dotnet/sdk",
         "expectedMicrosoftFeedInstallDirectory" : "/usr/bin/dotnet",
-		"installedSDKVersionsCommand": "dotnet --list-sdks",
-		"installedRuntimeVersionsCommand": "dotnet --list-runtimes",
-		"currentInstallationVersionCommand": "dotnet --version",
-		"currentInstallPathCommand" : "which dotnet",
+		"installedSDKVersionsCommand":
+		[
+			{
+				"runUnderSudo": false,
+				"commandRoot": "dotnet",
+				"commandParts": ["--list-sdks"]
+			}
+		],
+		"installedRuntimeVersionsCommand":
+		[
+			{
+				"runUnderSudo": false,
+				"commandRoot": "dotnet",
+				"commandParts": ["--list-runtimes"]
+			}
+		],
+		"currentInstallationVersionCommand":
+		[
+			{
+				"runUnderSudo": false,
+				"commandRoot": "dotnet",
+				"commandParts": ["--version"]
+			}
+		],
+		"currentInstallPathCommand":
+		[
+			{
+				"runUnderSudo": false,
+				"commandRoot": "which",
+				"commandParts": ["dotnet"]
+			}
+		],
 		"versions": [{
 				"version": "18.04",
 				"dotnet": [{
@@ -27,10 +100,28 @@
 						"aspnetcore": "aspnetcore-runtime-7.0"
 					}
 				],
-				"preInstallCommands": [
-					"sudo apt-get update && sudo apt install -y wget",
-					"sudo wget https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb",
-					"sudo dpkg -i packages-microsoft-prod.deb"
+				"preInstallCommands":
+				[
+					{
+						"runUnderSudo": true,
+						"commandRoot": "apt-get",
+						"commandParts": ["update"]
+					},
+					{
+						"runUnderSudo": true,
+						"commandRoot": "apt",
+						"commandParts": ["install", "-y", "wget"]
+					},
+					{
+						"runUnderSudo": true,
+						"commandRoot": "wget",
+						"commandParts": ["https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb", "-O", "packages-microsoft-prod.deb"]
+					},
+					{
+						"runUnderSudo": true,
+						"commandRoot": "dpkg",
+						"commandParts": ["-i", "packages-microsoft-prod.deb"]
+					}
 				]
 			},
 			{
@@ -48,10 +139,28 @@
 						"aspnetcore": "aspnetcore-runtime-7.0"
 					}
 				],
-				"preInstallCommands": [
-					"sudo apt-get update && sudo apt install -y wget",
-					"sudo wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb",
-					"sudo dpkg -i packages-microsoft-prod.deb"
+				"preInstallCommands":
+				[
+					{
+						"runUnderSudo": true,
+						"commandRoot": "apt-get",
+						"commandParts": ["update"]
+					},
+					{
+						"runUnderSudo": true,
+						"commandRoot": "apt",
+						"commandParts": ["install", "-y", "wget"]
+					},
+					{
+						"runUnderSudo": true,
+						"commandRoot": "wget",
+						"commandParts": ["https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb", "-O", "packages-microsoft-prod.deb"]
+					},
+					{
+						"runUnderSudo": true,
+						"commandRoot": "dpkg",
+						"commandParts": ["-i", "packages-microsoft-prod.deb"]
+					}
 				]
 			},
 			{

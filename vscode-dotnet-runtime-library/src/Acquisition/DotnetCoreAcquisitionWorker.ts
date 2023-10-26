@@ -291,7 +291,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         this.checkForPartialInstalls(installKey, installingVersion, false, false);
 
         const installer : IGlobalInstaller = os.platform() === 'linux' ?
-            new LinuxGlobalInstaller(this.context, this.utilityContext, installingVersion) :
+            new LinuxGlobalInstaller(this.context, this.utilityContext, this.context.acquisitionContext!, installingVersion) :
             new WinMacGlobalInstaller(this.context, this.utilityContext, installingVersion, await globalInstallerResolver.getInstallerUrl(), await globalInstallerResolver.getInstallerHash());
 
         // Indicate that we're beginning to do the install.

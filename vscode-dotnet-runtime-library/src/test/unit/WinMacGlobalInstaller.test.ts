@@ -14,7 +14,7 @@ import { SdkInstallationDirectoryProvider } from '../../Acquisition/SdkInstallat
 import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
 import { FileUtilities } from '../../Utils/FileUtilities';
 import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
-import { getMockAcquiringContext, getMockUtilityContext } from './TestUtility';
+import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 const assert = chai.assert;
 const standardTimeoutTime = 100000;
 

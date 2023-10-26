@@ -29,6 +29,7 @@ import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
+import path = require('path');
 
 export class AcquisitionInvoker extends IAcquisitionInvoker {
     protected readonly scriptWorker: IInstallScriptAcquisitionWorker;
@@ -137,14 +138,23 @@ You will need to restart VS Code after these changes. If PowerShell is still not
     {
         let knownError = false;
         let error = null;
-        let command = '';
+        let command = null;
+
+        const possibleCommands =
+        [
+            CommandExecutor.makeCommand(`powershell.exe`, []),
+            CommandExecutor.makeCommand(`%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`, []),
+            CommandExecutor.makeCommand(`pwsh`, []),
+            CommandExecutor.makeCommand(`powershell`, []),
+            CommandExecutor.makeCommand(`pwsh.exe`, [])
+        ];
 
         try
         {
             // Check if PowerShell exists and is on the path.
-            const commandWorking = await new CommandExecutor(this.eventStream, this.utilityContext).TryFindWorkingCommand([`powershell.exe`,
-                `%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`, `pwsh`, `powershell`, `pwsh.exe`]);
-            if(!commandWorking[1])
+            const workingCommandIndex = await new CommandExecutor(this.eventStream, this.utilityContext).tryFindWorkingCommand(possibleCommands);
+
+            if(workingCommandIndex === -1)
             {
                 knownError = true;
                 const err = Error(this.noPowershellError);
@@ -152,18 +162,21 @@ You will need to restart VS Code after these changes. If PowerShell is still not
             }
             else
             {
-                command = commandWorking[0];
+                command = possibleCommands[workingCommandIndex];
             }
 
             // Check Execution Policy
-            const execPolicyOutput = cp.spawnSync(command, [`-command`, `$ExecutionContext.SessionState.LanguageMode`]);
-            const languageMode = execPolicyOutput.stdout.toString().trim();
-            if(languageMode === 'ConstrainedLanguage' || languageMode === 'NoLanguage')
+            if(command)
             {
-                knownError = true;
-                const err = Error(`Your machine policy disables PowerShell language features that may be needed to install .NET. Read more at: https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_language_modes?view=powershell-7.3.
+                const execPolicyOutput = cp.spawnSync(command.commandRoot, [`-command`, `$ExecutionContext.SessionState.LanguageMode`], {cwd : path.resolve(__dirname), shell: true});
+                const languageMode = execPolicyOutput.stdout.toString().trim();
+                if(languageMode === 'ConstrainedLanguage' || languageMode === 'NoLanguage')
+                {
+                    knownError = true;
+                    const err = Error(`Your machine policy disables PowerShell language features that may be needed to install .NET. Read more at: https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_language_modes?view=powershell-7.3.
 If you cannot safely and confidently change the execution policy, try setting a custom existingDotnetPath following our instructions here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`);
-                error = err;
+                    error = err;
+                }
             }
         }
         catch(err)
@@ -181,6 +194,6 @@ If you cannot safely and confidently change the execution policy, try setting a 
             throw error;
         }
 
-        return command;
+        return command!.commandRoot;
     }
 }

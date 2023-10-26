@@ -3,6 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
+import { CommandExecutor } from '../Utils/CommandExecutor';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 import { DotnetDistroSupportStatus } from './LinuxVersionResolver';
 import { VersionResolver } from './VersionResolver';
@@ -18,69 +19,69 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
             const preinstallCommands = this.myVersionPackages()[this.preinstallCommandKey];
             for(const feedCommand of preinstallCommands)
             {
-                const preparationResult = (await this.commandRunner.execute(feedCommand))[0];
+                const preparationResult = (await this.commandRunner.executeMultipleCommands(feedCommand))[0];
             }
         }
 
-        let command = this.myDistroCommands()[this.installCommandKey];
+        let command = this.myDistroCommands(this.installCommandKey);
         const sdkPackage = this.myDotnetVersionPackages(fullySpecifiedVersion)[this.sdkKey];
-        command = command.replace('{0}', sdkPackage);
-        const commandResult = await this.commandRunner.execute(command);
+        command = CommandExecutor.replaceSubstringsInCommands(command, '{0}', sdkPackage);
+        const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
         return commandResult[0];
     }
 
     public async getInstalledGlobalDotnetPathIfExists() : Promise<string | null>
     {
-        const commandResult = await this.commandRunner.execute(this.myDistroCommands()[this.currentInstallPathCommandKey]);
+        const commandResult = await this.commandRunner.executeMultipleCommands(this.myDistroCommands(this.currentInstallPathCommandKey));
         return commandResult[0];
     }
 
     public async dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion : string) : Promise<boolean>
     {
-        let command = this.myDistroCommands()[this.packageLookupCommandKey];
+        let command = this.myDistroCommands(this.packageLookupCommandKey);
         const sdkPackage = this.myDotnetVersionPackages(this.JsonDotnetVersion(fullySpecifiedDotnetVersion))[this.sdkKey];
-        command = command.replace('{0}', sdkPackage);
-        const commandResult = await this.commandRunner.execute(command);
+        command = CommandExecutor.replaceSubstringsInCommands(command, '{0}', sdkPackage);
+        const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
         const noPackageResult = 'no packages found';
         return commandResult[0].toLowerCase().includes(noPackageResult);
     }
 
-    public getExpectedDotnetDistroFeedInstallationDirectory(): Promise<string>
+    public getExpectedDotnetDistroFeedInstallationDirectory(): string
     {
-        return this.myDistroCommands()[this.expectedDistroFeedInstallDirKey];
+        return this.myDistroStrings(this.expectedDistroFeedInstallDirKey);
     }
 
-    public getExpectedDotnetMicrosoftFeedInstallationDirectory(): Promise<string>
+    public getExpectedDotnetMicrosoftFeedInstallationDirectory(): string
     {
-        return this.myDistroCommands()[this.expectedMicrosoftFeedInstallDirKey];
+        return this.myDistroStrings(this.expectedMicrosoftFeedInstallDirKey);
     }
 
     public async upgradeDotnet(versionToUpgrade : string): Promise<string>
     {
-        let command = this.myDistroCommands()[this.updateCommandKey];
+        let command = this.myDistroCommands(this.updateCommandKey);
         const sdkPackage = this.myDotnetVersionPackages(versionToUpgrade)[this.sdkKey];
-        command = command.replace('{0}', sdkPackage);
-        const commandResult = await this.commandRunner.execute(command);
+        command = CommandExecutor.replaceSubstringsInCommands(command, '{0}',sdkPackage);
+        const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
         return commandResult[0];
     }
 
     public async uninstallDotnet(versionToUninstall : string): Promise<string>
     {
-        let command = this.myDistroCommands()[this.uninstallCommandKey];
+        let command = this.myDistroCommands(this.uninstallCommandKey);
         const sdkPackage = this.myDotnetVersionPackages(versionToUninstall)[this.sdkKey];
-        command = command.replace('{0}', sdkPackage);
-        const commandResult = await this.commandRunner.execute(command);
+        command = CommandExecutor.replaceSubstringsInCommands(command, '{0}', sdkPackage);
+        const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
         return commandResult[0];
     }
 
     public async getInstalledDotnetSDKVersions(): Promise<string[]>
     {
-        const command = this.myDistroCommands()[this.installedSDKVersionsCommandKey];
-        const commandResult = await this.commandRunner.execute(command);
+        const command = this.myDistroCommands(this.installedSDKVersionsCommandKey);
+        const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
         const outputLines : string[] = commandResult[0].split('\n');
         const versions : string[]  = [];
@@ -99,8 +100,8 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
 
     public async getInstalledDotnetRuntimeVersions(): Promise<string[]>
     {
-        const command = this.myDistroCommands()[this.installedRuntimeVersionsCommandKey];
-        const commandResult = await this.commandRunner.execute(command);
+        const command = this.myDistroCommands(this.installedRuntimeVersionsCommandKey);
+        const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
         const outputLines : string[] = commandResult[0].split('\n');
         const versions : string[]  = [];
@@ -119,11 +120,11 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
 
     public async getInstalledGlobalDotnetVersionIfExists(): Promise<string | null>
     {
-        const command = this.myDistroCommands()[this.currentInstallVersionCommandKey];
+        const command = this.myDistroCommands(this.currentInstallVersionCommandKey);
 
         // we need to run this command in the root directory otherwise local dotnets on the path may interfere
         const rootDir = path.parse(__dirname).root;
-        let commandResult = (await this.commandRunner.execute(command, rootDir))[0];
+        let commandResult = (await this.commandRunner.executeMultipleCommands(command, rootDir))[0];
 
         commandResult = commandResult.replace('\n', '');
         if(!this.versionResolver.isValidLongFormVersionFormat(commandResult))

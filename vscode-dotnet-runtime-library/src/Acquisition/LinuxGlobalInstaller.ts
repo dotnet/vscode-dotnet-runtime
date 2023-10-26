@@ -8,6 +8,7 @@ import { IGlobalInstaller } from './IGlobalInstaller';
 import { DotnetDistroSupportStatus, LinuxVersionResolver } from './LinuxVersionResolver';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
+import { IDotnetAcquireContext } from '..';
 
 export class LinuxGlobalInstaller extends IGlobalInstaller {
 
@@ -15,10 +16,10 @@ export class LinuxGlobalInstaller extends IGlobalInstaller {
     private version : string;
     private linuxSDKResolver : LinuxVersionResolver;
 
-    constructor(acqusitionContext : IAcquisitionWorkerContext, utilContext : IUtilityContext, fullySpecifiedDotnetVersion : string)
+    constructor(acqusitionContext : IAcquisitionWorkerContext, utilContext : IUtilityContext, acquireContext : IDotnetAcquireContext, fullySpecifiedDotnetVersion : string)
     {
         super(acqusitionContext, utilContext);
-        this.linuxSDKResolver = new LinuxVersionResolver(acqusitionContext, utilContext);
+        this.linuxSDKResolver = new LinuxVersionResolver(acqusitionContext, utilContext, acquireContext);
         this.version = fullySpecifiedDotnetVersion;
     }
 

@@ -8,7 +8,7 @@ import * as os from 'os';
 import * as util from './TestUtility'
 import { MockCommandExecutor, MockDistroProvider, MockEventStream } from '../mocks/MockObjects';
 import { DistroVersionPair, LinuxVersionResolver } from '../../Acquisition/LinuxVersionResolver';
-import { getMockAcquiringContext, getMockUtilityContext } from './TestUtility';
+import { getMockAcquireContext, getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 const assert = chai.assert;
 
 
@@ -20,9 +20,9 @@ suite('Linux Version Resolver Tests', () =>
     const mockExecutor = new MockCommandExecutor(new MockEventStream(), getMockUtilityContext());
     const pair : DistroVersionPair = { distro : 'Ubuntu', version : '22.04' };
     const shouldRun = os.platform() === 'linux';
-    const context = util.getMockAcquiringContext(false);
+    const context = util.getMockAcquisitionContext(false);
     const mockDistroProvider = new MockDistroProvider(pair, context, getMockUtilityContext(), mockExecutor);
-    const resolver : LinuxVersionResolver = new LinuxVersionResolver(context, getMockUtilityContext(), mockExecutor, mockDistroProvider);
+    const resolver : LinuxVersionResolver = new LinuxVersionResolver(context, getMockUtilityContext(), getMockAcquireContext(), mockExecutor, mockDistroProvider);
 
         test('It can determine the running distro', async () => {
             if(shouldRun)

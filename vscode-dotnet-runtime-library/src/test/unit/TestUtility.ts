@@ -4,6 +4,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
+import { IDotnetAcquireContext } from '../..';
 import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
 import { RuntimeInstallationDirectoryProvider } from '../../Acquisition/RuntimeInstallationDirectoryProvider';
 import { SdkInstallationDirectoryProvider } from '../../Acquisition/SdkInstallationDirectoryProvider';
@@ -12,7 +13,7 @@ import { MockEventStream, MockExtensionContext, MockInstallationValidator, MockV
 import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
 const standardTimeoutTime = 100000;
 
-export function getMockAcquiringContext(runtimeInstall: boolean, timeoutTime : number = standardTimeoutTime): IAcquisitionWorkerContext{
+export function getMockAcquisitionContext(runtimeInstall: boolean, timeoutTime : number = standardTimeoutTime): IAcquisitionWorkerContext{
     const extensionContext = new MockExtensionContext();
     const eventStream = new MockEventStream();
     const workerContext : IAcquisitionWorkerContext = {
@@ -28,11 +29,20 @@ export function getMockAcquiringContext(runtimeInstall: boolean, timeoutTime : n
     return workerContext;
 }
 
-export function getMockUtilityContext()
+export function getMockUtilityContext() : IUtilityContext
 {
     const utilityContext : IUtilityContext = {
         ui : new MockWindowDisplayWorker(),
         vsCodeEnv : new MockVSCodeEnvironment()
     }
     return utilityContext;
+}
+
+export function getMockAcquireContext() : IDotnetAcquireContext
+{
+    const acquireContext : IDotnetAcquireContext =
+    {
+        version: ''
+    };
+    return acquireContext;
 }
