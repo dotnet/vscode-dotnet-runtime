@@ -13,6 +13,7 @@ import { VersionResolver } from './VersionResolver';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { RedHatDistroSDKProvider } from './RedHatDistroSDKProvider';
+import { IUtilityContext } from '../Utils/IUtilityContext';
 
 /**
  * An enumeration type representing all distros with their versions that we recognize.
@@ -57,6 +58,7 @@ export class LinuxVersionResolver
     protected distroSDKProvider : IDistroDotnetSDKProvider | null = null;
     protected commandRunner : ICommandExecutor;
     protected acquisitionContext : IAcquisitionWorkerContext;
+    protected utilityContext : IUtilityContext;
     protected versionResolver : VersionResolver;
 
     public conflictingInstallErrorMessage = `A dotnet installation was found which indicates dotnet that was installed via Microsoft package feeds. But for this distro and version, we only acquire .NET via the distro feeds.
@@ -68,10 +70,12 @@ export class LinuxVersionResolver
     Your custom install is located at: `;
     public baseUnsupportedDistroErrorMessage = 'We are unable to detect the distro or version of your machine';
 
-    constructor(acquisitionContext : IAcquisitionWorkerContext, executor : ICommandExecutor | null = null, distroProvider : IDistroDotnetSDKProvider | null = null)
+    constructor(acquisitionContext : IAcquisitionWorkerContext, utilContext : IUtilityContext,
+        executor : ICommandExecutor | null = null, distroProvider : IDistroDotnetSDKProvider | null = null)
     {
-        this.commandRunner = executor ?? new CommandExecutor(acquisitionContext.eventStream);
+        this.commandRunner = executor ?? new CommandExecutor(acquisitionContext.eventStream, utilContext);
         this.acquisitionContext = acquisitionContext;
+        this.utilityContext = utilContext;
         this.versionResolver = new VersionResolver(acquisitionContext.extensionState, acquisitionContext.eventStream,
             acquisitionContext.timeoutValue, acquisitionContext.proxyUrl);
         if(distroProvider)
@@ -164,7 +168,7 @@ export class LinuxVersionResolver
             case 'Red Hat Enterprise Linux':
                 return new RedHatDistroSDKProvider(distroAndVersion, this.acquisitionContext);
             default:
-                return new GenericDistroSDKProvider(distroAndVersion, this.acquisitionContext);
+                return new GenericDistroSDKProvider(distroAndVersion, this.acquisitionContext, this.utilityContext);
         }
     }
 

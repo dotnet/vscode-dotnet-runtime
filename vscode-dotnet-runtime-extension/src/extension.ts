@@ -36,6 +36,8 @@ import {
     registerEventStream,
     RuntimeInstallationDirectoryProvider,
     VersionResolver,
+    VSCodeExtensionContext,
+    VSCodeEnvironment,
     WindowDisplayWorker,
 } from 'vscode-dotnet-runtime-library';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
@@ -70,18 +72,25 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         extensionContext.extensionConfiguration :
         vscode.workspace.getConfiguration(configPrefix);
 
+    const extensionTelemetryEnabled = enableExtensionTelemetry(extensionConfiguration, configKeys.enableTelemetry);
+    const displayWorker = extensionContext ? extensionContext.displayWorker : new WindowDisplayWorker();
+
+    const utilContext = {
+        ui : displayWorker,
+        vsCodeEnv: new VSCodeEnvironment()
+    }
+
     const eventStreamContext = {
         displayChannelName,
         logPath: context.logPath,
         extensionId: dotnetCoreAcquisitionExtensionId,
-        enableTelemetry: enableExtensionTelemetry(extensionConfiguration, configKeys.enableTelemetry),
+        enableTelemetry: extensionTelemetryEnabled,
         telemetryReporter: extensionContext ? extensionContext.telemetryReporter : undefined,
         showLogCommand: `${commandPrefix}.${commandKeys.showAcquisitionLog}`,
-        packageJson,
+        packageJson
     } as IEventStreamContext;
-    const [eventStream, outputChannel, loggingObserver, eventStreamObservers] = registerEventStream(eventStreamContext);
+    const [eventStream, outputChannel, loggingObserver, eventStreamObservers] = registerEventStream(eventStreamContext, new VSCodeExtensionContext(context), utilContext);
 
-    const displayWorker = extensionContext ? extensionContext.displayWorker : new WindowDisplayWorker();
     const extensionConfigWorker = new ExtensionConfigurationWorker(extensionConfiguration, configKeys.existingPath);
     const issueContext = (errorConfiguration: ErrorConfiguration | undefined, commandName: string, version?: string) => {
         return {
@@ -93,7 +102,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             commandName,
             version,
             moreInfoUrl,
-            timeoutInfoUrl: `${moreInfoUrl}#install-script-timeouts`,
+            timeoutInfoUrl: `${moreInfoUrl}#install-script-timeouts`
         } as IIssueContext;
     };
     const timeoutValue = extensionConfiguration.get<number>(configKeys.installTimeoutValue);
@@ -108,12 +117,13 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         storagePath: context.globalStoragePath,
         extensionState: context.globalState,
         eventStream,
-        acquisitionInvoker: new AcquisitionInvoker(context.globalState, eventStream, resolvedTimeoutSeconds),
+        acquisitionInvoker: new AcquisitionInvoker(context.globalState, eventStream, resolvedTimeoutSeconds, utilContext),
         installationValidator: new InstallationValidator(eventStream),
         timeoutValue: resolvedTimeoutSeconds,
         installDirectoryProvider: new RuntimeInstallationDirectoryProvider(context.globalStoragePath),
-        proxyUrl: proxyLink
-    });
+        proxyUrl: proxyLink,
+        isExtensionTelemetryInitiallyEnabled: extensionTelemetryEnabled
+    }, utilContext, new VSCodeExtensionContext(context));
     const existingPathResolver = new ExistingPathResolver();
     const versionResolver = new VersionResolver(context.globalState, eventStream, resolvedTimeoutSeconds, proxyLink);
 
@@ -197,4 +207,5 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         ensureDependenciesRegistration,
         reportIssueRegistration,
         ...eventStreamObservers);
+
 }

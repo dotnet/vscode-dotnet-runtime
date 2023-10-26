@@ -16,11 +16,12 @@ import {
   MockExtensionConfiguration,
   MockExtensionContext,
   MockTelemetryReporter,
-  MockWindowDisplayWorker,
+  MockWindowDisplayWorker
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 /* tslint:disable:no-any */
 const assert : any = chai.assert;
+const standardTimeoutTime = 40000;
 
 suite('DotnetCoreAcquisitionExtension End to End', function() {
   this.retries(3);
@@ -59,7 +60,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     // Commands should now be registered
     assert.exists(extensionContext);
     assert.isAbove(extensionContext.subscriptions.length, 0);
-  });
+  }).timeout(standardTimeoutTime);
 
   test('Install Command', async () => {
     const context: IDotnetAcquireContext = { version: '2.2', requestingExtensionId };
@@ -69,7 +70,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.isTrue(fs.existsSync(result!.dotnetPath));
     assert.include(result!.dotnetPath, '.dotnet');
     assert.include(result!.dotnetPath, context.version);
-  }).timeout(40000);
+  }).timeout(standardTimeoutTime);
 
   test('Uninstall Command', async () => {
     const context: IDotnetAcquireContext = { version: '2.1', requestingExtensionId };
@@ -80,7 +81,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.include(result!.dotnetPath, context.version);
     await vscode.commands.executeCommand<string>('dotnet.uninstallAll', context.version);
     assert.isFalse(fs.existsSync(result!.dotnetPath));
-  }).timeout(40000);
+  }).timeout(standardTimeoutTime);
 
 
   test('Install and Uninstall Multiple Versions', async () => {
@@ -99,7 +100,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     for (const dotnetPath of dotnetPaths) {
       assert.isTrue(fs.existsSync(dotnetPath));
     }
-  }).timeout(60000);
+  }).timeout(standardTimeoutTime * 2);
 
   test('Telemetry Sent During Install and Uninstall', async () => {
     const rntVersion = '2.2';
@@ -137,7 +138,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     // Check that no errors were reported
     const errors = MockTelemetryReporter.telemetryEvents.filter((event: ITelemetryEvent) => event.eventName.includes('Error'));
     assert.isEmpty(errors, 'No error events were reported in telemetry reporting');
-  }).timeout(40000);
+  }).timeout(standardTimeoutTime);
 
   test('Telemetry Sent on Error', async () => {
     const context: IDotnetAcquireContext = { version: 'foo', requestingExtensionId };
@@ -148,7 +149,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       const versionError = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === '[ERROR]:DotnetVersionResolutionError');
       assert.exists(versionError, 'The version resolution error appears in telemetry');
     }
-  }).timeout(2000);
+  }).timeout(standardTimeoutTime/2);
 
   test('Install Command Passes With Warning With No RequestingExtensionId', async () => {
     const context: IDotnetAcquireContext = { version: '3.1' };
@@ -157,7 +158,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.exists(result!.dotnetPath);
     assert.include(result!.dotnetPath, context.version);
     assert.include(mockDisplayWorker.warningMessage, 'Ignoring existing .NET paths');
-  }).timeout(40000);
+  }).timeout(standardTimeoutTime);
 
   test('Install Command With Path Config Defined', async () => {
     const context: IDotnetAcquireContext = { version: '0.1', requestingExtensionId: 'alternative.extension' };
@@ -165,7 +166,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.exists(result);
     assert.exists(result!.dotnetPath);
     assert.equal(result!.dotnetPath, 'foo');
-  });
+  }).timeout(standardTimeoutTime);
 
   test('Install Runtime Status Command', async () => {
     // Runtime is not yet installed
@@ -185,5 +186,5 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.exists(result!.dotnetPath);
     assert.isTrue(fs.existsSync(result!.dotnetPath!));
     rimraf.sync(result!.dotnetPath!);
-  }).timeout(40000);
+  }).timeout(standardTimeoutTime);
 });

@@ -6,15 +6,18 @@
 /* tslint:disable:no-any */
 
 import { IEventStream } from '../EventStream/EventStream';
+import { IUtilityContext } from './IUtilityContext';
 
 export abstract class ICommandExecutor
 {
-    constructor(eventStream : IEventStream)
+    constructor(eventStream : IEventStream, utilContext : IUtilityContext)
     {
         this.eventStream = eventStream;
+        this.utilityContext = utilContext;
     }
 
     protected eventStream : IEventStream;
+    protected utilityContext : IUtilityContext
 
     /**
      * @remarks Set this to true if you don't want to capture stdout and stderr, and just want to return the status / exit code.

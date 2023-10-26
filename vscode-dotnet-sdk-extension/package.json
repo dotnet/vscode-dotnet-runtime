@@ -57,7 +57,7 @@
 				"dotnetSDKAcquisitionExtension.enableTelemetry": {
 					"type": "boolean",
 					"default": true,
-					"description": "Enable Telemetry for the .NET SDK Install Tool."
+					"description": "Enable Telemetry for the .NET SDK Install Tool. Restart VS Code to apply changes."
 				},
 				"dotnetSDKAcquisitionExtension.installTimeoutValue": {
 					"type": "number",

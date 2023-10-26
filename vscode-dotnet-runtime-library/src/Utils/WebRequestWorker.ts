@@ -8,11 +8,9 @@ import { HttpsProxyAgent } from 'https-proxy-agent';
 import { getProxySettings } from 'get-proxy-settings';
 import { AxiosCacheInstance, buildStorage, setupCache, StorageValue } from 'axios-cache-interceptor';
 import { IEventStream } from '../EventStream/EventStream';
-import { DotnetLockAttemptingAcquireEvent, DotnetLockReleasedEvent, SuppressedAcquisitionError, WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
+import {SuppressedAcquisitionError, WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
 import { IExtensionState } from '../IExtensionState';
 import { Debugging } from '../Utils/Debugging';
-import { finished } from 'stream';
-import * as lockfile from 'proper-lockfile';
 import * as fs from 'fs';
 import { promisify } from 'util';
 import stream = require('stream');
@@ -210,7 +208,7 @@ export class WebRequestWorker
             ...(keepAlive && {headers: { 'Connection': 'keep-alive' }}),
             ...(this.proxyEnabled() && {proxy : false}),
             ...(this.proxyEnabled() && {httpsAgent : this.proxyAgent}),
-            ...furtherOptions,
+            ...furtherOptions
         };
 
         return options;

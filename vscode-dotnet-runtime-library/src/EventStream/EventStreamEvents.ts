@@ -393,6 +393,10 @@ export class DotnetVersionCategorizedEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetVersionCategorizedEvent';
 }
 
+export class DotnetTelemetrySettingEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetTelemetrySettingEvent';
+}
+
 export class DotnetCommandNotFoundEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetCommandNotFoundEvent';
 }

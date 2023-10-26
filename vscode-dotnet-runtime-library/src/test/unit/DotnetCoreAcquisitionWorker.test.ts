@@ -7,7 +7,6 @@ import * as chaiAsPromised from 'chai-as-promised';
 import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs';
-import { AcquisitionInvoker } from '../../Acquisition/AcquisitionInvoker';
 import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
 import { RuntimeInstallationDirectoryProvider } from '../../Acquisition/RuntimeInstallationDirectoryProvider';
 import { SdkInstallationDirectoryProvider } from '../../Acquisition/SdkInstallationDirectoryProvider';
@@ -30,12 +29,13 @@ import {
     MockEventStream,
     MockExtensionContext,
     MockInstallationValidator,
+    MockVSCodeExtensionContext,
     NoInstallAcquisitionInvoker,
     RejectingAcquisitionInvoker,
 } from '../mocks/MockObjects';
+import { getMockUtilityContext } from './TestUtility';
 const assert = chai.assert;
 chai.use(chaiAsPromised);
-
 const expectedTimeoutTime = 6000;
 
 suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
@@ -56,8 +56,9 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
             installationValidator: new MockInstallationValidator(eventStream),
             timeoutValue: 10,
             installDirectoryProvider: runtimeInstall ? new RuntimeInstallationDirectoryProvider('') : new SdkInstallationDirectoryProvider(''),
-            installingArchitecture: arch
-        });
+            installingArchitecture: arch,
+            isExtensionTelemetryInitiallyEnabled: true,
+        }, getMockUtilityContext(), new MockVSCodeExtensionContext());
         return [acquisitionWorker, eventStream, context];
     }
 
@@ -72,7 +73,8 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
             installationValidator: new MockInstallationValidator(eventStream),
             timeoutValue: 10,
             installDirectoryProvider: runtimeInstall ? new RuntimeInstallationDirectoryProvider('') : new SdkInstallationDirectoryProvider(''),
-        });
+            isExtensionTelemetryInitiallyEnabled: true,
+        }, getMockUtilityContext(), new MockVSCodeExtensionContext());
         return [acquisitionWorker, eventStream, context];
     }
 
@@ -304,7 +306,8 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
             installationValidator: new MockInstallationValidator(eventStream),
             timeoutValue: 10,
             installDirectoryProvider: new RuntimeInstallationDirectoryProvider(''),
-        });
+            isExtensionTelemetryInitiallyEnabled: true,
+        }, getMockUtilityContext(), new MockVSCodeExtensionContext());
 
         return assert.isRejected(acquisitionWorker.acquireRuntime('1.0'), '.NET Acquisition Failed: Installation failed: Rejecting message');
     });
