@@ -200,7 +200,7 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
                 CommandExecutor.makeCommand(`/usr/bin/open`, [])
             ];
 
-            const workingCommand = await this.commandRunner.tryFindWorkingCommand(possibleCommands);
+            let workingCommand = await this.commandRunner.tryFindWorkingCommand(possibleCommands);
             if(!workingCommand)
             {
                 const error = new Error(`The 'open' command on OSX was not detected. This is likely due to the PATH environment variable on your system being clobbered by another program.
@@ -208,10 +208,13 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
                 this.acquisitionContext.eventStream.post(new OSXOpenNotAvailableError(error));
                 throw error;
             }
+            else if(workingCommand.commandRoot === 'command')
+            {
+                workingCommand = CommandExecutor.makeCommand(`open`, [`-W`, `${path.resolve(installerPath)}`]);
+            }
 
             const commandResult = await this.commandRunner.execute(
-                CommandExecutor.makeCommand(`${workingCommand.commandRoot}`,
-                workingCommand.commandFollowUps.concat([`-W`, `${path.resolve(installerPath)}`]))
+                workingCommand
             );
 
             this.commandRunner.returnStatus = false;
