@@ -20,8 +20,8 @@ import { IExtensionState } from '../../IExtensionState';
 import { WebRequestWorker } from '../../Utils/WebRequestWorker';
 import { CommandExecutorCommand, ICommandExecutor } from '../../Utils/ICommandExecutor';
 import { CommandExecutor } from '../../Utils/CommandExecutor';
-import { IDistroDotnetSDKProvider } from '../../Acquisition/IDistroDotnetSDKProvider';
-import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
+import { IDistroDotnetSDKProvider, LinuxPackageCollection } from '../../Acquisition/IDistroDotnetSDKProvider';
+import { DistroVersionPair, DotnetDistroSupportStatus, LinuxInstallType } from '../../Acquisition/LinuxVersionResolver';
 import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProvider';
 import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
 import { FileUtilities } from '../../Utils/FileUtilities';
@@ -361,6 +361,7 @@ export class MockDistroProvider extends IDistroDotnetSDKProvider
     public recommendedVersionReturnValue = '';
     public upgradeReturnValue = '';
     public uninstallReturnValue = '';
+    public versionPackagesReturnValue = [];
     public context: IAcquisitionWorkerContext;
 
     constructor(version : DistroVersionPair, context : IAcquisitionWorkerContext, utilContext : IUtilityContext, commandRunner : ICommandExecutor)
@@ -414,9 +415,9 @@ export class MockDistroProvider extends IDistroDotnetSDKProvider
         return Promise.resolve(this.supportStatusReturnValue);
     }
 
-    public getRecommendedDotnetVersion(): string {
+    public getRecommendedDotnetVersion(installType : LinuxInstallType): Promise<string> {
         this.commandRunner.execute(CommandExecutor.makeCommand(`recommended`, [`version`]));
-        return this.recommendedVersionReturnValue;
+        return Promise.resolve(this.recommendedVersionReturnValue);
     }
 
     public upgradeDotnet(versionToUpgrade: string): Promise<string> {
@@ -431,6 +432,10 @@ export class MockDistroProvider extends IDistroDotnetSDKProvider
 
     public JsonDotnetVersion(fullySpecifiedDotnetVersion: string): string {
         return new GenericDistroSDKProvider(this.distroVersion, this.context, getMockUtilityContext()).JsonDotnetVersion(fullySpecifiedDotnetVersion);
+    }
+
+    protected isPackageFoundInSearch(resultOfSearchCommand: any): boolean {
+        return true;
     }
 }
 

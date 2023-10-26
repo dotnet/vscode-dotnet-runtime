@@ -35,6 +35,14 @@
 				"commandParts": ["upgrade", "-y", "{0}"]
 			}
 		],
+		"searchCommand":
+		[
+			{
+				"runUnderSudo": false,
+				"commandRoot": "apt-cache",
+				"commandParts": ["search", "{0}"]
+			}
+		],
 		"isInstalledCommand":
 		[
 			{
@@ -85,21 +93,41 @@
 				"commandParts": ["dotnet"]
 			}
 		],
+		"packages":
+		[
+			{
+				"version": "6.0",
+				"sdk":
+				[
+					"dotnet-sdk-6.0"
+				],
+				"runtime":
+				[
+					"dotnet-runtime-6.0"
+				],
+				"aspnetcore":
+				[
+					"aspnetcore-runtime-6.0"
+				]
+			},
+			{
+				"version": "7.0",
+				"sdk":
+				[
+					"dotnet-sdk-7.0"
+				],
+				"runtime":
+				[
+					"dotnet-runtime-7.0"
+				],
+				"aspnetcore":
+				[
+					"aspnetcore-runtime-7.0"
+				]
+			}
+		],
 		"versions": [{
 				"version": "18.04",
-				"dotnet": [{
-						"version": "6.0",
-						"sdk": "dotnet-sdk-6.0",
-						"runtime": "dotnet-runtime-6.0",
-						"aspnetcore": "aspnetcore-runtime-6.0"
-					},
-					{
-						"version": "7.0",
-						"sdk": "dotnet-sdk-7.0",
-						"runtime": "dotnet-runtime-7.0",
-						"aspnetcore": "aspnetcore-runtime-7.0"
-					}
-				],
 				"preInstallCommands":
 				[
 					{
@@ -126,19 +154,6 @@
 			},
 			{
 				"version": "20.04",
-				"dotnet": [{
-						"version": "6.0",
-						"sdk": "dotnet-sdk-6.0",
-						"runtime": "dotnet-runtime-6.0",
-						"aspnetcore": "aspnetcore-runtime-6.0"
-					},
-					{
-						"version": "7.0",
-						"sdk": "dotnet-sdk-7.0",
-						"runtime": "dotnet-runtime-7.0",
-						"aspnetcore": "aspnetcore-runtime-7.0"
-					}
-				],
 				"preInstallCommands":
 				[
 					{
@@ -164,36 +179,10 @@
 				]
 			},
 			{
-				"version": "22.04",
-				"dotnet": [{
-						"version": "6.0",
-						"sdk": "dotnet-sdk-6.0",
-						"runtime": "dotnet-runtime-6.0",
-						"aspnetcore": "aspnetcore-runtime-6.0"
-					},
-					{
-						"version": "7.0",
-						"sdk": "dotnet-sdk-7.0",
-						"runtime": "dotnet-runtime-7.0",
-						"aspnetcore": "aspnetcore-runtime-7.0"
-					}
-				]
+				"version": "22.04"
 			},
 			{
-				"version": "23.04",
-				"dotnet": [{
-						"version": "6.0",
-						"sdk": "dotnet-sdk-6.0",
-						"runtime": "dotnet-runtime-6.0",
-						"aspnetcore": "aspnetcore-runtime-6.0"
-					},
-					{
-						"version": "7.0",
-						"sdk": "dotnet-sdk-7.0",
-						"runtime": "dotnet-runtime-7.0",
-						"aspnetcore": "aspnetcore-runtime-7.0"
-					}
-				]
+				"version": "23.04"
 			}
 		]
 	}
