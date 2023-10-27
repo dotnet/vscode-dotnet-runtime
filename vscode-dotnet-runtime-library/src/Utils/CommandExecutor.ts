@@ -21,19 +21,17 @@ import { ICommandExecutor } from './ICommandExecutor';
 import path = require('path');
 import { IEventStream } from '../EventStream/EventStream';
 import * as os from 'os';
-import { WindowDisplayWorker } from '../EventStream/WindowDisplayWorker';
 import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
-import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { IUtilityContext } from './IUtilityContext';
+import { CommandExecutorCommand, IDotnetAcquireContext } from '..';
 
 /* tslint:disable:no-any */
 
 export class CommandExecutor extends ICommandExecutor
 {
-
-    constructor(eventStream : IEventStream, utilContext : IUtilityContext)
+    constructor(eventStream : IEventStream, utilContext : IUtilityContext, acquireContext? : IDotnetAcquireContext)
     {
-        super(eventStream, utilContext);
+        super(eventStream, utilContext, acquireContext);
     }
 
     /**
@@ -52,12 +50,11 @@ export class CommandExecutor extends ICommandExecutor
 
     /**
      *
-     * @param commandFollowUps The strings/args/options after the first word in the command.
      * @returns The output of the command.
      */
-    private async ExecSudoAsync(commandFollowUps : string[]) : Promise<string>
+    private async ExecSudoAsync(command : CommandExecutorCommand) : Promise<string>
     {
-        this.eventStream.post(new CommandExecutionUnderSudoEvent(`The command ${commandFollowUps} is being ran under sudo.`));
+        this.eventStream.post(new CommandExecutionUnderSudoEvent(`The command ${command} is being ran under sudo.`));
 
         if(this.isRunningUnderWSL())
         {
@@ -75,9 +72,10 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
         // We wrap the exec in a promise because there is no synchronous version of the sudo exec command for vscode/sudo
         return new Promise<string>((resolve, reject) =>
         {
-            // The '.' character is not allowed for sudo-prompt so we use 'DotNET'
-            const options = { name: 'VS Code DotNET Acquisition' };
-            exec(commandFollowUps.join(' '), options, (error?: any, stdout?: any, stderr?: any) =>
+            // The '.' character is not allowed for sudo-prompt so we use 'NET'
+            const options = { name: `${this.acquisitionContext?.requestingExtensionId} On behalf of NET Install Tool` };
+            const fullCommandString = CommandExecutor.prettifyCommandExecutorCommand(command, false);
+            exec((fullCommandString), options, (error?: any, stdout?: any, stderr?: any) =>
             {
                 let commandResultString = '';
 
@@ -87,113 +85,118 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
                 }
                 if (stderr)
                 {
-                    this.eventStream.post(new CommandExecutionStdError(`The command ${commandFollowUps} encountered stderr, continuing. ${stderr}.`));
+                    this.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandString} encountered stderr, continuing. ${stderr}.`));
                     commandResultString += stderr;
                 }
 
                 if (error)
                 {
-                    this.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The command ${commandFollowUps} failed to run under sudo.`));
+                    this.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The command ${fullCommandString} failed to run under sudo.`));
                     reject(error);
                 }
                 else
                 {
-                    this.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The command ${commandFollowUps} successfully ran under sudo.`));
+                    this.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The command ${fullCommandString} successfully ran under sudo.`));
                     resolve(commandResultString);
                 }
             });
         });
     }
 
+    public async executeMultipleCommands(commands: CommandExecutorCommand[], options?: any): Promise<string[]> {
+        const results = [];
+        for(const command of commands)
+        {
+            results.push(await this.execute(command, options));
+        }
+
+        return results;
+    }
+
     /**
      *
-     * @param command The command to run as a whole string. Commands with && will be run individually. Sudo commands will request sudo from the user.
-     * @param workingDirectory - the directory to execute in. Only works for non sudo commands.
+     * @param workingDirectory The directory to execute in. Only works for non sudo commands.
      *
      * @returns the result(s) of each command. Can throw generically if the command fails.
      */
-    public async execute(command : string, options : any | null = null) : Promise<string[]>
+    public async execute(command : CommandExecutorCommand, options : any | null = null) : Promise<string>
     {
+        const fullCommandStringForTelemetryOnly = `${command.commandRoot} ${command.commandParts.join(' ')}`;
         if(!options)
         {
             options = {cwd : path.resolve(__dirname), shell: true};
         }
 
-        const splitCommands : string[] = command.split('&&');
-        const commandResults : string[] = [];
-
-        for (let isolatedCommand of splitCommands)
+        if(command.runUnderSudo)
         {
-            isolatedCommand = isolatedCommand.trim();
-            const rootCommand = isolatedCommand.split(' ')[0];
-            const commandFollowUps : string[] = isolatedCommand.split(' ').slice(1);
-
-            if(rootCommand === 'sudo')
+            return this.ExecSudoAsync(command) ?? '';
+        }
+        else
+        {
+            this.eventStream.post(new CommandExecutionEvent(`Executing command ${command.toString()} or ${fullCommandStringForTelemetryOnly}
+with options ${options.toString()}.`));
+            const commandResult = proc.spawnSync(command.commandRoot, command.commandParts, options);
+            if(this.returnStatus)
             {
-                const commandResult = await this.ExecSudoAsync(commandFollowUps);
-                commandResults.push(commandResult);
-            }
-            else
-            {
-                this.eventStream.post(new CommandExecutionEvent(`The command ${command} is being executed with options ${splitCommands} and ${options}.`));
-                const commandResult = proc.spawnSync(rootCommand, commandFollowUps, options);
-                if(this.returnStatus)
+                if(commandResult.status !== null)
                 {
-                    if(commandResult.status !== null)
-                    {
-                        this.eventStream.post(new CommandExecutionStatusEvent(`The command ${command} exited with status: ${commandResult.status.toString()}.`));
-                        commandResults.push(commandResult.status.toString());
-                    }
-                    else
-                    {
-                        // A signal is generally given if a status is not given, and they are equivalent
-                        if(commandResult.signal !== null)
-                        {
-                            this.eventStream.post(new CommandExecutionSignalSentEvent(`The command ${command} exited with signal: ${commandResult.signal.toString()}.`));
-                            commandResults.push(commandResult.signal.toString());
-                        }
-                        else
-                        {
-                            this.eventStream.post(new CommandExecutionNoStatusCodeWarning(`The command ${command} with ${commandResult} had no status or signal.`));
-                            commandResults.push('000751'); // Error code 000751 : The command did not report an exit code upon completion. This is never expected
-                        }
-                    }
+                    this.eventStream.post(new CommandExecutionStatusEvent(`The command ${command.toString()} or ${fullCommandStringForTelemetryOnly} exited
+with status: ${commandResult.status.toString()}.`));
+                    return commandResult.status.toString() ?? '';
                 }
                 else
                 {
-                    if(commandResult.stdout === null && commandResult.stderr === null)
+                    // A signal is generally given if a status is not given, and they are 'equivalent' enough
+                    if(commandResult.signal !== null)
                     {
-                        commandResults.push('');
+                        this.eventStream.post(new CommandExecutionSignalSentEvent(`The command ${command.toString()} or ${fullCommandStringForTelemetryOnly} exited
+with signal: ${commandResult.signal.toString()}.`));
+                        return commandResult.signal.toString() ?? '';
                     }
                     else
                     {
-                        this.eventStream.post(new CommandExecutionStdError(`The command ${command} with follow ups ${commandFollowUps} encountered stdout and or stderr, continuing.
-out: ${commandResult.stdout} err: ${commandResult.stderr}.`));
-                        commandResults.push(commandResult.stdout?.toString() + commandResult.stderr?.toString());
+                        this.eventStream.post(new CommandExecutionNoStatusCodeWarning(`The command ${command.toString()} or ${fullCommandStringForTelemetryOnly} with
+result: ${commandResult.toString()} had no status or signal.`));
+                        return '000751'; // Error code 000751 : The command did not report an exit code upon completion. This is never expected
                     }
                 }
             }
+            else
+            {
+                if(commandResult.stdout === null && commandResult.stderr === null)
+                {
+                    return '';
+                }
+                else
+                {
+                    this.eventStream.post(new CommandExecutionStdError(`The command ${command.toString()} or ${fullCommandStringForTelemetryOnly} encountered stdout and or stderr, continuing.
+out: ${commandResult.stdout} err: ${commandResult.stderr}.`));
+                    return commandResult.stdout?.toString() + commandResult.stderr?.toString() ?? '';
+                }
+            }
         }
-
-        return commandResults;
     }
 
-    public async TryFindWorkingCommand(commands : string[]) : Promise<[string, boolean]>
+    /**
+     *
+     * @param commandRoots The first word of each command to try
+     * @param matchingCommandParts Any follow up words in that command to execute, matching in the same order as commandRoots
+     * @returns the index of the working command you provided, if no command works, -1.
+     */
+    public async tryFindWorkingCommand(commands : CommandExecutorCommand[]) : Promise<CommandExecutorCommand | null>
     {
-        let workingCommand = '';
-        let working = false;
-
         const oldReturnStatusSetting = this.returnStatus;
         this.returnStatus = true;
+
+        let workingCommand : CommandExecutorCommand | null = null;
 
         for(const command of commands)
         {
             try
             {
-                const cmdFoundOutput = (await this.execute(command))[0];
+                const cmdFoundOutput = await this.execute(command);
                 if(cmdFoundOutput === '0')
                 {
-                    working = true;
                     workingCommand = command;
                     this.eventStream.post(new DotnetAlternativeCommandFoundEvent(`The command ${command} was found.`));
                     break;
@@ -208,10 +211,10 @@ out: ${commandResult.stdout} err: ${commandResult.stderr}.`));
                 // Do nothing. The error should be raised higher up.
                 this.eventStream.post(new DotnetCommandNotFoundEvent(`The command ${command} was NOT found, and we caught any errors.`));
             }
-        }
+        };
 
         this.returnStatus = oldReturnStatusSetting;
-        return [workingCommand, working];
+        return workingCommand;
     }
 
     public async setEnvironmentVariable(variable : string, value : string, vscodeContext : IVSCodeExtensionContext, failureWarningMessage? : string, nonWinFailureMessage? : string)
@@ -225,8 +228,8 @@ out: ${commandResult.stdout} err: ${commandResult.stderr}.`));
 
         if(os.platform() === 'win32')
         {
-            const setShellVariable = `set ${variable}=${value}`;
-            const setSystemVariable = `setx ${variable} "${value}"`;
+            const setShellVariable = CommandExecutor.makeCommand(`set`, [`${variable}=${value}`]);
+            const setSystemVariable = CommandExecutor.makeCommand(`setx`, [`${variable}`, `"${value}"`]);
             try
             {
                 const shellEditResponse = await this.execute(setShellVariable);

@@ -13,6 +13,7 @@ import { VersionResolver } from './VersionResolver';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
+import { IDotnetAcquireContext } from '..';
 
 /**
  * An enumeration type representing all distros with their versions that we recognize.
@@ -69,10 +70,10 @@ export class LinuxVersionResolver
     Your custom install is located at: `;
     public baseUnsupportedDistroErrorMessage = 'We are unable to detect the distro or version of your machine';
 
-    constructor(acquisitionContext : IAcquisitionWorkerContext, utilContext : IUtilityContext,
+    constructor(acquisitionContext : IAcquisitionWorkerContext, utilContext : IUtilityContext, acquireContext : IDotnetAcquireContext,
         executor : ICommandExecutor | null = null, distroProvider : IDistroDotnetSDKProvider | null = null)
     {
-        this.commandRunner = executor ?? new CommandExecutor(acquisitionContext.eventStream, utilContext);
+        this.commandRunner = executor ?? new CommandExecutor(acquisitionContext.eventStream, utilContext, acquireContext);
         this.acquisitionContext = acquisitionContext;
         this.utilityContext = utilContext;
         this.versionResolver = new VersionResolver(acquisitionContext.extensionState, acquisitionContext.eventStream,
@@ -94,7 +95,7 @@ export class LinuxVersionResolver
             return this.distro;
         }
 
-        const commandResult = (await this.commandRunner.execute('cat /etc/os-release'))[0];
+        const commandResult = await this.commandRunner.execute(CommandExecutor.makeCommand(`cat`, [`/etc/os-release`]));
         const distroNameKey = 'NAME';
         const distroVersionKey = 'VERSION_ID';
 

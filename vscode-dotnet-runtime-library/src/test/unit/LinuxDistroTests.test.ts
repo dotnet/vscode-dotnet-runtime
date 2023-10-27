@@ -8,14 +8,14 @@ import * as os from 'os';
 import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProvider';
 import { MockCommandExecutor, MockEventStream } from '../mocks/MockObjects';
 import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
-import { getMockAcquiringContext, getMockUtilityContext } from './TestUtility';
+import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 const assert = chai.assert;
 const standardTimeoutTime = 100000;
 
 const mockVersion = '7.0.103';
 const mockExecutor = new MockCommandExecutor(new MockEventStream(), getMockUtilityContext());
 const pair : DistroVersionPair = { distro : 'Ubuntu', version : '22.04' };
-const provider : GenericDistroSDKProvider = new GenericDistroSDKProvider(pair, getMockAcquiringContext(false), getMockUtilityContext(), mockExecutor);
+const provider : GenericDistroSDKProvider = new GenericDistroSDKProvider(pair, getMockAcquisitionContext(false), getMockUtilityContext(), mockExecutor);
 const shouldRun = os.platform() === 'linux';
 
 const noDotnetString = `
@@ -147,7 +147,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
         if(shouldRun)
         {
             await provider.installDotnet(mockVersion);
-            assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get update && sudo apt-get install -y dotnet-sdk-7.0');
+            assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get install -y dotnet-sdk-7.0');
         }
     });
 
@@ -163,7 +163,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
         if(shouldRun)
         {
             await provider.upgradeDotnet(mockVersion);
-            assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get update && apt-get upgrade -y dotnet-sdk-7.0');
+            assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get upgrade -y dotnet-sdk-7.0');
         }
     }).timeout(standardTimeoutTime*1000);
 });

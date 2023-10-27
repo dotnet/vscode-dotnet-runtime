@@ -29,6 +29,7 @@ import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
+import path = require('path');
 
 export class AcquisitionInvoker extends IAcquisitionInvoker {
     protected readonly scriptWorker: IInstallScriptAcquisitionWorker;
@@ -117,14 +118,14 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         return `${ this.escapeFilePath(scriptPath) } ${ args.join(' ') }`;
     }
 
-    private escapeFilePath(path: string): string {
+    private escapeFilePath(pathToEsc: string): string {
         if (os.platform() === 'win32') {
             // Need to escape apostrophes with two apostrophes
-            const dotnetInstallDirEscaped = path.replace(/'/g, `''`);
+            const dotnetInstallDirEscaped = pathToEsc.replace(/'/g, `''`);
             // Surround with single quotes instead of double quotes (see https://github.com/dotnet/cli/issues/11521)
             return `'${dotnetInstallDirEscaped}'`;
         } else {
-            return `"${path}"`;
+            return `"${pathToEsc}"`;
         }
     }
 
@@ -137,26 +138,30 @@ You will need to restart VS Code after these changes. If PowerShell is still not
     {
         let knownError = false;
         let error = null;
-        let command = '';
+        let command = null;
+
+        const possibleCommands =
+        [
+            CommandExecutor.makeCommand(`powershell.exe`, []),
+            CommandExecutor.makeCommand(`%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`, []),
+            CommandExecutor.makeCommand(`pwsh`, []),
+            CommandExecutor.makeCommand(`powershell`, []),
+            CommandExecutor.makeCommand(`pwsh.exe`, [])
+        ];
 
         try
         {
             // Check if PowerShell exists and is on the path.
-            const commandWorking = await new CommandExecutor(this.eventStream, this.utilityContext).TryFindWorkingCommand([`powershell.exe`,
-                `%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`, `pwsh`, `powershell`, `pwsh.exe`]);
-            if(!commandWorking[1])
+            command = await new CommandExecutor(this.eventStream, this.utilityContext).tryFindWorkingCommand(possibleCommands);
+            if(!command)
             {
                 knownError = true;
                 const err = Error(this.noPowershellError);
                 error = err;
             }
-            else
-            {
-                command = commandWorking[0];
-            }
 
             // Check Execution Policy
-            const execPolicyOutput = cp.spawnSync(command, [`-command`, `$ExecutionContext.SessionState.LanguageMode`]);
+            const execPolicyOutput = cp.spawnSync(command!.commandRoot, [`-command`, `$ExecutionContext.SessionState.LanguageMode`], {cwd : path.resolve(__dirname), shell: true});
             const languageMode = execPolicyOutput.stdout.toString().trim();
             if(languageMode === 'ConstrainedLanguage' || languageMode === 'NoLanguage')
             {
@@ -181,6 +186,6 @@ If you cannot safely and confidently change the execution policy, try setting a 
             throw error;
         }
 
-        return command;
+        return command!.commandRoot;
     }
 }
