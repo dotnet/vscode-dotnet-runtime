@@ -22,6 +22,8 @@ import {
 import * as extension from '../../extension';
 import { warn } from 'console';
 /* tslint:disable:no-any */
+/* tslint:disable:no-unsafe-finally */
+
 const assert : any = chai.assert;
 const standardTimeoutTime = 40000;
 
