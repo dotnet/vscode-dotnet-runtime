@@ -135,7 +135,7 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
         else
         {
             this.eventStream.post(new CommandExecutionEvent(`Executing command ${fullCommandStringForTelemetryOnly}
-with options ${JSON.stringify(options)}.`));
+with options ${options}.`));
             const commandResult = proc.spawnSync(command.commandRoot, command.commandParts, options);
             if(this.returnStatus)
             {
