@@ -183,13 +183,12 @@ out: ${commandResult.stdout} err: ${commandResult.stderr}.`));
      * @param matchingCommandParts Any follow up words in that command to execute, matching in the same order as commandRoots
      * @returns the index of the working command you provided, if no command works, -1.
      */
-    public async tryFindWorkingCommand(commands : CommandExecutorCommand[]) : Promise<number>
+    public async tryFindWorkingCommand(commands : CommandExecutorCommand[]) : Promise<CommandExecutorCommand | null>
     {
         const oldReturnStatusSetting = this.returnStatus;
         this.returnStatus = true;
 
-        let index = 0;
-        let workingCommandIndex = -1;
+        let workingCommand : CommandExecutorCommand | null = null;
 
         for(const command of commands)
         {
@@ -198,7 +197,7 @@ out: ${commandResult.stdout} err: ${commandResult.stderr}.`));
                 const cmdFoundOutput = await this.execute(command);
                 if(cmdFoundOutput === '0')
                 {
-                    workingCommandIndex = index;
+                    workingCommand = command;
                     this.eventStream.post(new DotnetAlternativeCommandFoundEvent(`The command ${command} was found.`));
                     break;
                 }
@@ -212,12 +211,10 @@ out: ${commandResult.stdout} err: ${commandResult.stderr}.`));
                 // Do nothing. The error should be raised higher up.
                 this.eventStream.post(new DotnetCommandNotFoundEvent(`The command ${command} was NOT found, and we caught any errors.`));
             }
-
-            ++index;
         };
 
         this.returnStatus = oldReturnStatusSetting;
-        return workingCommandIndex;
+        return workingCommand;
     }
 
     public async setEnvironmentVariable(variable : string, value : string, vscodeContext : IVSCodeExtensionContext, failureWarningMessage? : string, nonWinFailureMessage? : string)

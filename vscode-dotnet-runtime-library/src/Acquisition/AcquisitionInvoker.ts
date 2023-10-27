@@ -118,14 +118,14 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         return `${ this.escapeFilePath(scriptPath) } ${ args.join(' ') }`;
     }
 
-    private escapeFilePath(path: string): string {
+    private escapeFilePath(pathToEsc: string): string {
         if (os.platform() === 'win32') {
             // Need to escape apostrophes with two apostrophes
-            const dotnetInstallDirEscaped = path.replace(/'/g, `''`);
+            const dotnetInstallDirEscaped = pathToEsc.replace(/'/g, `''`);
             // Surround with single quotes instead of double quotes (see https://github.com/dotnet/cli/issues/11521)
             return `'${dotnetInstallDirEscaped}'`;
         } else {
-            return `"${path}"`;
+            return `"${pathToEsc}"`;
         }
     }
 
@@ -152,31 +152,23 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         try
         {
             // Check if PowerShell exists and is on the path.
-            const workingCommandIndex = await new CommandExecutor(this.eventStream, this.utilityContext).tryFindWorkingCommand(possibleCommands);
-
-            if(workingCommandIndex === -1)
+            command = await new CommandExecutor(this.eventStream, this.utilityContext).tryFindWorkingCommand(possibleCommands);
+            if(!command)
             {
                 knownError = true;
                 const err = Error(this.noPowershellError);
                 error = err;
             }
-            else
-            {
-                command = possibleCommands[workingCommandIndex];
-            }
 
             // Check Execution Policy
-            if(command)
+            const execPolicyOutput = cp.spawnSync(command!.commandRoot, [`-command`, `$ExecutionContext.SessionState.LanguageMode`], {cwd : path.resolve(__dirname), shell: true});
+            const languageMode = execPolicyOutput.stdout.toString().trim();
+            if(languageMode === 'ConstrainedLanguage' || languageMode === 'NoLanguage')
             {
-                const execPolicyOutput = cp.spawnSync(command.commandRoot, [`-command`, `$ExecutionContext.SessionState.LanguageMode`], {cwd : path.resolve(__dirname), shell: true});
-                const languageMode = execPolicyOutput.stdout.toString().trim();
-                if(languageMode === 'ConstrainedLanguage' || languageMode === 'NoLanguage')
-                {
-                    knownError = true;
-                    const err = Error(`Your machine policy disables PowerShell language features that may be needed to install .NET. Read more at: https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_language_modes?view=powershell-7.3.
+                knownError = true;
+                const err = Error(`Your machine policy disables PowerShell language features that may be needed to install .NET. Read more at: https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_language_modes?view=powershell-7.3.
 If you cannot safely and confidently change the execution policy, try setting a custom existingDotnetPath following our instructions here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`);
-                    error = err;
-                }
+                error = err;
             }
         }
         catch(err)

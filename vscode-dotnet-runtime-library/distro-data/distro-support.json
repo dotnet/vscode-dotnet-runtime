@@ -11,7 +11,7 @@
 			{
 				"runUnderSudo": true,
 				"commandRoot": "apt-get",
-				"commandParts": ["install", "-y", "{0}"]
+				"commandParts": ["install", "-y", "{packageName}"]
 			}
 		],
 		"uninstallCommand":
@@ -19,7 +19,7 @@
 			{
 				"runUnderSudo": true,
 				"commandRoot": "apt-get",
-				"commandParts": ["remove", "{0}"]
+				"commandParts": ["remove", "{packageName}"]
 			}
 		],
 		"updateCommand":
@@ -32,7 +32,7 @@
 			{
 				"runUnderSudo": true,
 				"commandRoot": "apt-get",
-				"commandParts": ["upgrade", "-y", "{0}"]
+				"commandParts": ["upgrade", "-y", "{packageName}"]
 			}
 		],
 		"searchCommand":
@@ -48,7 +48,7 @@
 			{
 				"runUnderSudo": true,
 				"commandRoot": "apt",
-				"commandParts": ["list", "--installed", "{0}"]
+				"commandParts": ["list", "--installed", "{packageName}"]
 			}
 		],
 		"packageLookupCommand":

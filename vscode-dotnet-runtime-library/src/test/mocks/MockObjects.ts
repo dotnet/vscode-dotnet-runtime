@@ -313,8 +313,8 @@ export class MockCommandExecutor extends ICommandExecutor
         return result;
     }
 
-    public async tryFindWorkingCommand(commands: CommandExecutorCommand[]): Promise<number> {
-        return 0;
+    public async tryFindWorkingCommand(commands: CommandExecutorCommand[]): Promise<CommandExecutorCommand> {
+        return commands[0];
     }
 }
 

@@ -18,7 +18,7 @@ export type CommandExecutorCommand =
      * The remaining strings in the command to execute, example: 'dotnet build foo.csproj' will be ['build', 'foo.csproj']
      * @property runUnderSudo
      * Use this if the command should be executed under sudo on linux.
-    */
+     */
     commandRoot : string,
     commandFollowUps : string[],
     runUnderSudo : boolean
@@ -64,14 +64,14 @@ export abstract class ICommandExecutor
      * @param commands The set of commands to see if one of them is available/works.
      * @returns the working command index if one is available, else -1.
      */
-    public abstract tryFindWorkingCommand(commands : CommandExecutorCommand[]) : Promise<number>;
+    public abstract tryFindWorkingCommand(commands : CommandExecutorCommand[]) : Promise<CommandExecutorCommand | null>;
 
-    public static makeCommand(command : string, args : string[], runUnderSudo = false) : CommandExecutorCommand
+    public static makeCommand(command : string, args : string[], isSudo = false) : CommandExecutorCommand
     {
         return {
             commandRoot: command,
             commandFollowUps: args,
-            runUnderSudo: runUnderSudo
+            runUnderSudo: isSudo
         };
     }
 
@@ -82,8 +82,8 @@ export abstract class ICommandExecutor
 
     public static replaceSubstringsInCommand(command : CommandExecutorCommand, substring : string, replacement : string) : CommandExecutorCommand
     {
-        let newCommandRoot = command.commandRoot.replace(substring, replacement);
-        let newCommandParts: string[] = [];
+        const newCommandRoot = command.commandRoot.replace(substring, replacement);
+        const newCommandParts: string[] = [];
         for(const commandPart of command.commandFollowUps)
         {
             newCommandParts.push(commandPart.replace(substring, replacement));
@@ -97,7 +97,7 @@ export abstract class ICommandExecutor
 
     public static replaceSubstringsInCommands(commands : CommandExecutorCommand[], substring : string, replacement : string) : CommandExecutorCommand[]
     {
-        let newCommands : CommandExecutorCommand[] = [];
+        const newCommands : CommandExecutorCommand[] = [];
         for(const command of commands)
         {
             newCommands.push(this.replaceSubstringsInCommand(command, substring, replacement));

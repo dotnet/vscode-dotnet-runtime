@@ -139,7 +139,8 @@ suite('Windows & Mac Global Installer Tests', () =>
 
         if(os.platform() === 'darwin')
         {
-            assert.isTrue(mockExecutor.attemptedCommand.startsWith('open -W'), 'It ran the right mac command')
+            assert.isTrue(mockExecutor.attemptedCommand.startsWith('open'), `It ran the right mac command, open. Command found: ${mockExecutor.attemptedCommand}`)
+            assert.isTrue(mockExecutor.attemptedCommand.includes('-W'), 'It used the -W flag')
         }
         else if(os.platform() === 'win32')
         {

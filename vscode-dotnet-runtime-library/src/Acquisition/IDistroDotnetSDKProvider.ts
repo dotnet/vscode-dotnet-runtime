@@ -49,6 +49,7 @@ export abstract class IDistroDotnetSDKProvider {
     protected installedSDKVersionsCommandKey = 'installedSDKVersionsCommand';
     protected installedRuntimeVersionsCommandKey = 'installedRuntimeVersionsCommand';
     protected currentInstallVersionCommandKey = 'currentInstallationVersionCommand';
+    protected missingPackageNameKey = '{packageName}';
 
     protected distroVersionsKey = 'versions';
     protected versionKey = 'version';
@@ -210,7 +211,7 @@ export abstract class IDistroDotnetSDKProvider {
 
     protected myDistroCommands(commandKey : string) : CommandExecutorCommand[]
     {
-        return JSON.parse(this.distroJson[this.distroVersion.distro][commandKey]) as CommandExecutorCommand[];
+        return this.distroJson[this.distroVersion.distro][commandKey] as CommandExecutorCommand[];
     }
 
     protected async myDotnetVersionPackageName(fullySpecifiedDotnetVersion : string, installType : LinuxInstallType) : Promise<string>
