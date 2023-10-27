@@ -147,7 +147,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
         if(shouldRun)
         {
             await provider.installDotnet(mockVersion);
-            assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get update && sudo apt-get install -y dotnet-sdk-7.0');
+            assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get install -y dotnet-sdk-7.0');
         }
     });
 
@@ -163,7 +163,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
         if(shouldRun)
         {
             await provider.upgradeDotnet(mockVersion);
-            assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get update && apt-get upgrade -y dotnet-sdk-7.0');
+            assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get upgrade -y dotnet-sdk-7.0');
         }
     }).timeout(standardTimeoutTime*1000);
 });
