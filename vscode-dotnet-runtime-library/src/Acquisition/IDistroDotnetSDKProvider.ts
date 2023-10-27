@@ -173,7 +173,7 @@ export abstract class IDistroDotnetSDKProvider {
 
     protected myDistroCommands(commandKey : string) : CommandExecutorCommand[]
     {
-        return JSON.parse(this.distroJson[this.distroVersion.distro][commandKey]) as CommandExecutorCommand[];
+        return this.distroJson[this.distroVersion.distro][commandKey] as CommandExecutorCommand[];
     }
 
     protected myDotnetVersionPackages(fullySpecifiedDotnetVersion : string) : any
