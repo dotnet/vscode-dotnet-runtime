@@ -18,8 +18,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         const supportStatus = await this.getDotnetVersionSupportStatus(fullySpecifiedVersion, installType);
         if(supportStatus === DotnetDistroSupportStatus.Microsoft)
         {
-            const distroVersions = this.distroJson[this.distroVersion.distro][this.distroVersionsKey];
-            const myVersionDetails = distroVersions.filter((x: { [x: string]: string; }) => x[this.versionKey] === this.distroVersion.version)[0];
+            const myVersionDetails = this.myVersionDetails();
             const preInstallCommands = JSON.parse(myVersionDetails[this.preinstallCommandKey]) as CommandExecutorCommand[];
             this.commandRunner.executeMultipleCommands(preInstallCommands);
         }
@@ -144,9 +143,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
             return Promise.resolve(DotnetDistroSupportStatus.Unsupported);
         }
 
-        const simplifiedVersion = this.JsonDotnetVersion(fullySpecifiedVersion);
-        const versionData = await this.myVersionPackages(installType);
-        if(versionData.hasOwnProperty(this.preinstallCommandKey))
+        if(this.myVersionDetails().hasOwnProperty(this.preinstallCommandKey))
         {
             // If preinstall commmands exist ( to add the msft feed ) then it's a microsoft feed.
             return Promise.resolve(DotnetDistroSupportStatus.Microsoft);
@@ -154,6 +151,8 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         else
         {
             const availableVersions = await this.myVersionPackages(installType);
+            const simplifiedVersion = this.JsonDotnetVersion(fullySpecifiedVersion);
+
             for(const dotnetPackages of availableVersions)
             {
                 if(Number(dotnetPackages.version) === Number(simplifiedVersion))
@@ -164,6 +163,13 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         }
 
         return Promise.resolve(DotnetDistroSupportStatus.Unknown);
+    }
+
+    private myVersionDetails() : any
+    {
+        const distroVersions = this.distroJson[this.distroVersion.distro][this.distroVersionsKey];
+        const versionData = distroVersions.filter((x: { [x: string]: string; }) => x[this.versionKey] === this.distroVersion.version)[0];
+        return versionData;
     }
 
     public async getRecommendedDotnetVersion(installType : LinuxInstallType) : Promise<string>

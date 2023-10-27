@@ -23,7 +23,8 @@ import { IEventStream } from '../EventStream/EventStream';
 import * as os from 'os';
 import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { IUtilityContext } from './IUtilityContext';
-import { CommandExecutorCommand, IDotnetAcquireContext } from '..';
+import { CommandExecutorCommand } from './ICommandExecutor';
+import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
 
 /* tslint:disable:no-any */
 
@@ -54,7 +55,8 @@ export class CommandExecutor extends ICommandExecutor
      */
     private async ExecSudoAsync(command : CommandExecutorCommand) : Promise<string>
     {
-        this.eventStream.post(new CommandExecutionUnderSudoEvent(`The command ${command} is being ran under sudo.`));
+        const fullCommandString = CommandExecutor.prettifyCommandExecutorCommand(command, false);
+        this.eventStream.post(new CommandExecutionUnderSudoEvent(`The command ${fullCommandString} is being ran under sudo.`));
 
         if(this.isRunningUnderWSL())
         {
@@ -74,7 +76,6 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
         {
             // The '.' character is not allowed for sudo-prompt so we use 'NET'
             const options = { name: `${this.acquisitionContext?.requestingExtensionId} On behalf of NET Install Tool` };
-            const fullCommandString = CommandExecutor.prettifyCommandExecutorCommand(command, false);
             exec((fullCommandString), options, (error?: any, stdout?: any, stderr?: any) =>
             {
                 let commandResultString = '';
@@ -133,14 +134,14 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
         }
         else
         {
-            this.eventStream.post(new CommandExecutionEvent(`Executing command ${command.toString()} or ${fullCommandStringForTelemetryOnly}
-with options ${options.toString()}.`));
+            this.eventStream.post(new CommandExecutionEvent(`Executing command ${fullCommandStringForTelemetryOnly}
+with options ${JSON.stringify(options)}.`));
             const commandResult = proc.spawnSync(command.commandRoot, command.commandParts, options);
             if(this.returnStatus)
             {
                 if(commandResult.status !== null)
                 {
-                    this.eventStream.post(new CommandExecutionStatusEvent(`The command ${command.toString()} or ${fullCommandStringForTelemetryOnly} exited
+                    this.eventStream.post(new CommandExecutionStatusEvent(`The command ${fullCommandStringForTelemetryOnly} exited
 with status: ${commandResult.status.toString()}.`));
                     return commandResult.status.toString() ?? '';
                 }
@@ -149,13 +150,13 @@ with status: ${commandResult.status.toString()}.`));
                     // A signal is generally given if a status is not given, and they are 'equivalent' enough
                     if(commandResult.signal !== null)
                     {
-                        this.eventStream.post(new CommandExecutionSignalSentEvent(`The command ${command.toString()} or ${fullCommandStringForTelemetryOnly} exited
+                        this.eventStream.post(new CommandExecutionSignalSentEvent(`The command ${fullCommandStringForTelemetryOnly} exited
 with signal: ${commandResult.signal.toString()}.`));
                         return commandResult.signal.toString() ?? '';
                     }
                     else
                     {
-                        this.eventStream.post(new CommandExecutionNoStatusCodeWarning(`The command ${command.toString()} or ${fullCommandStringForTelemetryOnly} with
+                        this.eventStream.post(new CommandExecutionNoStatusCodeWarning(`The command ${fullCommandStringForTelemetryOnly} with
 result: ${commandResult.toString()} had no status or signal.`));
                         return '000751'; // Error code 000751 : The command did not report an exit code upon completion. This is never expected
                     }
@@ -163,14 +164,22 @@ result: ${commandResult.toString()} had no status or signal.`));
             }
             else
             {
-                if(commandResult.stdout === null && commandResult.stderr === null)
+                if(!commandResult.stdout && !commandResult.stderr)
                 {
                     return '';
                 }
                 else
                 {
-                    this.eventStream.post(new CommandExecutionStdError(`The command ${command.toString()} or ${fullCommandStringForTelemetryOnly} encountered stdout and or stderr, continuing.
-out: ${commandResult.stdout} err: ${commandResult.stderr}.`));
+                    if(commandResult.stdout)
+                    {
+                    this.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandStringForTelemetryOnly} encountered stdout:
+${commandResult.stdout}`));
+                    }
+                    if(commandResult.stderr)
+                    {
+                        this.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandStringForTelemetryOnly} encountered stdout:
+${commandResult.stderr}`));
+                    }
                     return commandResult.stdout?.toString() + commandResult.stderr?.toString() ?? '';
                 }
             }
@@ -198,18 +207,18 @@ out: ${commandResult.stdout} err: ${commandResult.stderr}.`));
                 if(cmdFoundOutput === '0')
                 {
                     workingCommand = command;
-                    this.eventStream.post(new DotnetAlternativeCommandFoundEvent(`The command ${command} was found.`));
+                    this.eventStream.post(new DotnetAlternativeCommandFoundEvent(`The command ${command.commandRoot} was found.`));
                     break;
                 }
                 else
                 {
-                    this.eventStream.post(new DotnetCommandNotFoundEvent(`The command ${command} was NOT found, no error was thrown.`));
+                    this.eventStream.post(new DotnetCommandNotFoundEvent(`The command ${command.commandRoot} was NOT found, no error was thrown.`));
                 }
             }
             catch(err)
             {
                 // Do nothing. The error should be raised higher up.
-                this.eventStream.post(new DotnetCommandNotFoundEvent(`The command ${command} was NOT found, and we caught any errors.`));
+                this.eventStream.post(new DotnetCommandNotFoundEvent(`The command ${command.commandRoot} was NOT found, and we caught any errors.`));
             }
         };
 
