@@ -8,6 +8,7 @@ import { CommandExecutorCommand } from '../Utils/ICommandExecutor';
 import { DotnetDistroSupportStatus, LinuxInstallType } from './LinuxVersionResolver';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 import * as path from 'path';
+/* tslint:disable:no-any */
 
 export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 {

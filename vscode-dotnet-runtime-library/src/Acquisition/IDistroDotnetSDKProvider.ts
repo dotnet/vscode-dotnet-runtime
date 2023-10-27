@@ -177,7 +177,7 @@ export abstract class IDistroDotnetSDKProvider {
         const potentialDotnetPackageNames = this.distroJson[this.distroVersion.distro][this.distroPackagesKey];
         for(const packageSet of potentialDotnetPackageNames)
         {
-            let thisVersionPackage : LinuxPackageCollection =
+            const thisVersionPackage : LinuxPackageCollection =
             {
                 version: potentialDotnetPackageNames[this.versionKey],
                 packages : []
@@ -226,7 +226,8 @@ export abstract class IDistroDotnetSDKProvider {
             }
         }
         const err = new Error(`Could not find a .NET package for version ${fullySpecifiedDotnetVersion}. Found only: ${JSON.stringify(await this.myVersionPackages(installType))}`);
-        this.context.eventStream.post(new DotnetVersionResolutionError(err, DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(fullySpecifiedDotnetVersion, this.context.acquisitionContext?.architecture)));
+        this.context.eventStream.post(new DotnetVersionResolutionError(err,DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(fullySpecifiedDotnetVersion,
+            this.context.acquisitionContext?.architecture)));
         throw err;
     }
 
