@@ -11,6 +11,7 @@ import { IInstallationValidator } from '../../Acquisition/IInstallationValidator
 import { InstallScriptAcquisitionWorker } from '../../Acquisition/InstallScriptAcquisitionWorker';
 import { VersionResolver } from '../../Acquisition/VersionResolver';
 import { IEventStream } from '../../EventStream/EventStream';
+import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
 import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStream/EventStreamEvents';
 import { IEvent } from '../../EventStream/IEvent';
 import { ILoggingObserver } from '../../EventStream/ILoggingObserver';
@@ -20,19 +21,18 @@ import { IExtensionState } from '../../IExtensionState';
 import { WebRequestWorker } from '../../Utils/WebRequestWorker';
 import { CommandExecutorCommand, ICommandExecutor } from '../../Utils/ICommandExecutor';
 import { CommandExecutor } from '../../Utils/CommandExecutor';
-import { IDistroDotnetSDKProvider } from '../../Acquisition/IDistroDotnetSDKProvider';
-import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
+import { AcquisitionInvoker } from '../../Acquisition/AcquisitionInvoker';
+import { LinuxInstallType } from '../../Acquisition/LinuxInstallType';
 import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProvider';
+import { getMockUtilityContext } from '../unit/TestUtility';
+import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
+import { IDistroDotnetSDKProvider } from '../../Acquisition/IDistroDotnetSDKProvider';
 import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
 import { FileUtilities } from '../../Utils/FileUtilities';
 import { IFileUtilities } from '../../Utils/IFileUtilities';
-import { AcquisitionInvoker } from '../../Acquisition/AcquisitionInvoker';
-import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
 import { IVSCodeExtensionContext } from '../../IVSCodeExtensionContext';
 import { IUtilityContext } from '../../Utils/IUtilityContext';
-import { getMockUtilityContext } from '../unit/TestUtility';
 import { IVSCodeEnvironment } from '../../Utils/IVSCodeEnvironment';
-import { LinuxInstallType } from '../../Acquisition/LinuxInstallType';
 
 const testDefaultTimeoutTimeMs = 60000;
 /* tslint:disable:no-any */

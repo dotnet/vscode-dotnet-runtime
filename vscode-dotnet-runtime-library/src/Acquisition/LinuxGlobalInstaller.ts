@@ -11,8 +11,6 @@ import { IUtilityContext } from '../Utils/IUtilityContext';
 import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
 
 export class LinuxGlobalInstaller extends IGlobalInstaller {
-
-
     private version : string;
     private linuxSDKResolver : LinuxVersionResolver;
 

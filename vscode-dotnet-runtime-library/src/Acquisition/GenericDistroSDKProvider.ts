@@ -5,10 +5,10 @@
  * ------------------------------------------------------------------------------------------ */
 import * as path from 'path';
 import { CommandExecutor } from '../Utils/CommandExecutor';
-import { CommandExecutorCommand } from '../Utils/ICommandExecutor';
 import { DotnetDistroSupportStatus } from './LinuxVersionResolver';
-import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 import { LinuxInstallType } from './LinuxInstallType';
+import { CommandExecutorCommand } from '../Utils/ICommandExecutor';
+import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 /* tslint:disable:no-any */
 
 export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider

@@ -6,13 +6,13 @@
 import * as fs from 'fs';
 import path = require('path');
 import { DotnetAcquisitionDistroUnknownError, DotnetConflictingLinuxInstallTypesError, DotnetCustomLinuxInstallExistsError } from '../EventStream/EventStreamEvents';
-import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
-import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
+import { GenericDistroSDKProvider } from './GenericDistroSDKProvider'
 import { VersionResolver } from './VersionResolver';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { GenericDistroSDKProvider } from './GenericDistroSDKProvider'
 import { IDotnetAcquireContext } from '../IDotnetAcquireContext'
 
 /**

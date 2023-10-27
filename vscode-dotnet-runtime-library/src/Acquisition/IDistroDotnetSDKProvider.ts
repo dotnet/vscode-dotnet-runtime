@@ -10,17 +10,12 @@ import { DotnetAcquisitionDistroUnknownError, DotnetVersionResolutionError } fro
 import { VersionResolver } from './VersionResolver';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+import { LinuxInstallType } from './LinuxInstallType';
+import { LinuxPackageCollection } from './LinuxPackageCollection';
 import { CommandExecutorCommand, ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { LinuxInstallType } from './LinuxInstallType';
 /* tslint:disable:no-any */
-
-export type LinuxPackageCollection =
-{
-    version : string,
-    packages : string[]
-}
 
 /**
  * This interface describes the functionality needed to manage the .NET SDK on a specific distro and version of Linux.
