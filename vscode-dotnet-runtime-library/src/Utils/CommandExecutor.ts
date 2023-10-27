@@ -121,7 +121,7 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
      */
     public async execute(command : CommandExecutorCommand, options : any | null = null) : Promise<string>
     {
-        const fullCommandStringForTelemetryOnly = `${command.commandRoot} ${command.commandFollowUps.join(' ')}`;
+        const fullCommandStringForTelemetryOnly = `${command.commandRoot} ${command.commandParts.join(' ')}`;
         if(!options)
         {
             options = {cwd : path.resolve(__dirname), shell: true};
@@ -135,7 +135,7 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
         {
             this.eventStream.post(new CommandExecutionEvent(`Executing command ${command.toString()} or ${fullCommandStringForTelemetryOnly}
 with options ${options.toString()}.`));
-            const commandResult = proc.spawnSync(command.commandRoot, command.commandFollowUps, options);
+            const commandResult = proc.spawnSync(command.commandRoot, command.commandParts, options);
             if(this.returnStatus)
             {
                 if(commandResult.status !== null)
