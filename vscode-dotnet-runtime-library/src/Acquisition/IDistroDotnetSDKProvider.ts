@@ -180,7 +180,7 @@ export abstract class IDistroDotnetSDKProvider {
         {
             const thisVersionPackage : LinuxPackageCollection =
             {
-                version: potentialDotnetPackageNames[this.versionKey],
+                version: packageSet[this.versionKey],
                 packages : []
             }
 
@@ -194,11 +194,11 @@ export abstract class IDistroDotnetSDKProvider {
                 {
                     thisVersionPackage.packages.push(packageName);
                 }
+            }
 
-                if(thisVersionPackage.packages.length !== 0)
-                {
-                    availableVersions.push(thisVersionPackage);
-                }
+            if(thisVersionPackage.packages.length !== 0)
+            {
+                availableVersions.push(thisVersionPackage);
             }
         }
 
