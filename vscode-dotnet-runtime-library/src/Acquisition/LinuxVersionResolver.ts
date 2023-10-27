@@ -6,14 +6,13 @@
 import { DotnetAcquisitionDistroUnknownError, DotnetConflictingLinuxInstallTypesError, DotnetCustomLinuxInstallExistsError } from '../EventStream/EventStreamEvents';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
-import { GenericDistroSDKProvider as GenericDistroSDKProvider } from './GenericDistroSDKProvider';
 import * as fs from 'fs';
 import path = require('path');
 import { VersionResolver } from './VersionResolver';
-import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { IDotnetAcquireContext } from '..';
+import { GenericDistroSDKProvider, IDotnetAcquireContext } from '..';
 
 /**
  * An enumeration type representing all distros with their versions that we recognize.

@@ -5,12 +5,12 @@
  * ------------------------------------------------------------------------------------------ */
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { CommandExecutorCommand } from '../Utils/ICommandExecutor';
-import { IDistroDotnetSDKProvider, LinuxPackageCollection } from './IDistroDotnetSDKProvider';
 import { DotnetDistroSupportStatus, LinuxInstallType } from './LinuxVersionResolver';
+import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 import * as path from 'path';
 
-export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
-
+export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
+{
     public async installDotnet(fullySpecifiedVersion : string, installType : LinuxInstallType): Promise<string>
     {
         const supportStatus = await this.getDotnetVersionSupportStatus(fullySpecifiedVersion, installType);

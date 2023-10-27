@@ -4,15 +4,15 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as fs from 'fs';
-import { DistroVersionPair, DotnetDistroSupportStatus, LinuxInstallType } from './LinuxVersionResolver';
 import path = require('path');
+import { DistroVersionPair, DotnetDistroSupportStatus, LinuxInstallType } from './LinuxVersionResolver';
 import { DotnetAcquisitionDistroUnknownError, DotnetVersionResolutionError } from '../EventStream/EventStreamEvents';
 import { VersionResolver } from './VersionResolver';
-import { CommandExecutorCommand, ICommandExecutor } from '../Utils/ICommandExecutor';
+import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+import { CommandExecutorCommand, ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 /* tslint:disable:no-any */
 
 export type LinuxPackageCollection =
