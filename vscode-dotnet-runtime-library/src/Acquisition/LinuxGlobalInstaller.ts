@@ -8,7 +8,7 @@ import { IGlobalInstaller } from './IGlobalInstaller';
 import { DotnetDistroSupportStatus, LinuxVersionResolver } from './LinuxVersionResolver';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { IDotnetAcquireContext } from '..';
+import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
 
 export class LinuxGlobalInstaller extends IGlobalInstaller {
 

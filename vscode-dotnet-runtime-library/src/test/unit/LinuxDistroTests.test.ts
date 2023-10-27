@@ -7,8 +7,9 @@ import * as chai from 'chai';
 import * as os from 'os';
 import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProvider';
 import { MockCommandExecutor, MockEventStream } from '../mocks/MockObjects';
-import { DistroVersionPair, DotnetDistroSupportStatus, LinuxInstallType } from '../../Acquisition/LinuxVersionResolver';
+import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
 import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
+import { LinuxInstallType } from '../../Acquisition/LinuxInstallType';
 const assert = chai.assert;
 const standardTimeoutTime = 100000;
 

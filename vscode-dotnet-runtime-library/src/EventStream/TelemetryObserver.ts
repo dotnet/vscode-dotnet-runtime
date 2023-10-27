@@ -3,10 +3,11 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import TelemetryReporter from 'vscode-extension-telemetry';
+import * as vscode from 'vscode';
+
 import { IPackageJson } from './EventStreamRegistration';
 import { IEvent } from './IEvent';
 import { IEventStreamObserver } from './IEventStreamObserver';
-import * as vscode from 'vscode';
 import { IEventStream } from './EventStream';
 import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';

@@ -20,9 +20,9 @@ import { IExtensionState } from '../../IExtensionState';
 import { WebRequestWorker } from '../../Utils/WebRequestWorker';
 import { CommandExecutorCommand, ICommandExecutor } from '../../Utils/ICommandExecutor';
 import { CommandExecutor } from '../../Utils/CommandExecutor';
-import { DistroVersionPair, DotnetDistroSupportStatus, LinuxInstallType } from '../../Acquisition/LinuxVersionResolver';
-import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProvider';
 import { IDistroDotnetSDKProvider } from '../../Acquisition/IDistroDotnetSDKProvider';
+import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
+import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProvider';
 import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
 import { FileUtilities } from '../../Utils/FileUtilities';
 import { IFileUtilities } from '../../Utils/IFileUtilities';
@@ -32,6 +32,7 @@ import { IVSCodeExtensionContext } from '../../IVSCodeExtensionContext';
 import { IUtilityContext } from '../../Utils/IUtilityContext';
 import { getMockUtilityContext } from '../unit/TestUtility';
 import { IVSCodeEnvironment } from '../../Utils/IVSCodeEnvironment';
+import { LinuxInstallType } from '../../Acquisition/LinuxInstallType';
 
 const testDefaultTimeoutTimeMs = 60000;
 /* tslint:disable:no-any */

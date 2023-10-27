@@ -5,7 +5,7 @@
  * ------------------------------------------------------------------------------------------ */
 import * as fs from 'fs';
 import path = require('path');
-import { DistroVersionPair, DotnetDistroSupportStatus, LinuxInstallType } from './LinuxVersionResolver';
+import { DistroVersionPair, DotnetDistroSupportStatus } from './LinuxVersionResolver';
 import { DotnetAcquisitionDistroUnknownError, DotnetVersionResolutionError } from '../EventStream/EventStreamEvents';
 import { VersionResolver } from './VersionResolver';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
@@ -13,6 +13,7 @@ import { CommandExecutor } from '../Utils/CommandExecutor';
 import { CommandExecutorCommand, ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
+import { LinuxInstallType } from './LinuxInstallType';
 /* tslint:disable:no-any */
 
 export type LinuxPackageCollection =
