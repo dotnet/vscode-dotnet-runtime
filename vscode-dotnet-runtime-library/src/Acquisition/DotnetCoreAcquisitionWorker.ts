@@ -25,7 +25,6 @@ import {
     DotnetPreinstallDetectionError,
     DotnetUninstallAllCompleted,
     DotnetUninstallAllStarted,
-    DotnetGlobalAcquisitionBeginEvent,
     DotnetGlobalAcquisitionCompletionEvent,
     DotnetGlobalVersionResolutionCompletionEvent,
     DotnetBeginGlobalInstallerExecution,
@@ -42,7 +41,8 @@ import { WinMacGlobalInstaller } from './WinMacGlobalInstaller';
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { LinuxGlobalInstaller } from './LinuxGlobalInstaller';
 import { Debugging } from '../Utils/Debugging';
-import { IDotnetAcquireContext, IVSCodeExtensionContext } from '..';
+import { IDotnetAcquireContext} from '../IDotnetAcquireContext';
+import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
 /* tslint:disable:no-any */

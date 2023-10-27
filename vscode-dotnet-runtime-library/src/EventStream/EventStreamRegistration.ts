@@ -6,7 +6,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { IExtensionConfiguration, IExtensionContext } from '../IExtensionContext';
+import { IExtensionConfiguration } from '../IExtensionContext';
 import { EventStream } from './EventStream';
 import { IEventStreamObserver } from './IEventStreamObserver';
 import { LoggingObserver } from './LoggingObserver';

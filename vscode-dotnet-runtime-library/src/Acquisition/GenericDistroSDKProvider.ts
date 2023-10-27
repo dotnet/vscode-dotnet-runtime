@@ -3,11 +3,12 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
+import * as path from 'path';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { CommandExecutorCommand } from '../Utils/ICommandExecutor';
-import { DotnetDistroSupportStatus, LinuxInstallType } from './LinuxVersionResolver';
+import { DotnetDistroSupportStatus } from './LinuxVersionResolver';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
-import * as path from 'path';
+import { LinuxInstallType } from './LinuxInstallType';
 /* tslint:disable:no-any */
 
 export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider

@@ -3,16 +3,17 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
+import * as fs from 'fs';
+import path = require('path');
 import { DotnetAcquisitionDistroUnknownError, DotnetConflictingLinuxInstallTypesError, DotnetCustomLinuxInstallExistsError } from '../EventStream/EventStreamEvents';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
-import * as fs from 'fs';
-import path = require('path');
 import { VersionResolver } from './VersionResolver';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { GenericDistroSDKProvider, IDotnetAcquireContext } from '..';
+import { GenericDistroSDKProvider } from './GenericDistroSDKProvider'
+import { IDotnetAcquireContext } from '../IDotnetAcquireContext'
 
 /**
  * An enumeration type representing all distros with their versions that we recognize.
@@ -45,7 +46,6 @@ export const enum DotnetDistroSupportStatus {
     Unknown = 'UNKNOWN'
 }
 
-export type LinuxInstallType = 'sdk' | 'runtime' | 'aspnetcore';
 
 /**
  * This class is responsible for detecting the distro and version of the Linux OS.
