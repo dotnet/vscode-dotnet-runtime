@@ -38,7 +38,7 @@ suite('Linux Distro Logic Unit Tests', () =>
             await provider.dotnetPackageExistsOnSystem(mockVersion, installType);
             assert.equal(mockExecutor.attemptedCommand, 'dpkg -l dotnet-sdk-7.0');
         }
-    });
+    }).timeout(standardTimeoutTime);
 
     test('Support Status Check', async () => {
         if(shouldRun)
@@ -46,7 +46,7 @@ suite('Linux Distro Logic Unit Tests', () =>
             const status = await provider.getDotnetVersionSupportStatus(mockVersion, installType);
             assert.equal(status, DotnetDistroSupportStatus.Distro);
         }
-    });
+    }).timeout(standardTimeoutTime);
 
     test('Gets Distro Feed Install Dir', async () => {
         if(shouldRun)
@@ -54,7 +54,7 @@ suite('Linux Distro Logic Unit Tests', () =>
             const distroFeedDir = await provider.getExpectedDotnetDistroFeedInstallationDirectory();
             assert.equal(distroFeedDir, '/usr/lib/dotnet/sdk');
         }
-    });
+    }).timeout(standardTimeoutTime);
 
     test('Gets Microsoft Feed Install Dir', async () => {
         if(shouldRun)
@@ -62,7 +62,7 @@ suite('Linux Distro Logic Unit Tests', () =>
             const microsoftFeedDir = await provider.getExpectedDotnetMicrosoftFeedInstallationDirectory();
             assert.equal(microsoftFeedDir, '/usr/bin/dotnet');
         }
-    });
+    }).timeout(standardTimeoutTime);
 
     test('Gets Installed SDKs', async () =>
     {
@@ -80,7 +80,7 @@ suite('Linux Distro Logic Unit Tests', () =>
             mockExecutor.fakeReturnValue = '';
             assert.deepStrictEqual(versions, []);
         }
-    });
+    }).timeout(standardTimeoutTime);
 
     test('Gets Installed Runtimes', async () => {
         if(shouldRun)
@@ -97,7 +97,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
             mockExecutor.fakeReturnValue = '';
             assert.deepStrictEqual(versions, []);
         }
-    });
+    }).timeout(standardTimeoutTime);
 
     test('Looks for Global Dotnet Path Correctly', async () => {
         if(shouldRun)
@@ -105,7 +105,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
             await provider.getInstalledGlobalDotnetPathIfExists(installType);
             assert.equal(mockExecutor.attemptedCommand, 'which dotnet');
         }
-    });
+    }).timeout(standardTimeoutTime);
 
     test('Finds Existing Global Dotnet Version', async () => {
         if(shouldRun)
@@ -120,7 +120,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
             mockExecutor.fakeReturnValue = '';
             assert.equal(currentInfo, null);
         }
-    });
+    }).timeout(standardTimeoutTime);
 
     test('Recommends Correct Version', async () => {
         if(shouldRun)
@@ -129,7 +129,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
             assert.equal(mockExecutor.attemptedCommand, 'apt-cache search dotnet-sdk-7.0');
             assert.equal(recVersion, '7.0.1xx');
         }
-    });
+    }).timeout(standardTimeoutTime);
 
     test('Gives Correct Version Support Info', async () => {
         if(shouldRun)
@@ -143,7 +143,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
             supported = await provider.isDotnetVersionSupported('7.0.201', installType);
             assert.equal(supported, false);
         }
-    });
+    }).timeout(standardTimeoutTime);
 
     test('Runs Correct Install Command', async () => {
         if(shouldRun)
@@ -151,7 +151,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
             await provider.installDotnet(mockVersion, installType);
             assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get install -y dotnet-sdk-7.0');
         }
-    });
+    }).timeout(standardTimeoutTime);
 
     test('Runs Correct Uninstall Command', async () => {
         if(shouldRun)
@@ -159,7 +159,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
             await provider.uninstallDotnet(mockVersion, installType);
             assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get remove dotnet-sdk-7.0');
         }
-    });
+    }).timeout(standardTimeoutTime);
 
     test('Runs Correct Update Command', async () => {
         if(shouldRun)
