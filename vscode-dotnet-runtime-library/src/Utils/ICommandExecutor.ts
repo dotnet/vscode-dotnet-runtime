@@ -14,13 +14,13 @@ export type CommandExecutorCommand =
     /**
      * @property commandRoot
      * The command first 'word' to run, example: 'dotnet --info' has a first word of 'dotnet'
-     * @property commandFollowUps
+     * @property commandParts
      * The remaining strings in the command to execute, example: 'dotnet build foo.csproj' will be ['build', 'foo.csproj']
      * @property runUnderSudo
      * Use this if the command should be executed under sudo on linux.
      */
     commandRoot : string,
-    commandFollowUps : string[],
+    commandParts : string[],
     runUnderSudo : boolean
 }
 
@@ -70,27 +70,27 @@ export abstract class ICommandExecutor
     {
         return {
             commandRoot: command,
-            commandFollowUps: args,
+            commandParts: args,
             runUnderSudo: isSudo
         };
     }
 
     public static prettifyCommandExecutorCommand(command : CommandExecutorCommand, includeSudo = true) : string
     {
-        return `${command.runUnderSudo && includeSudo ? `sudo ` : ``}${command.commandRoot} ${command.commandFollowUps.join(' ')}`
+        return `${command.runUnderSudo && includeSudo ? `sudo ` : ``}${command.commandRoot} ${command.commandParts.join(' ')}`
     }
 
     public static replaceSubstringsInCommand(command : CommandExecutorCommand, substring : string, replacement : string) : CommandExecutorCommand
     {
         const newCommandRoot = command.commandRoot.replace(substring, replacement);
         const newCommandParts: string[] = [];
-        for(const commandPart of command.commandFollowUps)
+        for(const commandPart of command.commandParts)
         {
             newCommandParts.push(commandPart.replace(substring, replacement));
         }
         return {
             commandRoot: newCommandRoot,
-            commandFollowUps: newCommandParts,
+            commandParts: newCommandParts,
             runUnderSudo: command.runUnderSudo
         } as CommandExecutorCommand
     }

@@ -72,10 +72,7 @@
 			{
 				"runUnderSudo": false,
 				"commandRoot": "dpkg",
-				"commandParts": [
-					"-l",
-					"{0}"
-				]
+				"commandParts": ["-l", "{packageName}"]
 			}
 		],
 		"expectedDistroFeedInstallDirectory": "/usr/lib/dotnet/sdk",

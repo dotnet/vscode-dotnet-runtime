@@ -5,12 +5,13 @@
  * ------------------------------------------------------------------------------------------ */
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { CommandExecutorCommand } from '../Utils/ICommandExecutor';
-import { IDistroDotnetSDKProvider, LinuxPackageCollection } from './IDistroDotnetSDKProvider';
 import { DotnetDistroSupportStatus, LinuxInstallType } from './LinuxVersionResolver';
+import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 import * as path from 'path';
+/* tslint:disable:no-any */
 
-export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
-
+export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
+{
     public async installDotnet(fullySpecifiedVersion : string, installType : LinuxInstallType): Promise<string>
     {
         const supportStatus = await this.getDotnetVersionSupportStatus(fullySpecifiedVersion, installType);
@@ -82,7 +83,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
         const command = this.myDistroCommands(this.installedSDKVersionsCommandKey);
         const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
-        const outputLines : string[] = commandResult[0].split('\n');
+        const outputLines : string[] = commandResult.split('\n');
         const versions : string[]  = [];
 
         for(const line of outputLines)
@@ -102,7 +103,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
         const command = this.myDistroCommands(this.installedRuntimeVersionsCommandKey);
         const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
-        const outputLines : string[] = commandResult[0].split('\n');
+        const outputLines : string[] = commandResult.split('\n');
         const versions : string[]  = [];
 
         for(const line of outputLines)

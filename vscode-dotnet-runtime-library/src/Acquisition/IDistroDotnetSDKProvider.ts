@@ -4,15 +4,15 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as fs from 'fs';
-import { DistroVersionPair, DotnetDistroSupportStatus, LinuxInstallType } from './LinuxVersionResolver';
 import path = require('path');
+import { DistroVersionPair, DotnetDistroSupportStatus, LinuxInstallType } from './LinuxVersionResolver';
 import { DotnetAcquisitionDistroUnknownError, DotnetVersionResolutionError } from '../EventStream/EventStreamEvents';
 import { VersionResolver } from './VersionResolver';
-import { CommandExecutorCommand, ICommandExecutor } from '../Utils/ICommandExecutor';
+import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+import { CommandExecutorCommand, ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 /* tslint:disable:no-any */
 
 export type LinuxPackageCollection =
@@ -177,7 +177,7 @@ export abstract class IDistroDotnetSDKProvider {
         const potentialDotnetPackageNames = this.distroJson[this.distroVersion.distro][this.distroPackagesKey];
         for(const packageSet of potentialDotnetPackageNames)
         {
-            let thisVersionPackage : LinuxPackageCollection =
+            const thisVersionPackage : LinuxPackageCollection =
             {
                 version: potentialDotnetPackageNames[this.versionKey],
                 packages : []
@@ -226,7 +226,8 @@ export abstract class IDistroDotnetSDKProvider {
             }
         }
         const err = new Error(`Could not find a .NET package for version ${fullySpecifiedDotnetVersion}. Found only: ${JSON.stringify(await this.myVersionPackages(installType))}`);
-        this.context.eventStream.post(new DotnetVersionResolutionError(err, DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(fullySpecifiedDotnetVersion, this.context.acquisitionContext?.architecture)));
+        this.context.eventStream.post(new DotnetVersionResolutionError(err,DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(fullySpecifiedDotnetVersion,
+            this.context.acquisitionContext?.architecture)));
         throw err;
     }
 
