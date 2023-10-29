@@ -225,9 +225,9 @@
 				"runUnderSudo": false,
 				"commandRoot": "yum",
 				"commandParts": [
-					"--cacheonly",
-					"list",
-					"{packageName}"
+					"search",
+					"{0}",
+					"-q"
 				]
 			}
 		],
@@ -316,29 +316,14 @@
 				"aspnetcore": [
 					"aspnetcore-runtime-7.0"
 				]
-			},
-			{
-				"version": "8.0",
-				"sdk": [
-					"dotnet-sdk-8.0"
-				],
-				"runtime": [
-					"dotnet-runtime-8.0"
-				],
-				"aspnetcore": [
-					"aspnetcore-runtime-8.0"
-				]
 			}
 		],
 		"versions": [
 			{
-				"version": "7.0"
+				"version": "8.0"
 			},
 			{
-				"version": "8.7"
-			},
-			{
-				"version": "9.1"
+				"version": "9.0"
 			}
 		]
 	}

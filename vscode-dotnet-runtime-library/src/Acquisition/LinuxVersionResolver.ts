@@ -14,6 +14,7 @@ import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { IDotnetAcquireContext } from '../IDotnetAcquireContext'
+import { RedHatDistroSDKProvider } from './RedHatDistroSDKProvider';
 
 /**
  * An enumeration type representing all distros with their versions that we recognize.
@@ -159,13 +160,15 @@ export class LinuxVersionResolver
 
     private DistroProviderFactory(distroAndVersion : DistroVersionPair) : IDistroDotnetSDKProvider
     {
-        switch(distroAndVersion)
+        switch(distroAndVersion.distro)
         {
             // Implement any custom logic for a Distro Class in a new DistroSDKProvider and add it to the factory here.
             case null:
                 const error = new DotnetAcquisitionDistroUnknownError(new Error(this.baseUnsupportedDistroErrorMessage));
                 this.acquisitionContext.eventStream.post(error);
                 throw error.error;
+            case "Red Hat Enterprise Linux":
+                return new RedHatDistroSDKProvider(distroAndVersion, this.acquisitionContext, this.utilityContext);
             default:
                 return new GenericDistroSDKProvider(distroAndVersion, this.acquisitionContext, this.utilityContext);
         }

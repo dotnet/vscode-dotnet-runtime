@@ -165,7 +165,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         return Promise.resolve(DotnetDistroSupportStatus.Unknown);
     }
 
-    private myVersionDetails() : any
+    protected myVersionDetails() : any
     {
         const distroVersions = this.distroJson[this.distroVersion.distro][this.distroVersionsKey];
         const versionData = distroVersions.filter((x: { [x: string]: string; }) => x[this.versionKey] === this.distroVersion.version)[0];
