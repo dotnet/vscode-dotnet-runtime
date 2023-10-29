@@ -167,7 +167,7 @@ export class LinuxVersionResolver
                 const error = new DotnetAcquisitionDistroUnknownError(new Error(this.baseUnsupportedDistroErrorMessage));
                 this.acquisitionContext.eventStream.post(error);
                 throw error.error;
-            case "Red Hat Enterprise Linux":
+            case 'Red Hat Enterprise Linux':
                 return new RedHatDistroSDKProvider(distroAndVersion, this.acquisitionContext, this.utilityContext);
             default:
                 return new GenericDistroSDKProvider(distroAndVersion, this.acquisitionContext, this.utilityContext);
