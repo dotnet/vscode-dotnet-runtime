@@ -67,11 +67,8 @@
 				},
 				"dotnetAcquisitionExtension.existingDotnetPath": {
 					"type": "array",
-					"description": "File Path to an existing installation of a .NET Runtime."
-				},
-				"dotnetAcquisitionExtension.existingDotnetSDKPath": {
-					"type": "array",
-					"description": "File Path to an existing installation of a .NET SDK Folder."
+					"description": "File Path to an existing installation of .NET. Used for both the .NET SDK and .NET Runtime.",
+					"examples": ["C:\\Program Files\\dotnet\\dotnet.exe", "/usr/local/share/dotnet/dotnet", "/usr/lib/dotnet/dotnet"]
 				},
 				"dotnetAcquisitionExtension.proxyUrl": {
 					"type": "string",

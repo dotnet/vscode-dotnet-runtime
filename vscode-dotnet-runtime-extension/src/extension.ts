@@ -54,7 +54,6 @@ namespace configKeys {
     export const installTimeoutValue = 'installTimeoutValue';
     export const enableTelemetry = 'enableTelemetry';
     export const existingPath = 'existingDotnetPath';
-    export const existingSDKPath = 'existingDotnetSDKPath';
     export const proxyUrl = 'proxyUrl';
 }
 namespace commandKeys {
@@ -111,12 +110,11 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     const versionResolver = new VersionResolver(context.globalState, eventStream, resolvedTimeoutSeconds, proxyLink);
 
     // Setting up command-shared classes for Runtime & SDK Acquisition
-    const runtimeExistingPathConfigWorker = new ExtensionConfigurationWorker(extensionConfiguration, configKeys.existingPath);
-    const runtimeIssueContextFunctor = getIssueContext(runtimeExistingPathConfigWorker);
+    const existingPathConfigWorker = new ExtensionConfigurationWorker(extensionConfiguration, configKeys.existingPath);
+    const runtimeIssueContextFunctor = getIssueContext(existingPathConfigWorker);
     const runtimeAcquisitionWorker = getAcquisitonWorker(true);
 
-    const sdkExistingPathConfigWorker = new ExtensionConfigurationWorker(extensionConfiguration, configKeys.existingSDKPath);
-    const sdkIssueContextFunctor = getIssueContext(sdkExistingPathConfigWorker);
+    const sdkIssueContextFunctor = getIssueContext(existingPathConfigWorker);
     const sdkAcquisitionWorker = getAcquisitonWorker(false);
 
     // Creating API Surfaces
@@ -132,7 +130,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
                 throw new Error(`Cannot acquire .NET version "${commandContext.version}". Please provide a valid version.`);
             }
 
-            const existingPath = await resolveExistingPathIfExists(runtimeExistingPathConfigWorker, commandContext);
+            const existingPath = await resolveExistingPathIfExists(existingPathConfigWorker, commandContext);
             if(existingPath)
             {
                 return existingPath;
@@ -165,7 +163,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             eventStream.post(new DotnetSDKAcquisitionStarted(commandContext.requestingExtensionId));
             eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
 
-            const existingPath = await resolveExistingPathIfExists(sdkExistingPathConfigWorker, commandContext);
+            const existingPath = await resolveExistingPathIfExists(existingPathConfigWorker, commandContext);
             if(existingPath)
             {
                 return Promise.resolve(existingPath);
