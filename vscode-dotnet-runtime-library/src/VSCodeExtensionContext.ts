@@ -25,6 +25,6 @@ export class VSCodeExtensionContext extends IVSCodeExtensionContext
     appendToEnvironmentVariable(variable: string, appendingValue: string): void
     {
         const environment = this.context.environmentVariableCollection;
-        environment.append(variable, appendingValue);
+        environment?.append(variable, appendingValue);
     }
 }
