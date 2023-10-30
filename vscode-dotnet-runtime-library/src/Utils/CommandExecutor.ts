@@ -90,7 +90,7 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
                 if (stdout)
                 {
                     this.eventStream.post(new CommandExecutionStdOut(`The command ${fullCommandString} encountered stdout, continuing
-${stderr}.`));
+${stdout}.`));
                     commandResultString += stdout;
                 }
                 if (stderr)
