@@ -112,10 +112,10 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     // Setting up command-shared classes for Runtime & SDK Acquisition
     const existingPathConfigWorker = new ExtensionConfigurationWorker(extensionConfiguration, configKeys.existingPath);
     const runtimeIssueContextFunctor = getIssueContext(existingPathConfigWorker);
-    const runtimeAcquisitionWorker = getAcquisitonWorker(true);
+    const runtimeAcquisitionWorker = getAcquisitionWorker(true);
 
     const sdkIssueContextFunctor = getIssueContext(existingPathConfigWorker);
-    const sdkAcquisitionWorker = getAcquisitonWorker(false);
+    const sdkAcquisitionWorker = getAcquisitionWorker(false);
 
     // Creating API Surfaces
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) => {
@@ -241,7 +241,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         });
     }
 
-    function getAcquisitonWorker(isRuntimeWorker : boolean) : DotnetCoreAcquisitionWorker
+    function getAcquisitionWorker(isRuntimeWorker : boolean) : DotnetCoreAcquisitionWorker
     {
         return new DotnetCoreAcquisitionWorker({
             storagePath: context.globalStoragePath,
