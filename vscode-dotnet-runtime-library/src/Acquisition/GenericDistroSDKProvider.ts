@@ -29,7 +29,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         const oldReturnStatusSetting = this.commandRunner.returnStatus;
         this.commandRunner.returnStatus = true;
         commands = CommandExecutor.replaceSubstringsInCommands(commands, this.missingPackageNameKey, sdkPackage);
-        const updateCommandsResult = (await this.commandRunner.executeMultipleCommands(commands.slice(0, -1), false))[0];
+        const updateCommandsResult = (await this.commandRunner.executeMultipleCommands(commands.slice(0, -1), undefined, false))[0];
         const installCommandResult = await this.commandRunner.execute(commands.slice(-1)[0]);
 
         this.commandRunner.returnStatus = oldReturnStatusSetting;
