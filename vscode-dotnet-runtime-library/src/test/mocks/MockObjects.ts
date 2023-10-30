@@ -284,7 +284,7 @@ export class MockCommandExecutor extends ICommandExecutor
         this.trueExecutor = new CommandExecutor(eventStream, utilContext);
     }
 
-    public async execute(command: CommandExecutorCommand, options : object | null = null): Promise<string>
+    public async execute(command: CommandExecutorCommand, options : object | null = null, terminalFailure? : boolean): Promise<string>
     {
         this.attemptedCommand = CommandExecutor.prettifyCommandExecutorCommand(command);
 
@@ -304,12 +304,12 @@ export class MockCommandExecutor extends ICommandExecutor
         }
     }
 
-    public async executeMultipleCommands(commands: CommandExecutorCommand[], options?: any): Promise<string[]>
+    public async executeMultipleCommands(commands: CommandExecutorCommand[], options?: any, terminalFailure? : boolean): Promise<string[]>
     {
         const result = [];
         for(const command of commands)
         {
-            result.push(await this.execute(command));
+            result.push(await this.execute(command, options, terminalFailure));
         }
         return result;
     }
