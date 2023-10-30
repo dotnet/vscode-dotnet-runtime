@@ -59,8 +59,8 @@
 				"commandParts": ["-l", "{packageName}"]
 			}
 		],
-		"expectedDistroFeedInstallDirectory" : "/usr/lib/dotnet/sdk",
-        "expectedMicrosoftFeedInstallDirectory" : "/usr/bin/dotnet",
+		"expectedDistroFeedInstallDirectory" : "/usr/lib/dotnet/dotnet",
+        "expectedMicrosoftFeedInstallDirectory" : "/usr/bin/dotnet/dotnet",
 		"installedSDKVersionsCommand":
 		[
 			{

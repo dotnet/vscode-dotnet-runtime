@@ -154,6 +154,27 @@ ${stderr}`);
         sampleShowAcquisitionLogRegistration,
     );
 
+    const sampleGlobalSDKFromRuntimeRegistration = vscode.commands.registerCommand('sample.dotnet.acquireGlobalSDK', async (version) => {
+        if (!version) {
+            version = await vscode.window.showInputBox({
+                placeHolder: '7.0.103',
+                value: '7.0.103',
+                prompt: 'The .NET SDK version. You can use different formats: 5, 3.1, 7.0.3xx, 6.0.201, etc.',
+            });
+        }
+
+        try
+        {
+            await vscode.commands.executeCommand('dotnet-sdk.showAcquisitionLog');
+            let commandContext : IDotnetAcquireContext = { version, requestingExtensionId, installType: 'global' };
+            await vscode.commands.executeCommand('dotnet.acquireGlobalSDK', commandContext);
+        }
+        catch (error)
+        {
+            vscode.window.showErrorMessage((error as Error).toString());
+        }
+    });
+
     // --------------------------------------------------------------------------
 
     // ---------------------sdk extension registrations--------------------------
@@ -264,5 +285,6 @@ ${stderr}`);
         sampleSDKlistVersions,
         sampleSDKrecommendedVersion,
         sampleSDKDotnetUninstallAllRegistration,
-        sampleSDKShowAcquisitionLogRegistration);
+        sampleSDKShowAcquisitionLogRegistration,
+        sampleGlobalSDKFromRuntimeRegistration);
 }

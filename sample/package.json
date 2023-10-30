@@ -52,13 +52,18 @@
 				"category": "Sample"
 			},
 			{
+				"command": "sample.dotnet.acquireGlobalSDK",
+				"title": "Install .NET SDK Globally via .NET Install Tool (Former Runtime Extension)",
+				"category": "Sample"
+			},
+			{
 				"command": "sample.dotnet-sdk.acquire",
 				"title": "Acquire .NET SDK",
 				"category": "Sample"
 			},
 			{
 				"command": "sample.dotnet-sdk.acquireGlobal",
-				"title": "Acquire .NET SDK on the machine globally. Requires admin.",
+				"title": "Acquire .NET SDK on the machine globally using the SDK Extension. Requires admin.",
 				"category": "Sample"
 			},
 			{
