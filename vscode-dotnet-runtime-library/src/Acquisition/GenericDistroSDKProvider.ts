@@ -20,7 +20,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         {
             const myVersionDetails = this.myVersionDetails();
             const preInstallCommands = myVersionDetails[this.preinstallCommandKey] as CommandExecutorCommand[];
-            this.commandRunner.executeMultipleCommands(preInstallCommands);
+            await this.commandRunner.executeMultipleCommands(preInstallCommands);
         }
 
         let commands = this.myDistroCommands(this.installCommandKey);
