@@ -23,12 +23,17 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
             this.commandRunner.executeMultipleCommands(preInstallCommands);
         }
 
-        let command = this.myDistroCommands(this.installCommandKey);
+        let commands = this.myDistroCommands(this.installCommandKey);
         const sdkPackage = await this.myDotnetVersionPackageName(fullySpecifiedVersion, installType);
-        command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, sdkPackage);
-        const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
-        return commandResult[0];
+        const oldReturnStatusSetting = this.commandRunner.returnStatus;
+        this.commandRunner.returnStatus = true;
+        commands = CommandExecutor.replaceSubstringsInCommands(commands, this.missingPackageNameKey, sdkPackage);
+        const updateCommandsResult = (await this.commandRunner.executeMultipleCommands(commands.slice(0, -1), false))[0];
+        const installCommandResult = await this.commandRunner.execute(commands.slice(-1)[0]);
+
+        this.commandRunner.returnStatus = oldReturnStatusSetting;
+        return installCommandResult;
     }
 
     public async getInstalledGlobalDotnetPathIfExists(installType : LinuxInstallType) : Promise<string | null>

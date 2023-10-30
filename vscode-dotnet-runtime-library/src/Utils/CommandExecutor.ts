@@ -10,6 +10,7 @@ import {
     CommandExecutionSignalSentEvent,
     CommandExecutionStatusEvent,
     CommandExecutionStdError,
+    CommandExecutionStdOut,
     CommandExecutionUnderSudoEvent,
     CommandExecutionUserCompletedDialogueEvent,
     DotnetAlternativeCommandFoundEvent,
@@ -53,7 +54,7 @@ export class CommandExecutor extends ICommandExecutor
      *
      * @returns The output of the command.
      */
-    private async ExecSudoAsync(command : CommandExecutorCommand) : Promise<string>
+    private async ExecSudoAsync(command : CommandExecutorCommand, terminalFailure = true) : Promise<string>
     {
         const fullCommandString = CommandExecutor.prettifyCommandExecutorCommand(command, false);
         this.eventStream.post(new CommandExecutionUnderSudoEvent(`The command ${fullCommandString} is being ran under sudo.`));
@@ -82,33 +83,43 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
 
                 if (stdout)
                 {
+                    this.eventStream.post(new CommandExecutionStdOut(`The command ${fullCommandString} encountered stdout, continuing
+${stderr}.`));
                     commandResultString += stdout;
                 }
                 if (stderr)
                 {
-                    this.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandString} encountered stderr, continuing. ${stderr}.`));
+                    this.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandString} encountered stderr, continuing
+${stderr}.`));
                     commandResultString += stderr;
                 }
 
                 if (error)
                 {
                     this.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The command ${fullCommandString} failed to run under sudo.`));
-                    reject(error);
+                    if(terminalFailure)
+                    {
+                        reject(error);
+                    }
+                    else
+                    {
+                        resolve(this.returnStatus ? '1' : stderr);
+                    }
                 }
                 else
                 {
                     this.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The command ${fullCommandString} successfully ran under sudo.`));
-                    resolve(commandResultString);
+                    resolve(this.returnStatus ? '0' : commandResultString);
                 }
             });
         });
     }
 
-    public async executeMultipleCommands(commands: CommandExecutorCommand[], options?: any): Promise<string[]> {
+    public async executeMultipleCommands(commands: CommandExecutorCommand[], options?: any, terminalFailure = true): Promise<string[]> {
         const results = [];
         for(const command of commands)
         {
-            results.push(await this.execute(command, options));
+            results.push(await this.execute(command, options, terminalFailure));
         }
 
         return results;
@@ -117,10 +128,10 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
     /**
      *
      * @param workingDirectory The directory to execute in. Only works for non sudo commands.
-     *
+     * @param terminalFailure Whether to throw up an error when executing under sudo or supress it and return stderr
      * @returns the result(s) of each command. Can throw generically if the command fails.
      */
-    public async execute(command : CommandExecutorCommand, options : any | null = null) : Promise<string>
+    public async execute(command : CommandExecutorCommand, options : any | null = null, terminalFailure = true) : Promise<string>
     {
         const fullCommandStringForTelemetryOnly = `${command.commandRoot} ${command.commandParts.join(' ')}`;
         if(!options)
@@ -130,7 +141,7 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
 
         if(command.runUnderSudo)
         {
-            return this.ExecSudoAsync(command) ?? '';
+            return this.ExecSudoAsync(command, terminalFailure) ?? '';
         }
         else
         {
@@ -172,7 +183,7 @@ result: ${commandResult.toString()} had no status or signal.`));
                 {
                     if(commandResult.stdout)
                     {
-                    this.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandStringForTelemetryOnly} encountered stdout:
+                    this.eventStream.post(new CommandExecutionStdOut(`The command ${fullCommandStringForTelemetryOnly} encountered stdout:
 ${commandResult.stdout}`));
                     }
                     if(commandResult.stderr)
