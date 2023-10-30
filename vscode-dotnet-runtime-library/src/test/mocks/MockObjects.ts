@@ -203,6 +203,10 @@ export class MockIndexWebRequestWorker extends WebRequestWorker {
 
 export class MockVSCodeExtensionContext extends IVSCodeExtensionContext
 {
+    appendToEnvironmentVariable(variable: string, pathAdditionWithDelimiter: string): void {
+        // Do nothing.
+    }
+
     setVSCodeEnvironmentVariable(variable: string, value: string): void {
         // Do nothing.
     }

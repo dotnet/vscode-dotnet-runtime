@@ -4,6 +4,11 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as proc from 'child_process';
+import * as fs from 'fs';
+import open = require('open');
+import * as os from 'os';
+import path = require('path');
+
 import {
     CommandExecutionEvent,
     CommandExecutionNoStatusCodeWarning,
@@ -18,17 +23,19 @@ import {
 } from '../EventStream/EventStreamEvents';
 import {exec} from '@vscode/sudo-prompt';
 import { ICommandExecutor } from './ICommandExecutor';
-import path = require('path');
 import { IEventStream } from '../EventStream/EventStream';
-import * as os from 'os';
 import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { IUtilityContext } from './IUtilityContext';
-import { CommandExecutorCommand, IDotnetAcquireContext } from '..';
+import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
+import { CommandExecutorCommand } from './ICommandExecutor';
+import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
 
 /* tslint:disable:no-any */
 
 export class CommandExecutor extends ICommandExecutor
 {
+    private pathTroubleshootingOption = 'Troubleshoot';
+
     constructor(eventStream : IEventStream, utilContext : IUtilityContext, acquireContext? : IDotnetAcquireContext)
     {
         super(eventStream, utilContext, acquireContext);
@@ -255,5 +262,63 @@ out: ${commandResult.stdout} err: ${commandResult.stderr}.`));
             this.utilityContext.ui.showWarningMessage(failureWarningMessage, () => {/* No Callback */}, );
         }
         this.returnStatus = oldReturnStatusSetting;
+    }
+
+    public setPathEnvVar(pathAddition: string, troubleshootingUrl : string, displayWorker: IWindowDisplayWorker, vscodeContext : IVSCodeExtensionContext, isGlobal : boolean)
+    {
+        if(!isGlobal || os.platform() === 'linux')
+        {
+            // Set user PATH variable. The .NET SDK Installer does this for us on Win/Mac.
+            let pathCommand: string | undefined;
+            if (os.platform() === 'win32') {
+                pathCommand = this.getWindowsPathCommand(pathAddition);
+            } else {
+                pathCommand = this.getLinuxPathCommand(pathAddition);
+            }
+
+            if (pathCommand !== undefined) {
+                this.runPathCommand(pathCommand, troubleshootingUrl, displayWorker);
+            }
+        }
+
+        // Set PATH for VSCode terminal instances
+        if (!process.env.PATH!.includes(pathAddition)) {
+            vscodeContext.appendToEnvironmentVariable('PATH', path.delimiter + pathAddition);
+            process.env.PATH += path.delimiter + pathAddition;
+        }
+    }
+
+    protected getLinuxPathCommand(pathAddition: string): string | undefined
+    {
+        const profileFile = os.platform() === 'darwin' ? path.join(os.homedir(), '.zshrc') : path.join(os.homedir(), '.profile');
+        if (fs.existsSync(profileFile) && fs.readFileSync(profileFile).toString().includes(pathAddition)) {
+            // No need to add to PATH again
+            return undefined;
+        }
+        return `echo 'export PATH="${pathAddition}:$PATH"' >> ${profileFile}`;
+    }
+
+    protected getWindowsPathCommand(pathAddition: string): string | undefined
+    {
+        if (process.env.PATH && process.env.PATH.includes(pathAddition)) {
+            // No need to add to PATH again
+            return undefined;
+        }
+        return `for /F "skip=2 tokens=1,2*" %A in ('%SystemRoot%\\System32\\reg.exe query "HKCU\\Environment" /v "Path" 2^>nul') do ` +
+            `(%SystemRoot%\\System32\\reg.exe ADD "HKCU\\Environment" /v Path /t REG_SZ /f /d "${pathAddition};%C")`;
+    }
+
+    protected runPathCommand(pathCommand: string, troubleshootingUrl : string, displayWorker: IWindowDisplayWorker)
+    {
+        try {
+            proc.execSync(pathCommand);
+        } catch (error) {
+            displayWorker.showWarningMessage(`Unable to add SDK to the PATH: ${error}`,
+                async (response: string | undefined) => {
+                    if (response === this.pathTroubleshootingOption) {
+                        open(`${troubleshootingUrl}#unable-to-add-to-path`);
+                    }
+                }, this.pathTroubleshootingOption);
+        }
     }
 }

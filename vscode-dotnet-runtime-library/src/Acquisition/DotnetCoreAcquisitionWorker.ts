@@ -320,7 +320,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         TelemetryUtilities.setDotnetSDKTelemetryToMatch(this.context.isExtensionTelemetryInitiallyEnabled, this.extensionContext, this.context.eventStream, this.utilityContext);
 
-        this.context.installationValidator.validateDotnetInstall(installingVersion, installedSDKPath, true);
+        this.context.installationValidator.validateDotnetInstall(installingVersion, installedSDKPath);
 
         this.context.eventStream.post(new DotnetAcquisitionCompleted(installKey, installedSDKPath, installingVersion));
 
