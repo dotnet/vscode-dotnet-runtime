@@ -14,7 +14,7 @@ import { SdkInstallationDirectoryProvider } from '../../Acquisition/SdkInstallat
 import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
 import { FileUtilities } from '../../Utils/FileUtilities';
 import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
-import { getMockAcquiringContext, getMockUtilityContext } from './TestUtility';
+import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 const assert = chai.assert;
 const standardTimeoutTime = 100000;
 
@@ -139,7 +139,8 @@ suite('Windows & Mac Global Installer Tests', () =>
 
         if(os.platform() === 'darwin')
         {
-            assert.isTrue(mockExecutor.attemptedCommand.startsWith('open -W'), 'It ran the right mac command')
+            assert.isTrue(mockExecutor.attemptedCommand.startsWith('open'), `It ran the right mac command, open. Command found: ${mockExecutor.attemptedCommand}`)
+            assert.isTrue(mockExecutor.attemptedCommand.includes('-W'), 'It used the -W flag')
         }
         else if(os.platform() === 'win32')
         {

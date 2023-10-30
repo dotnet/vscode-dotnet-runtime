@@ -8,7 +8,7 @@ import { DistroVersionPair, DotnetDistroSupportStatus } from './LinuxVersionReso
 import path = require('path');
 import { DotnetAcquisitionDistroUnknownError } from '../EventStream/EventStreamEvents';
 import { VersionResolver } from './VersionResolver';
-import { ICommandExecutor } from '../Utils/ICommandExecutor';
+import { CommandExecutorCommand, ICommandExecutor } from '../Utils/ICommandExecutor';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
@@ -40,6 +40,7 @@ export abstract class IDistroDotnetSDKProvider {
     protected installedSDKVersionsCommandKey = 'installedSDKVersionsCommand';
     protected installedRuntimeVersionsCommandKey = 'installedRuntimeVersionsCommand';
     protected currentInstallVersionCommandKey = 'currentInstallationVersionCommand';
+    protected missingPackageNameKey = '{packageName}';
 
     protected distroVersionsKey = 'versions';
     protected versionKey = 'version';
@@ -99,12 +100,12 @@ export abstract class IDistroDotnetSDKProvider {
      * Return the directory where the dotnet SDK should be installed per the distro preferences.
      * (e.g. where the distro would install it given its supported by default if you ran apt-get install.)
      */
-    public abstract getExpectedDotnetDistroFeedInstallationDirectory() : Promise<string>;
+    public abstract getExpectedDotnetDistroFeedInstallationDirectory() : string;
 
     /**
      * Return the directory where the dotnet SDK should be installed if installed using the microsoft feeds.
      */
-    public abstract getExpectedDotnetMicrosoftFeedInstallationDirectory() : Promise<string>;
+    public abstract getExpectedDotnetMicrosoftFeedInstallationDirectory() : string;
 
     /**
      * Return true if theres a package for the dotnet version on the system with the same major as the requested fullySpecifiedVersion, false else.
@@ -164,9 +165,15 @@ export abstract class IDistroDotnetSDKProvider {
         return distroVersions.filter((x: { [x: string]: string; }) => x[this.versionKey] === this.distroVersion.version)[0];
     }
 
-    protected myDistroCommands() : any
+
+    protected myDistroStrings(stringKey : string) : string
     {
-        return this.distroJson[this.distroVersion.distro];
+        return this.distroJson[this.distroVersion.distro][stringKey];
+    }
+
+    protected myDistroCommands(commandKey : string) : CommandExecutorCommand[]
+    {
+        return this.distroJson[this.distroVersion.distro][commandKey] as CommandExecutorCommand[];
     }
 
     protected myDotnetVersionPackages(fullySpecifiedDotnetVersion : string) : any
