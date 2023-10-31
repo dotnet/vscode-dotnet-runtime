@@ -255,7 +255,7 @@
 				]
 			}
 		],
-		"expectedDistroFeedInstallDirectory": "/usr/lib64/dotnet/sdk",
+		"expectedDistroFeedInstallDirectory": "/usr/lib64/dotnet/dotnet",
 		"expectedMicrosoftFeedInstallDirectory": "",
 		"installedSDKVersionsCommand": [
 			{

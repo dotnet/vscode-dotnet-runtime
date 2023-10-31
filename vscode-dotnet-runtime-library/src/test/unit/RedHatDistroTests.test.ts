@@ -52,7 +52,7 @@ suite('Red Hat For Linux Distro Logic Unit Tests', () =>
         if(shouldRun)
         {
             const distroFeedDir = await provider.getExpectedDotnetDistroFeedInstallationDirectory();
-            assert.equal(distroFeedDir, '/usr/lib64/dotnet/sdk');
+            assert.equal(distroFeedDir, '/usr/lib64/dotnet/dotnet');
         }
     }).timeout(standardTimeoutTime);
 

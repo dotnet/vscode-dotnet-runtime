@@ -24,7 +24,7 @@ export class RedHatDistroSDKProvider extends GenericDistroSDKProvider
         this.commandRunner.returnStatus = false;
 
         if (commandResult[0] !== '0'){
-            return ''
+            return '';
         }
         const verboseCommandResult = await this.commandRunner.executeMultipleCommands(this.myDistroCommands(this.currentInstallPathCommandKey));
         return verboseCommandResult[0];
