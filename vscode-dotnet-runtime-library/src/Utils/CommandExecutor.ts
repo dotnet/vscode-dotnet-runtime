@@ -90,13 +90,13 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
                 if (stdout)
                 {
                     this.eventStream.post(new CommandExecutionStdOut(`The command ${fullCommandString} encountered stdout, continuing
-${stdout}.`));
+${stdout}`));
                     commandResultString += stdout;
                 }
                 if (stderr)
                 {
                     this.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandString} encountered stderr, continuing
-${stderr}.`));
+${stderr}`));
                     commandResultString += stderr;
                 }
 

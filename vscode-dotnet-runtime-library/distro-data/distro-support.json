@@ -137,7 +137,7 @@
 					},
 					{
 						"runUnderSudo": true,
-						"commandRoot": "apt",
+						"commandRoot": "apt-get",
 						"commandParts": ["install", "-y", "wget"]
 					},
 					{
@@ -163,7 +163,7 @@
 					},
 					{
 						"runUnderSudo": true,
-						"commandRoot": "apt",
+						"commandRoot": "apt-get",
 						"commandParts": ["install", "-y", "wget"]
 					},
 					{
