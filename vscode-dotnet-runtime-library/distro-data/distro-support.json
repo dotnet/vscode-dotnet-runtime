@@ -226,7 +226,7 @@
 				"commandRoot": "yum",
 				"commandParts": [
 					"search",
-					"{0}",
+					"{packageName}",
 					"-q"
 				]
 			}
