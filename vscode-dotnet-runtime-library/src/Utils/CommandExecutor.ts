@@ -194,7 +194,7 @@ ${commandResult.stdout}`));
                     }
                     if(commandResult.stderr)
                     {
-                        this.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandStringForTelemetryOnly} encountered stdout:
+                        this.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandStringForTelemetryOnly} encountered stderr:
 ${commandResult.stderr}`));
                     }
                     return commandResult.stdout?.toString() + commandResult.stderr?.toString() ?? '';
