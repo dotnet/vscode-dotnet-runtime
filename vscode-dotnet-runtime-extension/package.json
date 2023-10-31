@@ -9,7 +9,7 @@
 	},
 	"license": "MIT",
 	"author": "Microsoft Corporation",
-	"displayName": ".NET Runtime Install Tool",
+	"displayName": ".NET Install Tool",
 	"description": "This extension installs and manages different versions of the .NET Runtime.",
 	"appInsightsKey": "02dc18e0-7494-43b2-b2a3-18ada5fcb522",
 	"icon": "images/dotnetIcon.png",
@@ -37,6 +37,7 @@
 	"activationEvents": [
 		"onCommand:dotnet.acquire",
 		"onCommand:dotnet.acquireStatus",
+		"onCommand:dotnet.acquireGlobalSDK",
 		"onCommand:dotnet.uninstallAll",
 		"onCommand:dotnet.showAcquisitionLog",
 		"onCommand:dotnet.ensureDotnetDependencies"
@@ -47,17 +48,17 @@
 		"commands": [
 			{
 				"command": "dotnet.reportIssue",
-				"title": "Report an issue with the .NET Runtime Install Tool.",
-				"category": ".NET Runtime Install Tool"
+				"title": "Report an issue with the .NET Install Tool.",
+				"category": ".NET Install Tool"
 			}
 		],
 		"configuration": {
-			"title": ".NET Runtime Install Tool",
+			"title": ".NET Install Tool",
 			"properties": {
 				"dotnetAcquisitionExtension.enableTelemetry": {
 					"type": "boolean",
 					"default": true,
-					"description": "Enable Telemetry for the .NET Runtime Install Tool. Restart VS Code to apply changes."
+					"description": "Enable Telemetry for the .NET Install Tool. Restart VS Code to apply changes."
 				},
 				"dotnetAcquisitionExtension.installTimeoutValue": {
 					"type": "number",
@@ -66,7 +67,8 @@
 				},
 				"dotnetAcquisitionExtension.existingDotnetPath": {
 					"type": "array",
-					"description": "File Path to an existing installation of .NET."
+					"description": "File Path to an existing installation of .NET. Used for both the .NET SDK and .NET Runtime.",
+					"examples": ["C:\\Program Files\\dotnet\\dotnet.exe", "/usr/local/share/dotnet/dotnet", "/usr/lib/dotnet/dotnet"]
 				},
 				"dotnetAcquisitionExtension.proxyUrl": {
 					"type": "string",
