@@ -52,7 +52,7 @@ suite('Linux Distro Logic Unit Tests', () =>
         if(shouldRun)
         {
             const distroFeedDir = await provider.getExpectedDotnetDistroFeedInstallationDirectory();
-            assert.equal(distroFeedDir, '/usr/lib/dotnet/dotnet');
+            assert.equal(distroFeedDir, '/usr/lib/dotnet');
         }
     }).timeout(standardTimeoutTime);
 
@@ -60,7 +60,7 @@ suite('Linux Distro Logic Unit Tests', () =>
         if(shouldRun)
         {
             const microsoftFeedDir = await provider.getExpectedDotnetMicrosoftFeedInstallationDirectory();
-            assert.equal(microsoftFeedDir, '/usr/bin/dotnet/dotnet');
+            assert.equal(microsoftFeedDir, '/usr/bin/dotnet');
         }
     }).timeout(standardTimeoutTime);
 
