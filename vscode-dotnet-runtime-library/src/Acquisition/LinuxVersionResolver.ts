@@ -14,6 +14,7 @@ import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { IDotnetAcquireContext } from '../IDotnetAcquireContext'
+import { RedHatDistroSDKProvider } from './RedHatDistroSDKProvider';
 
 /**
  * An enumeration type representing all distros with their versions that we recognize.
@@ -70,6 +71,7 @@ export class LinuxVersionResolver
     If you would like to proceed with installing .NET automatically for VS Code, you must remove this custom installation.
     Your custom install is located at: `;
     public baseUnsupportedDistroErrorMessage = 'We are unable to detect the distro or version of your machine';
+    public redhatUnsupportedDistroErrorMessage = 'Red Hat Enterprise Linux 7.0 is currently not supported. Follow the instructions here to download the .NET SDK: https://learn.microsoft.com/en-us/dotnet/core/install/linux-rhel#rhel-7--net-6. Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from https://access.redhat.com/downloads/';
 
     constructor(acquisitionContext : IAcquisitionWorkerContext, utilContext : IUtilityContext, acquireContext : IDotnetAcquireContext,
         executor : ICommandExecutor | null = null, distroProvider : IDistroDotnetSDKProvider | null = null)
@@ -157,15 +159,31 @@ export class LinuxVersionResolver
         }
     }
 
+    private isRedHatVersion7(version: string){
+        if(Math.floor(parseFloat(version)) === 7)
+        {
+            return true;
+        }
+        return false;
+    }
+
     private DistroProviderFactory(distroAndVersion : DistroVersionPair) : IDistroDotnetSDKProvider
     {
-        switch(distroAndVersion)
+        switch(distroAndVersion.distro)
         {
             // Implement any custom logic for a Distro Class in a new DistroSDKProvider and add it to the factory here.
             case null:
                 const error = new DotnetAcquisitionDistroUnknownError(new Error(this.baseUnsupportedDistroErrorMessage));
                 this.acquisitionContext.eventStream.post(error);
                 throw error.error;
+            case 'Red Hat Enterprise Linux':
+                if(this.isRedHatVersion7(distroAndVersion.version))
+                {
+                    const error = new DotnetAcquisitionDistroUnknownError(new Error(this.redhatUnsupportedDistroErrorMessage));
+                    this.acquisitionContext.eventStream.post(error);
+                    throw error.error;
+                }
+                return new RedHatDistroSDKProvider(distroAndVersion, this.acquisitionContext, this.utilityContext);
             default:
                 return new GenericDistroSDKProvider(distroAndVersion, this.acquisitionContext, this.utilityContext);
         }

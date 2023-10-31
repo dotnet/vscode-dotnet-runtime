@@ -19,10 +19,13 @@ suite('Linux Version Resolver Tests', () =>
     const mockVersion = '7.0.103';
     const mockExecutor = new MockCommandExecutor(new MockEventStream(), getMockUtilityContext());
     const pair : DistroVersionPair = { distro : 'Ubuntu', version : '22.04' };
+    const redHatPair: DistroVersionPair = { distro : 'Red Hat Enterprise Linux', version : '7.3' };
     const shouldRun = os.platform() === 'linux';
     const context = util.getMockAcquisitionContext(false);
+    const mockRedHatProvider = new MockDistroProvider(redHatPair, context, getMockUtilityContext(), mockExecutor);
     const mockDistroProvider = new MockDistroProvider(pair, context, getMockUtilityContext(), mockExecutor);
     const resolver : LinuxVersionResolver = new LinuxVersionResolver(context, getMockUtilityContext(), getMockAcquireContext(), mockExecutor, mockDistroProvider);
+    const redhatResolver : LinuxVersionResolver = new LinuxVersionResolver(context, getMockUtilityContext(), getMockAcquireContext(), mockExecutor, mockRedHatProvider);
 
         test('It can determine the running distro', async () => {
             if(shouldRun)
@@ -139,6 +142,13 @@ suite('Linux Version Resolver Tests', () =>
                 okResult = await resolver.ValidateAndInstallSDK(mockVersion);
                 assert.exists(okResult);
                 assert.include(mockExecutor.attemptedCommand, 'install');
+            }
+        });
+
+        test('It does not support Red Hat Enterprise Linux 7', async () => {
+            if(shouldRun)
+            {
+                assert.isRejected(resolver.ValidateAndInstallSDK(mockVersion), Error, `${redhatResolver.redhatUnsupportedDistroErrorMessage}/`);
             }
         });
 });
