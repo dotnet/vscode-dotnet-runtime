@@ -49,7 +49,7 @@ export abstract class ICommandExecutor
      *
      * @returns the parsed result of the command.
      */
-    public abstract execute(command : CommandExecutorCommand, options? : any) : Promise<string>;
+    public abstract execute(command : CommandExecutorCommand, options? : any, terminalFailure? : boolean) : Promise<string>;
 
     /**
      *
@@ -57,7 +57,7 @@ export abstract class ICommandExecutor
      *
      * @returns the result(s) of each command in the same order they were requested. Can throw generically if the command fails.
      */
-    public abstract executeMultipleCommands(commands : CommandExecutorCommand[], options? : any) : Promise<string[]>;
+    public abstract executeMultipleCommands(commands : CommandExecutorCommand[], options? : any, terminalFailure? : boolean) : Promise<string[]>;
 
     /**
      *

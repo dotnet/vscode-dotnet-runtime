@@ -25,7 +25,6 @@ import {
     DotnetPreinstallDetectionError,
     DotnetUninstallAllCompleted,
     DotnetUninstallAllStarted,
-    DotnetGlobalAcquisitionBeginEvent,
     DotnetGlobalAcquisitionCompletionEvent,
     DotnetGlobalVersionResolutionCompletionEvent,
     DotnetBeginGlobalInstallerExecution,
@@ -42,7 +41,8 @@ import { WinMacGlobalInstaller } from './WinMacGlobalInstaller';
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { LinuxGlobalInstaller } from './LinuxGlobalInstaller';
 import { Debugging } from '../Utils/Debugging';
-import { IDotnetAcquireContext, IVSCodeExtensionContext } from '..';
+import { IDotnetAcquireContext} from '../IDotnetAcquireContext';
+import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
 /* tslint:disable:no-any */
@@ -320,7 +320,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         TelemetryUtilities.setDotnetSDKTelemetryToMatch(this.context.isExtensionTelemetryInitiallyEnabled, this.extensionContext, this.context.eventStream, this.utilityContext);
 
-        this.context.installationValidator.validateDotnetInstall(installingVersion, installedSDKPath);
+        this.context.installationValidator.validateDotnetInstall(installingVersion, installedSDKPath, os.platform() !== 'win32');
 
         this.context.eventStream.post(new DotnetAcquisitionCompleted(installKey, installedSDKPath, installingVersion));
 

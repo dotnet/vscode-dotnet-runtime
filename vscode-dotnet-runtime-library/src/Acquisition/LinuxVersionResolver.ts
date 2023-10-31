@@ -3,17 +3,17 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
-import { DotnetAcquisitionDistroUnknownError, DotnetConflictingLinuxInstallTypesError, DotnetCustomLinuxInstallExistsError } from '../EventStream/EventStreamEvents';
-import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
-import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
-import { GenericDistroSDKProvider as GenericDistroSDKProvider } from './GenericDistroSDKProvider';
 import * as fs from 'fs';
 import path = require('path');
+import { DotnetAcquisitionDistroUnknownError, DotnetConflictingLinuxInstallTypesError, DotnetCustomLinuxInstallExistsError } from '../EventStream/EventStreamEvents';
+import { GenericDistroSDKProvider } from './GenericDistroSDKProvider'
 import { VersionResolver } from './VersionResolver';
-import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
+import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { IDotnetAcquireContext } from '..';
+import { IDotnetAcquireContext } from '../IDotnetAcquireContext'
 
 /**
  * An enumeration type representing all distros with their versions that we recognize.
@@ -45,6 +45,7 @@ export const enum DotnetDistroSupportStatus {
     Partial = 'PARTIAL',
     Unknown = 'UNKNOWN'
 }
+
 
 /**
  * This class is responsible for detecting the distro and version of the Linux OS.
@@ -250,11 +251,11 @@ export class LinuxVersionResolver
                     this.acquisitionContext.eventStream.post(err);
                     throw err.error;
                 }
-                else if(await this.distroSDKProvider!.dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion) ||
+                else if(await this.distroSDKProvider!.dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion, 'sdk') ||
                     Number(this.versionResolver.getFeatureBandPatchVersion(existingGlobalInstallSDKVersion)) < Number(this.versionResolver.getFeatureBandPatchVersion(fullySpecifiedDotnetVersion)))
                 {
                     // We can update instead of doing an install
-                    return (await this.distroSDKProvider!.upgradeDotnet(existingGlobalInstallSDKVersion)) ? '1' : '1';
+                    return (await this.distroSDKProvider!.upgradeDotnet(existingGlobalInstallSDKVersion, 'sdk')) ? '1' : '1';
                 }
                 else
                 {
@@ -272,17 +273,17 @@ export class LinuxVersionResolver
         await this.Initialize();
 
         // Verify the version of dotnet is supported
-        if (!( await this.distroSDKProvider!.isDotnetVersionSupported(fullySpecifiedDotnetVersion) ))
+        if (!( await this.distroSDKProvider!.isDotnetVersionSupported(fullySpecifiedDotnetVersion, 'sdk') ))
         {
             throw new Error(`The distro ${this.distro} does not officially support dotnet version ${fullySpecifiedDotnetVersion}.`);
         }
 
         // Verify there are no conflicting installs
         // Check existing installs ...
-        const supportStatus = await this.distroSDKProvider!.getDotnetVersionSupportStatus(fullySpecifiedDotnetVersion);
+        const supportStatus = await this.distroSDKProvider!.getDotnetVersionSupportStatus(fullySpecifiedDotnetVersion, 'sdk');
         await this.VerifyNoConflictInstallTypeExists(supportStatus, fullySpecifiedDotnetVersion);
 
-        const existingInstall = await this.distroSDKProvider!.getInstalledGlobalDotnetPathIfExists();
+        const existingInstall = await this.distroSDKProvider!.getInstalledGlobalDotnetPathIfExists('sdk');
         // Check for a custom install
         await this.VerifyNoCustomInstallExists(supportStatus, fullySpecifiedDotnetVersion, existingInstall);
 
@@ -290,7 +291,7 @@ export class LinuxVersionResolver
         const updateOrRejectState = await this.UpdateOrRejectIfVersionRequestDoesNotRequireInstall(fullySpecifiedDotnetVersion, existingInstall);
         if(updateOrRejectState === '0')
         {
-            return await this.distroSDKProvider!.installDotnet(fullySpecifiedDotnetVersion) ? '0' : '1';
+            return await this.distroSDKProvider!.installDotnet(fullySpecifiedDotnetVersion, 'sdk') ? '0' : '1';
         }
         return updateOrRejectState;
     }

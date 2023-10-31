@@ -11,6 +11,7 @@ import { IInstallationValidator } from '../../Acquisition/IInstallationValidator
 import { InstallScriptAcquisitionWorker } from '../../Acquisition/InstallScriptAcquisitionWorker';
 import { VersionResolver } from '../../Acquisition/VersionResolver';
 import { IEventStream } from '../../EventStream/EventStream';
+import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
 import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStream/EventStreamEvents';
 import { IEvent } from '../../EventStream/IEvent';
 import { ILoggingObserver } from '../../EventStream/ILoggingObserver';
@@ -20,17 +21,17 @@ import { IExtensionState } from '../../IExtensionState';
 import { WebRequestWorker } from '../../Utils/WebRequestWorker';
 import { CommandExecutorCommand, ICommandExecutor } from '../../Utils/ICommandExecutor';
 import { CommandExecutor } from '../../Utils/CommandExecutor';
-import { IDistroDotnetSDKProvider } from '../../Acquisition/IDistroDotnetSDKProvider';
-import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
+import { AcquisitionInvoker } from '../../Acquisition/AcquisitionInvoker';
+import { LinuxInstallType } from '../../Acquisition/LinuxInstallType';
 import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProvider';
+import { getMockUtilityContext } from '../unit/TestUtility';
+import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
+import { IDistroDotnetSDKProvider } from '../../Acquisition/IDistroDotnetSDKProvider';
 import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
 import { FileUtilities } from '../../Utils/FileUtilities';
 import { IFileUtilities } from '../../Utils/IFileUtilities';
-import { AcquisitionInvoker } from '../../Acquisition/AcquisitionInvoker';
-import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
 import { IVSCodeExtensionContext } from '../../IVSCodeExtensionContext';
 import { IUtilityContext } from '../../Utils/IUtilityContext';
-import { getMockUtilityContext } from '../unit/TestUtility';
 import { IVSCodeEnvironment } from '../../Utils/IVSCodeEnvironment';
 
 const testDefaultTimeoutTimeMs = 60000;
@@ -287,7 +288,7 @@ export class MockCommandExecutor extends ICommandExecutor
         this.trueExecutor = new CommandExecutor(eventStream, utilContext);
     }
 
-    public async execute(command: CommandExecutorCommand, options : object | null = null): Promise<string>
+    public async execute(command: CommandExecutorCommand, options : object | null = null, terminalFailure? : boolean): Promise<string>
     {
         this.attemptedCommand = CommandExecutor.prettifyCommandExecutorCommand(command);
 
@@ -307,12 +308,12 @@ export class MockCommandExecutor extends ICommandExecutor
         }
     }
 
-    public async executeMultipleCommands(commands: CommandExecutorCommand[], options?: any): Promise<string[]>
+    public async executeMultipleCommands(commands: CommandExecutorCommand[], options?: any, terminalFailure? : boolean): Promise<string[]>
     {
         const result = [];
         for(const command of commands)
         {
-            result.push(await this.execute(command));
+            result.push(await this.execute(command, options, terminalFailure));
         }
         return result;
     }
@@ -365,6 +366,7 @@ export class MockDistroProvider extends IDistroDotnetSDKProvider
     public recommendedVersionReturnValue = '';
     public upgradeReturnValue = '';
     public uninstallReturnValue = '';
+    public versionPackagesReturnValue = [];
     public context: IAcquisitionWorkerContext;
 
     constructor(version : DistroVersionPair, context : IAcquisitionWorkerContext, utilContext : IUtilityContext, commandRunner : ICommandExecutor)
@@ -418,9 +420,9 @@ export class MockDistroProvider extends IDistroDotnetSDKProvider
         return Promise.resolve(this.supportStatusReturnValue);
     }
 
-    public getRecommendedDotnetVersion(): string {
+    public getRecommendedDotnetVersion(installType : LinuxInstallType): Promise<string> {
         this.commandRunner.execute(CommandExecutor.makeCommand(`recommended`, [`version`]));
-        return this.recommendedVersionReturnValue;
+        return Promise.resolve(this.recommendedVersionReturnValue);
     }
 
     public upgradeDotnet(versionToUpgrade: string): Promise<string> {
@@ -435,6 +437,10 @@ export class MockDistroProvider extends IDistroDotnetSDKProvider
 
     public JsonDotnetVersion(fullySpecifiedDotnetVersion: string): string {
         return new GenericDistroSDKProvider(this.distroVersion, this.context, getMockUtilityContext()).JsonDotnetVersion(fullySpecifiedDotnetVersion);
+    }
+
+    protected isPackageFoundInSearch(resultOfSearchCommand: any): boolean {
+        return true;
     }
 }
 

@@ -283,5 +283,4 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         ensureDependenciesRegistration,
         reportIssueRegistration,
         ...eventStreamObservers);
-
 }

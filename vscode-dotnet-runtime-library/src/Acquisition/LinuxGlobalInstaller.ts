@@ -8,11 +8,9 @@ import { IGlobalInstaller } from './IGlobalInstaller';
 import { DotnetDistroSupportStatus, LinuxVersionResolver } from './LinuxVersionResolver';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { IDotnetAcquireContext } from '..';
+import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
 
 export class LinuxGlobalInstaller extends IGlobalInstaller {
-
-
     private version : string;
     private linuxSDKResolver : LinuxVersionResolver;
 
@@ -34,7 +32,7 @@ export class LinuxGlobalInstaller extends IGlobalInstaller {
     {
         await this.linuxSDKResolver.Initialize();
 
-        const dotnetFolder = await (await this.linuxSDKResolver.distroCall()).getDotnetVersionSupportStatus(specificSDKVersionInstalled) === DotnetDistroSupportStatus.Distro ?
+        const dotnetFolder = await (await this.linuxSDKResolver.distroCall()).getDotnetVersionSupportStatus(specificSDKVersionInstalled, 'sdk') === DotnetDistroSupportStatus.Distro ?
             await (await this.linuxSDKResolver.distroCall()).getExpectedDotnetDistroFeedInstallationDirectory() :
             await (await this.linuxSDKResolver.distroCall()).getExpectedDotnetMicrosoftFeedInstallationDirectory();
         return dotnetFolder;

@@ -4,12 +4,15 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as fs from 'fs';
-import { DistroVersionPair, DotnetDistroSupportStatus } from './LinuxVersionResolver';
 import path = require('path');
-import { DotnetAcquisitionDistroUnknownError } from '../EventStream/EventStreamEvents';
+import { DistroVersionPair, DotnetDistroSupportStatus } from './LinuxVersionResolver';
+import { DotnetAcquisitionDistroUnknownError, DotnetVersionResolutionError } from '../EventStream/EventStreamEvents';
 import { VersionResolver } from './VersionResolver';
-import { CommandExecutorCommand, ICommandExecutor } from '../Utils/ICommandExecutor';
+import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+import { LinuxInstallType } from './LinuxInstallType';
+import { LinuxPackageCollection } from './LinuxPackageCollection';
+import { CommandExecutorCommand, ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 /* tslint:disable:no-any */
@@ -26,11 +29,13 @@ export abstract class IDistroDotnetSDKProvider {
     protected commandRunner : ICommandExecutor;
     protected distroVersion : DistroVersionPair;
     protected versionResolver : VersionResolver;
+    protected context : IAcquisitionWorkerContext;
     protected distroJson : any | null = null;
 
     protected preinstallCommandKey = 'preInstallCommands';
     protected installCommandKey = 'installCommand';
     protected uninstallCommandKey = 'uninstallCommand';
+    protected searchCommandKey = 'searchCommand';
     protected updateCommandKey = 'updateCommand';
     protected packageLookupCommandKey = 'packageLookupCommand';
     protected currentInstallPathCommandKey = 'currentInstallPathCommand';
@@ -45,6 +50,7 @@ export abstract class IDistroDotnetSDKProvider {
     protected distroVersionsKey = 'versions';
     protected versionKey = 'version';
     protected dotnetPackagesKey = 'dotnet';
+    protected distroPackagesKey = 'packages';
     protected sdkKey = 'sdk';
     protected runtimeKey = 'runtime';
     protected aspNetKey = 'aspnetcore';
@@ -52,6 +58,7 @@ export abstract class IDistroDotnetSDKProvider {
     constructor(distroVersion : DistroVersionPair, context : IAcquisitionWorkerContext, utilContext : IUtilityContext, executor : ICommandExecutor | null = null)
     {
         this.commandRunner = executor ?? new CommandExecutor(context.eventStream, utilContext);
+        this.context = context;
         this.distroVersion = distroVersion;
         this.versionResolver = new VersionResolver(context.extensionState, context.eventStream, context.timeoutValue, context.proxyUrl);
         // Hard-code to the upper path (lib/dist/acquisition) from __dirname to the lib folder, as webpack-copy doesn't seem to copy the distro-support.json
@@ -69,7 +76,7 @@ export abstract class IDistroDotnetSDKProvider {
      * Return '0' on success.
      * @param installContext
      */
-    public abstract installDotnet(fullySpecifiedVersion : string): Promise<string>;
+    public abstract installDotnet(fullySpecifiedVersion : string, installType : LinuxInstallType): Promise<string>;
 
     /**
      * Search the machine for all installed .NET SDKs and return a list of their fully specified versions.
@@ -88,7 +95,7 @@ export abstract class IDistroDotnetSDKProvider {
      * For the .NET SDK that should be on the path and or managed by the distro, return its path.
      * Return null if no installations can be found. Do NOT include the version of dotnet in this path.
      */
-    public abstract getInstalledGlobalDotnetPathIfExists() : Promise<string | null>;
+    public abstract getInstalledGlobalDotnetPathIfExists(installType : LinuxInstallType) : Promise<string | null>;
 
     /**
      * For the .NET SDK that should be on the path and or managed by the distro, return its fully specified version.
@@ -110,32 +117,32 @@ export abstract class IDistroDotnetSDKProvider {
     /**
      * Return true if theres a package for the dotnet version on the system with the same major as the requested fullySpecifiedVersion, false else.
      */
-    public abstract dotnetPackageExistsOnSystem(fullySpecifiedVersion : string) : Promise<boolean>;
+    public abstract dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion : string, installType : LinuxInstallType) : Promise<boolean>;
 
     /**
      * Return the support status for this distro and version. See DotnetDistroSupportStatus for more info.
      */
-    public abstract getDotnetVersionSupportStatus(fullySpecifiedVersion : string) : Promise<DotnetDistroSupportStatus>;
+    public abstract getDotnetVersionSupportStatus(fullySpecifiedVersion: string, installType : LinuxInstallType): Promise<DotnetDistroSupportStatus>;
 
     /**
      * @remarks Returns the newest in support version of the dotnet SDK that's available in this distro+version.
      * Generally should be of the form major.minor.band with no patch, so like 7.0.1xx.
      */
-    public abstract getRecommendedDotnetVersion() : string;
+    public abstract getRecommendedDotnetVersion(installType : LinuxInstallType) : Promise<string>;
 
     /**
      * Update the globally installed .NET to the newest in-support version of the same feature band and major.minor.
      * Return '0' on success.
      * @param versionToUpgrade The version of dotnet to upgrade.
      */
-    public abstract upgradeDotnet(versionToUpgrade : string) : Promise<string>;
+    public abstract upgradeDotnet(versionToUpgrade : string, installType : LinuxInstallType): Promise<string>;
 
     /**
      * Uninstall the .NET SDK.
      * @param versionToUninstall The fully specified version of the .NET SDK to uninstall.
      * Return '0' on success.
      */
-    public abstract uninstallDotnet(versionToUninstall : string) : Promise<string>;
+    public abstract uninstallDotnet(versionToUninstall : string, installType : LinuxInstallType): Promise<string>;
 
     /**
      *
@@ -152,19 +159,46 @@ export abstract class IDistroDotnetSDKProvider {
      * @param fullySpecifiedVersion The version of dotnet to check support for in the 3-part semver version.
      * @returns true if the version is supported by default within the distro, false else.
      */
-    public async isDotnetVersionSupported(fullySpecifiedVersion : string) : Promise<boolean>
+    public async isDotnetVersionSupported(fullySpecifiedVersion : string, installType : LinuxInstallType) : Promise<boolean>
     {
-        const supportStatus = await this.getDotnetVersionSupportStatus(fullySpecifiedVersion);
+        const supportStatus = await this.getDotnetVersionSupportStatus(fullySpecifiedVersion, installType);
         const supportedType : boolean = supportStatus === DotnetDistroSupportStatus.Distro || supportStatus === DotnetDistroSupportStatus.Microsoft;
         return supportedType && this.versionResolver.getFeatureBandFromVersion(fullySpecifiedVersion) === '1';
     }
 
-    protected myVersionPackages() : any
+    protected async myVersionPackages(installType : LinuxInstallType) : Promise<LinuxPackageCollection[]>
     {
-        const distroVersions = this.distroJson[this.distroVersion.distro][this.distroVersionsKey];
-        return distroVersions.filter((x: { [x: string]: string; }) => x[this.versionKey] === this.distroVersion.version)[0];
-    }
+        const availableVersions : LinuxPackageCollection[] = [];
 
+        const potentialDotnetPackageNames = this.distroJson[this.distroVersion.distro][this.distroPackagesKey];
+        for(const packageSet of potentialDotnetPackageNames)
+        {
+            const thisVersionPackage : LinuxPackageCollection =
+            {
+                version: packageSet[this.versionKey],
+                packages : []
+            }
+
+            for(const packageName of packageSet[installType])
+            {
+                let command = this.myDistroCommands(this.searchCommandKey);
+                command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, packageName);
+                const packageIsAvailableResult = (await this.commandRunner.executeMultipleCommands(command))[0];
+                const packageExists = this.isPackageFoundInSearch(packageIsAvailableResult);
+                if(packageExists)
+                {
+                    thisVersionPackage.packages.push(packageName);
+                }
+            }
+
+            if(thisVersionPackage.packages.length !== 0)
+            {
+                availableVersions.push(thisVersionPackage);
+            }
+        }
+
+        return availableVersions;
+    }
 
     protected myDistroStrings(stringKey : string) : string
     {
@@ -176,9 +210,22 @@ export abstract class IDistroDotnetSDKProvider {
         return this.distroJson[this.distroVersion.distro][commandKey] as CommandExecutorCommand[];
     }
 
-    protected myDotnetVersionPackages(fullySpecifiedDotnetVersion : string) : any
+    protected async myDotnetVersionPackageName(fullySpecifiedDotnetVersion : string, installType : LinuxInstallType) : Promise<string>
     {
-        const myDotnetVersions = this.myVersionPackages();
-        return myDotnetVersions[this.dotnetPackagesKey].filter((x: { [x: string]: string; }) => x[this.versionKey] === this.JsonDotnetVersion(fullySpecifiedDotnetVersion))[0];
+        const myDotnetVersions = await this.myVersionPackages(installType);
+        for(const dotnetPackage of myDotnetVersions)
+        {
+            if(dotnetPackage.version === this.JsonDotnetVersion(fullySpecifiedDotnetVersion))
+            {
+                // Arbitrarily pick the first existing package.
+                return dotnetPackage.packages[0];
+            }
+        }
+        const err = new Error(`Could not find a .NET package for version ${fullySpecifiedDotnetVersion}. Found only: ${JSON.stringify(await this.myVersionPackages(installType))}`);
+        this.context.eventStream.post(new DotnetVersionResolutionError(err,DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(fullySpecifiedDotnetVersion,
+            this.context.acquisitionContext?.architecture)));
+        throw err;
     }
+
+    protected abstract isPackageFoundInSearch(resultOfSearchCommand : any) : boolean;
 }

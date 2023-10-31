@@ -3,44 +3,49 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
-import { CommandExecutor } from '../Utils/CommandExecutor';
-import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
-import { DotnetDistroSupportStatus } from './LinuxVersionResolver';
-import { VersionResolver } from './VersionResolver';
 import * as path from 'path';
+import { CommandExecutor } from '../Utils/CommandExecutor';
+import { DotnetDistroSupportStatus } from './LinuxVersionResolver';
+import { LinuxInstallType } from './LinuxInstallType';
+import { CommandExecutorCommand } from '../Utils/ICommandExecutor';
+import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
+/* tslint:disable:no-any */
 
-export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
-
-    public async installDotnet(fullySpecifiedVersion : string): Promise<string>
+export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
+{
+    public async installDotnet(fullySpecifiedVersion : string, installType : LinuxInstallType): Promise<string>
     {
-        const supportStatus = await this.getDotnetVersionSupportStatus(fullySpecifiedVersion);
+        const supportStatus = await this.getDotnetVersionSupportStatus(fullySpecifiedVersion, installType);
         if(supportStatus === DotnetDistroSupportStatus.Microsoft)
         {
-            const preinstallCommands = this.myVersionPackages()[this.preinstallCommandKey];
-            for(const feedCommand of preinstallCommands)
-            {
-                const preparationResult = (await this.commandRunner.executeMultipleCommands(feedCommand))[0];
-            }
+            const myVersionDetails = this.myVersionDetails();
+            const preInstallCommands = myVersionDetails[this.preinstallCommandKey] as CommandExecutorCommand[];
+            await this.commandRunner.executeMultipleCommands(preInstallCommands);
         }
 
-        let command = this.myDistroCommands(this.installCommandKey);
-        const sdkPackage = this.myDotnetVersionPackages(fullySpecifiedVersion)[this.sdkKey];
-        command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, sdkPackage);
-        const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
+        let commands = this.myDistroCommands(this.installCommandKey);
+        const sdkPackage = await this.myDotnetVersionPackageName(fullySpecifiedVersion, installType);
 
-        return commandResult[0];
+        const oldReturnStatusSetting = this.commandRunner.returnStatus;
+        this.commandRunner.returnStatus = true;
+        commands = CommandExecutor.replaceSubstringsInCommands(commands, this.missingPackageNameKey, sdkPackage);
+        const updateCommandsResult = (await this.commandRunner.executeMultipleCommands(commands.slice(0, -1), undefined, false))[0];
+        const installCommandResult = await this.commandRunner.execute(commands.slice(-1)[0]);
+
+        this.commandRunner.returnStatus = oldReturnStatusSetting;
+        return installCommandResult;
     }
 
-    public async getInstalledGlobalDotnetPathIfExists() : Promise<string | null>
+    public async getInstalledGlobalDotnetPathIfExists(installType : LinuxInstallType) : Promise<string | null>
     {
         const commandResult = await this.commandRunner.executeMultipleCommands(this.myDistroCommands(this.currentInstallPathCommandKey));
         return commandResult[0];
     }
 
-    public async dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion : string) : Promise<boolean>
+    public async dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion : string, installType : LinuxInstallType) : Promise<boolean>
     {
         let command = this.myDistroCommands(this.packageLookupCommandKey);
-        const sdkPackage = this.myDotnetVersionPackages(this.JsonDotnetVersion(fullySpecifiedDotnetVersion))[this.sdkKey];
+        const sdkPackage = await this.myDotnetVersionPackageName(this.JsonDotnetVersion(fullySpecifiedDotnetVersion), installType);
         command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, sdkPackage);
         const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
@@ -58,20 +63,20 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
         return this.myDistroStrings(this.expectedMicrosoftFeedInstallDirKey);
     }
 
-    public async upgradeDotnet(versionToUpgrade : string): Promise<string>
+    public async upgradeDotnet(versionToUpgrade : string, installType : LinuxInstallType): Promise<string>
     {
         let command = this.myDistroCommands(this.updateCommandKey);
-        const sdkPackage = this.myDotnetVersionPackages(versionToUpgrade)[this.sdkKey];
+        const sdkPackage = await this.myDotnetVersionPackageName(versionToUpgrade, installType);
         command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, sdkPackage);
         const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
         return commandResult[0];
     }
 
-    public async uninstallDotnet(versionToUninstall : string): Promise<string>
+    public async uninstallDotnet(versionToUninstall : string, installType : LinuxInstallType): Promise<string>
     {
         let command = this.myDistroCommands(this.uninstallCommandKey);
-        const sdkPackage = this.myDotnetVersionPackages(versionToUninstall)[this.sdkKey];
+        const sdkPackage = await this.myDotnetVersionPackageName(versionToUninstall, installType);
         command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, sdkPackage);
         const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
@@ -136,26 +141,26 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
         }
     }
 
-    public getDotnetVersionSupportStatus(fullySpecifiedVersion: string): Promise<DotnetDistroSupportStatus>
+    public async getDotnetVersionSupportStatus(fullySpecifiedVersion: string, installType : LinuxInstallType): Promise<DotnetDistroSupportStatus>
     {
         if(this.versionResolver.getFeatureBandFromVersion(fullySpecifiedVersion) !== '1')
         {
             return Promise.resolve(DotnetDistroSupportStatus.Unsupported);
         }
 
-        const simplifiedVersion = this.JsonDotnetVersion(fullySpecifiedVersion);
-        const versionData = this.myVersionPackages();
-        if(versionData.hasOwnProperty(this.preinstallCommandKey))
+        if(this.myVersionDetails().hasOwnProperty(this.preinstallCommandKey))
         {
             // If preinstall commmands exist ( to add the msft feed ) then it's a microsoft feed.
             return Promise.resolve(DotnetDistroSupportStatus.Microsoft);
         }
         else
         {
-            const json = versionData[this.dotnetPackagesKey];
-            for(const dotnetPackages of json)
+            const availableVersions = await this.myVersionPackages(installType);
+            const simplifiedVersion = this.JsonDotnetVersion(fullySpecifiedVersion);
+
+            for(const dotnetPackages of availableVersions)
             {
-                if(Number(dotnetPackages[this.versionKey]) === Number(simplifiedVersion))
+                if(Number(dotnetPackages.version) === Number(simplifiedVersion))
                 {
                     return Promise.resolve(DotnetDistroSupportStatus.Distro);
                 }
@@ -165,15 +170,22 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
         return Promise.resolve(DotnetDistroSupportStatus.Unknown);
     }
 
-    public getRecommendedDotnetVersion() : string
+    private myVersionDetails() : any
+    {
+        const distroVersions = this.distroJson[this.distroVersion.distro][this.distroVersionsKey];
+        const versionData = distroVersions.filter((x: { [x: string]: string; }) => x[this.versionKey] === this.distroVersion.version)[0];
+        return versionData;
+    }
+
+    public async getRecommendedDotnetVersion(installType : LinuxInstallType) : Promise<string>
     {
         let maxVersion = '0';
-        const json = this.myVersionPackages()[this.dotnetPackagesKey];
+        const json = await this.myVersionPackages(installType);
         for(const dotnetPackages of json)
         {
-            if(Number(dotnetPackages[this.versionKey]) > Number(maxVersion))
+            if(Number(dotnetPackages.version) > Number(maxVersion))
             {
-                maxVersion = dotnetPackages[this.versionKey];
+                maxVersion = dotnetPackages.version;
             }
         }
 
@@ -184,5 +196,9 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider {
     public JsonDotnetVersion(fullySpecifiedDotnetVersion : string) : string
     {
         return this.versionResolver.getMajorMinor(fullySpecifiedDotnetVersion);
+    }
+
+    protected isPackageFoundInSearch(resultOfSearchCommand: any): boolean {
+        return resultOfSearchCommand !== '';
     }
 }
