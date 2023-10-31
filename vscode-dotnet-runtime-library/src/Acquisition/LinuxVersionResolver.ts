@@ -71,6 +71,7 @@ export class LinuxVersionResolver
     If you would like to proceed with installing .NET automatically for VS Code, you must remove this custom installation.
     Your custom install is located at: `;
     public baseUnsupportedDistroErrorMessage = 'We are unable to detect the distro or version of your machine';
+    public redhatUnsupportedDistroErrorMessage = 'Red Hat Entreprise Linux 7.0 is currently not supported. Please install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from https://access.redhat.com/downloads/';
 
     constructor(acquisitionContext : IAcquisitionWorkerContext, utilContext : IUtilityContext, acquireContext : IDotnetAcquireContext,
         executor : ICommandExecutor | null = null, distroProvider : IDistroDotnetSDKProvider | null = null)
@@ -158,6 +159,14 @@ export class LinuxVersionResolver
         }
     }
 
+    private isRedHatVersion7(version: string){
+        if(Math.floor(parseFloat(version)) === 7)
+        {
+            return true;
+        }
+        return false;
+    }
+
     private DistroProviderFactory(distroAndVersion : DistroVersionPair) : IDistroDotnetSDKProvider
     {
         switch(distroAndVersion.distro)
@@ -168,6 +177,12 @@ export class LinuxVersionResolver
                 this.acquisitionContext.eventStream.post(error);
                 throw error.error;
             case 'Red Hat Enterprise Linux':
+                if(this.isRedHatVersion7(distroAndVersion.version))
+                {
+                    const error = new DotnetAcquisitionDistroUnknownError(new Error(this.redhatUnsupportedDistroErrorMessage));
+                    this.acquisitionContext.eventStream.post(error);
+                    throw error.error;
+                }
                 return new RedHatDistroSDKProvider(distroAndVersion, this.acquisitionContext, this.utilityContext);
             default:
                 return new GenericDistroSDKProvider(distroAndVersion, this.acquisitionContext, this.utilityContext);
