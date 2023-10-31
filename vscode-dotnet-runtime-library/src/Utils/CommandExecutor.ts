@@ -4,12 +4,18 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as proc from 'child_process';
+import * as fs from 'fs';
+import open = require('open');
+import * as os from 'os';
+import path = require('path');
+
 import {
     CommandExecutionEvent,
     CommandExecutionNoStatusCodeWarning,
     CommandExecutionSignalSentEvent,
     CommandExecutionStatusEvent,
     CommandExecutionStdError,
+    CommandExecutionStdOut,
     CommandExecutionUnderSudoEvent,
     CommandExecutionUserCompletedDialogueEvent,
     DotnetAlternativeCommandFoundEvent,
@@ -18,11 +24,10 @@ import {
 } from '../EventStream/EventStreamEvents';
 import {exec} from '@vscode/sudo-prompt';
 import { ICommandExecutor } from './ICommandExecutor';
-import path = require('path');
 import { IEventStream } from '../EventStream/EventStream';
-import * as os from 'os';
 import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { IUtilityContext } from './IUtilityContext';
+import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
 import { CommandExecutorCommand } from './ICommandExecutor';
 import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
 
@@ -30,6 +35,8 @@ import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
 
 export class CommandExecutor extends ICommandExecutor
 {
+    private pathTroubleshootingOption = 'Troubleshoot';
+
     constructor(eventStream : IEventStream, utilContext : IUtilityContext, acquireContext? : IDotnetAcquireContext)
     {
         super(eventStream, utilContext, acquireContext);
@@ -53,7 +60,7 @@ export class CommandExecutor extends ICommandExecutor
      *
      * @returns The output of the command.
      */
-    private async ExecSudoAsync(command : CommandExecutorCommand) : Promise<string>
+    private async ExecSudoAsync(command : CommandExecutorCommand, terminalFailure = true) : Promise<string>
     {
         const fullCommandString = CommandExecutor.prettifyCommandExecutorCommand(command, false);
         this.eventStream.post(new CommandExecutionUnderSudoEvent(`The command ${fullCommandString} is being ran under sudo.`));
@@ -82,33 +89,43 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
 
                 if (stdout)
                 {
+                    this.eventStream.post(new CommandExecutionStdOut(`The command ${fullCommandString} encountered stdout, continuing
+${stdout}.`));
                     commandResultString += stdout;
                 }
                 if (stderr)
                 {
-                    this.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandString} encountered stderr, continuing. ${stderr}.`));
+                    this.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandString} encountered stderr, continuing
+${stderr}.`));
                     commandResultString += stderr;
                 }
 
                 if (error)
                 {
                     this.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The command ${fullCommandString} failed to run under sudo.`));
-                    reject(error);
+                    if(terminalFailure)
+                    {
+                        reject(error);
+                    }
+                    else
+                    {
+                        resolve(this.returnStatus ? '1' : stderr);
+                    }
                 }
                 else
                 {
                     this.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The command ${fullCommandString} successfully ran under sudo.`));
-                    resolve(commandResultString);
+                    resolve(this.returnStatus ? '0' : commandResultString);
                 }
             });
         });
     }
 
-    public async executeMultipleCommands(commands: CommandExecutorCommand[], options?: any): Promise<string[]> {
+    public async executeMultipleCommands(commands: CommandExecutorCommand[], options?: any, terminalFailure = true): Promise<string[]> {
         const results = [];
         for(const command of commands)
         {
-            results.push(await this.execute(command, options));
+            results.push(await this.execute(command, options, terminalFailure));
         }
 
         return results;
@@ -117,10 +134,10 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
     /**
      *
      * @param workingDirectory The directory to execute in. Only works for non sudo commands.
-     *
+     * @param terminalFailure Whether to throw up an error when executing under sudo or supress it and return stderr
      * @returns the result(s) of each command. Can throw generically if the command fails.
      */
-    public async execute(command : CommandExecutorCommand, options : any | null = null) : Promise<string>
+    public async execute(command : CommandExecutorCommand, options : any | null = null, terminalFailure = true) : Promise<string>
     {
         const fullCommandStringForTelemetryOnly = `${command.commandRoot} ${command.commandParts.join(' ')}`;
         if(!options)
@@ -130,7 +147,7 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
 
         if(command.runUnderSudo)
         {
-            return this.ExecSudoAsync(command) ?? '';
+            return this.ExecSudoAsync(command, terminalFailure) ?? '';
         }
         else
         {
@@ -172,7 +189,7 @@ result: ${commandResult.toString()} had no status or signal.`));
                 {
                     if(commandResult.stdout)
                     {
-                    this.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandStringForTelemetryOnly} encountered stdout:
+                    this.eventStream.post(new CommandExecutionStdOut(`The command ${fullCommandStringForTelemetryOnly} encountered stdout:
 ${commandResult.stdout}`));
                     }
                     if(commandResult.stderr)
@@ -264,5 +281,63 @@ ${commandResult.stderr}`));
             this.utilityContext.ui.showWarningMessage(failureWarningMessage, () => {/* No Callback */}, );
         }
         this.returnStatus = oldReturnStatusSetting;
+    }
+
+    public setPathEnvVar(pathAddition: string, troubleshootingUrl : string, displayWorker: IWindowDisplayWorker, vscodeContext : IVSCodeExtensionContext, isGlobal : boolean)
+    {
+        if(!isGlobal || os.platform() === 'linux')
+        {
+            // Set user PATH variable. The .NET SDK Installer does this for us on Win/Mac.
+            let pathCommand: string | undefined;
+            if (os.platform() === 'win32') {
+                pathCommand = this.getWindowsPathCommand(pathAddition);
+            } else {
+                pathCommand = this.getLinuxPathCommand(pathAddition);
+            }
+
+            if (pathCommand !== undefined) {
+                this.runPathCommand(pathCommand, troubleshootingUrl, displayWorker);
+            }
+        }
+
+        // Set PATH for VSCode terminal instances
+        if (!process.env.PATH!.includes(pathAddition)) {
+            vscodeContext.appendToEnvironmentVariable('PATH', path.delimiter + pathAddition);
+            process.env.PATH += path.delimiter + pathAddition;
+        }
+    }
+
+    protected getLinuxPathCommand(pathAddition: string): string | undefined
+    {
+        const profileFile = os.platform() === 'darwin' ? path.join(os.homedir(), '.zshrc') : path.join(os.homedir(), '.profile');
+        if (fs.existsSync(profileFile) && fs.readFileSync(profileFile).toString().includes(pathAddition)) {
+            // No need to add to PATH again
+            return undefined;
+        }
+        return `echo 'export PATH="${pathAddition}:$PATH"' >> ${profileFile}`;
+    }
+
+    protected getWindowsPathCommand(pathAddition: string): string | undefined
+    {
+        if (process.env.PATH && process.env.PATH.includes(pathAddition)) {
+            // No need to add to PATH again
+            return undefined;
+        }
+        return `for /F "skip=2 tokens=1,2*" %A in ('%SystemRoot%\\System32\\reg.exe query "HKCU\\Environment" /v "Path" 2^>nul') do ` +
+            `(%SystemRoot%\\System32\\reg.exe ADD "HKCU\\Environment" /v Path /t REG_SZ /f /d "${pathAddition};%C")`;
+    }
+
+    protected runPathCommand(pathCommand: string, troubleshootingUrl : string, displayWorker: IWindowDisplayWorker)
+    {
+        try {
+            proc.execSync(pathCommand);
+        } catch (error) {
+            displayWorker.showWarningMessage(`Unable to add SDK to the PATH: ${error}`,
+                async (response: string | undefined) => {
+                    if (response === this.pathTroubleshootingOption) {
+                        open(`${troubleshootingUrl}#unable-to-add-to-path`);
+                    }
+                }, this.pathTroubleshootingOption);
+        }
     }
 }

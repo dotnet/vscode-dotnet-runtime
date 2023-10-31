@@ -5,7 +5,7 @@
 
 export abstract class IVSCodeExtensionContext
 {
-    /**
-     */
     abstract setVSCodeEnvironmentVariable(variable : string, value : string) : void;
+
+    abstract appendToEnvironmentVariable(variable : string, pathAdditionWithDelimiter : string) : void;
 }

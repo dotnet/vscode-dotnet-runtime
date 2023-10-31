@@ -182,7 +182,7 @@ export abstract class IDistroDotnetSDKProvider {
             for(const packageName of packageSet[installType])
             {
                 let command = this.myDistroCommands(this.searchCommandKey);
-                command = CommandExecutor.replaceSubstringsInCommands(command, '{0}', packageName);
+                command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, packageName);
                 const packageIsAvailableResult = (await this.commandRunner.executeMultipleCommands(command))[0];
                 const packageExists = this.isPackageFoundInSearch(packageIsAvailableResult);
                 if(packageExists)

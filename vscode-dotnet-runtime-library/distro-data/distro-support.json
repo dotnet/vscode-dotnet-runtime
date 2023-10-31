@@ -40,7 +40,7 @@
 			{
 				"runUnderSudo": false,
 				"commandRoot": "apt-cache",
-				"commandParts": ["search", "{0}"]
+				"commandParts": ["search", "{packageName}"]
 			}
 		],
 		"isInstalledCommand":
@@ -59,8 +59,8 @@
 				"commandParts": ["-l", "{packageName}"]
 			}
 		],
-		"expectedDistroFeedInstallDirectory" : "/usr/lib/dotnet/sdk",
-        "expectedMicrosoftFeedInstallDirectory" : "/usr/bin/dotnet",
+		"expectedDistroFeedInstallDirectory" : "/usr/lib/dotnet/dotnet",
+        "expectedMicrosoftFeedInstallDirectory" : "/usr/bin/dotnet/dotnet",
 		"installedSDKVersionsCommand":
 		[
 			{
