@@ -16,7 +16,7 @@ Developers who wish to use this new API may read about its usage in our document
 They should write a UI layer around getting consent from the user to install the .NET SDK before installing it. WSL and distros outside of RHEL and Ubuntu are not yet supported, nor are preview or RC .NET SDKs.
 https://github.com/dotnet/vscode-dotnet-runtime/tree/main/Documentation/global-installs
 
-## [1.8.1] - 2023-09-18
+## [1.8.1] - 2023-11-1
 
 Don't report failure if the .NET we try to uninstall is in use, and mark it to be uninstalled again next time, as before, we would not attempt to uninstall again later.
 
