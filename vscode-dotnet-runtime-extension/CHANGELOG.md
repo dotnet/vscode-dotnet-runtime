@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog],
 and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
+## [2.0.0] - 2023-09-18
+
+The '.NET Runtime Install Tool' has been renamed to the '.NET Install Tool.'
+
+The tool now supports installing a global .NET SDK on the machine. This feature is in preview and still undergoing improvements to UX.
+
+Developers who wish to use this new API may read about its usage in our documentation.
+They should write a UI layer around getting consent from the user to install the .NET SDK before installing it. WSL and distros outside of RHEL and Ubuntu are not yet supported, nor are preview or RC .NET SDKs.
+https://github.com/dotnet/vscode-dotnet-runtime/tree/main/Documentation/global-installs
+
 ## [1.8.1] - 2023-09-18
 
 Don't report failure if the .NET we try to uninstall is in use, and mark it to be uninstalled again next time, as before, we would not attempt to uninstall again later.
