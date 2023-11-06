@@ -43,3 +43,8 @@ export interface IDotnetAcquireContext {
  * Defines if an install should be global on the machine or local to a specific local folder/user.
  */
 export type DotnetInstallType = 'local' | 'global';
+
+export function getInstallKeyFromContext(ctx : IDotnetAcquireContext) : string
+{
+    return DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(ctx.version, ctx.architecture, ctx.installType ? ctx.installType === 'global' : false);
+}

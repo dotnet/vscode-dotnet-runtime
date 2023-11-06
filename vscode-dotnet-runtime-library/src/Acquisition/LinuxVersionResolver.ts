@@ -261,7 +261,7 @@ export class LinuxVersionResolver
                 {
                     // We shouldn't downgrade to a lower patch
                     const err = new DotnetCustomLinuxInstallExistsError(new Error(`An installation of ${fullySpecifiedDotnetVersion} was requested but ${existingGlobalInstallSDKVersion} is already available.`),
-                        fullySpecifiedDotnetVersion);
+                        getInstallKeyFromContext(this.acquireContext));
                     this.acquisitionContext.eventStream.post(err);
                     throw err.error;
                 }
@@ -289,6 +289,7 @@ export class LinuxVersionResolver
         // Verify the version of dotnet is supported
         if (!( await this.distroSDKProvider!.isDotnetVersionSupported(fullySpecifiedDotnetVersion, 'sdk') ))
         {
+            // does this still work?
             throw new Error(`The distro ${this.distro} does not officially support dotnet version ${fullySpecifiedDotnetVersion}.`);
         }
 

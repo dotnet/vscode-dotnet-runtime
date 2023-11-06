@@ -53,10 +53,9 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         this.installingVersion = installingVersion;
         this.installerHash = installerHash;
         this.commandRunner = executor ?? new CommandExecutor(context.eventStream, utilContext);
-        this.versionResolver = new VersionResolver(context.extensionState, context.eventStream, context.timeoutSeconds, context.proxyUrl);
+        this.versionResolver = new VersionResolver(context);
         this.file = new FileUtilities();
-        this.webWorker = new WebRequestWorker(context.extensionState, context.eventStream,
-            installerUrl, this.acquisitionContext.timeoutSeconds, this.acquisitionContext.proxyUrl);
+        this.webWorker = new WebRequestWorker(context, installerUrl);
     }
 
     public async installSDK(): Promise<string>

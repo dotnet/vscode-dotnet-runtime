@@ -22,6 +22,7 @@ import { DotnetVersionSupportPhase,
     IDotnetVersion
 } from '../IDotnetListVersionsContext';
 import { Debugging } from '../Utils/Debugging';
+import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 /* tslint:disable:no-any */
 
 export class VersionResolver implements IVersionResolver {
@@ -29,14 +30,12 @@ export class VersionResolver implements IVersionResolver {
     private readonly releasesUrl = 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json';
     protected static invalidFeatureBandErrorString = `A feature band couldn't be determined for the requested version: `;
 
-    constructor(extensionState: IExtensionState,
-                private readonly eventStream: IEventStream,
-                private readonly timeoutTime : number,
-                private readonly proxy?: string,
-                webWorker?: WebRequestWorker
+    constructor(
+        private readonly context : IAcquisitionWorkerContext,
+        webWorker?: WebRequestWorker
     )
     {
-        this.webWorker = webWorker ?? new WebRequestWorker(extensionState, eventStream, this.releasesUrl, this.timeoutTime * 1000, this.proxy);
+        this.webWorker = webWorker ?? new WebRequestWorker(context.extensionState, context.eventStream, this.releasesUrl, this.timeoutTime * 1000, this.proxy);
     }
 
     /**
