@@ -54,7 +54,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
             eventStream,
             acquisitionInvoker: new NoInstallAcquisitionInvoker(eventStream),
             installationValidator: new MockInstallationValidator(eventStream),
-            timeoutValue: 10,
+            timeoutSeconds: 10,
             installDirectoryProvider: runtimeInstall ? new RuntimeInstallationDirectoryProvider('') : new SdkInstallationDirectoryProvider(''),
             installingArchitecture: arch,
             isExtensionTelemetryInitiallyEnabled: true,
@@ -71,7 +71,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
             eventStream,
             acquisitionInvoker: new MockAcquisitionInvoker(context, eventStream, 10, installApostropheFolder),
             installationValidator: new MockInstallationValidator(eventStream),
-            timeoutValue: 10,
+            timeoutSeconds: 10,
             installDirectoryProvider: runtimeInstall ? new RuntimeInstallationDirectoryProvider('') : new SdkInstallationDirectoryProvider(''),
             isExtensionTelemetryInitiallyEnabled: true,
         }, getMockUtilityContext(), new MockVSCodeExtensionContext());
@@ -304,7 +304,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
             eventStream,
             acquisitionInvoker: new RejectingAcquisitionInvoker(eventStream),
             installationValidator: new MockInstallationValidator(eventStream),
-            timeoutValue: 10,
+            timeoutSeconds: 10,
             installDirectoryProvider: new RuntimeInstallationDirectoryProvider(''),
             isExtensionTelemetryInitiallyEnabled: true,
         }, getMockUtilityContext(), new MockVSCodeExtensionContext());

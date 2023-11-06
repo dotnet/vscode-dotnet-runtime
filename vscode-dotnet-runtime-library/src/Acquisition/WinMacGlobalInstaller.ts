@@ -16,6 +16,7 @@ import { CommandExecutor } from '../Utils/CommandExecutor';
 import { IFileUtilities } from '../Utils/IFileUtilities';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { IUtilityContext } from '../Utils/IUtilityContext';
+import { DotnetCoreAcquisitionWorker } from '..';
 /* tslint:disable:only-arrow-functions */
 /* tslint:disable:no-empty */
 /* tslint:disable:no-any */
@@ -52,10 +53,10 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         this.installingVersion = installingVersion;
         this.installerHash = installerHash;
         this.commandRunner = executor ?? new CommandExecutor(context.eventStream, utilContext);
-        this.versionResolver = new VersionResolver(context.extensionState, context.eventStream, context.timeoutValue, context.proxyUrl);
+        this.versionResolver = new VersionResolver(context.extensionState, context.eventStream, context.timeoutSeconds, context.proxyUrl);
         this.file = new FileUtilities();
         this.webWorker = new WebRequestWorker(context.extensionState, context.eventStream,
-            installerUrl, this.acquisitionContext.timeoutValue, this.acquisitionContext.proxyUrl);
+            installerUrl, this.acquisitionContext.timeoutSeconds, this.acquisitionContext.proxyUrl);
     }
 
     public async installSDK(): Promise<string>
@@ -73,7 +74,8 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
                 }
                 const err = new DotnetConflictingGlobalWindowsInstallError(new Error(`An global install is already on the machine: version ${conflictingVersion}, that conflicts with the requested version.
                     Please uninstall this version first if you would like to continue.
-                    If Visual Studio is installed, you may need to use the VS Setup Window to uninstall the SDK component.`));
+                    If Visual Studio is installed, you may need to use the VS Setup Window to uninstall the SDK component.`),
+                    DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(this.acquisitionContext.acquisitionContext?.version!, this.acquisitionContext.installingArchitecture, true));
                 this.acquisitionContext.eventStream.post(err);
                 throw err.error;
             }
@@ -84,7 +86,8 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         if(!canContinue)
         {
             const err = new DotnetConflictingGlobalWindowsInstallError(new Error(`The integrity of the .NET install file is invalid, or there was no integrity to check and you denied the request to continue with those risks.
-We cannot verify .NET is safe to download at this time. Please try again later.`));
+We cannot verify .NET is safe to download at this time. Please try again later.`),
+            DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(this.acquisitionContext.acquisitionContext?.version!, this.acquisitionContext.installingArchitecture, true));
         this.acquisitionContext.eventStream.post(err);
         throw err.error;
         }
@@ -176,7 +179,8 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
             return path.resolve(`/usr/local/share/dotnet/dotnet`);
         }
 
-        const err = new DotnetUnexpectedInstallerOSError(new Error(`The operating system ${os.platform()} is unsupported.`));
+        const err = new DotnetUnexpectedInstallerOSError(new Error(`The operating system ${os.platform()} is unsupported.`),
+            DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(this.acquisitionContext.acquisitionContext?.version!, this.acquisitionContext.installingArchitecture, true));
         this.acquisitionContext.eventStream.post(err);
         throw err.error;
     }
@@ -205,7 +209,8 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
             {
                 const error = new Error(`The 'open' command on OSX was not detected. This is likely due to the PATH environment variable on your system being clobbered by another program.
 Please correct your PATH variable or make sure the 'open' utility is installed so .NET can properly execute.`);
-                this.acquisitionContext.eventStream.post(new OSXOpenNotAvailableError(error));
+                this.acquisitionContext.eventStream.post(new OSXOpenNotAvailableError(error,
+                    DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(this.acquisitionContext.acquisitionContext?.version!, this.acquisitionContext.installingArchitecture, true)));
                 throw error;
             }
             else if(workingCommand.commandRoot === 'command')

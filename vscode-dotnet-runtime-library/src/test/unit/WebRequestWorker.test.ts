@@ -52,7 +52,7 @@ suite('WebRequestWorker Unit Tests', () => {
             eventStream,
             acquisitionInvoker: new ErrorAcquisitionInvoker(eventStream),
             installationValidator: new MockInstallationValidator(eventStream),
-            timeoutValue: 10,
+            timeoutSeconds: 10,
             installDirectoryProvider: new RuntimeInstallationDirectoryProvider(''),
             isExtensionTelemetryInitiallyEnabled: true
         }, getMockUtilityContext(), new MockVSCodeExtensionContext());

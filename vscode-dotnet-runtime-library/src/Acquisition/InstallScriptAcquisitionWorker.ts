@@ -22,6 +22,9 @@ import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { Debugging } from '../Utils/Debugging';
 import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
 import { FileUtilities } from '../Utils/FileUtilities';
+import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
+import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { IDotnetAcquireContext } from '..';
 
 export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisitionWorker {
     protected webWorker: WebRequestWorker;
@@ -30,7 +33,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
     private readonly fileUtilities: FileUtilities;
 
 
-    constructor(extensionState: IExtensionState, private readonly eventStream: IEventStream, private readonly timeoutTime : number) {
+    constructor(extensionState: IExtensionState, private readonly eventStream: IEventStream, private readonly timeoutTime : number, private readonly context : IDotnetAcquireContext) {
         const scriptFileEnding = os.platform() === 'win32' ? 'ps1' : 'sh';
         const scriptFileName = 'dotnet-install';
         this.scriptFilePath = path.join(__dirname, 'install scripts', `${scriptFileName}.${scriptFileEnding}`);
@@ -55,7 +58,8 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
         catch (error)
         {
             Debugging.log('An error occurred processing the install script.');
-            this.eventStream.post(new DotnetInstallScriptAcquisitionError(error as Error));
+            this.eventStream.post(new DotnetInstallScriptAcquisitionError(error as Error,
+                DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(this.context.version, this.context.architecture, false)));
 
             // Try to use fallback install script
             const fallbackPath = this.getFallbackScriptPath();

@@ -29,7 +29,7 @@ suite('Windows & Mac Global Installer Tests', () =>
             eventStream,
             acquisitionInvoker: new NoInstallAcquisitionInvoker(eventStream),
             installationValidator: new MockInstallationValidator(eventStream),
-            timeoutValue: standardTimeoutTime,
+            timeoutSeconds: standardTimeoutTime,
             installDirectoryProvider: runtimeInstall ? new RuntimeInstallationDirectoryProvider('') : new SdkInstallationDirectoryProvider(''),
             isExtensionTelemetryInitiallyEnabled: true,
         };

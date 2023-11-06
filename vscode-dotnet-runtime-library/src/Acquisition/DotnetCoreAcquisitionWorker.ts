@@ -47,7 +47,8 @@ import { IUtilityContext } from '../Utils/IUtilityContext';
 import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
 /* tslint:disable:no-any */
 
-export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker {
+export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
+{
     private readonly installingVersionsKey = 'installing';
     private readonly installedVersionsKey = 'installed';
     // The 'graveyard' includes failed uninstall paths and their install key.
@@ -64,7 +65,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     constructor(private readonly context: IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext, extensionContext : IVSCodeExtensionContext) {
         const dotnetExtension = os.platform() === 'win32' ? '.exe' : '';
         this.dotnetExecutable = `dotnet${dotnetExtension}`;
-        this.timeoutValue = context.timeoutValue;
+        this.timeoutValue = context.timeoutSeconds;
         this.acquisitionPromises = {};
         // null deliberately allowed to use old behavior below
         this.installingArchitecture = this.context.installingArchitecture === undefined ? os.arch() : this.context.installingArchitecture;
@@ -311,7 +312,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         if(installerResult !== '0')
         {
-            const err = new DotnetNonZeroInstallerExitCodeError(new Error(`An error was raised by the .NET SDK installer. The exit code it gave us: ${installerResult}`));
+            const err = new DotnetNonZeroInstallerExitCodeError(new Error(`An error was raised by the .NET SDK installer. The exit code it gave us: ${installerResult}`), installKey);
             this.context.eventStream.post(err);
             throw err;
         }
@@ -483,19 +484,26 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         }
     }
 
-    private async managePreinstalledVersion(dotnetInstallDir: string, installedInstallKeys: string[]): Promise<string[]> {
-        try {
+    private async managePreinstalledVersion(dotnetInstallDir: string, installedInstallKeys: string[]): Promise<string[]>
+    {
+        let lastInstallKey = '';
+        try
+        {
             // Determine installed version(s)
             const installKeys = fs.readdirSync(path.join(dotnetInstallDir, 'sdk'));
 
             // Update extension state
-            for (const installKey of installKeys) {
+            for (const installKey of installKeys)
+            {
+                lastInstallKey = installKey;
                 this.context.eventStream.post(new DotnetPreinstallDetected(installKey));
                 await this.addVersionToExtensionState(this.installedVersionsKey, installKey);
                 installedInstallKeys.push(installKey);
             }
-        } catch (error) {
-            this.context.eventStream.post(new DotnetPreinstallDetectionError(error as Error));
+        }
+        catch (error)
+        {
+            this.context.eventStream.post(new DotnetPreinstallDetectionError(error as Error, lastInstallKey));
         }
         return installedInstallKeys;
     }

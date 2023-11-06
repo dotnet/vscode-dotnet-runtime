@@ -97,7 +97,7 @@ export abstract class DotnetAcquisitionError extends IEvent {
     public readonly type = EventType.DotnetAcquisitionError;
     public isError = true;
 
-    constructor(public readonly error: Error) {
+    constructor(public readonly error: Error, public readonly installKey: string) {
         super();
     }
 
@@ -145,8 +145,8 @@ export class DotnetPreinstallDetectionError extends DotnetAcquisitionError {
 export class DotnetCommandFailed extends DotnetAcquisitionError {
     public readonly eventName = 'DotnetCommandFailed';
 
-    constructor(error: Error, public readonly command: string) {
-        super(error);
+    constructor(error: Error, public readonly command: string, installKey : string) {
+        super(error, installKey);
     }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
@@ -184,7 +184,7 @@ export class DotnetWSLSecurityError extends DotnetAcquisitionError {
 
 export abstract class DotnetAcquisitionVersionError extends DotnetAcquisitionError {
     constructor(error: Error, public readonly installKey: string) {
-        super(error);
+        super(error, installKey);
     }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
@@ -304,7 +304,8 @@ export class DotnetAcquisitionDistroUnknownError extends DotnetAcquisitionError 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
         return {ErrorMessage : this.error.message,
             ErrorName : this.error.name,
-            StackTrace : this.error.stack ? this.error.stack : ''};
+            StackTrace : this.error.stack ? this.error.stack : '',
+            InstallKey : this.installKey};
     }
 }
 

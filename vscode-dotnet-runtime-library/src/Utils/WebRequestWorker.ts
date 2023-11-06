@@ -7,13 +7,14 @@ import axiosRetry from 'axios-retry';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { getProxySettings } from 'get-proxy-settings';
 import { AxiosCacheInstance, buildStorage, setupCache, StorageValue } from 'axios-cache-interceptor';
-import { IEventStream } from '../EventStream/EventStream';
 import {SuppressedAcquisitionError, WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
 import { IExtensionState } from '../IExtensionState';
 import { Debugging } from '../Utils/Debugging';
 import * as fs from 'fs';
 import { promisify } from 'util';
 import stream = require('stream');
+import { getInstallKeyFromContext } from '../IDotnetAcquireContext';
+import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 /* tslint:disable:no-any */
 
 /*
@@ -45,40 +46,41 @@ export class WebRequestWorker
      * The responses from GET requests are cached with a 'time-to-live' of 5 minutes by default.
      */
     private client: AxiosCacheInstance;
+    private websiteTimeoutMs : number;
+    private proxy : string | undefined;
 
     private proxyAgent : HttpsProxyAgent<string> | null = null;
 
     constructor(
-        private readonly extensionState: IExtensionState,
-        private readonly eventStream: IEventStream,
+        private readonly context: IAcquisitionWorkerContext,
         protected readonly url: string,
-        private readonly websiteTimeoutMs: number, // Match the default timeout time of 10 minutes.
-        private proxy = '',
         private cacheTimeToLive = -1
-        )
-        {
-            this.cacheTimeToLive = this.cacheTimeToLive === -1 ? this.websiteTimeoutMs * 100 : this.cacheTimeToLive; // make things live 100x the default time, which is ~16 hrs
-            const uncachedAxiosClient = Axios.create({});
-            Debugging.log(`Axios client instantiated: ${uncachedAxiosClient}`);
+    )
+    {
+        this.websiteTimeoutMs = this.context.timeoutSeconds * 1000;
+        this.proxy = this.context.proxyUrl;
+        this.cacheTimeToLive = this.cacheTimeToLive === -1 ? this.websiteTimeoutMs * 100 : this.cacheTimeToLive; // make things live 100x the default time, which is ~16 hrs
+        const uncachedAxiosClient = Axios.create({});
+        Debugging.log(`Axios client instantiated: ${uncachedAxiosClient}`);
 
-            // Wrap the client with a retry interceptor. We don't need to return a new client, it should be applied automatically.
-            axiosRetry(uncachedAxiosClient, {
-                // Inject a custom retry delay to exponentially increase the time until we retry.
-                retryDelay(retryCount: number) {
-                    return Math.pow(2, retryCount); // Takes in the int as (ms) to delay.
-                }
-            });
+        // Wrap the client with a retry interceptor. We don't need to return a new client, it should be applied automatically.
+        axiosRetry(uncachedAxiosClient, {
+            // Inject a custom retry delay to exponentially increase the time until we retry.
+            retryDelay(retryCount: number) {
+                return Math.pow(2, retryCount); // Takes in the int as (ms) to delay.
+            }
+        });
 
-            Debugging.log(`Axios client wrapped around axios-retry: ${uncachedAxiosClient}`);
+        Debugging.log(`Axios client wrapped around axios-retry: ${uncachedAxiosClient}`);
 
-            this.client = setupCache(uncachedAxiosClient,
-                {
-                    storage: mementoStorage(this.extensionState),
-                    ttl: this.cacheTimeToLive
-                }
-            );
+        this.client = setupCache(uncachedAxiosClient,
+            {
+                storage: mementoStorage(this.context.extensionState),
+                ttl: this.cacheTimeToLive
+            }
+        );
 
-            Debugging.log(`Cached Axios Client Created: ${this.client}`);
+        Debugging.log(`Cached Axios Client Created: ${this.client}`);
     }
 
     /**
@@ -102,7 +104,7 @@ export class WebRequestWorker
             timeoutCancelTokenHook.abort();
             const formattedError = new Error(`TIMEOUT: The request to ${this.url} timed out at ${this.websiteTimeoutMs} ms. This only occurs if your internet
  or the url are experiencing connection difficulties; not if the server is being slow to respond. Check your connection, the url, and or increase the timeout value here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#install-script-timeouts`);
-            this.eventStream.post(new WebRequestError(formattedError));
+            this.context.eventStream.post(new WebRequestError(formattedError, getInstallKeyFromContext(this.context.acquisitionContext!)));
             throw formattedError;
         }, this.websiteTimeoutMs);
 
@@ -167,7 +169,7 @@ export class WebRequestWorker
             }
             catch(error : any)
             {
-                this.eventStream.post(new SuppressedAcquisitionError(error, `The proxy lookup failed, most likely due to limited registry access. Skipping automatic proxy lookup.`));
+                this.context.eventStream.post(new SuppressedAcquisitionError(error, `The proxy lookup failed, most likely due to limited registry access. Skipping automatic proxy lookup.`));
             }
         }
         if(this.proxyEnabled())
@@ -227,7 +229,7 @@ export class WebRequestWorker
 
         try
         {
-            this.eventStream.post(new WebRequestSent(this.url));
+            this.context.eventStream.post(new WebRequestSent(this.url));
             const response = await this.axiosGet(
                 this.url,
                 options
@@ -249,7 +251,7 @@ export class WebRequestWorker
 If you are on a corporate proxy with a result of 400, you may need to manually set the proxy in our extension settings. Please see https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md for more details.
 If your proxy requires credentials and the result is 407: we cannot currently handle your request, and you should configure dotnet manually following the above link.`);
                 }
-                this.eventStream.post(new WebRequestError(formattedError));
+                this.context.eventStream.post(new WebRequestError(formattedError, getInstallKeyFromContext(this.context.acquisitionContext!)));
                 throw formattedError;
             }
             return undefined;

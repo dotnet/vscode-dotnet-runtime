@@ -15,7 +15,7 @@ export interface IAcquisitionWorkerContext {
     eventStream: IEventStream;
     acquisitionInvoker: IAcquisitionInvoker;
     installationValidator: IInstallationValidator;
-    timeoutValue: number;
+    timeoutSeconds: number;
     installDirectoryProvider: IInstallationDirectoryProvider;
     acquisitionContext? : IDotnetAcquireContext | null;
     installingArchitecture? : string | undefined | null;

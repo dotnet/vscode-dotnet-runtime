@@ -33,6 +33,7 @@ import { IFileUtilities } from '../../Utils/IFileUtilities';
 import { IVSCodeExtensionContext } from '../../IVSCodeExtensionContext';
 import { IUtilityContext } from '../../Utils/IUtilityContext';
 import { IVSCodeEnvironment } from '../../Utils/IVSCodeEnvironment';
+import { IDotnetAcquireContext } from '../..';
 
 const testDefaultTimeoutTimeMs = 60000;
 /* tslint:disable:no-any */
@@ -231,8 +232,8 @@ export class MockVersionResolver extends VersionResolver {
 }
 
 export class MockInstallScriptWorker extends InstallScriptAcquisitionWorker {
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, failing: boolean, private fallback = false) {
-        super(extensionState, eventStream, testDefaultTimeoutTimeMs);
+    constructor(extensionState: IExtensionState, eventStream: IEventStream, acquireContext : IDotnetAcquireContext, failing: boolean, private fallback = false) {
+        super(extensionState, eventStream, testDefaultTimeoutTimeMs, acquireContext);
         this.webWorker = failing ?
             new FailingWebRequestWorker(extensionState, eventStream, '') :
             new MockWebRequestWorker(extensionState, eventStream, '');
@@ -250,8 +251,8 @@ export class MockInstallScriptWorker extends InstallScriptAcquisitionWorker {
 export class MockApostropheScriptAcquisitionWorker extends MockInstallScriptWorker
 {
     protected readonly scriptFilePath: string;
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, installFolder: string) {
-        super(extensionState, eventStream, false);
+    constructor(extensionState: IExtensionState, eventStream: IEventStream, installFolder: string, acquireContext : IDotnetAcquireContext) {
+        super(extensionState, eventStream, acquireContext, false);
         const scriptFileEnding = 'win32';
         const scriptFileName = 'dotnet-install';
         this.scriptFilePath = path.join(installFolder, 'install scripts', `${scriptFileName}.${scriptFileEnding}`);
@@ -262,9 +263,9 @@ export class MockApostropheScriptAcquisitionWorker extends MockInstallScriptWork
 export class MockAcquisitionInvoker extends AcquisitionInvoker
 {
     protected readonly scriptWorker: MockApostropheScriptAcquisitionWorker
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, timeoutTime : number, installFolder : string) {
+    constructor(extensionState: IExtensionState, eventStream: IEventStream, timeoutTime : number, installFolder : string, acquireContext : IDotnetAcquireContext) {
         super(extensionState, eventStream, timeoutTime, getMockUtilityContext());
-        this.scriptWorker = new MockApostropheScriptAcquisitionWorker(extensionState, eventStream, installFolder);
+        this.scriptWorker = new MockApostropheScriptAcquisitionWorker(extensionState, eventStream, installFolder, acquireContext);
     }
 }
 
@@ -446,8 +447,8 @@ export class MockDistroProvider extends IDistroDotnetSDKProvider
 
 
 export class FailingInstallScriptWorker extends InstallScriptAcquisitionWorker {
-    constructor(extensionState: IExtensionState, eventStream: IEventStream) {
-        super(extensionState, eventStream, testDefaultTimeoutTimeMs);
+    constructor(extensionState: IExtensionState, eventStream: IEventStream, acquireContext : IDotnetAcquireContext) {
+        super(extensionState, eventStream, testDefaultTimeoutTimeMs, acquireContext);
         this.webWorker = new MockWebRequestWorker(extensionState, eventStream, '');
     }
 

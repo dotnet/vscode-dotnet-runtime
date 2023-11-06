@@ -104,9 +104,7 @@ export class OutputChannelObserver implements IEventStreamObserver {
                 this.outputChannel.appendLine(error.error.message);
                 this.outputChannel.appendLine('');
 
-                if (error instanceof DotnetAcquisitionVersionError) {
-                    this.inProgressVersionDone(error.installKey);
-                }
+                this.inProgressVersionDone(error.installKey);
 
                 if (this.inProgressDownloads.length > 0) {
                     const errorVersionString = this.inProgressDownloads.join(', ');

@@ -4,7 +4,10 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as fs from 'fs';
+import * as os from 'os';
+
 import path = require('path');
+
 import { DistroVersionPair, DotnetDistroSupportStatus } from './LinuxVersionResolver';
 import { DotnetAcquisitionDistroUnknownError, DotnetVersionResolutionError } from '../EventStream/EventStreamEvents';
 import { VersionResolver } from './VersionResolver';
@@ -66,7 +69,8 @@ export abstract class IDistroDotnetSDKProvider {
         this.distroJson = JSON.parse(fs.readFileSync(distroDataFile, 'utf8'));
         if(!distroVersion || !this.distroJson || !((this.distroJson as any)[this.distroVersion.distro]))
         {
-            const error = new DotnetAcquisitionDistroUnknownError(new Error('We are unable to detect the distro or version of your machine'));
+            const error = new DotnetAcquisitionDistroUnknownError(new Error('We are unable to detect the distro or version of your machine'),
+            DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(context.acquisitionContext?.version!, context.installingArchitecture ?? os.arch(), true));
             throw error.error;
         }
     }

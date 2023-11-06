@@ -114,7 +114,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       const sdkVersion = '7.0.103';
       const context : IDotnetAcquireContext = { version: sdkVersion, requestingExtensionId: 'sample-extension', installType: 'global' };
 
-      // We cannot use the describe pattern to restore the environment variables using vscodes extension testing infrastructure.
+      // We cannot use the describe pattern to restore the environment variables using vscode's extension testing infrastructure.
       // So we must set and unset it ourselves, which isn't ideal as this variable could remain.
       let result : IDotnetAcquireResult;
       let error : any;
