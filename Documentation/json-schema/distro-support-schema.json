@@ -8,7 +8,7 @@
         "properties":
         {
             "installCommand": {
-                "type": "object",
+                "type": "array",
                 "typeDefinition" : {
                     "runUnderSudo":
                     {
@@ -24,28 +24,29 @@
                     {
                         "type": "array",
                         "description": "The remaining parts of the command in an array, for apt-get install {0} it would be [install, {0}] as strings"
-                    }
+                    },
+                    "description": "An array of these command objects needed to run in-order"
                 },
                 "description": "The command(s) needed to install dotnet for this distro. Use {0} for the package to install"
             },
             "uninstallCommand": {
-                "type": "object",
+                "type": "array",
                 "description": "The command(s) needed to uninstall dotnet. Use {0} for the package"
             },
             "updateCommand": {
-                "type": "object",
+                "type": "array",
                 "description": "The command(s) needed to update dotnet. Use {0} for the package"
             },
             "searchCommand": {
-                "type": "object",
+                "type": "array",
                 "description": "The command(s) needed to see if a package is available. Use {0} for the package"
             },
             "isInstalledCommand": {
-                "type": "object",
+                "type": "array",
                 "description": "The command(s) needed that will return true if dotnet is installed on the machine"
             },
             "packageLookupCommand": {
-                "type": "object",
+                "type": "array",
                 "description": "The command(s) needed that will return true if a given package is installed on the machine"
             },
             "expectedDistroFeedInstallDirectory": {
@@ -57,19 +58,19 @@
                 "description": "The path that dotnet would be installed if installed via the microsoft feed"
             },
             "installedSDKVersionsCommand": {
-                "type": "object",
+                "type": "array",
                 "description": "The command needed to get all installed dotnet sdk versions on the machine"
             },
             "installedRuntimeVersionsCommand": {
-                "type": "object",
+                "type": "array",
                 "description": "The command needed to get all installed dotnet runtime versions on the machine"
             },
             "currentInstallationVersionCommand": {
-                "type": "object",
+                "type": "array",
                 "description": "The command needed to get the version of the installed dotnet on the machine if available"
             },
             "currentInstallPathCommand": {
-                "type": "object",
+                "type": "array",
                 "description": "The command needed to get the path of the installed dotnet on the machine if available"
             },
             "packages": {
