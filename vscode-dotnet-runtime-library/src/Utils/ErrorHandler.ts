@@ -7,13 +7,15 @@ import * as open from 'open';
 import {
     DotnetCommandFailed,
     DotnetCommandSucceeded,
+    DotnetNotInstallRelatedCommandFailed
 } from '../EventStream/EventStreamEvents';
+import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
+
 import { ExistingPathKeys, IExistingPath } from '../IExtensionContext';
 import { IIssueContext } from './IIssueContext';
 import { formatIssueUrl } from './IssueReporter';
-import { DotnetNotInstallRelatedCommandFailed } from '../EventStream/EventStreamEvents';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
-import { getInstallKeyFromContext } from '../IDotnetAcquireContext';
+
 
 export enum AcquireErrorConfiguration {
     DisplayAllErrorPopups = 0,

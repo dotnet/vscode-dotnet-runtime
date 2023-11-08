@@ -5,26 +5,18 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import * as lockfile from 'proper-lockfile';
-import { IEventStream } from '../EventStream/EventStream';
 import {
     DotnetFallbackInstallScriptUsed,
-    DotnetFileWriteRequestEvent,
     DotnetInstallScriptAcquisitionCompleted,
     DotnetInstallScriptAcquisitionError,
-    DotnetLockAcquiredEvent,
-    DotnetLockAttemptingAcquireEvent,
-    DotnetLockErrorEvent,
-    DotnetLockReleasedEvent,
 } from '../EventStream/EventStreamEvents';
-import { IExtensionState } from '../IExtensionState';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { Debugging } from '../Utils/Debugging';
-import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
 import { FileUtilities } from '../Utils/FileUtilities';
-import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
+import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
+
+import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
-import { IDotnetAcquireContext, getInstallKeyFromContext } from '..';
 
 export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisitionWorker {
     protected webWorker: WebRequestWorker;

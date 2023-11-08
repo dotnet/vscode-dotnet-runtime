@@ -5,8 +5,8 @@
  * ------------------------------------------------------------------------------------------ */
 import * as proc from 'child_process';
 import * as fs from 'fs';
-import open = require('open');
 import * as os from 'os';
+import open = require('open');
 import path = require('path');
 
 import {
@@ -23,12 +23,15 @@ import {
     DotnetWSLSecurityError
 } from '../EventStream/EventStreamEvents';
 import {exec} from '@vscode/sudo-prompt';
+
+import { CommandExecutorCommand } from './CommandExecutorCommand';
+import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
+
+
 import { ICommandExecutor } from './ICommandExecutor';
-import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { IUtilityContext } from './IUtilityContext';
+import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
-import { CommandExecutorCommand } from './ICommandExecutor';
-import { getInstallKeyFromContext } from '../IDotnetAcquireContext';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 
 /* tslint:disable:no-any */

@@ -5,32 +5,34 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { IAcquisitionInvoker } from '../../Acquisition/IAcquisitionInvoker';
-import { IDotnetInstallationContext } from '../../Acquisition/IDotnetInstallationContext';
-import { IInstallationValidator } from '../../Acquisition/IInstallationValidator';
 import { InstallScriptAcquisitionWorker } from '../../Acquisition/InstallScriptAcquisitionWorker';
 import { VersionResolver } from '../../Acquisition/VersionResolver';
-import { IEventStream } from '../../EventStream/EventStream';
 import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
 import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStream/EventStreamEvents';
-import { IEvent } from '../../EventStream/IEvent';
-import { ILoggingObserver } from '../../EventStream/ILoggingObserver';
-import { ITelemetryReporter } from '../../EventStream/TelemetryObserver';
-import { IExistingPath, IExtensionConfiguration } from '../../IExtensionContext';
-import { IExtensionState } from '../../IExtensionState';
+import { FileUtilities } from '../../Utils/FileUtilities';
 import { WebRequestWorker } from '../../Utils/WebRequestWorker';
-import { CommandExecutorCommand, ICommandExecutor } from '../../Utils/ICommandExecutor';
 import { CommandExecutor } from '../../Utils/CommandExecutor';
 import { AcquisitionInvoker } from '../../Acquisition/AcquisitionInvoker';
 import { LinuxInstallType } from '../../Acquisition/LinuxInstallType';
 import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProvider';
 import { getMockUtilityContext } from '../unit/TestUtility';
 import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
+import { CommandExecutorCommand } from '../../Utils/CommandExecutorCommand';
+
+import { IAcquisitionInvoker } from '../../Acquisition/IAcquisitionInvoker';
+import { ICommandExecutor } from '../../Utils/ICommandExecutor';
+import { IEvent } from '../../EventStream/IEvent';
+import { IEventStream } from '../../EventStream/EventStream';
+import { IExistingPath, IExtensionConfiguration } from '../../IExtensionContext';
+import { IExtensionState } from '../../IExtensionState';
+import { IDotnetInstallationContext } from '../../Acquisition/IDotnetInstallationContext';
+import { IInstallationValidator } from '../../Acquisition/IInstallationValidator';
 import { IDistroDotnetSDKProvider } from '../../Acquisition/IDistroDotnetSDKProvider';
+import { ILoggingObserver } from '../../EventStream/ILoggingObserver';
 import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
-import { FileUtilities } from '../../Utils/FileUtilities';
 import { IFileUtilities } from '../../Utils/IFileUtilities';
 import { IVSCodeExtensionContext } from '../../IVSCodeExtensionContext';
+import { ITelemetryReporter } from '../../EventStream/TelemetryObserver';
 import { IUtilityContext } from '../../Utils/IUtilityContext';
 import { IVSCodeEnvironment } from '../../Utils/IVSCodeEnvironment';
 

@@ -5,9 +5,9 @@
  * ------------------------------------------------------------------------------------------ */
 import * as path from 'path';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+import { CommandExecutorCommand } from '../Utils/CommandExecutorCommand';
 import { DotnetDistroSupportStatus } from './LinuxVersionResolver';
 import { LinuxInstallType } from './LinuxInstallType';
-import { CommandExecutorCommand } from '../Utils/ICommandExecutor';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 /* tslint:disable:no-any */
 
@@ -150,7 +150,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 
         if(this.myVersionDetails().hasOwnProperty(this.preinstallCommandKey))
         {
-            // If preinstall commmands exist ( to add the msft feed ) then it's a microsoft feed.
+            // If preinstall commands exist ( to add the msft feed ) then it's a microsoft feed.
             return Promise.resolve(DotnetDistroSupportStatus.Microsoft);
         }
         else

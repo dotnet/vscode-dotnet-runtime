@@ -32,20 +32,21 @@ import {
     DotnetFakeSDKEnvironmentVariableTriggered,
     SuppressedAcquisitionError
 } from '../EventStream/EventStreamEvents';
+
+import { GlobalInstallerResolver } from './GlobalInstallerResolver';
+import { WinMacGlobalInstaller } from './WinMacGlobalInstaller';
+import { LinuxGlobalInstaller } from './LinuxGlobalInstaller';
+import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
+import { Debugging } from '../Utils/Debugging';
+import { IDotnetAcquireContext} from '../IDotnetAcquireContext';
+import { IGlobalInstaller } from './IGlobalInstaller';
+import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
+import { IUtilityContext } from '../Utils/IUtilityContext';
+import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetCoreAcquisitionWorker } from './IDotnetCoreAcquisitionWorker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
-import { GlobalInstallerResolver } from './GlobalInstallerResolver';
-import { WinMacGlobalInstaller } from './WinMacGlobalInstaller';
-import { IGlobalInstaller } from './IGlobalInstaller';
-import { LinuxGlobalInstaller } from './LinuxGlobalInstaller';
-import { Debugging } from '../Utils/Debugging';
-import { IDotnetAcquireContext} from '../IDotnetAcquireContext';
-import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
-import { IUtilityContext } from '../Utils/IUtilityContext';
-import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
-import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 /* tslint:disable:no-any */
 
 export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker

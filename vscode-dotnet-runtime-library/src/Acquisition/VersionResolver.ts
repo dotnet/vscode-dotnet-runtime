@@ -4,16 +4,18 @@
 *--------------------------------------------------------------------------------------------*/
 
 import * as semver from 'semver';
-import { IEventStream } from '../EventStream/EventStream';
 import {
     DotnetFeatureBandDoesNotExistError,
     DotnetInvalidReleasesJSONError,
     DotnetOfflineFailure,
     DotnetVersionResolutionCompleted,
     DotnetVersionResolutionError,
+    DotnetVersionParseEvent
 } from '../EventStream/EventStreamEvents';
-import { IExtensionState } from '../IExtensionState';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
+import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
+import { Debugging } from '../Utils/Debugging';
+
 import { IVersionResolver } from './IVersionResolver';
 import { DotnetVersionSupportPhase,
     DotnetVersionSupportStatus,
@@ -21,9 +23,7 @@ import { DotnetVersionSupportPhase,
     IDotnetListVersionsResult,
     IDotnetVersion
 } from '../IDotnetListVersionsContext';
-import { Debugging } from '../Utils/Debugging';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
-import { DotnetVersionParseEvent, SuppressedAcquisitionError, getInstallKeyFromContext } from '..';
 /* tslint:disable:no-any */
 
 export class VersionResolver implements IVersionResolver {

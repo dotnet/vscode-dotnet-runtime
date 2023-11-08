@@ -7,16 +7,23 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { FileUtilities } from '../Utils/FileUtilities';
-import { IGlobalInstaller } from './IGlobalInstaller';
-import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { VersionResolver } from './VersionResolver';
-import { DotnetConflictingGlobalWindowsInstallError, DotnetFileIntegrityCheckEvent, DotnetUnexpectedInstallerOSError, OSXOpenNotAvailableError, SuppressedAcquisitionError } from '../EventStream/EventStreamEvents';
-import { ICommandExecutor } from '../Utils/ICommandExecutor';
-import { CommandExecutor } from '../Utils/CommandExecutor';
-import { IFileUtilities } from '../Utils/IFileUtilities';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
+import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
+import { CommandExecutor } from '../Utils/CommandExecutor';
+import {
+    DotnetConflictingGlobalWindowsInstallError,
+    DotnetFileIntegrityCheckEvent,
+    DotnetUnexpectedInstallerOSError,
+    OSXOpenNotAvailableError,
+    SuppressedAcquisitionError
+} from '../EventStream/EventStreamEvents';
+
+import { IGlobalInstaller } from './IGlobalInstaller';
+import { ICommandExecutor } from '../Utils/ICommandExecutor';
+import { IFileUtilities } from '../Utils/IFileUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { DotnetCoreAcquisitionWorker, getInstallKeyFromContext } from '..';
+import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 /* tslint:disable:only-arrow-functions */
 /* tslint:disable:no-empty */
 /* tslint:disable:no-any */

@@ -5,16 +5,23 @@
  * ------------------------------------------------------------------------------------------ */
 import * as fs from 'fs';
 import path = require('path');
-import { DotnetAcquisitionDistroUnknownError, DotnetConflictingLinuxInstallTypesError, DotnetCustomLinuxInstallExistsError } from '../EventStream/EventStreamEvents';
+import
+{
+    DotnetAcquisitionDistroUnknownError,
+    DotnetConflictingLinuxInstallTypesError,
+    DotnetCustomLinuxInstallExistsError
+} from '../EventStream/EventStreamEvents';
 import { GenericDistroSDKProvider } from './GenericDistroSDKProvider'
 import { VersionResolver } from './VersionResolver';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+import { RedHatDistroSDKProvider } from './RedHatDistroSDKProvider';
+
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { IDotnetAcquireContext, getInstallKeyFromContext } from '../IDotnetAcquireContext'
-import { RedHatDistroSDKProvider } from './RedHatDistroSDKProvider';
+import { IDotnetAcquireContext } from '../IDotnetAcquireContext'
+import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
 
 /**
  * An enumeration type representing all distros with their versions that we recognize.

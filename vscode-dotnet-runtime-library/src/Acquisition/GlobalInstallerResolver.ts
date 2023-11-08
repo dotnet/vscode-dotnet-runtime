@@ -3,10 +3,12 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
-import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import * as os from 'os';
 import * as path from 'path';
+
+import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { VersionResolver } from './VersionResolver';
+import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
 import { DotnetFeatureBandDoesNotExistError,
         DotnetFileIntegrityCheckEvent,
         DotnetInvalidReleasesJSONError,
@@ -17,8 +19,8 @@ import { DotnetFeatureBandDoesNotExistError,
         DotnetVersionResolutionError
 } from '../EventStream/EventStreamEvents';
 import { FileUtilities } from '../Utils/FileUtilities';
+
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
-import { getInstallKeyFromContext } from '..';
 /* tslint:disable:no-any */
 /* tslint:disable:only-arrow-functions */
 

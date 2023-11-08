@@ -11,11 +11,12 @@ import path = require('path');
 import { DistroVersionPair, DotnetDistroSupportStatus } from './LinuxVersionResolver';
 import { DotnetAcquisitionDistroUnknownError, DotnetVersionResolutionError } from '../EventStream/EventStreamEvents';
 import { VersionResolver } from './VersionResolver';
+import { CommandExecutorCommand } from '../Utils/CommandExecutorCommand';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { LinuxInstallType } from './LinuxInstallType';
 import { LinuxPackageCollection } from './LinuxPackageCollection';
-import { CommandExecutorCommand, ICommandExecutor } from '../Utils/ICommandExecutor';
+import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 /* tslint:disable:no-any */

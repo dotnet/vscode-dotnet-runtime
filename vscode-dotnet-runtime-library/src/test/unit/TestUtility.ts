@@ -4,14 +4,16 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-import { IDotnetAcquireContext } from '../../IDotnetAcquireContext';
-import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
 import { RuntimeInstallationDirectoryProvider } from '../../Acquisition/RuntimeInstallationDirectoryProvider';
 import { SdkInstallationDirectoryProvider } from '../../Acquisition/SdkInstallationDirectoryProvider';
-import { IUtilityContext } from '../../Utils/IUtilityContext';
-import { MockDotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext, MockInstallationValidator, MockVSCodeEnvironment, MockVSCodeExtensionContext, NoInstallAcquisitionInvoker } from '../mocks/MockObjects';
 import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
+import { MockDotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext, MockInstallationValidator, MockVSCodeEnvironment, MockVSCodeExtensionContext } from '../mocks/MockObjects';
+
+import { IDotnetAcquireContext } from '../../IDotnetAcquireContext';
+import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
 import { IEventStream } from '../../EventStream/EventStream';
+import { IUtilityContext } from '../../Utils/IUtilityContext';
+
 const standardTimeoutTime = 100000;
 
 export function getMockAcquisitionContext(runtimeInstall: boolean, timeoutTime : number = standardTimeoutTime, customEventStream? : IEventStream,

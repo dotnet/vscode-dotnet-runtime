@@ -5,7 +5,8 @@
 import * as cp from 'child_process';
 import * as isOnline from 'is-online';
 import * as os from 'os';
-import { IEventStream } from '../EventStream/EventStream';
+import path = require('path');
+
 import {
     DotnetAcquisitionCompleted,
     DotnetAcquisitionInstallError,
@@ -13,23 +14,21 @@ import {
     DotnetAcquisitionScriptOutput,
     DotnetAcquisitionTimeoutError,
     DotnetAcquisitionUnexpectedError,
-    DotnetAlternativeCommandFoundEvent,
-    DotnetCommandFallbackArchitectureEvent,
-    DotnetCommandNotFoundEvent,
     DotnetOfflineFailure,
 } from '../EventStream/EventStreamEvents';
+
 import { timeoutConstants } from '../Utils/ErrorHandler';
-import { IAcquisitionInvoker } from './IAcquisitionInvoker';
-import { IDotnetInstallationContext } from './IDotnetInstallationContext';
-import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
 import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker';
 import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import path = require('path');
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { IAcquisitionInvoker } from './IAcquisitionInvoker';
+import { IDotnetInstallationContext } from './IDotnetInstallationContext';
+import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
 
 export class AcquisitionInvoker extends IAcquisitionInvoker {
     protected readonly scriptWorker: IInstallScriptAcquisitionWorker;

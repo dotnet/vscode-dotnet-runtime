@@ -2,19 +2,20 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
+import * as fs from 'fs';
 import Axios from 'axios';
 import axiosRetry from 'axios-retry';
+import { promisify } from 'util';
+import stream = require('stream');
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { getProxySettings } from 'get-proxy-settings';
 import { AxiosCacheInstance, buildStorage, setupCache, StorageValue } from 'axios-cache-interceptor';
 import {SuppressedAcquisitionError, WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
+import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
+
 import { IExtensionState } from '../IExtensionState';
-import { Debugging } from '../Utils/Debugging';
-import * as fs from 'fs';
-import { promisify } from 'util';
-import stream = require('stream');
-import { getInstallKeyFromContext } from '../IDotnetAcquireContext';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
+import { Debugging } from '../Utils/Debugging';
 /* tslint:disable:no-any */
 
 /*

@@ -8,7 +8,8 @@ import { IExtensionState } from '../IExtensionState';
 import { IInstallationDirectoryProvider } from './IInstallationDirectoryProvider';
 import { IInstallationValidator } from './IInstallationValidator';
 
-export interface IAcquisitionWorkerContext {
+export interface IAcquisitionWorkerContext
+{
     storagePath: string;
     extensionState: IExtensionState;
     eventStream: IEventStream;
