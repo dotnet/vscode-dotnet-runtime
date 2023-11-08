@@ -33,8 +33,6 @@ import { IFileUtilities } from '../../Utils/IFileUtilities';
 import { IVSCodeExtensionContext } from '../../IVSCodeExtensionContext';
 import { IUtilityContext } from '../../Utils/IUtilityContext';
 import { IVSCodeEnvironment } from '../../Utils/IVSCodeEnvironment';
-import { IDotnetAcquireContext } from '../..';
-import { IDotnetCoreAcquisitionWorker } from '../../Acquisition/IDotnetCoreAcquisitionWorker';
 
 const testDefaultTimeoutTimeMs = 60000;
 /* tslint:disable:no-any */
