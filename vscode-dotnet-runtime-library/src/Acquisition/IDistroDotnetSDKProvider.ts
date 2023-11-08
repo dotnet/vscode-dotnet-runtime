@@ -60,7 +60,7 @@ export abstract class IDistroDotnetSDKProvider {
 
     constructor(distroVersion : DistroVersionPair, context : IAcquisitionWorkerContext, utilContext : IUtilityContext, executor : ICommandExecutor | null = null)
     {
-        this.commandRunner = executor ?? new CommandExecutor(context.eventStream, utilContext);
+        this.commandRunner = executor ?? new CommandExecutor(context, utilContext);
         this.context = context;
         this.distroVersion = distroVersion;
         this.versionResolver = new VersionResolver(context);

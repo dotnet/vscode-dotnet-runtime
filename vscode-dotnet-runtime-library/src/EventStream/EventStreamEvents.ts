@@ -104,6 +104,22 @@ export abstract class DotnetAcquisitionError extends IEvent {
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
         return {ErrorName : this.error.name,
                 ErrorMessage : this.error.message,
+                StackTrace : this.error.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : '',
+                InstallKey : this.installKey};
+    }
+}
+
+export abstract class DotnetNonAcquisitionError extends IEvent {
+    public readonly type = EventType.DotnetAcquisitionError;
+    public isError = true;
+
+    constructor(public readonly error: Error) {
+        super();
+    }
+
+    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+        return {ErrorName : this.error.name,
+                ErrorMessage : this.error.message,
                 StackTrace : this.error.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : ''};
     }
 }
@@ -142,6 +158,22 @@ export class DotnetPreinstallDetectionError extends DotnetAcquisitionError {
     public readonly eventName = 'DotnetPreinstallDetectionError';
 }
 
+export class DotnetNotInstallRelatedCommandFailed extends DotnetNonAcquisitionError {
+    public readonly eventName = 'DotnetNotInstallRelatedCommandFailed';
+
+    constructor(error: Error, public readonly command: string) {
+        super(error);
+    }
+
+    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+        return {
+            ErrorMessage : this.error.message,
+            CommandName : this.command,
+            ErrorName : this.error.name,
+            StackTrace : this.error.stack ? this.error.stack : ''};
+        }
+}
+
 export class DotnetCommandFailed extends DotnetAcquisitionError {
     public readonly eventName = 'DotnetCommandFailed';
 
@@ -155,7 +187,7 @@ export class DotnetCommandFailed extends DotnetAcquisitionError {
             ErrorName : this.error.name,
             StackTrace : this.error.stack ? this.error.stack : ''};
         }
-    }
+}
 
 export class DotnetInvalidReleasesJSONError extends DotnetAcquisitionError {
         public readonly eventName = 'DotnetInvalidReleasesJSONError';
@@ -487,6 +519,10 @@ export class CommandExecutionUserCompletedDialogueEvent extends DotnetCustomMess
 
 export class CommandExecutionUnderSudoEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'CommandExecutionUnderSudoEvent';
+}
+
+export class DotnetVersionParseEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetVersionParseEvent';
 }
 
 export abstract class DotnetFileEvent extends DotnetAcquisitionMessage

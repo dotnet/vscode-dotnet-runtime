@@ -6,6 +6,7 @@
 /* tslint:disable:no-any */
 
 import { IDotnetAcquireContext } from '..';
+import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { IEventStream } from '../EventStream/EventStream';
 import { IUtilityContext } from './IUtilityContext';
 
@@ -26,16 +27,12 @@ export type CommandExecutorCommand =
 
 export abstract class ICommandExecutor
 {
-    constructor(eventStream : IEventStream, utilContext : IUtilityContext, acquireContext? : IDotnetAcquireContext)
+    constructor(protected readonly context : IAcquisitionWorkerContext, utilContext : IUtilityContext)
     {
-        this.eventStream = eventStream;
         this.utilityContext = utilContext;
-        this.acquisitionContext = acquireContext;
     }
 
-    protected eventStream : IEventStream;
     protected utilityContext : IUtilityContext;
-    protected acquisitionContext? : IDotnetAcquireContext;
 
     /**
      * @remarks Set this to true if you don't want to capture stdout and stderr, and just want to return the status / exit code.

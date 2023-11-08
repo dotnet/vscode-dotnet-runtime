@@ -76,7 +76,7 @@ export class LinuxVersionResolver
     constructor(acquisitionContext : IAcquisitionWorkerContext, utilContext : IUtilityContext, private readonly acquireContext : IDotnetAcquireContext,
         executor : ICommandExecutor | null = null, distroProvider : IDistroDotnetSDKProvider | null = null)
     {
-        this.commandRunner = executor ?? new CommandExecutor(acquisitionContext.eventStream, utilContext, acquireContext);
+        this.commandRunner = executor ?? new CommandExecutor(acquisitionContext, utilContext);
         this.acquisitionContext = acquisitionContext;
         this.utilityContext = utilContext;
         this.versionResolver = new VersionResolver(acquisitionContext);

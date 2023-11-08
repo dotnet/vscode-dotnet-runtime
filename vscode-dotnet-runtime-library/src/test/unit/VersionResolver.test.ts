@@ -6,6 +6,7 @@ import * as chai from 'chai';
 import { MockEventStream, MockExtensionContext, MockVersionResolver, versionPairs } from '../mocks/MockObjects';
 import { IDotnetListVersionsResult } from '../../IDotnetListVersionsContext';
 import { VersionResolver } from '../../Acquisition/VersionResolver';
+import { getMockAcquisitionContext } from './TestUtility';
 const assert = chai.assert;
 const fullySpecifiedVersion = '7.0.201';
 const twoDigitPatchVersion = '7.0.221';
@@ -24,7 +25,7 @@ suite('VersionResolver Unit Tests', () => {
     const context = new MockExtensionContext();
     // MockVersionResolver is a VersionResolver that uses a fake releases.json
     // (prevents us from making web requests in unit tests)
-    const resolver: MockVersionResolver = new MockVersionResolver(context, eventStream);
+    const resolver: MockVersionResolver = new MockVersionResolver(getMockAcquisitionContext(true));
 
     test('Get Available Versions', async () => {
         const result : IDotnetListVersionsResult = await resolver.GetAvailableDotnetVersions(undefined);
@@ -87,24 +88,24 @@ suite('VersionResolver Unit Tests', () => {
     test('Detects Unspecified Patch Version', async () => {
         assert.equal(resolver.isNonSpecificFeatureBandedVersion(fullySpecifiedVersion), false, 'It detects versions with patches');
         assert.equal(resolver.isNonSpecificFeatureBandedVersion(featureBandVersion), true, 'It detects versions with xx');
-        assert.equal(resolver.isNonSpecificFeatureBandedVersion(twoDigitMajorVersion), false, 'It doesnt error for non xx containing version');
+        assert.equal(resolver.isNonSpecificFeatureBandedVersion(twoDigitMajorVersion), false, 'It does not error for non xx containing version');
     });
 
     test('Detects if Fully Specified Version', async () => {
         assert.equal(resolver.isFullySpecifiedVersion(fullySpecifiedVersion), true, 'It passes basic fully specified version');
         assert.equal(resolver.isFullySpecifiedVersion(uniqueMajorMinorVersion), true);
         assert.equal(resolver.isFullySpecifiedVersion(twoDigitMajorVersion), true, 'It works for 2+ digit major versions');
-        assert.equal(resolver.isFullySpecifiedVersion(majorOnly), false, 'It detects major only versions arent fully specified');
+        assert.equal(resolver.isFullySpecifiedVersion(majorOnly), false, 'It detects major only versions are not fully specified');
         assert.equal(resolver.isFullySpecifiedVersion(featureBandVersion), false, 'It counts feature band only with xxx as not fully specified');
         assert.equal(resolver.isFullySpecifiedVersion(majorMinorOnly), false, 'It detects major.minor as not fully specified');
     });
 
     test('Detects if Only Major or Minor Given', async () => {
-        assert.equal(resolver.isNonSpecificMajorOrMajorMinorVersion(fullySpecifiedVersion), false, 'It doesnt think a fully specified version is major.minor only');
+        assert.equal(resolver.isNonSpecificMajorOrMajorMinorVersion(fullySpecifiedVersion), false, 'It does not think a fully specified version is major.minor only');
         assert.equal(resolver.isNonSpecificMajorOrMajorMinorVersion(uniqueMajorMinorVersion), false);
         assert.equal(resolver.isNonSpecificMajorOrMajorMinorVersion(twoDigitMajorVersion), false);
         assert.equal(resolver.isNonSpecificMajorOrMajorMinorVersion(majorOnly), true, 'It detects major only versions as major only versions');
-        assert.equal(resolver.isNonSpecificMajorOrMajorMinorVersion(featureBandVersion), false, 'It doesnt think xx versions are major minor versions');
+        assert.equal(resolver.isNonSpecificMajorOrMajorMinorVersion(featureBandVersion), false, 'It does not think xx versions are major minor versions');
         assert.equal(resolver.isNonSpecificMajorOrMajorMinorVersion(majorMinorOnly), true, 'It can determine if the version is only major.minor');
     });
 

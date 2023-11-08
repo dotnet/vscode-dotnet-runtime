@@ -34,6 +34,7 @@ import { IVSCodeExtensionContext } from '../../IVSCodeExtensionContext';
 import { IUtilityContext } from '../../Utils/IUtilityContext';
 import { IVSCodeEnvironment } from '../../Utils/IVSCodeEnvironment';
 import { IDotnetAcquireContext } from '../..';
+import { IDotnetCoreAcquisitionWorker } from '../../Acquisition/IDotnetCoreAcquisitionWorker';
 
 const testDefaultTimeoutTimeMs = 60000;
 /* tslint:disable:no-any */
@@ -107,9 +108,8 @@ export class ErrorAcquisitionInvoker extends IAcquisitionInvoker {
 export const versionPairs = [['1.0', '1.0.16'], ['1.1', '1.1.13'], ['2.0', '2.0.9'], ['2.1', '2.1.14'], ['2.2', '2.2.8']];
 
 export class FileWebRequestWorker extends WebRequestWorker {
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, uri: string, extensionStateKey: string,
-                private readonly mockFilePath: string) {
-        super(extensionState, eventStream, uri, testDefaultTimeoutTimeMs);
+    constructor(ctx : IAcquisitionWorkerContext, uri: string,  private readonly mockFilePath: string) {
+        super(ctx, uri);
     }
 
     protected async makeWebRequest(): Promise<string | undefined> {
@@ -119,8 +119,8 @@ export class FileWebRequestWorker extends WebRequestWorker {
 }
 
 export class FailingWebRequestWorker extends WebRequestWorker {
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, uri: string) {
-        super(extensionState, eventStream, '', testDefaultTimeoutTimeMs); // Empty string as uri to cause failure. Uri is required to match the interface even though it's unused.
+    constructor(ctx : IAcquisitionWorkerContext, uri: string) {
+        super(ctx, '', testDefaultTimeoutTimeMs); // Empty string as uri to cause failure. Uri is required to match the interface even though it's unused.
     }
 
     public async getCachedData(): Promise<string | undefined> {
@@ -132,10 +132,10 @@ export class MockTrackingWebRequestWorker extends WebRequestWorker {
     private requestCount = 0;
     public response = 'Mock Web Request Result';
 
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, url: string,
+    constructor(ctx : IAcquisitionWorkerContext, url: string,
             protected readonly succeed = true, webTimeToLive = testDefaultTimeoutTimeMs, cacheTimeToLive = testDefaultTimeoutTimeMs)
     {
-        super(extensionState, eventStream, url, webTimeToLive, '', cacheTimeToLive);
+        super(ctx, url, cacheTimeToLive);
     }
 
     public getRequestCount() {
@@ -158,8 +158,8 @@ export class MockWebRequestWorker extends MockTrackingWebRequestWorker {
     public readonly errorMessage = 'Web Request Failed';
     public response = 'Mock Web Request Result';
 
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, url: string) {
-        super(extensionState, eventStream, url);
+    constructor(ctx : IAcquisitionWorkerContext, url: string) {
+        super(ctx, url);
     }
 
     protected async makeWebRequest(): Promise<string | undefined> {
@@ -185,10 +185,10 @@ export class MockIndexWebRequestWorker extends WebRequestWorker {
         ``
     ];
 
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, url: string,
+    constructor(ctx : IAcquisitionWorkerContext, url: string,
         protected readonly succeed = true, webTimeToLive = testDefaultTimeoutTimeMs, cacheTimeToLive = testDefaultTimeoutTimeMs)
     {
-            super(extensionState, eventStream, url, webTimeToLive, '', cacheTimeToLive);
+            super(ctx, url, cacheTimeToLive);
     }
 
     public async getCachedData(retriesCount = 2): Promise<string | undefined>
@@ -225,18 +225,18 @@ export class MockVSCodeEnvironment extends IVSCodeEnvironment
 export class MockVersionResolver extends VersionResolver {
     private readonly filePath = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-releases.json');
 
-    constructor(extensionState: IExtensionState, eventStream: IEventStream) {
-        super(extensionState, eventStream, testDefaultTimeoutTimeMs);
-        this.webWorker = new FileWebRequestWorker(extensionState, eventStream, '', 'releases', this.filePath);
+    constructor(ctx : IAcquisitionWorkerContext) {
+        super(ctx);
+        this.webWorker = new FileWebRequestWorker(ctx, 'releases', this.filePath);
     }
 }
 
 export class MockInstallScriptWorker extends InstallScriptAcquisitionWorker {
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, acquireContext : IDotnetAcquireContext, failing: boolean, private fallback = false) {
-        super(extensionState, eventStream, testDefaultTimeoutTimeMs, acquireContext);
+    constructor(ctx : IAcquisitionWorkerContext, failing: boolean, private fallback = false) {
+        super(ctx);
         this.webWorker = failing ?
-            new FailingWebRequestWorker(extensionState, eventStream, '') :
-            new MockWebRequestWorker(extensionState, eventStream, '');
+            new FailingWebRequestWorker(ctx, '') :
+            new MockWebRequestWorker(ctx, '');
     }
 
     protected getFallbackScriptPath(): string {
@@ -251,8 +251,8 @@ export class MockInstallScriptWorker extends InstallScriptAcquisitionWorker {
 export class MockApostropheScriptAcquisitionWorker extends MockInstallScriptWorker
 {
     protected readonly scriptFilePath: string;
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, installFolder: string, acquireContext : IDotnetAcquireContext) {
-        super(extensionState, eventStream, acquireContext, false);
+    constructor(ctx : IAcquisitionWorkerContext, installFolder: string) {
+        super(ctx, false);
         const scriptFileEnding = 'win32';
         const scriptFileName = 'dotnet-install';
         this.scriptFilePath = path.join(installFolder, 'install scripts', `${scriptFileName}.${scriptFileEnding}`);
@@ -263,9 +263,9 @@ export class MockApostropheScriptAcquisitionWorker extends MockInstallScriptWork
 export class MockAcquisitionInvoker extends AcquisitionInvoker
 {
     protected readonly scriptWorker: MockApostropheScriptAcquisitionWorker
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, timeoutTime : number, installFolder : string, acquireContext : IDotnetAcquireContext) {
-        super(extensionState, eventStream, timeoutTime, getMockUtilityContext());
-        this.scriptWorker = new MockApostropheScriptAcquisitionWorker(extensionState, eventStream, installFolder, acquireContext);
+    constructor(ctx : IAcquisitionWorkerContext, installFolder : string) {
+        super(ctx, getMockUtilityContext());
+        this.scriptWorker = new MockApostropheScriptAcquisitionWorker(ctx, installFolder);
     }
 }
 
@@ -283,10 +283,10 @@ export class MockCommandExecutor extends ICommandExecutor
     public otherCommandsToMock : string[] = [];
     public otherCommandsReturnValues : string[] = [];
 
-    constructor(eventStream : IEventStream, utilContext : IUtilityContext)
+    constructor(acquisitionContext : IAcquisitionWorkerContext, utilContext : IUtilityContext)
     {
-        super(eventStream, utilContext);
-        this.trueExecutor = new CommandExecutor(eventStream, utilContext);
+        super(acquisitionContext, utilContext);
+        this.trueExecutor = new CommandExecutor(acquisitionContext, utilContext);
     }
 
     public async execute(command: CommandExecutorCommand, options : object | null = null, terminalFailure? : boolean): Promise<string>
@@ -447,9 +447,9 @@ export class MockDistroProvider extends IDistroDotnetSDKProvider
 
 
 export class FailingInstallScriptWorker extends InstallScriptAcquisitionWorker {
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, acquireContext : IDotnetAcquireContext) {
-        super(extensionState, eventStream, testDefaultTimeoutTimeMs, acquireContext);
-        this.webWorker = new MockWebRequestWorker(extensionState, eventStream, '');
+    constructor(ctx : IAcquisitionWorkerContext) {
+        super(ctx);
+        this.webWorker = new MockWebRequestWorker(ctx, '');
     }
 
     public getDotnetInstallScriptPath() : Promise<string> {

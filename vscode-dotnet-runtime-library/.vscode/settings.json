@@ -11,9 +11,14 @@
     "cSpell.words": [
         "aspnet",
         "aspnetcore",
+        "hasher",
+        "HKCU",
         "HKEY",
         "norestart",
+        "OPTOUT",
+        "pkexec",
         "REGHEXVALUE",
-        "REGTYPE"
+        "REGTYPE",
+        "setx"
     ]
 }

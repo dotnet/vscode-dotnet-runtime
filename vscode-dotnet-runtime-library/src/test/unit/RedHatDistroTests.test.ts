@@ -14,7 +14,8 @@ const assert = chai.assert;
 const standardTimeoutTime = 100000;
 
 const mockVersion = '7.0.103';
-const mockExecutor = new MockCommandExecutor(new MockEventStream(), getMockUtilityContext());
+const acquisitionContext = getMockAcquisitionContext(false);
+const mockExecutor = new MockCommandExecutor(acquisitionContext, getMockUtilityContext());
 const pair : DistroVersionPair = { distro : 'Red Hat Enterprise Linux', version : '9.0' };
 const provider : RedHatDistroSDKProvider = new RedHatDistroSDKProvider(pair, getMockAcquisitionContext(false), getMockUtilityContext(), mockExecutor);
 const shouldRun = os.platform() === 'linux';

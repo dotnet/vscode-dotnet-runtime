@@ -18,7 +18,6 @@ import {
     DotnetCommandNotFoundEvent,
     DotnetOfflineFailure,
 } from '../EventStream/EventStreamEvents';
-import { IExtensionState } from '../IExtensionState';
 import { timeoutConstants } from '../Utils/ErrorHandler';
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
@@ -30,19 +29,18 @@ import { FileUtilities } from '../Utils/FileUtilities';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import path = require('path');
+import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 
 export class AcquisitionInvoker extends IAcquisitionInvoker {
     protected readonly scriptWorker: IInstallScriptAcquisitionWorker;
     protected fileUtilities : FileUtilities;
-    protected utilityContext : IUtilityContext;
     private noPowershellError = `powershell.exe is not discoverable on your system. Is PowerShell added to your PATH and correctly installed? Please visit: https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows.
 You will need to restart VS Code after these changes. If PowerShell is still not discoverable, try setting a custom existingDotnetPath following our instructions here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`
 
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, timeoutTime : number, utilContext : IUtilityContext) {
+    constructor(private readonly workerContext : IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext) {
 
-        super(eventStream);
-        this.utilityContext = utilContext;
-        this.scriptWorker = new InstallScriptAcquisitionWorker(extensionState, eventStream, timeoutTime);
+        super(workerContext.eventStream);
+        this.scriptWorker = new InstallScriptAcquisitionWorker(workerContext);
         this.fileUtilities = new FileUtilities();
     }
 
@@ -152,7 +150,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         try
         {
             // Check if PowerShell exists and is on the path.
-            command = await new CommandExecutor(this.eventStream, this.utilityContext).tryFindWorkingCommand(possibleCommands);
+            command = await new CommandExecutor(this.workerContext, this.utilityContext).tryFindWorkingCommand(possibleCommands);
             if(!command)
             {
                 knownError = true;
