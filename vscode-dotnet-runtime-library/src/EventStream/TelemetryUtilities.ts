@@ -48,7 +48,8 @@ export class TelemetryUtilities
         return hashedPathsString;
     }
 
-    static async setDotnetSDKTelemetryToMatch(isExtensionTelemetryEnabled : boolean, extensionContext : IVSCodeExtensionContext, acquisitionContext : IAcquisitionWorkerContext | null, utilityContext : IUtilityContext)
+    static async setDotnetSDKTelemetryToMatch(isExtensionTelemetryEnabled : boolean, extensionContext : IVSCodeExtensionContext,
+        acquisitionContext : IAcquisitionWorkerContext | null, utilityContext : IUtilityContext)
     {
         if(!TelemetryUtilities.isTelemetryEnabled(isExtensionTelemetryEnabled, utilityContext))
         {

@@ -3,8 +3,8 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-import { DotnetCoreAcquisitionWorker } from "../Acquisition/DotnetCoreAcquisitionWorker";
-import { IDotnetAcquireContext } from "../IDotnetAcquireContext";
+import { DotnetCoreAcquisitionWorker } from '../Acquisition/DotnetCoreAcquisitionWorker';
+import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
 
 export function getInstallKeyFromContext(ctx : IDotnetAcquireContext) : string
 {

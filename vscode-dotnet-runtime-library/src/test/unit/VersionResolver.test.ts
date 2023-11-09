@@ -25,7 +25,7 @@ suite('VersionResolver Unit Tests', () => {
     const context = new MockExtensionContext();
     // MockVersionResolver is a VersionResolver that uses a fake releases.json
     // (prevents us from making web requests in unit tests)
-    const resolver: MockVersionResolver = new MockVersionResolver(getMockAcquisitionContext(true));
+    const resolver: MockVersionResolver = new MockVersionResolver(getMockAcquisitionContext(true, ''));
 
     test('Get Available Versions', async () => {
         const result : IDotnetListVersionsResult = await resolver.GetAvailableDotnetVersions(undefined);

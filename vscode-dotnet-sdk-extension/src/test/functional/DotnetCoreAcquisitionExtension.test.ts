@@ -46,8 +46,6 @@ chai.use(chaiAsPromised);
 /* tslint:disable:no-unsafe-finally */
 
 const currentSDKVersion = '6.0';
-const mockAcquisitionContext = getMockAcquisitionContext(false);
-
 suite('DotnetCoreAcquisitionExtension End to End', function ()
 {
 const mockReleasesData = `{
@@ -107,8 +105,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
   });
 
   test('List Sdks & Runtimes', async () => {
-    const mockWebContext = new MockExtensionContext();
-    const eventStream = new MockEventStream();
+    const mockAcquisitionContext = getMockAcquisitionContext(false, '');
     const webWorker = new MockWebRequestWorker(mockAcquisitionContext, '');
     webWorker.response = JSON.parse(mockReleasesData);
 
@@ -130,8 +127,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
   }).timeout(standardTimeoutTime);
 
   test('Get Recommended SDK Version', async () => {
-    const mockWebContext = new MockExtensionContext();
-    const eventStream = new MockEventStream();
+    const mockAcquisitionContext = getMockAcquisitionContext(false, '');
     const webWorker = new MockWebRequestWorker(mockAcquisitionContext, '');
     webWorker.response = JSON.parse(mockReleasesData);
 
@@ -240,6 +236,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     const newestVersion = '6.0.408';
 
     const url = 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/6.0/releases.json'
+    let mockAcquisitionContext = getMockAcquisitionContext(false, '');
     const webWorker = new MockIndexWebRequestWorker(mockAcquisitionContext, url);
     webWorker.knownUrls.push(url);
     // Note that ZIPS in the data below come before EXEs to make sure the file extension check works.
