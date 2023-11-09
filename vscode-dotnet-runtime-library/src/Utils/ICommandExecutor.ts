@@ -12,7 +12,7 @@ import { IUtilityContext } from './IUtilityContext';
 
 export abstract class ICommandExecutor
 {
-    constructor(protected readonly context : IAcquisitionWorkerContext, utilContext : IUtilityContext)
+    constructor(protected readonly context : IAcquisitionWorkerContext | null, utilContext : IUtilityContext)
     {
         this.utilityContext = utilContext;
     }

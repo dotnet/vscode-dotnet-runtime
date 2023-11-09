@@ -19,6 +19,7 @@ import { LinuxPackageCollection } from './LinuxPackageCollection';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
+import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
 /* tslint:disable:no-any */
 
 /**
@@ -71,7 +72,7 @@ export abstract class IDistroDotnetSDKProvider {
         if(!distroVersion || !this.distroJson || !((this.distroJson as any)[this.distroVersion.distro]))
         {
             const error = new DotnetAcquisitionDistroUnknownError(new Error('We are unable to detect the distro or version of your machine'),
-            DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(context.acquisitionContext?.version!, context.installingArchitecture ?? os.arch(), true));
+                getInstallKeyFromContext(this.context.acquisitionContext!));
             throw error.error;
         }
     }
@@ -168,7 +169,7 @@ export abstract class IDistroDotnetSDKProvider {
     {
         const supportStatus = await this.getDotnetVersionSupportStatus(fullySpecifiedVersion, installType);
         const supportedType : boolean = supportStatus === DotnetDistroSupportStatus.Distro || supportStatus === DotnetDistroSupportStatus.Microsoft;
-        return supportedType && this.versionResolver.getFeatureBandFromVersion(fullySpecifiedVersion) === '1';
+        return supportedType;
     }
 
     protected async myVersionPackages(installType : LinuxInstallType) : Promise<LinuxPackageCollection[]>
@@ -227,8 +228,7 @@ export abstract class IDistroDotnetSDKProvider {
             }
         }
         const err = new Error(`Could not find a .NET package for version ${fullySpecifiedDotnetVersion}. Found only: ${JSON.stringify(await this.myVersionPackages(installType))}`);
-        this.context.eventStream.post(new DotnetVersionResolutionError(err,DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(fullySpecifiedDotnetVersion,
-            this.context.acquisitionContext?.architecture)));
+        this.context.eventStream.post(new DotnetVersionResolutionError(err, getInstallKeyFromContext(this.context.acquisitionContext!)));
         throw err;
     }
 

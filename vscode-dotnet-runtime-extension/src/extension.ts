@@ -113,7 +113,6 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     const existingPathConfigWorker = new ExtensionConfigurationWorker(extensionConfiguration, configKeys.existingPath);
 
     const runtimeContext = getAcquisitionWorkerContext(true);
-    telemetryObserver?.setAcquisitionContext(runtimeContext);
     const runtimeVersionResolver = new VersionResolver(runtimeContext);
     const runtimeIssueContextFunctor = getIssueContext(existingPathConfigWorker);
     const runtimeAcquisitionWorker = getAcquisitionWorker(runtimeContext);
@@ -129,8 +128,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             eventStream.post(new DotnetRuntimeAcquisitionStarted(commandContext.requestingExtensionId));
             eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
 
-            telemetryObserver?.setAcquisitionContext(runtimeContext);
             runtimeAcquisitionWorker.setAcquisitionContext(commandContext);
+            telemetryObserver?.setAcquisitionContext(runtimeContext, commandContext);
 
             if (!commandContext.version || commandContext.version === 'latest') {
                 throw new Error(`Cannot acquire .NET version "${commandContext.version}". Please provide a valid version.`);
@@ -177,8 +176,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
                 return Promise.resolve(existingPath);
             }
 
-            telemetryObserver?.setAcquisitionContext(sdkContext);
             sdkAcquisitionWorker.setAcquisitionContext(commandContext);
+            telemetryObserver?.setAcquisitionContext(sdkContext, commandContext);
 
             if(commandContext.version === '' || !commandContext.version)
             {

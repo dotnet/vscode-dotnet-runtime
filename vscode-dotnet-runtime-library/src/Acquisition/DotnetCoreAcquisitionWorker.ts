@@ -58,7 +58,6 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     private readonly installPathsGraveyardKey = 'installPathsGraveyard';
     public installingArchitecture : string | null;
     private readonly dotnetExecutable: string;
-    private readonly timeoutValue: number;
     private globalResolver: GlobalInstallerResolver | null;
 
     private acquisitionPromises: { [installKeys: string]: Promise<string> | undefined };
@@ -67,7 +66,6 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     constructor(private readonly context: IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext, extensionContext : IVSCodeExtensionContext) {
         const dotnetExtension = os.platform() === 'win32' ? '.exe' : '';
         this.dotnetExecutable = `dotnet${dotnetExtension}`;
-        this.timeoutValue = context.timeoutSeconds;
         this.acquisitionPromises = {};
         // null deliberately allowed to use old behavior below
         this.installingArchitecture = this.context.installingArchitecture === undefined ? os.arch() : this.context.installingArchitecture;
@@ -247,7 +245,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             installDir: dotnetInstallDir,
             version,
             dotnetPath,
-            timeoutValue: this.timeoutValue,
+            timeoutSeconds: this.context.timeoutSeconds,
             installRuntime,
             architecture: this.installingArchitecture
         } as IDotnetInstallationContext;

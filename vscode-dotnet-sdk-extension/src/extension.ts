@@ -115,7 +115,6 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
     const timeoutValue = extensionConfiguration.get<number>(configKeys.installTimeoutValue);
     const resolvedTimeoutSeconds = timeoutValue === undefined ? defaultTimeoutValue : timeoutValue;
-    const proxyUrl = extensionConfiguration.get<string>(configKeys.proxyUrl);
 
     let storagePath: string;
     if (os.platform() === 'win32') {
@@ -135,13 +134,10 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         installationValidator: new InstallationValidator(eventStream),
         timeoutSeconds: resolvedTimeoutSeconds,
         installDirectoryProvider: new SdkInstallationDirectoryProvider(storagePath),
-        acquisitionContext : null, // todo: why is this null
+        acquisitionContext : null,
         isExtensionTelemetryInitiallyEnabled : isExtensionTelemetryEnabled,
     };
-
-    telemetryObserver?.setAcquisitionContext(acquisitionContext);
     const acquisitionWorker = new DotnetCoreAcquisitionWorker(acquisitionContext, utilContext, vsCodeExtensionContext);
-
     const versionResolver = new VersionResolver(acquisitionContext);
 
     const getAvailableVersions = async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) : Promise<IDotnetListVersionsResult | undefined> =>
@@ -172,6 +168,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
             eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
             acquisitionWorker.setAcquisitionContext(commandContext);
+            telemetryObserver?.setAcquisitionContext(acquisitionContext, commandContext);
+
             if(commandContext.installType === 'global')
             {
                 Debugging.log(`Acquisition Request was remarked as Global.`, eventStream);

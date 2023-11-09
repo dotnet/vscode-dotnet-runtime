@@ -66,8 +66,6 @@ export class LinuxVersionResolver
     private distro : DistroVersionPair | null = null;
     protected distroSDKProvider : IDistroDotnetSDKProvider | null = null;
     protected commandRunner : ICommandExecutor;
-    protected acquisitionContext : IAcquisitionWorkerContext;
-    protected utilityContext : IUtilityContext;
     protected versionResolver : VersionResolver;
 
     public conflictingInstallErrorMessage = `A dotnet installation was found which indicates dotnet that was installed via Microsoft package feeds. But for this distro and version, we only acquire .NET via the distro feeds.
@@ -80,12 +78,10 @@ export class LinuxVersionResolver
     public baseUnsupportedDistroErrorMessage = 'We are unable to detect the distro or version of your machine';
     public redhatUnsupportedDistroErrorMessage = 'Red Hat Enterprise Linux 7.0 is currently not supported. Follow the instructions here to download the .NET SDK: https://learn.microsoft.com/en-us/dotnet/core/install/linux-rhel#rhel-7--net-6. Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from https://access.redhat.com/downloads/';
 
-    constructor(acquisitionContext : IAcquisitionWorkerContext, utilContext : IUtilityContext, private readonly acquireContext : IDotnetAcquireContext,
+    constructor(private readonly acquisitionContext : IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext, private readonly acquireContext : IDotnetAcquireContext,
         executor : ICommandExecutor | null = null, distroProvider : IDistroDotnetSDKProvider | null = null)
     {
-        this.commandRunner = executor ?? new CommandExecutor(acquisitionContext, utilContext);
-        this.acquisitionContext = acquisitionContext;
-        this.utilityContext = utilContext;
+        this.commandRunner = executor ?? new CommandExecutor(this.acquisitionContext, this.utilityContext);
         this.versionResolver = new VersionResolver(acquisitionContext);
         if(distroProvider)
         {
@@ -296,7 +292,6 @@ export class LinuxVersionResolver
         // Verify the version of dotnet is supported
         if (!( await this.distroSDKProvider!.isDotnetVersionSupported(fullySpecifiedDotnetVersion, 'sdk') ))
         {
-            // does this still work?
             throw new Error(`The distro ${this.distro} does not officially support dotnet version ${fullySpecifiedDotnetVersion}.`);
         }
 

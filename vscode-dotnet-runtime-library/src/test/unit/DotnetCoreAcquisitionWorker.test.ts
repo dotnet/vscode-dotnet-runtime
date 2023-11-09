@@ -135,7 +135,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
     });
 
     test('Acquire Runtime Status', async () => {
-        const [acquisitionWorker, eventStream, context, invoker] = setupWorker(false);
+        const [acquisitionWorker, eventStream, context, invoker] = setupWorker(true);
         const version = '5.0';
         const installKey = acquisitionWorker.getInstallKey(version);
         let result = await acquisitionWorker.acquireStatus(version, true);
@@ -245,7 +245,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
 
         // Install non-legacy SDK
         sdkWorker.installingArchitecture = os.arch();
-        await AssertInstallSDK(sdkWorker, sdkContext, sdkEvents, sdkV5, runtimeInvoker);
+        await AssertInstallSDK(sdkWorker, sdkContext, sdkEvents, sdkV5, sdkInvoker);
 
         // 6.0 sdk legacy should remain, as well as 5.0 and 6.0 runtime. 5.0 SDK should be removed.
         remainingInstalls = context.get<string[]>(installedVersionsKey, []).concat(sdkContext.get<string[]>(installedVersionsKey, []));
@@ -266,7 +266,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
     });
 
     test('Error is Redirected on Acquisition Failure', async () => {
-        const [acquisitionWorker, eventStream, _] = setupWorker(true);
+        const [acquisitionWorker, eventStream, _, __] = setupWorker(true);
         const acquisitionInvoker = new RejectingAcquisitionInvoker(eventStream);
 
         return assert.isRejected(acquisitionWorker.acquireRuntime('1.0', acquisitionInvoker), '.NET Acquisition Failed: Installation failed: Rejecting message');

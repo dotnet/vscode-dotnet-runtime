@@ -13,11 +13,11 @@ import {
     DotnetInstallScriptAcquisitionError,
 } from '../../EventStream/EventStreamEvents';
 import {
+    ErrorAcquisitionInvoker,
     MockEventStream,
     MockInstallScriptWorker,
     MockTrackingWebRequestWorker,
     MockVSCodeExtensionContext,
-    NoInstallAcquisitionInvoker,
 } from '../mocks/MockObjects';
 
 import {
@@ -36,13 +36,13 @@ suite('WebRequestWorker Unit Tests', () => {
     test('Acquire Version Network Failure', async () => {
         const eventStream = new MockEventStream();
         const acquisitionWorker = new DotnetCoreAcquisitionWorker(getMockAcquisitionContext(true, undefined, eventStream), getMockUtilityContext(), new MockVSCodeExtensionContext());
-        const invoker = new NoInstallAcquisitionInvoker(eventStream);
+        const invoker = new ErrorAcquisitionInvoker(eventStream);
         return assert.isRejected(acquisitionWorker.acquireRuntime('1.0', invoker), Error, '.NET Acquisition Failed');
     });
 
     test('Install Script Request Failure', async () => {
         const eventStream = new MockEventStream();
-        const installScriptWorker: IInstallScriptAcquisitionWorker = new MockInstallScriptWorker(getMockAcquisitionContext(true), true);
+        const installScriptWorker: IInstallScriptAcquisitionWorker = new MockInstallScriptWorker(getMockAcquisitionContext(true, undefined, eventStream), true);
         await assert.isRejected(installScriptWorker.getDotnetInstallScriptPath(), Error, 'Failed to Acquire Dotnet Install Script');
         assert.exists(eventStream.events.find(event => event instanceof DotnetInstallScriptAcquisitionError));
     });

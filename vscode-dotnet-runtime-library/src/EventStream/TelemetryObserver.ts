@@ -13,6 +13,7 @@ import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { TelemetryUtilities } from './TelemetryUtilities';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
+import { IDotnetAcquireContext } from '..';
 
 export interface ITelemetryReporter {
     sendTelemetryEvent(eventName: string, properties?: { [key: string]: string }, measures?: { [key: string]: number }): void;
@@ -45,12 +46,13 @@ export class TelemetryObserver implements IEventStreamObserver {
         vscode.env.onDidChangeTelemetryEnabled((newIsTelemetryEnabledSetting: boolean) =>
         {
             this.isExtensionTelemetryEnabled = newIsTelemetryEnabledSetting;
-            TelemetryUtilities.setDotnetSDKTelemetryToMatch(this.isExtensionTelemetryEnabled, this.extensionContext, this.acquisitionContext!, this.utilityContext);
+            TelemetryUtilities.setDotnetSDKTelemetryToMatch(this.isExtensionTelemetryEnabled, this.extensionContext, this.acquisitionContext, this.utilityContext);
         });
     }
 
-    public setAcquisitionContext(context : IAcquisitionWorkerContext)
+    public setAcquisitionContext(context : IAcquisitionWorkerContext, underlyingAcquisitionContext : IDotnetAcquireContext)
     {
+        context.acquisitionContext = underlyingAcquisitionContext;
         this.acquisitionContext = context;
     }
 

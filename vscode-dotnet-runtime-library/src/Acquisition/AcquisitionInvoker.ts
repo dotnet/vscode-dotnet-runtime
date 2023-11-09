@@ -58,7 +58,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                 }
 
                 cp.exec(winOS ? windowsFullCommand : installCommand,
-                        { cwd: process.cwd(), maxBuffer: 500 * 1024, timeout: 1000 * installContext.timeoutValue, killSignal: 'SIGKILL' },
+                        { cwd: process.cwd(), maxBuffer: 500 * 1024, timeout: 1000 * installContext.timeoutSeconds, killSignal: 'SIGKILL' },
                         async (error, stdout, stderr) => {
                     if (error) {
                         if (stdout) {
@@ -75,7 +75,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                             reject(offlineError);
                         } else if (error.signal === 'SIGKILL') {
                             error.message = timeoutConstants.timeoutMessage;
-                            this.eventStream.post(new DotnetAcquisitionTimeoutError(error, installKey, installContext.timeoutValue));
+                            this.eventStream.post(new DotnetAcquisitionTimeoutError(error, installKey, installContext.timeoutSeconds));
                             reject(error);
                         } else {
                             this.eventStream.post(new DotnetAcquisitionInstallError(error, installKey));

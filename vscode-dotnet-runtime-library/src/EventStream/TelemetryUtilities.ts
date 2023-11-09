@@ -48,11 +48,11 @@ export class TelemetryUtilities
         return hashedPathsString;
     }
 
-    static async setDotnetSDKTelemetryToMatch(isExtensionTelemetryEnabled : boolean, extensionContext : IVSCodeExtensionContext, acquisitionContext : IAcquisitionWorkerContext, utilityContext : IUtilityContext)
+    static async setDotnetSDKTelemetryToMatch(isExtensionTelemetryEnabled : boolean, extensionContext : IVSCodeExtensionContext, acquisitionContext : IAcquisitionWorkerContext | null, utilityContext : IUtilityContext)
     {
         if(!TelemetryUtilities.isTelemetryEnabled(isExtensionTelemetryEnabled, utilityContext))
         {
-            TelemetryUtilities.logTelemetryChange(`Before disabling .NET SDK telemetry:`, isExtensionTelemetryEnabled, acquisitionContext.eventStream, utilityContext);
+            TelemetryUtilities.logTelemetryChange(`Before disabling .NET SDK telemetry:`, isExtensionTelemetryEnabled, acquisitionContext?.eventStream, utilityContext);
 
             await new CommandExecutor(acquisitionContext, utilityContext).setEnvironmentVariable(
                 'DOTNET_CLI_TELEMETRY_OPTOUT',
@@ -65,7 +65,7 @@ To disable .NET SDK telemetry, set the environment variable DOTNET_CLI_TELEMETRY
 `The .NET Install Tool will not collect telemetry. However, the .NET SDK does collect telemetry.
 To disable .NET SDK telemetry, set the environment variable DOTNET_CLI_TELEMETRY_OPTOUT to true.`);
 
-            TelemetryUtilities.logTelemetryChange(`After disabling .NET SDK telemetry:`, isExtensionTelemetryEnabled, acquisitionContext.eventStream, utilityContext);
+            TelemetryUtilities.logTelemetryChange(`After disabling .NET SDK telemetry:`, isExtensionTelemetryEnabled, acquisitionContext?.eventStream, utilityContext);
         }
         else
         {
@@ -73,7 +73,7 @@ To disable .NET SDK telemetry, set the environment variable DOTNET_CLI_TELEMETRY
 `The .NET tools collect usage data in order to help us improve your experience. It is collected by Microsoft and shared with the community. You can opt-out of telemetry by setting the DOTNET_CLI_TELEMETRY_OPTOUT environment variable to '1' or 'true' using your favorite shell.
 Read more about .NET CLI Tools telemetry: https://aka.ms/dotnet-cli-telemetry`,
             () => {/* No Callback */}, );
-            TelemetryUtilities.logTelemetryChange(`Unchanged Telemetry Settings.`, isExtensionTelemetryEnabled, acquisitionContext.eventStream, utilityContext);
+            TelemetryUtilities.logTelemetryChange(`Unchanged Telemetry Settings.`, isExtensionTelemetryEnabled, acquisitionContext?.eventStream, utilityContext);
         }
     }
 
@@ -89,9 +89,9 @@ Read more about .NET CLI Tools telemetry: https://aka.ms/dotnet-cli-telemetry`,
         return isVSCodeTelemetryEnabled && isExtensionTelemetryEnabled;
     }
 
-    static logTelemetryChange(changeMessage : string, isExtensionTelemetryEnabled : boolean, eventStream : IEventStream, utilityContext : IUtilityContext) : void
+    static logTelemetryChange(changeMessage : string, isExtensionTelemetryEnabled : boolean, eventStream : IEventStream | undefined, utilityContext : IUtilityContext) : void
     {
-        eventStream.post(new DotnetTelemetrySettingEvent(`Telemetry Setting Change: ${changeMessage}
+        eventStream?.post(new DotnetTelemetrySettingEvent(`Telemetry Setting Change: ${changeMessage}
 .NET SDK Setting: ${!TelemetryUtilities.isDotnetSDKTelemetryDisabled()},
 Extension Setting: ${isExtensionTelemetryEnabled}
 VS Code Setting: ${utilityContext.vsCodeEnv.isTelemetryEnabled()}.`))
