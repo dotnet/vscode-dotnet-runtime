@@ -10,6 +10,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { VersionResolver } from './VersionResolver';
 import { DotnetFeatureBandDoesNotExistError,
+        DotnetFileIntegrityCheckEvent,
         DotnetInvalidReleasesJSONError,
         DotnetNoInstallerFileExistsError,
         DotnetUnexpectedInstallerArchitectureError,
@@ -248,6 +249,10 @@ We cannot verify that .NET downloads are hosted in a secure location, so we have
 Please report this issue so it can be remedied or investigated.`));
                             this.eventStream.post(releaseJsonErr);
                             throw releaseJsonErr.error;
+                        }
+                        else
+                        {
+                            this.eventStream.post(new DotnetFileIntegrityCheckEvent(`This installer file is hosted on an expected domain https://download.visualstudio.microsoft.com/.`));
                         }
 
                         let installerHash = installer[this.releasesHashKey];
