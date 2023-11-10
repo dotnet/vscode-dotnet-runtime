@@ -10,7 +10,7 @@ import { FileUtilities } from '../Utils/FileUtilities';
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { VersionResolver } from './VersionResolver';
-import { DotnetConflictingGlobalWindowsInstallError, DotnetUnexpectedInstallerOSError, OSXOpenNotAvailableError, SuppressedAcquisitionError } from '../EventStream/EventStreamEvents';
+import { DotnetConflictingGlobalWindowsInstallError, DotnetFileIntegrityCheckEvent, DotnetUnexpectedInstallerOSError, OSXOpenNotAvailableError, SuppressedAcquisitionError } from '../EventStream/EventStreamEvents';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { IFileUtilities } from '../Utils/IFileUtilities';
@@ -137,7 +137,9 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
     private async installerFileHasValidIntegrity(installerFile : string) : Promise<boolean>
     {
         const realFileHash = await this.file.getFileHash(installerFile);
+        this.acquisitionContext.eventStream.post(new DotnetFileIntegrityCheckEvent(`The hash of the installer file we downloaded is ${realFileHash}`));
         const expectedFileHash = this.installerHash;
+        this.acquisitionContext.eventStream.post(new DotnetFileIntegrityCheckEvent(`The valid and expected hash of the installer file is ${expectedFileHash}`));
 
         if(expectedFileHash === null)
         {
@@ -147,15 +149,18 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
 
             const pick = await this.utilityContext.ui.getModalWarningResponse(message, no, yes);
             const userConsentsToContinue = pick === yes;
+            this.acquisitionContext.eventStream.post(new DotnetFileIntegrityCheckEvent(`The valid hash could not be found. The user chose to continue? ${userConsentsToContinue}`));
             return userConsentsToContinue;
         }
 
         if(realFileHash !== expectedFileHash)
         {
+            this.acquisitionContext.eventStream.post(new DotnetFileIntegrityCheckEvent(`The hashes DO NOT match.`));
             return false;
         }
         else
         {
+            this.acquisitionContext.eventStream.post(new DotnetFileIntegrityCheckEvent(`This file is valid.`));
             return true;
         }
     }
