@@ -88,7 +88,7 @@ export class FileUtilities extends IFileUtilities
     /**
      * @param directoryToWipe the directory to delete all of the files in if privilege to do so exists.
      */
-    public wipeDirectory(directoryToWipe : string)
+    public wipeDirectory(directoryToWipe : string, eventStream : IEventStream)
     {
         if(!fs.existsSync(directoryToWipe))
         {
@@ -96,7 +96,17 @@ export class FileUtilities extends IFileUtilities
         }
 
         // Use rimraf to delete all of the items in a directory without the directory itself.
-        fs.readdirSync(directoryToWipe).forEach(f => fs.rmSync(`${directoryToWipe}/${f}`));
+        fs.readdirSync(directoryToWipe).forEach(f =>
+        {
+            try
+            {
+                fs.rmSync(`${directoryToWipe}/${f}`);
+            }
+            catch(error : any)
+            {
+                eventStream.post(new SuppressedAcquisitionError(error, `Failed to delete ${f} when marked for deletion.`));
+            }
+        });
     }
 
     /**
