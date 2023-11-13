@@ -27,12 +27,9 @@ const mementoBasedAxiosCacheInterceptorStorage = (extensionStorage: IExtensionSt
         // tslint:disable-next-line
         set(key: string, value: any, request? : CacheRequestConfig)
          {
-             let isJson = false;
-             let parsedJson = undefined;
              try
              {
-                parsedJson = JSON.parse(value);
-                isJson = true;
+                JSON.parse(value);
              }
              catch(error : any)
              {
@@ -61,7 +58,7 @@ const mementoBasedAxiosCacheInterceptorStorage = (extensionStorage: IExtensionSt
                 }, websiteTimeoutMs); // Give web requests
             }
 
-            extensionStorage.update(`${cachePrefix}:${key}`, isJson ? parsedJson : value);
+            extensionStorage.update(`${cachePrefix}:${key}`, value);
         },
         remove(key: string) {
             extensionStorage.update(`${cachePrefix}:${key}`, undefined);
