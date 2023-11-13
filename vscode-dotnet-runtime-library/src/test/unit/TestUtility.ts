@@ -58,7 +58,7 @@ export function getMockAcquireContext(version : string, legacy = false) : IDotne
     const acquireContext : IDotnetAcquireContext =
     {
         version: version,
-        architecture: legacy ? null : os.arch();
+        architecture: legacy ? null : os.arch()
     };
     return acquireContext;
 }
