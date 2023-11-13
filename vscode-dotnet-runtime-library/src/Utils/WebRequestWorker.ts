@@ -27,10 +27,21 @@ const mementoBasedAxiosCacheInterceptorStorage = (extensionStorage: IExtensionSt
         // tslint:disable-next-line
         set(key: string, value: any, request? : CacheRequestConfig)
          {
-             try
-             {
+            if(value.state === 'loading')
+            {
+                setTimeout(() =>
+                {
+                    if(value.state === 'loading')
+                    {
+                        return; // The web request is a timeout, do NOT cache its result, as the result is junk
+                    }
+                }, websiteTimeoutMs); // Give web requests
+            }
+
+            try
+            {
                 JSON.parse(value);
-             }
+            }
              catch(error : any)
              {
                 if(error.includes('Converting circular structure to JSON'))
@@ -45,17 +56,6 @@ const mementoBasedAxiosCacheInterceptorStorage = (extensionStorage: IExtensionSt
                 {
                     // Web request is to something other than json
                 }
-            }
-
-            if(value.state === 'loading')
-            {
-                setTimeout(() =>
-                {
-                    if(value.state === 'loading')
-                    {
-                        return; // The web request is a timeout, do NOT cache its result, as the result is junk
-                    }
-                }, websiteTimeoutMs); // Give web requests
             }
 
             extensionStorage.update(`${cachePrefix}:${key}`, value);
