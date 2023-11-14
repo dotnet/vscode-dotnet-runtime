@@ -6,68 +6,14 @@ import Axios from 'axios';
 import axiosRetry from 'axios-retry';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { getProxySettings } from 'get-proxy-settings';
-import { AxiosCacheInstance, buildStorage, CacheRequestConfig, setupCache, StorageValue } from 'axios-cache-interceptor';
+import { AxiosCacheInstance, buildMemoryStorage, buildStorage, CacheRequestConfig, NotEmptyStorageValue, setupCache, StorageValue } from 'axios-cache-interceptor';
 import { IEventStream } from '../EventStream/EventStream';
 import {SuppressedAcquisitionError, WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
 import { IExtensionState } from '../IExtensionState';
-import { Debugging } from '../Utils/Debugging';
 import * as fs from 'fs';
 import { promisify } from 'util';
 import stream = require('stream');
 /* tslint:disable:no-any */
-
-/*
-This wraps the VSCode memento state blob into an axios-cache-interceptor-compatible Storage.
-(The momento state is used to save extensionState/data across runs of the extension.)
-All the calls are synchronous.
-*/
-const mementoBasedAxiosCacheInterceptorStorage = (extensionStorage: IExtensionState, websiteTimeoutMs : number) => {
-    const cachePrefix = 'axios-cache'; // Used to make it easier to tell what part of the extension state is from the cache
-    return buildStorage({
-        // tslint:disable-next-line
-        set(key: string, value: any, request? : CacheRequestConfig)
-         {
-            if(value.state === 'loading')
-            {
-                setTimeout(() =>
-                {
-                    if(value.state === 'loading')
-                    {
-                        return; // The web request is a timeout, do NOT cache its result, as the result is junk
-                    }
-                }, websiteTimeoutMs); // Give web requests
-            }
-
-            try
-            {
-                JSON.parse(value);
-            }
-             catch(error : any)
-             {
-                if(error.includes('Converting circular structure to JSON'))
-                {
-                    // For requests that contain the TLSSocket, which are web requests that are still initiating, they will be circular/cyclic
-                    // VS Code will try to unwrap the circular reference as there is a bug in the extension state handler
-                    // This will cause an infinite-loop timeout failure to update the extension state in the future
-                    // So we do not permit such requests to be cached
-                    return;
-                }
-                else
-                {
-                    // Web request is to something other than json
-                }
-            }
-
-            extensionStorage.update(`${cachePrefix}:${key}`, value);
-        },
-        remove(key: string) {
-            extensionStorage.update(`${cachePrefix}:${key}`, undefined);
-        },
-        find(key: string) {
-            return extensionStorage.get(`${cachePrefix}:${key}`) as StorageValue;
-        }
-    });
-}
 
 export class WebRequestWorker
 {
@@ -91,7 +37,6 @@ export class WebRequestWorker
         {
             this.cacheTimeToLive = this.cacheTimeToLive === -1 ? this.websiteTimeoutMs * 100 : this.cacheTimeToLive; // make things live 100x the default time, which is ~16 hrs
             const uncachedAxiosClient = Axios.create({});
-            Debugging.log(`Axios client instantiated: ${uncachedAxiosClient}`);
 
             // Wrap the client with a retry interceptor. We don't need to return a new client, it should be applied automatically.
             axiosRetry(uncachedAxiosClient, {
@@ -101,16 +46,12 @@ export class WebRequestWorker
                 }
             });
 
-            Debugging.log(`Axios client wrapped around axios-retry: ${uncachedAxiosClient}`);
-
             this.client = setupCache(uncachedAxiosClient,
                 {
-                    storage: mementoBasedAxiosCacheInterceptorStorage(this.extensionState, this.websiteTimeoutMs),
+                    storage: buildMemoryStorage(),
                     ttl: this.cacheTimeToLive
                 }
             );
-
-            Debugging.log(`Cached Axios Client Created: ${this.client}`);
     }
 
     /**
