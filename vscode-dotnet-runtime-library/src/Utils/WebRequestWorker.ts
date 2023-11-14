@@ -231,15 +231,15 @@ export class WebRequestWorker
             {
                 if(isAxiosError(error))
                 {
-                    let formattedError = error as AxiosError;
-                    const genericError = new Error(
-`Request to ${this.url} Failed: ${formattedError.message}. Aborting.
-${formattedError.cause? `Error Cause: ${formattedError.cause!.message}` : ``}
+                    const axiosBasedError = error as AxiosError;
+                    const summarizedError = new Error(
+`Request to ${this.url} Failed: ${axiosBasedError.message}. Aborting.
+${axiosBasedError.cause? `Error Cause: ${axiosBasedError.cause!.message}` : ``}
 Please ensure that you are online.
 
 If you're on a proxy and disable registry access, you must set the proxy in our extension settings. See https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`);
-                    this.eventStream.post(new WebRequestError(genericError));
-                    throw genericError;
+                    this.eventStream.post(new WebRequestError(summarizedError));
+                    throw summarizedError;
                 }
                 else
                 {
