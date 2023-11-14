@@ -6,36 +6,14 @@ import Axios from 'axios';
 import axiosRetry from 'axios-retry';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { getProxySettings } from 'get-proxy-settings';
-import { AxiosCacheInstance, buildStorage, setupCache, StorageValue } from 'axios-cache-interceptor';
+import { AxiosCacheInstance, buildMemoryStorage, buildStorage, CacheRequestConfig, NotEmptyStorageValue, setupCache, StorageValue } from 'axios-cache-interceptor';
 import { IEventStream } from '../EventStream/EventStream';
 import {SuppressedAcquisitionError, WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
 import { IExtensionState } from '../IExtensionState';
-import { Debugging } from '../Utils/Debugging';
 import * as fs from 'fs';
 import { promisify } from 'util';
 import stream = require('stream');
 /* tslint:disable:no-any */
-
-/*
-This wraps the VSCode memento state blob into an axios-cache-interceptor-compatible Storage.
-(The momento state is used to save extensionState/data across runs of the extension.)
-All the calls are synchronous.
-*/
-const mementoStorage = (extensionStorage: IExtensionState) => {
-    const cachePrefix = 'axios-cache'; // Used to make it easier to tell what part of the extension state is from the cache
-    return buildStorage({
-        // tslint:disable-next-line
-        set(key: string, value: any) {
-            extensionStorage.update(`${cachePrefix}:${key}`, value);
-        },
-        remove(key: string) {
-            extensionStorage.update(`${cachePrefix}:${key}`, undefined);
-        },
-        find(key: string) {
-            return extensionStorage.get(`${cachePrefix}:${key}`) as StorageValue;
-        }
-    });
-}
 
 export class WebRequestWorker
 {
@@ -59,7 +37,6 @@ export class WebRequestWorker
         {
             this.cacheTimeToLive = this.cacheTimeToLive === -1 ? this.websiteTimeoutMs * 100 : this.cacheTimeToLive; // make things live 100x the default time, which is ~16 hrs
             const uncachedAxiosClient = Axios.create({});
-            Debugging.log(`Axios client instantiated: ${uncachedAxiosClient}`);
 
             // Wrap the client with a retry interceptor. We don't need to return a new client, it should be applied automatically.
             axiosRetry(uncachedAxiosClient, {
@@ -69,16 +46,12 @@ export class WebRequestWorker
                 }
             });
 
-            Debugging.log(`Axios client wrapped around axios-retry: ${uncachedAxiosClient}`);
-
             this.client = setupCache(uncachedAxiosClient,
                 {
-                    storage: mementoStorage(this.extensionState),
+                    storage: buildMemoryStorage(),
                     ttl: this.cacheTimeToLive
                 }
             );
-
-            Debugging.log(`Cached Axios Client Created: ${this.client}`);
     }
 
     /**
