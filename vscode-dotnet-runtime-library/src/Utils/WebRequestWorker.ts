@@ -2,7 +2,7 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
-import Axios from 'axios';
+import Axios, { AxiosError, isAxiosError } from 'axios';
 import axiosRetry from 'axios-retry';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { getProxySettings } from 'get-proxy-settings';
@@ -96,18 +96,8 @@ export class WebRequestWorker
         {
             throw new Error(`Request to the url ${this.url} failed, as the URL is invalid.`);
         }
-        const timeoutCancelTokenHook = new AbortController();
-        const timeout = setTimeout(() =>
-        {
-            timeoutCancelTokenHook.abort();
-            const formattedError = new Error(`TIMEOUT: The request to ${this.url} timed out at ${this.websiteTimeoutMs} ms. This only occurs if your internet
- or the url are experiencing connection difficulties; not if the server is being slow to respond. Check your connection, the url, and or increase the timeout value here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#install-script-timeouts`);
-            this.eventStream.post(new WebRequestError(formattedError));
-            throw formattedError;
-        }, this.websiteTimeoutMs);
 
-        const response = await this.client.get(url, { signal: timeoutCancelTokenHook.signal, ...options });
-        clearTimeout(timeout);
+        const response = await this.client.get(url, { ...options });
 
         return response;
     }
@@ -235,22 +225,28 @@ export class WebRequestWorker
 
             return response.data;
         }
-        catch (error)
+        catch (error : any)
         {
             if (throwOnError)
             {
-                let formattedError = error as Error;
-                if ((formattedError.message as string).toLowerCase().includes('block')) {
-                    formattedError = new Error(`Software restriction policy is blocking .NET installation: Request to ${this.url} Failed: ${formattedError.message}`);
+                if(isAxiosError(error))
+                {
+                    let formattedError = error as AxiosError;
+                    const genericError = new Error(
+`Request to ${this.url} Failed: ${formattedError.message}. Aborting.
+${formattedError.cause? `Error Cause: ${formattedError.cause!.message}` : ``}
+Please ensure that you are online.
+
+If you're on a proxy and disable registry access, you must set the proxy in our extension settings. See https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`);
+                    this.eventStream.post(new WebRequestError(genericError));
+                    throw genericError;
                 }
                 else
                 {
-                    formattedError = new Error(`Please ensure that you are online: Request to ${this.url} Failed: ${formattedError.message}.
-If you are on a corporate proxy with a result of 400, you may need to manually set the proxy in our extension settings. Please see https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md for more details.
-If your proxy requires credentials and the result is 407: we cannot currently handle your request, and you should configure dotnet manually following the above link.`);
+                    const genericError = new Error(`Web Request to ${this.url} Failed: ${error.message}. Aborting. Please ensure that you are online.`);
+                    this.eventStream.post(new WebRequestError(genericError));
+                    throw genericError;
                 }
-                this.eventStream.post(new WebRequestError(formattedError));
-                throw formattedError;
             }
             return undefined;
         }
