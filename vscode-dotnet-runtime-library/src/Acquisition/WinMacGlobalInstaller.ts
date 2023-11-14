@@ -92,7 +92,7 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
 
         if(this.cleanupInstallFiles)
         {
-            this.file.wipeDirectory(path.dirname(installerFile));
+            this.file.wipeDirectory(path.dirname(installerFile), this.acquisitionContext.eventStream);
         }
 
         const validInstallerStatusCodes = ['0', '1641', '3010']; // Ok, Pending Reboot, + Reboot Starting Now
@@ -114,7 +114,7 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
     private async downloadInstaller(installerUrl : string) : Promise<string>
     {
         const ourInstallerDownloadFolder = IGlobalInstaller.getDownloadedInstallFilesFolder();
-        this.file.wipeDirectory(ourInstallerDownloadFolder);
+        this.file.wipeDirectory(ourInstallerDownloadFolder, this.acquisitionContext.eventStream);
         const installerPath = path.join(ourInstallerDownloadFolder, `${installerUrl.split('/').slice(-1)}`);
 
         const installerDir = path.dirname(installerPath);
