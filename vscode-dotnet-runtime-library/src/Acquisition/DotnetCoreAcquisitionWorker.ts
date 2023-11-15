@@ -78,8 +78,14 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         this.removeFolderRecursively(this.context.installDirectoryProvider.getStoragePath());
 
-        await this.context.extensionState.update(this.installingVersionsKey, []);
-        await this.context.extensionState.update(this.installedVersionsKey, []);
+        // This does not uninstall global things yet, so don't remove their keys.
+        const installingVersions = this.context.extensionState.get<string[]>(this.installingVersionsKey, []);
+        const remainingInstallingVersions = installingVersions.filter(x => this.isGlobalInstallKey(x));
+        await this.context.extensionState.update(this.installingVersionsKey, remainingInstallingVersions);
+
+        const installedVersions = this.context.extensionState.get<string[]>(this.installedVersionsKey, []);
+        const remainingInstalledVersions = installedVersions.filter(x => this.isGlobalInstallKey(x));
+        await this.context.extensionState.update(this.installedVersionsKey, remainingInstalledVersions);
 
         this.context.eventStream.post(new DotnetUninstallAllCompleted());
     }
@@ -97,6 +103,11 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     {
         this.globalResolver = installerResolver;
         return this.acquire(await installerResolver.getFullySpecifiedVersion(), false, installerResolver);
+    }
+
+    private isGlobalInstallKey(installKey : string) : boolean
+    {
+        return installKey.toLowerCase().includes('global');
     }
 
     /**
