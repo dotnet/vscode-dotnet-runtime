@@ -58,7 +58,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     private readonly timeoutValue: number;
     private globalResolver: GlobalInstallerResolver | null;
 
-    private acquisitionPromises: { [installKeys: string]: Promise<string> | undefined };
+    private acquisitionPromises: { [installKey: string]: Promise<string> | undefined };
     private extensionContext : IVSCodeExtensionContext;
 
     constructor(private readonly context: IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext, extensionContext : IVSCodeExtensionContext) {
@@ -196,6 +196,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
                 });
             }
 
+            // Put this promise into the list so we can let other requests run at the same time
+            // Allows us to return the end result of this current request for any following duplicates while we are still running.
             this.acquisitionPromises[installKey] = acquisitionPromise;
             return acquisitionPromise.then((res) => ({ dotnetPath: res }));
         }
@@ -273,6 +275,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         await this.removeVersionFromExtensionState(this.installingVersionsKey, installKey);
         await this.addVersionToExtensionState(this.installedVersionsKey, installKey);
 
+        delete this.acquisitionPromises[installKey];
         return dotnetPath;
     }
 
@@ -342,6 +345,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         await this.addVersionToExtensionState(this.installedVersionsKey, installKey);
 
         this.context.eventStream.post(new DotnetGlobalAcquisitionCompletionEvent(`The version ${installKey} completed successfully.`));
+        delete this.acquisitionPromises[installKey];
         return installedSDKPath;
     }
 
