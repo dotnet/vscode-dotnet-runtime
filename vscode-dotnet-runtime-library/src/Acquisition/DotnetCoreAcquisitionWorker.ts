@@ -292,7 +292,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             }
             if(uninstallLocalSDK)
             {
-                await this.uninstallRuntimeOrSDK(installKey);
+                await this.uninstallLocalRuntimeOrSDK(installKey);
             }
         }
     }
@@ -378,7 +378,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             if(legacyInstall.includes(version))
             {
                 this.context.eventStream.post(new DotnetLegacyInstallRemovalRequestEvent(`Trying to remove legacy install: ${legacyInstall} of ${version}.`));
-                await this.uninstallRuntimeOrSDK(legacyInstall);
+                await this.uninstallLocalRuntimeOrSDK(legacyInstall);
             }
         }
     }
@@ -410,7 +410,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         {
             this.context.eventStream.post(new DotnetInstallGraveyardEvent(
                 `Attempting to remove .NET at ${installKey} again, as it was left in the graveyard.`));
-            await this.uninstallRuntimeOrSDK(installKey);
+            await this.uninstallLocalRuntimeOrSDK(installKey);
         }
     }
 
@@ -437,7 +437,13 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         await this.context.extensionState.update(this.installPathsGraveyardKey, graveyard);
     }
 
-    public async uninstallRuntimeOrSDK(installKey : string) {
+    public async uninstallLocalRuntimeOrSDK(installKey : string)
+    {
+        if(this.isGlobalInstallKey(installKey))
+        {
+            return;
+        }
+
         try
         {
             delete this.acquisitionPromises[installKey];
