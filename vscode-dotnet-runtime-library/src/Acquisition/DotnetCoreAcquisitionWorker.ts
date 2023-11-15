@@ -169,6 +169,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
                 Debugging.log(`The Acquisition Worker has Determined a Global Install was requested.`, this.context.eventStream);
 
                 acquisitionPromise = this.acquireGlobalCore(globalInstallerResolver, installKey).catch((error: Error) => {
+                    this.removeVersionFromExtensionState(this.installingVersionsKey, installKey);
                     delete this.acquisitionPromises[installKey];
                     throw new Error(`.NET Acquisition Failed: ${error.message}`);
                 });
@@ -177,7 +178,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             {
                 Debugging.log(`The Acquisition Worker has Determined a Local Install was requested.`, this.context.eventStream);
 
-                acquisitionPromise = this.acquireCore(version, installRuntime, installKey).catch((error: Error) => {
+                acquisitionPromise = this.acquireLocalCore(version, installRuntime, installKey).catch((error: Error) => {
+                    this.removeVersionFromExtensionState(this.installingVersionsKey, installKey);
                     delete this.acquisitionPromises[installKey];
                     throw new Error(`.NET Acquisition Failed: ${error.message}`);
                 });
@@ -215,7 +217,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      *
      * @remarks it is called "core" because it is the meat of the actual acquisition work; this has nothing to do with .NET core vs framework.
      */
-    private async acquireCore(version: string, installRuntime: boolean, installKey : string): Promise<string>
+    private async acquireLocalCore(version: string, installRuntime: boolean, installKey : string): Promise<string>
     {
         this.checkForPartialInstalls(installKey, version, installRuntime, !installRuntime);
 
