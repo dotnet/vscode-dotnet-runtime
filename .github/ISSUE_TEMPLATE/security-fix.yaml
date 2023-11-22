@@ -9,3 +9,8 @@ body:
 - type: markdown
   attributes:
     value: "⚠️ Please do not open issues for anything you think might have a security implication."
+- type: textarea
+  attributes:
+    label: ‎‎‎‎‎‎‎ㅤ
+  validations:
+    required: true
