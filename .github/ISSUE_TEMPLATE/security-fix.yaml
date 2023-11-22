@@ -12,5 +12,6 @@ body:
 - type: textarea
   attributes:
     label: ‎‎‎‎‎‎‎ㅤ
+    placeholder: Close this window and instead email secure@microsoft.com or disclose the issue via the portal at https://msrc.microsoft.com.
   validations:
     required: true
