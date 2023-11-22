@@ -1,7 +1,7 @@
 name: "Security fix"
 description: 'Report a security vulnerability'
 title: 'Reporting a Vulnerability'
-labels: []
+labels: ["closeable"]
 body:
 - type: markdown
   attributes:
@@ -13,5 +13,6 @@ body:
   attributes:
     label: ‎‎‎‎‎‎‎ㅤ
     placeholder: Close this window and instead email secure@microsoft.com or disclose the issue via the portal at https://msrc.microsoft.com.
+    render: cs
   validations:
     required: true
