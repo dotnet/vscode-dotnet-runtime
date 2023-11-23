@@ -1,6 +1,5 @@
 name: Security fix
 description: Report a security vulnerability
-title: ''
 labels: ["closeable"]
 body:
 - type: markdown

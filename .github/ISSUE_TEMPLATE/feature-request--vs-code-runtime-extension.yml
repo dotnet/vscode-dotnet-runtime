@@ -1,6 +1,5 @@
-name: "Feature Request"
-description: 'Request a new feature for this project'
-title: ''
+name: Feature Request
+description: Request a new feature for this project
 labels: ["feature-request"]
 body:
 - type: textarea
