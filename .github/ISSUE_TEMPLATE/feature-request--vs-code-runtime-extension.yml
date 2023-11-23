@@ -1,6 +1,6 @@
 name: "Feature Request"
 description: 'Request a new feature for this project'
-title: 'Reporting a Vulnerability'
+title: ''
 labels: ["feature-request"]
 body:
 - type: textarea
@@ -11,7 +11,7 @@ body:
     required: true
 - type: textarea
   attributes:
-    label: A clear and **concise** description of what you want to happen. Include any alternative solutions you've considered.
+    label: A clear and concise description of what you want to happen. Include any alternative solutions you've considered.
     placeholder: Example -- I would like to have [...] to change from [...] to [...]. The benefit of this is [...].
   validations:
     required: true
