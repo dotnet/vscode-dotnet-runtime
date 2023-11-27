@@ -1,10 +1,13 @@
-/* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ */
+/*---------------------------------------------------------------------------------------------
+*  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
+*--------------------------------------------------------------------------------------------*/
+
 import * as semver from 'semver';
 import { IEventStream } from '../EventStream/EventStream';
 import {
+    DotnetFeatureBandDoesNotExistError,
+    DotnetInvalidReleasesJSONError,
     DotnetOfflineFailure,
     DotnetVersionResolutionCompleted,
     DotnetVersionResolutionError,
@@ -18,18 +21,22 @@ import { DotnetVersionSupportPhase,
     IDotnetListVersionsResult,
     IDotnetVersion
 } from '../IDotnetListVersionsContext';
+import { Debugging } from '../Utils/Debugging';
+/* tslint:disable:no-any */
 
 export class VersionResolver implements IVersionResolver {
     protected webWorker: WebRequestWorker;
-    private readonly releasesKey = 'releases';
     private readonly releasesUrl = 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json';
+    protected static invalidFeatureBandErrorString = `A feature band couldn't be determined for the requested version: `;
 
     constructor(extensionState: IExtensionState,
                 private readonly eventStream: IEventStream,
+                private readonly timeoutTime : number,
+                private readonly proxy?: string,
                 webWorker?: WebRequestWorker
     )
     {
-        this.webWorker = webWorker ?? new WebRequestWorker(extensionState, eventStream, this.releasesUrl, this.releasesKey);
+        this.webWorker = webWorker ?? new WebRequestWorker(extensionState, eventStream, this.releasesUrl, this.timeoutTime * 1000, this.proxy);
     }
 
     /**
@@ -52,8 +59,7 @@ export class VersionResolver implements IVersionResolver {
         const shouldObtainSdkVersions : boolean = !commandContext?.listRuntimes;
         const availableVersions : IDotnetListVersionsResult = [];
 
-        const response = await this.webWorker.getCachedData();
-
+        const response : any = await this.webWorker.getCachedData();
 
         return new Promise<IDotnetListVersionsResult>((resolve, reject) =>
         {
@@ -65,7 +71,7 @@ export class VersionResolver implements IVersionResolver {
             }
             else
             {
-                const sdkDetailsJson = JSON.parse(response)['releases-index'];
+                const sdkDetailsJson = response['releases-index'];
 
                 for(const availableSdk of sdkDetailsJson)
                 {
@@ -97,34 +103,70 @@ export class VersionResolver implements IVersionResolver {
     /**
      * @param getRuntimeVersion - True for getting the full runtime version, false for the SDk version.
      */
-    private async getFullVersion(version: string, getRuntimeVersion: boolean): Promise<string> {
-        try {
-            const releasesVersions = await this.getReleasesInfo(getRuntimeVersion);
-            const versionResult = this.resolveVersion(version, releasesVersions);
-            this.eventStream.post(new DotnetVersionResolutionCompleted(version, versionResult));
-            return versionResult;
-        } catch (error) {
-            this.eventStream.post(new DotnetVersionResolutionError(error as Error, version));
+    private async getFullVersion(version: string, getRuntimeVersion: boolean): Promise<string>
+    {
+        let releasesVersions : IDotnetListVersionsResult;
+        try
+        {
+            releasesVersions = await this.getReleasesInfo(getRuntimeVersion);
+        }
+        catch(error)
+        {
             throw error;
         }
+
+        return new Promise<string>((resolve, reject) =>
+        {
+            try
+            {
+                const versionResult = this.resolveVersion(version, releasesVersions);
+                this.eventStream.post(new DotnetVersionResolutionCompleted(version, versionResult));
+                resolve(versionResult);
+            }
+            catch (error)
+            {
+                this.eventStream.post(new DotnetVersionResolutionError(error as Error, version));
+                reject(error);
+            }
+        });
     }
 
     private resolveVersion(version: string, releases: IDotnetListVersionsResult): string {
+        Debugging.log(`Resolving the version: ${version}`, this.eventStream);
         this.validateVersionInput(version);
 
         const matchingVersion = releases.filter((availableVersions : IDotnetVersion) => availableVersions.channelVersion === version);
-        if (!matchingVersion || matchingVersion.length < 1) {
-            throw new Error(`Unable to resolve version: ${version}`);
+        if (!matchingVersion || matchingVersion.length < 1)
+        {
+            const err = new DotnetVersionResolutionError(new Error(`The requested and or resolved version is invalid.`), version);
+            this.eventStream.post(err);
+            throw err.error;
         }
 
         return matchingVersion[0].version;
     }
 
-    private validateVersionInput(version: string) {
-        const parsedVer = semver.coerce(version);
-        if (version.split('.').length !== 2 || !parsedVer) {
-            throw new Error(`Invalid version: ${version}`);
+    private validateVersionInput(version: string)
+    {
+        let parsedVer;
+        try
+        {
+            parsedVer = semver.coerce(version);
         }
+        catch(err)
+        {
+            parsedVer = null;
+        }
+        Debugging.log(`Semver parsing passed: ${version}.`, this.eventStream);
+
+        if (version.split('.').length !== 2 || !parsedVer)
+        {
+            Debugging.log(`Resolving the version: ${version} ... it is invalid!`, this.eventStream);
+            const err = new DotnetVersionResolutionError(new Error(`An invalid version was requested. Version: ${version}`), version);
+            this.eventStream.post(err);
+            throw err.error;
+        }
+        Debugging.log(`The version ${version} was determined to be valid.`, this.eventStream);
     }
 
     private async getReleasesInfo(getRuntimeVersion : boolean): Promise<IDotnetListVersionsResult>
@@ -132,10 +174,150 @@ export class VersionResolver implements IVersionResolver {
         const apiContext: IDotnetListVersionsContext = { listRuntimes: getRuntimeVersion };
 
         const response = await this.GetAvailableDotnetVersions(apiContext);
-        if (!response) {
-            throw new Error('Unable to get the full version.');
+        if (!response)
+        {
+            const err = new DotnetInvalidReleasesJSONError(new Error(`We could not reach the releases API ${this.releasesUrl} to download dotnet, is your machine offline or is this website down?`));
+            this.eventStream.post(err);
+            throw err.error;
         }
 
         return response;
+    }
+
+    /**
+     *
+     * @param fullySpecifiedVersion the fully specified version of the sdk, e.g. 7.0.301 to get the major from.
+     * @returns the major.minor in the form of '3', etc.
+     */
+    public getMajor(fullySpecifiedVersion : string) : string
+    {
+        // The called function will check that we can do the split, so we dont need to check again.
+        return this.getMajorMinor(fullySpecifiedVersion).split('.')[0];
+    }
+
+    /**
+     *
+     * @param fullySpecifiedVersion the fully specified version, e.g. 7.0.301 to get the major minor from.
+     * @returns the major.minor in the form of '3.1', etc.
+     */
+    public getMajorMinor(fullySpecifiedVersion : string) : string
+    {
+        if(fullySpecifiedVersion.split('.').length < 2)
+        {
+            const err = new DotnetVersionResolutionError(new Error(`The requested version ${fullySpecifiedVersion} is invalid.`), fullySpecifiedVersion);
+            throw err.error;
+        }
+
+        const majorMinor = `${fullySpecifiedVersion.split('.').at(0)}.${fullySpecifiedVersion.split('.').at(1)}`;
+        return majorMinor;
+    }
+
+    /**
+     *
+     * @param fullySpecifiedVersion the version of the sdk, either fully specified or not, but containing a band definition.
+     * @returns a single string representing the band number, e.g. 3 in 7.0.301.
+     */
+    public getFeatureBandFromVersion(fullySpecifiedVersion : string) : string
+    {
+        const band : string | undefined = fullySpecifiedVersion.split('.')?.at(2)?.charAt(0);
+        if(band === undefined)
+        {
+            const err = new DotnetFeatureBandDoesNotExistError(new Error(`${VersionResolver.invalidFeatureBandErrorString}${fullySpecifiedVersion}.`));
+            throw err.error;
+        }
+        return band;
+    }
+
+    /**
+     *
+     * @param fullySpecifiedVersion the version of the sdk, either fully specified or not, but containing a band definition.
+     * @returns a single string representing the band patch version, e.g. 12 in 7.0.312.
+     */
+    public getFeatureBandPatchVersion(fullySpecifiedVersion : string) : string
+    {
+        return Number(this.getPatchVersionString(fullySpecifiedVersion)).toString();
+    }
+
+    /**
+     *
+     * @remarks the logic for getFeatureBandPatchVersion, except that it returns '01' or '00' instead of the patch number.
+     * Not meant for public use.
+     */
+    private getPatchVersionString(fullySpecifiedVersion : string) : string
+    {
+        const patch : string | undefined = fullySpecifiedVersion.split('.')?.at(2)?.substring(1);
+        if(patch === undefined || !this.isNumber(patch))
+        {
+            const err = new DotnetFeatureBandDoesNotExistError(new Error(`${VersionResolver.invalidFeatureBandErrorString}${fullySpecifiedVersion}.`));
+            throw err.error;
+        }
+        return patch
+    }
+    /**
+     *
+     * @param fullySpecifiedVersion the requested version to analyze.
+     * @returns true IFF version is of an expected length and format.
+     */
+      public isValidLongFormVersionFormat(fullySpecifiedVersion : string) : boolean
+      {
+          const numberOfPeriods = fullySpecifiedVersion.split('.').length - 1;
+          // 9 is used to prevent bad versions (current expectation is 7 but we want to support .net 10 etc)
+          if(numberOfPeriods === 2 && fullySpecifiedVersion.length < 11)
+          {
+            if(this.isNonSpecificFeatureBandedVersion(fullySpecifiedVersion) ||
+                (this.getPatchVersionString(fullySpecifiedVersion).length <= 2 && this.getPatchVersionString(fullySpecifiedVersion).length > 1))
+            {
+                return true;
+            }
+            Debugging.log(`The version has a bad patch number: ${fullySpecifiedVersion}`);
+          }
+          Debugging.log(`The version has more or less than two periods, or it is too long: ${fullySpecifiedVersion}`);
+          return false;
+      }
+
+    /**
+     *
+     * @param version the requested version to analyze.
+     * @returns true IFF version is a feature band with an unspecified sub-version was given e.g. 6.0.4xx or 6.0.40x
+     */
+    public isNonSpecificFeatureBandedVersion(version : string) : boolean
+    {
+        const numberOfPeriods = version.split('.').length - 1;
+        return version.split('.').slice(0, 2).every(x => this.isNumber(x)) && version.endsWith('x') && numberOfPeriods === 2;
+    }
+
+    /**
+     *
+     * @param version the requested version to analyze.
+     * @returns true IFF version is a specific version e.g. 7.0.301.
+     */
+    public isFullySpecifiedVersion(version : string) : boolean
+    {
+        return version.split('.').every(x => this.isNumber(x)) && this.isValidLongFormVersionFormat(version) && !this.isNonSpecificFeatureBandedVersion(version);
+    }
+
+    /**
+     *
+     * @param version the requested version to analyze.
+     * @returns true IFF a major release represented as an integer was given. e.g. 6, which we convert to 6.0, OR a major minor was given, e.g. 6.1.
+     */
+    public isNonSpecificMajorOrMajorMinorVersion(version : string) : boolean
+    {
+        const numberOfPeriods = version.split('.').length - 1;
+        return this.isNumber(version) && numberOfPeriods >= 0 && numberOfPeriods < 2;
+    }
+
+    /**
+     *
+     * @param value the string to check and see if it's a valid number.
+     * @returns true if it's a valid number.
+     */
+    private isNumber(value: string | number): boolean
+    {
+        return (
+            (value != null) &&
+            (value !== '') &&
+            !isNaN(Number(value.toString()))
+        );
     }
 }

@@ -14,6 +14,10 @@
 		"lint": "tslint -c tslint.json 'vscode-dotnet-runtime-library/src/**/*.ts' 'vscode-dotnet-runtime-extension/src/**/*.ts' 'vscode-dotnet-sdk-extension/src/**/*.ts'"
 	},
 	"dependencies": {
+		"rimraf": "^5.0.1",
 		"vsce": "2.11.0"
+	},
+	"devDependencies": {
+		"@types/source-map-support": "^0.5.6"
 	}
 }

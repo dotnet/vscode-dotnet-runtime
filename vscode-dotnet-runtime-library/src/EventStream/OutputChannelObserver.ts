@@ -1,7 +1,7 @@
 /*---------------------------------------------------------------------------------------------
- *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the MIT License. See License.txt in the project root for license information.
- *--------------------------------------------------------------------------------------------*/
+*  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
+*--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
 import {
     DotnetAcquisitionAlreadyInstalled,
@@ -10,6 +10,7 @@ import {
     DotnetAcquisitionInProgress,
     DotnetAcquisitionStarted,
     DotnetAcquisitionVersionError,
+    DotnetDebuggingMessage,
     DotnetExistingPathResolutionCompleted,
 } from './EventStreamEvents';
 import { EventType } from './EventType';
@@ -24,24 +25,28 @@ export class OutputChannelObserver implements IEventStreamObserver {
     constructor(private readonly outputChannel: vscode.OutputChannel) {
     }
 
-    public post(event: IEvent): void {
-        switch (event.type) {
+    public post(event: IEvent): void
+    {
+        switch (event.type)
+        {
             case EventType.DotnetRuntimeAcquisitionStart:
-                this.outputChannel.append('Downloading the .NET Runtime.');
+                const runtimeAcquisitionStarted = event as DotnetAcquisitionStarted;
+                this.outputChannel.append(`${runtimeAcquisitionStarted.requestingExtensionId} requested to download the .NET Runtime.`);
                 this.outputChannel.appendLine('');
                 break;
             case EventType.DotnetSDKAcquisitionStart:
-                this.outputChannel.append('Downloading the .NET SDK.');
+                const sdkAcquisitionStarted = event as DotnetAcquisitionStarted;
+                this.outputChannel.append(`${sdkAcquisitionStarted.requestingExtensionId} requested to download the .NET SDK.`);
                 this.outputChannel.appendLine('');
                 break;
             case EventType.DotnetAcquisitionStart:
                 const acquisitionStarted = event as DotnetAcquisitionStarted;
 
-                this.inProgressDownloads.push(acquisitionStarted.version);
+                this.inProgressDownloads.push(acquisitionStarted.installKey);
 
                 if (this.inProgressDownloads.length > 1) {
                     // Already a download in progress
-                    this.outputChannel.appendLine(` -- Concurrent download of '${acquisitionStarted.version}' started!`);
+                    this.outputChannel.appendLine(` -- Concurrent download of '${acquisitionStarted.installKey}' started!`);
                     this.outputChannel.appendLine('');
                 } else {
                     this.startDownloadIndicator();
@@ -53,10 +58,10 @@ export class OutputChannelObserver implements IEventStreamObserver {
             case EventType.DotnetAcquisitionCompleted:
                 const acquisitionCompleted = event as DotnetAcquisitionCompleted;
                 this.outputChannel.appendLine(' Done!');
-                this.outputChannel.appendLine(`.NET ${acquisitionCompleted.version} executable path: ${acquisitionCompleted.dotnetPath}`);
+                this.outputChannel.appendLine(`.NET ${acquisitionCompleted.installKey} executable path: ${acquisitionCompleted.dotnetPath}`);
                 this.outputChannel.appendLine('');
 
-                this.inProgressVersionDone(acquisitionCompleted.version);
+                this.inProgressVersionDone(acquisitionCompleted.installKey);
 
                 if (this.inProgressDownloads.length > 0) {
                     const completedVersionString = `'${this.inProgressDownloads.join('\', \'')}'`;
@@ -76,7 +81,7 @@ export class OutputChannelObserver implements IEventStreamObserver {
                     this.outputChannel.append(`${
                         (event as DotnetAcquisitionAlreadyInstalled).requestingExtensionId
                     } wants to install .NET ${
-                        (event as DotnetAcquisitionAlreadyInstalled).version
+                        (event as DotnetAcquisitionAlreadyInstalled).installKey
                     } but it already exists. No downloads or changes were made.\n`);
                 }
                 break;
@@ -86,7 +91,7 @@ export class OutputChannelObserver implements IEventStreamObserver {
                     this.outputChannel.append(`${
                         (event as DotnetAcquisitionInProgress).requestingExtensionId
                     } tried to install .NET ${
-                        (event as DotnetAcquisitionInProgress).version
+                        (event as DotnetAcquisitionInProgress).installKey
                     } but that install had already been requested. No downloads or changes were made.\n`);
                 }
                 break;
@@ -94,13 +99,13 @@ export class OutputChannelObserver implements IEventStreamObserver {
                 const error = event as DotnetAcquisitionError;
                 this.outputChannel.appendLine(' Error!');
                 if (error instanceof DotnetAcquisitionVersionError) {
-                    this.outputChannel.appendLine(`Failed to download .NET ${error.version}:`);
+                    this.outputChannel.appendLine(`Failed to download .NET ${error.installKey}:`);
                 }
                 this.outputChannel.appendLine(error.error.message);
                 this.outputChannel.appendLine('');
 
                 if (error instanceof DotnetAcquisitionVersionError) {
-                    this.inProgressVersionDone(error.version);
+                    this.inProgressVersionDone(error.installKey);
                 }
 
                 if (this.inProgressDownloads.length > 0) {
@@ -109,6 +114,10 @@ export class OutputChannelObserver implements IEventStreamObserver {
                 } else {
                     this.stopDownloadIndicator();
                 }
+                break;
+            case EventType.DotnetDebuggingMessage:
+                const loggedMessage = event as DotnetDebuggingMessage;
+                this.outputChannel.appendLine(loggedMessage.message);
                 break;
         }
     }

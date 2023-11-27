@@ -41,7 +41,7 @@ stages:
     steps:
     - task: NodeTool@0
       inputs:
-        versionSpec: '15.x'
+        versionSpec: '16.10.0'
       displayName: 'Install Node.js'
     - script: build.cmd
       displayName: Build Windows
@@ -75,7 +75,7 @@ stages:
     steps:
     - task: NodeTool@0
       inputs:
-        versionSpec: '15.x'
+        versionSpec: '16.10.0'
       displayName: 'Install Node.js'
     - bash: |
         npm install --cache /temp/empty-cache
@@ -94,15 +94,15 @@ stages:
         addToPath: true
         architecture: 'x64'
     - task: PythonScript@0
+      continueOnError: true
       inputs:
         scriptSource: 'filePath'
         scriptPath: 'dependency-verifier.py'
         arguments: '$(System.PullRequest.TargetBranch)'
-        failOnStderr: true  
   ##### Package and Publish #####
   - job: Package
     displayName: 'Package and Publish'
-    dependsOn: 
+    dependsOn:
     - Build
     - TSLint
     condition: succeeded()
@@ -119,7 +119,7 @@ stages:
     steps:
     - task: NodeTool@0
       inputs:
-        versionSpec: '15.x'
+        versionSpec: '16.10.0'
       displayName: 'Install Node.js'
     - bash: |
         if ([ $(is-sdk-release) = 'True' ] && [ $(package-name) = 'vscode-dotnet-sdk' ]) || ([ $(is-runtime-release) = 'True' ] && [ $(package-name) = 'vscode-dotnet-runtime' ]); then

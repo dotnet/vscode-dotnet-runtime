@@ -1,12 +1,13 @@
 /*---------------------------------------------------------------------------------------------
- *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the MIT License. See License.txt in the project root for license information.
- *--------------------------------------------------------------------------------------------*/
+*  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
+*--------------------------------------------------------------------------------------------*/
 import * as fs from 'fs';
 import * as path from 'path';
 import { IDotnetInstallationContext } from '../Acquisition/IDotnetInstallationContext';
 import { EventType } from './EventType';
 import { IEvent } from './IEvent';
+import { TelemetryUtilities } from './TelemetryUtilities';
 
 // tslint:disable max-classes-per-file
 
@@ -14,12 +15,14 @@ export class DotnetAcquisitionStarted extends IEvent {
     public readonly eventName = 'DotnetAcquisitionStarted';
     public readonly type = EventType.DotnetAcquisitionStart;
 
-    constructor(public readonly version: string) {
+    constructor(public readonly installKey: string, public readonly startingVersion: string, public readonly requestingExtensionId = '') {
         super();
     }
 
     public getProperties() {
-        return {AcquisitionStartVersion : this.version};
+        return {AcquisitionInstallKey : this.installKey,
+                AcquisitionStartVersion : this.startingVersion,
+                extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
     }
 }
 
@@ -27,8 +30,12 @@ export class DotnetRuntimeAcquisitionStarted extends IEvent {
     public readonly eventName = 'DotnetRuntimeAcquisitionStarted';
     public readonly type = EventType.DotnetRuntimeAcquisitionStart;
 
+    constructor(public readonly requestingExtensionId = '') {
+        super();
+    }
+
     public getProperties() {
-        return undefined;
+        return {extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
     }
 }
 
@@ -36,8 +43,12 @@ export class DotnetSDKAcquisitionStarted extends IEvent {
     public readonly eventName = 'DotnetSDKAcquisitionStarted';
     public readonly type = EventType.DotnetSDKAcquisitionStart;
 
+    constructor(public readonly requestingExtensionId = '') {
+        super();
+    }
+
     public getProperties() {
-        return undefined;
+        return {extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
     }
 }
 
@@ -45,18 +56,40 @@ export class DotnetAcquisitionCompleted extends IEvent {
     public readonly eventName = 'DotnetAcquisitionCompleted';
     public readonly type = EventType.DotnetAcquisitionCompleted;
 
-    constructor(public readonly version: string, public readonly dotnetPath: string) {
+    constructor(public readonly installKey: string, public readonly dotnetPath: string, public readonly version: string) {
         super();
     }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
         if (telemetry) {
-            return {AcquisitionCompletedVersion : this.version};
+            return {AcquisitionCompletedInstallKey : this.installKey,
+                    AcquisitionCompletedVersion: this.version};
         } else {
-            return {AcquisitionCompletedVersion : this.version,
+            return {AcquisitionCompletedInstallKey : this.installKey,
+                    AcquisitionCompletedVersion: this.version,
                     AcquisitionCompletedDotnetPath : this.dotnetPath};
         }
 
+    }
+}
+
+export class DotnetRuntimeAcquisitionTotalSuccessEvent extends IEvent
+{
+    public readonly eventName = 'DotnetRuntimeAcquisitionTotalSuccessEvent';
+    public readonly type = EventType.DotnetTotalSuccessEvent;
+
+
+    constructor(public readonly startingVersion: string, public readonly installKey: string, public readonly requestingExtensionId = '', public readonly finalPath: string) {
+        super();
+    }
+
+    public getProperties() {
+        return {
+                AcquisitionStartVersion : this.startingVersion,
+                AcquisitionInstallKey : this.installKey,
+                ExtensionId : TelemetryUtilities.HashData(this.requestingExtensionId),
+                FinalPath : this.finalPath,
+            };
     }
 }
 
@@ -71,12 +104,34 @@ export abstract class DotnetAcquisitionError extends IEvent {
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
         return {ErrorName : this.error.name,
                 ErrorMessage : this.error.message,
-                StackTrace : this.error.stack ? this.error.stack : ''};
+                StackTrace : this.error.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : ''};
+    }
+}
+
+
+export class SuppressedAcquisitionError extends IEvent {
+    public readonly eventName = 'SuppressedAcquisitionError';
+    public readonly type = EventType.SuppressedAcquisitionError;
+
+    constructor(public readonly error: Error, public readonly supplementalMessage : string) {
+        super();
+    }
+
+    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+        return {
+                SupplementMessage : this.supplementalMessage,
+                ErrorName : this.error.name,
+                ErrorMessage : telemetry ? 'redacted' : TelemetryUtilities.HashAllPaths(this.error.message),
+                StackTrace : telemetry ? 'redacted' : (this.error.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : '')};
     }
 }
 
 export class DotnetInstallScriptAcquisitionError extends DotnetAcquisitionError {
     public readonly eventName = 'DotnetInstallScriptAcquisitionError';
+}
+
+export class OSXOpenNotAvailableError extends DotnetAcquisitionError {
+    public readonly eventName = 'OSXOpenNotAvailableError';
 }
 
 export class WebRequestError extends DotnetAcquisitionError {
@@ -99,21 +154,46 @@ export class DotnetCommandFailed extends DotnetAcquisitionError {
             CommandName : this.command,
             ErrorName : this.error.name,
             StackTrace : this.error.stack ? this.error.stack : ''};
+        }
     }
+
+export class DotnetInvalidReleasesJSONError extends DotnetAcquisitionError {
+        public readonly eventName = 'DotnetInvalidReleasesJSONError';
 }
 
+export class DotnetNoInstallerFileExistsError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetNoInstallerFileExistsError';
+}
+
+export class DotnetUnexpectedInstallerOSError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetUnexpectedInstallerOSError';
+}
+
+export class DotnetUnexpectedInstallerArchitectureError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetUnexpectedInstallerArchitectureError';
+}
+
+export class DotnetFeatureBandDoesNotExistError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetFeatureBandDoesNotExistError';
+}
+
+export class DotnetWSLSecurityError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetWSLSecurityError';
+}
+
+
 export abstract class DotnetAcquisitionVersionError extends DotnetAcquisitionError {
-    constructor(error: Error, public readonly version: string) {
+    constructor(error: Error, public readonly installKey: string) {
         super(error);
     }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
         return {ErrorMessage : this.error.message,
-            AcquisitionErrorVersion : this.version,
+            AcquisitionErrorInstallKey : this.installKey,
             ErrorName : this.error.name,
             StackTrace : this.error.stack ? this.error.stack : ''};
+        }
     }
-}
 
 export class DotnetAcquisitionUnexpectedError extends DotnetAcquisitionVersionError {
     public readonly eventName = 'DotnetAcquisitionUnexpectedError';
@@ -127,6 +207,28 @@ export class DotnetAcquisitionScriptError extends DotnetAcquisitionVersionError 
     public readonly eventName = 'DotnetAcquisitionScriptError';
 }
 
+export class DotnetConflictingGlobalWindowsInstallError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetConflictingGlobalWindowsInstallError';
+}
+
+export class DotnetDebuggingMessage extends IEvent {
+    public readonly eventName = 'DotnetDebuggingMessage';
+    public readonly type = EventType.DotnetDebuggingMessage;
+
+    constructor(public readonly message: string) {
+        super();
+        this.message = message;
+    }
+
+    public getProperties() {
+        return { message : this.message };
+    }
+}
+
+export class DotnetNonZeroInstallerExitCodeError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetNonZeroInstallerExitCodeError';
+}
+
 export class DotnetOfflineFailure extends DotnetAcquisitionVersionError {
     public readonly eventName = 'DotnetOfflineFailure';
 }
@@ -134,14 +236,14 @@ export class DotnetOfflineFailure extends DotnetAcquisitionVersionError {
 export class DotnetAcquisitionTimeoutError extends DotnetAcquisitionVersionError {
     public readonly eventName = 'DotnetAcquisitionTimeoutError';
 
-    constructor(error: Error, version: string, public readonly timeoutValue: number) {
-        super(error, version);
+    constructor(error: Error, installKey: string, public readonly timeoutValue: number) {
+        super(error, installKey);
     }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
         return {ErrorMessage : this.error.message,
             TimeoutValue : this.timeoutValue.toString(),
-            Version : this.version,
+            InstallKey : this.installKey,
             ErrorName : this.error.name,
             StackTrace : this.error.stack ? this.error.stack : ''};
     }
@@ -151,17 +253,25 @@ export class DotnetVersionResolutionError extends DotnetAcquisitionVersionError 
     public readonly eventName = 'DotnetVersionResolutionError';
 }
 
+export class DotnetConflictingLinuxInstallTypesError extends DotnetAcquisitionVersionError {
+    public readonly eventName = 'DotnetConflictingLinuxInstallTypesError';
+}
+
+export class DotnetCustomLinuxInstallExistsError extends DotnetAcquisitionVersionError {
+    public readonly eventName = 'DotnetCustomLinuxInstallExistsError';
+}
+
 export class DotnetInstallationValidationError extends DotnetAcquisitionVersionError {
     public readonly eventName = 'DotnetInstallationValidationError';
     public readonly fileStructure: string;
-    constructor(error: Error, version: string, public readonly dotnetPath: string) {
-        super(error, version);
+    constructor(error: Error, installKey: string, public readonly dotnetPath: string) {
+        super(error, installKey);
         this.fileStructure = this.getFileStructure();
     }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
         return {ErrorMessage : this.error.message,
-            AcquisitionErrorVersion : this.version,
+            AcquisitionErrorInstallKey : this.installKey,
             ErrorName : this.error.name,
             StackTrace : this.error.stack ? this.error.stack : '',
             FileStructure : this.fileStructure};
@@ -187,6 +297,17 @@ export class DotnetInstallationValidationError extends DotnetAcquisitionVersionE
         return relativeFiles.join('\n');
     }
 }
+
+export class DotnetAcquisitionDistroUnknownError extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetAcquisitionDistroUnknownError';
+
+    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+        return {ErrorMessage : this.error.message,
+            ErrorName : this.error.name,
+            StackTrace : this.error.stack ? this.error.stack : ''};
+    }
+}
+
 
 export abstract class DotnetAcquisitionSuccessEvent extends IEvent {
     public readonly type = EventType.DotnetAcquisitionSuccessEvent;
@@ -217,10 +338,10 @@ export class DotnetUninstallAllCompleted extends DotnetAcquisitionSuccessEvent {
 export class DotnetVersionResolutionCompleted extends DotnetAcquisitionSuccessEvent {
     public readonly eventName = 'DotnetVersionResolutionCompleted';
 
-    constructor(public readonly requestedVerion: string, public readonly resolvedVersion: string) { super(); }
+    constructor(public readonly requestedVersion: string, public readonly resolvedVersion: string) { super(); }
 
     public getProperties() {
-        return {RequestedVersion : this.requestedVerion,
+        return {RequestedVersion : this.requestedVersion,
                 ResolvedVersion : this.resolvedVersion};
     }
 }
@@ -260,12 +381,164 @@ export class DotnetFallbackInstallScriptUsed extends DotnetAcquisitionMessage {
     public readonly eventName = 'DotnetFallbackInstallScriptUsed';
 }
 
-export class DotnetAcquisitionPartialInstallation extends DotnetAcquisitionMessage {
-    public readonly eventName = 'DotnetAcquisitionPartialInstallation';
-    constructor(public readonly version: string) { super(); }
+export abstract class DotnetCustomMessageEvent extends DotnetAcquisitionMessage {
+    constructor(public readonly eventMessage: string) { super(); }
 
     public getProperties() {
-        return {PartialInstallationVersion: this.version};
+        return { Message: this.eventMessage };
+    }
+}
+
+export class DotnetVersionCategorizedEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetVersionCategorizedEvent';
+}
+
+export class DotnetTelemetrySettingEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetTelemetrySettingEvent';
+}
+
+export class DotnetCommandNotFoundEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetCommandNotFoundEvent';
+}
+
+export class DotnetFileIntegrityCheckEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFileIntegrityCheckEvent';
+}
+
+export class CommandExecutionStdOut extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionStdOut';
+}
+
+export class CommandExecutionStdError extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionStdError';
+}
+
+export class DotnetGlobalAcquisitionBeginEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetGlobalAcquisitionBeginEvent';
+}
+
+export class DotnetGlobalVersionResolutionCompletionEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetGlobalVersionResolutionCompletionEvent';
+}
+
+export class DotnetBeginGlobalInstallerExecution extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetBeginGlobalInstallerExecution';
+}
+
+export class DotnetCompletedGlobalInstallerExecution extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetCompletedGlobalInstallerExecution';
+}
+
+export class DotnetGlobalAcquisitionCompletionEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetGlobalAcquisitionCompletionEvent';
+}
+export class DotnetInstallGraveyardEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetInstallGraveyardEvent';
+}
+
+export class DotnetAlternativeCommandFoundEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetAlternativeCommandFoundEvent';
+}
+
+export class DotnetCommandFallbackArchitectureEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetCommandFallbackArchitectureEvent';
+}
+
+export class DotnetCommandFallbackOSEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetCommandFallbackOSEvent';
+}
+
+export class DotnetInstallKeyCreatedEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetInstallKeyCreatedEvent';
+}
+
+export class DotnetLegacyInstallDetectedEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetLegacyInstallDetectedEvent';
+}
+
+export class DotnetLegacyInstallRemovalRequestEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetLegacyInstallRemovalRequestEvent';
+}
+
+export class DotnetFakeSDKEnvironmentVariableTriggered extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFakeSDKEnvironmentVariableTriggered';
+}
+
+export class CommandExecutionNoStatusCodeWarning extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionNoStatusCodeWarning';
+}
+
+export class CommandExecutionSignalSentEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionSignalSentEvent';
+}
+
+export class CommandExecutionStatusEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionStatusEvent';
+}
+
+export class CommandExecutionEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionEvent';
+}
+
+export class CommandExecutionUserCompletedDialogueEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionUserCompletedDialogueEvent';
+}
+
+export class CommandExecutionUnderSudoEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionUnderSudoEvent';
+}
+
+export abstract class DotnetFileEvent extends DotnetAcquisitionMessage
+{
+    constructor(public readonly eventMessage: string, public readonly time: string, public readonly file: string) { super(); }
+
+    public getProperties() {
+        return {Message: this.eventMessage, Time: this.time, File: TelemetryUtilities.HashData(this.file)};
+    }
+}
+
+export abstract class DotnetLockEvent extends DotnetFileEvent
+{
+    constructor(public readonly eventMessage: string, public readonly time: string, public readonly lock: string, public readonly file: string) { super(eventMessage, time, file); }
+
+    public getProperties() {
+        return {Message: this.eventMessage, Time: this.time, Lock: TelemetryUtilities.HashData(this.lock), File: TelemetryUtilities.HashData(this.file)};
+    }
+}
+
+export class DotnetLockAcquiredEvent extends DotnetLockEvent {
+    public readonly eventName = 'DotnetLockAcquiredEvent';
+}
+
+export class DotnetLockReleasedEvent extends DotnetLockEvent {
+    public readonly eventName = 'DotnetLockReleasedEvent';
+}
+
+export class DotnetLockErrorEvent extends DotnetLockEvent {
+    public readonly eventName = 'DotnetLockErrorEvent';
+    constructor(public readonly error : Error,
+        public readonly eventMessage: string, public readonly time: string, public readonly lock: string, public readonly file: string) { super(eventMessage, time, lock, file); }
+
+    public getProperties() {
+        return {Error: this.error.toString(), Message: this.eventMessage, Time: this.time, Lock: TelemetryUtilities.HashData(this.lock), File: TelemetryUtilities.HashData(this.file)};
+    }
+
+}
+
+export class DotnetLockAttemptingAcquireEvent extends DotnetLockEvent {
+    public readonly eventName = 'DotnetLockAttemptingAcquireEvent';
+}
+
+export class DotnetFileWriteRequestEvent extends DotnetFileEvent {
+    public readonly eventName = 'DotnetFileWriteRequestEvent';
+}
+
+export class DotnetAcquisitionPartialInstallation extends DotnetAcquisitionMessage {
+    public readonly eventName = 'DotnetAcquisitionPartialInstallation';
+    constructor(public readonly installKey: string) { super(); }
+
+    public getProperties() {
+        return {PartialInstallationInstallKey: this.installKey};
     }
 }
 
@@ -273,10 +546,10 @@ export class DotnetAcquisitionInProgress extends IEvent {
     public readonly type = EventType.DotnetAcquisitionInProgress;
 
     public readonly eventName = 'DotnetAcquisitionInProgress';
-    constructor(public readonly version: string, public readonly requestingExtensionId: string | null) { super(); }
+    constructor(public readonly installKey: string, public readonly requestingExtensionId: string | null) { super(); }
 
     public getProperties() {
-        return {InProgressInstallationVersion : this.version, extensionId : this.requestingExtensionId != null ? this.requestingExtensionId : ''};
+        return {InProgressInstallationInstallKey : this.installKey, extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
     }
 }
 
@@ -284,10 +557,10 @@ export class DotnetAcquisitionAlreadyInstalled extends IEvent {
     public readonly eventName = 'DotnetAcquisitionAlreadyInstalled';
     public readonly type = EventType.DotnetAcquisitionAlreadyInstalled;
 
-    constructor(public readonly version: string, public readonly requestingExtensionId: string | null) { super(); }
+    constructor(public readonly installKey: string, public readonly requestingExtensionId: string | null) { super(); }
 
     public getProperties() {
-        return {AlreadyInstalledVersion : this.version, extensionId : this.requestingExtensionId != null ? this.requestingExtensionId : ''};
+        return {AlreadyInstalledInstallKey : this.installKey, extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
     }
 }
 
@@ -295,37 +568,37 @@ export class DotnetAcquisitionMissingLinuxDependencies extends DotnetAcquisition
     public readonly eventName = 'DotnetAcquisitionMissingLinuxDependencies';
 }
 
-export class DotnetAcquisitionScriptOuput extends DotnetAcquisitionMessage {
-    public readonly eventName = 'DotnetAcquisitionScriptOuput';
+export class DotnetAcquisitionScriptOutput extends DotnetAcquisitionMessage {
+    public readonly eventName = 'DotnetAcquisitionScriptOutput';
     public isError = true;
-    constructor(public readonly version: string, public readonly output: string) { super(); }
+    constructor(public readonly installKey: string, public readonly output: string) { super(); }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
-        return {AcquisitionVersion : this.version,
+        return {AcquisitionInstallKey : this.installKey,
                 ScriptOutput: this.output};
     }
 }
 
 export class DotnetInstallationValidated extends DotnetAcquisitionMessage {
     public readonly eventName = 'DotnetInstallationValidated';
-    constructor(public readonly version: string) { super(); }
+    constructor(public readonly installKey: string) { super(); }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
-        return {ValidatedVersion : this.version};
+        return {ValidatedInstallKey : this.installKey};
     }
 }
 
 export class DotnetAcquisitionRequested extends DotnetAcquisitionMessage {
     public readonly eventName = 'DotnetAcquisitionRequested';
 
-    constructor(public readonly version: string,
+    constructor(public readonly startingVersion: string,
                 public readonly requestingId = '') {
         super();
     }
 
     public getProperties() {
-        return {AcquisitionStartVersion : this.version,
-                RequestingExtensionId: this.requestingId};
+        return {AcquisitionStartVersion : this.startingVersion,
+                RequestingExtensionId: TelemetryUtilities.HashData(this.requestingId)};
     }
 }
 
@@ -339,31 +612,32 @@ export class DotnetAcquisitionStatusRequested extends DotnetAcquisitionMessage {
 
     public getProperties() {
         return {AcquisitionStartVersion : this.version,
-                RequestingExtensionId: this.requestingId};
+                RequestingExtensionId: TelemetryUtilities.HashData(this.requestingId)};
     }
 }
 
 export class DotnetAcquisitionStatusUndefined extends DotnetAcquisitionMessage {
     public readonly eventName = 'DotnetAcquisitionStatusUndefined';
 
-    constructor(public readonly version: string) {
+    constructor(public readonly installKey: string) {
         super();
     }
 
     public getProperties() {
-        return {AcquisitionStatusVersion : this.version};
+        return {AcquisitionStatusInstallKey : this.installKey};
     }
 }
 
 export class DotnetAcquisitionStatusResolved extends DotnetAcquisitionMessage {
     public readonly eventName = 'DotnetAcquisitionStatusResolved';
 
-    constructor(public readonly version: string) {
+    constructor(public readonly installKey: string, public readonly version: string) {
         super();
     }
 
     public getProperties() {
-        return {AcquisitionStatusVersion : this.version};
+        return {AcquisitionStatusInstallKey : this.installKey,
+                AcquisitionStatusVersion : this.version};
     }
 }
 
@@ -381,10 +655,10 @@ export class WebRequestSent extends DotnetAcquisitionMessage {
 
 export class DotnetPreinstallDetected extends DotnetAcquisitionMessage {
     public readonly eventName = 'DotnetPreinstallDetected';
-    constructor(public readonly version: string) { super(); }
+    constructor(public readonly installKey: string) { super(); }
 
     public getProperties() {
-        return {PreinstalledVersion : this.version};
+        return {PreinstalledInstallKey : this.installKey};
     }
 }
 

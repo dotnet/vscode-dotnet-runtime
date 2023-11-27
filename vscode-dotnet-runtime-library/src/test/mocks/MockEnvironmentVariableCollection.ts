@@ -1,11 +1,12 @@
-/* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ */
+/*---------------------------------------------------------------------------------------------
+*  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
+*--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
 /* tslint:disable:no-any */
 
 export class MockEnvironmentVariableCollection implements vscode.EnvironmentVariableCollection {
+
     public persistent =  true;
     public variables: {[variable: string]: string} = {};
 
@@ -39,6 +40,10 @@ export class MockEnvironmentVariableCollection implements vscode.EnvironmentVari
     }
 
     public clear(): void {
+        throw new Error('Method not implemented.');
+    }
+
+    [Symbol.iterator](): Iterator<[variable: string, mutator: vscode.EnvironmentVariableMutator], any, undefined> {
         throw new Error('Method not implemented.');
     }
 }

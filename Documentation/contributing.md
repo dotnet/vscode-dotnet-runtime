@@ -18,7 +18,7 @@ The team marks the most straightforward issues as "up for grabs". This set of is
 Contribution "Bar"
 ------------------
 
-Project maintainers will merge changes that improve the product significantly and broadly and that align with the [.NET Core roadmap](https://github.com/dotnet/core/blob/main/roadmap.md). 
+Project maintainers will merge changes that improve the product significantly and broadly and that align with the [.NET Core roadmap](https://github.com/dotnet/core/blob/main/roadmap.md).
 
 Maintainers will not merge changes that have narrowly-defined benefits, due to compatibility risk. The .NET Core codebase is used by several Microsoft products (for example, ASP.NET Core, .NET Framework 4.x, Windows Universal Apps) to enable execution of managed code. Other companies are building products on top of .NET Core, too. We may revert changes if they are found to be breaking.
 
@@ -44,7 +44,7 @@ Please do:
 
 Please do not:
 
-* **DON'T** make PRs for style changes. 
+* **DON'T** make PRs for style changes.
 * **DON'T** surprise us with big pull requests. Instead, file an issue and start
   a discussion so we can agree on a direction before you invest a large amount
   of time.
@@ -93,9 +93,9 @@ The following file header is the used for .NET Core. Please use it for new files
 
 ```
 /*---------------------------------------------------------------------------------------------
- *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the MIT License. See License.txt in the project root for license information.
- *--------------------------------------------------------------------------------------------*/
+*  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
+*--------------------------------------------------------------------------------------------*/
 ```
 
 - See [extension.ts](../vscode-dotnet-runtime-library/src/extension.ts) for an example of the header in a TypeScript file.

@@ -1,0 +1,331 @@
+{
+	"$schema": "../../Documentation/json-schema/distro-support-schema.json",
+	"Ubuntu": {
+		"installCommand":
+		[
+			{
+				"runUnderSudo": true,
+				"commandRoot": "apt-get",
+				"commandParts": ["update"]
+			},
+			{
+				"runUnderSudo": true,
+				"commandRoot": "apt-get",
+				"commandParts": ["install", "-y", "{packageName}"]
+			}
+		],
+		"uninstallCommand":
+		[
+			{
+				"runUnderSudo": true,
+				"commandRoot": "apt-get",
+				"commandParts": ["remove", "{packageName}"]
+			}
+		],
+		"updateCommand":
+		[
+			{
+				"runUnderSudo": true,
+				"commandRoot": "apt-get",
+				"commandParts": ["update"]
+			},
+			{
+				"runUnderSudo": true,
+				"commandRoot": "apt-get",
+				"commandParts": ["upgrade", "-y", "{packageName}"]
+			}
+		],
+		"searchCommand":
+		[
+			{
+				"runUnderSudo": false,
+				"commandRoot": "apt-cache",
+				"commandParts": ["search", "{packageName}"]
+			}
+		],
+		"isInstalledCommand":
+		[
+			{
+				"runUnderSudo": true,
+				"commandRoot": "apt",
+				"commandParts": ["list", "--installed", "{packageName}"]
+			}
+		],
+		"packageLookupCommand":
+		[
+			{
+				"runUnderSudo": false,
+				"commandRoot": "dpkg",
+				"commandParts": ["-l", "{packageName}"]
+			}
+		],
+		"expectedDistroFeedInstallDirectory" : "/usr/lib/dotnet",
+        "expectedMicrosoftFeedInstallDirectory" : "/usr/bin/dotnet",
+		"installedSDKVersionsCommand":
+		[
+			{
+				"runUnderSudo": false,
+				"commandRoot": "dotnet",
+				"commandParts": ["--list-sdks"]
+			}
+		],
+		"installedRuntimeVersionsCommand":
+		[
+			{
+				"runUnderSudo": false,
+				"commandRoot": "dotnet",
+				"commandParts": ["--list-runtimes"]
+			}
+		],
+		"currentInstallationVersionCommand":
+		[
+			{
+				"runUnderSudo": false,
+				"commandRoot": "dotnet",
+				"commandParts": ["--version"]
+			}
+		],
+		"currentInstallPathCommand":
+		[
+			{
+				"runUnderSudo": false,
+				"commandRoot": "which",
+				"commandParts": ["dotnet"]
+			}
+		],
+		"packages":
+		[
+			{
+				"version": "6.0",
+				"sdk":
+				[
+					"dotnet-sdk-6.0"
+				],
+				"runtime":
+				[
+					"dotnet-runtime-6.0"
+				],
+				"aspnetcore":
+				[
+					"aspnetcore-runtime-6.0"
+				]
+			},
+			{
+				"version": "7.0",
+				"sdk":
+				[
+					"dotnet-sdk-7.0"
+				],
+				"runtime":
+				[
+					"dotnet-runtime-7.0"
+				],
+				"aspnetcore":
+				[
+					"aspnetcore-runtime-7.0"
+				]
+			}
+		],
+		"versions": [{
+				"version": "18.04",
+				"preInstallCommands":
+				[
+					{
+						"runUnderSudo": true,
+						"commandRoot": "apt-get",
+						"commandParts": ["update"]
+					},
+					{
+						"runUnderSudo": true,
+						"commandRoot": "apt-get",
+						"commandParts": ["install", "-y", "wget"]
+					},
+					{
+						"runUnderSudo": true,
+						"commandRoot": "wget",
+						"commandParts": ["https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb", "-O", "packages-microsoft-prod.deb"]
+					},
+					{
+						"runUnderSudo": true,
+						"commandRoot": "dpkg",
+						"commandParts": ["-i", "packages-microsoft-prod.deb"]
+					}
+				]
+			},
+			{
+				"version": "20.04",
+				"preInstallCommands":
+				[
+					{
+						"runUnderSudo": true,
+						"commandRoot": "apt-get",
+						"commandParts": ["update"]
+					},
+					{
+						"runUnderSudo": true,
+						"commandRoot": "apt-get",
+						"commandParts": ["install", "-y", "wget"]
+					},
+					{
+						"runUnderSudo": true,
+						"commandRoot": "wget",
+						"commandParts": ["https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb", "-O", "packages-microsoft-prod.deb"]
+					},
+					{
+						"runUnderSudo": true,
+						"commandRoot": "dpkg",
+						"commandParts": ["-i", "packages-microsoft-prod.deb"]
+					}
+				]
+			},
+			{
+				"version": "22.04"
+			},
+			{
+				"version": "23.04"
+			}
+		]
+	},
+	"Red Hat Enterprise Linux": {
+		"installCommand": [
+			{
+				"runUnderSudo": true,
+				"commandRoot": "dnf",
+				"commandParts": [
+					"install",
+					"-y",
+					"{packageName}"
+				]
+			}
+		],
+		"uninstallCommand": [
+			{
+				"runUnderSudo": true,
+				"commandRoot": "dnf",
+				"commandParts": [
+					"remove",
+					"-y",
+					"{packageName}"
+				]
+			}
+		],
+		"updateCommand": [
+			{
+				"runUnderSudo": true,
+				"commandRoot": "dnf",
+				"commandParts": [
+					"update",
+					"-y",
+					"{packageName}"
+				]
+			}
+		],
+		"searchCommand": [
+			{
+				"runUnderSudo": false,
+				"commandRoot": "yum",
+				"commandParts": [
+					"search",
+					"{packageName}",
+					"-q"
+				]
+			}
+		],
+		"isInstalledCommand": [
+			{
+				"runUnderSudo": true,
+				"commandRoot": "dnf",
+				"commandParts": [
+					"list",
+					"--installed",
+					"{packageName}",
+					"-q"
+				]
+			}
+		],
+		"packageLookupCommand": [
+			{
+				"runUnderSudo": false,
+				"commandRoot": "yum",
+				"commandParts": [
+					"list",
+					"install",
+					"{packageName}",
+					"-q"
+				]
+			}
+		],
+		"expectedDistroFeedInstallDirectory": "/usr/lib64/dotnet/dotnet",
+		"expectedMicrosoftFeedInstallDirectory": "",
+		"installedSDKVersionsCommand": [
+			{
+				"runUnderSudo": false,
+				"commandRoot": "dotnet",
+				"commandParts": [
+					"--list-sdks"
+				]
+			}
+		],
+		"installedRuntimeVersionsCommand": [
+			{
+				"runUnderSudo": false,
+				"commandRoot": "dotnet",
+				"commandParts": [
+					"--list-runtimes"
+				]
+			}
+		],
+		"currentInstallationVersionCommand": [
+			{
+				"runUnderSudo": false,
+				"commandRoot": "dotnet",
+				"commandParts": [
+					"--version"
+				]
+			}
+		],
+		"currentInstallPathCommand": [
+			{
+				"runUnderSudo": false,
+				"commandRoot": "which",
+				"commandParts": [
+					"dotnet"
+				]
+			}
+		],
+		"packages": [
+			{
+				"version": "6.0",
+				"sdk": [
+					"dotnet-sdk-6.0"
+				],
+				"runtime": [
+					"dotnet-runtime-6.0"
+				],
+				"aspnetcore": [
+					"aspnetcore-runtime-6.0"
+				]
+			},
+			{
+				"version": "7.0",
+				"sdk": [
+					"dotnet-sdk-7.0"
+				],
+				"runtime": [
+					"dotnet-runtime-7.0"
+				],
+				"aspnetcore": [
+					"aspnetcore-runtime-7.0"
+				]
+			}
+		],
+		"versions": [
+			{
+				"version": "8.0"
+			},
+			{
+				"version": "9.0"
+			}
+		]
+	}
+}
