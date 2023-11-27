@@ -149,7 +149,7 @@
 						"runUnderSudo": true,
 						"commandRoot": "apt-get",
 						"commandParts": ["update"]
-					},
+					}
 				]
 			},
 			{

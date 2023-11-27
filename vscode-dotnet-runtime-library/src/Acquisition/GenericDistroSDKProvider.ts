@@ -15,13 +15,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 {
     public async installDotnet(fullySpecifiedVersion : string, installType : LinuxInstallType): Promise<string>
     {
-        const supportStatus = await this.getDotnetVersionSupportStatus(fullySpecifiedVersion, installType);
-        if(supportStatus === DotnetDistroSupportStatus.Microsoft)
-        {
-            const myVersionDetails = this.myVersionDetails();
-            const preInstallCommands = myVersionDetails[this.preinstallCommandKey] as CommandExecutorCommand[];
-            await this.commandRunner.executeMultipleCommands(preInstallCommands);
-        }
+        await this.injectPMCFeed(fullySpecifiedVersion, installType);
 
         let commands = this.myDistroCommands(this.installCommandKey);
         const sdkPackage = await this.myDotnetVersionPackageName(fullySpecifiedVersion, installType);
@@ -150,7 +144,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 
         if(this.myVersionDetails().hasOwnProperty(this.preinstallCommandKey))
         {
-            // If preinstall commmands exist ( to add the msft feed ) then it's a microsoft feed.
+            // If preinstall commands exist ( to add the msft feed ) then it's a microsoft feed.
             return Promise.resolve(DotnetDistroSupportStatus.Microsoft);
         }
         else
@@ -168,37 +162,6 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         }
 
         return Promise.resolve(DotnetDistroSupportStatus.Unknown);
-    }
-
-    protected myVersionDetails() : any
-    {
-
-        const distroVersions = this.distroJson[this.distroVersion.distro][this.distroVersionsKey];
-        const versionData = distroVersions.filter((x: { [x: string]: string; }) => x[this.versionKey] === this.distroVersion.version)[0];
-        if(!versionData)
-        {
-            const closestVersion = this.findMostSimilarVersion(this.distroVersion.version, distroVersions.map((x: { [x: string]: string; }) => parseFloat(x[this.versionKey])));
-            return distroVersions.filter((x: { [x: string]: string; }) => parseFloat(x[this.versionKey]) === closestVersion)[0];
-        }
-        return versionData;
-    }
-
-    private findMostSimilarVersion(myVersion : string, knownVersions : number[]) : number
-    {
-        const sameMajorVersions = knownVersions.filter(x => Math.floor(x) === Math.floor(parseFloat(myVersion)));
-        if(sameMajorVersions && sameMajorVersions.length)
-        {
-            return Math.max(...sameMajorVersions);
-        }
-
-        const lowerMajorVersions = knownVersions.filter(x => x < Math.floor(parseFloat(myVersion)));
-        if(lowerMajorVersions && lowerMajorVersions.length)
-        {
-            return Math.max(...lowerMajorVersions);
-        }
-
-        // Just return the lowest known version, as it will be the closest to our version, as they are all larger than our version.
-        return Math.min(...knownVersions);
     }
 
     public async getRecommendedDotnetVersion(installType : LinuxInstallType) : Promise<string>
