@@ -127,7 +127,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 
         // we need to run this command in the root directory otherwise local dotnets on the path may interfere
         const rootDir = path.parse(__dirname).root;
-        let commandResult = (await this.commandRunner.executeMultipleCommands(command, rootDir))[0];
+        let commandResult = (await this.commandRunner.executeMultipleCommands(command, { cwd: path.resolve(rootDir), shell: true }))[0];
 
         commandResult = commandResult.replace('\n', '');
         if(!this.versionResolver.isValidLongFormVersionFormat(commandResult))
