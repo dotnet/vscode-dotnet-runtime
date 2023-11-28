@@ -104,7 +104,10 @@ export class OutputChannelObserver implements IEventStreamObserver {
                 this.outputChannel.appendLine(error.error.message);
                 this.outputChannel.appendLine('');
 
-                this.inProgressVersionDone(error.installKey);
+                if(error.installKey && error.installKey !== 'null')
+                {
+                    this.inProgressVersionDone(error.installKey);
+                }
 
                 if (this.inProgressDownloads.length > 0) {
                     const errorVersionString = this.inProgressDownloads.join(', ');

@@ -29,6 +29,7 @@ import {
 } from '../mocks/MockObjects';
 import { getMockAcquisitionContext, getMockAcquisitionWorker } from './TestUtility';
 import { IAcquisitionInvoker } from '../../Acquisition/IAcquisitionInvoker';
+import { escape } from 'querystring';
 const assert = chai.assert;
 chai.use(chaiAsPromised);
 const expectedTimeoutTime = 6000;
@@ -38,7 +39,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
     const installedVersionsKey = 'installed';
     const dotnetFolderName = `.dotnet O'Hare O'Donald`;
 
-    function setupWorker(isRuntimeWorker : boolean, version : string): [MockDotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext, IAcquisitionInvoker] {
+    function setupWorker(isRuntimeWorker : boolean, version : string, existingEventSteam? : MockEventStream, existingContext? : MockExtensionContext): [MockDotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext, IAcquisitionInvoker] {
         const context = new MockExtensionContext();
         const eventStream = new MockEventStream();
         const acquisitionWorker = getMockAcquisitionWorker(isRuntimeWorker, version, undefined, eventStream, context);
@@ -167,18 +168,27 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
     });
 
     test('Acquire Multiple Versions and UninstallAll', async () => {
-        const [acquisitionWorker, eventStream, context, invoker] = setupWorker(true);
         const versions = ['1.0', '1.1', '2.0', '2.1', '2.2'];
-        for (const version of versions) {
+        let eventStream = undefined;
+        let context = undefined;
+        let lastWorker = undefined;
+
+        for (const version of versions)
+        {
+            const [acquisitionWorker, eStreamCopy, contextCopy, invoker] = setupWorker(true, version, eventStream, context);
+            eventStream = eStreamCopy;
+            context = contextCopy;
+            lastWorker = acquisitionWorker;
+
             const installKey = acquisitionWorker.getInstallKey(version);
             const res = await acquisitionWorker.acquireRuntime(version, invoker);
             await assertAcquisitionSucceeded(installKey, res.dotnetPath, eventStream, context);
         }
-        await acquisitionWorker.uninstallAll();
-        assert.exists(eventStream.events.find(event => event instanceof DotnetUninstallAllStarted));
-        assert.exists(eventStream.events.find(event => event instanceof DotnetUninstallAllCompleted));
-        assert.isEmpty(context.get<string[]>(installingVersionsKey, []));
-        assert.isEmpty(context.get<string[]>(installedVersionsKey, []));
+        await lastWorker!.uninstallAll();
+        assert.exists(eventStream!.events.find(event => event instanceof DotnetUninstallAllStarted));
+        assert.exists(eventStream!.events.find(event => event instanceof DotnetUninstallAllCompleted));
+        assert.isEmpty(context!.get<string[]>(installingVersionsKey, []));
+        assert.isEmpty(context!.get<string[]>(installedVersionsKey, []));
     });
 
     test('Acquire Runtime and UninstallAll', async () => {
@@ -198,7 +208,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
 
     test('Graveyard Removes Failed Uninstalls', async () => {
         const version = '1.0';
-        const [acquisitionWorker, eventStream, context, invoker] = setupWorker(true);
+        let [acquisitionWorker, eventStream, context, invoker] = setupWorker(true, version);
         const installKey = acquisitionWorker.getInstallKey(version);
         const res = await acquisitionWorker.acquireRuntime(version, invoker);
         await assertAcquisitionSucceeded(installKey, res.dotnetPath, eventStream, context);
@@ -206,7 +216,8 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
 
         const versionToKeep = '5.0';
         const versionToKeepKey = acquisitionWorker.getInstallKey(versionToKeep);
-        await acquisitionWorker.acquireRuntime(versionToKeep, invoker);
+        let [fiveAcquisitionWorker, _, __, ___] = setupWorker(true, version, eventStream, context);
+        await fiveAcquisitionWorker.acquireRuntime(versionToKeep, invoker);
 
         assert.exists(eventStream.events.find(event => event instanceof DotnetInstallGraveyardEvent), 'The graveyard tried to uninstall .NET');
         assert.isEmpty(context.get<string[]>(installingVersionsKey, []), 'We did not hang/ get interrupted during the install.');
@@ -220,13 +231,13 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         const sdkV5 = '5.0.100';
         const sdkV6 = '6.0.100';
 
-        const [runtimeWorker, events, context, runtimeInvoker] = setupWorker(true);
+        const [runtimeWorker, events, context, runtimeInvoker] = setupWorker(true, runtimeV5);
         // Install 5.0, 6.0 runtime without an architecture
         await AssertInstallRuntime(runtimeWorker, context, events, runtimeV5, runtimeInvoker);
         await AssertInstallRuntime(runtimeWorker, context, events, runtimeV6, runtimeInvoker);
 
         // Install similar SDKs without an architecture.
-        const [sdkWorker, sdkEvents, sdkContext, sdkInvoker] = setupWorker(false);
+        const [sdkWorker, sdkEvents, sdkContext, sdkInvoker] = setupWorker(false, sdkV5);
         await AssertInstallSDK(sdkWorker, sdkContext, sdkEvents, sdkV5, sdkInvoker);
         await AssertInstallSDK(sdkWorker, sdkContext, sdkEvents, sdkV6, sdkInvoker);
 

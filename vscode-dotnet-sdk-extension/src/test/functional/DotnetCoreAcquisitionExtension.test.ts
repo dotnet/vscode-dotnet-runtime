@@ -141,10 +141,10 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     const context = new MockExtensionContext();
     const eventStream = new MockEventStream();
     const installDirectoryProvider = new SdkInstallationDirectoryProvider(storagePath);
-    const acquisitionWorker = getMockAcquisitionWorker(false, undefined, eventStream);
 
     const version = currentSDKVersion;
     const earlierVersion = '3.1';
+    const acquisitionWorker = getMockAcquisitionWorker(false, version, undefined, eventStream);
 
     // Write 'preinstalled' SDKs
     const dotnetDir = installDirectoryProvider.getInstallDir(version);
@@ -181,9 +181,10 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
   test('Install Status Command with Preinstalled SDK', async () => {
     // Set up acquisition worker
     const installDirectoryProvider = new SdkInstallationDirectoryProvider(storagePath);
-    const acquisitionWorker = getMockAcquisitionWorker(false);
 
     const version = currentSDKVersion;
+    const acquisitionWorker = getMockAcquisitionWorker(false, version);
+
     const currentVersionInstallKey =  DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, os.arch());
     // Ensure nothing is returned when there is no preinstalled SDK
     const noPreinstallResult = await acquisitionWorker.acquireStatus(version, false);
@@ -234,6 +235,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
 
     const newestBandedVersion = '6.0.311';
     const newestVersion = '6.0.408';
+    const mockAcquisitionContext = getMockAcquisitionContext(false, '');
 
     const url = 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/6.0/releases.json'
     const webWorker = new MockIndexWebRequestWorker(mockAcquisitionContext, url);

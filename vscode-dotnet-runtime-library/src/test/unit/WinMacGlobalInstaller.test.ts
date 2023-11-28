@@ -19,9 +19,9 @@ suite('Windows & Mac Global Installer Tests', () =>
     const mockVersion = '7.0.306';
     const mockUrl = 'https://download.visualstudio.microsoft.com/download/pr/4c0aaf08-3fa1-4fa0-8435-73b85eee4b32/e8264b3530b03b74b04ecfcf1666fe93/dotnet-sdk-7.0.306-win-x64.exe';
     const mockHash = '';
-    const mockExecutor = new MockCommandExecutor(getMockAcquisitionContext(false), getMockUtilityContext());
+    const mockExecutor = new MockCommandExecutor(getMockAcquisitionContext(false, mockVersion), getMockUtilityContext());
     const mockFileUtils = new MockFileUtilities();
-    const installer : WinMacGlobalInstaller = new WinMacGlobalInstaller(getMockAcquisitionContext(false), getMockUtilityContext(), mockVersion, mockUrl, mockHash, mockExecutor);
+    const installer : WinMacGlobalInstaller = new WinMacGlobalInstaller(getMockAcquisitionContext(false, mockVersion), getMockUtilityContext(), mockVersion, mockUrl, mockHash, mockExecutor);
     installer.file = mockFileUtils;
 
     test('It reads SDK registry entries correctly on windows', async () =>

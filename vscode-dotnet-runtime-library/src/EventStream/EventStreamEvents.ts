@@ -97,7 +97,14 @@ export abstract class DotnetAcquisitionError extends IEvent {
     public readonly type = EventType.DotnetAcquisitionError;
     public isError = true;
 
-    constructor(public readonly error: Error, public readonly installKey: string) {
+    /**
+     *
+     * @param error The error that triggered, so the call stack, etc. can be analyzed.
+     * @param installKey For acquisition errors, you MUST include this install key. For commands unrelated to acquiring or managing a specific dotnet version, you
+     * have the option to leave this parameter null. If it is NULL during acquisition the extension CANNOT properly manage what it has finished installing or not.
+     */
+    constructor(public readonly error: Error, public readonly installKey: string | null)
+    {
         super();
     }
 
@@ -105,7 +112,7 @@ export abstract class DotnetAcquisitionError extends IEvent {
         return {ErrorName : this.error.name,
                 ErrorMessage : this.error.message,
                 StackTrace : this.error.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : '',
-                InstallKey : this.installKey};
+                InstallKey : this.installKey ?? 'null'};
     }
 }
 
@@ -177,7 +184,7 @@ export class DotnetNotInstallRelatedCommandFailed extends DotnetNonAcquisitionEr
 export class DotnetCommandFailed extends DotnetAcquisitionError {
     public readonly eventName = 'DotnetCommandFailed';
 
-    constructor(error: Error, public readonly command: string, installKey : string) {
+    constructor(error: Error, public readonly command: string, installKey : string | null) {
         super(error, installKey);
     }
 
@@ -185,7 +192,8 @@ export class DotnetCommandFailed extends DotnetAcquisitionError {
         return {ErrorMessage : this.error.message,
             CommandName : this.command,
             ErrorName : this.error.name,
-            StackTrace : this.error.stack ? this.error.stack : ''};
+            StackTrace : this.error.stack ? this.error.stack : '',
+            InstallKey : this.installKey ?? 'null'};
         }
 }
 
@@ -215,13 +223,13 @@ export class DotnetWSLSecurityError extends DotnetAcquisitionError {
 
 
 export abstract class DotnetAcquisitionVersionError extends DotnetAcquisitionError {
-    constructor(error: Error, public readonly installKey: string) {
+    constructor(error: Error, public readonly installKey: string | null) {
         super(error, installKey);
     }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
         return {ErrorMessage : this.error.message,
-            AcquisitionErrorInstallKey : this.installKey,
+            AcquisitionErrorInstallKey : this.installKey ?? 'null',
             ErrorName : this.error.name,
             StackTrace : this.error.stack ? this.error.stack : ''};
         }
@@ -268,14 +276,14 @@ export class DotnetOfflineFailure extends DotnetAcquisitionVersionError {
 export class DotnetAcquisitionTimeoutError extends DotnetAcquisitionVersionError {
     public readonly eventName = 'DotnetAcquisitionTimeoutError';
 
-    constructor(error: Error, installKey: string, public readonly timeoutValue: number) {
+    constructor(error: Error, installKey: string | null, public readonly timeoutValue: number) {
         super(error, installKey);
     }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
         return {ErrorMessage : this.error.message,
             TimeoutValue : this.timeoutValue.toString(),
-            InstallKey : this.installKey,
+            InstallKey : this.installKey ?? 'null',
             ErrorName : this.error.name,
             StackTrace : this.error.stack ? this.error.stack : ''};
     }
@@ -296,14 +304,14 @@ export class DotnetCustomLinuxInstallExistsError extends DotnetAcquisitionVersio
 export class DotnetInstallationValidationError extends DotnetAcquisitionVersionError {
     public readonly eventName = 'DotnetInstallationValidationError';
     public readonly fileStructure: string;
-    constructor(error: Error, installKey: string, public readonly dotnetPath: string) {
+    constructor(error: Error, installKey: string | null, public readonly dotnetPath: string) {
         super(error, installKey);
         this.fileStructure = this.getFileStructure();
     }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
         return {ErrorMessage : this.error.message,
-            AcquisitionErrorInstallKey : this.installKey,
+            AcquisitionErrorInstallKey : this.installKey ?? 'null',
             ErrorName : this.error.name,
             StackTrace : this.error.stack ? this.error.stack : '',
             FileStructure : this.fileStructure};
@@ -337,7 +345,7 @@ export class DotnetAcquisitionDistroUnknownError extends DotnetAcquisitionError 
         return {ErrorMessage : this.error.message,
             ErrorName : this.error.name,
             StackTrace : this.error.stack ? this.error.stack : '',
-            InstallKey : this.installKey};
+            InstallKey : this.installKey ?? 'null'};
     }
 }
 

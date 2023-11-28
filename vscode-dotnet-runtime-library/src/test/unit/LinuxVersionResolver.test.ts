@@ -17,16 +17,16 @@ const assert = chai.assert;
 suite('Linux Version Resolver Tests', () =>
 {
     const mockVersion = '7.0.103';
-    const acquisitionContext = getMockAcquisitionContext(false);
+    const acquisitionContext = getMockAcquisitionContext(false, mockVersion);
     const mockExecutor = new MockCommandExecutor(acquisitionContext, getMockUtilityContext());
     const pair : DistroVersionPair = { distro : 'Ubuntu', version : '22.04' };
     const redHatPair: DistroVersionPair = { distro : 'Red Hat Enterprise Linux', version : '7.3' };
     const shouldRun = os.platform() === 'linux';
-    const context = util.getMockAcquisitionContext(false);
+    const context = util.getMockAcquisitionContext(false, mockVersion);
     const mockRedHatProvider = new MockDistroProvider(redHatPair, context, getMockUtilityContext(), mockExecutor);
     const mockDistroProvider = new MockDistroProvider(pair, context, getMockUtilityContext(), mockExecutor);
-    const resolver : LinuxVersionResolver = new LinuxVersionResolver(context, getMockUtilityContext(), getMockAcquireContext(), mockExecutor, mockDistroProvider);
-    const redhatResolver : LinuxVersionResolver = new LinuxVersionResolver(context, getMockUtilityContext(), getMockAcquireContext(), mockExecutor, mockRedHatProvider);
+    const resolver : LinuxVersionResolver = new LinuxVersionResolver(context, getMockUtilityContext(), getMockAcquireContext(mockVersion), mockExecutor, mockDistroProvider);
+    const redhatResolver : LinuxVersionResolver = new LinuxVersionResolver(context, getMockUtilityContext(), getMockAcquireContext(mockVersion), mockExecutor, mockRedHatProvider);
 
         test('It can determine the running distro', async () => {
             if(shouldRun)

@@ -63,7 +63,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
     {
         const error = caughtError as Error;
         context.eventStream.post(isAcquisitionError ?
-            new DotnetCommandFailed(error, context.commandName, getInstallKeyFromContext(acquireContext?.acquisitionContext!)) :
+            new DotnetCommandFailed(error, context.commandName, getInstallKeyFromContext(acquireContext?.acquisitionContext)) :
             new DotnetNotInstallRelatedCommandFailed(error, context.commandName)
         );
 

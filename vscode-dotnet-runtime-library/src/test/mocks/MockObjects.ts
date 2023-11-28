@@ -35,6 +35,7 @@ import { IVSCodeExtensionContext } from '../../IVSCodeExtensionContext';
 import { ITelemetryReporter } from '../../EventStream/TelemetryObserver';
 import { IUtilityContext } from '../../Utils/IUtilityContext';
 import { IVSCodeEnvironment } from '../../Utils/IVSCodeEnvironment';
+import { IDotnetAcquireResult } from '../../IDotnetAcquireResult';
 
 const testDefaultTimeoutTimeMs = 60000;
 /* tslint:disable:no-any */
@@ -87,6 +88,20 @@ export class MockDotnetCoreAcquisitionWorker extends DotnetCoreAcquisitionWorker
     public AddToGraveyard(installKey : string, installPath : string)
     {
         this.updateGraveyard(installKey, installPath);
+    }
+
+    public acquireSDK(version: string, invoker: IAcquisitionInvoker): Promise<IDotnetAcquireResult>
+    {
+        // In extension.ts, when we call set AcquisitionContext, the version is updated.
+        // That may not happen under test and we do not want to create a new worker for each version as we want to test functionality
+        // that shares the same worker, so we can use this hack.
+        this.context.acquisitionContext!.version = version;
+        return super.acquireSDK(version, invoker);
+    }
+
+    public acquireRuntime(version: string, invoker: IAcquisitionInvoker): Promise<IDotnetAcquireResult> {
+        this.context.acquisitionContext!.version = version;
+        return super.acquireRuntime(version, invoker);
     }
 }
 
