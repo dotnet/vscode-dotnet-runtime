@@ -292,7 +292,7 @@ export class LinuxVersionResolver
         // Verify the version of dotnet is supported
         if (!( await this.distroSDKProvider!.isDotnetVersionSupported(fullySpecifiedDotnetVersion, 'sdk') ))
         {
-            throw new Error(`The distro ${this.distro} does not officially support dotnet version ${fullySpecifiedDotnetVersion}.`);
+            throw new Error(`The distro ${this.distro?.distro} ${this.distro?.version} does not officially support dotnet version ${fullySpecifiedDotnetVersion}.`);
         }
 
         // Verify there are no conflicting installs

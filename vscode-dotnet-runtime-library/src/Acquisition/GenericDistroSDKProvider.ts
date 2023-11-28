@@ -172,9 +172,33 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 
     protected myVersionDetails() : any
     {
+
         const distroVersions = this.distroJson[this.distroVersion.distro][this.distroVersionsKey];
         const versionData = distroVersions.filter((x: { [x: string]: string; }) => x[this.versionKey] === this.distroVersion.version)[0];
+        if(!versionData)
+        {
+            const closestVersion = this.findMostSimilarVersion(this.distroVersion.version, distroVersions.map((x: { [x: string]: string; }) => parseFloat(x[this.versionKey])));
+            return distroVersions.filter((x: { [x: string]: string; }) => parseFloat(x[this.versionKey]) === closestVersion)[0];
+        }
         return versionData;
+    }
+
+    private findMostSimilarVersion(myVersion : string, knownVersions : number[]) : number
+    {
+        const sameMajorVersions = knownVersions.filter(x => Math.floor(x) === Math.floor(parseFloat(myVersion)));
+        if(sameMajorVersions && sameMajorVersions.length)
+        {
+            return Math.max(...sameMajorVersions);
+        }
+
+        const lowerMajorVersions = knownVersions.filter(x => x < Math.floor(parseFloat(myVersion)));
+        if(lowerMajorVersions && lowerMajorVersions.length)
+        {
+            return Math.max(...lowerMajorVersions);
+        }
+
+        // Just return the lowest known version, as it will be the closest to our version, as they are all larger than our version.
+        return Math.min(...knownVersions);
     }
 
     public async getRecommendedDotnetVersion(installType : LinuxInstallType) : Promise<string>
