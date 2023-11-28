@@ -32,7 +32,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 
     public async getInstalledGlobalDotnetPathIfExists(installType : LinuxInstallType) : Promise<string | null>
     {
-        let commandResult = await this.commandRunner.executeMultipleCommands(this.myDistroCommands(this.currentInstallPathCommandKey));
+        const commandResult = await this.commandRunner.executeMultipleCommands(this.myDistroCommands(this.currentInstallPathCommandKey));
         if(commandResult[0])
         {
             commandResult[0] = commandResult[0].trim();
