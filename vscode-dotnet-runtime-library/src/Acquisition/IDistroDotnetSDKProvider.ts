@@ -172,7 +172,7 @@ export abstract class IDistroDotnetSDKProvider {
         return supportedType;
     }
 
-    protected async myVersionPackages(installType : LinuxInstallType) : Promise<LinuxPackageCollection[]>
+    protected async myVersionPackages(installType : LinuxInstallType, haveTriedFeedInjectionAlready = false) : Promise<LinuxPackageCollection[]>
     {
         const availableVersions : LinuxPackageCollection[] = [];
 
@@ -203,7 +203,58 @@ export abstract class IDistroDotnetSDKProvider {
             }
         }
 
+        if(availableVersions.length === 0 && !haveTriedFeedInjectionAlready)
+        {
+            // PMC is only injected and should only be injected for MSFT feed distros.
+            // Our check runs by checking the feature band first, so that needs to be supported for it to fallback to the preinstall command check.
+            const fakeVersionToCheckMicrosoftSupportStatus = '6.0.1xx';
+
+            await this.injectPMCFeed(fakeVersionToCheckMicrosoftSupportStatus, installType);
+            return this.myVersionPackages(installType, true);
+        }
         return availableVersions;
+    }
+
+    protected async injectPMCFeed(fullySpecifiedVersion : string, installType : LinuxInstallType)
+    {
+        const supportStatus = await this.getDotnetVersionSupportStatus(fullySpecifiedVersion, installType);
+        if(supportStatus === DotnetDistroSupportStatus.Microsoft)
+        {
+            const myVersionDetails = this.myVersionDetails();
+            const preInstallCommands = myVersionDetails[this.preinstallCommandKey] as CommandExecutorCommand[];
+            await this.commandRunner.executeMultipleCommands(preInstallCommands);
+        }
+    }
+
+    protected myVersionDetails() : any
+    {
+
+        const distroVersions = this.distroJson[this.distroVersion.distro][this.distroVersionsKey];
+        const versionData = distroVersions.filter((x: { [x: string]: string; }) => x[this.versionKey] === this.distroVersion.version)[0];
+        if(!versionData)
+        {
+            const closestVersion = this.findMostSimilarVersion(this.distroVersion.version, distroVersions.map((x: { [x: string]: string; }) => parseFloat(x[this.versionKey])));
+            return distroVersions.filter((x: { [x: string]: string; }) => parseFloat(x[this.versionKey]) === closestVersion)[0];
+        }
+        return versionData;
+    }
+
+    protected findMostSimilarVersion(myVersion : string, knownVersions : number[]) : number
+    {
+        const sameMajorVersions = knownVersions.filter(x => Math.floor(x) === Math.floor(parseFloat(myVersion)));
+        if(sameMajorVersions && sameMajorVersions.length)
+        {
+            return Math.max(...sameMajorVersions);
+        }
+
+        const lowerMajorVersions = knownVersions.filter(x => x < Math.floor(parseFloat(myVersion)));
+        if(lowerMajorVersions && lowerMajorVersions.length)
+        {
+            return Math.max(...lowerMajorVersions);
+        }
+
+        // Just return the lowest known version, as it will be the closest to our version, as they are all larger than our version.
+        return Math.min(...knownVersions);
     }
 
     protected myDistroStrings(stringKey : string) : string

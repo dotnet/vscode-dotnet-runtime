@@ -15,13 +15,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 {
     public async installDotnet(fullySpecifiedVersion : string, installType : LinuxInstallType): Promise<string>
     {
-        const supportStatus = await this.getDotnetVersionSupportStatus(fullySpecifiedVersion, installType);
-        if(supportStatus === DotnetDistroSupportStatus.Microsoft)
-        {
-            const myVersionDetails = this.myVersionDetails();
-            const preInstallCommands = myVersionDetails[this.preinstallCommandKey] as CommandExecutorCommand[];
-            await this.commandRunner.executeMultipleCommands(preInstallCommands);
-        }
+        await this.injectPMCFeed(fullySpecifiedVersion, installType);
 
         let commands = this.myDistroCommands(this.installCommandKey);
         const sdkPackage = await this.myDotnetVersionPackageName(fullySpecifiedVersion, installType);
@@ -39,6 +33,10 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
     public async getInstalledGlobalDotnetPathIfExists(installType : LinuxInstallType) : Promise<string | null>
     {
         const commandResult = await this.commandRunner.executeMultipleCommands(this.myDistroCommands(this.currentInstallPathCommandKey));
+        if(commandResult[0])
+        {
+            commandResult[0] = commandResult[0].trim();
+        }
         return commandResult[0];
     }
 
@@ -129,7 +127,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 
         // we need to run this command in the root directory otherwise local dotnets on the path may interfere
         const rootDir = path.parse(__dirname).root;
-        let commandResult = (await this.commandRunner.executeMultipleCommands(command, rootDir))[0];
+        let commandResult = (await this.commandRunner.executeMultipleCommands(command, { cwd: path.resolve(rootDir), shell: true }))[0];
 
         commandResult = commandResult.replace('\n', '');
         if(!this.versionResolver.isValidLongFormVersionFormat(commandResult))
@@ -168,37 +166,6 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         }
 
         return Promise.resolve(DotnetDistroSupportStatus.Unknown);
-    }
-
-    protected myVersionDetails() : any
-    {
-
-        const distroVersions = this.distroJson[this.distroVersion.distro][this.distroVersionsKey];
-        const versionData = distroVersions.filter((x: { [x: string]: string; }) => x[this.versionKey] === this.distroVersion.version)[0];
-        if(!versionData)
-        {
-            const closestVersion = this.findMostSimilarVersion(this.distroVersion.version, distroVersions.map((x: { [x: string]: string; }) => parseFloat(x[this.versionKey])));
-            return distroVersions.filter((x: { [x: string]: string; }) => parseFloat(x[this.versionKey]) === closestVersion)[0];
-        }
-        return versionData;
-    }
-
-    private findMostSimilarVersion(myVersion : string, knownVersions : number[]) : number
-    {
-        const sameMajorVersions = knownVersions.filter(x => Math.floor(x) === Math.floor(parseFloat(myVersion)));
-        if(sameMajorVersions && sameMajorVersions.length)
-        {
-            return Math.max(...sameMajorVersions);
-        }
-
-        const lowerMajorVersions = knownVersions.filter(x => x < Math.floor(parseFloat(myVersion)));
-        if(lowerMajorVersions && lowerMajorVersions.length)
-        {
-            return Math.max(...lowerMajorVersions);
-        }
-
-        // Just return the lowest known version, as it will be the closest to our version, as they are all larger than our version.
-        return Math.min(...knownVersions);
     }
 
     public async getRecommendedDotnetVersion(installType : LinuxInstallType) : Promise<string>
