@@ -144,7 +144,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     {
 
         const versionsResult = await callWithErrorHandling(async () => {
-            const customVersionResolver = new VersionResolver(acquisitionContext);
+            const customVersionResolver = new VersionResolver(acquisitionContext, customWebWorker);
             return customVersionResolver.GetAvailableDotnetVersions(commandContext);
         }, issueContext(commandContext?.errorConfiguration, 'listVersions'));
 

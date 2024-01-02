@@ -144,7 +144,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
 
     const version = currentSDKVersion;
     const earlierVersion = '3.1';
-    const acquisitionWorker = getMockAcquisitionWorker(false, version, undefined, eventStream);
+    const acquisitionWorker = getMockAcquisitionWorker(false, version, undefined, eventStream, context, installDirectoryProvider);
 
     // Write 'preinstalled' SDKs
     const dotnetDir = installDirectoryProvider.getInstallDir(version);
@@ -183,7 +183,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     const installDirectoryProvider = new SdkInstallationDirectoryProvider(storagePath);
 
     const version = currentSDKVersion;
-    const acquisitionWorker = getMockAcquisitionWorker(false, version);
+    const acquisitionWorker = getMockAcquisitionWorker(false, version, undefined, undefined, undefined, installDirectoryProvider);
 
     const currentVersionInstallKey =  DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, os.arch());
     // Ensure nothing is returned when there is no preinstalled SDK
