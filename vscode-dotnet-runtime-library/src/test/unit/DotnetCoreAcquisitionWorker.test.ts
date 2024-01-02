@@ -39,7 +39,8 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
     const installedVersionsKey = 'installed';
     const dotnetFolderName = `.dotnet O'Hare O'Donald`;
 
-    function setupWorker(isRuntimeWorker : boolean, version : string, arch? : string | null, existingEventSteam? : MockEventStream, existingContext? : MockExtensionContext): [MockDotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext, IAcquisitionInvoker] {
+    function setupWorker(isRuntimeWorker : boolean, version : string, arch? : string | null): [MockDotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext, IAcquisitionInvoker]
+    {
         const context = new MockExtensionContext();
         const eventStream = new MockEventStream();
         const acquisitionWorker = getMockAcquisitionWorker(isRuntimeWorker, version, arch, eventStream, context);
@@ -213,7 +214,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
 
     test('Graveyard Removes Failed Uninstalls', async () => {
         const version = '1.0';
-        let [acquisitionWorker, eventStream, context, invoker] = setupWorker(true, version);
+        const [acquisitionWorker, eventStream, context, invoker] = setupWorker(true, version);
         const installKey = acquisitionWorker.getInstallKey(version);
         const res = await acquisitionWorker.acquireRuntime(version, invoker);
         await assertAcquisitionSucceeded(installKey, res.dotnetPath, eventStream, context);

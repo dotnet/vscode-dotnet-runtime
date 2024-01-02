@@ -55,11 +55,11 @@ export function getMockUtilityContext() : IUtilityContext
     return utilityContext;
 }
 
-export function getMockAcquireContext(version : string, legacy = false) : IDotnetAcquireContext
+export function getMockAcquireContext(nextAcquiringVersion : string, legacy = false) : IDotnetAcquireContext
 {
     const acquireContext : IDotnetAcquireContext =
     {
-        version: version,
+        version: nextAcquiringVersion,
         architecture: legacy ? null : os.arch()
     };
     return acquireContext;
