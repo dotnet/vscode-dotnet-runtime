@@ -18,7 +18,7 @@ import { IUtilityContext } from '../../Utils/IUtilityContext';
 const standardTimeoutTime = 100000;
 
 export function getMockAcquisitionContext(runtimeInstall: boolean, version : string, timeoutTime : number = standardTimeoutTime, customEventStream? : IEventStream,
-    customContext? : MockExtensionContext, arch? : string): IAcquisitionWorkerContext
+    customContext? : MockExtensionContext, arch? : string | null): IAcquisitionWorkerContext
 {
     const extensionContext = customContext ?? new MockExtensionContext();
     const myEventStream = customEventStream ?? new MockEventStream();
@@ -31,13 +31,14 @@ export function getMockAcquisitionContext(runtimeInstall: boolean, version : str
         installationValidator: new MockInstallationValidator(myEventStream),
         timeoutSeconds: timeoutTime,
         installingArchitecture: arch,
+        proxyUrl: undefined,
         installDirectoryProvider: runtimeInstall ? new RuntimeInstallationDirectoryProvider('') : new SdkInstallationDirectoryProvider(''),
         isExtensionTelemetryInitiallyEnabled: true
     };
     return workerContext;
 }
 
-export function getMockAcquisitionWorker(runtimeInstall: boolean, version : string, arch? : string, customEventStream? : MockEventStream, customContext? : MockExtensionContext) : MockDotnetCoreAcquisitionWorker
+export function getMockAcquisitionWorker(runtimeInstall: boolean, version : string, arch? : string | null, customEventStream? : MockEventStream, customContext? : MockExtensionContext) : MockDotnetCoreAcquisitionWorker
 {
     const acquisitionWorker = new MockDotnetCoreAcquisitionWorker(getMockAcquisitionContext(runtimeInstall, version, undefined, customEventStream, customContext, arch),
         getMockUtilityContext(), new MockVSCodeExtensionContext());

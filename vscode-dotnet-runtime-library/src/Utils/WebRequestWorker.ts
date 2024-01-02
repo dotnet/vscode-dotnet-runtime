@@ -135,7 +135,7 @@ export class WebRequestWorker
                 this.context.eventStream.post(new SuppressedAcquisitionError(error, `The proxy lookup failed, most likely due to limited registry access. Skipping automatic proxy lookup.`));
             }
         }
-        if(this.proxyEnabled())
+        if(this.proxyEnabled() && this.proxy)
         {
             this.proxyAgent = new HttpsProxyAgent(this.proxy);
         }

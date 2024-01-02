@@ -103,6 +103,18 @@ export class MockDotnetCoreAcquisitionWorker extends DotnetCoreAcquisitionWorker
         this.context.acquisitionContext!.version = version;
         return super.acquireRuntime(version, invoker);
     }
+
+    public updateVersion(newVersion : string)
+    {
+        this.context.acquisitionContext!.version = newVersion;
+    }
+
+    public updateArch(newArch : string)
+    {
+        this.installingArchitecture = newArch;
+        this.context.installingArchitecture = newArch;
+        this.context.acquisitionContext!.architecture = newArch;
+    }
 }
 
 export class RejectingAcquisitionInvoker extends IAcquisitionInvoker {
