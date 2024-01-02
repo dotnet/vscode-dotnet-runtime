@@ -133,11 +133,6 @@
 					{
 						"runUnderSudo": true,
 						"commandRoot": "apt-get",
-						"commandParts": ["update"]
-					},
-					{
-						"runUnderSudo": true,
-						"commandRoot": "apt-get",
 						"commandParts": ["install", "-y", "wget"]
 					},
 					{
@@ -149,6 +144,11 @@
 						"runUnderSudo": true,
 						"commandRoot": "dpkg",
 						"commandParts": ["-i", "packages-microsoft-prod.deb"]
+					},
+					{
+						"runUnderSudo": true,
+						"commandRoot": "apt-get",
+						"commandParts": ["update"]
 					}
 				]
 			},
