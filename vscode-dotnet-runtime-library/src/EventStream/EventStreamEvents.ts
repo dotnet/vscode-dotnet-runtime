@@ -131,6 +131,28 @@ export abstract class DotnetNonAcquisitionError extends IEvent {
     }
 }
 
+export abstract class DotnetInstallExpectedAbort extends IEvent {
+    public readonly type = EventType.DotnetInstallExpectedAbort;
+    public isError = true;
+
+    /**
+     *
+     * @param error The error that triggered, so the call stack, etc. can be analyzed.
+     * @param installKey For acquisition errors, you MUST include this install key. For commands unrelated to acquiring or managing a specific dotnet version, you
+     * have the option to leave this parameter null. If it is NULL during acquisition the extension CANNOT properly manage what it has finished installing or not.
+     */
+    constructor(public readonly error: Error, public readonly installKey: string | null)
+    {
+        super();
+    }
+
+    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+        return {ErrorName : this.error.name,
+                ErrorMessage : this.error.message,
+                StackTrace : this.error.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : '',
+                InstallKey : this.installKey ?? 'null'};
+    }
+}
 
 export class SuppressedAcquisitionError extends IEvent {
     public readonly eventName = 'SuppressedAcquisitionError';
@@ -217,7 +239,7 @@ export class DotnetFeatureBandDoesNotExistError extends DotnetAcquisitionError {
     public readonly eventName = 'DotnetFeatureBandDoesNotExistError';
 }
 
-export class DotnetWSLSecurityError extends DotnetAcquisitionError {
+export class DotnetWSLSecurityError extends DotnetInstallExpectedAbort {
     public readonly eventName = 'DotnetWSLSecurityError';
 }
 
@@ -247,8 +269,12 @@ export class DotnetAcquisitionScriptError extends DotnetAcquisitionVersionError 
     public readonly eventName = 'DotnetAcquisitionScriptError';
 }
 
-export class DotnetConflictingGlobalWindowsInstallError extends DotnetAcquisitionError {
+export class DotnetConflictingGlobalWindowsInstallError extends DotnetInstallExpectedAbort {
     public readonly eventName = 'DotnetConflictingGlobalWindowsInstallError';
+}
+
+export class DotnetInstallCancelledByUserError extends DotnetInstallExpectedAbort {
+    public readonly eventName = 'DotnetInstallCancelledByUserError';
 }
 
 export class DotnetDebuggingMessage extends IEvent {
@@ -293,11 +319,11 @@ export class DotnetVersionResolutionError extends DotnetAcquisitionVersionError 
     public readonly eventName = 'DotnetVersionResolutionError';
 }
 
-export class DotnetConflictingLinuxInstallTypesError extends DotnetAcquisitionVersionError {
+export class DotnetConflictingLinuxInstallTypesError extends DotnetInstallExpectedAbort {
     public readonly eventName = 'DotnetConflictingLinuxInstallTypesError';
 }
 
-export class DotnetCustomLinuxInstallExistsError extends DotnetAcquisitionVersionError {
+export class DotnetCustomLinuxInstallExistsError extends DotnetInstallExpectedAbort {
     public readonly eventName = 'DotnetCustomLinuxInstallExistsError';
 }
 
@@ -338,7 +364,7 @@ export class DotnetInstallationValidationError extends DotnetAcquisitionVersionE
     }
 }
 
-export class DotnetAcquisitionDistroUnknownError extends DotnetAcquisitionError {
+export class DotnetAcquisitionDistroUnknownError extends DotnetInstallExpectedAbort {
     public readonly eventName = 'DotnetAcquisitionDistroUnknownError';
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {

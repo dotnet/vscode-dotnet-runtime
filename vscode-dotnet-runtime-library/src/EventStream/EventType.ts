@@ -18,4 +18,5 @@ export enum EventType {
     DotnetTotalSuccessEvent,
     DotnetUpgradedEvent,
     SuppressedAcquisitionError,
+    DotnetInstallExpectedAbort
 }

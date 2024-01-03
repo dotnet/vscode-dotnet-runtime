@@ -109,6 +109,14 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
         {
             return '0'; // These statuses are a success, we don't want to throw.
         }
+        else if(installerResult === '1602')
+        {
+            // Special code for when user cancels the install
+            const err = new DotnetInstallCancelledByUserError(new Error(
+                `The install of .NET was cancelled by the user. Aborting.`), getInstallKeyFromContext(this.acquisitionContext.acquisitionContext));
+            this.acquisitionContext.eventStream.post(err);
+            throw err.error;
+        }
         else
         {
             return installerResult;
