@@ -104,7 +104,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
         if(shouldRun)
         {
             await provider.getInstalledGlobalDotnetPathIfExists(installType);
-            assert.equal(mockExecutor.attemptedCommand, 'which dotnet');
+            assert.equal(mockExecutor.attemptedCommand, 'readlink -f /usr/bin/dotnet');
         }
     }).timeout(standardTimeoutTime);
 
