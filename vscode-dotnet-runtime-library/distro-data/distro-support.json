@@ -60,7 +60,7 @@
 			}
 		],
 		"expectedDistroFeedInstallDirectory" : "/usr/lib/dotnet",
-        "expectedMicrosoftFeedInstallDirectory" : "/usr/bin/dotnet",
+        "expectedMicrosoftFeedInstallDirectory" : "/usr/share/dotnet",
 		"installedSDKVersionsCommand":
 		[
 			{
