@@ -9,7 +9,8 @@ import
 {
     DotnetAcquisitionDistroUnknownError,
     DotnetConflictingLinuxInstallTypesError,
-    DotnetCustomLinuxInstallExistsError
+    DotnetCustomLinuxInstallExistsError,
+    DotnetUpgradedEvent
 } from '../EventStream/EventStreamEvents';
 import { GenericDistroSDKProvider } from './GenericDistroSDKProvider'
 import { VersionResolver } from './VersionResolver';
@@ -67,6 +68,7 @@ export class LinuxVersionResolver
     protected distroSDKProvider : IDistroDotnetSDKProvider | null = null;
     protected commandRunner : ICommandExecutor;
     protected versionResolver : VersionResolver;
+    public okUpdateExitCode = 11188; // Arbitrary number that is not shared or used by other things we rely on as an exit code
 
     public conflictingInstallErrorMessage = `A dotnet installation was found which indicates dotnet that was installed via Microsoft package feeds. But for this distro and version, we only acquire .NET via the distro feeds.
     You should not mix distro feed and microsoft feed installations. To continue, please completely remove this version of dotnet to continue by following https://learn.microsoft.com/dotnet/core/install/remove-runtime-sdk-versions?pivots=os-linux.
@@ -272,7 +274,9 @@ export class LinuxVersionResolver
                     Number(this.versionResolver.getFeatureBandPatchVersion(existingGlobalInstallSDKVersion)) < Number(this.versionResolver.getFeatureBandPatchVersion(fullySpecifiedDotnetVersion)))
                 {
                     // We can update instead of doing an install
-                    return (await this.distroSDKProvider!.upgradeDotnet(existingGlobalInstallSDKVersion, 'sdk')) ? '1' : '1';
+                    this.acquisitionContext.eventStream.post(new DotnetUpgradedEvent(
+                        `.NET was updated by the .NET Install Tool from ${existingGlobalInstallSDKVersion} to ${fullySpecifiedDotnetVersion}, or the newest available package in the feed.`));
+                    return (await this.distroSDKProvider!.upgradeDotnet(existingGlobalInstallSDKVersion, 'sdk')) === '0' ? this.okUpdateExitCode : '1';
                 }
                 else
                 {
@@ -309,6 +313,10 @@ export class LinuxVersionResolver
         if(updateOrRejectState === '0')
         {
             return await this.distroSDKProvider!.installDotnet(fullySpecifiedDotnetVersion, 'sdk') ? '0' : '1';
+        }
+        else if(updateOrRejectState === String(this.okUpdateExitCode))
+        {
+            return '0';
         }
         return updateOrRejectState;
     }

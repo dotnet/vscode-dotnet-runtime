@@ -12,6 +12,7 @@ import {
     DotnetAcquisitionVersionError,
     DotnetDebuggingMessage,
     DotnetExistingPathResolutionCompleted,
+    DotnetUpgradedEvent,
 } from './EventStreamEvents';
 import { EventType } from './EventType';
 import { IEvent } from './IEvent';
@@ -115,6 +116,10 @@ export class OutputChannelObserver implements IEventStreamObserver {
                 } else {
                     this.stopDownloadIndicator();
                 }
+                break;
+            case EventType.DotnetUpgradedEvent:
+                const upgradeMessage = event as DotnetUpgradedEvent;
+                this.outputChannel.appendLine(`${upgradeMessage.eventMessage}:`);
                 break;
             case EventType.DotnetDebuggingMessage:
                 const loggedMessage = event as DotnetDebuggingMessage;

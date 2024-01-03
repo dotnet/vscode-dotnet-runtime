@@ -521,6 +521,10 @@ export class CommandExecutionEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'CommandExecutionEvent';
 }
 
+export class CommandExecutionUserAskDialogueEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandExecutionUserAskDialogueEvent';
+}
+
 export class CommandExecutionUserCompletedDialogueEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'CommandExecutionUserCompletedDialogueEvent';
 }

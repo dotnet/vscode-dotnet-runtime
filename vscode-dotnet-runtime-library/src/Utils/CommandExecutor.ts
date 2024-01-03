@@ -89,6 +89,8 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
             let sanitizedCallerName = this.context?.acquisitionContext?.requestingExtensionId?.replace(/[^0-9a-z]/gi, ''); // Remove non-alphanumerics per OS requirements
             sanitizedCallerName = sanitizedCallerName?.substring(0, 69); // 70 Characters is the maximum limit we can use for the prompt.
             const options = { name: `${sanitizedCallerName ?? '.NET Install Tool'}` };
+
+            this.context?.eventStream.post(new CommandExecutionUserAskDialogueEvent(`Prompting user for command ${fullCommandString} under sudo.`));
             exec((fullCommandString), options, (error?: any, stdout?: any, stderr?: any) =>
             {
                 let commandResultString = '';
