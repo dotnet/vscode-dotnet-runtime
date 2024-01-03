@@ -4,16 +4,18 @@
 *--------------------------------------------------------------------------------------------*/
 
 import * as semver from 'semver';
-import { IEventStream } from '../EventStream/EventStream';
 import {
     DotnetFeatureBandDoesNotExistError,
     DotnetInvalidReleasesJSONError,
     DotnetOfflineFailure,
     DotnetVersionResolutionCompleted,
     DotnetVersionResolutionError,
+    DotnetVersionParseEvent
 } from '../EventStream/EventStreamEvents';
-import { IExtensionState } from '../IExtensionState';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
+import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
+import { Debugging } from '../Utils/Debugging';
+
 import { IVersionResolver } from './IVersionResolver';
 import { DotnetVersionSupportPhase,
     DotnetVersionSupportStatus,
@@ -21,7 +23,7 @@ import { DotnetVersionSupportPhase,
     IDotnetListVersionsResult,
     IDotnetVersion
 } from '../IDotnetListVersionsContext';
-import { Debugging } from '../Utils/Debugging';
+import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 /* tslint:disable:no-any */
 
 export class VersionResolver implements IVersionResolver {
@@ -29,14 +31,12 @@ export class VersionResolver implements IVersionResolver {
     private readonly releasesUrl = 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json';
     protected static invalidFeatureBandErrorString = `A feature band couldn't be determined for the requested version: `;
 
-    constructor(extensionState: IExtensionState,
-                private readonly eventStream: IEventStream,
-                private readonly timeoutTime : number,
-                private readonly proxy?: string,
-                webWorker?: WebRequestWorker
+    constructor(
+        private readonly context : IAcquisitionWorkerContext,
+        webWorker?: WebRequestWorker
     )
     {
-        this.webWorker = webWorker ?? new WebRequestWorker(extensionState, eventStream, this.releasesUrl, this.timeoutTime * 1000, this.proxy);
+        this.webWorker = webWorker ?? new WebRequestWorker(context, this.releasesUrl);
     }
 
     /**
@@ -66,7 +66,7 @@ export class VersionResolver implements IVersionResolver {
             if (!response)
             {
                 const offlineError = new Error('Unable to connect to the index server: Cannot find .NET versions.');
-                this.eventStream.post(new DotnetOfflineFailure(offlineError, 'any'));
+                this.context.eventStream.post(new DotnetOfflineFailure(offlineError, getInstallKeyFromContext(this.context.acquisitionContext)));
                 reject(offlineError);
             }
             else
@@ -120,26 +120,26 @@ export class VersionResolver implements IVersionResolver {
             try
             {
                 const versionResult = this.resolveVersion(version, releasesVersions);
-                this.eventStream.post(new DotnetVersionResolutionCompleted(version, versionResult));
+                this.context.eventStream.post(new DotnetVersionResolutionCompleted(version, versionResult));
                 resolve(versionResult);
             }
             catch (error)
             {
-                this.eventStream.post(new DotnetVersionResolutionError(error as Error, version));
+                this.context.eventStream.post(new DotnetVersionResolutionError(error as Error, version));
                 reject(error);
             }
         });
     }
 
     private resolveVersion(version: string, releases: IDotnetListVersionsResult): string {
-        Debugging.log(`Resolving the version: ${version}`, this.eventStream);
+        Debugging.log(`Resolving the version: ${version}`, this.context.eventStream);
         this.validateVersionInput(version);
 
         const matchingVersion = releases.filter((availableVersions : IDotnetVersion) => availableVersions.channelVersion === version);
         if (!matchingVersion || matchingVersion.length < 1)
         {
             const err = new DotnetVersionResolutionError(new Error(`The requested and or resolved version is invalid.`), version);
-            this.eventStream.post(err);
+            this.context.eventStream.post(err);
             throw err.error;
         }
 
@@ -157,16 +157,16 @@ export class VersionResolver implements IVersionResolver {
         {
             parsedVer = null;
         }
-        Debugging.log(`Semver parsing passed: ${version}.`, this.eventStream);
+        Debugging.log(`Semver parsing passed: ${version}.`, this.context.eventStream);
 
         if (version.split('.').length !== 2 || !parsedVer)
         {
-            Debugging.log(`Resolving the version: ${version} ... it is invalid!`, this.eventStream);
+            Debugging.log(`Resolving the version: ${version} ... it is invalid!`, this.context.eventStream);
             const err = new DotnetVersionResolutionError(new Error(`An invalid version was requested. Version: ${version}`), version);
-            this.eventStream.post(err);
+            this.context.eventStream.post(err);
             throw err.error;
         }
-        Debugging.log(`The version ${version} was determined to be valid.`, this.eventStream);
+        Debugging.log(`The version ${version} was determined to be valid.`, this.context.eventStream);
     }
 
     private async getReleasesInfo(getRuntimeVersion : boolean): Promise<IDotnetListVersionsResult>
@@ -176,8 +176,9 @@ export class VersionResolver implements IVersionResolver {
         const response = await this.GetAvailableDotnetVersions(apiContext);
         if (!response)
         {
-            const err = new DotnetInvalidReleasesJSONError(new Error(`We could not reach the releases API ${this.releasesUrl} to download dotnet, is your machine offline or is this website down?`));
-            this.eventStream.post(err);
+            const err = new DotnetInvalidReleasesJSONError(new Error(`We could not reach the releases API ${this.releasesUrl} to download dotnet, is your machine offline or is this website down?`),
+                getInstallKeyFromContext(this.context.acquisitionContext));
+            this.context.eventStream.post(err);
             throw err.error;
         }
 
@@ -191,7 +192,7 @@ export class VersionResolver implements IVersionResolver {
      */
     public getMajor(fullySpecifiedVersion : string) : string
     {
-        // The called function will check that we can do the split, so we dont need to check again.
+        // The called function will check that we can do the split, so we don't need to check again.
         return this.getMajorMinor(fullySpecifiedVersion).split('.')[0];
     }
 
@@ -204,8 +205,9 @@ export class VersionResolver implements IVersionResolver {
     {
         if(fullySpecifiedVersion.split('.').length < 2)
         {
-            const err = new DotnetVersionResolutionError(new Error(`The requested version ${fullySpecifiedVersion} is invalid.`), fullySpecifiedVersion);
-            throw err.error;
+            const event = new DotnetVersionResolutionError(new Error(`The requested version ${fullySpecifiedVersion} is invalid.`), getInstallKeyFromContext(this.context.acquisitionContext));
+            this.context.eventStream.post(event);
+            throw event.error;
         }
 
         const majorMinor = `${fullySpecifiedVersion.split('.').at(0)}.${fullySpecifiedVersion.split('.').at(1)}`;
@@ -222,8 +224,10 @@ export class VersionResolver implements IVersionResolver {
         const band : string | undefined = fullySpecifiedVersion.split('.')?.at(2)?.charAt(0);
         if(band === undefined)
         {
-            const err = new DotnetFeatureBandDoesNotExistError(new Error(`${VersionResolver.invalidFeatureBandErrorString}${fullySpecifiedVersion}.`));
-            throw err.error;
+            const event = new DotnetFeatureBandDoesNotExistError(new Error(`${VersionResolver.invalidFeatureBandErrorString}${fullySpecifiedVersion}.`),
+                getInstallKeyFromContext(this.context.acquisitionContext));
+            this.context.eventStream.post(event);
+            throw event.error;
         }
         return band;
     }
@@ -248,8 +252,10 @@ export class VersionResolver implements IVersionResolver {
         const patch : string | undefined = fullySpecifiedVersion.split('.')?.at(2)?.substring(1);
         if(patch === undefined || !this.isNumber(patch))
         {
-            const err = new DotnetFeatureBandDoesNotExistError(new Error(`${VersionResolver.invalidFeatureBandErrorString}${fullySpecifiedVersion}.`));
-            throw err.error;
+            const event = new DotnetFeatureBandDoesNotExistError(new Error(`${VersionResolver.invalidFeatureBandErrorString}${fullySpecifiedVersion}.`),
+                getInstallKeyFromContext(this.context.acquisitionContext));
+            this.context.eventStream.post(event);
+            throw event.error;
         }
         return patch
     }
@@ -269,9 +275,11 @@ export class VersionResolver implements IVersionResolver {
             {
                 return true;
             }
-            Debugging.log(`The version has a bad patch number: ${fullySpecifiedVersion}`);
+
+            this.context.eventStream.post(new DotnetVersionParseEvent(`The version has a bad patch number: ${fullySpecifiedVersion}`));
           }
-          Debugging.log(`The version has more or less than two periods, or it is too long: ${fullySpecifiedVersion}`);
+
+          this.context.eventStream.post(new DotnetVersionParseEvent(`The version has more or less than two periods, or it is too long: ${fullySpecifiedVersion}`));
           return false;
       }
 

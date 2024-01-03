@@ -114,7 +114,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       const sdkVersion = '7.0.103';
       const context : IDotnetAcquireContext = { version: sdkVersion, requestingExtensionId: 'sample-extension', installType: 'global' };
 
-      // We cannot use the describe pattern to restore the environment variables using vscodes extension testing infrastructure.
+      // We cannot use the describe pattern to restore the environment variables using vscode's extension testing infrastructure.
       // So we must set and unset it ourselves, which isn't ideal as this variable could remain.
       let result : IDotnetAcquireResult;
       let error : any;
@@ -158,6 +158,12 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   }).timeout(standardTimeoutTime*1000);
 
   test('Telemetry Sent During Install and Uninstall', async () => {
+    if(!vscode.env.isTelemetryEnabled)
+    {
+      console.warn('The telemetry test cannot run as VS Code Telemetry is disabled in user settings.');
+      return;
+    }
+
     const rntVersion = '2.2';
     const fullyResolvedVersion = '2.2.8'; // 2.2 is very much out of support, so we don't expect this to change to a newer version
     const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(fullyResolvedVersion, os.arch());
@@ -196,6 +202,12 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   }).timeout(standardTimeoutTime);
 
   test('Telemetry Sent on Error', async () => {
+    if(!vscode.env.isTelemetryEnabled)
+    {
+      console.warn('The telemetry test cannot run as VS Code Telemetry is disabled in user settings.');
+      return;
+    }
+
     const context: IDotnetAcquireContext = { version: 'foo', requestingExtensionId };
     try {
       await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
