@@ -318,7 +318,7 @@ export class LinuxVersionResolver
         {
             return '0';
         }
-        return updateOrRejectState;
+        return String(updateOrRejectState);
     }
 
     /**

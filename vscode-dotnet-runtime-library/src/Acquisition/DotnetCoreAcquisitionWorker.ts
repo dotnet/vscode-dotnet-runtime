@@ -308,7 +308,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         this.context.eventStream.post(new DotnetBeginGlobalInstallerExecution(`Beginning to run installer for ${installKey} in ${os.platform()}.`))
         const installerResult = await installer.installSDK();
-        this.context.eventStream.post(new DotnetCompletedGlobalInstallerExecution(`Beginning to run installer for ${installKey} in ${os.platform()}.`))
+        this.context.eventStream.post(new DotnetCompletedGlobalInstallerExecution(`Completed installer for ${installKey} in ${os.platform()}.`))
 
         if(installerResult !== '0')
         {

@@ -17,6 +17,7 @@ import {
     CommandExecutionStdError,
     CommandExecutionStdOut,
     CommandExecutionUnderSudoEvent,
+    CommandExecutionUserAskDialogueEvent,
     CommandExecutionUserCompletedDialogueEvent,
     DotnetAlternativeCommandFoundEvent,
     DotnetCommandNotFoundEvent,

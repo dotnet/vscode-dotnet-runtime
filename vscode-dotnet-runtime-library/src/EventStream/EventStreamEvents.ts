@@ -537,6 +537,10 @@ export class DotnetVersionParseEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetVersionParseEvent';
 }
 
+export class DotnetUpgradedEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetUpgradedEvent';
+}
+
 export abstract class DotnetFileEvent extends DotnetAcquisitionMessage
 {
     constructor(public readonly eventMessage: string, public readonly time: string, public readonly file: string) { super(); }
