@@ -254,7 +254,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         return {
             storagePath: context.globalStoragePath,
             extensionState: context.globalState,
-            eventStream,
+            eventStream: eventStream,
             installationValidator: new InstallationValidator(eventStream),
             timeoutSeconds: resolvedTimeoutSeconds,
             installDirectoryProvider: isRuntimeInstall ? new RuntimeInstallationDirectoryProvider(context.globalStoragePath): new SdkInstallationDirectoryProvider(context.globalStoragePath),
