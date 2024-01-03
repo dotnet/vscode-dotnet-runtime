@@ -13,6 +13,8 @@ import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 
 export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 {
+    protected resolvePathAsSymlink = true;
+
     public async installDotnet(fullySpecifiedVersion : string, installType : LinuxInstallType): Promise<string>
     {
         await this.injectPMCFeed(fullySpecifiedVersion, installType);
@@ -37,6 +39,18 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         {
             commandResult[0] = commandResult[0].trim();
         }
+
+        if(commandResult && this.resolvePathAsSymlink)
+        {
+            let symLinkReadCommand = this.myDistroCommands(this.readSymbolicLinkCommandKey);
+            symLinkReadCommand = CommandExecutor.replaceSubstringsInCommands(symLinkReadCommand, this.missingPathKey, commandResult[0]);
+            const resolvedPath = (await this.commandRunner.executeMultipleCommands(symLinkReadCommand))[0];
+            if(resolvedPath)
+            {
+                return resolvedPath.trim();
+            }
+        }
+
         return commandResult[0];
     }
 
