@@ -252,7 +252,7 @@ export class LinuxVersionResolver
      * @returns 0 if we can proceed. Will throw if a conflicting install exists. If we can update, it will do the update and return 1.
      * A string is returned in case we want to make this return more info about the update.
      */
-    private async UpdateOrRejectIfVersionRequestDoesNotRequireInstall(fullySpecifiedDotnetVersion : string, existingInstall : string | null)
+    private async UpdateOrRejectIfVersionRequestDoesNotRequireInstall(fullySpecifiedDotnetVersion : string, existingInstall : string | null) : Promise<string>
     {
         await this.Initialize();
 
@@ -262,6 +262,8 @@ export class LinuxVersionResolver
             if(existingGlobalInstallSDKVersion && Number(this.versionResolver.getMajorMinor(existingGlobalInstallSDKVersion)) ===
                 Number(this.versionResolver.getMajorMinor(fullySpecifiedDotnetVersion)))
             {
+                const isPatchUpgrade = Number(this.versionResolver.getFeatureBandPatchVersion(existingGlobalInstallSDKVersion)) < Number(this.versionResolver.getFeatureBandPatchVersion(fullySpecifiedDotnetVersion));
+
                 if(Number(this.versionResolver.getMajorMinor(existingGlobalInstallSDKVersion)) > Number(this.versionResolver.getMajorMinor(fullySpecifiedDotnetVersion)))
                 {
                     // We shouldn't downgrade to a lower patch
@@ -270,13 +272,15 @@ export class LinuxVersionResolver
                     this.acquisitionContext.eventStream.post(err);
                     throw err.error;
                 }
-                else if(await this.distroSDKProvider!.dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion, 'sdk') ||
-                    Number(this.versionResolver.getFeatureBandPatchVersion(existingGlobalInstallSDKVersion)) < Number(this.versionResolver.getFeatureBandPatchVersion(fullySpecifiedDotnetVersion)))
+                else if(await this.distroSDKProvider!.dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion, 'sdk') || isPatchUpgrade)
                 {
                     // We can update instead of doing an install
                     this.acquisitionContext.eventStream.post(new DotnetUpgradedEvent(
-                        `.NET was updated by the .NET Install Tool from ${existingGlobalInstallSDKVersion} to ${fullySpecifiedDotnetVersion}, or the newest available package in the feed.`));
-                    return (await this.distroSDKProvider!.upgradeDotnet(existingGlobalInstallSDKVersion, 'sdk')) === '0' ? this.okUpdateExitCode : '1';
+                        isPatchUpgrade ?
+                        `Updating .NET: Current Version: ${existingGlobalInstallSDKVersion} to ${fullySpecifiedDotnetVersion}.`
+                        :
+                        `Repairing .NET Packages for ${existingGlobalInstallSDKVersion}.`));
+                    return (await this.distroSDKProvider!.upgradeDotnet(existingGlobalInstallSDKVersion, 'sdk')) === '0' ? String(this.okUpdateExitCode) : '1';
                 }
                 else
                 {
