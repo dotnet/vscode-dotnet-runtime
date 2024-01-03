@@ -256,6 +256,7 @@ export class LinuxVersionResolver
     {
         await this.Initialize();
 
+        this.acquisitionContext.eventStream.post(new DotnetInstallLinuxChecks(`Checking to see if we should install, update, or cancel...`));
         if(existingInstall)
         {
             const existingGlobalInstallSDKVersion = await this.distroSDKProvider!.getInstalledGlobalDotnetVersionIfExists();
