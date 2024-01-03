@@ -14,6 +14,7 @@ import { CommandExecutor } from '../Utils/CommandExecutor';
 import {
     DotnetConflictingGlobalWindowsInstallError,
     DotnetFileIntegrityCheckEvent,
+    DotnetInstallCancelledByUserError as DotnetInstallCancelledByUser,
     DotnetUnexpectedInstallerOSError,
     NetInstallerBeginExecutionEvent,
     NetInstallerEndExecutionEvent,
@@ -112,7 +113,7 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
         else if(installerResult === '1602')
         {
             // Special code for when user cancels the install
-            const err = new DotnetInstallCancelledByUserError(new Error(
+            const err = new DotnetInstallCancelledByUser(new Error(
                 `The install of .NET was cancelled by the user. Aborting.`), getInstallKeyFromContext(this.acquisitionContext.acquisitionContext));
             this.acquisitionContext.eventStream.post(err);
             throw err.error;
