@@ -546,6 +546,15 @@ export class DotnetUpgradedEvent extends DotnetCustomMessageEvent {
     }
 }
 
+export class NetInstallerBeginExecutionEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'NetInstallerBeginExecutionEvent';
+}
+
+export class NetInstallerEndExecutionEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'NetInstallerEndExecutionEvent';
+}
+
+
 export class DotnetInstallLinuxChecks extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetInstallLinuxChecks';
 }

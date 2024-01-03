@@ -15,6 +15,8 @@ import {
     DotnetConflictingGlobalWindowsInstallError,
     DotnetFileIntegrityCheckEvent,
     DotnetUnexpectedInstallerOSError,
+    NetInstallerBeginExecutionEvent,
+    NetInstallerEndExecutionEvent,
     OSXOpenNotAvailableError,
     SuppressedAcquisitionError
 } from '../EventStream/EventStreamEvents';
@@ -225,9 +227,11 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
                 workingCommand = CommandExecutor.makeCommand(`open`, [`-W`, `${path.resolve(installerPath)}`]);
             }
 
+            this.acquisitionContext.eventStream.post(new NetInstallerBeginExecutionEvent(`The OS X .NET Installer has been launched.`));
             const commandResult = await this.commandRunner.execute(
                 workingCommand
             );
+            this.acquisitionContext.eventStream.post(new NetInstallerEndExecutionEvent(`The OS X .NET Installer has closed.`));
 
             this.commandRunner.returnStatus = false;
             return commandResult[0];
@@ -240,9 +244,13 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
             {
                 commandOptions = [`/quiet`, `/install`, `/norestart`];
             }
+
+            this.acquisitionContext.eventStream.post(new NetInstallerBeginExecutionEvent(`The Windows .NET Installer has been launched.`));
             const commandResult = await this.commandRunner.execute(
                 CommandExecutor.makeCommand(command, commandOptions)
             );
+            this.acquisitionContext.eventStream.post(new NetInstallerEndExecutionEvent(`The Windows .NET Installer has closed.`));
+
             this.commandRunner.returnStatus = false;
             return commandResult[0];
         }
