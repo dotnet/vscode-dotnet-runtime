@@ -402,7 +402,7 @@ export class DotnetExistingPathResolutionCompleted extends DotnetAcquisitionSucc
 }
 
 export abstract class DotnetAcquisitionMessage extends IEvent {
-    public readonly type = EventType.DotnetAcquisitionMessage;
+    public type = EventType.DotnetAcquisitionMessage;
 
     public getProperties(): { [key: string]: string } | undefined {
         return undefined;
@@ -539,6 +539,11 @@ export class DotnetVersionParseEvent extends DotnetCustomMessageEvent {
 
 export class DotnetUpgradedEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetUpgradedEvent';
+    constructor(eventMsg : string)
+    {
+        super(eventMsg);
+        this.type = EventType.DotnetUpgradedEvent;
+    }
 }
 
 export class DotnetInstallLinuxChecks extends DotnetCustomMessageEvent {
