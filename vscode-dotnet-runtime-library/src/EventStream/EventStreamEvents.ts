@@ -541,6 +541,10 @@ export class DotnetUpgradedEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetUpgradedEvent';
 }
 
+export class DotnetInstallLinuxChecks extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetInstallLinuxChecks';
+}
+
 export abstract class DotnetFileEvent extends DotnetAcquisitionMessage
 {
     constructor(public readonly eventMessage: string, public readonly time: string, public readonly file: string) { super(); }

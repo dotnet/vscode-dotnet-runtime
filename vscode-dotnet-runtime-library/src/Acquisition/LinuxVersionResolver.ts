@@ -10,6 +10,7 @@ import
     DotnetAcquisitionDistroUnknownError,
     DotnetConflictingLinuxInstallTypesError,
     DotnetCustomLinuxInstallExistsError,
+    DotnetInstallLinuxChecks,
     DotnetUpgradedEvent
 } from '../EventStream/EventStreamEvents';
 import { GenericDistroSDKProvider } from './GenericDistroSDKProvider'
