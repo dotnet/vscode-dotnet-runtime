@@ -77,11 +77,15 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 
     public async upgradeDotnet(versionToUpgrade : string, installType : LinuxInstallType): Promise<string>
     {
+        const oldReturnStatusSetting = this.commandRunner.returnStatus;
+        this.commandRunner.returnStatus = true;
+
         let command = this.myDistroCommands(this.updateCommandKey);
         const sdkPackage = await this.myDotnetVersionPackageName(versionToUpgrade, installType);
         command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, sdkPackage);
         const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
+        this.commandRunner.returnStatus = oldReturnStatusSetting;
         return commandResult[0];
     }
 
