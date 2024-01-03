@@ -47,7 +47,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
             const resolvedPath = (await this.commandRunner.executeMultipleCommands(symLinkReadCommand))[0];
             if(resolvedPath)
             {
-                return resolvedPath.trim();
+                return path.dirname(resolvedPath.trim());
             }
         }
 
