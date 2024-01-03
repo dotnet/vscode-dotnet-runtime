@@ -234,7 +234,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
             this.acquisitionContext.eventStream.post(new NetInstallerEndExecutionEvent(`The OS X .NET Installer has closed.`));
 
             this.commandRunner.returnStatus = false;
-            return commandResult[0];
+            return commandResult;
         }
         else
         {
@@ -252,7 +252,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
             this.acquisitionContext.eventStream.post(new NetInstallerEndExecutionEvent(`The Windows .NET Installer has closed.`));
 
             this.commandRunner.returnStatus = false;
-            return commandResult[0];
+            return commandResult;
         }
     }
 
