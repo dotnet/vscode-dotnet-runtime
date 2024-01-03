@@ -43,6 +43,7 @@ export abstract class IDistroDotnetSDKProvider {
     protected searchCommandKey = 'searchCommand';
     protected updateCommandKey = 'updateCommand';
     protected packageLookupCommandKey = 'packageLookupCommand';
+    protected readSymbolicLinkCommandKey = 'readSymLinkCommand';
     protected currentInstallPathCommandKey = 'currentInstallPathCommand';
     protected isInstalledCommandKey = 'isInstalledCommand';
     protected expectedMicrosoftFeedInstallDirKey = 'expectedMicrosoftFeedInstallDirectory';
@@ -51,6 +52,7 @@ export abstract class IDistroDotnetSDKProvider {
     protected installedRuntimeVersionsCommandKey = 'installedRuntimeVersionsCommand';
     protected currentInstallVersionCommandKey = 'currentInstallationVersionCommand';
     protected missingPackageNameKey = '{packageName}';
+    protected missingPathKey = '{path}';
 
     protected distroVersionsKey = 'versions';
     protected versionKey = 'version';
