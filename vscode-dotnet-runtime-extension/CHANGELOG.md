@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog],
 and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
+## [2.0.1] - 2023-09-18
+
+Fixes several key bugs with installing .NET:
+
+- Ubuntu Installs would fail for the first time on 18.04.
+- The extension would print ... forever after installation failure.
+- The extension would fail to read Ubuntu directories properly if PMC was installed in certain scenarios.
+- GitHub Forms is now added.
+- Corrects behavior on our unknown Ubuntu Versions by estimating the correct behavior for known versions.
+- Improve timeout error handling
+- Catch bug in the caching library we use to prevent it from failing to cache
+- Several other key issues.
+
 ## [2.0.0] - 2023-09-18
 
 The '.NET Runtime Install Tool' has been renamed to the '.NET Install Tool.'
