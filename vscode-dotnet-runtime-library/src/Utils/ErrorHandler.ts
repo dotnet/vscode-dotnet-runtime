@@ -64,6 +64,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
         const error = caughtError as Error;
         context.eventStream.post(isAcquisitionError ?
             new DotnetCommandFailed(error, context.commandName, getInstallKeyFromContext(acquireContext?.acquisitionContext)) :
+            // The output observer will keep track of installs and we don't want a non-install failure to make it think it should -=1 from the no. of installs
             new DotnetNotInstallRelatedCommandFailed(error, context.commandName)
         );
 
