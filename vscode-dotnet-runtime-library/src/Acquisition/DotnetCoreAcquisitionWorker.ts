@@ -63,6 +63,9 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     private acquisitionPromises: { [installKey: string]: Promise<string> | undefined };
     private extensionContext : IVSCodeExtensionContext;
 
+    // @member usingNoInstallInvoker - Only use this for test when using the No Install Invoker to fake the worker into thinking a path is on disk.
+    protected usingNoInstallInvoker = false;
+
     constructor(protected readonly context: IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext, extensionContext : IVSCodeExtensionContext) {
         const dotnetExtension = os.platform() === 'win32' ? '.exe' : '';
         this.dotnetExecutable = `dotnet${dotnetExtension}`;
@@ -120,7 +123,15 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         return this.acquire(version, true, undefined, invoker);
     }
 
-    public async acquireStatus(version: string, installRuntime: boolean, architecture? : string): Promise<IDotnetAcquireResult | undefined> {
+    /**
+     *
+     * @param version The version of the runtime or sdk to check
+     * @param installRuntime Whether this is a local runtime status check or a local SDK status check.
+     * @param architecture The architecture of the install. Undefined means it will be the default arch, which is the node platform arch.
+     * @returns The result of the install with the path to dotnet if installed, else undefined.
+     */
+    public async acquireStatus(version: string, installRuntime: boolean, architecture? : string): Promise<IDotnetAcquireResult | undefined>
+    {
         const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, architecture ? architecture : this.installingArchitecture)
 
         const existingAcquisitionPromise = this.acquisitionPromises[installKey];
@@ -140,7 +151,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             installedVersions = await this.managePreinstalledVersion(dotnetInstallDir, installedVersions);
         }
 
-        if (installedVersions.includes(installKey) && fs.existsSync(dotnetPath))
+        if (installedVersions.includes(installKey) && (fs.existsSync(dotnetPath) || this.usingNoInstallInvoker ))
         {
             // Requested version has already been installed.
             this.context.eventStream.post(new DotnetAcquisitionStatusResolved(installKey, version));
@@ -244,7 +255,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             installedVersions = await this.managePreinstalledVersion(dotnetInstallDir, installedVersions);
         }
 
-        if (installedVersions.includes(installKey) && fs.existsSync(dotnetPath)) {
+        if (installedVersions.includes(installKey) && (fs.existsSync(dotnetPath) || this.usingNoInstallInvoker)) {
             // Version requested has already been installed.
             this.context.installationValidator.validateDotnetInstall(installKey, dotnetPath);
             this.context.eventStream.post(new DotnetAcquisitionAlreadyInstalled(installKey,
