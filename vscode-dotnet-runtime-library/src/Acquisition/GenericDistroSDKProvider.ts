@@ -40,7 +40,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
             commandResult[0] = commandResult[0].trim();
         }
 
-        if(commandResult && this.resolvePathAsSymlink)
+        if(!commandResult[0] && this.resolvePathAsSymlink)
         {
             let symLinkReadCommand = this.myDistroCommands(this.readSymbolicLinkCommandKey);
             symLinkReadCommand = CommandExecutor.replaceSubstringsInCommands(symLinkReadCommand, this.missingPathKey, commandResult[0]);
