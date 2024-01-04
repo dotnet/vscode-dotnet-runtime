@@ -3,7 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
-import { DotnetCommandFailed, DotnetCommandSucceeded } from '../../EventStream/EventStreamEvents';
+import { DotnetCommandFailed, DotnetCommandSucceeded, DotnetNotInstallRelatedCommandFailed } from '../../EventStream/EventStreamEvents';
 import { ExistingPathKeys } from '../../IExtensionContext';
 import {
     errorConstants,
@@ -117,6 +117,6 @@ suite('ErrorHandler Unit Tests', () => {
             throw new Error(timeoutConstants.timeoutMessage);
         }, issueContext(displayWorker, eventStream));
 
-        assert.exists(eventStream.events.find(event => event instanceof DotnetCommandFailed));
+        assert.exists(eventStream.events.find(event => event instanceof DotnetNotInstallRelatedCommandFailed));
     });
 });

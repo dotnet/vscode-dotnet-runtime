@@ -32,22 +32,25 @@ import {
     DotnetFakeSDKEnvironmentVariableTriggered,
     SuppressedAcquisitionError
 } from '../EventStream/EventStreamEvents';
+
+import { GlobalInstallerResolver } from './GlobalInstallerResolver';
+import { WinMacGlobalInstaller } from './WinMacGlobalInstaller';
+import { LinuxGlobalInstaller } from './LinuxGlobalInstaller';
+import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
+import { Debugging } from '../Utils/Debugging';
+import { IDotnetAcquireContext} from '../IDotnetAcquireContext';
+import { IGlobalInstaller } from './IGlobalInstaller';
+import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
+import { IUtilityContext } from '../Utils/IUtilityContext';
+import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetCoreAcquisitionWorker } from './IDotnetCoreAcquisitionWorker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
-import { GlobalInstallerResolver } from './GlobalInstallerResolver';
-import { WinMacGlobalInstaller } from './WinMacGlobalInstaller';
-import { IGlobalInstaller } from './IGlobalInstaller';
-import { LinuxGlobalInstaller } from './LinuxGlobalInstaller';
-import { Debugging } from '../Utils/Debugging';
-import { IDotnetAcquireContext} from '../IDotnetAcquireContext';
-import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
-import { IUtilityContext } from '../Utils/IUtilityContext';
-import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
 /* tslint:disable:no-any */
 
-export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker {
+export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
+{
     private readonly installingVersionsKey = 'installing';
     private readonly installedVersionsKey = 'installed';
     // The 'graveyard' includes failed uninstall paths and their install key.
@@ -55,16 +58,14 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     private readonly installPathsGraveyardKey = 'installPathsGraveyard';
     public installingArchitecture : string | null;
     private readonly dotnetExecutable: string;
-    private readonly timeoutValue: number;
     private globalResolver: GlobalInstallerResolver | null;
 
     private acquisitionPromises: { [installKey: string]: Promise<string> | undefined };
     private extensionContext : IVSCodeExtensionContext;
 
-    constructor(private readonly context: IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext, extensionContext : IVSCodeExtensionContext) {
+    constructor(protected readonly context: IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext, extensionContext : IVSCodeExtensionContext) {
         const dotnetExtension = os.platform() === 'win32' ? '.exe' : '';
         this.dotnetExecutable = `dotnet${dotnetExtension}`;
-        this.timeoutValue = context.timeoutValue;
         this.acquisitionPromises = {};
         // null deliberately allowed to use old behavior below
         this.installingArchitecture = this.context.installingArchitecture === undefined ? os.arch() : this.context.installingArchitecture;
@@ -95,8 +96,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      * @remarks this is simply a wrapper around the acquire function.
      * @returns the requested dotnet path.
      */
-    public async acquireSDK(version: string): Promise<IDotnetAcquireResult> {
-        return this.acquire(version, false);
+    public async acquireSDK(version: string, invoker : IAcquisitionInvoker): Promise<IDotnetAcquireResult> {
+        return this.acquire(version, false, undefined, invoker);
     }
 
     public async acquireGlobalSDK(installerResolver: GlobalInstallerResolver): Promise<IDotnetAcquireResult>
@@ -115,8 +116,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      * @remarks this is simply a wrapper around the acquire function.
      * @returns the requested dotnet path.
      */
-    public async acquireRuntime(version: string): Promise<IDotnetAcquireResult> {
-        return this.acquire(version, true);
+    public async acquireRuntime(version: string, invoker : IAcquisitionInvoker): Promise<IDotnetAcquireResult> {
+        return this.acquire(version, true, undefined, invoker);
     }
 
     public async acquireStatus(version: string, installRuntime: boolean, architecture? : string): Promise<IDotnetAcquireResult | undefined> {
@@ -158,7 +159,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      * @param globalInstallerResolver Create this and add it to install globally.
      * @returns the dotnet acquisition result.
      */
-    private async acquire(version: string, installRuntime: boolean, globalInstallerResolver : GlobalInstallerResolver | null = null): Promise<IDotnetAcquireResult>
+    private async acquire(version: string, installRuntime: boolean, globalInstallerResolver : GlobalInstallerResolver | null = null, localInvoker? : IAcquisitionInvoker): Promise<IDotnetAcquireResult>
     {
         const installKey = this.getInstallKey(version);
         this.context.eventStream.post(new DotnetInstallKeyCreatedEvent(`The requested version ${version} is now marked under the install key: ${installKey}.`));
@@ -189,7 +190,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             {
                 Debugging.log(`The Acquisition Worker has Determined a Local Install was requested.`, this.context.eventStream);
 
-                acquisitionPromise = this.acquireLocalCore(version, installRuntime, installKey).catch((error: Error) => {
+                acquisitionPromise = this.acquireLocalCore(version, installRuntime, installKey, localInvoker!).catch((error: Error) => {
                     this.removeVersionFromExtensionState(this.installingVersionsKey, installKey);
                     delete this.acquisitionPromises[installKey];
                     throw new Error(`.NET Acquisition Failed: ${error.message}`);
@@ -230,7 +231,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      *
      * @remarks it is called "core" because it is the meat of the actual acquisition work; this has nothing to do with .NET core vs framework.
      */
-    private async acquireLocalCore(version: string, installRuntime: boolean, installKey : string): Promise<string>
+    private async acquireLocalCore(version: string, installRuntime: boolean, installKey : string, acquisitionInvoker : IAcquisitionInvoker): Promise<string>
     {
         this.checkForPartialInstalls(installKey, version, installRuntime, !installRuntime);
 
@@ -259,12 +260,12 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             installDir: dotnetInstallDir,
             version,
             dotnetPath,
-            timeoutValue: this.timeoutValue,
+            timeoutSeconds: this.context.timeoutSeconds,
             installRuntime,
             architecture: this.installingArchitecture
         } as IDotnetInstallationContext;
         this.context.eventStream.post(new DotnetAcquisitionStarted(installKey, version, this.context.acquisitionContext?.requestingExtensionId));
-        await this.context.acquisitionInvoker.installDotnet(installContext).catch((reason) => {
+        await acquisitionInvoker.installDotnet(installContext).catch((reason) => {
             throw Error(`Installation failed: ${reason}`);
         });
         this.context.installationValidator.validateDotnetInstall(installKey, dotnetPath);
@@ -327,14 +328,14 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         if(installerResult !== '0')
         {
-            const err = new DotnetNonZeroInstallerExitCodeError(new Error(`An error was raised by the .NET SDK installer. The exit code it gave us: ${installerResult}`));
+            const err = new DotnetNonZeroInstallerExitCodeError(new Error(`An error was raised by the .NET SDK installer. The exit code it gave us: ${installerResult}`), installKey);
             this.context.eventStream.post(err);
             throw err;
         }
 
         const installedSDKPath : string = await installer.getExpectedGlobalSDKPath(installingVersion, os.arch());
 
-        TelemetryUtilities.setDotnetSDKTelemetryToMatch(this.context.isExtensionTelemetryInitiallyEnabled, this.extensionContext, this.context.eventStream, this.utilityContext);
+        TelemetryUtilities.setDotnetSDKTelemetryToMatch(this.context.isExtensionTelemetryInitiallyEnabled, this.extensionContext, this.context, this.utilityContext);
 
         this.context.installationValidator.validateDotnetInstall(installingVersion, installedSDKPath, os.platform() !== 'win32');
 
@@ -506,19 +507,26 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         }
     }
 
-    private async managePreinstalledVersion(dotnetInstallDir: string, installedInstallKeys: string[]): Promise<string[]> {
-        try {
+    private async managePreinstalledVersion(dotnetInstallDir: string, installedInstallKeys: string[]): Promise<string[]>
+    {
+        let lastInstallKey = '';
+        try
+        {
             // Determine installed version(s)
             const installKeys = fs.readdirSync(path.join(dotnetInstallDir, 'sdk'));
 
             // Update extension state
-            for (const installKey of installKeys) {
+            for (const installKey of installKeys)
+            {
+                lastInstallKey = installKey;
                 this.context.eventStream.post(new DotnetPreinstallDetected(installKey));
                 await this.addVersionToExtensionState(this.installedVersionsKey, installKey);
                 installedInstallKeys.push(installKey);
             }
-        } catch (error) {
-            this.context.eventStream.post(new DotnetPreinstallDetectionError(error as Error));
+        }
+        catch (error)
+        {
+            this.context.eventStream.post(new DotnetPreinstallDetectionError(error as Error, lastInstallKey));
         }
         return installedInstallKeys;
     }
