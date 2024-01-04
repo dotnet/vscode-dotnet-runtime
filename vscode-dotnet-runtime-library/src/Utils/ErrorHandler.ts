@@ -7,6 +7,8 @@ import * as open from 'open';
 import {
     DotnetCommandFailed,
     DotnetCommandSucceeded,
+    DotnetInstallCancelledByUserError,
+    DotnetInstallExpectedAbort,
     DotnetNotInstallRelatedCommandFailed
 } from '../EventStream/EventStreamEvents';
 import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
@@ -62,11 +64,14 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
     catch (caughtError)
     {
         const error = caughtError as Error;
-        context.eventStream.post(isAcquisitionError ?
-            new DotnetCommandFailed(error, context.commandName, getInstallKeyFromContext(acquireContext?.acquisitionContext)) :
-            // The output observer will keep track of installs and we don't want a non-install failure to make it think it should -=1 from the no. of installs
-            new DotnetNotInstallRelatedCommandFailed(error, context.commandName)
-        );
+        if(!(error instanceof DotnetInstallExpectedAbort) && error && error.constructor && error.constructor.name !== 'UserCancelledError')
+        {
+            context.eventStream.post(isAcquisitionError ?
+                new DotnetCommandFailed(error, context.commandName, getInstallKeyFromContext(acquireContext?.acquisitionContext)) :
+                // The output observer will keep track of installs and we don't want a non-install failure to make it think it should -=1 from the no. of installs
+                new DotnetNotInstallRelatedCommandFailed(error, context.commandName)
+            );
+        }
 
         if (context.errorConfiguration === AcquireErrorConfiguration.DisplayAllErrorPopups)
         {

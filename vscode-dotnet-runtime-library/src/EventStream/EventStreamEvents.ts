@@ -559,6 +559,10 @@ export class CommandExecutionUnderSudoEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'CommandExecutionUnderSudoEvent';
 }
 
+export class CommandExecutionUserRejectedPasswordRequest extends DotnetInstallExpectedAbort {
+    public readonly eventName = 'CommandExecutionUserRejectedPasswordRequest';
+}
+
 export class DotnetVersionParseEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetVersionParseEvent';
 }

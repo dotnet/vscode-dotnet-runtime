@@ -19,6 +19,7 @@ import {
     CommandExecutionUnderSudoEvent,
     CommandExecutionUserAskDialogueEvent,
     CommandExecutionUserCompletedDialogueEvent,
+    CommandExecutionUserRejectedPasswordRequest,
     DotnetAlternativeCommandFoundEvent,
     DotnetCommandNotFoundEvent,
     DotnetWSLSecurityError
@@ -114,6 +115,14 @@ ${stderr}`));
                     this.context?.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The command ${fullCommandString} failed to run under sudo.`));
                     if(terminalFailure)
                     {
+                        if(error.code === 126)
+                        {
+                            const err = new CommandExecutionUserRejectedPasswordRequest(new Error(`Cancelling .NET Install, as command ${fullCommandString} failed.
+The user refused the password prompt.`),
+                                getInstallKeyFromContext(this.context?.acquisitionContext!));
+                            this.context?.eventStream.post(err);
+                            throw err.error;
+                        }
                         reject(error);
                     }
                     else
