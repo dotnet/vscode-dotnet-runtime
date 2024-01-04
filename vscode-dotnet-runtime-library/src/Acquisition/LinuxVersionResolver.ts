@@ -184,9 +184,9 @@ export class LinuxVersionResolver
             case 'Red Hat Enterprise Linux':
                 if(this.isRedHatVersion7(distroAndVersion.version))
                 {
-                    const error = new DotnetAcquisitionDistroUnknownError(new Error(this.redhatUnsupportedDistroErrorMessage), getInstallKeyFromContext(this.acquireContext));
-                    this.acquisitionContext.eventStream.post(error);
-                    throw error.error;
+                    const unsupportedRhelErr = new DotnetAcquisitionDistroUnknownError(new Error(this.redhatUnsupportedDistroErrorMessage), getInstallKeyFromContext(this.acquireContext));
+                    this.acquisitionContext.eventStream.post(unsupportedRhelErr);
+                    throw unsupportedRhelErr.error;
                 }
                 return new RedHatDistroSDKProvider(distroAndVersion, this.acquisitionContext, this.utilityContext);
             default:
@@ -264,7 +264,8 @@ export class LinuxVersionResolver
             if(existingGlobalInstallSDKVersion && Number(this.versionResolver.getMajorMinor(existingGlobalInstallSDKVersion)) ===
                 Number(this.versionResolver.getMajorMinor(fullySpecifiedDotnetVersion)))
             {
-                const isPatchUpgrade = Number(this.versionResolver.getFeatureBandPatchVersion(existingGlobalInstallSDKVersion)) < Number(this.versionResolver.getFeatureBandPatchVersion(fullySpecifiedDotnetVersion));
+                const isPatchUpgrade = Number(this.versionResolver.getFeatureBandPatchVersion(existingGlobalInstallSDKVersion)) <
+                    Number(this.versionResolver.getFeatureBandPatchVersion(fullySpecifiedDotnetVersion));
 
                 if(Number(this.versionResolver.getMajorMinor(existingGlobalInstallSDKVersion)) > Number(this.versionResolver.getMajorMinor(fullySpecifiedDotnetVersion))
                 || Number(this.versionResolver.getFeatureBandFromVersion(existingGlobalInstallSDKVersion)) > Number(this.versionResolver.getFeatureBandFromVersion(fullySpecifiedDotnetVersion)))
