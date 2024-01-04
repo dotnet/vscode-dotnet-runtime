@@ -51,7 +51,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
             }
         }
 
-        return commandResult[0];
+        return commandResult[0] ?? null;
     }
 
     public async dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion : string, installType : LinuxInstallType) : Promise<boolean>
