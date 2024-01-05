@@ -44,7 +44,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         const context = new MockExtensionContext();
         const eventStream = new MockEventStream();
         const acquisitionWorker = getMockAcquisitionWorker(isRuntimeWorker, version, arch, eventStream, context);
-        const invoker = new NoInstallAcquisitionInvoker(eventStream);
+        const invoker = new NoInstallAcquisitionInvoker(eventStream, acquisitionWorker);
         return [acquisitionWorker, eventStream, context, invoker];
     }
 
@@ -140,7 +140,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         assert.exists(undefinedEvent, 'Undefined event exists');
 
         await acquisitionWorker.acquireSDK(version, invoker);
-        result = await acquisitionWorker.acquireStatus(version, false);
+        result = await acquisitionWorker.acquireStatus(version, false, undefined);
         await assertAcquisitionSucceeded(installKey, result!.dotnetPath, eventStream, context, false);
         const resolvedEvent = eventStream.events.find(event => event instanceof DotnetAcquisitionStatusResolved);
         assert.exists(resolvedEvent, 'The sdk is resolved');
@@ -155,8 +155,8 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         const undefinedEvent = eventStream.events.find(event => event instanceof DotnetAcquisitionStatusUndefined);
         assert.exists(undefinedEvent);
 
-        await acquisitionWorker.acquireSDK(version, invoker);
-        result = await acquisitionWorker.acquireStatus(version, true);
+        await acquisitionWorker.acquireRuntime(version, invoker);
+        result = await acquisitionWorker.acquireStatus(version, true, undefined);
         await assertAcquisitionSucceeded(installKey, result!.dotnetPath, eventStream, context, true);
         const resolvedEvent = eventStream.events.find(event => event instanceof DotnetAcquisitionStatusResolved);
         assert.exists(resolvedEvent);

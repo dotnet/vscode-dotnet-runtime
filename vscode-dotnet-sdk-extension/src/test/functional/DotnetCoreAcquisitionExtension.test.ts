@@ -160,7 +160,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     fs.writeFileSync(dotnetExePath, '');
 
     // Assert preinstalled SDKs are detected
-    const acquisitionInvoker = new NoInstallAcquisitionInvoker(eventStream);
+    const acquisitionInvoker = new NoInstallAcquisitionInvoker(eventStream, acquisitionWorker);
     const result = await acquisitionWorker.acquireSDK(version, acquisitionInvoker);
     assert.equal(path.dirname(result.dotnetPath), dotnetDir);
     const preinstallEvents = eventStream.events
