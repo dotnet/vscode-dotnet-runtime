@@ -6,13 +6,14 @@ import Axios, { AxiosError, isAxiosError } from 'axios';
 import axiosRetry from 'axios-retry';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { getProxySettings } from 'get-proxy-settings';
-import { AxiosCacheInstance, buildMemoryStorage, buildStorage, CacheRequestConfig, NotEmptyStorageValue, setupCache, StorageValue } from 'axios-cache-interceptor';
-import { IEventStream } from '../EventStream/EventStream';
+import { AxiosCacheInstance, buildMemoryStorage, setupCache } from 'axios-cache-interceptor';
 import {SuppressedAcquisitionError, WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
-import { IExtensionState } from '../IExtensionState';
+import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
+
 import * as fs from 'fs';
 import { promisify } from 'util';
 import stream = require('stream');
+import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 /* tslint:disable:no-any */
 
 export class WebRequestWorker
@@ -23,28 +24,29 @@ export class WebRequestWorker
      * The responses from GET requests are cached with a 'time-to-live' of 5 minutes by default.
      */
     private client: AxiosCacheInstance;
+    private websiteTimeoutMs : number;
+    private proxy : string | undefined;
 
     private proxyAgent : HttpsProxyAgent<string> | null = null;
 
     constructor(
-        private readonly extensionState: IExtensionState,
-        private readonly eventStream: IEventStream,
+        private readonly context: IAcquisitionWorkerContext,
         protected readonly url: string,
-        private readonly websiteTimeoutMs: number, // Match the default timeout time of 10 minutes.
-        private proxy = '',
         private cacheTimeToLive = -1
-        )
-        {
-            this.cacheTimeToLive = this.cacheTimeToLive === -1 ? this.websiteTimeoutMs * 100 : this.cacheTimeToLive; // make things live 100x the default time, which is ~16 hrs
-            const uncachedAxiosClient = Axios.create({});
+    )
+    {
+        this.websiteTimeoutMs = this.context.timeoutSeconds * 1000;
+        this.proxy = this.context.proxyUrl;
+        this.cacheTimeToLive = this.cacheTimeToLive === -1 ? this.websiteTimeoutMs * 100 : this.cacheTimeToLive; // make things live 100x the default time, which is ~16 hrs
+        const uncachedAxiosClient = Axios.create({});
 
-            // Wrap the client with a retry interceptor. We don't need to return a new client, it should be applied automatically.
-            axiosRetry(uncachedAxiosClient, {
-                // Inject a custom retry delay to exponentially increase the time until we retry.
-                retryDelay(retryCount: number) {
-                    return Math.pow(2, retryCount); // Takes in the int as (ms) to delay.
-                }
-            });
+        // Wrap the client with a retry interceptor. We don't need to return a new client, it should be applied automatically.
+        axiosRetry(uncachedAxiosClient, {
+            // Inject a custom retry delay to exponentially increase the time until we retry.
+            retryDelay(retryCount: number) {
+                return Math.pow(2, retryCount); // Takes in the int as (ms) to delay.
+            }
+        });
 
             this.client = setupCache(uncachedAxiosClient,
                 {
@@ -130,10 +132,10 @@ export class WebRequestWorker
             }
             catch(error : any)
             {
-                this.eventStream.post(new SuppressedAcquisitionError(error, `The proxy lookup failed, most likely due to limited registry access. Skipping automatic proxy lookup.`));
+                this.context.eventStream.post(new SuppressedAcquisitionError(error, `The proxy lookup failed, most likely due to limited registry access. Skipping automatic proxy lookup.`));
             }
         }
-        if(this.proxyEnabled())
+        if(this.proxyEnabled() && this.proxy)
         {
             this.proxyAgent = new HttpsProxyAgent(this.proxy);
         }
@@ -190,7 +192,7 @@ export class WebRequestWorker
 
         try
         {
-            this.eventStream.post(new WebRequestSent(this.url));
+            this.context.eventStream.post(new WebRequestSent(this.url));
             const response = await this.axiosGet(
                 this.url,
                 options
@@ -211,13 +213,13 @@ ${axiosBasedError.cause? `Error Cause: ${axiosBasedError.cause!.message}` : ``}
 Please ensure that you are online.
 
 If you're on a proxy and disable registry access, you must set the proxy in our extension settings. See https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`);
-                    this.eventStream.post(new WebRequestError(summarizedError));
+                    this.context.eventStream.post(new WebRequestError(summarizedError, getInstallKeyFromContext(this.context.acquisitionContext)));
                     throw summarizedError;
                 }
                 else
                 {
                     const genericError = new Error(`Web Request to ${this.url} Failed: ${error.message}. Aborting. Please ensure that you are online.`);
-                    this.eventStream.post(new WebRequestError(genericError));
+                    this.context.eventStream.post(new WebRequestError(genericError, getInstallKeyFromContext(this.context.acquisitionContext)));
                     throw genericError;
                 }
             }

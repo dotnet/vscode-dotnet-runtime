@@ -5,9 +5,9 @@
  * ------------------------------------------------------------------------------------------ */
 import * as path from 'path';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+import { CommandExecutorCommand } from '../Utils/CommandExecutorCommand';
 import { DotnetDistroSupportStatus } from './LinuxVersionResolver';
 import { LinuxInstallType } from './LinuxInstallType';
-import { CommandExecutorCommand } from '../Utils/ICommandExecutor';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 /* tslint:disable:no-any */
 
@@ -141,7 +141,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 
     public async getDotnetVersionSupportStatus(fullySpecifiedVersion: string, installType : LinuxInstallType): Promise<DotnetDistroSupportStatus>
     {
-        if(this.versionResolver.getFeatureBandFromVersion(fullySpecifiedVersion) !== '1')
+        if(this.versionResolver.getFeatureBandFromVersion(fullySpecifiedVersion) !== '1' || Number(this.versionResolver.getMajor(fullySpecifiedVersion)) < 6)
         {
             return Promise.resolve(DotnetDistroSupportStatus.Unsupported);
         }

@@ -9,39 +9,19 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { MockCommandExecutor, MockEventStream, MockExtensionContext, MockFileUtilities, MockInstallationValidator, NoInstallAcquisitionInvoker } from '../mocks/MockObjects';
 import { WinMacGlobalInstaller } from '../../Acquisition/WinMacGlobalInstaller';
-import { RuntimeInstallationDirectoryProvider } from '../../Acquisition/RuntimeInstallationDirectoryProvider';
-import { SdkInstallationDirectoryProvider } from '../../Acquisition/SdkInstallationDirectoryProvider';
-import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
 import { FileUtilities } from '../../Utils/FileUtilities';
-import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
 import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 const assert = chai.assert;
 const standardTimeoutTime = 100000;
 
 suite('Windows & Mac Global Installer Tests', () =>
 {
-    function mockContext(runtimeInstall: boolean): IAcquisitionWorkerContext {
-        const extensionContext = new MockExtensionContext();
-        const eventStream = new MockEventStream();
-        const workerContext : IAcquisitionWorkerContext = {
-            storagePath: '',
-            extensionState: extensionContext,
-            eventStream,
-            acquisitionInvoker: new NoInstallAcquisitionInvoker(eventStream),
-            installationValidator: new MockInstallationValidator(eventStream),
-            timeoutValue: standardTimeoutTime,
-            installDirectoryProvider: runtimeInstall ? new RuntimeInstallationDirectoryProvider('') : new SdkInstallationDirectoryProvider(''),
-            isExtensionTelemetryInitiallyEnabled: true,
-        };
-        return workerContext;
-    }
-
     const mockVersion = '7.0.306';
     const mockUrl = 'https://download.visualstudio.microsoft.com/download/pr/4c0aaf08-3fa1-4fa0-8435-73b85eee4b32/e8264b3530b03b74b04ecfcf1666fe93/dotnet-sdk-7.0.306-win-x64.exe';
     const mockHash = '';
-    const mockExecutor = new MockCommandExecutor(new MockEventStream(), getMockUtilityContext());
+    const mockExecutor = new MockCommandExecutor(getMockAcquisitionContext(false, mockVersion), getMockUtilityContext());
     const mockFileUtils = new MockFileUtilities();
-    const installer : WinMacGlobalInstaller = new WinMacGlobalInstaller(mockContext(false), getMockUtilityContext(), mockVersion, mockUrl, mockHash, mockExecutor);
+    const installer : WinMacGlobalInstaller = new WinMacGlobalInstaller(getMockAcquisitionContext(false, mockVersion), getMockUtilityContext(), mockVersion, mockUrl, mockHash, mockExecutor);
     installer.file = mockFileUtils;
 
     test('It reads SDK registry entries correctly on windows', async () =>
@@ -147,7 +127,7 @@ suite('Windows & Mac Global Installer Tests', () =>
             assert.isTrue(fs.existsSync(mockExecutor.attemptedCommand.split(' ')[0]), 'It ran a command to an executable that exists');
             if(new FileUtilities().isElevated())
             {
-                assert.include(mockExecutor.attemptedCommand, ' /quiet /install /norestart', 'It ran under the hood if it had privelleges already');
+                assert.include(mockExecutor.attemptedCommand, ' /quiet /install /norestart', 'It ran under the hood if it had privileges already');
             }
         }
 
@@ -169,12 +149,12 @@ suite('Windows & Mac Global Installer Tests', () =>
         const installersDir = WinMacGlobalInstaller.getDownloadedInstallFilesFolder();
         assert.equal(installerDownloadFolder, installersDir, 'The expected installer folder is used');
 
-        assert.isTrue(fs.existsSync(installerDownloadFolder), 'install folder is created when we dont clean it up');
+        assert.isTrue(fs.existsSync(installerDownloadFolder), 'install folder is created when we do not clean it up');
 
 
         installer.cleanupInstallFiles = true;
         await installer.installSDK();
-        // The installer files should be removed. Note this doesnt really check the default as we changed it manually
+        // The installer files should be removed. Note this doesn't really check the default as we changed it manually
 
         if(new FileUtilities().isElevated())
         {

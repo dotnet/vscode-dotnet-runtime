@@ -4,17 +4,22 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as fs from 'fs';
+import * as os from 'os';
+
 import path = require('path');
+
 import { DistroVersionPair, DotnetDistroSupportStatus } from './LinuxVersionResolver';
 import { DotnetAcquisitionDistroUnknownError, DotnetVersionResolutionError } from '../EventStream/EventStreamEvents';
 import { VersionResolver } from './VersionResolver';
+import { CommandExecutorCommand } from '../Utils/CommandExecutorCommand';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { LinuxInstallType } from './LinuxInstallType';
 import { LinuxPackageCollection } from './LinuxPackageCollection';
-import { CommandExecutorCommand, ICommandExecutor } from '../Utils/ICommandExecutor';
+import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
+import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
 /* tslint:disable:no-any */
 
 /**
@@ -57,16 +62,17 @@ export abstract class IDistroDotnetSDKProvider {
 
     constructor(distroVersion : DistroVersionPair, context : IAcquisitionWorkerContext, utilContext : IUtilityContext, executor : ICommandExecutor | null = null)
     {
-        this.commandRunner = executor ?? new CommandExecutor(context.eventStream, utilContext);
+        this.commandRunner = executor ?? new CommandExecutor(context, utilContext);
         this.context = context;
         this.distroVersion = distroVersion;
-        this.versionResolver = new VersionResolver(context.extensionState, context.eventStream, context.timeoutValue, context.proxyUrl);
+        this.versionResolver = new VersionResolver(context);
         // Hard-code to the upper path (lib/dist/acquisition) from __dirname to the lib folder, as webpack-copy doesn't seem to copy the distro-support.json
         const distroDataFile = path.join(__dirname, 'distro-data', `distro-support.json`);
         this.distroJson = JSON.parse(fs.readFileSync(distroDataFile, 'utf8'));
         if(!distroVersion || !this.distroJson || !((this.distroJson as any)[this.distroVersion.distro]))
         {
-            const error = new DotnetAcquisitionDistroUnknownError(new Error('We are unable to detect the distro or version of your machine'));
+            const error = new DotnetAcquisitionDistroUnknownError(new Error('We are unable to detect the distro or version of your machine'),
+                getInstallKeyFromContext(this.context.acquisitionContext));
             throw error.error;
         }
     }
@@ -163,7 +169,7 @@ export abstract class IDistroDotnetSDKProvider {
     {
         const supportStatus = await this.getDotnetVersionSupportStatus(fullySpecifiedVersion, installType);
         const supportedType : boolean = supportStatus === DotnetDistroSupportStatus.Distro || supportStatus === DotnetDistroSupportStatus.Microsoft;
-        return supportedType && this.versionResolver.getFeatureBandFromVersion(fullySpecifiedVersion) === '1';
+        return supportedType;
     }
 
     protected async myVersionPackages(installType : LinuxInstallType, haveTriedFeedInjectionAlready = false) : Promise<LinuxPackageCollection[]>
@@ -273,8 +279,7 @@ export abstract class IDistroDotnetSDKProvider {
             }
         }
         const err = new Error(`Could not find a .NET package for version ${fullySpecifiedDotnetVersion}. Found only: ${JSON.stringify(await this.myVersionPackages(installType))}`);
-        this.context.eventStream.post(new DotnetVersionResolutionError(err,DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(fullySpecifiedDotnetVersion,
-            this.context.acquisitionContext?.architecture)));
+        this.context.eventStream.post(new DotnetVersionResolutionError(err, getInstallKeyFromContext(this.context.acquisitionContext)));
         throw err;
     }
 
