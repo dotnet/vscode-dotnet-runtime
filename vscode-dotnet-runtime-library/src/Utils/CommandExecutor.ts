@@ -70,6 +70,12 @@ export class CommandExecutor extends ICommandExecutor
     {
         const fullCommandString = CommandExecutor.prettifyCommandExecutorCommand(command, false);
         this.context?.eventStream.post(new CommandExecutionUnderSudoEvent(`The command ${fullCommandString} is being ran under sudo.`));
+        const shellScript = path.join(__dirname, 'installer.sh');
+        const shellContent = `
+#!/usr/bin/env bash
+sudo ${fullCommandString}
+        `;
+        await new FileUtilities().writeFileOntoDisk(shellContent, shellScript, this.context?.eventStream!)
 
         if(this.isRunningUnderWSL())
         {
@@ -94,12 +100,6 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
             const options = { name: `${sanitizedCallerName ?? '.NET Install Tool'}` };
 
             this.context?.eventStream.post(new CommandExecutionUserAskDialogueEvent(`Prompting user for command ${fullCommandString} under sudo.`));
-            const shellScript = path.join(__dirname, 'installer.sh');
-            const shellContent = `
-#!/usr/bin/env bash
-sudo ${fullCommandString}
-            `;
-            new FileUtilities().writeFileOntoDisk(shellContent, shellScript, this.context?.eventStream!)
             exec((`sh ${shellScript}`), options, (error?: any, stdout?: any, stderr?: any) =>
             {
                 let commandResultString = '';
