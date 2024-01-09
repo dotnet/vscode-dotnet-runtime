@@ -9,6 +9,7 @@
         "HKCU",
         "HKEY",
         "norestart",
+        "proccom",
         "programfiles",
         "REGHEXVALUE",
         "REGTYPE"
