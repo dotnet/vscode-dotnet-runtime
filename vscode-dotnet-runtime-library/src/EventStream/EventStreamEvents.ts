@@ -187,6 +187,18 @@ export class DotnetPreinstallDetectionError extends DotnetAcquisitionError {
     public readonly eventName = 'DotnetPreinstallDetectionError';
 }
 
+export class TimeoutSudoProcessSpawnerError extends DotnetAcquisitionError {
+    public readonly eventName = 'TimeoutSudoProcessSpawnerError';
+}
+
+export class TimeoutSudoCommandExecutionError extends DotnetAcquisitionError {
+    public readonly eventName = 'TimeoutSudoCommandExecutionError';
+}
+
+export class CommandExecutionNonZeroExitFailure extends DotnetAcquisitionError {
+    public readonly eventName = 'CommandExecutionNonZeroExitFailure';
+}
+
 export class DotnetNotInstallRelatedCommandFailed extends DotnetNonAcquisitionError {
     public readonly eventName = 'DotnetNotInstallRelatedCommandFailed';
 
@@ -486,6 +498,18 @@ export class DotnetGlobalAcquisitionBeginEvent extends DotnetCustomMessageEvent 
 
 export class DotnetGlobalVersionResolutionCompletionEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetGlobalVersionResolutionCompletionEvent';
+}
+
+export class CommandProcessesExecutionFailureNonTerminal extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandProcessesExecutionFailureNonTerminal';
+}
+
+export class CommandProcessorExecutionBegin extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandProcessorExecutionBegin';
+}
+
+export class CommandProcessorExecutionEnd extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandProcessorExecutionEnd';
 }
 
 export class DotnetBeginGlobalInstallerExecution extends DotnetCustomMessageEvent {

@@ -25,9 +25,9 @@ import { DotnetCommandFallbackArchitectureEvent,
 
 export class FileUtilities extends IFileUtilities
 {
-    public async writeFileOntoDisk(scriptContent: string, filePath: string, eventStream : IEventStream)
+    public async writeFileOntoDisk(scriptContent: string, filePath: string, eventStream? : IEventStream)
     {
-        eventStream.post(new DotnetFileWriteRequestEvent(`Request to write`, new Date().toISOString(), filePath));
+        eventStream?.post(new DotnetFileWriteRequestEvent(`Request to write`, new Date().toISOString(), filePath));
 
         if (!fs.existsSync(path.dirname(filePath))) {
             fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -43,15 +43,15 @@ export class FileUtilities extends IFileUtilities
         if(!fs.existsSync(filePath))
         {
             // Create an empty file, as proper-lockfile fails to lock a file if file dne
-            eventStream.post(new DotnetFileWriteRequestEvent(`File did not exist upon write request.`, new Date().toISOString(), filePath));
+            eventStream?.post(new DotnetFileWriteRequestEvent(`File did not exist upon write request.`, new Date().toISOString(), filePath));
             fs.writeFileSync(filePath, '');
         }
 
-        eventStream.post(new DotnetLockAttemptingAcquireEvent(`Lock Acquisition request to begin.`, new Date().toISOString(), directoryLockPath, filePath));
+        eventStream?.post(new DotnetLockAttemptingAcquireEvent(`Lock Acquisition request to begin.`, new Date().toISOString(), directoryLockPath, filePath));
         await lockfile.lock(filePath, { lockfilePath: directoryLockPath, retries: { retries: 10, maxTimeout: 1000 } } )
         .then(async (release) =>
         {
-            eventStream.post(new DotnetLockAcquiredEvent(`Lock Acquired.`, new Date().toISOString(), directoryLockPath, filePath));
+            eventStream?.post(new DotnetLockAcquiredEvent(`Lock Acquired.`, new Date().toISOString(), directoryLockPath, filePath));
 
             // We would like to unlock the directory, but we can't grab a lock on the file if the directory is locked.
             // Theoretically you could: add a new file-writer lock as a 3rd party lock ...
@@ -66,29 +66,30 @@ export class FileUtilities extends IFileUtilities
             if(scriptContent !== existingScriptContent)
             {
                 fs.writeFileSync(filePath, scriptContent);
-                eventStream.post(new DotnetFileWriteRequestEvent(`File content needed to be updated.`, new Date().toISOString(), filePath));
+                eventStream?.post(new DotnetFileWriteRequestEvent(`File content needed to be updated.`, new Date().toISOString(), filePath));
             }
             else
             {
-                eventStream.post(new DotnetFileWriteRequestEvent(`File content is an exact match, not writing file.`, new Date().toISOString(), filePath));
+                eventStream?.post(new DotnetFileWriteRequestEvent(`File content is an exact match, not writing file.`, new Date().toISOString(), filePath));
             }
 
             fs.chmodSync(filePath, 0o744);
-            eventStream.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), directoryLockPath, filePath));
+            eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), directoryLockPath, filePath));
             return release();
         })
         .catch((e : Error) =>
         {
             // Either the lock could not be acquired or releasing it failed
-            eventStream.post(new DotnetLockErrorEvent(e, e.message, new Date().toISOString(), directoryLockPath, filePath));
+            eventStream?.post(new DotnetLockErrorEvent(e, e.message, new Date().toISOString(), directoryLockPath, filePath));
         });
         // End Critical Section
     }
 
     /**
      * @param directoryToWipe the directory to delete all of the files in if privilege to do so exists.
+     * @param fileExtensionsToDelete - if undefined, delete all files. if not, delete only files with extensions in this array in lower case.
      */
-    public wipeDirectory(directoryToWipe : string, eventStream : IEventStream)
+    public wipeDirectory(directoryToWipe : string, eventStream? : IEventStream, fileExtensionsToDelete? : string[])
     {
         if(!fs.existsSync(directoryToWipe))
         {
@@ -100,11 +101,12 @@ export class FileUtilities extends IFileUtilities
         {
             try
             {
+                if(!fileExtensionsToDelete || path.extname(f).toLocaleLowerCase() in fileExtensionsToDelete)
                 fs.rmSync(`${directoryToWipe}/${f}`);
             }
             catch(error : any)
             {
-                eventStream.post(new SuppressedAcquisitionError(error, `Failed to delete ${f} when marked for deletion.`));
+                eventStream?.post(new SuppressedAcquisitionError(error, `Failed to delete ${f} when marked for deletion.`));
             }
         });
     }

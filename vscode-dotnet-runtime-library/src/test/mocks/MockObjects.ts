@@ -373,9 +373,9 @@ export class MockFileUtilities extends IFileUtilities
         return this.trueUtilities.writeFileOntoDisk(content, filePath, new MockEventStream());
     }
 
-    public wipeDirectory(directoryToWipe : string, eventSteam : IEventStream)
+    public wipeDirectory(directoryToWipe : string, eventSteam : IEventStream, fileExtensionsToDelete? : string[])
     {
-        return this.trueUtilities.wipeDirectory(directoryToWipe, eventSteam);
+        return this.trueUtilities.wipeDirectory(directoryToWipe, eventSteam, fileExtensionsToDelete);
     }
 
     public isElevated()
