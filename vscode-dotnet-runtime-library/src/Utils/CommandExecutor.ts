@@ -216,7 +216,7 @@ ${stderr}`));
 The user refused the password prompt.`),
                                 getInstallKeyFromContext(this.context?.acquisitionContext!));
                             this.context?.eventStream.post(err);
-                            throw err.error;
+                            reject(err.error);
                         }
                         reject(error);
                     }
