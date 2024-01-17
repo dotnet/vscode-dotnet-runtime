@@ -271,7 +271,7 @@
 				"commandParts": ["-f", "{path}"]
 			}
 		],
-		"expectedDistroFeedInstallDirectory": "/usr/lib64/dotnet/dotnet",
+		"expectedDistroFeedInstallDirectory": "/usr/lib64/dotnet",
 		"expectedMicrosoftFeedInstallDirectory": "",
 		"installedSDKVersionsCommand": [
 			{
