@@ -70,6 +70,7 @@ export class LinuxVersionResolver
     protected commandRunner : ICommandExecutor;
     protected versionResolver : VersionResolver;
     public okUpdateExitCode = 11188; // Arbitrary number that is not shared or used by other things we rely on as an exit code
+    public okAlreadyExistsExitCode = 11166;
 
     public conflictingInstallErrorMessage = `A dotnet installation was found which indicates dotnet that was installed via Microsoft package feeds. But for this distro and version, we only acquire .NET via the distro feeds.
     You should not mix distro feed and microsoft feed installations. To continue, please completely remove this version of dotnet to continue by following https://learn.microsoft.com/dotnet/core/install/remove-runtime-sdk-versions?pivots=os-linux.
@@ -289,7 +290,7 @@ export class LinuxVersionResolver
                 else
                 {
                     // An existing install exists.
-                    return '1';
+                    return String(this.okAlreadyExistsExitCode);
                 }
             }
             // Additional logic to check the major.minor could be added here if we wanted to prevent installing lower major.minors if an existing install existed.
@@ -322,7 +323,7 @@ export class LinuxVersionResolver
         {
             return await this.distroSDKProvider!.installDotnet(fullySpecifiedDotnetVersion, 'sdk') ? '0' : '1';
         }
-        else if(updateOrRejectState === String(this.okUpdateExitCode))
+        else if(updateOrRejectState === String(this.okUpdateExitCode) || updateOrRejectState === String(this.okAlreadyExistsExitCode))
         {
             return '0';
         }
