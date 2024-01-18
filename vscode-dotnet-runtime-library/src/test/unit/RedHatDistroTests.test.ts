@@ -53,7 +53,7 @@ suite('Red Hat For Linux Distro Logic Unit Tests', () =>
         if(shouldRun)
         {
             const distroFeedDir = await provider.getExpectedDotnetDistroFeedInstallationDirectory();
-            assert.equal(distroFeedDir, '/usr/lib64/dotnet/dotnet');
+            assert.equal(distroFeedDir, '/usr/lib64/dotnet');
         }
     }).timeout(standardTimeoutTime);
 
@@ -104,7 +104,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
         if(shouldRun)
         {
             await provider.getInstalledGlobalDotnetPathIfExists(installType);
-            assert.equal(mockExecutor.attemptedCommand, 'which dotnet');
+            assert.equal(mockExecutor.attemptedCommand, 'readlink -f /usr/bin/dotnet');
         }
     }).timeout(standardTimeoutTime);
 
