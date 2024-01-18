@@ -61,7 +61,7 @@ suite('Linux Distro Logic Unit Tests', () =>
         if(shouldRun)
         {
             const microsoftFeedDir = await provider.getExpectedDotnetMicrosoftFeedInstallationDirectory();
-            assert.equal(microsoftFeedDir, '/usr/bin/dotnet');
+            assert.equal(microsoftFeedDir, '/usr/share/dotnet');
         }
     }).timeout(standardTimeoutTime);
 
@@ -104,7 +104,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
         if(shouldRun)
         {
             await provider.getInstalledGlobalDotnetPathIfExists(installType);
-            assert.equal(mockExecutor.attemptedCommand, 'which dotnet');
+            assert.equal(mockExecutor.attemptedCommand, 'readlink -f /usr/bin/dotnet');
         }
     }).timeout(standardTimeoutTime);
 
