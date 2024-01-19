@@ -52,11 +52,11 @@ import { CommandProcessorOutput } from './CommandProcessorOutput';
 export class CommandExecutor extends ICommandExecutor
 {
     private pathTroubleshootingOption = 'Troubleshoot';
-    private sudoProcessCommunicationDir = path.join(__dirname, 'proccom');
+    private sudoProcessCommunicationDir = path.join(__dirname, 'install scripts');
     private fileUtil : IFileUtilities;
     private hasEverLaunchedSudoFork = false;
 
-    constructor(context : IAcquisitionWorkerContext | null, utilContext : IUtilityContext)
+    constructor(context : IAcquisitionWorkerContext | null, utilContext : IUtilityContext,  protected readonly validSudoCommands? : string[])
     {
         super(context, utilContext);
         this.fileUtil = new FileUtilities();
@@ -84,40 +84,7 @@ export class CommandExecutor extends ICommandExecutor
     {
         const fullCommandString = CommandExecutor.prettifyCommandExecutorCommand(command, false);
         this.context?.eventStream.post(new CommandExecutionUnderSudoEvent(`The command ${fullCommandString} is being ran under sudo.`));
-        const shellScript = path.join(__dirname, path.join(this.sudoProcessCommunicationDir, 'installer.sh'));
-        const shellContent = `
-#!/usr/bin/env bash
-COMMANDTORUNFILE=./ok.txt
-OKSIGNALFILE=./command.txt
-while true
-do
-        stop=false
-        until ((stop))
-        do
-            sleep 5
-            if test -f "$COMMANDTORUNFILE"; then
-                COMMAND="$(cat "$COMMANDTORUNFILE")"
-                OUT=$(sudo "$COMMAND" 2> errFile)
-                STATUSCODE=$?
-                ERR=$(<errFile)
-                rm "$COMMANDTORUNFILE"
-                cat > output.json << EOF
-{
-    "stdout": "$OUT",
-    "stderr": "$ERR",
-    "status": "$STATUSCODE"
-}
-EOF
-            fi
-            if test -f "$OKSIGNALFILE"; then
-                rm "$OKSIGNALFILE"
-            fi
-        done
-done
-sudo ${fullCommandString}
-        `;
-
-        await this.fileUtil.writeFileOntoDisk(shellContent, shellScript, this.context?.eventStream!)
+        const shellScript = path.join(__dirname, path.join(this.sudoProcessCommunicationDir, 'interprocess-communicator.sh'));
 
         if(this.isRunningUnderWSL())
         {
@@ -188,7 +155,7 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
             sanitizedCallerName = sanitizedCallerName?.substring(0, 69); // 70 Characters is the maximum limit we can use for the prompt.
             const options = { name: `${sanitizedCallerName ?? '.NET Install Tool'}` };
 
-            exec((`sh ${shellScriptPath}`), options, (error?: any, stdout?: any, stderr?: any) =>
+            exec((`sh ${shellScriptPath} ${this.validSudoCommands?.join(' ')}`), options, (error?: any, stdout?: any, stderr?: any) =>
             {
                 let commandResultString = '';
 
@@ -305,7 +272,7 @@ Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: $
         let statusCode = '1220'; // Special failure code for if code is never set error
         let commandResultString = '';
 
-        const commandFile = path.join(this.sudoProcessCommunicationDir, 'command.txt');
+        const commandFile = path.join(this.sudoProcessCommunicationDir, 'command.sh');
         const outputFile = path.join(this.sudoProcessCommunicationDir, 'output.json');
         const fakeLockFile = path.join(this.sudoProcessCommunicationDir, 'fakeLockFile'); // We need a file to lock the directory in the API besides the dir lock file
 

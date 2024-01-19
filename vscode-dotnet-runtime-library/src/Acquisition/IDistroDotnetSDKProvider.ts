@@ -4,7 +4,6 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as fs from 'fs';
-import * as os from 'os';
 
 import path = require('path');
 
@@ -12,7 +11,6 @@ import { DistroVersionPair, DotnetDistroSupportStatus } from './LinuxVersionReso
 import { DotnetAcquisitionDistroUnknownError, DotnetVersionResolutionError } from '../EventStream/EventStreamEvents';
 import { VersionResolver } from './VersionResolver';
 import { CommandExecutorCommand } from '../Utils/CommandExecutorCommand';
-import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { LinuxInstallType } from './LinuxInstallType';
 import { LinuxPackageCollection } from './LinuxPackageCollection';
@@ -64,11 +62,9 @@ export abstract class IDistroDotnetSDKProvider {
 
     constructor(distroVersion : DistroVersionPair, context : IAcquisitionWorkerContext, utilContext : IUtilityContext, executor : ICommandExecutor | null = null)
     {
-        this.commandRunner = executor ?? new CommandExecutor(context, utilContext);
         this.context = context;
         this.distroVersion = distroVersion;
         this.versionResolver = new VersionResolver(context);
-        // Hard-code to the upper path (lib/dist/acquisition) from __dirname to the lib folder, as webpack-copy doesn't seem to copy the distro-support.json
         const distroDataFile = path.join(__dirname, 'distro-data', `distro-support.json`);
         this.distroJson = JSON.parse(fs.readFileSync(distroDataFile, 'utf8'));
         if(!distroVersion || !this.distroJson || !((this.distroJson as any)[this.distroVersion.distro]))
@@ -77,6 +73,9 @@ export abstract class IDistroDotnetSDKProvider {
                 getInstallKeyFromContext(this.context.acquisitionContext));
             throw error.error;
         }
+
+        const validCommandSet = this.getAllValidCommands();
+        this.commandRunner = executor ?? new CommandExecutor(context, utilContext, validCommandSet);
     }
 
     /**
@@ -267,6 +266,54 @@ export abstract class IDistroDotnetSDKProvider {
     protected myDistroCommands(commandKey : string) : CommandExecutorCommand[]
     {
         return this.distroJson[this.distroVersion.distro][commandKey] as CommandExecutorCommand[];
+    }
+
+    protected getAllValidCommands() : string[]
+    {
+        const validCommands : string[] = [];
+
+        const baseCommands = this.distroJson[this.distroVersion.distro].filter((x : any) => x as CommandExecutorCommand !== null) as CommandExecutorCommand[];
+        const preInstallCommands = this.myVersionDetails()[this.preinstallCommandKey] as CommandExecutorCommand[];
+        const sudoCommands = baseCommands.concat(preInstallCommands).filter(x => x.runUnderSudo);
+
+        for(const command of sudoCommands)
+        {
+            if(command.commandParts.slice(-1)[0] !== this.missingPackageNameKey)
+            {
+                validCommands.push(`"${CommandExecutor.prettifyCommandExecutorCommand(command, false)}"`);
+            }
+            else
+            {
+                for(const packageName of this.allPackages())
+                {
+                    const newCommand = CommandExecutor.replaceSubstringsInCommands([command], this.missingPackageNameKey, packageName)[0];
+                    validCommands.push(`"${CommandExecutor.prettifyCommandExecutorCommand(newCommand, false)}"`);
+                }
+            }
+        }
+        return validCommands;
+    }
+
+    protected allPackages() : string[]
+    {
+        const allPackages : string[] = [];
+        const distroPackages = this.distroJson[this.distroVersion.distro][this.dotnetPackagesKey];
+        for(const packageSet of distroPackages)
+        {
+            for(const packageName of packageSet[this.sdkKey])
+            {
+                allPackages.push(packageName);
+            }
+            for(const packageName of packageSet[this.runtimeKey])
+            {
+                allPackages.push(packageName);
+            }
+            for(const packageName of packageSet[this.aspNetKey])
+            {
+                allPackages.push(packageName);
+            }
+        }
+        return allPackages;
     }
 
     protected async myDotnetVersionPackageName(fullySpecifiedDotnetVersion : string, installType : LinuxInstallType) : Promise<string>
