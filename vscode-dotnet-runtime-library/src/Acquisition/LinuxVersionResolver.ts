@@ -175,9 +175,9 @@ export class LinuxVersionResolver
         {
             // Implement any custom logic for a Distro Class in a new DistroSDKProvider and add it to the factory here.
             case null:
-                const error = new DotnetAcquisitionDistroUnknownError(new Error(this.baseUnsupportedDistroErrorMessage), getInstallKeyFromContext(this.acquireContext));
-                this.acquisitionContext.eventStream.post(error);
-                throw error.error;
+                const unknownDistroErr = new DotnetAcquisitionDistroUnknownError(new Error(this.baseUnsupportedDistroErrorMessage), getInstallKeyFromContext(this.acquireContext));
+                this.acquisitionContext.eventStream.post(unknownDistroErr);
+                throw unknownDistroErr.error;
             case 'Red Hat Enterprise Linux':
                 if(this.isRedHatVersion7(distroAndVersion.version))
                 {

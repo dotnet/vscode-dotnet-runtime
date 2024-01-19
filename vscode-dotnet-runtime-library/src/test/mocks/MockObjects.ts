@@ -36,6 +36,7 @@ import { ITelemetryReporter } from '../../EventStream/TelemetryObserver';
 import { IUtilityContext } from '../../Utils/IUtilityContext';
 import { IVSCodeEnvironment } from '../../Utils/IVSCodeEnvironment';
 import { IDotnetAcquireResult } from '../../IDotnetAcquireResult';
+import { IDotnetCoreAcquisitionWorker } from '../../Acquisition/IDotnetCoreAcquisitionWorker';
 
 const testDefaultTimeoutTimeMs = 60000;
 /* tslint:disable:no-any */
@@ -81,6 +82,13 @@ export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker {
 
         });
     }
+
+    constructor(eventStream : IEventStream, worker : MockDotnetCoreAcquisitionWorker)
+    {
+        super(eventStream);
+        worker.enableNoInstallInvoker();
+    }
+
 }
 
 export class MockDotnetCoreAcquisitionWorker extends DotnetCoreAcquisitionWorker
@@ -114,6 +122,11 @@ export class MockDotnetCoreAcquisitionWorker extends DotnetCoreAcquisitionWorker
         this.installingArchitecture = newArch;
         this.context.installingArchitecture = newArch;
         this.context.acquisitionContext!.architecture = newArch;
+    }
+
+    public enableNoInstallInvoker()
+    {
+        this.usingNoInstallInvoker = true;
     }
 }
 

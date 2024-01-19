@@ -7,7 +7,7 @@ import * as chai from 'chai';
 import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
-import { MockCommandExecutor, MockEventStream, MockExtensionContext, MockFileUtilities, MockInstallationValidator, NoInstallAcquisitionInvoker } from '../mocks/MockObjects';
+import { MockCommandExecutor, MockFileUtilities } from '../mocks/MockObjects';
 import { WinMacGlobalInstaller } from '../../Acquisition/WinMacGlobalInstaller';
 import { FileUtilities } from '../../Utils/FileUtilities';
 import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
