@@ -151,7 +151,8 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
             sanitizedCallerName = sanitizedCallerName?.substring(0, 69); // 70 Characters is the maximum limit we can use for the prompt.
             const options = { name: `${sanitizedCallerName ?? '.NET Install Tool'}` };
 
-            exec((`sh "${shellScriptPath}" ${this.validSudoCommands?.join(' ')}`), options, (error?: any, stdout?: any, stderr?: any) =>
+            fs.chmodSync(shellScriptPath, 0o500);
+            exec((`"${shellScriptPath}" ${this.validSudoCommands?.join(' ')}`), options, (error?: any, stdout?: any, stderr?: any) =>
             {
                 let commandResultString = '';
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 OKSIGNALFILE=./ok.txt
 COMMANDTORUNFILE=./command.sh
 while true
