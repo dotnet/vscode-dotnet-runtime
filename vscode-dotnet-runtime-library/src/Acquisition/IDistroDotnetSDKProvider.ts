@@ -272,9 +272,10 @@ export abstract class IDistroDotnetSDKProvider {
     {
         const validCommands : string[] = [];
 
-        const baseCommands = this.distroJson[this.distroVersion.distro].filter((x : any) => x as CommandExecutorCommand !== null) as CommandExecutorCommand[];
+        const baseCommands = (Object.values(this.distroJson[this.distroVersion.distro])
+            .filter((x : any) => x && Array.isArray(x) && ((x[0] as CommandExecutorCommand).commandParts))).flat();
         const preInstallCommands = this.myVersionDetails()[this.preinstallCommandKey] as CommandExecutorCommand[];
-        const sudoCommands = baseCommands.concat(preInstallCommands).filter(x => x.runUnderSudo);
+        const sudoCommands = (baseCommands as CommandExecutorCommand[]).concat(preInstallCommands).filter(x => x.runUnderSudo);
 
         for(const command of sudoCommands)
         {
@@ -291,27 +292,18 @@ export abstract class IDistroDotnetSDKProvider {
                 }
             }
         }
-        return validCommands;
+        return [...new Set(validCommands)];
     }
 
     protected allPackages() : string[]
     {
-        const allPackages : string[] = [];
-        const distroPackages = this.distroJson[this.distroVersion.distro][this.dotnetPackagesKey];
+        let allPackages : string[] = [];
+        const distroPackages = this.distroJson[this.distroVersion.distro][this.distroPackagesKey];
         for(const packageSet of distroPackages)
         {
-            for(const packageName of packageSet[this.sdkKey])
-            {
-                allPackages.push(packageName);
-            }
-            for(const packageName of packageSet[this.runtimeKey])
-            {
-                allPackages.push(packageName);
-            }
-            for(const packageName of packageSet[this.aspNetKey])
-            {
-                allPackages.push(packageName);
-            }
+            allPackages = allPackages.concat(packageSet[this.sdkKey]);
+            allPackages = allPackages.concat(packageSet[this.runtimeKey])
+            allPackages = allPackages.concat(packageSet[this.aspNetKey])
         }
         return allPackages;
     }
