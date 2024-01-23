@@ -84,7 +84,7 @@ export class CommandExecutor extends ICommandExecutor
     {
         const fullCommandString = CommandExecutor.prettifyCommandExecutorCommand(command, false);
         this.context?.eventStream.post(new CommandExecutionUnderSudoEvent(`The command ${fullCommandString} is being ran under sudo.`));
-        const shellScript = path.join(__dirname, path.join(this.sudoProcessCommunicationDir, 'interprocess-communicator.sh'));
+        const shellScript = path.join(this.sudoProcessCommunicationDir, 'interprocess-communicator.sh');
 
         if(this.isRunningUnderWSL())
         {
