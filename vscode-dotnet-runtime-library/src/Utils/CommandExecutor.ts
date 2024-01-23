@@ -119,7 +119,7 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
         }
         this.returnStatus = oldReturnStatusSetting;
 
-        return this.executeSudoViaProcessCommmunication(fullCommandString, terminalFailure);
+        return this.executeSudoViaProcessCommunication(fullCommandString, terminalFailure);
     }
 
     /**
@@ -131,10 +131,6 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
      */
     private async startupSudoProc(fullCommandString : string, shellScriptPath : string, terminalFailure : boolean) : Promise<string>
     {
-        if (!fs.existsSync(this.sudoProcessCommunicationDir))
-        {
-            fs.mkdirSync(this.sudoProcessCommunicationDir);
-        }
         if(this.hasEverLaunchedSudoFork)
         {
             if(await this.sudoProcIsLive(false))
@@ -155,7 +151,7 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
             sanitizedCallerName = sanitizedCallerName?.substring(0, 69); // 70 Characters is the maximum limit we can use for the prompt.
             const options = { name: `${sanitizedCallerName ?? '.NET Install Tool'}` };
 
-            exec((`sh ${shellScriptPath} ${this.validSudoCommands?.join(' ')}`), options, (error?: any, stdout?: any, stderr?: any) =>
+            exec((`sh "${shellScriptPath}" ${this.validSudoCommands?.join(' ')}`), options, (error?: any, stdout?: any, stderr?: any) =>
             {
                 let commandResultString = '';
 
@@ -266,7 +262,7 @@ Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: $
      * @param failOnNonZeroExit Whether to fail if we get an exit code from the command besides 0.
      * @returns The output string of the command, or the string status code, depending on the mode of execution.
      */
-    private async executeSudoViaProcessCommmunication(commandToExecuteString : string, terminalFailure : boolean, failOnNonZeroExit = true) : Promise<string>
+    private async executeSudoViaProcessCommunication(commandToExecuteString : string, terminalFailure : boolean, failOnNonZeroExit = true) : Promise<string>
     {
         let commandOutputJson : CommandProcessorOutput | null = null;
         let statusCode = '1220'; // Special failure code for if code is never set error
