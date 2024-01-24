@@ -571,6 +571,26 @@ export class CommandExecutionEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'CommandExecutionEvent';
 }
 
+export class SudoProcAliveCheckBegin extends DotnetCustomMessageEvent {
+    public readonly eventName = 'SudoProcAliveCheckBegin';
+}
+
+export class SudoProcAliveCheckEnd extends DotnetCustomMessageEvent {
+    public readonly eventName = 'SudoProcAliveCheckEnd';
+}
+
+export class SudoProcCommandExchangeBegin extends DotnetCustomMessageEvent {
+    public readonly eventName = 'SudoProcCommandExchangeBegin';
+}
+
+export class SudoProcCommandExchangePing extends DotnetCustomMessageEvent {
+    public readonly eventName = 'SudoProcCommandExchangePing';
+}
+
+export class SudoProcCommandExchangeEnd extends DotnetCustomMessageEvent {
+    public readonly eventName = 'SudoProcCommandExchangeEnd';
+}
+
 export class CommandExecutionUserAskDialogueEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'CommandExecutionUserAskDialogueEvent';
 }

@@ -43,7 +43,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
                 throw new Error('Unable to get script path.');
             }
 
-            await this.fileUtilities.writeFileOntoDisk(script, this.scriptFilePath, this.context.eventStream);
+            await this.fileUtilities.writeFileOntoDisk(script, this.scriptFilePath, false, this.context.eventStream);
             this.context.eventStream.post(new DotnetInstallScriptAcquisitionCompleted());
             return this.scriptFilePath;
         }
