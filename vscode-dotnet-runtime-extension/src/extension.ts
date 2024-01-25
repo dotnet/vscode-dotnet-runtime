@@ -106,7 +106,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         showLogCommand: `${commandPrefix}.${commandKeys.showAcquisitionLog}`,
         packageJson
     } as IEventStreamContext;
-    const [eventStream, outputChannel, loggingObserver, eventStreamObservers, telemetryObserver] = registerEventStream(eventStreamContext, vsCodeExtensionContext, utilContext);
+    const [globalEventStream, outputChannel, loggingObserver, eventStreamObservers, telemetryObserver] = registerEventStream(eventStreamContext, vsCodeExtensionContext, utilContext);
 
 
     // Setting up command-shared classes for Runtime & SDK Acquisition
@@ -125,8 +125,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) => {
         let fullyResolvedVersion = '';
         const dotnetPath = await callWithErrorHandling<Promise<IDotnetAcquireResult>>(async () => {
-            eventStream.post(new DotnetRuntimeAcquisitionStarted(commandContext.requestingExtensionId));
-            eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
+            globalEventStream.post(new DotnetRuntimeAcquisitionStarted(commandContext.requestingExtensionId));
+            globalEventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
 
             runtimeAcquisitionWorker.setAcquisitionContext(commandContext);
             telemetryObserver?.setAcquisitionContext(runtimeContext, commandContext);
@@ -154,7 +154,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         }, runtimeIssueContextFunctor(commandContext.errorConfiguration, 'acquire', commandContext.version), commandContext.requestingExtensionId, runtimeContext);
 
         const installKey = runtimeAcquisitionWorker.getInstallKey(fullyResolvedVersion);
-        eventStream.post(new DotnetRuntimeAcquisitionTotalSuccessEvent(commandContext.version, installKey, commandContext.requestingExtensionId ?? '', dotnetPath?.dotnetPath ?? ''));
+        globalEventStream.post(new DotnetRuntimeAcquisitionTotalSuccessEvent(commandContext.version, installKey, commandContext.requestingExtensionId ?? '', dotnetPath?.dotnetPath ?? ''));
         return dotnetPath;
     });
 
@@ -167,8 +167,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
         const pathResult = callWithErrorHandling(async () =>
         {
-            eventStream.post(new DotnetSDKAcquisitionStarted(commandContext.requestingExtensionId));
-            eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
+            globalEventStream.post(new DotnetSDKAcquisitionStarted(commandContext.requestingExtensionId));
+            globalEventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
 
             const existingPath = await resolveExistingPathIfExists(existingPathConfigWorker, commandContext);
             if(existingPath)
@@ -196,7 +196,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
     const dotnetAcquireStatusRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquireStatus}`, async (commandContext: IDotnetAcquireContext) => {
         const pathResult = callWithErrorHandling(async () => {
-            eventStream.post(new DotnetAcquisitionStatusRequested(commandContext.version, commandContext.requestingExtensionId));
+            globalEventStream.post(new DotnetAcquisitionStatusRequested(commandContext.version, commandContext.requestingExtensionId));
             const resolvedVersion = await runtimeVersionResolver.getFullRuntimeVersion(commandContext.version);
             const dotnetPath = await runtimeAcquisitionWorker.acquireStatus(resolvedVersion, true);
             return dotnetPath;
@@ -220,7 +220,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             const result = cp.spawnSync(commandContext.command, commandContext.arguments);
             const installer = new DotnetCoreDependencyInstaller();
             if (installer.signalIndicatesMissingLinuxDependencies(result.signal!)) {
-                eventStream.post(new DotnetAcquisitionMissingLinuxDependencies());
+                globalEventStream.post(new DotnetAcquisitionMissingLinuxDependencies());
                 await installer.promptLinuxDependencyInstall('Failed to run .NET runtime.');
             }
         }, runtimeIssueContextFunctor(commandContext.errorConfiguration, 'ensureDependencies'));
@@ -239,7 +239,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
         const existingPath = existingPathResolver.resolveExistingPath(configResolver.getPathConfigurationValue(), commandContext.requestingExtensionId, displayWorker);
         if (existingPath) {
-            eventStream.post(new DotnetExistingPathResolutionCompleted(existingPath.dotnetPath));
+            globalEventStream.post(new DotnetExistingPathResolutionCompleted(existingPath.dotnetPath));
             return new Promise((resolve) => {
                 resolve(existingPath);
             });
@@ -254,8 +254,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         return {
             storagePath: context.globalStoragePath,
             extensionState: context.globalState,
-            eventStream,
-            installationValidator: new InstallationValidator(eventStream),
+            eventStream: globalEventStream,
+            installationValidator: new InstallationValidator(globalEventStream),
             timeoutSeconds: resolvedTimeoutSeconds,
             installDirectoryProvider: isRuntimeInstall ? new RuntimeInstallationDirectoryProvider(context.globalStoragePath): new SdkInstallationDirectoryProvider(context.globalStoragePath),
             proxyUrl: proxyLink,
@@ -276,7 +276,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
                 errorConfiguration: errorConfiguration || AcquireErrorConfiguration.DisplayAllErrorPopups,
                 displayWorker,
                 extensionConfigWorker: configResolver,
-                eventStream,
+                eventStream: globalEventStream,
                 commandName,
                 version,
                 moreInfoUrl,

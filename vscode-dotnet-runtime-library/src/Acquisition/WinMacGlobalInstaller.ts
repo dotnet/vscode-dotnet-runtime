@@ -14,7 +14,10 @@ import { CommandExecutor } from '../Utils/CommandExecutor';
 import {
     DotnetConflictingGlobalWindowsInstallError,
     DotnetFileIntegrityCheckEvent,
+    DotnetInstallCancelledByUserError as DotnetInstallCancelledByUser,
     DotnetUnexpectedInstallerOSError,
+    NetInstallerBeginExecutionEvent,
+    NetInstallerEndExecutionEvent,
     OSXOpenNotAvailableError,
     SuppressedAcquisitionError
 } from '../EventStream/EventStreamEvents';
@@ -106,6 +109,14 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
         if(validInstallerStatusCodes.includes(installerResult))
         {
             return '0'; // These statuses are a success, we don't want to throw.
+        }
+        else if(installerResult === '1602')
+        {
+            // Special code for when user cancels the install
+            const err = new DotnetInstallCancelledByUser(new Error(
+                `The install of .NET was cancelled by the user. Aborting.`), getInstallKeyFromContext(this.acquisitionContext.acquisitionContext));
+            this.acquisitionContext.eventStream.post(err);
+            throw err.error;
         }
         else
         {
@@ -225,12 +236,14 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
                 workingCommand = CommandExecutor.makeCommand(`open`, [`-W`, `${path.resolve(installerPath)}`]);
             }
 
+            this.acquisitionContext.eventStream.post(new NetInstallerBeginExecutionEvent(`The OS X .NET Installer has been launched.`));
             const commandResult = await this.commandRunner.execute(
                 workingCommand
             );
+            this.acquisitionContext.eventStream.post(new NetInstallerEndExecutionEvent(`The OS X .NET Installer has closed.`));
 
             this.commandRunner.returnStatus = false;
-            return commandResult[0];
+            return commandResult;
         }
         else
         {
@@ -240,11 +253,15 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
             {
                 commandOptions = [`/quiet`, `/install`, `/norestart`];
             }
+
+            this.acquisitionContext.eventStream.post(new NetInstallerBeginExecutionEvent(`The Windows .NET Installer has been launched.`));
             const commandResult = await this.commandRunner.execute(
                 CommandExecutor.makeCommand(command, commandOptions)
             );
+            this.acquisitionContext.eventStream.post(new NetInstallerEndExecutionEvent(`The Windows .NET Installer has closed.`));
+
             this.commandRunner.returnStatus = false;
-            return commandResult[0];
+            return commandResult;
         }
     }
 

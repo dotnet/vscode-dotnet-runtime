@@ -9,7 +9,9 @@ import
 {
     DotnetAcquisitionDistroUnknownError,
     DotnetConflictingLinuxInstallTypesError,
-    DotnetCustomLinuxInstallExistsError
+    DotnetCustomLinuxInstallExistsError,
+    DotnetInstallLinuxChecks,
+    DotnetUpgradedEvent
 } from '../EventStream/EventStreamEvents';
 import { GenericDistroSDKProvider } from './GenericDistroSDKProvider'
 import { VersionResolver } from './VersionResolver';
@@ -67,6 +69,8 @@ export class LinuxVersionResolver
     protected distroSDKProvider : IDistroDotnetSDKProvider | null = null;
     protected commandRunner : ICommandExecutor;
     protected versionResolver : VersionResolver;
+    public okUpdateExitCode = 11188; // Arbitrary number that is not shared or used by other things we rely on as an exit code
+    public okAlreadyExistsExitCode = 11166;
 
     public conflictingInstallErrorMessage = `A dotnet installation was found which indicates dotnet that was installed via Microsoft package feeds. But for this distro and version, we only acquire .NET via the distro feeds.
     You should not mix distro feed and microsoft feed installations. To continue, please completely remove this version of dotnet to continue by following https://learn.microsoft.com/dotnet/core/install/remove-runtime-sdk-versions?pivots=os-linux.
@@ -181,9 +185,9 @@ export class LinuxVersionResolver
             case 'Red Hat Enterprise Linux':
                 if(this.isRedHatVersion7(distroAndVersion.version))
                 {
-                    const error = new DotnetAcquisitionDistroUnknownError(new Error(this.redhatUnsupportedDistroErrorMessage), getInstallKeyFromContext(this.acquireContext));
-                    this.acquisitionContext.eventStream.post(error);
-                    throw error.error;
+                    const unsupportedRhelErr = new DotnetAcquisitionDistroUnknownError(new Error(this.redhatUnsupportedDistroErrorMessage), getInstallKeyFromContext(this.acquireContext));
+                    this.acquisitionContext.eventStream.post(unsupportedRhelErr);
+                    throw unsupportedRhelErr.error;
                 }
                 return new RedHatDistroSDKProvider(distroAndVersion, this.acquisitionContext, this.utilityContext);
             default:
@@ -250,17 +254,22 @@ export class LinuxVersionResolver
      * @returns 0 if we can proceed. Will throw if a conflicting install exists. If we can update, it will do the update and return 1.
      * A string is returned in case we want to make this return more info about the update.
      */
-    private async UpdateOrRejectIfVersionRequestDoesNotRequireInstall(fullySpecifiedDotnetVersion : string, existingInstall : string | null)
+    private async UpdateOrRejectIfVersionRequestDoesNotRequireInstall(fullySpecifiedDotnetVersion : string, existingInstall : string | null) : Promise<string>
     {
         await this.Initialize();
 
+        this.acquisitionContext.eventStream.post(new DotnetInstallLinuxChecks(`Checking to see if we should install, update, or cancel...`));
         if(existingInstall)
         {
             const existingGlobalInstallSDKVersion = await this.distroSDKProvider!.getInstalledGlobalDotnetVersionIfExists();
             if(existingGlobalInstallSDKVersion && Number(this.versionResolver.getMajorMinor(existingGlobalInstallSDKVersion)) ===
                 Number(this.versionResolver.getMajorMinor(fullySpecifiedDotnetVersion)))
             {
-                if(Number(this.versionResolver.getMajorMinor(existingGlobalInstallSDKVersion)) > Number(this.versionResolver.getMajorMinor(fullySpecifiedDotnetVersion)))
+                const isPatchUpgrade = Number(this.versionResolver.getFeatureBandPatchVersion(existingGlobalInstallSDKVersion)) <
+                    Number(this.versionResolver.getFeatureBandPatchVersion(fullySpecifiedDotnetVersion));
+
+                if(Number(this.versionResolver.getMajorMinor(existingGlobalInstallSDKVersion)) > Number(this.versionResolver.getMajorMinor(fullySpecifiedDotnetVersion))
+                || Number(this.versionResolver.getFeatureBandFromVersion(existingGlobalInstallSDKVersion)) > Number(this.versionResolver.getFeatureBandFromVersion(fullySpecifiedDotnetVersion)))
                 {
                     // We shouldn't downgrade to a lower patch
                     const err = new DotnetCustomLinuxInstallExistsError(new Error(`An installation of ${fullySpecifiedDotnetVersion} was requested but ${existingGlobalInstallSDKVersion} is already available.`),
@@ -268,16 +277,20 @@ export class LinuxVersionResolver
                     this.acquisitionContext.eventStream.post(err);
                     throw err.error;
                 }
-                else if(await this.distroSDKProvider!.dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion, 'sdk') ||
-                    Number(this.versionResolver.getFeatureBandPatchVersion(existingGlobalInstallSDKVersion)) < Number(this.versionResolver.getFeatureBandPatchVersion(fullySpecifiedDotnetVersion)))
+                else if(await this.distroSDKProvider!.dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion, 'sdk') || isPatchUpgrade)
                 {
                     // We can update instead of doing an install
-                    return (await this.distroSDKProvider!.upgradeDotnet(existingGlobalInstallSDKVersion, 'sdk')) ? '1' : '1';
+                    this.acquisitionContext.eventStream.post(new DotnetUpgradedEvent(
+                        isPatchUpgrade ?
+                        `Updating .NET: Current Version: ${existingGlobalInstallSDKVersion} to ${fullySpecifiedDotnetVersion}.`
+                        :
+                        `Repairing .NET Packages for ${existingGlobalInstallSDKVersion}.`));
+                    return (await this.distroSDKProvider!.upgradeDotnet(existingGlobalInstallSDKVersion, 'sdk')) === '0' ? String(this.okUpdateExitCode) : '1';
                 }
                 else
                 {
                     // An existing install exists.
-                    return '1';
+                    return String(this.okAlreadyExistsExitCode);
                 }
             }
             // Additional logic to check the major.minor could be added here if we wanted to prevent installing lower major.minors if an existing install existed.
@@ -310,7 +323,11 @@ export class LinuxVersionResolver
         {
             return await this.distroSDKProvider!.installDotnet(fullySpecifiedDotnetVersion, 'sdk') ? '0' : '1';
         }
-        return updateOrRejectState;
+        else if(updateOrRejectState === String(this.okUpdateExitCode) || updateOrRejectState === String(this.okAlreadyExistsExitCode))
+        {
+            return '0';
+        }
+        return String(updateOrRejectState);
     }
 
     /**

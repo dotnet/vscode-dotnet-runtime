@@ -35,12 +35,23 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
     public async getInstalledGlobalDotnetPathIfExists(installType : LinuxInstallType) : Promise<string | null>
     {
         const commandResult = await this.commandRunner.executeMultipleCommands(this.myDistroCommands(this.currentInstallPathCommandKey));
+
+        const oldReturnStatusSetting = this.commandRunner.returnStatus;
+        this.commandRunner.returnStatus = true;
+        const commandSignal = await this.commandRunner.executeMultipleCommands(this.myDistroCommands(this.currentInstallPathCommandKey));
+        this.commandRunner.returnStatus = oldReturnStatusSetting;
+
+        if(commandSignal[0] !== '0') // no dotnet error can be returned, dont want to try to parse this as a path
+        {
+            return null;
+        }
+
         if(commandResult[0])
         {
             commandResult[0] = commandResult[0].trim();
         }
 
-        if(commandResult && this.resolvePathAsSymlink)
+        if(commandResult[0] && this.resolvePathAsSymlink)
         {
             let symLinkReadCommand = this.myDistroCommands(this.readSymbolicLinkCommandKey);
             symLinkReadCommand = CommandExecutor.replaceSubstringsInCommands(symLinkReadCommand, this.missingPathKey, commandResult[0]);
@@ -51,7 +62,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
             }
         }
 
-        return commandResult[0];
+        return commandResult[0] ?? null;
     }
 
     public async dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion : string, installType : LinuxInstallType) : Promise<boolean>
@@ -77,11 +88,15 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 
     public async upgradeDotnet(versionToUpgrade : string, installType : LinuxInstallType): Promise<string>
     {
+        const oldReturnStatusSetting = this.commandRunner.returnStatus;
+        this.commandRunner.returnStatus = true;
+
         let command = this.myDistroCommands(this.updateCommandKey);
         const sdkPackage = await this.myDotnetVersionPackageName(versionToUpgrade, installType);
         command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, sdkPackage);
         const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
+        this.commandRunner.returnStatus = oldReturnStatusSetting;
         return commandResult[0];
     }
 

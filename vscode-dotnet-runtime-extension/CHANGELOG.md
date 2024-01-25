@@ -6,7 +6,27 @@ The format is based on [Keep a Changelog],
 and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
-## [2.0.0] - 2023-09-18
+## [2.0.1] - 2024-01-03
+
+Fixes several key bugs with installing .NET:
+
+- Ubuntu Global SDK Installs would fail for the first time on 18.04.
+- The extension would print ... forever after installation failure for certain errors.
+- The extension would fail to read Ubuntu directories properly for the first time if PMC was installed in certain scenarios.
+- GitHub Forms is now added.
+- Corrects behavior on our unknown Ubuntu Versions by estimating the correct behavior for known versions.
+- Improve timeout error handling
+- Catch bug in the caching library we use to prevent it from failing to cache
+- Remove bug where status bar would stay red when cancelling install
+- Fix bug where Linux would not update .NET SDKs properly when it could update instead of install
+- Detect when a user cancels the installation in the password prompt or windows installer so we can remove the error failure message
+- Adds more logging to the extension to improve diagnostics and speed to resolve github issues
+- Improve installation management, so that the extension is aware that installs it manages can be deleted by external sources, to prevent it from thinking something is installed when it is no longer installed.
+- Fix an issue where the uninstall command would think it could uninstall a global SDK. This is not the case.
+- Improve detection logic for existing Ubuntu and RHEL installations of linux to prevent installing when it is not needed
+- Several other key issues.
+
+## [2.0.0] - 2023-11-23
 
 The '.NET Runtime Install Tool' has been renamed to the '.NET Install Tool.'
 
