@@ -142,7 +142,7 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
         const options = { name: `${sanitizedCallerName ?? '.NET Install Tool'}` };
 
         fs.chmodSync(shellScriptPath, 0o500);
-        exec((`"${shellScriptPath}" ${this.validSudoCommands?.join(' ')} &`), options, (error?: any, stdout?: any, stderr?: any) =>
+        exec((`"${shellScriptPath}" "${this.sudoProcessCommunicationDir}" ${this.validSudoCommands?.join(' ')} &`), options, (error?: any, stdout?: any, stderr?: any) =>
         {
             let commandResultString = '';
 
@@ -219,9 +219,10 @@ The user refused the password prompt.`),
             await this.fileUtil.writeFileOntoDisk('', processAliveOkSentinelFile, true, this.context?.eventStream);
             this.context?.eventStream.post(new SudoProcAliveCheckBegin(`Looking for Sudo Process Master, wrote OK file. ${new Date().toISOString()}`));
 
-            await this.wait(100, 180000,
-                function f() : boolean { return !fs.existsSync(processAliveOkSentinelFile) },
-                function b() : void { isLive = true; }
+            const waitTime = 30000; // TODO: Change this to for production 180000;
+            await this.loopWithTimeoutOnCond(100, waitTime,
+                function processRespondedByDeletingOkFile() : boolean { return !fs.existsSync(processAliveOkSentinelFile) },
+                function setProcessIsAlive() : void { isLive = true; }
             )
             .catch(error =>
             {
@@ -246,7 +247,7 @@ Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: $
         return isLive;
     }
 
-    private async wait(sampleRatePerMs : number, durationToWaitBeforeTimeoutMs : number, conditionToStop : Function, doAfterStop : Function )
+    private async loopWithTimeoutOnCond(sampleRatePerMs : number, durationToWaitBeforeTimeoutMs : number, conditionToStop : Function, doAfterStop : Function )
     {
         return new Promise(async (resolve, reject) =>
         {
@@ -255,13 +256,13 @@ Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: $
                 if(conditionToStop())
                 {
                     doAfterStop();
-                    resolve('The promise succeeded.');
+                    return resolve('The promise succeeded.');
                 }
                 this.context?.eventStream.post(new SudoProcCommandExchangePing(`Ping : Waiting. ${new Date().toISOString()}`));
                 await new Promise(resolve => setTimeout(resolve, sampleRatePerMs));
             }
 
-            reject('The promise timed out.');
+            return reject('The promise timed out.');
         });
     }
 
@@ -279,6 +280,10 @@ Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: $
         let commandResultString = '';
 
         const commandFile = path.join(this.sudoProcessCommunicationDir, 'command.txt');
+        const stderrFile = path.join(this.sudoProcessCommunicationDir, 'stderr.txt');
+        const stdoutFile = path.join(this.sudoProcessCommunicationDir, 'stdout.txt');
+        const statusFile = path.join(this.sudoProcessCommunicationDir, 'status.txt');
+
         const outputFile = path.join(this.sudoProcessCommunicationDir, 'output.json');
         const fakeLockFile = path.join(this.sudoProcessCommunicationDir, 'fakeLockFile'); // We need a file to lock the directory in the API besides the dir lock file
 
@@ -302,15 +307,21 @@ Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: $
             this.context?.eventStream.post(new SudoProcCommandExchangeBegin(`Handing command off to master process. ${new Date().toISOString()}`));
             this.context?.eventStream.post(new CommandProcessorExecutionBegin(`The command ${commandToExecuteString} was forwarded to the master process to run.`));
 
-            await this.wait(100, 600000,
-                function f() : boolean { return fs.existsSync(outputFile) },
-                function b() : void { commandOutputJson = JSON.parse(fs.readFileSync(outputFile, 'utf8')) as CommandProcessorOutput; }
+            const waitTime = 30000; // TODO: Change this to for production 600000;
+            await this.loopWithTimeoutOnCond(100, waitTime,
+                function ProcessFinishedExecutingAndWroteOutput() : boolean { return fs.existsSync(outputFile) },
+                function doNothing() : void { ; }
             )
             .catch(error =>
             {
                 // Let the rejected promise get handled below
             });
 
+            commandOutputJson = {
+                stdout : (fs.readFileSync(stdoutFile, 'utf8')),
+                stderr : (fs.readFileSync(stderrFile, 'utf8')),
+                status : (fs.readFileSync(statusFile, 'utf8'))
+            } as CommandProcessorOutput;
             this.context?.eventStream.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), directoryLockPath, fakeLockFile));
             return release();
         });
