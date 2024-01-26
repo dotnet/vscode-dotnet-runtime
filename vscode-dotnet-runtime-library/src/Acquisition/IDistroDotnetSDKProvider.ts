@@ -8,7 +8,7 @@ import * as fs from 'fs';
 import path = require('path');
 
 import { DistroVersionPair, DotnetDistroSupportStatus } from './LinuxVersionResolver';
-import { DotnetAcquisitionDistroUnknownError, DotnetVersionResolutionError } from '../EventStream/EventStreamEvents';
+import { DotnetAcquisitionDistroUnknownError, DotnetVersionResolutionError, SuppressedAcquisitionError } from '../EventStream/EventStreamEvents';
 import { VersionResolver } from './VersionResolver';
 import { CommandExecutorCommand } from '../Utils/CommandExecutorCommand';
 import { CommandExecutor } from '../Utils/CommandExecutor';
@@ -66,6 +66,15 @@ export abstract class IDistroDotnetSDKProvider {
         this.distroVersion = distroVersion;
         this.versionResolver = new VersionResolver(context);
         const distroDataFile = path.join(__dirname, 'distro-data', `distro-support.json`);
+        try
+        {
+            fs.chmodSync(distroDataFile, 0o544);
+        }
+        catch(error : any)
+        {
+            this.context.eventStream.post(new SuppressedAcquisitionError(error, `Failed to chmod +x on .NET folder ${distroDataFile} when marked for deletion.`));
+        }
+
         this.distroJson = JSON.parse(fs.readFileSync(distroDataFile, 'utf8'));
         if(!distroVersion || !this.distroJson || !((this.distroJson as any)[this.distroVersion.distro]))
         {
