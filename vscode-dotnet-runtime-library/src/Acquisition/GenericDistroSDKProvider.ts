@@ -35,6 +35,17 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
     public async getInstalledGlobalDotnetPathIfExists(installType : LinuxInstallType) : Promise<string | null>
     {
         const commandResult = await this.commandRunner.executeMultipleCommands(this.myDistroCommands(this.currentInstallPathCommandKey));
+
+        const oldReturnStatusSetting = this.commandRunner.returnStatus;
+        this.commandRunner.returnStatus = true;
+        const commandSignal = await this.commandRunner.executeMultipleCommands(this.myDistroCommands(this.currentInstallPathCommandKey));
+        this.commandRunner.returnStatus = oldReturnStatusSetting;
+
+        if(commandSignal[0] !== '0') // no dotnet error can be returned, dont want to try to parse this as a path
+        {
+            return null;
+        }
+
         if(commandResult[0])
         {
             commandResult[0] = commandResult[0].trim();
