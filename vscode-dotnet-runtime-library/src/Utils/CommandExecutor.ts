@@ -220,7 +220,7 @@ The user refused the password prompt.`),
             await this.fileUtil.writeFileOntoDisk('', processAliveOkSentinelFile, true, this.context?.eventStream);
             this.context?.eventStream.post(new SudoProcAliveCheckBegin(`Looking for Sudo Process Master, wrote OK file. ${new Date().toISOString()}`));
 
-            const waitTime = 60000; // TODO: Change this to for production 180000;
+            const waitTime = this.context?.timeoutSeconds ? ((this.context?.timeoutSeconds/3) * 1000) : 180000;
             await this.loopWithTimeoutOnCond(100, waitTime,
                 function processRespondedByDeletingOkFile() : boolean { return !fs.existsSync(processAliveOkSentinelFile) },
                 function setProcessIsAlive() : void { isLive = true; }
@@ -309,7 +309,8 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFrom
             this.context?.eventStream.post(new SudoProcCommandExchangeBegin(`Handing command off to master process. ${new Date().toISOString()}`));
             this.context?.eventStream.post(new CommandProcessorExecutionBegin(`The command ${commandToExecuteString} was forwarded to the master process to run.`));
 
-            const waitTime = 60000; // TODO: Change this to for production 600000;
+
+            const waitTime = this.context?.timeoutSeconds ? (this.context?.timeoutSeconds * 1000) : 600000;
             await this.loopWithTimeoutOnCond(100, waitTime,
                 function ProcessFinishedExecutingAndWroteOutput() : boolean { return fs.existsSync(outputFile) },
                 function doNothing() : void { ; }
