@@ -22,12 +22,11 @@ do
                     rm "$COMMANDTORUNFILE"
                     exit 111777 # Special exit code - arbitrarily picked for when the command is not expected
                 fi
-                OUT=$(sudo "${COMMANDARGS[@]}" 2> "$EXECFOLDER/stderr.txt")
+                sudo "${COMMANDARGS[@]}" 2> "$EXECFOLDER/stderr.txt" 1> "$EXECFOLDER/stdout.txt"
                 STATUSCODE=$?
+                echo $STATUSCODE > "$EXECFOLDER/status.txt"
                 rm "$COMMANDTORUNFILE"
-                $OUT | tee "$EXECFOLDER/stdout.txt"
-                $STATUSCODE | tee "$EXECFOLDER/status.txt"
-                " " | tee "$EXECFOLDER/output.json"
+                touch "$EXECFOLDER/output.txt"
             fi
             if test -f "$OKSIGNALFILE"; then
                 rm "$OKSIGNALFILE"

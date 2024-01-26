@@ -214,7 +214,7 @@ The user refused the password prompt.`),
         {
             this.context?.eventStream.post(new DotnetLockAcquiredEvent(`Lock Acquired.`, new Date().toISOString(), directoryLockPath, fakeLockFile));
 
-            await this.fileUtil.wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt', '.json']);
+            await this.fileUtil.wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt']);
 
             await this.fileUtil.writeFileOntoDisk('', processAliveOkSentinelFile, true, this.context?.eventStream);
             this.context?.eventStream.post(new SudoProcAliveCheckBegin(`Looking for Sudo Process Master, wrote OK file. ${new Date().toISOString()}`));
@@ -284,7 +284,7 @@ Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: $
         const stdoutFile = path.join(this.sudoProcessCommunicationDir, 'stdout.txt');
         const statusFile = path.join(this.sudoProcessCommunicationDir, 'status.txt');
 
-        const outputFile = path.join(this.sudoProcessCommunicationDir, 'output.json');
+        const outputFile = path.join(this.sudoProcessCommunicationDir, 'output.txt');
         const fakeLockFile = path.join(this.sudoProcessCommunicationDir, 'fakeLockFile'); // We need a file to lock the directory in the API besides the dir lock file
 
         await this.fileUtil.writeFileOntoDisk('', fakeLockFile, false, this.context?.eventStream!);
@@ -323,7 +323,7 @@ Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: $
                 status : (fs.readFileSync(statusFile, 'utf8')).trim()
             } as CommandProcessorOutput;
             this.context?.eventStream.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), directoryLockPath, fakeLockFile));
-            await this.fileUtil.wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt', '.json']);
+            await this.fileUtil.wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt']);
 
             return release();
         });
