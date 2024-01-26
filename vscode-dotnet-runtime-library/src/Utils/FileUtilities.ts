@@ -25,7 +25,7 @@ import { DotnetCommandFallbackArchitectureEvent,
 
 export class FileUtilities extends IFileUtilities
 {
-   public async writeFileOntoDisk(scriptContent: string, filePath: string, alreadyHoldingLock : boolean = false, eventStream? : IEventStream)
+   public async writeFileOntoDisk(scriptContent: string, filePath: string, alreadyHoldingLock = false, eventStream? : IEventStream)
    {
        eventStream?.post(new DotnetFileWriteRequestEvent(`Request to write`, new Date().toISOString(), filePath));
 

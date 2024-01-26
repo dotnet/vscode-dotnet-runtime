@@ -54,6 +54,7 @@ import { CommandProcessorOutput } from './CommandProcessorOutput';
 import { setTimeout } from 'timers';
 
 /* tslint:disable:no-any */
+/* tslint:disable:no-string-literal */
 
 export class CommandExecutor extends ICommandExecutor
 {
@@ -238,8 +239,9 @@ The user refused the password prompt.`),
 
         if(!isLive && errorIfDead)
         {
-            const err = new TimeoutSudoProcessSpawnerError(new Error(`We are unable to spawn the process needed to run commands under sudo for installing .NET.
-Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: ${errorIfDead} and had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFromContext(this.context?.acquisitionContext));
+            const err = new TimeoutSudoProcessSpawnerError(new Error(`We are unable to spawn the process to run commands under sudo for installing .NET.
+Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: ${errorIfDead}.
+It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFromContext(this.context?.acquisitionContext));
             this.context?.eventStream.post(err);
             throw err.error;
         }
@@ -247,7 +249,7 @@ Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: $
         return isLive;
     }
 
-    private async loopWithTimeoutOnCond(sampleRatePerMs : number, durationToWaitBeforeTimeoutMs : number, conditionToStop : Function, doAfterStop : Function )
+    private async loopWithTimeoutOnCond(sampleRatePerMs : number, durationToWaitBeforeTimeoutMs : number, conditionToStop : () => boolean, doAfterStop : () => void )
     {
         return new Promise(async (resolve, reject) =>
         {
@@ -259,7 +261,7 @@ Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: $
                     return resolve('The promise succeeded.');
                 }
                 this.context?.eventStream.post(new SudoProcCommandExchangePing(`Ping : Waiting. ${new Date().toISOString()}`));
-                await new Promise(resolve => setTimeout(resolve, sampleRatePerMs));
+                await new Promise(waitAndResolve => setTimeout(waitAndResolve, sampleRatePerMs));
             }
 
             return reject('The promise timed out.');
@@ -333,7 +335,8 @@ Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: $
         if(!commandOutputJson && terminalFailure)
         {
             const err = new TimeoutSudoCommandExecutionError(new Error(`Timeout: The master process with command ${commandToExecuteString} never finished executing.
-Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: ${terminalFailure} and had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFromContext(this.context?.acquisitionContext));
+Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: ${terminalFailure}.
+It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFromContext(this.context?.acquisitionContext));
             this.context?.eventStream.post(err);
             throw err.error;
         }
