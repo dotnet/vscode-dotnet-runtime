@@ -219,7 +219,7 @@ The user refused the password prompt.`),
             await this.fileUtil.writeFileOntoDisk('', processAliveOkSentinelFile, true, this.context?.eventStream);
             this.context?.eventStream.post(new SudoProcAliveCheckBegin(`Looking for Sudo Process Master, wrote OK file. ${new Date().toISOString()}`));
 
-            const waitTime = 30000; // TODO: Change this to for production 180000;
+            const waitTime = 60000; // TODO: Change this to for production 180000;
             await this.loopWithTimeoutOnCond(100, waitTime,
                 function processRespondedByDeletingOkFile() : boolean { return !fs.existsSync(processAliveOkSentinelFile) },
                 function setProcessIsAlive() : void { isLive = true; }
@@ -307,7 +307,7 @@ Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: $
             this.context?.eventStream.post(new SudoProcCommandExchangeBegin(`Handing command off to master process. ${new Date().toISOString()}`));
             this.context?.eventStream.post(new CommandProcessorExecutionBegin(`The command ${commandToExecuteString} was forwarded to the master process to run.`));
 
-            const waitTime = 30000; // TODO: Change this to for production 600000;
+            const waitTime = 60000; // TODO: Change this to for production 600000;
             await this.loopWithTimeoutOnCond(100, waitTime,
                 function ProcessFinishedExecutingAndWroteOutput() : boolean { return fs.existsSync(outputFile) },
                 function doNothing() : void { ; }
@@ -318,11 +318,13 @@ Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: $
             });
 
             commandOutputJson = {
-                stdout : (fs.readFileSync(stdoutFile, 'utf8')),
-                stderr : (fs.readFileSync(stderrFile, 'utf8')),
-                status : (fs.readFileSync(statusFile, 'utf8'))
+                stdout : (fs.readFileSync(stdoutFile, 'utf8')).trim(),
+                stderr : (fs.readFileSync(stderrFile, 'utf8')).trim(),
+                status : (fs.readFileSync(statusFile, 'utf8')).trim()
             } as CommandProcessorOutput;
             this.context?.eventStream.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), directoryLockPath, fakeLockFile));
+            await this.fileUtil.wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt', '.json']);
+
             return release();
         });
 
