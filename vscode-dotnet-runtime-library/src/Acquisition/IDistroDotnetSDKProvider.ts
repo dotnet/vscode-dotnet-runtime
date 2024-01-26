@@ -274,7 +274,11 @@ export abstract class IDistroDotnetSDKProvider {
 
         const baseCommands = (Object.values(this.distroJson[this.distroVersion.distro])
             .filter((x : any) => x && Array.isArray(x) && ((x[0] as CommandExecutorCommand).commandParts))).flat();
-        const preInstallCommands = this.myVersionDetails()[this.preinstallCommandKey] as CommandExecutorCommand[];
+        let preInstallCommands = this.myVersionDetails()[this.preinstallCommandKey] as CommandExecutorCommand[];
+        if(!preInstallCommands)
+        {
+            preInstallCommands = [];
+        }
         const sudoCommands = (baseCommands as CommandExecutorCommand[]).concat(preInstallCommands).filter(x => x.runUnderSudo);
 
         for(const command of sudoCommands)
