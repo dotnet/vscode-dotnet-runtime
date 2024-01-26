@@ -2,7 +2,7 @@
 EXECFOLDER=$1 # First argument is the working folder as this is launched with cwd of /root
 OKSIGNALFILE="$EXECFOLDER/ok.txt"
 COMMANDTORUNFILE="$EXECFOLDER/command.txt"
-OUTPUTFILE="/home/viru/om.txt"
+OUTPUTFILE="/home/test_output_.txt"
 end=$((SECONDS+3600))
 while true
 do
