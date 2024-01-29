@@ -1,9 +1,10 @@
-/* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ */
+/*---------------------------------------------------------------------------------------------
+*  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
+*--------------------------------------------------------------------------------------------*/
 
 import * as path from 'path';
+import * as os from 'os';
 
 import { runTests } from 'vscode-test';
 
@@ -16,9 +17,23 @@ async function main() {
     // The path to the extension test runner script
     // Passed to --extensionTestsPath
     const extensionTestsPath = path.resolve(__dirname, './index');
+    let platformValue = '';
+    switch(os.platform())
+    {
+      case 'win32':
+        platformValue = 'win32-x64-archive';
+        break;
+      case 'darwin':
+        platformValue = 'darwin';
+        break;
+      case 'linux':
+        platformValue = 'linux-x64';
+        break;
+    }
 
     // Download VS Code, unzip it and run the integration test
     await runTests({
+      ...(platformValue !== '' && {platform: platformValue}),
       extensionDevelopmentPath,
       extensionTestsPath,
       launchArgs: [

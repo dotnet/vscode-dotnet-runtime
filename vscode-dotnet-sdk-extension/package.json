@@ -13,10 +13,10 @@
 	"description": "This extension installs and manages different versions of the .NET SDK.",
 	"appInsightsKey": "02dc18e0-7494-43b2-b2a3-18ada5fcb522",
 	"icon": "images/dotnetIcon.png",
-	"version": "0.9.0",
+	"version": "2.0.1",
 	"publisher": "ms-dotnettools",
 	"engines": {
-		"vscode": "^1.72.0"
+		"vscode": "^1.74.0"
 	},
 	"preview": true,
 	"categories": [
@@ -57,12 +57,16 @@
 				"dotnetSDKAcquisitionExtension.enableTelemetry": {
 					"type": "boolean",
 					"default": true,
-					"description": "Enable Telemetry for the .NET SDK Install Tool."
+					"description": "Enable Telemetry for the .NET SDK Install Tool. Restart VS Code to apply changes."
 				},
 				"dotnetSDKAcquisitionExtension.installTimeoutValue": {
 					"type": "number",
 					"default": 600,
 					"description": "Timeout for installing .NET SDK in seconds."
+				},
+				"dotnetAcquisitionExtension.proxyUrl": {
+					"type": "string",
+					"description": "URL to a proxy if you use one, such as: https://proxy:port"
 				}
 			}
 		}
@@ -70,7 +74,10 @@
 	"scripts": {
 		"vscode:prepublish": "npm run compile-all && npm install && webpack --mode production",
 		"vscode:uninstall": "node ./dist/ExtensionUninstall",
-		"compile": "npm run clean && tsc -p ./",
+		"compile": "npm run clean && tsc -p ./ && npm run mockPack",
+		"mockPack": "run-script-os",
+		"mockPack:darwin:linux": "cd .. && sh ./mock-webpack.sh && cd vscode-dotnet-sdk-extension",
+		"mockPack:win32": "pushd .. && @powershell -NoProfile -ExecutionPolicy Unrestricted -Command ./mock-webpack.ps1 && popd",
 		"watch": "npm run compile && tsc -watch -p ./",
 		"test": "npm run compile --silent && node ./dist/test/functional/runTest.js",
 		"clean": "rimraf dist",
@@ -84,7 +91,7 @@
 		"@types/mocha": "^9.0.0",
 		"@types/node": "16.11.7",
 		"@types/rimraf": "3.0.2",
-		"@types/vscode": "1.62.0",
+		"@types/vscode": "1.74.0",
 		"array-buffer-byte-length": "^1.0.0",
 		"aws4": "^1.12.0",
 		"axios": "^1.3.4",
@@ -102,6 +109,7 @@
 		"mocha": "^9.1.3",
 		"open": "^8.4.0",
 		"rimraf": "3.0.2",
+		"run-script-os": "^1.1.6",
 		"shelljs": "^0.8.5",
 		"source-map-support": "^0.5.21",
 		"ts-loader": "^9.2.6",

@@ -78,4 +78,7 @@ if (! $?)
 }
 popd
 
+#################### Copy Library Artifacts ####################
+& "$(Split-Path $MyInvocation.MyCommand.Path)/mock-webpack.ps1"
+
 Write-Host "Build Succeeded" -ForegroundColor $successColor

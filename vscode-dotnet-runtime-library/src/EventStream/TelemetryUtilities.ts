@@ -1,11 +1,17 @@
- /* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ */
+ /*---------------------------------------------------------------------------------------------
+*  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
+*--------------------------------------------------------------------------------------------*/
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { TextEncoder } from 'util';
+import { CommandExecutor } from '../Utils/CommandExecutor';
+import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
+import { IEventStream } from './EventStream';
+import { DotnetTelemetrySettingEvent } from './EventStreamEvents';
+import { IUtilityContext } from '../Utils/IUtilityContext';
+import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 
 export class TelemetryUtilities
 {
@@ -40,5 +46,55 @@ export class TelemetryUtilities
             return hashedPathsString;
         });
         return hashedPathsString;
+    }
+
+    static async setDotnetSDKTelemetryToMatch(isExtensionTelemetryEnabled : boolean, extensionContext : IVSCodeExtensionContext,
+        acquisitionContext : IAcquisitionWorkerContext | null, utilityContext : IUtilityContext)
+    {
+        if(!TelemetryUtilities.isTelemetryEnabled(isExtensionTelemetryEnabled, utilityContext))
+        {
+            TelemetryUtilities.logTelemetryChange(`Before disabling .NET SDK telemetry:`, isExtensionTelemetryEnabled, acquisitionContext?.eventStream, utilityContext);
+
+            await new CommandExecutor(acquisitionContext, utilityContext).setEnvironmentVariable(
+                'DOTNET_CLI_TELEMETRY_OPTOUT',
+                'true',
+                extensionContext,
+
+`Telemetry is disabled for the .NET Install Tool, but we were unable to turn off the .NET SDK telemetry.
+To disable .NET SDK telemetry, set the environment variable DOTNET_CLI_TELEMETRY_OPTOUT to true.`,
+
+`The .NET Install Tool will not collect telemetry. However, the .NET SDK does collect telemetry.
+To disable .NET SDK telemetry, set the environment variable DOTNET_CLI_TELEMETRY_OPTOUT to true.`);
+
+            TelemetryUtilities.logTelemetryChange(`After disabling .NET SDK telemetry:`, isExtensionTelemetryEnabled, acquisitionContext?.eventStream, utilityContext);
+        }
+        else
+        {
+            utilityContext.ui.showWarningMessage(
+`The .NET tools collect usage data in order to help us improve your experience. It is collected by Microsoft and shared with the community. You can opt-out of telemetry by setting the DOTNET_CLI_TELEMETRY_OPTOUT environment variable to '1' or 'true' using your favorite shell.
+Read more about .NET CLI Tools telemetry: https://aka.ms/dotnet-cli-telemetry`,
+            () => {/* No Callback */}, );
+            TelemetryUtilities.logTelemetryChange(`Unchanged Telemetry Settings.`, isExtensionTelemetryEnabled, acquisitionContext?.eventStream, utilityContext);
+        }
+    }
+
+    static isDotnetSDKTelemetryDisabled()
+    {
+        const optOut = process.env.DOTNET_CLI_TELEMETRY_OPTOUT;
+        return optOut && optOut !== 'false' && optOut !== '0';
+    }
+
+    static isTelemetryEnabled(isExtensionTelemetryEnabled : boolean, utilityContext : IUtilityContext)
+    {
+        const isVSCodeTelemetryEnabled = utilityContext.vsCodeEnv.isTelemetryEnabled();
+        return isVSCodeTelemetryEnabled && isExtensionTelemetryEnabled;
+    }
+
+    static logTelemetryChange(changeMessage : string, isExtensionTelemetryEnabled : boolean, eventStream : IEventStream | undefined, utilityContext : IUtilityContext) : void
+    {
+        eventStream?.post(new DotnetTelemetrySettingEvent(`Telemetry Setting Change: ${changeMessage}
+.NET SDK Setting: ${!TelemetryUtilities.isDotnetSDKTelemetryDisabled()},
+Extension Setting: ${isExtensionTelemetryEnabled}
+VS Code Setting: ${utilityContext.vsCodeEnv.isTelemetryEnabled()}.`))
     }
 }

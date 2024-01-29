@@ -1,9 +1,8 @@
-/* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ */
+/*---------------------------------------------------------------------------------------------
+*  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
+*--------------------------------------------------------------------------------------------*/
 
-import * as cp from 'child_process';
 import * as fs from 'fs';
 import open = require('open');
 import * as os from 'os';
@@ -11,7 +10,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import {
     AcquireErrorConfiguration,
-    AcquisitionInvoker,
+    AcquisitionInvoker as LocalAcquisitionInvoker,
     callWithErrorHandling,
     DotnetAcquisitionRequested,
     DotnetAcquisitionStatusRequested,
@@ -34,12 +33,18 @@ import {
     registerEventStream,
     SdkInstallationDirectoryProvider,
     VersionResolver,
+    VSCodeExtensionContext,
+    VSCodeEnvironment,
     WebRequestWorker,
     IWindowDisplayWorker,
     WindowDisplayWorker,
+    Debugging,
+    CommandExecutor,
 } from 'vscode-dotnet-runtime-library';
 
-import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquistionId';
+import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
+import { GlobalInstallerResolver } from 'vscode-dotnet-runtime-library/dist/Acquisition/GlobalInstallerResolver';
+import { IAcquisitionWorkerContext } from 'vscode-dotnet-runtime-library/dist/Acquisition/IAcquisitionWorkerContext';
 
 // tslint:disable no-var-requires
 const packageJson = require('../package.json');
@@ -48,6 +53,7 @@ const packageJson = require('../package.json');
 namespace configKeys {
     export const installTimeoutValue = 'installTimeoutValue';
     export const enableTelemetry = 'enableTelemetry';
+    export const proxyUrl = 'proxyUrl';
 }
 namespace commandKeys {
     export const acquire = 'acquire';
@@ -62,7 +68,6 @@ const commandPrefix = 'dotnet-sdk';
 const configPrefix = 'dotnetSDKAcquisitionExtension';
 const displayChannelName = '.NET SDK';
 const defaultTimeoutValue = 600;
-const pathTroubleshootingOption = 'Troubleshoot';
 const troubleshootingUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-sdk.md';
 const knownExtensionIds = ['ms-dotnettools.sample-extension', 'ms-dotnettools.vscode-dotnet-pack'];
 
@@ -71,18 +76,27 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         extensionContext.extensionConfiguration :
         vscode.workspace.getConfiguration(configPrefix);
 
+    const displayWorker = extensionContext ? extensionContext.displayWorker : new WindowDisplayWorker();
+    const utilContext =
+    {
+        ui: displayWorker,
+        vsCodeEnv: new VSCodeEnvironment()
+    }
+
+    const vsCodeExtensionContext = new VSCodeExtensionContext(context);
+
+    const isExtensionTelemetryEnabled = enableExtensionTelemetry(extensionConfiguration, configKeys.enableTelemetry);
     const eventStreamContext = {
         displayChannelName,
         logPath: context.logPath,
         extensionId: dotnetCoreAcquisitionExtensionId,
-        enableTelemetry: enableExtensionTelemetry(extensionConfiguration, configKeys.enableTelemetry),
+        enableTelemetry: isExtensionTelemetryEnabled,
         telemetryReporter: extensionContext ? extensionContext.telemetryReporter : undefined,
         showLogCommand: `${commandPrefix}.${commandKeys.showAcquisitionLog}`,
         packageJson,
     } as IEventStreamContext;
-    const [eventStream, outputChannel, loggingObserver, eventStreamObservers] = registerEventStream(eventStreamContext);
+    const [eventStream, outputChannel, loggingObserver, eventStreamObservers, telemetryObserver] = registerEventStream(eventStreamContext, vsCodeExtensionContext, utilContext);
 
-    const displayWorker = extensionContext ? extensionContext.displayWorker : new WindowDisplayWorker();
     const extensionConfigWorker = new ExtensionConfigurationWorker(extensionConfiguration, undefined);
     const issueContext = (errorConfiguration: ErrorConfiguration | undefined, commandName: string, version?: string) => {
         return {
@@ -98,8 +112,10 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         } as IIssueContext;
     };
 
+
     const timeoutValue = extensionConfiguration.get<number>(configKeys.installTimeoutValue);
     const resolvedTimeoutSeconds = timeoutValue === undefined ? defaultTimeoutValue : timeoutValue;
+
     let storagePath: string;
     if (os.platform() === 'win32') {
         // Install to %AppData% on windows to avoid running into long path errors
@@ -111,23 +127,24 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         }
     }
 
-    const acquisitionWorker = new DotnetCoreAcquisitionWorker({
+    const acquisitionContext : IAcquisitionWorkerContext = {
         storagePath,
         extensionState: context.globalState,
         eventStream,
-        acquisitionInvoker: new AcquisitionInvoker(context.globalState, eventStream, resolvedTimeoutSeconds),
         installationValidator: new InstallationValidator(eventStream),
-        timeoutValue: resolvedTimeoutSeconds,
+        timeoutSeconds: resolvedTimeoutSeconds,
         installDirectoryProvider: new SdkInstallationDirectoryProvider(storagePath),
-        acquisitionContext : null
-    });
-
-    const versionResolver = new VersionResolver(context.globalState, eventStream, resolvedTimeoutSeconds);
+        acquisitionContext : null,
+        isExtensionTelemetryInitiallyEnabled : isExtensionTelemetryEnabled,
+    };
+    const acquisitionWorker = new DotnetCoreAcquisitionWorker(acquisitionContext, utilContext, vsCodeExtensionContext);
+    const versionResolver = new VersionResolver(acquisitionContext);
 
     const getAvailableVersions = async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) : Promise<IDotnetListVersionsResult | undefined> =>
     {
+
         const versionsResult = await callWithErrorHandling(async () => {
-            const customVersionResolver = new VersionResolver(context.globalState, eventStream, resolvedTimeoutSeconds, customWebWorker);
+            const customVersionResolver = new VersionResolver(acquisitionContext, customWebWorker);
             return customVersionResolver.GetAvailableDotnetVersions(commandContext);
         }, issueContext(commandContext?.errorConfiguration, 'listVersions'));
 
@@ -135,9 +152,14 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     }
 
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) => {
-        if (commandContext.requestingExtensionId === undefined) {
+        Debugging.log(`The SDK Extension Acquire Command was Invoked.`, eventStream);
+
+        if (commandContext.requestingExtensionId === undefined)
+        {
             return Promise.reject('No requesting extension id was provided.');
-        } else if (!knownExtensionIds.includes(commandContext.requestingExtensionId!)) {
+        }
+        else if (!knownExtensionIds.includes(commandContext.requestingExtensionId!))
+        {
             return Promise.reject(`${commandContext.requestingExtensionId} is not a known requesting extension id. The vscode-dotnet-sdk extension can only be used by ms-dotnettools.vscode-dotnet-pack.`);
         }
 
@@ -145,13 +167,41 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             eventStream.post(new DotnetSDKAcquisitionStarted(commandContext.requestingExtensionId));
 
             eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
-            const resolvedVersion = await versionResolver.getFullSDKVersion(commandContext.version);
             acquisitionWorker.setAcquisitionContext(commandContext);
-            const dotnetPath = await acquisitionWorker.acquireSDK(resolvedVersion);
-            const pathEnvVar = path.dirname(dotnetPath.dotnetPath);
-            setPathEnvVar(pathEnvVar, displayWorker, context.environmentVariableCollection);
-            return dotnetPath;
-        }, issueContext(commandContext.errorConfiguration, 'acquireSDK'));
+            telemetryObserver?.setAcquisitionContext(acquisitionContext, commandContext);
+
+            if(commandContext.installType === 'global')
+            {
+                Debugging.log(`Acquisition Request was remarked as Global.`, eventStream);
+
+                if(commandContext.version === '' || !commandContext.version)
+                {
+                    throw Error(`No version was defined to install.`);
+                }
+
+                const globalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, commandContext.version);
+                const dotnetPath = await acquisitionWorker.acquireGlobalSDK(globalInstallerResolver);
+
+                new CommandExecutor(acquisitionContext, utilContext).setPathEnvVar(dotnetPath.dotnetPath, troubleshootingUrl, displayWorker, vsCodeExtensionContext, true);
+                Debugging.log(`Returning path: ${dotnetPath}.`, eventStream);
+                return dotnetPath;
+            }
+            else
+            {
+                Debugging.log(`Acquisition Request was remarked as local.`, eventStream);
+
+                const resolvedVersion = await versionResolver.getFullSDKVersion(commandContext.version);
+                const acquisitionInvoker = new LocalAcquisitionInvoker(acquisitionContext, utilContext);
+                const dotnetPath = await acquisitionWorker.acquireSDK(resolvedVersion, acquisitionInvoker);
+
+                const pathEnvVar = path.dirname(dotnetPath.dotnetPath);
+                new CommandExecutor(acquisitionContext, utilContext).setPathEnvVar(pathEnvVar, troubleshootingUrl, displayWorker, vsCodeExtensionContext, false);
+                return dotnetPath;
+            }
+        }, issueContext(commandContext.errorConfiguration, 'acquireSDK'), commandContext.requestingExtensionId, acquisitionContext);
+
+        Debugging.log(`Returning Path Result ${pathResult}.`, eventStream);
+
         return pathResult;
     });
 
@@ -165,7 +215,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         return pathResult;
     });
 
-    const dotnetlistVersionsRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listVersions}`,
+    const dotnetListVersionsRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listVersions}`,
         async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) =>
     {
         return getAvailableVersions(commandContext, customWebWorker);
@@ -206,61 +256,10 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     context.subscriptions.push(
         dotnetAcquireRegistration,
         dotnetAcquireStatusRegistration,
-        dotnetlistVersionsRegistration,
+        dotnetListVersionsRegistration,
         dotnetRecommendedVersionRegistration,
         dotnetUninstallAllRegistration,
         showOutputChannelRegistration,
         reportIssueRegistration,
         ...eventStreamObservers);
-}
-
-function setPathEnvVar(pathAddition: string, displayWorker: IWindowDisplayWorker, environmentVariables: vscode.EnvironmentVariableCollection) {
-    // Set user PATH variable
-    let pathCommand: string | undefined;
-    if (os.platform() === 'win32') {
-        pathCommand = getWindowsPathCommand(pathAddition);
-    } else {
-        pathCommand = getLinuxPathCommand(pathAddition);
-    }
-
-    if (pathCommand !== undefined) {
-        runPathCommand(pathCommand, displayWorker);
-    }
-
-    // Set PATH for VSCode terminal instances
-    if (!process.env.PATH!.includes(pathAddition)) {
-        environmentVariables.append('PATH', path.delimiter + pathAddition);
-        process.env.PATH += path.delimiter + pathAddition;
-    }
-}
-
-function getLinuxPathCommand(pathAddition: string): string | undefined {
-    const profileFile = os.platform() === 'darwin' ? path.join(os.homedir(), '.zshrc') : path.join(os.homedir(), '.profile');
-    if (fs.existsSync(profileFile) && fs.readFileSync(profileFile).toString().includes(pathAddition)) {
-        // No need to add to PATH again
-        return undefined;
-    }
-    return `echo 'export PATH="${pathAddition}:$PATH"' >> ${profileFile}`;
-}
-
-function getWindowsPathCommand(pathAddition: string): string | undefined {
-    if (process.env.PATH && process.env.PATH.includes(pathAddition)) {
-        // No need to add to PATH again
-        return undefined;
-    }
-    return `for /F "skip=2 tokens=1,2*" %A in ('%SystemRoot%\\System32\\reg.exe query "HKCU\\Environment" /v "Path" 2^>nul') do ` +
-        `(%SystemRoot%\\System32\\reg.exe ADD "HKCU\\Environment" /v Path /t REG_SZ /f /d "${pathAddition};%C")`;
-}
-
-function runPathCommand(pathCommand: string, displayWorker: IWindowDisplayWorker) {
-    try {
-        cp.execSync(pathCommand);
-    } catch (error) {
-        displayWorker.showWarningMessage(`Unable to add SDK to the PATH: ${error}`,
-            async (response: string | undefined) => {
-                if (response === pathTroubleshootingOption) {
-                    open(`${troubleshootingUrl}#unable-to-add-to-path`);
-                }
-            }, pathTroubleshootingOption);
-    }
 }
