@@ -58,8 +58,6 @@ namespace configKeys {
 namespace commandKeys {
     export const acquire = 'acquire';
     export const acquireStatus = 'acquireStatus';
-    export const listVersions = 'listVersions'
-    export const recommendedVersion = 'recommendedVersion'
     export const uninstallAll = 'uninstallAll';
     export const showAcquisitionLog = 'showAcquisitionLog';
     export const reportIssue = 'reportIssue';
@@ -140,17 +138,6 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     const acquisitionWorker = new DotnetCoreAcquisitionWorker(acquisitionContext, utilContext, vsCodeExtensionContext);
     const versionResolver = new VersionResolver(acquisitionContext);
 
-    const getAvailableVersions = async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) : Promise<IDotnetListVersionsResult | undefined> =>
-    {
-
-        const versionsResult = await callWithErrorHandling(async () => {
-            const customVersionResolver = new VersionResolver(acquisitionContext, customWebWorker);
-            return customVersionResolver.GetAvailableDotnetVersions(commandContext);
-        }, issueContext(commandContext?.errorConfiguration, 'listVersions'));
-
-        return versionsResult;
-    }
-
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) => {
         Debugging.log(`The SDK Extension Acquire Command was Invoked.`, eventStream);
 
@@ -215,29 +202,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         return pathResult;
     });
 
-    const dotnetListVersionsRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listVersions}`,
-        async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) =>
-    {
-        return getAvailableVersions(commandContext, customWebWorker);
-    });
 
-    const dotnetRecommendedVersionRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.recommendedVersion}`,
-    async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) : Promise<IDotnetVersion> =>
-    {
-        const availableVersions = await getAvailableVersions(commandContext, customWebWorker);
-        const activeSupportVersions = availableVersions?.filter( (version : IDotnetVersion) => version.supportPhase === 'active');
 
-        if (!activeSupportVersions || activeSupportVersions.length < 1)
-        {
-            const err = new Error(`An active-support version of dotnet couldn't be found. Discovered versions: ${JSON.stringify(availableVersions)}`);
-            eventStream.post(new DotnetVersionResolutionError(err as Error, 'recommended'));
-            throw err;
-        }
-
-        // The first item will be the newest version.
-        // For Linux: we should eventually add logic here to check the distro support status.
-        return activeSupportVersions[0];
-    });
 
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallAll}`, async (commandContext: IDotnetUninstallContext | undefined) => {
         await callWithErrorHandling(async () => {
@@ -256,8 +222,6 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     context.subscriptions.push(
         dotnetAcquireRegistration,
         dotnetAcquireStatusRegistration,
-        dotnetListVersionsRegistration,
-        dotnetRecommendedVersionRegistration,
         dotnetUninstallAllRegistration,
         showOutputChannelRegistration,
         reportIssueRegistration,

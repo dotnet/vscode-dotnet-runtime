@@ -43,6 +43,18 @@ import {
     GlobalInstallerResolver,
     SdkInstallationDirectoryProvider,
     CommandExecutor,
+    IDotnetListVersionsContext,
+    WebRequestWorker,
+    IDotnetVersion,
+    DotnetVersionResolutionError,
+    IDotnetListVersionsResult,
+    LinuxVersionResolver,
+    LinuxInstallType,
+    GlobalAcquisitionContextMenuOpened,
+    UserManualInstallVersionChosen,
+    UserManualInstallRequested,
+    UserManualInstallSuccess,
+    UserManualInstallFailure,
 } from 'vscode-dotnet-runtime-library';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 import { IAcquisitionWorkerContext } from 'vscode-dotnet-runtime-library/dist/Acquisition/IAcquisitionWorkerContext';
@@ -62,6 +74,9 @@ namespace commandKeys {
     export const acquireGlobalSDK = 'acquireGlobalSDK';
     export const acquireStatus = 'acquireStatus';
     export const uninstallAll = 'uninstallAll';
+    export const listVersions = 'listVersions';
+    export const recommendedVersion = 'recommendedVersion'
+    export const globalAcquireSDKPublic = 'acquireGlobalSDKPublic';
     export const showAcquisitionLog = 'showAcquisitionLog';
     export const ensureDotnetDependencies = 'ensureDotnetDependencies';
     export const reportIssue = 'reportIssue';
@@ -194,6 +209,61 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         return pathResult;
     });
 
+    const dotnetListVersionsRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listVersions}`,
+    async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) =>
+    {
+        return getAvailableVersions(commandContext, customWebWorker);
+    });
+
+    const dotnetRecommendedVersionRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.recommendedVersion}`,
+    async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) : Promise<string> =>
+    {
+        const availableVersions = await getAvailableVersions(commandContext, customWebWorker);
+        const activeSupportVersions = availableVersions?.filter( (version : IDotnetVersion) => version.supportPhase === 'active');
+
+        if (!activeSupportVersions || activeSupportVersions.length < 1)
+        {
+            const err = new Error(`An active-support version of dotnet couldn't be found. Discovered versions: ${JSON.stringify(availableVersions)}`);
+            globalEventStream.post(new DotnetVersionResolutionError(err as Error, 'recommended'));
+            throw err;
+        }
+
+        // The first item will be the newest version.
+        return activeSupportVersions[0].version;
+    });
+
+    const acquireGlobalSDKPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.globalAcquireSDKPublic}`, async (commandContext: IDotnetAcquireContext) =>
+    {
+        globalEventStream.post(new GlobalAcquisitionContextMenuOpened(`The user has opened the global SDK acquisition context menu.`));
+
+        const recommendedVersion : string = await vscode.commands.executeCommand('dotnet.getRecommendedVersion') ?? '';
+
+        const version = await vscode.window.showInputBox(
+        {
+                placeHolder: recommendedVersion,
+                value: recommendedVersion,
+                prompt: 'The .NET SDK version. You can use different formats: 5, 3.1, 7.0.3xx, 6.0.201, etc.',
+        }) ?? '';
+
+        globalEventStream.post(new UserManualInstallVersionChosen(`The user has chosen to install the .NET SDK version ${version}.`));
+
+        try
+        {
+            globalEventStream.post(new UserManualInstallRequested(`Starting to install the .NET SDK ${version} via a user request.`));
+
+            await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
+            let commandContext : IDotnetAcquireContext = { version: version, requestingExtensionId: 'user', installType: 'global' };
+            await vscode.commands.executeCommand('dotnet.acquireGlobalSDK', commandContext);
+            globalEventStream.post(new UserManualInstallSuccess(`The .NET SDK ${version} was successfully installed.`));
+
+        }
+        catch (error)
+        {
+            globalEventStream.post(new UserManualInstallFailure((error as Error), `The .NET SDK ${version} failed to install. Error: ${(error as Error).toString()}`));
+            vscode.window.showErrorMessage((error as Error).toString());
+        }
+    });
+
     const dotnetAcquireStatusRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquireStatus}`, async (commandContext: IDotnetAcquireContext) => {
         const pathResult = callWithErrorHandling(async () => {
             globalEventStream.post(new DotnetAcquisitionStatusRequested(commandContext.version, commandContext.requestingExtensionId));
@@ -249,6 +319,33 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         });
     }
 
+    const getAvailableVersions = async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) : Promise<IDotnetListVersionsResult | undefined> =>
+    {
+        const customVersionResolver = new VersionResolver(sdkContext, customWebWorker);
+
+        if(os.platform() !== 'linux')
+        {
+            const versionsResult = await callWithErrorHandling(async () =>
+            {
+                return customVersionResolver.GetAvailableDotnetVersions(commandContext);
+            }, getIssueContext(existingPathConfigWorker)(commandContext?.errorConfiguration, 'getAvailableVersions'));
+
+            return versionsResult;
+        }
+        else
+        {
+            const linuxResolver = new LinuxVersionResolver(sdkContext, utilContext);
+            const suggestedVersion = await linuxResolver.getRecommendedDotnetVersion('sdk' as LinuxInstallType);
+            return [
+                { version: suggestedVersion, channelVersion: `${customVersionResolver.getMajorMinor(suggestedVersion)}`,
+                supportStatus: Number(customVersionResolver.getMajor(suggestedVersion)) % 2 === 0 ? 'lts' : 'sts',
+                supportPhase: 'eol' } // Assumption : The newest version is 'active' support, but we can't gaurantee that.
+                // Be on the conservative side to say everything is 'eol' until we would make a change to query for the real data.
+                // This data should not be used based on the purpose of this API, so it's okay to leave it with a placeholder.
+            ];
+        }
+    }
+
     function getAcquisitionWorkerContext(isRuntimeInstall : boolean) : IAcquisitionWorkerContext
     {
         return {
@@ -290,6 +387,9 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         dotnetAcquireRegistration,
         dotnetAcquireStatusRegistration,
         dotnetAcquireGlobalSDKRegistration,
+        acquireGlobalSDKPublicRegistration,
+        dotnetListVersionsRegistration,
+        dotnetRecommendedVersionRegistration,
         dotnetUninstallAllRegistration,
         showOutputChannelRegistration,
         ensureDependenciesRegistration,

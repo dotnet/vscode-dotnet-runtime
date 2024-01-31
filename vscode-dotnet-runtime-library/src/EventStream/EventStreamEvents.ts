@@ -155,7 +155,7 @@ export abstract class DotnetInstallExpectedAbort extends IEvent {
 }
 
 export class SuppressedAcquisitionError extends IEvent {
-    public readonly eventName = 'SuppressedAcquisitionError';
+    public eventName = 'SuppressedAcquisitionError';
     public readonly type = EventType.SuppressedAcquisitionError;
 
     constructor(public readonly error: Error, public readonly supplementalMessage : string) {
@@ -173,6 +173,10 @@ export class SuppressedAcquisitionError extends IEvent {
 
 export class DotnetInstallScriptAcquisitionError extends DotnetAcquisitionError {
     public readonly eventName = 'DotnetInstallScriptAcquisitionError';
+}
+
+export class UserManualInstallFailure extends SuppressedAcquisitionError {
+    eventName = 'UserManualInstallFailure';
 }
 
 export class OSXOpenNotAvailableError extends DotnetAcquisitionError {
@@ -470,6 +474,22 @@ export class DotnetCommandNotFoundEvent extends DotnetCustomMessageEvent {
 
 export class DotnetFileIntegrityCheckEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetFileIntegrityCheckEvent';
+}
+
+export class GlobalAcquisitionContextMenuOpened extends DotnetCustomMessageEvent {
+    public readonly eventName = 'GlobalAcquisitionContextMenuOpened';
+}
+
+export class UserManualInstallVersionChosen extends DotnetCustomMessageEvent {
+    public readonly eventName = 'UserManualInstallVersionChosen';
+}
+
+export class UserManualInstallRequested extends DotnetCustomMessageEvent {
+    public readonly eventName = 'UserManualInstallRequested';
+}
+
+export class UserManualInstallSuccess extends DotnetCustomMessageEvent {
+    public readonly eventName = 'UserManualInstallSuccess';
 }
 
 export class CommandExecutionStdOut extends DotnetCustomMessageEvent {

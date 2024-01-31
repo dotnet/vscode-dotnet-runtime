@@ -38,6 +38,8 @@
 		"onCommand:dotnet.acquire",
 		"onCommand:dotnet.acquireStatus",
 		"onCommand:dotnet.acquireGlobalSDK",
+		"onCommand:dotnet.listVersions",
+		"onCommand:dotnet.recommendedVersion",
 		"onCommand:dotnet.uninstallAll",
 		"onCommand:dotnet.showAcquisitionLog",
 		"onCommand:dotnet.ensureDotnetDependencies"
@@ -50,6 +52,11 @@
 				"command": "dotnet.reportIssue",
 				"title": "Report an issue with the .NET Install Tool.",
 				"category": ".NET Install Tool"
+			},
+			{
+				"command": "dotnet.acquireGlobalSDKPublic",
+				"title": "Install the .NET SDK System-Wide.",
+				"category": "Sample"
 			}
 		],
 		"configuration": {
