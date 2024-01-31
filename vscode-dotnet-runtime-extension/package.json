@@ -56,7 +56,7 @@
 			{
 				"command": "dotnet.acquireGlobalSDKPublic",
 				"title": "Install the .NET SDK System-Wide.",
-				"category": "Sample"
+				"category": ".NET Install Tool"
 			}
 		],
 		"configuration": {

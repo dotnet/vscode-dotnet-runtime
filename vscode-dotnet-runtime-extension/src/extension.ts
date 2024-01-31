@@ -236,7 +236,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     {
         globalEventStream.post(new GlobalAcquisitionContextMenuOpened(`The user has opened the global SDK acquisition context menu.`));
 
-        const recommendedVersion : string = await vscode.commands.executeCommand('dotnet.getRecommendedVersion') ?? '';
+        const recommendedVersion : string = await vscode.commands.executeCommand('dotnet.recommendedVersion') ?? '';
 
         const version = await vscode.window.showInputBox(
         {
