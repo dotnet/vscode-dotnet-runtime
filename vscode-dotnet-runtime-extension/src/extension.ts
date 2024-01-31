@@ -339,9 +339,10 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             return [
                 { version: suggestedVersion, channelVersion: `${customVersionResolver.getMajorMinor(suggestedVersion)}`,
                 supportStatus: Number(customVersionResolver.getMajor(suggestedVersion)) % 2 === 0 ? 'lts' : 'sts',
-                supportPhase: 'eol' } // Assumption : The newest version is 'active' support, but we can't gaurantee that.
-                // Be on the conservative side to say everything is 'eol' until we would make a change to query for the real data.
+                supportPhase: 'active' } // Assumption : The newest version is 'active' support, but we can't gaurantee that.
                 // This data should not be used based on the purpose of this API, so it's okay to leave it with a placeholder.
+                // If the linux version is too old it will eventually support no active versions of .NET, which would cause a failure.
+                // The best we can give it is the newest working version, which is the most likely to be supported.
             ];
         }
     }
