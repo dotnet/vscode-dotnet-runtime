@@ -272,7 +272,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     const apiContext: IDotnetListVersionsContext = { listRuntimes: false };
     const result = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet.listVersions', apiContext, webWorker);
     assert.exists(result);
-    assert.equal(result?.length, 2);
+    assert.equal(result?.length, 2, `It can find both versions of the SDKs. Found: ${result}`);
     assert.equal(result?.filter((sdk : any) => sdk.version === '7.0.202').length, 1, 'The mock SDK with the expected version {7.0.200} was not found by the API parsing service.');
     assert.equal(result?.filter((sdk : any) => sdk.channelVersion === '7.0').length, 1, 'The mock SDK with the expected channel version {7.0} was not found by the API parsing service.');
     assert.equal(result?.filter((sdk : any) => sdk.supportPhase === 'active').length, 1, 'The mock SDK with the expected support phase of {active} was not found by the API parsing service.');
@@ -281,7 +281,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     apiContext.listRuntimes = true;
     const runtimeResult = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet.listVersions', apiContext, webWorker);
     assert.exists(runtimeResult);
-    assert.equal(runtimeResult?.length, 2);
+    assert.equal(runtimeResult?.length, 2,  `It can find both versions of the runtime. Found: ${result}`);
     assert.equal(runtimeResult?.filter((runtime : any) => runtime.version === '7.0.4').length, 1, 'The mock Runtime with the expected version was not found by the API parsing service.');
   }).timeout(standardTimeoutTime);
 

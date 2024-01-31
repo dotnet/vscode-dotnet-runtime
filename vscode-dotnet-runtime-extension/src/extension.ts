@@ -212,13 +212,13 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     const dotnetListVersionsRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listVersions}`,
     async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) =>
     {
-        return getAvailableVersions(commandContext, customWebWorker);
+        return getAvailableVersions(commandContext, customWebWorker, false);
     });
 
     const dotnetRecommendedVersionRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.recommendedVersion}`,
     async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) : Promise<string> =>
     {
-        const availableVersions = await getAvailableVersions(commandContext, customWebWorker);
+        const availableVersions = await getAvailableVersions(commandContext, customWebWorker, true);
         const activeSupportVersions = availableVersions?.filter( (version : IDotnetVersion) => version.supportPhase === 'active');
 
         if (!activeSupportVersions || activeSupportVersions.length < 1)
@@ -238,28 +238,28 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
         const recommendedVersion : string = await vscode.commands.executeCommand('dotnet.recommendedVersion') ?? '';
 
-        const version = await vscode.window.showInputBox(
+        const chosenVersion = await vscode.window.showInputBox(
         {
                 placeHolder: recommendedVersion,
                 value: recommendedVersion,
                 prompt: 'The .NET SDK version. You can use different formats: 5, 3.1, 7.0.3xx, 6.0.201, etc.',
         }) ?? '';
 
-        globalEventStream.post(new UserManualInstallVersionChosen(`The user has chosen to install the .NET SDK version ${version}.`));
+        globalEventStream.post(new UserManualInstallVersionChosen(`The user has chosen to install the .NET SDK version ${chosenVersion}.`));
 
         try
         {
-            globalEventStream.post(new UserManualInstallRequested(`Starting to install the .NET SDK ${version} via a user request.`));
+            globalEventStream.post(new UserManualInstallRequested(`Starting to install the .NET SDK ${chosenVersion} via a user request.`));
 
             await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
-            let commandContext : IDotnetAcquireContext = { version: version, requestingExtensionId: 'user', installType: 'global' };
-            await vscode.commands.executeCommand('dotnet.acquireGlobalSDK', commandContext);
-            globalEventStream.post(new UserManualInstallSuccess(`The .NET SDK ${version} was successfully installed.`));
+            const userCommandContext : IDotnetAcquireContext = { version: chosenVersion, requestingExtensionId: 'user', installType: 'global' };
+            await vscode.commands.executeCommand('dotnet.acquireGlobalSDK', userCommandContext);
+            globalEventStream.post(new UserManualInstallSuccess(`The .NET SDK ${chosenVersion} was successfully installed.`));
 
         }
         catch (error)
         {
-            globalEventStream.post(new UserManualInstallFailure((error as Error), `The .NET SDK ${version} failed to install. Error: ${(error as Error).toString()}`));
+            globalEventStream.post(new UserManualInstallFailure((error as Error), `The .NET SDK ${chosenVersion} failed to install. Error: ${(error as Error).toString()}`));
             vscode.window.showErrorMessage((error as Error).toString());
         }
     });
@@ -319,11 +319,12 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         });
     }
 
-    const getAvailableVersions = async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) : Promise<IDotnetListVersionsResult | undefined> =>
+    const getAvailableVersions = async (commandContext: IDotnetListVersionsContext | undefined,
+        customWebWorker: WebRequestWorker | undefined, onRecommendationMode : boolean) : Promise<IDotnetListVersionsResult | undefined> =>
     {
         const customVersionResolver = new VersionResolver(sdkContext, customWebWorker);
 
-        if(os.platform() !== 'linux')
+        if(os.platform() !== 'linux' && !onRecommendationMode)
         {
             const versionsResult = await callWithErrorHandling(async () =>
             {
@@ -336,13 +337,17 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         {
             const linuxResolver = new LinuxVersionResolver(sdkContext, utilContext);
             const suggestedVersion = await linuxResolver.getRecommendedDotnetVersion('sdk' as LinuxInstallType);
+            const osAgnosticVersionData = await getAvailableVersions(commandContext, customWebWorker, !onRecommendationMode);
+            const resolvedSupportPhase = osAgnosticVersionData?.find((version : IDotnetVersion) =>
+                customVersionResolver.getMajorMinor(version.version) === customVersionResolver.getMajorMinor(suggestedVersion))?.supportPhase ?? 'active';
+                // Assumption : The newest version is 'active' support, but we can't gaurantee that.
+                // If the linux version is too old it will eventually support no active versions of .NET, which would cause a failure.
+                // The best we can give it is the newest working version, which is the most likely to be supported, and mark it as active so we can use it.
+
             return [
                 { version: suggestedVersion, channelVersion: `${customVersionResolver.getMajorMinor(suggestedVersion)}`,
                 supportStatus: Number(customVersionResolver.getMajor(suggestedVersion)) % 2 === 0 ? 'lts' : 'sts',
-                supportPhase: 'active' } // Assumption : The newest version is 'active' support, but we can't gaurantee that.
-                // This data should not be used based on the purpose of this API, so it's okay to leave it with a placeholder.
-                // If the linux version is too old it will eventually support no active versions of .NET, which would cause a failure.
-                // The best we can give it is the newest working version, which is the most likely to be supported.
+                supportPhase: resolvedSupportPhase }
             ];
         }
     }
