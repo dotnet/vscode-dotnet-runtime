@@ -199,8 +199,15 @@ export abstract class IDistroDotnetSDKProvider {
             {
                 let command = this.myDistroCommands(this.searchCommandKey);
                 command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, packageName);
-                const packageIsAvailableResult = (await this.commandRunner.executeMultipleCommands(command))[0];
-                const packageExists = this.isPackageFoundInSearch(packageIsAvailableResult);
+
+                const packageIsAvailableResult = (await this.commandRunner.executeMultipleCommands(command))[0].trim();
+                const oldReturnStatusSetting = this.commandRunner.returnStatus;
+
+                this.commandRunner.returnStatus = true;
+                const packageAvailableExitCode = (await this.commandRunner.executeMultipleCommands(command))[0].trim();
+                this.commandRunner.returnStatus = oldReturnStatusSetting;
+
+                const packageExists = this.isPackageFoundInSearch(packageIsAvailableResult, packageAvailableExitCode);
                 if(packageExists)
                 {
                     thisVersionPackage.packages.push(packageName);
@@ -337,5 +344,5 @@ export abstract class IDistroDotnetSDKProvider {
         throw err;
     }
 
-    protected abstract isPackageFoundInSearch(resultOfSearchCommand : any) : boolean;
+    protected abstract isPackageFoundInSearch(resultOfSearchCommand : any, searchCommandExitCode : string) : boolean;
 }

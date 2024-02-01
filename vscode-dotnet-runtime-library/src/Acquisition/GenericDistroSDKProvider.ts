@@ -218,7 +218,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         return this.versionResolver.getMajorMinor(fullySpecifiedDotnetVersion);
     }
 
-    protected isPackageFoundInSearch(resultOfSearchCommand: any): boolean {
-        return resultOfSearchCommand !== '';
+    protected isPackageFoundInSearch(resultOfSearchCommand: any, searchCommandExitCode : string): boolean {
+        return resultOfSearchCommand.trim() !== '' && searchCommandExitCode === '0';
     }
 }

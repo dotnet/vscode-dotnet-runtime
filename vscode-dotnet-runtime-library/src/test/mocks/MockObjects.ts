@@ -480,7 +480,7 @@ export class MockDistroProvider extends IDistroDotnetSDKProvider
         return new GenericDistroSDKProvider(this.distroVersion, this.context, getMockUtilityContext()).JsonDotnetVersion(fullySpecifiedDotnetVersion);
     }
 
-    protected isPackageFoundInSearch(resultOfSearchCommand: any): boolean {
+    protected isPackageFoundInSearch(resultOfSearchCommand: any, searchCommandExitCode : string): boolean {
         return true;
     }
 }
