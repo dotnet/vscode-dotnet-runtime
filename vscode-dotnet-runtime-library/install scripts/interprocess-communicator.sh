@@ -15,6 +15,8 @@ do
                 for validCmd in "${@:2}"
                 do
                     if [ "$COMMAND" == "$validCmd" ]; then
+                        # Eventually we should split the cmd file to be line by line instead of space separated,
+                        # but it works for now because the commands are running under sudo
                         IFS=' ' read -ra COMMANDARGS <<< "$COMMAND"
                     fi
                 done
