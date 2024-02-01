@@ -324,7 +324,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     {
         const customVersionResolver = new VersionResolver(sdkContext, customWebWorker);
 
-        if(os.platform() !== 'linux' && !onRecommendationMode)
+        if(os.platform() !== 'linux' || !onRecommendationMode)
         {
             const versionsResult = await callWithErrorHandling(async () =>
             {
