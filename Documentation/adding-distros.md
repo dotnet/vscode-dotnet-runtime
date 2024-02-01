@@ -4,7 +4,8 @@ Our initial support for automated .NET installs on Linux includes Ubuntu and Red
 
 
 
-While we plan on adding more distros in the future to meet the same support policy as VS Code, (which is also rather limited), we are happy to review PRs that add support for more distros. Only a few changes are required, which we will describe here. We are open to hearing your feedback on https://github.com/dotnet/vscode-dotnet-runtime/issues.
+While we plan on adding more distros in the future to meet the same support policy as [VS Code](https://code.visualstudio.com/docs/setup/linux), we are happy to review PRs that add support for more distros. Only a few changes are required, which we will describe here. We are open to hearing your feedback on https://github.com/dotnet/vscode-dotnet-runtime/issues.
+
 
 # Steps to Add Support for your Distro
 
