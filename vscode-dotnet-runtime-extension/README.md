@@ -24,6 +24,8 @@ As of version 2.0.2, you can install the .NET SDK using part of our private API 
 Bring up the command pallete (ctrl + shift + p) and run the command:
 .NET Install Tool - Install the .NET SDK System-Wide.
 
+![Video demonstrating use of the command pallet to install .NET.](https://raw.githubusercontent.com/dotnet/vscode-dotnet-runtime/63b7fca6c714781dc4cb1cdbcb786013f2115098/Documentation/example.gif)
+
 The command will try to find the best version of .NET for you to install, but you can tell it to install other versions as well based on its prompt.
 Note this feature is in-preview, and does not support all distros, WSL, nor preview versions of .NET.
 
