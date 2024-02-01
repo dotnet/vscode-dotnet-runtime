@@ -17,6 +17,18 @@ This extension was probably included as a dependency of one of the following ext
 
 The above extensions call into this extension to provide a unified way of downloading shared .NET Runtimes or .NET SDKs. If you already have an installation of .NET that you'd like to use, see [the troubleshooting section below](#i-already-have-a-net-runtime-or-sdk-installed-and-i-want-to-use-it). If you want to remove this extension completely, you will need to uninstall any extensions that depend on it first. If this extension is uninstalled, any .NET Runtimes installed by it will also be removed.
 
+## Using the extension yourself
+
+As of version 2.0.2, you can install the .NET SDK using part of our private API via the VS Code Command Pallete!
+
+Bring up the command pallete (ctrl + shift + p) and run the command:
+.NET Install Tool - Install the .NET SDK System-Wide.
+
+The command will try to find the best version of .NET for you to install, but you can tell it to install other versions as well based on its prompt.
+Note this feature is in-preview, and does not support all distros, WSL, nor preview versions of .NET.
+
+The rest of the extension functionality is still limited to other extensions that rely on our extension.
+
 ## Troubleshooting
 
 ### I already have a .NET Runtime or SDK installed, and I want to use it
