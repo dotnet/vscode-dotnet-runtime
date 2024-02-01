@@ -335,6 +335,7 @@ export class MockCommandExecutor extends ICommandExecutor
 
         if(!command.runUnderSudo && this.fakeReturnValue === '')
         {
+            this.trueExecutor.returnStatus = this.returnStatus;
             return this.trueExecutor.execute(command, options);
         }
         else if(this.otherCommandsToMock.some(x => x.includes(command.commandRoot)))
