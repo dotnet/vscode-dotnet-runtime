@@ -607,6 +607,10 @@ export class CommandExecutionUserRejectedPasswordRequest extends DotnetInstallEx
     public readonly eventName = 'CommandExecutionUserRejectedPasswordRequest';
 }
 
+export class CommandExecutionUnknownCommandExecutionAttempt extends DotnetInstallExpectedAbort {
+    public readonly eventName = 'CommandExecutionUnknownCommandExecutionAttempt';
+}
+
 export class DotnetVersionParseEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetVersionParseEvent';
 }

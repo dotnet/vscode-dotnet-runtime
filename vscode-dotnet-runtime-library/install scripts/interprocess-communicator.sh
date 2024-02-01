@@ -4,6 +4,13 @@ OKSIGNALFILE="$EXECFOLDER/ok.txt"
 COMMANDTORUNFILE="$EXECFOLDER/command.txt"
 #OUTPUTFILE="/home/test_output_.txt"
 end=$((SECONDS+3600))
+
+function finish {
+  rm "$COMMANDTORUNFILE"
+  rm "$OKSIGNALFILE"
+}
+trap finish EXIT
+
 while true
 do
         stop=false

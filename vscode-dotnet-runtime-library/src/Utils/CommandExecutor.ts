@@ -18,6 +18,7 @@ import {
     CommandExecutionStdError,
     CommandExecutionStdOut,
     CommandExecutionUnderSudoEvent,
+    CommandExecutionUnknownCommandExecutionAttempt,
     CommandExecutionUserAskDialogueEvent,
     CommandExecutionUserCompletedDialogueEvent,
     CommandExecutionUserRejectedPasswordRequest,
@@ -140,7 +141,7 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
         // The '.' character is not allowed for sudo-prompt so we use 'NET'
         let sanitizedCallerName = this.context?.acquisitionContext?.requestingExtensionId?.replace(/[^0-9a-z]/gi, ''); // Remove non-alphanumerics per OS requirements
         sanitizedCallerName = sanitizedCallerName?.substring(0, 69); // 70 Characters is the maximum limit we can use for the prompt.
-        const options = { name: `${sanitizedCallerName ?? '.NET Install Tool'}` };
+        const options = { name: `${sanitizedCallerName ?? 'NET Install Tool'}` };
 
         fs.chmodSync(shellScriptPath, 0o500);
         exec((`"${shellScriptPath}" "${this.sudoProcessCommunicationDir}" ${this.validSudoCommands?.join(' ')} &`), options, (error?: any, stdout?: any, stderr?: any) =>
@@ -167,11 +168,19 @@ ${stderr}`));
                 {
                     if(error.code === 126)
                     {
-                        const err = new CommandExecutionUserRejectedPasswordRequest(new Error(`Cancelling .NET Install, as command ${fullCommandString} failed.
+                        const cancelledErr = new CommandExecutionUserRejectedPasswordRequest(new Error(`Cancelling .NET Install, as command ${fullCommandString} failed.
 The user refused the password prompt.`),
                             getInstallKeyFromContext(this.context?.acquisitionContext!));
-                        this.context?.eventStream.post(err);
-                        return Promise.reject(err.error);
+                        this.context?.eventStream.post(cancelledErr);
+                        return Promise.reject(cancelledErr.error);
+                    }
+                    else if(error.code === 111777)
+                    {
+                        const securityErr = new CommandExecutionUnknownCommandExecutionAttempt(new Error(`Cancelling .NET Install, as command ${fullCommandString} is UNKNOWN.
+Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
+                            getInstallKeyFromContext(this.context?.acquisitionContext!));
+                        this.context?.eventStream.post(securityErr);
+                        return Promise.reject(securityErr.error);
                     }
                     return Promise.reject(error);
                 }
