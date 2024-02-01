@@ -24,7 +24,7 @@ Most of the functionality should be the same, but if your distro needs custom lo
 
 ## Example
 
-If you'd like to see how Red Hat was initially added, you can look at this PR. (Some of the custom implementation added during this time is not even needed anymore.)
+If you'd like to see how Red Hat was initially added, you can look at this PR https://github.com/dotnet/vscode-dotnet-runtime/pull/1500/files. (Some of the custom implementation added during this time is not even needed anymore.)
 
 # Final Steps
 
