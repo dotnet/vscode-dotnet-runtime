@@ -1,6 +1,7 @@
 # Adding Custom Distros
 
-Our initial support for automated .NET installs on Linux includes Ubuntu and Red Hat Enterprise Linux distros. We realize this is a limited number of distros.
+Our initial support for automated .NET installs on Linux includes Ubuntu and Red Hat Enterprise Linux distros. Microsoft has first-party support for these distros as well as a few others, which you can learn more about at our [compatibility documentation](https://github.com/dotnet/core/blob/main/release-notes/8.0/supported-os.md#linux).
+
 
 
 While we plan on adding more distros in the future to meet the same support policy as VS Code, (which is also rather limited), we are happy to review PRs that add support for more distros. Only a few changes are required, which we will describe here. We are open to hearing your feedback on https://github.com/dotnet/vscode-dotnet-runtime/issues.
