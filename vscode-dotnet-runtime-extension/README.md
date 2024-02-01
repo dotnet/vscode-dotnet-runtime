@@ -21,7 +21,7 @@ The above extensions call into this extension to provide a unified way of downlo
 
 As of version 2.0.2, you can install the .NET SDK using part of our private API via the VS Code Command Palette!
 
-Bring up the command pallete (ctrl + shift + p) and run the command:
+Bring up the command palette (ctrl + shift + p) and run the command:
 .NET Install Tool - Install the .NET SDK System-Wide.
 
 ![Video demonstrating use of the command pallet to install .NET.](https://raw.githubusercontent.com/dotnet/vscode-dotnet-runtime/63b7fca6c714781dc4cb1cdbcb786013f2115098/Documentation/example.gif)
