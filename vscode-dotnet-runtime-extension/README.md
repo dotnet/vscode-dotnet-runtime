@@ -27,7 +27,7 @@ Bring up the command palette (ctrl + shift + p) and run the command:
 ![Video demonstrating use of the command pallet to install .NET.](https://raw.githubusercontent.com/dotnet/vscode-dotnet-runtime/63b7fca6c714781dc4cb1cdbcb786013f2115098/Documentation/example.gif)
 
 The command will try to find the best version of .NET for you to install, but you can tell it to install other versions as well based on its prompt.
-Note this feature is in-preview, and does not support all distros, WSL, nor preview versions of .NET.
+Note this feature is in preview, and does not support all distros, WSL, nor preview or RC versions of .NET.
 
 The rest of the extension functionality is still limited to other extensions that rely on our extension.
 
