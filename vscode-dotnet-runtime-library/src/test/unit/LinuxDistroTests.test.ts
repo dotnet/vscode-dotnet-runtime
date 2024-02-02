@@ -135,7 +135,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
     test('Gives Correct Version Support Info', async () => {
         if(shouldRun)
         {
-            let supported = await provider.isDotnetVersionSupported('8.0.101', installType);
+            let supported = await provider.isDotnetVersionSupported('11.0.101', installType);
             // In the mock data, 8.0 is not supported, so it should be false.
             assert.equal(supported, false);
             supported = await provider.isDotnetVersionSupported('7.0.101', installType);

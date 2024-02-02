@@ -37,7 +37,7 @@ suite('Red Hat For Linux Distro Logic Unit Tests', () =>
         {
             // assert this passes : we don't want the test to be reliant on machine state for whether the package exists or not, so don't check output
             await provider.dotnetPackageExistsOnSystem(mockVersion, installType);
-            assert.equal(mockExecutor.attemptedCommand, 'yum list install dotnet-sdk-7.0 -q');
+            assert.equal(mockExecutor.attemptedCommand, 'yum list install dotnet-sdk-9.0 -q');
         }
     }).timeout(standardTimeoutTime);
 
@@ -127,7 +127,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
         if(shouldRun)
         {
             const recVersion = await provider.getRecommendedDotnetVersion(installType);
-            assert.equal(mockExecutor.attemptedCommand, 'yum search dotnet-sdk-7.0 -q');
+            assert.equal(mockExecutor.attemptedCommand, 'yum search dotnet-sdk-9.0 -q');
             assert.equal(recVersion, '7.0.1xx');
         }
     }).timeout(standardTimeoutTime);
@@ -135,7 +135,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
     test('Gives Correct Version Support Info', async () => {
         if(shouldRun)
         {
-            let supported = await provider.isDotnetVersionSupported('8.0.101', installType);
+            let supported = await provider.isDotnetVersionSupported('11.0.101', installType);
             // In the mock data, 8.0 is not supported, so it should be false.
             assert.equal(supported, false);
             supported = await provider.isDotnetVersionSupported('7.0.101', installType);
