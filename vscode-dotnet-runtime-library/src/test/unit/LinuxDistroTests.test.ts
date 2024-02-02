@@ -127,7 +127,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
         if(shouldRun)
         {
             const recVersion = await provider.getRecommendedDotnetVersion(installType);
-            assert.equal(mockExecutor.attemptedCommand, 'apt-cache search dotnet-sdk-7.0');
+            assert.equal(mockExecutor.attemptedCommand, 'apt-cache search --name-only ^dotnet-sdk-9.0$');
             assert.equal(recVersion, '7.0.1xx');
         }
     }).timeout(standardTimeoutTime);
