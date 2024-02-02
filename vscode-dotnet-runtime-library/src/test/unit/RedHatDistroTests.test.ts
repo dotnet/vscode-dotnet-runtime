@@ -104,7 +104,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
         if(shouldRun)
         {
             await provider.getInstalledGlobalDotnetPathIfExists(installType);
-            assert.equal(mockExecutor.attemptedCommand, 'which dotnet');
+            assert.equal(mockExecutor.attemptedCommand, 'readlink -f /usr/share/dotnet/dotnet');
         }
     }).timeout(standardTimeoutTime);
 
@@ -127,8 +127,8 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
         if(shouldRun)
         {
             const recVersion = await provider.getRecommendedDotnetVersion(installType);
-            assert.equal(mockExecutor.attemptedCommand, 'yum search dotnet-sdk-9.0 -q');
-            assert.equal(recVersion, '7.0.1xx');
+            assert.equal(mockExecutor.attemptedCommand, 'yum search dotnet-sdk-9.0 -q', 'Correct command run to get recommended version, uses newest package in distro json');
+            assert.equal(recVersion, '7.0.1xx', 'The most in support version is suggested : will eventually break if not updated');
         }
     }).timeout(standardTimeoutTime);
 
