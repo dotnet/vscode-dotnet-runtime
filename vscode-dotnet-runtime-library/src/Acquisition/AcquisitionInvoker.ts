@@ -5,7 +5,8 @@
 import * as cp from 'child_process';
 import * as isOnline from 'is-online';
 import * as os from 'os';
-import { IEventStream } from '../EventStream/EventStream';
+import path = require('path');
+
 import {
     DotnetAcquisitionCompleted,
     DotnetAcquisitionInstallError,
@@ -13,36 +14,32 @@ import {
     DotnetAcquisitionScriptOutput,
     DotnetAcquisitionTimeoutError,
     DotnetAcquisitionUnexpectedError,
-    DotnetAlternativeCommandFoundEvent,
-    DotnetCommandFallbackArchitectureEvent,
-    DotnetCommandNotFoundEvent,
     DotnetOfflineFailure,
 } from '../EventStream/EventStreamEvents';
-import { IExtensionState } from '../IExtensionState';
+
 import { timeoutConstants } from '../Utils/ErrorHandler';
-import { IAcquisitionInvoker } from './IAcquisitionInvoker';
-import { IDotnetInstallationContext } from './IDotnetInstallationContext';
-import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
 import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker';
 import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import path = require('path');
+import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { IAcquisitionInvoker } from './IAcquisitionInvoker';
+import { IDotnetInstallationContext } from './IDotnetInstallationContext';
+import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
 
 export class AcquisitionInvoker extends IAcquisitionInvoker {
     protected readonly scriptWorker: IInstallScriptAcquisitionWorker;
     protected fileUtilities : FileUtilities;
-    protected utilityContext : IUtilityContext;
     private noPowershellError = `powershell.exe is not discoverable on your system. Is PowerShell added to your PATH and correctly installed? Please visit: https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows.
 You will need to restart VS Code after these changes. If PowerShell is still not discoverable, try setting a custom existingDotnetPath following our instructions here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`
 
-    constructor(extensionState: IExtensionState, eventStream: IEventStream, timeoutTime : number, utilContext : IUtilityContext) {
+    constructor(private readonly workerContext : IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext) {
 
-        super(eventStream);
-        this.utilityContext = utilContext;
-        this.scriptWorker = new InstallScriptAcquisitionWorker(extensionState, eventStream, timeoutTime);
+        super(workerContext.eventStream);
+        this.scriptWorker = new InstallScriptAcquisitionWorker(workerContext);
         this.fileUtilities = new FileUtilities();
     }
 
@@ -61,7 +58,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                 }
 
                 cp.exec(winOS ? windowsFullCommand : installCommand,
-                        { cwd: process.cwd(), maxBuffer: 500 * 1024, timeout: 1000 * installContext.timeoutValue, killSignal: 'SIGKILL' },
+                        { cwd: process.cwd(), maxBuffer: 500 * 1024, timeout: 1000 * installContext.timeoutSeconds, killSignal: 'SIGKILL' },
                         async (error, stdout, stderr) => {
                     if (error) {
                         if (stdout) {
@@ -78,7 +75,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                             reject(offlineError);
                         } else if (error.signal === 'SIGKILL') {
                             error.message = timeoutConstants.timeoutMessage;
-                            this.eventStream.post(new DotnetAcquisitionTimeoutError(error, installKey, installContext.timeoutValue));
+                            this.eventStream.post(new DotnetAcquisitionTimeoutError(error, installKey, installContext.timeoutSeconds));
                             reject(error);
                         } else {
                             this.eventStream.post(new DotnetAcquisitionInstallError(error, installKey));
@@ -152,7 +149,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         try
         {
             // Check if PowerShell exists and is on the path.
-            command = await new CommandExecutor(this.eventStream, this.utilityContext).tryFindWorkingCommand(possibleCommands);
+            command = await new CommandExecutor(this.workerContext, this.utilityContext).tryFindWorkingCommand(possibleCommands);
             if(!command)
             {
                 knownError = true;

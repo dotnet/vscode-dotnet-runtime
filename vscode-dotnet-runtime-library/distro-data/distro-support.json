@@ -59,8 +59,16 @@
 				"commandParts": ["-l", "{packageName}"]
 			}
 		],
+		"readSymLinkCommand":
+		[
+			{
+				"runUnderSudo": false,
+				"commandRoot": "readlink",
+				"commandParts": ["-f", "{path}"]
+			}
+		],
 		"expectedDistroFeedInstallDirectory" : "/usr/lib/dotnet",
-        "expectedMicrosoftFeedInstallDirectory" : "/usr/bin/dotnet",
+        "expectedMicrosoftFeedInstallDirectory" : "/usr/share/dotnet",
 		"installedSDKVersionsCommand":
 		[
 			{
@@ -255,7 +263,15 @@
 				]
 			}
 		],
-		"expectedDistroFeedInstallDirectory": "/usr/lib64/dotnet/dotnet",
+		"readSymLinkCommand":
+		[
+			{
+				"runUnderSudo": false,
+				"commandRoot": "readlink",
+				"commandParts": ["-f", "{path}"]
+			}
+		],
+		"expectedDistroFeedInstallDirectory": "/usr/lib64/dotnet",
 		"expectedMicrosoftFeedInstallDirectory": "",
 		"installedSDKVersionsCommand": [
 			{

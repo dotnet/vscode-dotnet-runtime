@@ -5,14 +5,16 @@
  * ------------------------------------------------------------------------------------------ */
 import * as path from 'path';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+import { CommandExecutorCommand } from '../Utils/CommandExecutorCommand';
 import { DotnetDistroSupportStatus } from './LinuxVersionResolver';
 import { LinuxInstallType } from './LinuxInstallType';
-import { CommandExecutorCommand } from '../Utils/ICommandExecutor';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 /* tslint:disable:no-any */
 
 export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 {
+    protected resolvePathAsSymlink = true;
+
     public async installDotnet(fullySpecifiedVersion : string, installType : LinuxInstallType): Promise<string>
     {
         await this.injectPMCFeed(fullySpecifiedVersion, installType);
@@ -33,11 +35,34 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
     public async getInstalledGlobalDotnetPathIfExists(installType : LinuxInstallType) : Promise<string | null>
     {
         const commandResult = await this.commandRunner.executeMultipleCommands(this.myDistroCommands(this.currentInstallPathCommandKey));
+
+        const oldReturnStatusSetting = this.commandRunner.returnStatus;
+        this.commandRunner.returnStatus = true;
+        const commandSignal = await this.commandRunner.executeMultipleCommands(this.myDistroCommands(this.currentInstallPathCommandKey));
+        this.commandRunner.returnStatus = oldReturnStatusSetting;
+
+        if(commandSignal[0] !== '0') // no dotnet error can be returned, dont want to try to parse this as a path
+        {
+            return null;
+        }
+
         if(commandResult[0])
         {
             commandResult[0] = commandResult[0].trim();
         }
-        return commandResult[0];
+
+        if(commandResult[0] && this.resolvePathAsSymlink)
+        {
+            let symLinkReadCommand = this.myDistroCommands(this.readSymbolicLinkCommandKey);
+            symLinkReadCommand = CommandExecutor.replaceSubstringsInCommands(symLinkReadCommand, this.missingPathKey, commandResult[0]);
+            const resolvedPath = (await this.commandRunner.executeMultipleCommands(symLinkReadCommand))[0];
+            if(resolvedPath)
+            {
+                return path.dirname(resolvedPath.trim());
+            }
+        }
+
+        return commandResult[0] ?? null;
     }
 
     public async dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion : string, installType : LinuxInstallType) : Promise<boolean>
@@ -63,11 +88,15 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 
     public async upgradeDotnet(versionToUpgrade : string, installType : LinuxInstallType): Promise<string>
     {
+        const oldReturnStatusSetting = this.commandRunner.returnStatus;
+        this.commandRunner.returnStatus = true;
+
         let command = this.myDistroCommands(this.updateCommandKey);
         const sdkPackage = await this.myDotnetVersionPackageName(versionToUpgrade, installType);
         command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, sdkPackage);
         const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
+        this.commandRunner.returnStatus = oldReturnStatusSetting;
         return commandResult[0];
     }
 
@@ -141,7 +170,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 
     public async getDotnetVersionSupportStatus(fullySpecifiedVersion: string, installType : LinuxInstallType): Promise<DotnetDistroSupportStatus>
     {
-        if(this.versionResolver.getFeatureBandFromVersion(fullySpecifiedVersion) !== '1')
+        if(this.versionResolver.getFeatureBandFromVersion(fullySpecifiedVersion) !== '1' || Number(this.versionResolver.getMajor(fullySpecifiedVersion)) < 6)
         {
             return Promise.resolve(DotnetDistroSupportStatus.Unsupported);
         }

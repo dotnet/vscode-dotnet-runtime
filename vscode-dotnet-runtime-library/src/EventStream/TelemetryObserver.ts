@@ -12,6 +12,8 @@ import { IEventStream } from './EventStream';
 import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { TelemetryUtilities } from './TelemetryUtilities';
+import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
+import { IDotnetAcquireContext } from '..';
 
 export interface ITelemetryReporter {
     sendTelemetryEvent(eventName: string, properties?: { [key: string]: string }, measures?: { [key: string]: number }): void;
@@ -22,12 +24,11 @@ export interface ITelemetryReporter {
 export class TelemetryObserver implements IEventStreamObserver {
     private readonly telemetryReporter: ITelemetryReporter;
     private isExtensionTelemetryEnabled = false;
-    private eventStream : IEventStream;
-    private extensionContext : IVSCodeExtensionContext;
-    private utilityContext : IUtilityContext;
+    private acquisitionContext : IAcquisitionWorkerContext | null = null;
 
-    constructor(packageJson: IPackageJson, isExtensionTelemetryEnabled : boolean, eventStream : IEventStream,
-        extensionContext : IVSCodeExtensionContext, utilContext : IUtilityContext, telemetryReporter?: ITelemetryReporter) {
+    constructor(packageJson: IPackageJson, isExtensionTelemetryEnabled : boolean, private readonly extensionContext : IVSCodeExtensionContext,
+            private readonly utilityContext : IUtilityContext, telemetryReporter?: ITelemetryReporter)
+    {
         if (telemetryReporter === undefined)
         {
             const extensionVersion = packageJson.version;
@@ -41,15 +42,18 @@ export class TelemetryObserver implements IEventStreamObserver {
         }
 
         this.isExtensionTelemetryEnabled = isExtensionTelemetryEnabled;
-        this.eventStream = eventStream;
-        this.extensionContext = extensionContext;
-        this.utilityContext = utilContext;
 
         vscode.env.onDidChangeTelemetryEnabled((newIsTelemetryEnabledSetting: boolean) =>
         {
             this.isExtensionTelemetryEnabled = newIsTelemetryEnabledSetting;
-            TelemetryUtilities.setDotnetSDKTelemetryToMatch(this.isExtensionTelemetryEnabled, this.extensionContext, this.eventStream, this.utilityContext);
+            TelemetryUtilities.setDotnetSDKTelemetryToMatch(this.isExtensionTelemetryEnabled, this.extensionContext, this.acquisitionContext, this.utilityContext);
         });
+    }
+
+    public setAcquisitionContext(context : IAcquisitionWorkerContext, underlyingAcquisitionContext : IDotnetAcquireContext)
+    {
+        context.acquisitionContext = underlyingAcquisitionContext;
+        this.acquisitionContext = context;
     }
 
     /**
