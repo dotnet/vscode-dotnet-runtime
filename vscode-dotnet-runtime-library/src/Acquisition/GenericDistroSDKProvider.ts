@@ -182,7 +182,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         }
         else
         {
-            const availableVersions = await this.myVersionPackages(installType);
+            const availableVersions = await this.myVersionPackages(installType, this.isMidFeedInjection);
             const simplifiedVersion = this.JsonDotnetVersion(fullySpecifiedVersion);
 
             for(const dotnetPackages of availableVersions)
@@ -200,7 +200,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
     public async getRecommendedDotnetVersion(installType : LinuxInstallType) : Promise<string>
     {
         let maxVersion = '0';
-        const json = await this.myVersionPackages(installType);
+        const json = await this.myVersionPackages(installType, this.isMidFeedInjection);
         for(const dotnetPackages of json)
         {
             if(Number(dotnetPackages.version) > Number(maxVersion))
@@ -218,7 +218,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         return this.versionResolver.getMajorMinor(fullySpecifiedDotnetVersion);
     }
 
-    protected isPackageFoundInSearch(resultOfSearchCommand: any): boolean {
-        return resultOfSearchCommand !== '';
+    protected isPackageFoundInSearch(resultOfSearchCommand: any, searchCommandExitCode : string): boolean {
+        return resultOfSearchCommand.trim() !== '' && searchCommandExitCode === '0';
     }
 }

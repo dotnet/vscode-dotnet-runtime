@@ -335,6 +335,7 @@ export class MockCommandExecutor extends ICommandExecutor
 
         if(!command.runUnderSudo && this.fakeReturnValue === '')
         {
+            this.trueExecutor.returnStatus = this.returnStatus;
             return this.trueExecutor.execute(command, options);
         }
         else if(this.otherCommandsToMock.some(x => x.includes(command.commandRoot)))
@@ -368,14 +369,14 @@ export class MockFileUtilities extends IFileUtilities
 {
     private trueUtilities = new FileUtilities();
 
-    public writeFileOntoDisk(content : string, filePath : string)
+    public writeFileOntoDisk(content : string, filePath : string, alreadyHoldingLock = false)
     {
-        return this.trueUtilities.writeFileOntoDisk(content, filePath, new MockEventStream());
+        return this.trueUtilities.writeFileOntoDisk(content, filePath, alreadyHoldingLock, new MockEventStream());
     }
 
-    public wipeDirectory(directoryToWipe : string, eventSteam : IEventStream)
+    public wipeDirectory(directoryToWipe : string, eventSteam : IEventStream, fileExtensionsToDelete? : string[])
     {
-        return this.trueUtilities.wipeDirectory(directoryToWipe, eventSteam);
+        return this.trueUtilities.wipeDirectory(directoryToWipe, eventSteam, fileExtensionsToDelete);
     }
 
     public isElevated()
@@ -480,7 +481,7 @@ export class MockDistroProvider extends IDistroDotnetSDKProvider
         return new GenericDistroSDKProvider(this.distroVersion, this.context, getMockUtilityContext()).JsonDotnetVersion(fullySpecifiedDotnetVersion);
     }
 
-    protected isPackageFoundInSearch(resultOfSearchCommand: any): boolean {
+    protected isPackageFoundInSearch(resultOfSearchCommand: any, searchCommandExitCode : string): boolean {
         return true;
     }
 }
