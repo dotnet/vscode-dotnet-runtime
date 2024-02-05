@@ -298,7 +298,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     }
     else
     {
-      assert.equal(result, '7.0.1xx', 'The SDK did not recommend the version it was supposed to, which should be N.0.1xx based on surface level distro knowledge.');
+      assert.equal(result, '8.0.1xx', 'The SDK did not recommend the version it was supposed to, which should be N.0.1xx based on surface level distro knowledge. If a new version is available, this test may need to be updated to the newest version.');
+
     }
   }).timeout(standardTimeoutTime);
 
