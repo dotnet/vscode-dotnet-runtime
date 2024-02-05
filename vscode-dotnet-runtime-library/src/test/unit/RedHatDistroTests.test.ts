@@ -6,7 +6,7 @@
 import * as chai from 'chai';
 import * as os from 'os';
 import { MockCommandExecutor, MockEventStream } from '../mocks/MockObjects';
-import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
+import { DistroVersionPair, DotnetDistroSupportStatus, LinuxVersionResolver } from '../../Acquisition/LinuxVersionResolver';
 import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 import { LinuxInstallType } from '../../Acquisition/LinuxInstallType';
 import { RedHatDistroSDKProvider } from '../../Acquisition/RedHatDistroSDKProvider';
@@ -18,7 +18,8 @@ const acquisitionContext = getMockAcquisitionContext(false, mockVersion);
 const mockExecutor = new MockCommandExecutor(acquisitionContext, getMockUtilityContext());
 const pair : DistroVersionPair = { distro : 'Red Hat Enterprise Linux', version : '9.0' };
 const provider : RedHatDistroSDKProvider = new RedHatDistroSDKProvider(pair, acquisitionContext, getMockUtilityContext(), mockExecutor);
-const shouldRun = os.platform() === 'linux';
+const versionResolver = new LinuxVersionResolver(acquisitionContext, getMockUtilityContext(), acquisitionContext.acquisitionContext!, mockExecutor);
+let shouldRun = os.platform() === 'linux';
 const installType : LinuxInstallType = 'sdk';
 const noDotnetString = `
 Command 'dotnet' not found, but can be installed with:
@@ -33,6 +34,8 @@ Command 'dotnet' not found, but can be installed with:
 suite('Red Hat For Linux Distro Logic Unit Tests', () =>
 {
     test('Package Check Succeeds', async () => {
+        shouldRun = os.platform() === 'linux' && (await versionResolver.getRunningDistro()).distro === 'Red Hat Enterprise Linux';
+
         if(shouldRun)
         {
             // assert this passes : we don't want the test to be reliant on machine state for whether the package exists or not, so don't check output
@@ -104,7 +107,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
         if(shouldRun)
         {
             await provider.getInstalledGlobalDotnetPathIfExists(installType);
-            assert.equal(mockExecutor.attemptedCommand, 'readlink -f /usr/share/dotnet/dotnet');
+            assert.equal(mockExecutor.attemptedCommand, 'readlink -f /usr/bin/dotnet');
         }
     }).timeout(standardTimeoutTime);
 
@@ -127,7 +130,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
         if(shouldRun)
         {
             const recVersion = await provider.getRecommendedDotnetVersion(installType);
-            assert.equal(mockExecutor.attemptedCommand, 'yum search dotnet-sdk-9.0 -q', 'Correct command run to get recommended version, uses newest package in distro json');
+            assert.equal(mockExecutor.attemptedCommand, 'dotnet --version', 'Correct command run to get recommended version, uses newest package in distro json');
             assert.equal(recVersion, '7.0.1xx', 'The most in support version is suggested : will eventually break if not updated');
         }
     }).timeout(standardTimeoutTime);
