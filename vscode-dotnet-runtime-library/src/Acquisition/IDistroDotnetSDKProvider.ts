@@ -4,15 +4,13 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as fs from 'fs';
-import * as os from 'os';
 
 import path = require('path');
 
 import { DistroVersionPair, DotnetDistroSupportStatus } from './LinuxVersionResolver';
-import { DotnetAcquisitionDistroUnknownError, DotnetVersionResolutionError } from '../EventStream/EventStreamEvents';
+import { DotnetAcquisitionDistroUnknownError, DotnetVersionResolutionError, SuppressedAcquisitionError } from '../EventStream/EventStreamEvents';
 import { VersionResolver } from './VersionResolver';
 import { CommandExecutorCommand } from '../Utils/CommandExecutorCommand';
-import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { LinuxInstallType } from './LinuxInstallType';
 import { LinuxPackageCollection } from './LinuxPackageCollection';
@@ -62,14 +60,24 @@ export abstract class IDistroDotnetSDKProvider {
     protected runtimeKey = 'runtime';
     protected aspNetKey = 'aspnetcore';
 
+    protected isMidFeedInjection = false;
+    protected cachedMyVersionPacakges : any = null;
+
     constructor(distroVersion : DistroVersionPair, context : IAcquisitionWorkerContext, utilContext : IUtilityContext, executor : ICommandExecutor | null = null)
     {
-        this.commandRunner = executor ?? new CommandExecutor(context, utilContext);
         this.context = context;
         this.distroVersion = distroVersion;
         this.versionResolver = new VersionResolver(context);
-        // Hard-code to the upper path (lib/dist/acquisition) from __dirname to the lib folder, as webpack-copy doesn't seem to copy the distro-support.json
         const distroDataFile = path.join(__dirname, 'distro-data', `distro-support.json`);
+        try
+        {
+            fs.chmodSync(distroDataFile, 0o544);
+        }
+        catch(error : any)
+        {
+            this.context.eventStream.post(new SuppressedAcquisitionError(error, `Failed to chmod +x on .NET folder ${distroDataFile} when marked for deletion.`));
+        }
+
         this.distroJson = JSON.parse(fs.readFileSync(distroDataFile, 'utf8'));
         if(!distroVersion || !this.distroJson || !((this.distroJson as any)[this.distroVersion.distro]))
         {
@@ -77,6 +85,9 @@ export abstract class IDistroDotnetSDKProvider {
                 getInstallKeyFromContext(this.context.acquisitionContext));
             throw error.error;
         }
+
+        const validCommandSet = this.getAllValidCommands();
+        this.commandRunner = executor ?? new CommandExecutor(context, utilContext, validCommandSet);
     }
 
     /**
@@ -176,6 +187,11 @@ export abstract class IDistroDotnetSDKProvider {
 
     protected async myVersionPackages(installType : LinuxInstallType, haveTriedFeedInjectionAlready = false) : Promise<LinuxPackageCollection[]>
     {
+        if(this.cachedMyVersionPacakges)
+        {
+            return this.cachedMyVersionPacakges;
+        }
+
         const availableVersions : LinuxPackageCollection[] = [];
 
         const potentialDotnetPackageNames = this.distroJson[this.distroVersion.distro][this.distroPackagesKey];
@@ -191,8 +207,15 @@ export abstract class IDistroDotnetSDKProvider {
             {
                 let command = this.myDistroCommands(this.searchCommandKey);
                 command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, packageName);
-                const packageIsAvailableResult = (await this.commandRunner.executeMultipleCommands(command))[0];
-                const packageExists = this.isPackageFoundInSearch(packageIsAvailableResult);
+
+                const packageIsAvailableResult = (await this.commandRunner.executeMultipleCommands(command))[0].trim();
+                const oldReturnStatusSetting = this.commandRunner.returnStatus;
+
+                this.commandRunner.returnStatus = true;
+                const packageAvailableExitCode = (await this.commandRunner.executeMultipleCommands(command))[0].trim();
+                this.commandRunner.returnStatus = oldReturnStatusSetting;
+
+                const packageExists = this.isPackageFoundInSearch(packageIsAvailableResult, packageAvailableExitCode);
                 if(packageExists)
                 {
                     thisVersionPackage.packages.push(packageName);
@@ -212,13 +235,24 @@ export abstract class IDistroDotnetSDKProvider {
             const fakeVersionToCheckMicrosoftSupportStatus = '6.0.1xx';
 
             await this.injectPMCFeed(fakeVersionToCheckMicrosoftSupportStatus, installType);
-            return this.myVersionPackages(installType, true);
+            this.cachedMyVersionPacakges = this.myVersionPackages(installType, true);
         }
-        return availableVersions;
+        else
+        {
+            this.cachedMyVersionPacakges = availableVersions;
+        }
+
+        return this.cachedMyVersionPacakges;
     }
 
     protected async injectPMCFeed(fullySpecifiedVersion : string, installType : LinuxInstallType)
     {
+        if(this.isMidFeedInjection)
+        {
+            return;
+        }
+
+        this.isMidFeedInjection = true;
         const supportStatus = await this.getDotnetVersionSupportStatus(fullySpecifiedVersion, installType);
         if(supportStatus === DotnetDistroSupportStatus.Microsoft)
         {
@@ -226,6 +260,8 @@ export abstract class IDistroDotnetSDKProvider {
             const preInstallCommands = myVersionDetails[this.preinstallCommandKey] as CommandExecutorCommand[];
             await this.commandRunner.executeMultipleCommands(preInstallCommands);
         }
+
+        this.isMidFeedInjection = false;
     }
 
     protected myVersionDetails() : any
@@ -269,9 +305,53 @@ export abstract class IDistroDotnetSDKProvider {
         return this.distroJson[this.distroVersion.distro][commandKey] as CommandExecutorCommand[];
     }
 
+    protected getAllValidCommands() : string[]
+    {
+        const validCommands : string[] = [];
+
+        const baseCommands = (Object.values(this.distroJson[this.distroVersion.distro])
+            .filter((x : any) => x && Array.isArray(x) && ((x[0] as CommandExecutorCommand).commandParts))).flat();
+        let preInstallCommands = this.myVersionDetails()[this.preinstallCommandKey] as CommandExecutorCommand[];
+        if(!preInstallCommands)
+        {
+            preInstallCommands = [];
+        }
+        const sudoCommands = (baseCommands as CommandExecutorCommand[]).concat(preInstallCommands).filter(x => x.runUnderSudo);
+
+        for(const command of sudoCommands)
+        {
+            if(command.commandParts.slice(-1)[0] !== this.missingPackageNameKey)
+            {
+                validCommands.push(`"${CommandExecutor.prettifyCommandExecutorCommand(command, false)}"`);
+            }
+            else
+            {
+                for(const packageName of this.allPackages())
+                {
+                    const newCommand = CommandExecutor.replaceSubstringsInCommands([command], this.missingPackageNameKey, packageName)[0];
+                    validCommands.push(`"${CommandExecutor.prettifyCommandExecutorCommand(newCommand, false)}"`);
+                }
+            }
+        }
+        return [...new Set(validCommands)];
+    }
+
+    protected allPackages() : string[]
+    {
+        let allPackages : string[] = [];
+        const distroPackages = this.distroJson[this.distroVersion.distro][this.distroPackagesKey];
+        for(const packageSet of distroPackages)
+        {
+            allPackages = allPackages.concat(packageSet[this.sdkKey]);
+            allPackages = allPackages.concat(packageSet[this.runtimeKey])
+            allPackages = allPackages.concat(packageSet[this.aspNetKey])
+        }
+        return allPackages;
+    }
+
     protected async myDotnetVersionPackageName(fullySpecifiedDotnetVersion : string, installType : LinuxInstallType) : Promise<string>
     {
-        const myDotnetVersions = await this.myVersionPackages(installType);
+        const myDotnetVersions = await this.myVersionPackages(installType, this.isMidFeedInjection);
         for(const dotnetPackage of myDotnetVersions)
         {
             if(dotnetPackage.version === this.JsonDotnetVersion(fullySpecifiedDotnetVersion))
@@ -280,10 +360,10 @@ export abstract class IDistroDotnetSDKProvider {
                 return dotnetPackage.packages[0];
             }
         }
-        const err = new Error(`Could not find a .NET package for version ${fullySpecifiedDotnetVersion}. Found only: ${JSON.stringify(await this.myVersionPackages(installType))}`);
+        const err = new Error(`Could not find a .NET package for version ${fullySpecifiedDotnetVersion}. Found only: ${JSON.stringify(myDotnetVersions)}`);
         this.context.eventStream.post(new DotnetVersionResolutionError(err, getInstallKeyFromContext(this.context.acquisitionContext)));
         throw err;
     }
 
-    protected abstract isPackageFoundInSearch(resultOfSearchCommand : any) : boolean;
+    protected abstract isPackageFoundInSearch(resultOfSearchCommand : any, searchCommandExitCode : string) : boolean;
 }
