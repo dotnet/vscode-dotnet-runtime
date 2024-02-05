@@ -24,6 +24,7 @@ import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { IDotnetAcquireContext } from '../IDotnetAcquireContext'
 import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
+import { LinuxInstallType } from './LinuxInstallType';
 
 /**
  * An enumeration type representing all distros with their versions that we recognize.
@@ -80,9 +81,12 @@ export class LinuxVersionResolver
     If you would like to proceed with installing .NET automatically for VS Code, you must remove this custom installation.
     Your custom install is located at: `;
     public baseUnsupportedDistroErrorMessage = 'We are unable to detect the distro or version of your machine';
+    public unsupportedDistroErrorMessage = `Your current distro is not yet supported. We are expanding this list based on community feed back and contributions.
+If you would like to contribute to the list of supported distros, please visit: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/adding-distros.md`;
     public redhatUnsupportedDistroErrorMessage = 'Red Hat Enterprise Linux 7.0 is currently not supported. Follow the instructions here to download the .NET SDK: https://learn.microsoft.com/en-us/dotnet/core/install/linux-rhel#rhel-7--net-6. Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from https://access.redhat.com/downloads/';
+    protected acquireCtx: IDotnetAcquireContext | null | undefined;
 
-    constructor(private readonly acquisitionContext : IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext, private readonly acquireContext : IDotnetAcquireContext,
+    constructor(private readonly acquisitionContext : IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext,
         executor : ICommandExecutor | null = null, distroProvider : IDistroDotnetSDKProvider | null = null)
     {
         this.commandRunner = executor ?? new CommandExecutor(this.acquisitionContext, this.utilityContext);
@@ -91,6 +95,8 @@ export class LinuxVersionResolver
         {
             this.distroSDKProvider = distroProvider;
         }
+
+        this.acquireCtx = this.acquisitionContext.acquisitionContext;
     }
 
     /**
@@ -123,7 +129,7 @@ export class LinuxVersionResolver
 
             if(distroName === '' || distroVersion === '')
             {
-                const error = new DotnetAcquisitionDistroUnknownError(new Error(this.baseUnsupportedDistroErrorMessage), getInstallKeyFromContext(this.acquireContext));
+                const error = new DotnetAcquisitionDistroUnknownError(new Error(this.baseUnsupportedDistroErrorMessage), getInstallKeyFromContext(this.acquireCtx));
                 this.acquisitionContext.eventStream.post(error);
                 throw error.error;
             }
@@ -133,7 +139,7 @@ export class LinuxVersionResolver
         }
         catch(error)
         {
-            const err = new DotnetAcquisitionDistroUnknownError(new Error(`${this.baseUnsupportedDistroErrorMessage} ... does /etc/os-release exist?`), getInstallKeyFromContext(this.acquireContext));
+            const err = new DotnetAcquisitionDistroUnknownError(new Error(`${this.baseUnsupportedDistroErrorMessage} ... does /etc/os-release exist?`), getInstallKeyFromContext(this.acquireCtx));
             this.acquisitionContext.eventStream.post(err);
             throw err.error;
         }
@@ -159,7 +165,7 @@ export class LinuxVersionResolver
 
         if(!this.distro || !this.distroSDKProvider)
         {
-            const error = new DotnetAcquisitionDistroUnknownError(new Error(`${this.baseUnsupportedDistroErrorMessage} ... we cannot initialize.`), getInstallKeyFromContext(this.acquireContext));
+            const error = new DotnetAcquisitionDistroUnknownError(new Error(`${this.baseUnsupportedDistroErrorMessage} ... we cannot initialize.`), getInstallKeyFromContext(this.acquireCtx));
             this.acquisitionContext.eventStream.post(error);
             throw error.error;
         }
@@ -179,13 +185,13 @@ export class LinuxVersionResolver
         {
             // Implement any custom logic for a Distro Class in a new DistroSDKProvider and add it to the factory here.
             case null:
-                const unknownDistroErr = new DotnetAcquisitionDistroUnknownError(new Error(this.baseUnsupportedDistroErrorMessage), getInstallKeyFromContext(this.acquireContext));
+                const unknownDistroErr = new DotnetAcquisitionDistroUnknownError(new Error(this.unsupportedDistroErrorMessage), getInstallKeyFromContext(this.acquireCtx));
                 this.acquisitionContext.eventStream.post(unknownDistroErr);
                 throw unknownDistroErr.error;
             case 'Red Hat Enterprise Linux':
                 if(this.isRedHatVersion7(distroAndVersion.version))
                 {
-                    const unsupportedRhelErr = new DotnetAcquisitionDistroUnknownError(new Error(this.redhatUnsupportedDistroErrorMessage), getInstallKeyFromContext(this.acquireContext));
+                    const unsupportedRhelErr = new DotnetAcquisitionDistroUnknownError(new Error(this.redhatUnsupportedDistroErrorMessage), getInstallKeyFromContext(this.acquireCtx));
                     this.acquisitionContext.eventStream.post(unsupportedRhelErr);
                     throw unsupportedRhelErr.error;
                 }
@@ -212,7 +218,7 @@ export class LinuxVersionResolver
             const microsoftFeedDir = await this.distroSDKProvider!.getExpectedDotnetMicrosoftFeedInstallationDirectory();
             if(fs.existsSync(microsoftFeedDir))
             {
-                const err = new DotnetConflictingLinuxInstallTypesError(new Error(this.conflictingInstallErrorMessage + microsoftFeedDir), getInstallKeyFromContext(this.acquireContext));
+                const err = new DotnetConflictingLinuxInstallTypesError(new Error(this.conflictingInstallErrorMessage + microsoftFeedDir), getInstallKeyFromContext(this.acquireCtx));
                 this.acquisitionContext.eventStream.post(err);
                 throw err.error;
             }
@@ -222,7 +228,7 @@ export class LinuxVersionResolver
             const distroFeedDir = await this.distroSDKProvider!.getExpectedDotnetDistroFeedInstallationDirectory();
             if(fs.existsSync(distroFeedDir))
             {
-                const err = new DotnetConflictingLinuxInstallTypesError(new Error(this.conflictingInstallErrorMessage + distroFeedDir), getInstallKeyFromContext(this.acquireContext));
+                const err = new DotnetConflictingLinuxInstallTypesError(new Error(this.conflictingInstallErrorMessage + distroFeedDir), getInstallKeyFromContext(this.acquireCtx));
                 this.acquisitionContext.eventStream.post(err);
                 throw err.error;
             }
@@ -241,7 +247,7 @@ export class LinuxVersionResolver
             supportStatus === DotnetDistroSupportStatus.Distro ? await this.distroSDKProvider!.getExpectedDotnetDistroFeedInstallationDirectory()
             : await this.distroSDKProvider!.getExpectedDotnetMicrosoftFeedInstallationDirectory() ))
         {
-            const err = new DotnetCustomLinuxInstallExistsError(new Error(this.conflictingCustomInstallErrorMessage + existingInstall), getInstallKeyFromContext(this.acquireContext));
+            const err = new DotnetCustomLinuxInstallExistsError(new Error(this.conflictingCustomInstallErrorMessage + existingInstall), getInstallKeyFromContext(this.acquireCtx));
             this.acquisitionContext.eventStream.post(err);
             throw err.error;
         }
@@ -273,7 +279,7 @@ export class LinuxVersionResolver
                 {
                     // We shouldn't downgrade to a lower patch
                     const err = new DotnetCustomLinuxInstallExistsError(new Error(`An installation of ${fullySpecifiedDotnetVersion} was requested but ${existingGlobalInstallSDKVersion} is already available.`),
-                        getInstallKeyFromContext(this.acquireContext));
+                        getInstallKeyFromContext(this.acquireCtx));
                     this.acquisitionContext.eventStream.post(err);
                     throw err.error;
                 }
@@ -339,5 +345,11 @@ export class LinuxVersionResolver
     {
         await this.Initialize();
         return this.distroSDKProvider!;
+    }
+
+    public async getRecommendedDotnetVersion(installType : LinuxInstallType) : Promise<string>
+    {
+        await this.Initialize();
+        return this.distroSDKProvider!.getRecommendedDotnetVersion(installType);
     }
 }

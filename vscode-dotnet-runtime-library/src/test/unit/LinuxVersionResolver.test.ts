@@ -25,8 +25,8 @@ suite('Linux Version Resolver Tests', () =>
     const context = util.getMockAcquisitionContext(false, mockVersion);
     const mockRedHatProvider = new MockDistroProvider(redHatPair, context, getMockUtilityContext(), mockExecutor);
     const mockDistroProvider = new MockDistroProvider(pair, context, getMockUtilityContext(), mockExecutor);
-    const resolver : LinuxVersionResolver = new LinuxVersionResolver(context, getMockUtilityContext(), getMockAcquireContext(mockVersion), mockExecutor, mockDistroProvider);
-    const redhatResolver : LinuxVersionResolver = new LinuxVersionResolver(context, getMockUtilityContext(), getMockAcquireContext(mockVersion), mockExecutor, mockRedHatProvider);
+    const resolver : LinuxVersionResolver = new LinuxVersionResolver(context, getMockUtilityContext(), mockExecutor, mockDistroProvider);
+    const redhatResolver : LinuxVersionResolver = new LinuxVersionResolver(context, getMockUtilityContext(), mockExecutor, mockRedHatProvider);
 
         test('It can determine the running distro', async () => {
             if(shouldRun)

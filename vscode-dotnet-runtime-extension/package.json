@@ -13,7 +13,7 @@
 	"description": "This extension installs and manages different versions of the .NET SDK and Runtime.",
 	"appInsightsKey": "02dc18e0-7494-43b2-b2a3-18ada5fcb522",
 	"icon": "images/dotnetIcon.png",
-	"version": "2.0.1",
+	"version": "2.0.2",
 	"publisher": "ms-dotnettools",
 	"engines": {
 		"vscode": "^1.74.0"
@@ -38,6 +38,8 @@
 		"onCommand:dotnet.acquire",
 		"onCommand:dotnet.acquireStatus",
 		"onCommand:dotnet.acquireGlobalSDK",
+		"onCommand:dotnet.listVersions",
+		"onCommand:dotnet.recommendedVersion",
 		"onCommand:dotnet.uninstallAll",
 		"onCommand:dotnet.showAcquisitionLog",
 		"onCommand:dotnet.ensureDotnetDependencies"
@@ -50,6 +52,12 @@
 				"command": "dotnet.reportIssue",
 				"title": "Report an issue with the .NET Install Tool.",
 				"category": ".NET Install Tool"
+			},
+			{
+				"command": "dotnet.acquireGlobalSDKPublic",
+				"title": "Install the .NET SDK System-Wide.",
+				"category": ".NET Install Tool",
+				"enablement": "config.dotnetAcquisitionExtension.enablePreviewFeatures && dotnetAcquisitionExtension.isGlobalSDKSupported !== false"
 			}
 		],
 		"configuration": {
@@ -59,6 +67,11 @@
 					"type": "boolean",
 					"default": true,
 					"description": "Enable Telemetry for the .NET Install Tool. Restart VS Code to apply changes."
+				},
+				"dotnetAcquisitionExtension.enablePreviewFeatures": {
+					"type": "boolean",
+					"default": false,
+					"description": "Enable Preview Features for the Extension. Restart VS Code to apply changes."
 				},
 				"dotnetAcquisitionExtension.installTimeoutValue": {
 					"type": "number",

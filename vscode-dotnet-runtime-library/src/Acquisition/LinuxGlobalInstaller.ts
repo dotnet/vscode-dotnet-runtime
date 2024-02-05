@@ -14,10 +14,10 @@ export class LinuxGlobalInstaller extends IGlobalInstaller {
     private version : string;
     private linuxSDKResolver : LinuxVersionResolver;
 
-    constructor(acquisitionContext : IAcquisitionWorkerContext, utilContext : IUtilityContext, acquireContext : IDotnetAcquireContext, fullySpecifiedDotnetVersion : string)
+    constructor(acquisitionContext : IAcquisitionWorkerContext, utilContext : IUtilityContext, fullySpecifiedDotnetVersion : string)
     {
         super(acquisitionContext, utilContext);
-        this.linuxSDKResolver = new LinuxVersionResolver(acquisitionContext, utilContext, acquireContext);
+        this.linuxSDKResolver = new LinuxVersionResolver(acquisitionContext, utilContext);
         this.version = fullySpecifiedDotnetVersion;
     }
 

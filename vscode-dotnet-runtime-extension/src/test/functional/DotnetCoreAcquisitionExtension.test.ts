@@ -13,11 +13,16 @@ import {
   FileUtilities,
   IDotnetAcquireContext,
   IDotnetAcquireResult,
+  IDotnetListVersionsContext,
+  IDotnetListVersionsResult,
+  IDotnetVersion,
   ITelemetryEvent,
   MockExtensionConfiguration,
   MockExtensionContext,
   MockTelemetryReporter,
-  MockWindowDisplayWorker
+  MockWebRequestWorker,
+  MockWindowDisplayWorker,
+  getMockAcquisitionContext
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { warn } from 'console';
@@ -36,6 +41,29 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   const requestingExtensionId = 'fake.extension';
   const mockDisplayWorker = new MockWindowDisplayWorker();
   let extensionContext: vscode.ExtensionContext;
+
+  const mockReleasesData = `{
+    "releases-index": [
+      {
+            "channel-version": "8.0",
+            "latest-release": "8.0.0-preview.2",
+            "latest-runtime": "8.0.0-preview.2.23128.3",
+            "latest-sdk": "8.0.100-preview.2.23157.25",
+            "release-type" : "lts",
+            "support-phase": "preview"
+        },
+        {
+            "channel-version": "7.0",
+            "latest-release": "7.0.4",
+            "latest-release-date": "2023-03-14",
+            "latest-runtime": "7.0.4",
+            "latest-sdk": "7.0.202",
+            "release-type" : "sts",
+            "support-phase": "active"
+        }
+      ]
+  }`;
+
 
   this.beforeAll(async () => {
     extensionContext = {
@@ -234,6 +262,47 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.exists(result!.dotnetPath);
     assert.equal(result!.dotnetPath, 'foo');
   }).timeout(standardTimeoutTime);
+
+  test('List Sdks & Runtimes', async () => {
+    const mockAcquisitionContext = getMockAcquisitionContext(false, '');
+    const webWorker = new MockWebRequestWorker(mockAcquisitionContext, '');
+    webWorker.response = JSON.parse(mockReleasesData);
+
+    // The API can find the available SDKs and list their versions.
+    const apiContext: IDotnetListVersionsContext = { listRuntimes: false };
+    const result = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet.listVersions', apiContext, webWorker);
+    assert.exists(result);
+    assert.equal(result?.length, 2, `It can find both versions of the SDKs. Found: ${result}`);
+    assert.equal(result?.filter((sdk : any) => sdk.version === '7.0.202').length, 1, 'The mock SDK with the expected version {7.0.200} was not found by the API parsing service.');
+    assert.equal(result?.filter((sdk : any) => sdk.channelVersion === '7.0').length, 1, 'The mock SDK with the expected channel version {7.0} was not found by the API parsing service.');
+    assert.equal(result?.filter((sdk : any) => sdk.supportPhase === 'active').length, 1, 'The mock SDK with the expected support phase of {active} was not found by the API parsing service.');
+
+    // The API can find the available runtimes and their versions.
+    apiContext.listRuntimes = true;
+    const runtimeResult = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet.listVersions', apiContext, webWorker);
+    assert.exists(runtimeResult);
+    assert.equal(runtimeResult?.length, 2,  `It can find both versions of the runtime. Found: ${result}`);
+    assert.equal(runtimeResult?.filter((runtime : any) => runtime.version === '7.0.4').length, 1, 'The mock Runtime with the expected version was not found by the API parsing service.');
+  }).timeout(standardTimeoutTime);
+
+  test('Get Recommended SDK Version', async () => {
+    const mockAcquisitionContext = getMockAcquisitionContext(false, '');
+    const webWorker = new MockWebRequestWorker(mockAcquisitionContext, '');
+    webWorker.response = JSON.parse(mockReleasesData);
+
+    const result = await vscode.commands.executeCommand<string>('dotnet.recommendedVersion', null, webWorker);
+    assert.exists(result);
+    if(os.platform() !== 'linux')
+    {
+      assert.equal(result, '7.0.202', 'The SDK did not recommend the version it was supposed to, which should be {7.0.200} from the mock data.');
+    }
+    else
+    {
+      assert.equal(result, '8.0.1xx', 'The SDK did not recommend the version it was supposed to, which should be N.0.1xx based on surface level distro knowledge. If a new version is available, this test may need to be updated to the newest version.');
+
+    }
+  }).timeout(standardTimeoutTime);
+
 
   test('Install Runtime Status Command', async () => {
     // Runtime is not yet installed

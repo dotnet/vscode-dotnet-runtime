@@ -18,15 +18,12 @@ import {
   DotnetPreinstallDetected,
   IDotnetAcquireContext,
   IDotnetAcquireResult,
-  IDotnetListVersionsContext,
-  IDotnetListVersionsResult,
   GlobalInstallerResolver,
   MockEnvironmentVariableCollection,
   MockEventStream,
   MockExtensionConfiguration,
   MockExtensionContext,
   MockTelemetryReporter,
-  MockWebRequestWorker,
   MockWindowDisplayWorker,
   NoInstallAcquisitionInvoker,
   SdkInstallationDirectoryProvider,
@@ -36,7 +33,6 @@ import {
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { uninstallSDKExtension } from '../../ExtensionUninstall';
-import { IDotnetVersion } from 'vscode-dotnet-runtime-library';
 import { warn } from 'console';
 
 const standardTimeoutTime = 100000;
@@ -48,28 +44,6 @@ chai.use(chaiAsPromised);
 const currentSDKVersion = '6.0';
 suite('DotnetCoreAcquisitionExtension End to End', function ()
 {
-const mockReleasesData = `{
-  "releases-index": [
-    {
-          "channel-version": "8.0",
-          "latest-release": "8.0.0-preview.2",
-          "latest-runtime": "8.0.0-preview.2.23128.3",
-          "latest-sdk": "8.0.100-preview.2.23157.25",
-          "release-type" : "lts",
-          "support-phase": "preview"
-      },
-      {
-          "channel-version": "7.0",
-          "latest-release": "7.0.4",
-          "latest-release-date": "2023-03-14",
-          "latest-runtime": "7.0.4",
-          "latest-sdk": "7.0.202",
-          "release-type" : "sts",
-          "support-phase": "active"
-      }
-    ]
-}`
-
 suite('DotnetCoreAcquisitionExtension End to End', function()
 {
   this.retries(3);
@@ -103,38 +77,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     assert.exists(extensionContext);
     assert.isAbove(extensionContext.subscriptions.length, 0);
   });
-
-  test('List Sdks & Runtimes', async () => {
-    const mockAcquisitionContext = getMockAcquisitionContext(false, '');
-    const webWorker = new MockWebRequestWorker(mockAcquisitionContext, '');
-    webWorker.response = JSON.parse(mockReleasesData);
-
-    // The API can find the available SDKs and list their versions.
-    const apiContext: IDotnetListVersionsContext = { listRuntimes: false };
-    const result = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet-sdk.listVersions', apiContext, webWorker);
-    assert.exists(result);
-    assert.equal(result?.length, 2);
-    assert.equal(result?.filter((sdk : any) => sdk.version === '7.0.202').length, 1, 'The mock SDK with the expected version {7.0.200} was not found by the API parsing service.');
-    assert.equal(result?.filter((sdk : any) => sdk.channelVersion === '7.0').length, 1, 'The mock SDK with the expected channel version {7.0} was not found by the API parsing service.');
-    assert.equal(result?.filter((sdk : any) => sdk.supportPhase === 'active').length, 1, 'The mock SDK with the expected support phase of {active} was not found by the API parsing service.');
-
-    // The API can find the available runtimes and their versions.
-    apiContext.listRuntimes = true;
-    const runtimeResult = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet-sdk.listVersions', apiContext, webWorker);
-    assert.exists(runtimeResult);
-    assert.equal(runtimeResult?.length, 2);
-    assert.equal(runtimeResult?.filter((runtime : any) => runtime.version === '7.0.4').length, 1, 'The mock Runtime with the expected version was not found by the API parsing service.');
-  }).timeout(standardTimeoutTime);
-
-  test('Get Recommended SDK Version', async () => {
-    const mockAcquisitionContext = getMockAcquisitionContext(false, '');
-    const webWorker = new MockWebRequestWorker(mockAcquisitionContext, '');
-    webWorker.response = JSON.parse(mockReleasesData);
-
-    const result = await vscode.commands.executeCommand<IDotnetVersion>('dotnet-sdk.recommendedVersion', null, webWorker);
-    assert.exists(result);
-    assert.equal(result?.version, '7.0.202', 'The SDK did not recommend the version it was supposed to, which should be {7.0.200} from the mock data.');
-  }).timeout(standardTimeoutTime);
 
   test('Detect Preinstalled SDK', async () => {
     // Set up acquisition worker

@@ -18,7 +18,7 @@ const acquisitionContext = getMockAcquisitionContext(false, mockVersion);
 const mockExecutor = new MockCommandExecutor(acquisitionContext, getMockUtilityContext());
 const pair : DistroVersionPair = { distro : 'Red Hat Enterprise Linux', version : '9.0' };
 const provider : RedHatDistroSDKProvider = new RedHatDistroSDKProvider(pair, acquisitionContext, getMockUtilityContext(), mockExecutor);
-const versionResolver = new LinuxVersionResolver(acquisitionContext, getMockUtilityContext(), acquisitionContext.acquisitionContext!, mockExecutor);
+const versionResolver = new LinuxVersionResolver(acquisitionContext, getMockUtilityContext(), mockExecutor);
 let shouldRun = os.platform() === 'linux';
 const installType : LinuxInstallType = 'sdk';
 const noDotnetString = `

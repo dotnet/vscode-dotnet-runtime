@@ -35,6 +35,7 @@ export * from './Acquisition/DotnetCoreAcquisitionWorker';
 export * from './Acquisition/AcquisitionInvoker';
 export * from './Acquisition/DotnetCoreDependencyInstaller'
 export * from './Acquisition/LinuxVersionResolver';
+export * from './Acquisition/LinuxInstallType';
 export * from './Acquisition/GenericDistroSDKProvider';
 export * from './Acquisition/GlobalInstallerResolver';
 export * from './Acquisition/InstallationValidator';
