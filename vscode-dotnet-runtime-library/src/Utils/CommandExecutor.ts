@@ -77,9 +77,19 @@ export class CommandExecutor extends ICommandExecutor
     {
         // See https://github.com/microsoft/WSL/issues/4071 for evidence that we can rely on this behavior.
 
+        if(os.platform() !== 'linux')
+        {
+            return false;
+        }
+
         const command = 'grep';
         const args = ['-i', 'Microsoft', '/proc/version'];
         const commandResult = proc.spawnSync(command, args);
+
+        if(!commandResult || !commandResult.stdout)
+        {
+            return false;
+        }
 
         return commandResult.stdout.toString() !== '';
     }
