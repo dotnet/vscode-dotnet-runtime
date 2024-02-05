@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog],
 and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
+
+## [2.0.2] - 2024-02-05
+
+Allow users to call code to install Global SDKs on their own.
+Improves Global .NET SDK Install UX on Linux.
+Fixes issue with install scripts on local runtime installs where stderr was treated as error.
+Add recommended version API.
+
 ## [2.0.1] - 2024-01-03
 
 Fixes several key bugs with installing .NET:

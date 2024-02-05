@@ -155,7 +155,7 @@ export abstract class DotnetInstallExpectedAbort extends IEvent {
 }
 
 export class SuppressedAcquisitionError extends IEvent {
-    public readonly eventName = 'SuppressedAcquisitionError';
+    public eventName = 'SuppressedAcquisitionError';
     public readonly type = EventType.SuppressedAcquisitionError;
 
     constructor(public readonly error: Error, public readonly supplementalMessage : string) {
@@ -175,6 +175,10 @@ export class DotnetInstallScriptAcquisitionError extends DotnetAcquisitionError 
     public readonly eventName = 'DotnetInstallScriptAcquisitionError';
 }
 
+export class UserManualInstallFailure extends SuppressedAcquisitionError {
+    eventName = 'UserManualInstallFailure';
+}
+
 export class OSXOpenNotAvailableError extends DotnetAcquisitionError {
     public readonly eventName = 'OSXOpenNotAvailableError';
 }
@@ -185,6 +189,18 @@ export class WebRequestError extends DotnetAcquisitionError {
 
 export class DotnetPreinstallDetectionError extends DotnetAcquisitionError {
     public readonly eventName = 'DotnetPreinstallDetectionError';
+}
+
+export class TimeoutSudoProcessSpawnerError extends DotnetAcquisitionError {
+    public readonly eventName = 'TimeoutSudoProcessSpawnerError';
+}
+
+export class TimeoutSudoCommandExecutionError extends DotnetAcquisitionError {
+    public readonly eventName = 'TimeoutSudoCommandExecutionError';
+}
+
+export class CommandExecutionNonZeroExitFailure extends DotnetAcquisitionError {
+    public readonly eventName = 'CommandExecutionNonZeroExitFailure';
 }
 
 export class DotnetNotInstallRelatedCommandFailed extends DotnetNonAcquisitionError {
@@ -472,6 +488,22 @@ export class DotnetFileIntegrityCheckEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetFileIntegrityCheckEvent';
 }
 
+export class GlobalAcquisitionContextMenuOpened extends DotnetCustomMessageEvent {
+    public readonly eventName = 'GlobalAcquisitionContextMenuOpened';
+}
+
+export class UserManualInstallVersionChosen extends DotnetCustomMessageEvent {
+    public readonly eventName = 'UserManualInstallVersionChosen';
+}
+
+export class UserManualInstallRequested extends DotnetCustomMessageEvent {
+    public readonly eventName = 'UserManualInstallRequested';
+}
+
+export class UserManualInstallSuccess extends DotnetCustomMessageEvent {
+    public readonly eventName = 'UserManualInstallSuccess';
+}
+
 export class CommandExecutionStdOut extends DotnetCustomMessageEvent {
     public readonly eventName = 'CommandExecutionStdOut';
 }
@@ -486,6 +518,18 @@ export class DotnetGlobalAcquisitionBeginEvent extends DotnetCustomMessageEvent 
 
 export class DotnetGlobalVersionResolutionCompletionEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetGlobalVersionResolutionCompletionEvent';
+}
+
+export class CommandProcessesExecutionFailureNonTerminal extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandProcessesExecutionFailureNonTerminal';
+}
+
+export class CommandProcessorExecutionBegin extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandProcessorExecutionBegin';
+}
+
+export class CommandProcessorExecutionEnd extends DotnetCustomMessageEvent {
+    public readonly eventName = 'CommandProcessorExecutionEnd';
 }
 
 export class DotnetBeginGlobalInstallerExecution extends DotnetCustomMessageEvent {
@@ -547,6 +591,26 @@ export class CommandExecutionEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'CommandExecutionEvent';
 }
 
+export class SudoProcAliveCheckBegin extends DotnetCustomMessageEvent {
+    public readonly eventName = 'SudoProcAliveCheckBegin';
+}
+
+export class SudoProcAliveCheckEnd extends DotnetCustomMessageEvent {
+    public readonly eventName = 'SudoProcAliveCheckEnd';
+}
+
+export class SudoProcCommandExchangeBegin extends DotnetCustomMessageEvent {
+    public readonly eventName = 'SudoProcCommandExchangeBegin';
+}
+
+export class SudoProcCommandExchangePing extends DotnetCustomMessageEvent {
+    public readonly eventName = 'SudoProcCommandExchangePing';
+}
+
+export class SudoProcCommandExchangeEnd extends DotnetCustomMessageEvent {
+    public readonly eventName = 'SudoProcCommandExchangeEnd';
+}
+
 export class CommandExecutionUserAskDialogueEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'CommandExecutionUserAskDialogueEvent';
 }
@@ -561,6 +625,10 @@ export class CommandExecutionUnderSudoEvent extends DotnetCustomMessageEvent {
 
 export class CommandExecutionUserRejectedPasswordRequest extends DotnetInstallExpectedAbort {
     public readonly eventName = 'CommandExecutionUserRejectedPasswordRequest';
+}
+
+export class CommandExecutionUnknownCommandExecutionAttempt extends DotnetInstallExpectedAbort {
+    public readonly eventName = 'CommandExecutionUnknownCommandExecutionAttempt';
 }
 
 export class DotnetVersionParseEvent extends DotnetCustomMessageEvent {
