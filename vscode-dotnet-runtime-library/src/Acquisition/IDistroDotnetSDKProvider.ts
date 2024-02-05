@@ -60,6 +60,9 @@ export abstract class IDistroDotnetSDKProvider {
     protected runtimeKey = 'runtime';
     protected aspNetKey = 'aspnetcore';
 
+    protected isMidFeedInjection = false;
+    protected cachedMyVersionPacakges : any = null;
+
     constructor(distroVersion : DistroVersionPair, context : IAcquisitionWorkerContext, utilContext : IUtilityContext, executor : ICommandExecutor | null = null)
     {
         this.context = context;
@@ -184,6 +187,11 @@ export abstract class IDistroDotnetSDKProvider {
 
     protected async myVersionPackages(installType : LinuxInstallType, haveTriedFeedInjectionAlready = false) : Promise<LinuxPackageCollection[]>
     {
+        if(this.cachedMyVersionPacakges)
+        {
+            return this.cachedMyVersionPacakges;
+        }
+
         const availableVersions : LinuxPackageCollection[] = [];
 
         const potentialDotnetPackageNames = this.distroJson[this.distroVersion.distro][this.distroPackagesKey];
@@ -227,13 +235,24 @@ export abstract class IDistroDotnetSDKProvider {
             const fakeVersionToCheckMicrosoftSupportStatus = '6.0.1xx';
 
             await this.injectPMCFeed(fakeVersionToCheckMicrosoftSupportStatus, installType);
-            return this.myVersionPackages(installType, true);
+            this.cachedMyVersionPacakges = this.myVersionPackages(installType, true);
         }
-        return availableVersions;
+        else
+        {
+            this.cachedMyVersionPacakges = availableVersions;
+        }
+
+        return this.cachedMyVersionPacakges;
     }
 
     protected async injectPMCFeed(fullySpecifiedVersion : string, installType : LinuxInstallType)
     {
+        if(this.isMidFeedInjection)
+        {
+            return;
+        }
+
+        this.isMidFeedInjection = true;
         const supportStatus = await this.getDotnetVersionSupportStatus(fullySpecifiedVersion, installType);
         if(supportStatus === DotnetDistroSupportStatus.Microsoft)
         {
@@ -241,6 +260,8 @@ export abstract class IDistroDotnetSDKProvider {
             const preInstallCommands = myVersionDetails[this.preinstallCommandKey] as CommandExecutorCommand[];
             await this.commandRunner.executeMultipleCommands(preInstallCommands);
         }
+
+        this.isMidFeedInjection = false;
     }
 
     protected myVersionDetails() : any
@@ -330,7 +351,7 @@ export abstract class IDistroDotnetSDKProvider {
 
     protected async myDotnetVersionPackageName(fullySpecifiedDotnetVersion : string, installType : LinuxInstallType) : Promise<string>
     {
-        const myDotnetVersions = await this.myVersionPackages(installType);
+        const myDotnetVersions = await this.myVersionPackages(installType, this.isMidFeedInjection);
         for(const dotnetPackage of myDotnetVersions)
         {
             if(dotnetPackage.version === this.JsonDotnetVersion(fullySpecifiedDotnetVersion))
@@ -339,7 +360,7 @@ export abstract class IDistroDotnetSDKProvider {
                 return dotnetPackage.packages[0];
             }
         }
-        const err = new Error(`Could not find a .NET package for version ${fullySpecifiedDotnetVersion}. Found only: ${JSON.stringify(await this.myVersionPackages(installType))}`);
+        const err = new Error(`Could not find a .NET package for version ${fullySpecifiedDotnetVersion}. Found only: ${JSON.stringify(myDotnetVersions)}`);
         this.context.eventStream.post(new DotnetVersionResolutionError(err, getInstallKeyFromContext(this.context.acquisitionContext)));
         throw err;
     }
