@@ -59,8 +59,16 @@
 				"commandParts": ["-l", "{packageName}"]
 			}
 		],
+		"readSymLinkCommand":
+		[
+			{
+				"runUnderSudo": false,
+				"commandRoot": "readlink",
+				"commandParts": ["-f", "{path}"]
+			}
+		],
 		"expectedDistroFeedInstallDirectory" : "/usr/lib/dotnet",
-        "expectedMicrosoftFeedInstallDirectory" : "/usr/bin/dotnet",
+        "expectedMicrosoftFeedInstallDirectory" : "/usr/share/dotnet",
 		"installedSDKVersionsCommand":
 		[
 			{
@@ -133,11 +141,6 @@
 					{
 						"runUnderSudo": true,
 						"commandRoot": "apt-get",
-						"commandParts": ["update"]
-					},
-					{
-						"runUnderSudo": true,
-						"commandRoot": "apt-get",
 						"commandParts": ["install", "-y", "wget"]
 					},
 					{
@@ -149,6 +152,11 @@
 						"runUnderSudo": true,
 						"commandRoot": "dpkg",
 						"commandParts": ["-i", "packages-microsoft-prod.deb"]
+					},
+					{
+						"runUnderSudo": true,
+						"commandRoot": "apt-get",
+						"commandParts": ["update"]
 					}
 				]
 			},
@@ -255,7 +263,15 @@
 				]
 			}
 		],
-		"expectedDistroFeedInstallDirectory": "/usr/lib64/dotnet/dotnet",
+		"readSymLinkCommand":
+		[
+			{
+				"runUnderSudo": false,
+				"commandRoot": "readlink",
+				"commandParts": ["-f", "{path}"]
+			}
+		],
+		"expectedDistroFeedInstallDirectory": "/usr/lib64/dotnet",
 		"expectedMicrosoftFeedInstallDirectory": "",
 		"installedSDKVersionsCommand": [
 			{

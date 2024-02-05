@@ -9,9 +9,10 @@ import {
     DotnetAcquisitionError,
     DotnetAcquisitionInProgress,
     DotnetAcquisitionStarted,
-    DotnetAcquisitionVersionError,
     DotnetDebuggingMessage,
     DotnetExistingPathResolutionCompleted,
+    DotnetInstallExpectedAbort,
+    DotnetUpgradedEvent,
 } from './EventStreamEvents';
 import { EventType } from './EventType';
 import { IEvent } from './IEvent';
@@ -98,22 +99,22 @@ export class OutputChannelObserver implements IEventStreamObserver {
             case EventType.DotnetAcquisitionError:
                 const error = event as DotnetAcquisitionError;
                 this.outputChannel.appendLine(' Error!');
-                if (error instanceof DotnetAcquisitionVersionError) {
-                    this.outputChannel.appendLine(`Failed to download .NET ${error.installKey}:`);
-                }
+                this.outputChannel.appendLine(`Failed to download .NET ${error.installKey}:`);
                 this.outputChannel.appendLine(error.error.message);
                 this.outputChannel.appendLine('');
 
-                if (error instanceof DotnetAcquisitionVersionError) {
-                    this.inProgressVersionDone(error.installKey);
-                }
+                this.updateDownloadIndicators(error.installKey);
+                break;
+            case EventType.DotnetInstallExpectedAbort:
+                const abortEvent = event as DotnetInstallExpectedAbort;
+                this.outputChannel.appendLine(`Cancelled Installation of .NET ${abortEvent.installKey}.`);
+                this.outputChannel.appendLine(abortEvent.error.message);
 
-                if (this.inProgressDownloads.length > 0) {
-                    const errorVersionString = this.inProgressDownloads.join(', ');
-                    this.outputChannel.append(`Still downloading .NET version(s) ${errorVersionString} ...`);
-                } else {
-                    this.stopDownloadIndicator();
-                }
+                this.updateDownloadIndicators(abortEvent.installKey);
+                break;
+            case EventType.DotnetUpgradedEvent:
+                const upgradeMessage = event as DotnetUpgradedEvent;
+                this.outputChannel.appendLine(`${upgradeMessage.eventMessage}:`);
                 break;
             case EventType.DotnetDebuggingMessage:
                 const loggedMessage = event as DotnetDebuggingMessage;
@@ -124,6 +125,23 @@ export class OutputChannelObserver implements IEventStreamObserver {
 
     public dispose(): void {
         // Nothing to dispose
+    }
+
+    private updateDownloadIndicators(installKey : string | null | undefined)
+    {
+        if(installKey && installKey !== 'null')
+        {
+            this.inProgressVersionDone(installKey);
+        }
+
+        if (this.inProgressDownloads.length > 0)
+        {
+            const errorVersionString = this.inProgressDownloads.join(', ');
+            this.outputChannel.append(`Still downloading .NET version(s) ${errorVersionString} ...`);
+        }
+        else {
+            this.stopDownloadIndicator();
+        }
     }
 
     private startDownloadIndicator() {

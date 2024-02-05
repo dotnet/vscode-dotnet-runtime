@@ -14,9 +14,10 @@ const assert = chai.assert;
 const standardTimeoutTime = 100000;
 
 const mockVersion = '7.0.103';
-const mockExecutor = new MockCommandExecutor(new MockEventStream(), getMockUtilityContext());
+const acquisitionContext = getMockAcquisitionContext(false, mockVersion);
+const mockExecutor = new MockCommandExecutor(acquisitionContext, getMockUtilityContext());
 const pair : DistroVersionPair = { distro : 'Ubuntu', version : '22.04' };
-const provider : GenericDistroSDKProvider = new GenericDistroSDKProvider(pair, getMockAcquisitionContext(false), getMockUtilityContext(), mockExecutor);
+const provider : GenericDistroSDKProvider = new GenericDistroSDKProvider(pair, acquisitionContext, getMockUtilityContext(), mockExecutor);
 const shouldRun = os.platform() === 'linux';
 const installType : LinuxInstallType = 'sdk';
 const noDotnetString = `
@@ -60,7 +61,7 @@ suite('Linux Distro Logic Unit Tests', () =>
         if(shouldRun)
         {
             const microsoftFeedDir = await provider.getExpectedDotnetMicrosoftFeedInstallationDirectory();
-            assert.equal(microsoftFeedDir, '/usr/bin/dotnet');
+            assert.equal(microsoftFeedDir, '/usr/share/dotnet');
         }
     }).timeout(standardTimeoutTime);
 

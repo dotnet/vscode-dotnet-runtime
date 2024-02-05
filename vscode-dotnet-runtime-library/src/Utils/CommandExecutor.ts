@@ -5,8 +5,8 @@
  * ------------------------------------------------------------------------------------------ */
 import * as proc from 'child_process';
 import * as fs from 'fs';
-import open = require('open');
 import * as os from 'os';
+import open = require('open');
 import path = require('path');
 
 import {
@@ -17,19 +17,24 @@ import {
     CommandExecutionStdError,
     CommandExecutionStdOut,
     CommandExecutionUnderSudoEvent,
+    CommandExecutionUserAskDialogueEvent,
     CommandExecutionUserCompletedDialogueEvent,
+    CommandExecutionUserRejectedPasswordRequest,
     DotnetAlternativeCommandFoundEvent,
     DotnetCommandNotFoundEvent,
     DotnetWSLSecurityError
 } from '../EventStream/EventStreamEvents';
 import {exec} from '@vscode/sudo-prompt';
+
+import { CommandExecutorCommand } from './CommandExecutorCommand';
+import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
+
+
 import { ICommandExecutor } from './ICommandExecutor';
-import { IEventStream } from '../EventStream/EventStream';
-import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { IUtilityContext } from './IUtilityContext';
+import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
-import { CommandExecutorCommand } from './ICommandExecutor';
-import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
+import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 
 /* tslint:disable:no-any */
 
@@ -37,9 +42,9 @@ export class CommandExecutor extends ICommandExecutor
 {
     private pathTroubleshootingOption = 'Troubleshoot';
 
-    constructor(eventStream : IEventStream, utilContext : IUtilityContext, acquireContext? : IDotnetAcquireContext)
+    constructor(context : IAcquisitionWorkerContext | null, utilContext : IUtilityContext)
     {
-        super(eventStream, utilContext, acquireContext);
+        super(context, utilContext);
     }
 
     /**
@@ -63,7 +68,7 @@ export class CommandExecutor extends ICommandExecutor
     private async ExecSudoAsync(command : CommandExecutorCommand, terminalFailure = true) : Promise<string>
     {
         const fullCommandString = CommandExecutor.prettifyCommandExecutorCommand(command, false);
-        this.eventStream.post(new CommandExecutionUnderSudoEvent(`The command ${fullCommandString} is being ran under sudo.`));
+        this.context?.eventStream.post(new CommandExecutionUnderSudoEvent(`The command ${fullCommandString} is being ran under sudo.`));
 
         if(this.isRunningUnderWSL())
         {
@@ -73,8 +78,9 @@ export class CommandExecutor extends ICommandExecutor
             // We had a working implementation that opens a vscode box and gets the user password, but that will require more security analysis.
 
             const err = new DotnetWSLSecurityError(new Error(`Automatic .NET SDK Installation is not yet supported in WSL due to VS Code & WSL limitations.
-Please install the .NET SDK manually by following https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu. Then, add it to the path by following https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#manually-installing-net`));
-            this.eventStream.post(err);
+Please install the .NET SDK manually by following https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu. Then, add it to the path by following https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#manually-installing-net`,
+                ), getInstallKeyFromContext(this.context?.acquisitionContext!));
+            this.context?.eventStream.post(err);
             throw err.error;
         }
 
@@ -82,29 +88,41 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
         return new Promise<string>((resolve, reject) =>
         {
             // The '.' character is not allowed for sudo-prompt so we use 'NET'
-            const options = { name: `${this.acquisitionContext?.requestingExtensionId} On behalf of NET Install Tool` };
+            let sanitizedCallerName = this.context?.acquisitionContext?.requestingExtensionId?.replace(/[^0-9a-z]/gi, ''); // Remove non-alphanumerics per OS requirements
+            sanitizedCallerName = sanitizedCallerName?.substring(0, 69); // 70 Characters is the maximum limit we can use for the prompt.
+            const options = { name: `${sanitizedCallerName ?? '.NET Install Tool'}` };
+
+            this.context?.eventStream.post(new CommandExecutionUserAskDialogueEvent(`Prompting user for command ${fullCommandString} under sudo.`));
             exec((fullCommandString), options, (error?: any, stdout?: any, stderr?: any) =>
             {
                 let commandResultString = '';
 
                 if (stdout)
                 {
-                    this.eventStream.post(new CommandExecutionStdOut(`The command ${fullCommandString} encountered stdout, continuing
+                    this.context?.eventStream.post(new CommandExecutionStdOut(`The command ${fullCommandString} encountered stdout, continuing
 ${stdout}`));
                     commandResultString += stdout;
                 }
                 if (stderr)
                 {
-                    this.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandString} encountered stderr, continuing
+                    this.context?.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandString} encountered stderr, continuing
 ${stderr}`));
                     commandResultString += stderr;
                 }
 
                 if (error)
                 {
-                    this.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The command ${fullCommandString} failed to run under sudo.`));
+                    this.context?.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The command ${fullCommandString} failed to run under sudo.`));
                     if(terminalFailure)
                     {
+                        if(error.code === 126)
+                        {
+                            const err = new CommandExecutionUserRejectedPasswordRequest(new Error(`Cancelling .NET Install, as command ${fullCommandString} failed.
+The user refused the password prompt.`),
+                                getInstallKeyFromContext(this.context?.acquisitionContext!));
+                            this.context?.eventStream.post(err);
+                            reject(err.error);
+                        }
                         reject(error);
                     }
                     else
@@ -114,7 +132,7 @@ ${stderr}`));
                 }
                 else
                 {
-                    this.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The command ${fullCommandString} successfully ran under sudo.`));
+                    this.context?.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The command ${fullCommandString} successfully ran under sudo.`));
                     resolve(this.returnStatus ? '0' : commandResultString);
                 }
             });
@@ -134,7 +152,7 @@ ${stderr}`));
     /**
      *
      * @param workingDirectory The directory to execute in. Only works for non sudo commands.
-     * @param terminalFailure Whether to throw up an error when executing under sudo or supress it and return stderr
+     * @param terminalFailure Whether to throw up an error when executing under sudo or suppress it and return stderr
      * @returns the result(s) of each command. Can throw generically if the command fails.
      */
     public async execute(command : CommandExecutorCommand, options : any | null = null, terminalFailure = true) : Promise<string>
@@ -151,14 +169,14 @@ ${stderr}`));
         }
         else
         {
-            this.eventStream.post(new CommandExecutionEvent(`Executing command ${fullCommandStringForTelemetryOnly}
+            this.context?.eventStream.post(new CommandExecutionEvent(`Executing command ${fullCommandStringForTelemetryOnly}
 with options ${options}.`));
             const commandResult = proc.spawnSync(command.commandRoot, command.commandParts, options);
             if(this.returnStatus)
             {
                 if(commandResult.status !== null)
                 {
-                    this.eventStream.post(new CommandExecutionStatusEvent(`The command ${fullCommandStringForTelemetryOnly} exited
+                    this.context?.eventStream.post(new CommandExecutionStatusEvent(`The command ${fullCommandStringForTelemetryOnly} exited
 with status: ${commandResult.status.toString()}.`));
                     return commandResult.status.toString() ?? '';
                 }
@@ -167,13 +185,13 @@ with status: ${commandResult.status.toString()}.`));
                     // A signal is generally given if a status is not given, and they are 'equivalent' enough
                     if(commandResult.signal !== null)
                     {
-                        this.eventStream.post(new CommandExecutionSignalSentEvent(`The command ${fullCommandStringForTelemetryOnly} exited
+                        this.context?.eventStream.post(new CommandExecutionSignalSentEvent(`The command ${fullCommandStringForTelemetryOnly} exited
 with signal: ${commandResult.signal.toString()}.`));
                         return commandResult.signal.toString() ?? '';
                     }
                     else
                     {
-                        this.eventStream.post(new CommandExecutionNoStatusCodeWarning(`The command ${fullCommandStringForTelemetryOnly} with
+                        this.context?.eventStream.post(new CommandExecutionNoStatusCodeWarning(`The command ${fullCommandStringForTelemetryOnly} with
 result: ${commandResult.toString()} had no status or signal.`));
                         return '000751'; // Error code 000751 : The command did not report an exit code upon completion. This is never expected
                     }
@@ -189,12 +207,12 @@ result: ${commandResult.toString()} had no status or signal.`));
                 {
                     if(commandResult.stdout)
                     {
-                    this.eventStream.post(new CommandExecutionStdOut(`The command ${fullCommandStringForTelemetryOnly} encountered stdout:
+                    this.context?.eventStream.post(new CommandExecutionStdOut(`The command ${fullCommandStringForTelemetryOnly} encountered stdout:
 ${commandResult.stdout}`));
                     }
                     if(commandResult.stderr)
                     {
-                        this.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandStringForTelemetryOnly} encountered stderr:
+                        this.context?.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandStringForTelemetryOnly} encountered stderr:
 ${commandResult.stderr}`));
                     }
                     return commandResult.stdout?.toString() + commandResult.stderr?.toString() ?? '';
@@ -224,18 +242,18 @@ ${commandResult.stderr}`));
                 if(cmdFoundOutput === '0')
                 {
                     workingCommand = command;
-                    this.eventStream.post(new DotnetAlternativeCommandFoundEvent(`The command ${command.commandRoot} was found.`));
+                    this.context?.eventStream.post(new DotnetAlternativeCommandFoundEvent(`The command ${command.commandRoot} was found.`));
                     break;
                 }
                 else
                 {
-                    this.eventStream.post(new DotnetCommandNotFoundEvent(`The command ${command.commandRoot} was NOT found, no error was thrown.`));
+                    this.context?.eventStream.post(new DotnetCommandNotFoundEvent(`The command ${command.commandRoot} was NOT found, no error was thrown.`));
                 }
             }
             catch(err)
             {
                 // Do nothing. The error should be raised higher up.
-                this.eventStream.post(new DotnetCommandNotFoundEvent(`The command ${command.commandRoot} was NOT found, and we caught any errors.`));
+                this.context?.eventStream.post(new DotnetCommandNotFoundEvent(`The command ${command.commandRoot} was NOT found, and we caught any errors.`));
             }
         };
 
