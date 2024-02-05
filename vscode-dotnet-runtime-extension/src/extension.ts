@@ -227,7 +227,11 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         {
             const err = new Error(`An active-support version of dotnet couldn't be found. Discovered versions: ${JSON.stringify(availableVersions)}`);
             globalEventStream.post(new DotnetVersionResolutionError(err as Error, 'recommended'));
-            throw err;
+            if(!availableVersions || availableVersions.length < 1)
+            {
+                return '';
+            }
+            return availableVersions[0].version;
         }
 
         // The first item will be the newest version.
