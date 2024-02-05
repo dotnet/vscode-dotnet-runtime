@@ -136,6 +136,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     const sdkIssueContextFunctor = getIssueContext(existingPathConfigWorker);
     const sdkAcquisitionWorker = getAcquisitionWorker(sdkContext);
 
+    checkIfSDKAcquisitionIsSupported();
+
     // Creating API Surfaces
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) => {
         let fullyResolvedVersion = '';
@@ -317,6 +319,14 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         return new Promise((resolve) => {
             resolve(null);
         });
+    }
+
+    function checkIfSDKAcquisitionIsSupported() : boolean
+    {
+        let isSupported = true;
+        isSupported = isSupported && !CommandExecutor.isRunningUnderWSL();
+        vscode.commands.executeCommand('setContext', 'dotnetAcquisitionExtension.isGlobalSDKSupported', isSupported);
+        return isSupported;
     }
 
     const getAvailableVersions = async (commandContext: IDotnetListVersionsContext | undefined,

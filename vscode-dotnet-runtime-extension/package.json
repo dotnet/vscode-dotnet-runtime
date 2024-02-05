@@ -56,7 +56,8 @@
 			{
 				"command": "dotnet.acquireGlobalSDKPublic",
 				"title": "Install the .NET SDK System-Wide.",
-				"category": ".NET Install Tool"
+				"category": ".NET Install Tool",
+				"enablement": "config.dotnetAcquisitionExtension.enablePreviewFeatures && dotnetAcquisitionExtension.isGlobalSDKSupported !== false"
 			}
 		],
 		"configuration": {
@@ -67,6 +68,11 @@
 					"default": true,
 					"description": "Enable Telemetry for the .NET Install Tool. Restart VS Code to apply changes."
 				},
+				"dotnetAcquisitionExtension.enablePreviewFeatures": {
+					"type": "boolean",
+					"default": false,
+					"description": "Enable Preview Features for the Extension. Restart VS Code to apply changes."
+				},
 				"dotnetAcquisitionExtension.installTimeoutValue": {
 					"type": "number",
 					"default": 600,
@@ -75,7 +81,11 @@
 				"dotnetAcquisitionExtension.existingDotnetPath": {
 					"type": "array",
 					"description": "File Path to an existing installation of .NET. Used for both the .NET SDK and .NET Runtime.",
-					"examples": ["C:\\Program Files\\dotnet\\dotnet.exe", "/usr/local/share/dotnet/dotnet", "/usr/lib/dotnet/dotnet"]
+					"examples": [
+						"C:\\Program Files\\dotnet\\dotnet.exe",
+						"/usr/local/share/dotnet/dotnet",
+						"/usr/lib/dotnet/dotnet"
+					]
 				},
 				"dotnetAcquisitionExtension.proxyUrl": {
 					"type": "string",

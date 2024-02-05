@@ -50,7 +50,7 @@ export class CommandExecutor extends ICommandExecutor
     /**
      * Returns true if the linux agent is running under WSL, else false.
      */
-    private isRunningUnderWSL() : boolean
+    public static isRunningUnderWSL() : boolean
     {
         // See https://github.com/microsoft/WSL/issues/4071 for evidence that we can rely on this behavior.
 
@@ -70,7 +70,7 @@ export class CommandExecutor extends ICommandExecutor
         const fullCommandString = CommandExecutor.prettifyCommandExecutorCommand(command, false);
         this.context?.eventStream.post(new CommandExecutionUnderSudoEvent(`The command ${fullCommandString} is being ran under sudo.`));
 
-        if(this.isRunningUnderWSL())
+        if(CommandExecutor.isRunningUnderWSL())
         {
             // For WSL, vscode/sudo-prompt does not work.
             // This is because it relies on pkexec or a GUI app to popup and request sudo privilege.
