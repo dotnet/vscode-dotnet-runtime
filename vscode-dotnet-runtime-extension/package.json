@@ -43,7 +43,7 @@
 		"onCommand:dotnet.uninstallAll",
 		"onCommand:dotnet.showAcquisitionLog",
 		"onCommand:dotnet.ensureDotnetDependencies",
-		"*"
+		"onStartupFinished"
 	],
 	"main": "./dist/extension.js",
 	"types": "./dist/extension.d.ts",
