@@ -80,7 +80,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
                 if(conflictingVersion === this.installingVersion)
                 {
                     // The install already exists, we can just exit with Ok.
-                    this.acquisitionContext.eventStream.post(new DotnetAcquisitionAlreadyInstalled(`The .NET SDK ${this.installingVersion} is already installed.`,
+                    this.acquisitionContext.eventStream.post(new DotnetAcquisitionAlreadyInstalled(` `,
                         getInstallKeyFromContext(this.acquisitionContext.acquisitionContext)));
                     return '0';
                 }
