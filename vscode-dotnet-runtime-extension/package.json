@@ -42,7 +42,8 @@
 		"onCommand:dotnet.recommendedVersion",
 		"onCommand:dotnet.uninstallAll",
 		"onCommand:dotnet.showAcquisitionLog",
-		"onCommand:dotnet.ensureDotnetDependencies"
+		"onCommand:dotnet.ensureDotnetDependencies",
+		"*"
 	],
 	"main": "./dist/extension.js",
 	"types": "./dist/extension.d.ts",
@@ -57,7 +58,7 @@
 				"command": "dotnet.acquireGlobalSDKPublic",
 				"title": "Install the .NET SDK System-Wide.",
 				"category": ".NET Install Tool",
-				"enablement": "config.dotnetAcquisitionExtension.enablePreviewFeatures && dotnetAcquisitionExtension.isGlobalSDKSupported"
+				"enablement": "config.dotnetAcquisitionExtension.enablePreviewFeatures && !dotnetAcquisitionExtension.isGlobalSDKUnsupported"
 			}
 		],
 		"configuration": {

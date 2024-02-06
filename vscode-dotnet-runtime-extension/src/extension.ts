@@ -329,7 +329,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     {
         let isSupported = true;
         isSupported = isSupported && !CommandExecutor.isRunningUnderWSL();
-        vscode.commands.executeCommand('setContext', 'dotnetAcquisitionExtension.isGlobalSDKSupported', isSupported);
+        vscode.commands.executeCommand('setContext', 'dotnetAcquisitionExtension.isGlobalSDKUnsupported', !isSupported);
         return isSupported;
     }
 
