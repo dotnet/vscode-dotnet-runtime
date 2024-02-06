@@ -81,7 +81,7 @@ export class OutputChannelObserver implements IEventStreamObserver {
                 {
                     this.outputChannel.append(`${
                         (event as DotnetAcquisitionAlreadyInstalled).requestingExtensionId
-                    } wants to install .NET ${
+                    }: Trying to install .NET ${
                         (event as DotnetAcquisitionAlreadyInstalled).installKey
                     } but it already exists. No downloads or changes were made.\n`);
                 }

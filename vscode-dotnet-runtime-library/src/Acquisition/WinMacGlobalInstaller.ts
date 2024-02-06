@@ -80,8 +80,9 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
                 if(conflictingVersion === this.installingVersion)
                 {
                     // The install already exists, we can just exit with Ok.
-                    this.acquisitionContext.eventStream.post(new DotnetAcquisitionAlreadyInstalled(` `,
-                        getInstallKeyFromContext(this.acquisitionContext.acquisitionContext)));
+                    this.acquisitionContext.eventStream.post(new DotnetAcquisitionAlreadyInstalled(getInstallKeyFromContext(this.acquisitionContext.acquisitionContext) ?? '',
+                        (this.acquisitionContext.acquisitionContext && this.acquisitionContext.acquisitionContext.requestingExtensionId)
+                        ? this.acquisitionContext.acquisitionContext.requestingExtensionId : null));
                     return '0';
                 }
                 const err = new DotnetConflictingGlobalWindowsInstallError(new Error(`An global install is already on the machine: version ${conflictingVersion}, that conflicts with the requested version.
