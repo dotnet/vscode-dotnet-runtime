@@ -12,6 +12,7 @@ import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import {
+    DotnetAcquisitionAlreadyInstalled,
     DotnetConflictingGlobalWindowsInstallError,
     DotnetFileIntegrityCheckEvent,
     DotnetInstallCancelledByUserError as DotnetInstallCancelledByUser,
@@ -79,6 +80,8 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
                 if(conflictingVersion === this.installingVersion)
                 {
                     // The install already exists, we can just exit with Ok.
+                    this.acquisitionContext.eventStream.post(new DotnetAcquisitionAlreadyInstalled(`The .NET SDK ${this.installingVersion} is already installed.`,
+                        getInstallKeyFromContext(this.acquisitionContext.acquisitionContext)));
                     return '0';
                 }
                 const err = new DotnetConflictingGlobalWindowsInstallError(new Error(`An global install is already on the machine: version ${conflictingVersion}, that conflicts with the requested version.
