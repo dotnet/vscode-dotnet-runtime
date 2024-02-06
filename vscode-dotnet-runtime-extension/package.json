@@ -57,7 +57,7 @@
 				"command": "dotnet.acquireGlobalSDKPublic",
 				"title": "Install the .NET SDK System-Wide.",
 				"category": ".NET Install Tool",
-				"enablement": "config.dotnetAcquisitionExtension.enablePreviewFeatures && dotnetAcquisitionExtension.isGlobalSDKSupported !== false"
+				"enablement": "config.dotnetAcquisitionExtension.enablePreviewFeatures && dotnetAcquisitionExtension.isGlobalSDKSupported"
 			}
 		],
 		"configuration": {
