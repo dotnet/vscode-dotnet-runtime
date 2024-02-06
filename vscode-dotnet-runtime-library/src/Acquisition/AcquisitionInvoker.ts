@@ -96,6 +96,8 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                     else if (stderr && stderr.length > 0)
                     {
                         this.eventStream.post(new DotnetAcquisitionScriptOutput(installKey, `STDERR: ${TelemetryUtilities.HashAllPaths(stderr)}`));
+                        this.eventStream.post(new DotnetAcquisitionCompleted(installKey, installContext.dotnetPath, installContext.version));
+                        resolve();
                     }
                     else
                     {
