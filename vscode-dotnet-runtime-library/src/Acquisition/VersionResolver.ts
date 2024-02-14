@@ -159,7 +159,7 @@ export class VersionResolver implements IVersionResolver {
         }
         Debugging.log(`Semver parsing passed: ${version}.`, this.eventStream);
 
-        if (version.split('.').length !== 3 || !parsedVer)
+        if (version.split('.').length !== 3 || version.split('.').length !== 2 || !parsedVer)
         {
             Debugging.log(`Resolving the version: ${version} ... it is invalid!`, this.eventStream);
             const err = new DotnetVersionResolutionError(new Error(`An invalid version was requested. Version: ${version}`), version);
