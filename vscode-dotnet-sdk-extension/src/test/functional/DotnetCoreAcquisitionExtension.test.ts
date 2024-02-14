@@ -18,28 +18,21 @@ import {
   DotnetPreinstallDetected,
   IDotnetAcquireContext,
   IDotnetAcquireResult,
-  IDotnetListVersionsContext,
-  IDotnetListVersionsResult,
-  FileUtilities,
   GlobalInstallerResolver,
   MockEnvironmentVariableCollection,
   MockEventStream,
   MockExtensionConfiguration,
   MockExtensionContext,
-  MockInstallationValidator,
   MockTelemetryReporter,
-  MockWebRequestWorker,
   MockWindowDisplayWorker,
   NoInstallAcquisitionInvoker,
   SdkInstallationDirectoryProvider,
-  WinMacGlobalInstaller,
   MockIndexWebRequestWorker,
-  MockVSCodeExtensionContext,
-  getMockUtilityContext
+  getMockAcquisitionContext,
+  getMockAcquisitionWorker
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { uninstallSDKExtension } from '../../ExtensionUninstall';
-import { IDotnetVersion } from 'vscode-dotnet-runtime-library';
 import { warn } from 'console';
 
 const standardTimeoutTime = 100000;
@@ -49,31 +42,8 @@ chai.use(chaiAsPromised);
 /* tslint:disable:no-unsafe-finally */
 
 const currentSDKVersion = '6.0';
-
 suite('DotnetCoreAcquisitionExtension End to End', function ()
 {
-const mockReleasesData = `{
-  "releases-index": [
-    {
-          "channel-version": "8.0",
-          "latest-release": "8.0.0-preview.2",
-          "latest-runtime": "8.0.0-preview.2.23128.3",
-          "latest-sdk": "8.0.100-preview.2.23157.25",
-          "release-type" : "lts",
-          "support-phase": "preview"
-      },
-      {
-          "channel-version": "7.0",
-          "latest-release": "7.0.4",
-          "latest-release-date": "2023-03-14",
-          "latest-runtime": "7.0.4",
-          "latest-sdk": "7.0.202",
-          "release-type" : "sts",
-          "support-phase": "active"
-      }
-    ]
-}`
-
 suite('DotnetCoreAcquisitionExtension End to End', function()
 {
   this.retries(3);
@@ -108,58 +78,15 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     assert.isAbove(extensionContext.subscriptions.length, 0);
   });
 
-  test('List Sdks & Runtimes', async () => {
-    const mockWebContext = new MockExtensionContext();
-    const eventStream = new MockEventStream();
-    const webWorker = new MockWebRequestWorker(mockWebContext, eventStream, '');
-    webWorker.response = JSON.parse(mockReleasesData);
-
-    // The API can find the available SDKs and list their versions.
-    const apiContext: IDotnetListVersionsContext = { listRuntimes: false };
-    const result = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet-sdk.listVersions', apiContext, webWorker);
-    assert.exists(result);
-    assert.equal(result?.length, 2);
-    assert.equal(result?.filter((sdk : any) => sdk.version === '7.0.202').length, 1, 'The mock SDK with the expected version {7.0.200} was not found by the API parsing service.');
-    assert.equal(result?.filter((sdk : any) => sdk.channelVersion === '7.0').length, 1, 'The mock SDK with the expected channel version {7.0} was not found by the API parsing service.');
-    assert.equal(result?.filter((sdk : any) => sdk.supportPhase === 'active').length, 1, 'The mock SDK with the expected support phase of {active} was not found by the API parsing service.');
-
-    // The API can find the available runtimes and their versions.
-    apiContext.listRuntimes = true;
-    const runtimeResult = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet-sdk.listVersions', apiContext, webWorker);
-    assert.exists(runtimeResult);
-    assert.equal(runtimeResult?.length, 2);
-    assert.equal(runtimeResult?.filter((runtime : any) => runtime.version === '7.0.4').length, 1, 'The mock Runtime with the expected version was not found by the API parsing service.');
-  }).timeout(standardTimeoutTime);
-
-  test('Get Recommended SDK Version', async () => {
-    const mockWebContext = new MockExtensionContext();
-    const eventStream = new MockEventStream();
-    const webWorker = new MockWebRequestWorker(mockWebContext, eventStream, '');
-    webWorker.response = JSON.parse(mockReleasesData);
-
-    const result = await vscode.commands.executeCommand<IDotnetVersion>('dotnet-sdk.recommendedVersion', null, webWorker);
-    assert.exists(result);
-    assert.equal(result?.version, '7.0.202', 'The SDK did not recommend the version it was supposed to, which should be {7.0.200} from the mock data.');
-  }).timeout(standardTimeoutTime);
-
   test('Detect Preinstalled SDK', async () => {
     // Set up acquisition worker
     const context = new MockExtensionContext();
     const eventStream = new MockEventStream();
     const installDirectoryProvider = new SdkInstallationDirectoryProvider(storagePath);
-    const acquisitionWorker = new DotnetCoreAcquisitionWorker({
-      storagePath: '',
-      extensionState: context,
-      eventStream,
-      acquisitionInvoker: new NoInstallAcquisitionInvoker(eventStream),
-      installationValidator: new MockInstallationValidator(eventStream),
-      timeoutValue: 10,
-      installDirectoryProvider,
-      isExtensionTelemetryInitiallyEnabled: true,
-    }, getMockUtilityContext(), new MockVSCodeExtensionContext());
 
     const version = currentSDKVersion;
     const earlierVersion = '3.1';
+    const acquisitionWorker = getMockAcquisitionWorker(false, version, undefined, eventStream, context, installDirectoryProvider);
 
     // Write 'preinstalled' SDKs
     const dotnetDir = installDirectoryProvider.getInstallDir(version);
@@ -175,7 +102,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     fs.writeFileSync(dotnetExePath, '');
 
     // Assert preinstalled SDKs are detected
-    const result = await acquisitionWorker.acquireSDK(version);
+    const acquisitionInvoker = new NoInstallAcquisitionInvoker(eventStream, acquisitionWorker);
+    const result = await acquisitionWorker.acquireSDK(version, acquisitionInvoker);
     assert.equal(path.dirname(result.dotnetPath), dotnetDir);
     const preinstallEvents = eventStream.events
       .filter(event => event instanceof DotnetPreinstallDetected)
@@ -194,21 +122,11 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
 
   test('Install Status Command with Preinstalled SDK', async () => {
     // Set up acquisition worker
-    const context = new MockExtensionContext();
-    const eventStream = new MockEventStream();
     const installDirectoryProvider = new SdkInstallationDirectoryProvider(storagePath);
-    const acquisitionWorker = new DotnetCoreAcquisitionWorker({
-      storagePath: '',
-      extensionState: context,
-      eventStream,
-      acquisitionInvoker: new NoInstallAcquisitionInvoker(eventStream),
-      installationValidator: new MockInstallationValidator(eventStream),
-      timeoutValue: 10,
-      installDirectoryProvider,
-      isExtensionTelemetryInitiallyEnabled: true,
-    }, getMockUtilityContext(), new MockVSCodeExtensionContext());
 
     const version = currentSDKVersion;
+    const acquisitionWorker = getMockAcquisitionWorker(false, version, undefined, undefined, undefined, installDirectoryProvider);
+
     const currentVersionInstallKey =  DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, os.arch());
     // Ensure nothing is returned when there is no preinstalled SDK
     const noPreinstallResult = await acquisitionWorker.acquireStatus(version, false);
@@ -252,9 +170,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
   }).timeout(standardTimeoutTime);
 
   test('Global Install Version Parsing Handles Different Version Formats Correctly and Gives Expected Installer URL', async () => {
-    const mockExtensionContext = new MockExtensionContext();
-    const eventStream = new MockEventStream();
-
     const majorOnlyVersion = '6';
     const majorMinorVersion = '6.0';
     const featureBandOnlyVersion = '6.0.3xx'; // this should be a full version thats lower than the newest version available.
@@ -262,23 +177,24 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
 
     const newestBandedVersion = '6.0.311';
     const newestVersion = '6.0.408';
+    const mockAcquisitionContext = getMockAcquisitionContext(false, '');
 
     const url = 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/6.0/releases.json'
-    const webWorker = new MockIndexWebRequestWorker(mockExtensionContext, eventStream, url);
+    const webWorker = new MockIndexWebRequestWorker(mockAcquisitionContext, url);
     webWorker.knownUrls.push(url);
     // Note that ZIPS in the data below come before EXEs to make sure the file extension check works.
     const mockJsonFile = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-releases.json');
     webWorker.matchingUrlResponses.push(fs.readFileSync(mockJsonFile, 'utf8'));
 
-    let resolver : GlobalInstallerResolver = new GlobalInstallerResolver(mockExtensionContext, eventStream, majorOnlyVersion, standardTimeoutTime, undefined);
+    let resolver : GlobalInstallerResolver = new GlobalInstallerResolver(mockAcquisitionContext, majorOnlyVersion);
     resolver.customWebRequestWorker = webWorker;
     assert.strictEqual(await resolver.getFullySpecifiedVersion(), newestVersion);
 
-    resolver = new GlobalInstallerResolver(mockExtensionContext, eventStream, majorMinorVersion, standardTimeoutTime, undefined);
+    resolver = new GlobalInstallerResolver(mockAcquisitionContext, majorMinorVersion);
     resolver.customWebRequestWorker = webWorker;
     assert.strictEqual(await resolver.getFullySpecifiedVersion(), newestVersion);
 
-    resolver = new GlobalInstallerResolver(mockExtensionContext, eventStream, featureBandOnlyVersion, standardTimeoutTime, undefined);
+    resolver = new GlobalInstallerResolver(mockAcquisitionContext, featureBandOnlyVersion);
     resolver.customWebRequestWorker = webWorker;
     assert.strictEqual(await resolver.getFullySpecifiedVersion(), newestBandedVersion);
 
@@ -297,7 +213,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
       }
     }
 
-    resolver = new GlobalInstallerResolver(mockExtensionContext, eventStream, fullVersion, standardTimeoutTime, undefined);
+    resolver = new GlobalInstallerResolver(mockAcquisitionContext, fullVersion);
     resolver.customWebRequestWorker = webWorker;
     assert.strictEqual(await resolver.getFullySpecifiedVersion(), fullVersion);
   }).timeout(standardTimeoutTime);
