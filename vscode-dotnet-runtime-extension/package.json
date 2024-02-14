@@ -35,14 +35,6 @@
 		"virtualWorkspaces": true
 	},
 	"activationEvents": [
-		"onCommand:dotnet.acquire",
-		"onCommand:dotnet.acquireStatus",
-		"onCommand:dotnet.acquireGlobalSDK",
-		"onCommand:dotnet.listVersions",
-		"onCommand:dotnet.recommendedVersion",
-		"onCommand:dotnet.uninstallAll",
-		"onCommand:dotnet.showAcquisitionLog",
-		"onCommand:dotnet.ensureDotnetDependencies",
 		"onStartupFinished"
 	],
 	"main": "./dist/extension.js",
