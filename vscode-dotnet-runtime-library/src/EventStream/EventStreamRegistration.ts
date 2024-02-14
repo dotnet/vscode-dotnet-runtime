@@ -33,7 +33,7 @@ export interface IEventStreamContext {
 }
 
 export function registerEventStream(context: IEventStreamContext, extensionContext : IVSCodeExtensionContext,
-    utilityContext : IUtilityContext): [EventStream, vscode.OutputChannel, LoggingObserver, IEventStreamObserver[]]
+    utilityContext : IUtilityContext): [EventStream, vscode.OutputChannel, LoggingObserver, IEventStreamObserver[], TelemetryObserver | null]
 {
     const outputChannel = vscode.window.createOutputChannel(context.displayChannelName);
     if (!fs.existsSync(context.logPath))
@@ -56,12 +56,13 @@ export function registerEventStream(context: IEventStreamContext, extensionConte
         eventStream.subscribe(event => observer.post(event));
     }
 
+    let telemetryObserver : TelemetryObserver | null = null;
     if (context.enableTelemetry) {
-        const telemetryObserver = new TelemetryObserver(context.packageJson, context.enableTelemetry, eventStream, extensionContext, utilityContext, context.telemetryReporter);
-        eventStream.subscribe(event => telemetryObserver.post(event));
+        telemetryObserver = new TelemetryObserver(context.packageJson, context.enableTelemetry, extensionContext, utilityContext, context.telemetryReporter);
+        eventStream.subscribe(event => telemetryObserver!.post(event));
     }
 
-    return [eventStream, outputChannel, loggingObserver, eventStreamObservers];
+    return [eventStream, outputChannel, loggingObserver, eventStreamObservers, telemetryObserver];
 }
 
 export function enableExtensionTelemetry(extensionConfiguration: IExtensionConfiguration, enableTelemetryKey: string): boolean {
