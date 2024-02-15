@@ -88,11 +88,13 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     rimraf.sync(storagePath);
   });
 
-  test('Activate', async () => {
+
+  test('Activated', async () => {
     // Commands should now be registered
     assert.exists(extensionContext);
     assert.isAbove(extensionContext.subscriptions.length, 0);
   }).timeout(standardTimeoutTime);
+
 
   test('Install Local Runtime Command', async () => {
     const context: IDotnetAcquireContext = { version: '2.2', requestingExtensionId };
