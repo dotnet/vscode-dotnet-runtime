@@ -92,7 +92,7 @@ let disableActivationUnderTest = true;
 export function activate(context: vscode.ExtensionContext, extensionContext?: IExtensionContext)
 {
 
-    if(process.env['DOTNET_INSTALL_TOOL_UNDER_TEST'] === 'true' && disableActivationUnderTest)
+    if(process.env.DOTNET_INSTALL_TOOL_UNDER_TEST === 'true' && disableActivationUnderTest)
     {
         return;
     }
