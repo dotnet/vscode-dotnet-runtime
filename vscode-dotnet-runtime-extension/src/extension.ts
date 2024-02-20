@@ -87,9 +87,16 @@ const configPrefix = 'dotnetAcquisitionExtension';
 const displayChannelName = '.NET Runtime';
 const defaultTimeoutValue = 600;
 const moreInfoUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md';
+let disableActivationUnderTest = true;
 
 export function activate(context: vscode.ExtensionContext, extensionContext?: IExtensionContext)
 {
+
+    if(process.env.DOTNET_INSTALL_TOOL_UNDER_TEST === 'true' && disableActivationUnderTest)
+    {
+        return;
+    }
+
     // Loading Extension Configuration
     const extensionConfiguration = extensionContext !== undefined && extensionContext.extensionConfiguration ?
     extensionContext.extensionConfiguration :
@@ -415,4 +422,9 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         ensureDependenciesRegistration,
         reportIssueRegistration,
         ...eventStreamObservers);
+}
+
+export function allowManualTestActivation()
+{
+    disableActivationUnderTest = false;
 }

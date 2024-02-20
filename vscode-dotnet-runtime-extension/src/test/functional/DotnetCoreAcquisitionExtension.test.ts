@@ -73,6 +73,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       extensionPath,
       logPath,
     } as any;
+
+    extension.allowManualTestActivation();
     extension.activate(extensionContext, {
       telemetryReporter: new MockTelemetryReporter(),
       extensionConfiguration: new MockExtensionConfiguration([{extensionId: 'alternative.extension', path: 'foo'}], true),
