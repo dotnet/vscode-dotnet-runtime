@@ -33,14 +33,18 @@ async function main() {
     }
 
     // Download VS Code, unzip it and run the integration test
-    await runTests({
-      ...(platformValue !== '' && {platform: platformValue}),
-      extensionDevelopmentPath,
-      extensionTestsPath,
-      launchArgs: [
-        // This disables all extensions except the one being testing
-        '--disable-extensions',
-      ]});
+    await runTests(
+      {
+        ...(platformValue !== '' && {platform: platformValue}),
+        extensionDevelopmentPath,
+        extensionTestsPath,
+        launchArgs: [
+          // This disables all extensions except the one being testing
+          '--disable-extensions',
+        ],
+        extensionTestsEnv : { DOTNET_INSTALL_TOOL_UNDER_TEST : 'true' }
+      }
+      );
   } catch (err) {
     console.error('Failed to run tests');
     process.exit(1);
