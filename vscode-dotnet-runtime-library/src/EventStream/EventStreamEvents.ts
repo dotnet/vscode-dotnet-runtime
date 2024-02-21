@@ -476,6 +476,14 @@ export class DotnetVersionCategorizedEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetVersionCategorizedEvent';
 }
 
+export class DotnetWSLCheckEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetWSLCheckEvent';
+}
+
+export class DotnetWSLOperationOutputEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetWSLOperationOutputEvent';
+}
+
 export class DotnetTelemetrySettingEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetTelemetrySettingEvent';
 }

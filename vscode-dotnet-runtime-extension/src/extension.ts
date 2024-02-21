@@ -335,7 +335,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     function checkIfSDKAcquisitionIsSupported() : boolean
     {
         let isSupported = true;
-        isSupported = isSupported && !CommandExecutor.isRunningUnderWSL();
+        isSupported = isSupported && !CommandExecutor.isRunningUnderWSL(globalEventStream);
         vscode.commands.executeCommand('setContext', 'dotnetAcquisitionExtension.isGlobalSDKUnsupported', !isSupported);
         return isSupported;
     }
