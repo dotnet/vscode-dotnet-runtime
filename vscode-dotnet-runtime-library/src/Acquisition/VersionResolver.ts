@@ -135,7 +135,13 @@ export class VersionResolver implements IVersionResolver {
         Debugging.log(`Resolving the version: ${version}`, this.context.eventStream);
         this.validateVersionInput(version);
 
-        const matchingVersion = releases.filter((availableVersions : IDotnetVersion) => availableVersions.channelVersion === version);
+        // Search for the specific version
+        let matchingVersion = releases.filter((availableVersions : IDotnetVersion) => availableVersions.version === version);
+        // If a x.y version is given, just find that instead (which is how almost all requests are given atm)
+        if(!matchingVersion || matchingVersion.length < 1)
+        {
+            matchingVersion = releases.filter((availableVersions : IDotnetVersion) => availableVersions.channelVersion === version);
+        }
         if (!matchingVersion || matchingVersion.length < 1)
         {
             const err = new DotnetVersionResolutionError(new Error(`The requested and or resolved version is invalid.`), version);
