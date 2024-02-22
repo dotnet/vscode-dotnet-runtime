@@ -11,6 +11,11 @@ import { TelemetryUtilities } from './TelemetryUtilities';
 
 // tslint:disable max-classes-per-file
 
+export class EventCancellationError extends Error
+{
+
+}
+
 export class DotnetAcquisitionStarted extends IEvent {
     public readonly eventName = 'DotnetAcquisitionStarted';
     public readonly type = EventType.DotnetAcquisitionStart;
@@ -331,7 +336,7 @@ export class DotnetAcquisitionTimeoutError extends DotnetAcquisitionVersionError
     }
 }
 
-export class DotnetVersionResolutionError extends DotnetAcquisitionVersionError {
+export class DotnetVersionResolutionError extends DotnetInstallExpectedAbort {
     public readonly eventName = 'DotnetVersionResolutionError';
 }
 

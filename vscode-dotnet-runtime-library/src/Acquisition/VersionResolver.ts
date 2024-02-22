@@ -10,7 +10,8 @@ import {
     DotnetOfflineFailure,
     DotnetVersionResolutionCompleted,
     DotnetVersionResolutionError,
-    DotnetVersionParseEvent
+    DotnetVersionParseEvent,
+    EventCancellationError
 } from '../EventStream/EventStreamEvents';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
@@ -125,7 +126,7 @@ export class VersionResolver implements IVersionResolver {
             }
             catch (error)
             {
-                this.context.eventStream.post(new DotnetVersionResolutionError(error as Error, version));
+                this.context.eventStream.post(new DotnetVersionResolutionError(error as EventCancellationError, version));
                 reject(error);
             }
         });
@@ -144,7 +145,7 @@ export class VersionResolver implements IVersionResolver {
         }
         if (!matchingVersion || matchingVersion.length < 1)
         {
-            const err = new DotnetVersionResolutionError(new Error(`The requested and or resolved version is invalid.`), version);
+            const err = new DotnetVersionResolutionError(new EventCancellationError(`The requested and or resolved version is invalid.`), version);
             this.context.eventStream.post(err);
             throw err.error;
         }
@@ -168,7 +169,7 @@ export class VersionResolver implements IVersionResolver {
         if (!parsedVer || (version.split('.').length !== 2 && version.split('.').length !== 3))
         {
             Debugging.log(`Resolving the version: ${version} ... it is invalid!`, this.context.eventStream);
-            const err = new DotnetVersionResolutionError(new Error(`An invalid version was requested. Version: ${version}`), version);
+            const err = new DotnetVersionResolutionError(new EventCancellationError(`An invalid version was requested. Version: ${version}`), version);
             this.context.eventStream.post(err);
             throw err.error;
         }
@@ -211,7 +212,8 @@ export class VersionResolver implements IVersionResolver {
     {
         if(fullySpecifiedVersion.split('.').length < 2)
         {
-            const event = new DotnetVersionResolutionError(new Error(`The requested version ${fullySpecifiedVersion} is invalid.`), getInstallKeyFromContext(this.context.acquisitionContext));
+            const event = new DotnetVersionResolutionError(new EventCancellationError(`The requested version ${fullySpecifiedVersion} is invalid.`),
+                getInstallKeyFromContext(this.context.acquisitionContext));
             this.context.eventStream.post(event);
             throw event.error;
         }

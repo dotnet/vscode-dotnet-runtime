@@ -10,6 +10,7 @@ import open = require('open');
 import path = require('path');
 
 import {
+    EventCancellationError,
     CommandExecutionEvent,
     CommandExecutionNoStatusCodeWarning,
     CommandExecutionNonZeroExitFailure,
@@ -122,7 +123,7 @@ status: ${commandResult.status?.toString()}`
             // GUI in WSL is not supported, so it will fail.
             // We had a working implementation that opens a vscode box and gets the user password, but that will require more security analysis.
 
-            const err = new DotnetWSLSecurityError(new Error(`Automatic .NET SDK Installation is not yet supported in WSL due to VS Code & WSL limitations.
+            const err = new DotnetWSLSecurityError(new EventCancellationError(`Automatic .NET SDK Installation is not yet supported in WSL due to VS Code & WSL limitations.
 Please install the .NET SDK manually by following https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu. Then, add it to the path by following https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#manually-installing-net`,
                 ), getInstallKeyFromContext(this.context?.acquisitionContext!));
             this.context?.eventStream.post(err);
@@ -189,7 +190,7 @@ ${stderr}`));
                 {
                     if(error.code === 126)
                     {
-                        const cancelledErr = new CommandExecutionUserRejectedPasswordRequest(new Error(`Cancelling .NET Install, as command ${fullCommandString} failed.
+                        const cancelledErr = new CommandExecutionUserRejectedPasswordRequest(new EventCancellationError(`Cancelling .NET Install, as command ${fullCommandString} failed.
 The user refused the password prompt.`),
                             getInstallKeyFromContext(this.context?.acquisitionContext!));
                         this.context?.eventStream.post(cancelledErr);
@@ -197,7 +198,7 @@ The user refused the password prompt.`),
                     }
                     else if(error.code === 111777)
                     {
-                        const securityErr = new CommandExecutionUnknownCommandExecutionAttempt(new Error(`Cancelling .NET Install, as command ${fullCommandString} is UNKNOWN.
+                        const securityErr = new CommandExecutionUnknownCommandExecutionAttempt(new EventCancellationError(`Cancelling .NET Install, as command ${fullCommandString} is UNKNOWN.
 Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
                             getInstallKeyFromContext(this.context?.acquisitionContext!));
                         this.context?.eventStream.post(securityErr);

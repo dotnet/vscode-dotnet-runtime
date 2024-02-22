@@ -15,8 +15,9 @@ import {
     DotnetAcquisitionAlreadyInstalled,
     DotnetConflictingGlobalWindowsInstallError,
     DotnetFileIntegrityCheckEvent,
-    DotnetInstallCancelledByUserError as DotnetInstallCancelledByUser,
+    DotnetInstallCancelledByUserError,
     DotnetUnexpectedInstallerOSError,
+    EventCancellationError,
     NetInstallerBeginExecutionEvent,
     NetInstallerEndExecutionEvent,
     OSXOpenNotAvailableError,
@@ -85,7 +86,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
                         ? this.acquisitionContext.acquisitionContext.requestingExtensionId : null));
                     return '0';
                 }
-                const err = new DotnetConflictingGlobalWindowsInstallError(new Error(`An global install is already on the machine: version ${conflictingVersion}, that conflicts with the requested version.
+                const err = new DotnetConflictingGlobalWindowsInstallError(new EventCancellationError(`An global install is already on the machine: version ${conflictingVersion}, that conflicts with the requested version.
                     Please uninstall this version first if you would like to continue.
                     If Visual Studio is installed, you may need to use the VS Setup Window to uninstall the SDK component.`), getInstallKeyFromContext(this.acquisitionContext.acquisitionContext));
                 this.acquisitionContext.eventStream.post(err);
@@ -97,7 +98,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         const canContinue = await this.installerFileHasValidIntegrity(installerFile);
         if(!canContinue)
         {
-            const err = new DotnetConflictingGlobalWindowsInstallError(new Error(`The integrity of the .NET install file is invalid, or there was no integrity to check and you denied the request to continue with those risks.
+            const err = new DotnetConflictingGlobalWindowsInstallError(new EventCancellationError(`The integrity of the .NET install file is invalid, or there was no integrity to check and you denied the request to continue with those risks.
 We cannot verify .NET is safe to download at this time. Please try again later.`), getInstallKeyFromContext(this.acquisitionContext.acquisitionContext));
         this.acquisitionContext.eventStream.post(err);
         throw err.error;
@@ -117,7 +118,7 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
         else if(installerResult === '1602')
         {
             // Special code for when user cancels the install
-            const err = new DotnetInstallCancelledByUser(new Error(
+            const err = new DotnetInstallCancelledByUserError(new EventCancellationError(
                 `The install of .NET was cancelled by the user. Aborting.`), getInstallKeyFromContext(this.acquisitionContext.acquisitionContext));
             this.acquisitionContext.eventStream.post(err);
             throw err.error;
