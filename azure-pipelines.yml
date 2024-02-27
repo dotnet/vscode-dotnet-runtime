@@ -1,3 +1,9 @@
+# This Yaml Document has been converted by ESAI Yaml Pipeline Conversion Tool.
+# Please make sure to check all the converted content, it is your team's responsibility to make sure that the pipeline is still valid and functions as expected.
+# This pipeline will be extended to the OneESPT template
+# If you are not using the E+D shared hosted pool with windows-2022, replace the pool section with your hosted pool, os, and image name. If you are using a Linux image, you must specify an additional windows image for SDL: https://eng.ms/docs/cloud-ai-platform/devdiv/one-engineering-system-1es/1es-docs/1es-pipeline-templates/features/sdlanalysis/overview#how-to-specify-a-windows-pool-for-the-sdl-source-analysis-stage
+# The Task 'PublishBuildArtifacts@1' has been converted to an output named 'Publish Logs' in the templateContext section.
+# The Task 'PublishPipelineArtifact@0' has been converted to an output named '' in the templateContext section.
 trigger:
   batch: true
   branches:
@@ -12,141 +18,143 @@ pr:
   branches:
     include:
     - '*'
-
 variables:
-  - name: is-runtime-release
-    value: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/Runtime-v')]
-  - name: is-sdk-release
-    value: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/SDK-v')]
-  - name: Codeql.Enabled
-    value: true
-
-stages:
-##### Test and Build #####
-- stage: Build
-  jobs:
-  ##### Build #####
-  - job: Build
-    displayName: 'Build and Test'
+- name: is-runtime-release
+  value: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/Runtime-v')]
+- name: is-sdk-release
+  value: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/SDK-v')]
+- name: Codeql.Enabled
+  value: true
+resources:
+  repositories:
+  - repository: 1ESPipelineTemplates
+    type: git
+    name: 1ESPipelineTemplates/1ESPipelineTemplates
+    ref: refs/tags/release
+extends:
+  template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
+  parameters:
     pool:
-      vmImage: $(imageName)
-    strategy:
-      matrix:
-        Linux:
-          imageName: 'ubuntu-latest'
-        Mac:
-          imageName: 'macOS-latest'
-        Windows:
-          imageName: 'windows-latest'
-    steps:
-    - task: NodeTool@0
-      inputs:
-        versionSpec: '16.10.0'
-      displayName: 'Install Node.js'
-    - script: build.cmd
-      displayName: Build Windows
-      condition: eq(variables['Agent.OS'], 'Windows_NT')
-    - script: test.cmd
-      displayName: Test Windows
-      condition: eq(variables['Agent.OS'], 'Windows_NT')
-    - bash: |
-        /usr/bin/Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
-        echo ">>> Started xvfb"
-      displayName: Start xvfb
-      condition: and(succeeded(), eq(variables['Agent.OS'], 'Linux'))
-    - script: ./build.sh
-      displayName: Build Mac and Linux
-      condition: or(eq(variables['Agent.OS'], 'Darwin'), eq(variables['Agent.OS'], 'Linux'))
-    - script: ./test.sh
-      displayName: Test Mac and Linux
-      env: { DISPLAY: ':99.0' }
-      condition: or(eq(variables['Agent.OS'], 'Darwin'), eq(variables['Agent.OS'], 'Linux'))
-    - task: PublishBuildArtifacts@1
-      inputs:
-        pathtoPublish: '$(Build.SourcesDirectory)/vscode-dotnet-runtime-extension/dist/test/functional/logs'
-        artifactName: 'logs'
-      displayName: Publish Logs
-      condition: always()
-  ##### TSLint #####
-  - job: TSLint
-    displayName: 'TSLint'
-    pool:
-      vmImage: 'windows-latest'
-    steps:
-    - task: NodeTool@0
-      inputs:
-        versionSpec: '16.10.0'
-      displayName: 'Install Node.js'
-    - bash: |
-        npm install --cache /temp/empty-cache
-        npm install tslint --reg https://registry.npmjs.org/ --verbose
-        npm run lint
-      displayName: Run Lint
-  ##### Verify NPM and Yarn are in sync #####
-  - job: SyncPackageManagers
-    displayName: 'Verify NPM & Yarn In-Sync [Local Copy of Target Branch Must Be Up to Date]'
-    pool:
-      vmImage: 'windows-latest'
-    steps:
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: '3.x'
-        addToPath: true
-        architecture: 'x64'
-    - task: PythonScript@0
-      continueOnError: true
-      inputs:
-        scriptSource: 'filePath'
-        scriptPath: 'dependency-verifier.py'
-        arguments: '$(System.PullRequest.TargetBranch)'
-  ##### Package and Publish #####
-  - job: Package
-    displayName: 'Package and Publish'
-    dependsOn:
-    - Build
-    - TSLint
-    condition: succeeded()
-    pool:
-      vmImage: 'windows-latest'
-    strategy:
-      matrix:
-        Runtime:
-          dir-name: 'vscode-dotnet-runtime-extension'
-          package-name: 'vscode-dotnet-runtime'
-        SDK:
-          dir-name: 'vscode-dotnet-sdk-extension'
-          package-name: 'vscode-dotnet-sdk'
-    steps:
-    - task: NodeTool@0
-      inputs:
-        versionSpec: '16.10.0'
-      displayName: 'Install Node.js'
-    - bash: |
-        if ([ $(is-sdk-release) = 'True' ] && [ $(package-name) = 'vscode-dotnet-sdk' ]) || ([ $(is-runtime-release) = 'True' ] && [ $(package-name) = 'vscode-dotnet-runtime' ]); then
-          VERSION=`node -p "require('./package.json').version"`
-        else
-          VERSION_NUM=`node -p "require('./package.json').version"`
-          VERSION="$VERSION_NUM-alpha-$(Build.BuildId)"
-        fi
-        npm version $VERSION --allow-same-version
-        echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
-      name: GetVersion
-      displayName: 'Get Version'
-      workingDirectory: $(dir-name)
-    - bash: |
-          npm install rimraf --reg https://registry.npmjs.org/ --verbose
-          npm install vsce -g --reg https://registry.npmjs.org/ --verbose
-          vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
-      displayName: Package Artifact
-      workingDirectory: $(dir-name)
-    - task: CopyFiles@2
-      displayName: 'Copy Artifact'
-      inputs:
-        SourceFolder: '$(Build.SourcesDirectory)'
-        Contents: '**\*.vsix'
-        TargetFolder: '$(Build.ArtifactStagingDirectory)'
-        flattenFolders: true
-    - task: PublishPipelineArtifact@0
-      inputs:
-        targetPath: '$(Build.ArtifactStagingDirectory)'
-        artifactName: '$(dir-name)'
+      name: Azure-Pipelines-1ESPT-ExDShared
+      image: windows-2022
+      os: windows
+    customBuildTags:
+    - ES365AIMigrationTooling
+    stages:
+    - stage: Build
+      jobs:
+      - job: Build
+        displayName: 'Build and Test'
+        strategy:
+          matrix:
+            Linux:
+              imageName: 'ubuntu-latest'
+            Mac:
+              imageName: 'macOS-latest'
+            Windows:
+              imageName: 'windows-latest'
+        templateContext:
+          outputs:
+          - output: pipelineArtifact
+            displayName: 'Publish Logs'
+            condition: always()
+            targetPath: '$(Build.SourcesDirectory)/vscode-dotnet-runtime-extension/dist/test/functional/logs'
+            artifactName: 'logs'
+        steps:
+        - task: NodeTool@0
+          inputs:
+            versionSpec: '16.10.0'
+          displayName: 'Install Node.js'
+        - script: build.cmd
+          displayName: Build Windows
+          condition: eq(variables['Agent.OS'], 'Windows_NT')
+        - script: test.cmd
+          displayName: Test Windows
+          condition: eq(variables['Agent.OS'], 'Windows_NT')
+        - bash: |
+            /usr/bin/Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+            echo ">>> Started xvfb"
+          displayName: Start xvfb
+          condition: and(succeeded(), eq(variables['Agent.OS'], 'Linux'))
+        - script: ./build.sh
+          displayName: Build Mac and Linux
+          condition: or(eq(variables['Agent.OS'], 'Darwin'), eq(variables['Agent.OS'], 'Linux'))
+        - script: ./test.sh
+          displayName: Test Mac and Linux
+          env: {DISPLAY: ':99.0'}
+          condition: or(eq(variables['Agent.OS'], 'Darwin'), eq(variables['Agent.OS'], 'Linux'))
+      - job: TSLint
+        displayName: 'TSLint'
+        steps:
+        - task: NodeTool@0
+          inputs:
+            versionSpec: '16.10.0'
+          displayName: 'Install Node.js'
+        - bash: |
+            npm install --cache /temp/empty-cache
+            npm install tslint --reg https://registry.npmjs.org/ --verbose
+            npm run lint
+          displayName: Run Lint
+      - job: SyncPackageManagers
+        displayName: 'Verify NPM & Yarn In-Sync [Local Copy of Target Branch Must Be Up to Date]'
+        steps:
+        - task: UsePythonVersion@0
+          inputs:
+            versionSpec: '3.x'
+            addToPath: true
+            architecture: 'x64'
+        - task: PythonScript@0
+          continueOnError: true
+          inputs:
+            scriptSource: 'filePath'
+            scriptPath: 'dependency-verifier.py'
+            arguments: '$(System.PullRequest.TargetBranch)'
+      - job: Package
+        displayName: 'Package and Publish'
+        dependsOn:
+        - Build
+        - TSLint
+        condition: succeeded()
+        strategy:
+          matrix:
+            Runtime:
+              dir-name: 'vscode-dotnet-runtime-extension'
+              package-name: 'vscode-dotnet-runtime'
+            SDK:
+              dir-name: 'vscode-dotnet-sdk-extension'
+              package-name: 'vscode-dotnet-sdk'
+        templateContext:
+          outputs:
+          - output: pipelineArtifact
+            targetPath: '$(Build.ArtifactStagingDirectory)'
+            artifactName: '$(dir-name)'
+        steps:
+        - task: NodeTool@0
+          inputs:
+            versionSpec: '16.10.0'
+          displayName: 'Install Node.js'
+        - bash: |
+            if ([ $(is-sdk-release) = 'True' ] && [ $(package-name) = 'vscode-dotnet-sdk' ]) || ([ $(is-runtime-release) = 'True' ] && [ $(package-name) = 'vscode-dotnet-runtime' ]); then
+              VERSION=`node -p "require('./package.json').version"`
+            else
+              VERSION_NUM=`node -p "require('./package.json').version"`
+              VERSION="$VERSION_NUM-alpha-$(Build.BuildId)"
+            fi
+            npm version $VERSION --allow-same-version
+            echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
+          name: GetVersion
+          displayName: 'Get Version'
+          workingDirectory: $(dir-name)
+        - bash: |
+            npm install rimraf --reg https://registry.npmjs.org/ --verbose
+            npm install vsce -g --reg https://registry.npmjs.org/ --verbose
+            vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
+          displayName: Package Artifact
+          workingDirectory: $(dir-name)
+        - task: CopyFiles@2
+          displayName: 'Copy Artifact'
+          inputs:
+            SourceFolder: '$(Build.SourcesDirectory)'
+            Contents: '**\*.vsix'
+            TargetFolder: '$(Build.ArtifactStagingDirectory)'
+            flattenFolders: true
