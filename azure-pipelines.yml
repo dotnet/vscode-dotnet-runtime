@@ -1,9 +1,3 @@
-# This Yaml Document has been converted by ESAI Yaml Pipeline Conversion Tool.
-# Please make sure to check all the converted content, it is your team's responsibility to make sure that the pipeline is still valid and functions as expected.
-# This pipeline will be extended to the OneESPT template
-# If you are not using the E+D shared hosted pool with windows-2022, replace the pool section with your hosted pool, os, and image name. If you are using a Linux image, you must specify an additional windows image for SDL: https://eng.ms/docs/cloud-ai-platform/devdiv/one-engineering-system-1es/1es-docs/1es-pipeline-templates/features/sdlanalysis/overview#how-to-specify-a-windows-pool-for-the-sdl-source-analysis-stage
-# The Task 'PublishBuildArtifacts@1' has been converted to an output named 'Publish Logs' in the templateContext section.
-# The Task 'PublishPipelineArtifact@0' has been converted to an output named '' in the templateContext section.
 trigger:
   batch: true
   branches:
@@ -18,6 +12,7 @@ pr:
   branches:
     include:
     - '*'
+
 variables:
 - name: is-runtime-release
   value: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/Runtime-v')]
@@ -25,26 +20,31 @@ variables:
   value: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/SDK-v')]
 - name: Codeql.Enabled
   value: true
+
 resources:
   repositories:
   - repository: 1ESPipelineTemplates
     type: git
     name: 1ESPipelineTemplates/1ESPipelineTemplates
     ref: refs/tags/release
+
 extends:
+  #### 1ES Injections ####
   template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
   parameters:
     pool:
       name: Azure-Pipelines-1ESPT-ExDShared
-      image: windows-2022
-      os: windows
+      image: $(imageName)
     customBuildTags:
     - ES365AIMigrationTooling
     stages:
+    ##### Test and Build #####
     - stage: Build
       jobs:
+
+      ##### Build #####
       - job: Build
-        displayName: 'Build and Test'
+        displayName: '🔨 Build and Test'
         strategy:
           matrix:
             Linux:
@@ -56,7 +56,7 @@ extends:
         templateContext:
           outputs:
           - output: pipelineArtifact
-            displayName: 'Publish Logs'
+            displayName: '🌐 Publish Logs'
             condition: always()
             targetPath: '$(Build.SourcesDirectory)/vscode-dotnet-runtime-extension/dist/test/functional/logs'
             artifactName: 'logs'
@@ -64,39 +64,43 @@ extends:
         - task: NodeTool@0
           inputs:
             versionSpec: '16.10.0'
-          displayName: 'Install Node.js'
+          displayName: '🍚 Install Node.js'
         - script: build.cmd
-          displayName: Build Windows
+          displayName: 💻 Build Windows
           condition: eq(variables['Agent.OS'], 'Windows_NT')
         - script: test.cmd
-          displayName: Test Windows
+          displayName: 🔍 Test Windows
           condition: eq(variables['Agent.OS'], 'Windows_NT')
         - bash: |
             /usr/bin/Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
             echo ">>> Started xvfb"
-          displayName: Start xvfb
+          displayName: 🎮 Start xvfb
           condition: and(succeeded(), eq(variables['Agent.OS'], 'Linux'))
         - script: ./build.sh
-          displayName: Build Mac and Linux
+          displayName: 🐧 Build Mac and Linux
           condition: or(eq(variables['Agent.OS'], 'Darwin'), eq(variables['Agent.OS'], 'Linux'))
         - script: ./test.sh
-          displayName: Test Mac and Linux
+          displayName: 🔎 Test Mac and Linux
           env: {DISPLAY: ':99.0'}
           condition: or(eq(variables['Agent.OS'], 'Darwin'), eq(variables['Agent.OS'], 'Linux'))
+
+      ##### TSLint #####
       - job: TSLint
-        displayName: 'TSLint'
+        displayName: '🏛️ TSLint'
         steps:
         - task: NodeTool@0
           inputs:
             versionSpec: '16.10.0'
-          displayName: 'Install Node.js'
+          displayName: '🍚 Install Node.js'
         - bash: |
             npm install --cache /temp/empty-cache
             npm install tslint --reg https://registry.npmjs.org/ --verbose
             npm run lint
-          displayName: Run Lint
+          displayName: 🧶 Run Lint
+
+      ##### Verify NPM and Yarn are in sync #####
       - job: SyncPackageManagers
-        displayName: 'Verify NPM & Yarn In-Sync [Local Copy of Target Branch Must Be Up to Date]'
+        displayName: '♻️ Verify NPM & Yarn In-Sync [Local Copy of Target Branch Must Be Up to Date]'
         steps:
         - task: UsePythonVersion@0
           inputs:
@@ -109,8 +113,10 @@ extends:
             scriptSource: 'filePath'
             scriptPath: 'dependency-verifier.py'
             arguments: '$(System.PullRequest.TargetBranch)'
+
+      ##### Package and Publish #####
       - job: Package
-        displayName: 'Package and Publish'
+        displayName: '📦 Package and Publish'
         dependsOn:
         - Build
         - TSLint
@@ -126,13 +132,14 @@ extends:
         templateContext:
           outputs:
           - output: pipelineArtifact
+            displayName: '📂 Publish .VSIX'
             targetPath: '$(Build.ArtifactStagingDirectory)'
             artifactName: '$(dir-name)'
         steps:
         - task: NodeTool@0
           inputs:
             versionSpec: '16.10.0'
-          displayName: 'Install Node.js'
+          displayName: '🍚 Install Node.js'
         - bash: |
             if ([ $(is-sdk-release) = 'True' ] && [ $(package-name) = 'vscode-dotnet-sdk' ]) || ([ $(is-runtime-release) = 'True' ] && [ $(package-name) = 'vscode-dotnet-runtime' ]); then
               VERSION=`node -p "require('./package.json').version"`
@@ -143,16 +150,16 @@ extends:
             npm version $VERSION --allow-same-version
             echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
           name: GetVersion
-          displayName: 'Get Version'
+          displayName: '❓ Get Version'
           workingDirectory: $(dir-name)
         - bash: |
             npm install rimraf --reg https://registry.npmjs.org/ --verbose
             npm install vsce -g --reg https://registry.npmjs.org/ --verbose
             vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
-          displayName: Package Artifact
+          displayName: 📦 Package Artifact
           workingDirectory: $(dir-name)
         - task: CopyFiles@2
-          displayName: 'Copy Artifact'
+          displayName: '📩 Copy Artifact'
           inputs:
             SourceFolder: '$(Build.SourcesDirectory)'
             Contents: '**\*.vsix'
