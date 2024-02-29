@@ -55,6 +55,7 @@ import {
     UserManualInstallRequested,
     UserManualInstallSuccess,
     UserManualInstallFailure,
+    EventCancellationError,
 } from 'vscode-dotnet-runtime-library';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 import { IAcquisitionWorkerContext } from 'vscode-dotnet-runtime-library/dist/Acquisition/IAcquisitionWorkerContext';
@@ -233,7 +234,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         if (!activeSupportVersions || activeSupportVersions.length < 1)
         {
             const err = new Error(`An active-support version of dotnet couldn't be found. Discovered versions: ${JSON.stringify(availableVersions)}`);
-            globalEventStream.post(new DotnetVersionResolutionError(err as Error, 'recommended'));
+            globalEventStream.post(new DotnetVersionResolutionError(err as EventCancellationError, 'recommended'));
             if(!availableVersions || availableVersions.length < 1)
             {
                 return '';
@@ -335,7 +336,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     function checkIfSDKAcquisitionIsSupported() : boolean
     {
         let isSupported = true;
-        isSupported = isSupported && !CommandExecutor.isRunningUnderWSL();
+        isSupported = isSupported && !CommandExecutor.isRunningUnderWSL(globalEventStream);
         vscode.commands.executeCommand('setContext', 'dotnetAcquisitionExtension.isGlobalSDKUnsupported', !isSupported);
         return isSupported;
     }

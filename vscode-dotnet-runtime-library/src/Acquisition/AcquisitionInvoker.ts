@@ -185,7 +185,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
             if(languageMode === 'ConstrainedLanguage' || languageMode === 'NoLanguage')
             {
                 knownError = true;
-                const err = Error(`Your machine policy disables PowerShell language features that may be needed to install .NET. Read more at: https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_language_modes?view=powershell-7.3.
+                const err = Error(`Your machine policy ${languageMode} disables PowerShell language features that may be needed to install .NET. Read more at: https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_language_modes?view=powershell-7.3.
 If you cannot safely and confidently change the execution policy, try setting a custom existingDotnetPath following our instructions here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`);
                 error = err;
             }

@@ -16,7 +16,8 @@ import { DotnetFeatureBandDoesNotExistError,
         DotnetUnexpectedInstallerArchitectureError,
         DotnetUnexpectedInstallerOSError,
         DotnetVersionCategorizedEvent,
-        DotnetVersionResolutionError
+        DotnetVersionResolutionError,
+        EventCancellationError
 } from '../EventStream/EventStreamEvents';
 import { FileUtilities } from '../Utils/FileUtilities';
 
@@ -159,7 +160,7 @@ export class GlobalInstallerResolver {
             return [installerUrlAndHash[0], fullySpecifiedVersionRequested, installerUrlAndHash[1]];
         }
 
-        const err = new DotnetVersionResolutionError(new Error(`${this.badResolvedVersionErrorString} ${version}`), getInstallKeyFromContext(this.context.acquisitionContext));
+        const err = new DotnetVersionResolutionError(new EventCancellationError(`${this.badResolvedVersionErrorString} ${version}`), getInstallKeyFromContext(this.context.acquisitionContext));
         this.context.eventStream.post(err);
         throw err.error;
     }
@@ -175,7 +176,8 @@ export class GlobalInstallerResolver {
     {
         if(specificVersion === null || specificVersion === undefined || specificVersion === '')
         {
-            const versionErr = new DotnetVersionResolutionError(new Error(`${this.badResolvedVersionErrorString} ${specificVersion}.`), getInstallKeyFromContext(this.context.acquisitionContext));
+            const versionErr = new DotnetVersionResolutionError(new EventCancellationError(`${this.badResolvedVersionErrorString} ${specificVersion}.`),
+                getInstallKeyFromContext(this.context.acquisitionContext));
             this.context.eventStream.post(versionErr);
             throw versionErr.error;
         }
