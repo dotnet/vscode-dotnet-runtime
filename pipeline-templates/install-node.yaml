@@ -1,0 +1,7 @@
+jobs:
+- job: Install Node
+  displayName: '⚛️ Install Node.js'
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '16.10.0'
+    displayName: '⚛️ Install Node.js'

@@ -1,0 +1,10 @@
+jobs:
+  - template: templates/install-node.yml
+  - job: TSLint
+    displayName: '🧶 TSLint'
+    steps:
+    - bash: |
+        npm install --cache /temp/empty-cache
+        npm install tslint --reg https://registry.npmjs.org/ --verbose
+        npm run lint
+      displayName: 🧶 Run Lint

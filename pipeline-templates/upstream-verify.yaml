@@ -1,0 +1,15 @@
+jobs:
+ - job: SyncPackageManagers
+  displayName: '♻️ Verify NPM & Yarn In-Sync [Local Copy of Target Branch Must Be Up to Date]'
+  steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.x'
+      addToPath: true
+      architecture: 'x64'
+  - task: PythonScript@0
+    continueOnError: true
+    inputs:
+      scriptSource: 'filePath'
+      scriptPath: 'dependency-verifier.py'
+      arguments: '$(System.PullRequest.TargetBranch)'
