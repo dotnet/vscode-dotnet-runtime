@@ -21,13 +21,6 @@ variables:
 - name: Codeql.Enabled
   value: true
 
-resources:
-  repositories:
-  - repository: 1ESPipelineTemplates
-    type: git
-    name: 1ESPipelineTemplates/1ESPipelineTemplates
-    ref: refs/tags/release
-
 parameters:
 - name: pools
   type: object
@@ -39,22 +32,18 @@ parameters:
   - name: 'windows-latest'
     os: windows
 
-extends:
-  #### 1ES Injections ####
-  template:  v1/1ES.Unofficial.PipelineTemplate.yml
-  parameters:
-    stages:
-    - stage: stage
-      jobs:
-      - ${{ each pool in parameters.pools }}:
-      - job: ${{ pool.os }}_job
-        pool:
-          name: ${{ pool.name }}
-          os: ${{ pool.os }}
-        steps:
-        - powershell: echo "Running Pool ${{ pool.name }}"
-        # Our Actual Pipeline Steps
-        - template: templates/build-test.yml
-        - template: templates/lint.yml
-        - template: templates/upstream-verify.yml
-        - template: templates/package-vsix.yml
+stages:
+- stage: stage
+  jobs:
+  - ${{ each pool in parameters.pools }}:
+  - job: ${{ pool.os }}_job
+    pool:
+      name: ${{ pool.name }}
+      os: ${{ pool.os }}
+    steps:
+    - powershell: echo "Running Pool ${{ pool.name }}"
+    # Our Actual Pipeline Steps
+    - template: templates/build-test.yml
+    - template: templates/lint.yml
+    - template: templates/upstream-verify.yml
+    - template: templates/package-vsix.yml
