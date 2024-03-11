@@ -21,16 +21,13 @@ parameters:
 - name: pools
   type: object
   default:
-  - name: Ubuntu
-    vmImage: ubuntu-latest
+  - name: $(DncEngPublicBuildPool)
     image: ubuntu-latest
     os: linux
-  - name: OSX
-    vmImage: ubuntu-latest
+  - name: $(DncEngPublicBuildPool)
     image: macOS-latest
     os: macOS
-  - name: Windows
-    vmImage: ubuntu-latest
+  - name: $(DncEngPublicBuildPool)
     image: windows-latest
     os: windows
 
@@ -38,21 +35,21 @@ stages:
 - stage: Build
   jobs:
   - ${{ each image in parameters.pools }}:
-    - template: pipeline-templates/build-test.yaml@self
+    - template: pipeline-templates/build-test.yaml
       parameters:
         pool:
           name: ${{ image.name }}
           image: ${{ image.image }}
           os: ${{ image.os }}
-  - template: pipeline-templates/upstream-verify.yaml@self
+  - template: pipeline-templates/upstream-verify.yaml
     parameters:
       pool:
         vmImage: 'windows-latest'
-  - template: pipeline-templates/lint.yaml@self
+  - template: pipeline-templates/lint.yaml
     parameters:
       pool:
         vmImage: 'windows-latest'
-  - template: pipeline-templates/package-vsix.yaml@self
+  - template: pipeline-templates/package-vsix.yaml
     parameters:
       pool:
         vmImage: 'windows-latest'
