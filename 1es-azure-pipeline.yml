@@ -32,14 +32,14 @@ parameters:
 - name: pools
   type: object
   default:
-  - name: Azure Pipelines
-    image: ubuntu-latest
+  - name: $(DncEngInternalBuildPool)
+    image: 1es-ubuntu-2204-pt
     os: linux
-  - name: Azure Pipelines
+  - name: $(DncEngInternalBuildPool)
     image: macOS-latest
     os: macOS
-  - name: Azure Pipelines
-    image: windows-latest
+  - name: $(DncEngInternalBuildPool)
+    image: 1es-windows-2022-pt
     os: windows
 
 extends:
@@ -60,21 +60,21 @@ extends:
               name: ${{ image.name }}
               image: ${{ image.image }}
               os: ${{ image.os }}
-        - template: pipeline-templates/lint.yaml@self
-          parameters:
-            pool:
-              name: ${{ image.name }}
-              image: ${{ image.image }}
-              os: ${{ image.os }}
         - template: pipeline-templates/upstream-verify.yaml@self
           parameters:
             pool:
               name: ${{ image.name }}
               image: ${{ image.image }}
               os: ${{ image.os }}
-        - template: pipeline-templates/package-vsix.yaml@self
-          parameters:
-            pool:
-              name: ${{ image.name }}
-              image: ${{ image.image }}
-              os: ${{ image.os }}
+      - template: pipeline-templates/lint.yaml@self
+        parameters:
+          pool:
+            name: $(DncEngInternalBuildPool)
+            image: 1es-windows-2022-pt
+            os: windows
+      - template: pipeline-templates/package-vsix.yaml@self
+        parameters:
+          pool:
+            name: $(DncEngInternalBuildPool)
+            image: 1es-windows-2022-pt
+            os: windows
