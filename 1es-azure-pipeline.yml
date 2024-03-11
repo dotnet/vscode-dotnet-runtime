@@ -51,7 +51,7 @@ extends:
             name: ${{ pool.name }}
             os: ${{ pool.os }}
           steps:
-          - template: templates/build-test.yml@self
-          - template: templates/lint.yml@self
-          - template: templates/upstream-verify.yml@self
-          - template: templates/package-vsix.yml@self
+          - template: pipeline-templates/build-test.yml@self
+          - template: pipeline-templates/lint.yml@self
+          - template: pipeline-templates/upstream-verify.yml@self
+          - template: pipeline-templates/package-vsix.yml@self
