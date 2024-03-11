@@ -2,7 +2,7 @@ parameters:
   pool: ''
 
 jobs:
-- template: templates/install-node.yml
+- template: install-node.yml
 - job: Package
   pool: ${{ parameters.pool }}
   displayName: '📦 Package and Publish'

@@ -1,11 +1,5 @@
-parameters:
-  pool: ''
-
-jobs:
-- job: Install Node
-  pool: ${{ parameters.pool }}
+steps:
+- task: NodeTool@0
+  inputs:
+    versionSpec: '16.10.0'
   displayName: '⚛️ Install Node.js'
-  - task: NodeTool@0
-    inputs:
-      versionSpec: '16.10.0'
-    displayName: '⚛️ Install Node.js'
