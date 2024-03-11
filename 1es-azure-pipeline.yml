@@ -1,0 +1,57 @@
+trigger:
+  batch: true
+  branches:
+    include:
+    - main
+  tags:
+    include:
+    - SDK-v*
+    - Runtime-v*
+pr:
+  autoCancel: false
+  branches:
+    include:
+    - '*'
+
+variables:
+- name: is-runtime-release
+  value: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/Runtime-v')]
+- name: is-sdk-release
+  value: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/SDK-v')]
+- name: Codeql.Enabled
+  value: true
+
+resources:
+  repositories:
+  - repository: 1esPipelines
+    type: git
+    name: 1ESPipelineTemplates/1ESPipelineTemplates
+    ref: refs/tags/release
+
+parameters:
+- name: pools
+  type: object
+  default:
+  - name: ubuntu-latest
+    os: linux
+  - name: macOS-latest
+    os: macOS
+  - name: windows-latest
+    os: windows
+
+extends:
+  template: v1/1ES.Unofficial.PipelineTemplate.yml@1esPipelines
+  parameters:
+    stages:
+    - stage: stage
+      jobs:
+      - ${{ each pool in parameters.pools }}:
+        - job: ${{ pool.os }}_job
+          pool:
+            name: ${{ pool.name }}
+            os: ${{ pool.os }}
+          steps:
+          - template: templates/build-test.yml
+          - template: templates/lint.yml
+          - template: templates/upstream-verify.yml
+          - template: templates/package-vsix.yml
