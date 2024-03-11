@@ -13,5 +13,6 @@
         "programfiles",
         "REGHEXVALUE",
         "REGTYPE"
-    ]
+    ],
+    "azure-pipelines.1ESPipelineTemplatesSchemaFile": true
 }

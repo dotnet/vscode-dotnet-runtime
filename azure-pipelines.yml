@@ -27,23 +27,24 @@ parameters:
   default:
   - name: ubuntu-latest
     os: linux
-  - name: 'macOS-latest'
+  - name: macOS-latest
     os: macOS
-  - name: 'windows-latest'
+  - name: windows-latest
     os: windows
 
-stages:
-- stage: stage
-  jobs:
-  - ${{ each pool in parameters.pools }}:
-  - job: ${{ pool.os }}_job
-    pool:
-      name: ${{ pool.name }}
-      os: ${{ pool.os }}
-    steps:
-    - powershell: echo "Running Pool ${{ pool.name }}"
-    # Our Actual Pipeline Steps
-    - template: templates/build-test.yml
-    - template: templates/lint.yml
-    - template: templates/upstream-verify.yml
-    - template: templates/package-vsix.yml
+extends:
+  template: v1/1ES.Unofficial.PipelineTemplate.yml@templates
+  parameters:
+    stages:
+    - stage: stage
+      jobs:
+      - ${{ each pool in parameters.pools }}:
+      - job: ${{ pool.os }}_job
+        pool:
+          name: ${{ pool.name }}
+          os: ${{ pool.os }}
+        steps:
+        - template: templates/build-test.yml
+        - template: templates/lint.yml
+        - template: templates/upstream-verify.yml
+        - template: templates/package-vsix.yml
