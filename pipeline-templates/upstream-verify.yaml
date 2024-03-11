@@ -1,5 +1,9 @@
+parameters:
+  pool: ''
+
 jobs:
  - job: SyncPackageManagers
+  pool: ${{ parameters.pool }}
   displayName: '♻️ Verify NPM & Yarn In-Sync [Local Copy of Target Branch Must Be Up to Date]'
   steps:
   - task: UsePythonVersion@0

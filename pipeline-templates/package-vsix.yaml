@@ -1,9 +1,10 @@
+parameters:
+  pool: ''
+
 jobs:
 - template: templates/install-node.yml
 - job: Package
-  pool:
-    name: windows-latest
-    os: windows
+  pool: ${{ parameters.pool }}
   displayName: '📦 Package and Publish'
   dependsOn:
   - Build

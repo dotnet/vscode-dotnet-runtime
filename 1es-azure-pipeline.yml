@@ -44,8 +44,25 @@ extends:
   parameters:
     stages:
     - stage: Run Pipeline
-      jobs:
-      - template: pipeline-templates/build-test.yaml@self
-      - template: pipeline-templates/lint.yaml@self
-      - template: pipeline-templates/upstream-verify.yaml@self
-      - template: pipeline-templates/package-vsix.yaml@self
+      - ${{ each pool in parameters.pools }}:
+        jobs:
+        - template: pipeline-templates/build-test.yaml@self
+          parameters:
+            pool:
+              name: ${{ pool.name }}
+              os: ${{ pool.os }}
+        - template: pipeline-templates/lint.yaml@self
+          parameters:
+            pool:
+              name: ${{ pool.name }}
+              os: ${{ pool.os }}
+        - template: pipeline-templates/upstream-verify.yaml@self
+          parameters:
+            pool:
+              name: ${{ pool.name }}
+              os: ${{ pool.os }}
+        - template: pipeline-templates/package-vsix.yaml@self
+          parameters:
+            pool:
+              name: ${{ pool.name }}
+              os: ${{ pool.os }}

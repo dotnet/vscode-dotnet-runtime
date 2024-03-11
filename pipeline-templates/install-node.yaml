@@ -1,5 +1,9 @@
+parameters:
+  pool: ''
+
 jobs:
 - job: Install Node
+  pool: ${{ parameters.pool }}
   displayName: '⚛️ Install Node.js'
   - task: NodeTool@0
     inputs:

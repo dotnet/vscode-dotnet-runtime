@@ -1,6 +1,9 @@
+parameters:
+  pool: ''
 
 jobs:
 - job: Build
+  pool: ${{ parameters.pool }}
   displayName: '🔨 Build and Test'
   templateContext:
     outputs:

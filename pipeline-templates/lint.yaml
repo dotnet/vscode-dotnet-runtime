@@ -1,6 +1,10 @@
+parameters:
+  pool: ''
+
 jobs:
   - template: templates/install-node.yml
   - job: TSLint
+    pool: ${{ parameters.pool }}
     displayName: '🧶 TSLint'
     steps:
     - bash: |
