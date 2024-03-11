@@ -32,13 +32,13 @@ parameters:
 - name: pools
   type: object
   default:
-  - name:  NetCore1ESPool-Internal
+  - name: NetCore1ESPool-Internal
     image: 1es-ubuntu-2204-pt
     os: linux
-  - name:  NetCore1ESPool-Internal
+  - name: NetCore1ESPool-Internal
     image: macOS-latest
     os: macOS
-  - name:  NetCore1ESPool-Internal
+  - name: NetCore1ESPool-Internal
     image: 1es-windows-2022-pt
     os: windows
 
@@ -47,7 +47,7 @@ extends:
   parameters:
     sdl:
       sourceAnalysisPool:
-        name:  NetCore1ESPool-Internal
+        name: NetCore1ESPool-Internal
         image: 1es-windows-2022-pt
         os: windows
     stages:
@@ -63,13 +63,13 @@ extends:
       - template: pipeline-templates/upstream-verify.yaml@self
         parameters:
           pool:
-            name:  NetCore1ESPool-Internal
+            name: NetCore1ESPool-Internal
             image: 1es-windows-2022-pt
             os: windows
       - template: pipeline-templates/lint.yaml@self
         parameters:
           pool:
-            name:  NetCore1ESPool-Internal
+            name: NetCore1ESPool-Internal
             image: 1es-windows-2022-pt
             os: windows
       - template: pipeline-templates/package-vsix.yaml@self
