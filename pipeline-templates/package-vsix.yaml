@@ -24,7 +24,7 @@ jobs:
       targetPath: '$(Build.ArtifactStagingDirectory)'
       artifactName: '$(dir-name)'
   steps:
-  - template: install-node.yml
+  - template: install-node.yaml
   - bash: |
       if ([ $(is-sdk-release) = 'True' ] && [ $(package-name) = 'vscode-dotnet-sdk' ]) || ([ $(is-runtime-release) = 'True' ] && [ $(package-name) = 'vscode-dotnet-runtime' ]); then
         VERSION=`node -p "require('./package.json').version"`
