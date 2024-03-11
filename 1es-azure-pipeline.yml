@@ -35,7 +35,7 @@ parameters:
   - name: NetCore1ESPool-Internal
     image: 1es-ubuntu-2204-pt
     os: linux
-  - name: NetCore1ESPool-Internal
+  - name: Azure Pipelines
     image: macOS-latest
     os: macOS
   - name: NetCore1ESPool-Internal
