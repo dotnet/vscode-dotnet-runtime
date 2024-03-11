@@ -32,11 +32,14 @@ parameters:
 - name: pools
   type: object
   default:
-  - name: ubuntu-latest
+  - name: Azure Pipelines
+    image: ubuntu-latest
     os: linux
-  - name: macOS-latest
+  - name: Azure Pipelines
+    image: macOS-latest
     os: macOS
-  - name: windows-latest
+  - name: Azure Pipelines
+    image: windows-latest
     os: windows
 
 extends:

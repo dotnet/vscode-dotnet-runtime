@@ -6,8 +6,8 @@ jobs:
   pool: ${{ parameters.pool }}
   displayName: '📦 Package and Publish'
   dependsOn:
-  - Build
-  - TSLint
+  - ${{ parameters.pool.os }}_Build
+  - ${{ parameters.pool.os }}_TSLint
   condition: succeeded()
   strategy:
     matrix:
