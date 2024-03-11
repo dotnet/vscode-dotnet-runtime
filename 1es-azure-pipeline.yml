@@ -58,19 +58,23 @@ extends:
           parameters:
             pool:
               name: ${{ image.name }}
+              image: ${{ image.image }}
               os: ${{ image.os }}
         - template: pipeline-templates/lint.yaml@self
           parameters:
             pool:
               name: ${{ image.name }}
+              image: ${{ image.image }}
               os: ${{ image.os }}
         - template: pipeline-templates/upstream-verify.yaml@self
           parameters:
             pool:
               name: ${{ image.name }}
+              image: ${{ image.image }}
               os: ${{ image.os }}
         - template: pipeline-templates/package-vsix.yaml@self
           parameters:
             pool:
               name: ${{ image.name }}
+              image: ${{ image.image }}
               os: ${{ image.os }}
