@@ -2,7 +2,7 @@ parameters:
   pool: ''
 
 jobs:
-- job: ${{ parameters.pool.os }} SyncPackageManagers
+- job: ${{ parameters.pool.os }}_SyncPackageManagers
   pool: ${{ parameters.pool }}
   displayName: '♻️ Verify NPM & Yarn In-Sync [Local Copy of Target Branch Must Be Up to Date]'
   steps:
