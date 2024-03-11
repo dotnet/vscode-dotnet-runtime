@@ -39,12 +39,12 @@ extends:
     - stage: stage
       jobs:
       - ${{ each pool in parameters.pools }}:
-      - job: ${{ pool.os }}_job
-        pool:
-          name: ${{ pool.name }}
-          os: ${{ pool.os }}
-        steps:
-        - template: templates/build-test.yml
-        - template: templates/lint.yml
-        - template: templates/upstream-verify.yml
-        - template: templates/package-vsix.yml
+        - job: ${{ pool.os }}_job
+          pool:
+            name: ${{ pool.name }}
+            os: ${{ pool.os }}
+          steps:
+          - template: templates/build-test.yml
+          - template: templates/lint.yml
+          - template: templates/upstream-verify.yml
+          - template: templates/package-vsix.yml
