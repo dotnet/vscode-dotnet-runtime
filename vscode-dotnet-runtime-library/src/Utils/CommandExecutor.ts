@@ -10,6 +10,7 @@ import open = require('open');
 import path = require('path');
 
 import {
+    EventCancellationError,
     CommandExecutionEvent,
     CommandExecutionNoStatusCodeWarning,
     CommandExecutionNonZeroExitFailure,
@@ -29,6 +30,8 @@ import {
     DotnetCommandNotFoundEvent,
     DotnetLockAcquiredEvent,
     DotnetLockReleasedEvent,
+    DotnetWSLCheckEvent,
+    DotnetWSLOperationOutputEvent,
     DotnetWSLSecurityError,
     SudoProcAliveCheckBegin,
     SudoProcAliveCheckEnd,
@@ -53,6 +56,7 @@ import { FileUtilities } from './FileUtilities';
 import { IFileUtilities } from './IFileUtilities';
 import { CommandProcessorOutput } from './CommandProcessorOutput';
 import { setTimeout } from 'timers';
+import { IEventStream } from '../EventStream/EventStream';
 
 /* tslint:disable:no-any */
 /* tslint:disable:no-string-literal */
@@ -73,9 +77,11 @@ export class CommandExecutor extends ICommandExecutor
     /**
      * Returns true if the linux agent is running under WSL, else false.
      */
-    public static isRunningUnderWSL() : boolean
+    public static isRunningUnderWSL(eventStream? : IEventStream) : boolean
     {
         // See https://github.com/microsoft/WSL/issues/4071 for evidence that we can rely on this behavior.
+
+        eventStream?.post(new DotnetWSLCheckEvent(`Checking if system is WSL. OS: ${os.platform()}`));
 
         if(os.platform() !== 'linux')
         {
@@ -85,6 +91,12 @@ export class CommandExecutor extends ICommandExecutor
         const command = 'grep';
         const args = ['-i', 'Microsoft', '/proc/version'];
         const commandResult = proc.spawnSync(command, args);
+
+        eventStream?.post(new DotnetWSLOperationOutputEvent(`The output of the WSL check:
+stdout: ${commandResult.stdout?.toString()}
+stderr: ${commandResult.stderr?.toString()}
+status: ${commandResult.status?.toString()}`
+        ));
 
         if(!commandResult || !commandResult.stdout)
         {
@@ -104,14 +116,14 @@ export class CommandExecutor extends ICommandExecutor
         this.context?.eventStream.post(new CommandExecutionUnderSudoEvent(`The command ${fullCommandString} is being ran under sudo.`));
         const shellScript = path.join(this.sudoProcessCommunicationDir, 'interprocess-communicator.sh');
 
-        if(CommandExecutor.isRunningUnderWSL())
+        if(CommandExecutor.isRunningUnderWSL(this.context?.eventStream))
         {
             // For WSL, vscode/sudo-prompt does not work.
             // This is because it relies on pkexec or a GUI app to popup and request sudo privilege.
             // GUI in WSL is not supported, so it will fail.
             // We had a working implementation that opens a vscode box and gets the user password, but that will require more security analysis.
 
-            const err = new DotnetWSLSecurityError(new Error(`Automatic .NET SDK Installation is not yet supported in WSL due to VS Code & WSL limitations.
+            const err = new DotnetWSLSecurityError(new EventCancellationError(`Automatic .NET SDK Installation is not yet supported in WSL due to VS Code & WSL limitations.
 Please install the .NET SDK manually by following https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu. Then, add it to the path by following https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#manually-installing-net`,
                 ), getInstallKeyFromContext(this.context?.acquisitionContext!));
             this.context?.eventStream.post(err);
@@ -178,7 +190,7 @@ ${stderr}`));
                 {
                     if(error.code === 126)
                     {
-                        const cancelledErr = new CommandExecutionUserRejectedPasswordRequest(new Error(`Cancelling .NET Install, as command ${fullCommandString} failed.
+                        const cancelledErr = new CommandExecutionUserRejectedPasswordRequest(new EventCancellationError(`Cancelling .NET Install, as command ${fullCommandString} failed.
 The user refused the password prompt.`),
                             getInstallKeyFromContext(this.context?.acquisitionContext!));
                         this.context?.eventStream.post(cancelledErr);
@@ -186,7 +198,7 @@ The user refused the password prompt.`),
                     }
                     else if(error.code === 111777)
                     {
-                        const securityErr = new CommandExecutionUnknownCommandExecutionAttempt(new Error(`Cancelling .NET Install, as command ${fullCommandString} is UNKNOWN.
+                        const securityErr = new CommandExecutionUnknownCommandExecutionAttempt(new EventCancellationError(`Cancelling .NET Install, as command ${fullCommandString} is UNKNOWN.
 Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
                             getInstallKeyFromContext(this.context?.acquisitionContext!));
                         this.context?.eventStream.post(securityErr);

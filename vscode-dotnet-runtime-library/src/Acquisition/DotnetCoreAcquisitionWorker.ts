@@ -194,7 +194,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
                 acquisitionPromise = this.acquireGlobalCore(globalInstallerResolver, installKey).catch((error: Error) => {
                     this.removeVersionFromExtensionState(this.installingVersionsKey, installKey);
                     delete this.acquisitionPromises[installKey];
-                    throw new Error(`.NET Acquisition Failed: ${error.message}`);
+                    error.message = `.NET Acquisition Failed: ${error.message}`;
+                    throw error;
                 });
             }
             else
@@ -204,7 +205,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
                 acquisitionPromise = this.acquireLocalCore(version, installRuntime, installKey, localInvoker!).catch((error: Error) => {
                     this.removeVersionFromExtensionState(this.installingVersionsKey, installKey);
                     delete this.acquisitionPromises[installKey];
-                    throw new Error(`.NET Acquisition Failed: ${error.message}`);
+                    error.message = `.NET Acquisition Failed: ${error.message}`;
+                    throw error;
                 });
             }
 

@@ -7,7 +7,6 @@ import * as open from 'open';
 import {
     DotnetCommandFailed,
     DotnetCommandSucceeded,
-    DotnetInstallCancelledByUserError,
     DotnetInstallExpectedAbort,
     DotnetNotInstallRelatedCommandFailed
 } from '../EventStream/EventStreamEvents';
@@ -64,7 +63,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
     catch (caughtError)
     {
         const error = caughtError as Error;
-        if(!(error instanceof DotnetInstallExpectedAbort) && error && error.constructor && error.constructor.name !== 'UserCancelledError')
+        if(!isCancellationStyleError(error))
         {
             context.eventStream.post(isAcquisitionError ?
                 new DotnetCommandFailed(error, context.commandName, getInstallKeyFromContext(acquireContext?.acquisitionContext)) :
@@ -85,7 +84,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
                     }
                 }, timeoutConstants.moreInfoOption);
             }
-            else if (error.constructor.name !== 'UserCancelledError' && showMessage)
+            else if (!isCancellationStyleError(error) && showMessage)
             {
                 let errorOptions = [errorConstants.reportOption, errorConstants.hideOption, errorConstants.moreInfoOption];
                 if (requestingExtensionId)
@@ -149,4 +148,10 @@ async function configureManualInstall(context: IIssueContext, requestingExtensio
     {
         context.displayWorker.showWarningMessage('Manually configured path was not valid.', () => { /* No callback needed */ });
     }
+}
+
+function isCancellationStyleError(error : Error)
+{
+    // Handle both when the event.error or event itself is posted.
+    return error && error.constructor && (error.constructor.name === 'UserCancelledError' || error.constructor.name === 'EventCancellationError') || error instanceof DotnetInstallExpectedAbort;
 }
