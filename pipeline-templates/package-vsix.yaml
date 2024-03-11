@@ -2,7 +2,6 @@ parameters:
   pool: ''
 
 jobs:
-- template: install-node.yml
 - job: Package
   pool: ${{ parameters.pool }}
   displayName: '📦 Package and Publish'
@@ -25,6 +24,7 @@ jobs:
       targetPath: '$(Build.ArtifactStagingDirectory)'
       artifactName: '$(dir-name)'
   steps:
+  - template: install-node.yml
   - bash: |
       if ([ $(is-sdk-release) = 'True' ] && [ $(package-name) = 'vscode-dotnet-sdk' ]) || ([ $(is-runtime-release) = 'True' ] && [ $(package-name) = 'vscode-dotnet-runtime' ]); then
         VERSION=`node -p "require('./package.json').version"`
