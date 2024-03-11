@@ -14,44 +14,45 @@ pr:
     - '*'
 
 variables:
-- name: is-runtime-release
-  value: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/Runtime-v')]
-- name: is-sdk-release
-  value: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/SDK-v')]
 - name: Codeql.Enabled
   value: true
-
-resources:
-  repositories:
-  - repository: 1esPipelines
-    type: git
-    name: 1ESPipelineTemplates/1ESPipelineTemplates
-    ref: refs/tags/release
 
 parameters:
 - name: pools
   type: object
   default:
-  - name: ubuntu-latest
+  - name: Ubuntu
+    vmImage: ubuntu-latest
+    image: ubuntu-latest
     os: linux
-  - name: macOS-latest
+  - name: OSX
+    vmImage: ubuntu-latest
+    image: macOS-latest
     os: macOS
-  - name: windows-latest
+  - name: Windows
+    vmImage: ubuntu-latest
+    image: windows-latest
     os: windows
 
-extends:
-  template: v1/1ES.Unofficial.PipelineTemplate.yml@1esPipelines
-  parameters:
-    stages:
-    - stage: stage
-      jobs:
-      - ${{ each pool in parameters.pools }}:
-        - job: ${{ pool.os }}_job
-          pool:
-            name: ${{ pool.name }}
-            os: ${{ pool.os }}
-          steps:
-          - template: templates/build-test.yml@self
-          - template: templates/lint.yml@self
-          - template: templates/upstream-verify.yml@self
-          - template: templates/package-vsix.yml@self
+stages:
+- stage: Build
+  jobs:
+  - ${{ each image in parameters.pools }}:
+    - template: pipeline-templates/build-test.yaml@self
+      parameters:
+        pool:
+          name: ${{ image.name }}
+          image: ${{ image.image }}
+          os: ${{ image.os }}
+  - template: pipeline-templates/upstream-verify.yaml@self
+    parameters:
+      pool:
+        vmImage: 'windows-latest'
+  - template: pipeline-templates/lint.yaml@self
+    parameters:
+      pool:
+        vmImage: 'windows-latest'
+  - template: pipeline-templates/package-vsix.yaml@self
+    parameters:
+      pool:
+        vmImage: 'windows-latest'
