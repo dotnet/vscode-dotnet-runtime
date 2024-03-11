@@ -48,7 +48,7 @@ extends:
         image: 1es-windows-2022-pt
         os: windows
     stages:
-    - stage: Run Pipeline
+    - stage: stage
       jobs:
       - ${{ each image in parameters.pools }}:
         - template: pipeline-templates/build-test.yaml@self

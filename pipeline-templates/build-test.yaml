@@ -2,7 +2,7 @@ parameters:
   pool: ''
 
 jobs:
-- job: Build
+- job: ${{ parameters.pool.os }} Build
   pool: ${{ parameters.pool }}
   displayName: '🔨 Build and Test'
   templateContext:

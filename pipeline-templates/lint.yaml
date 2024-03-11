@@ -2,7 +2,7 @@ parameters:
   pool: ''
 
 jobs:
-  - job: TSLint
+  - job: ${{ parameters.pool.os }} TSLint
     pool: ${{ parameters.pool }}
     displayName: '🧶 TSLint'
     steps:
