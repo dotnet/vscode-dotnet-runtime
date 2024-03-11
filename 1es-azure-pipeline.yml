@@ -43,15 +43,9 @@ extends:
   template: v1/1ES.Unofficial.PipelineTemplate.yml@1esPipelines
   parameters:
     stages:
-    - stage: stage
+    - stage: Run Pipeline
       jobs:
-      - ${{ each pool in parameters.pools }}:
-        - job: ${{ pool.os }}_job
-          pool:
-            name: ${{ pool.name }}
-            os: ${{ pool.os }}
-          steps:
-          - template: pipeline-templates/build-test.yaml@self
-          - template: pipeline-templates/lint.yaml@self
-          - template: pipeline-templates/upstream-verify.yaml@self
-          - template: pipeline-templates/package-vsix.yaml@self
+      - template: pipeline-templates/build-test.yaml@self
+      - template: pipeline-templates/lint.yaml@self
+      - template: pipeline-templates/upstream-verify.yaml@self
+      - template: pipeline-templates/package-vsix.yaml@self

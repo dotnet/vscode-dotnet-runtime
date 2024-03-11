@@ -1,6 +1,9 @@
 jobs:
 - template: templates/install-node.yml
 - job: Package
+  pool:
+    name: windows-latest
+    os: windows
   displayName: '📦 Package and Publish'
   dependsOn:
   - Build
