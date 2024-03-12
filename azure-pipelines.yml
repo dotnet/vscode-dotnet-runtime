@@ -22,13 +22,13 @@ parameters:
   type: object
   default:
   - name: $(DncEngPublicBuildPool)
-    image: ubuntu-latest
+    image: build.ubuntu.2204.amd64
     os: linux
-  - name: $(DncEngPublicBuildPool)
+  - name: Azure Pipelines
     image: macOS-latest
     os: macOS
   - name: $(DncEngPublicBuildPool)
-    image: windows-latest
+    image: 1es-windows-2022-open
     os: windows
 
 stages:
