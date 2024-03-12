@@ -21,13 +21,13 @@ parameters:
 - name: pools
   type: object
   default:
-  - name: $(DncEngPublicBuildPool)
+  - name: $(DncEngInternalBuildPool)
     image: build.ubuntu.2204.amd64
     os: linux
   - name: Azure Pipelines
     image: macOS-latest
     os: macOS
-  - name: $(DncEngPublicBuildPool)
+  - name: $(DncEngInternalBuildPool)
     image: 1es-windows-2022-open
     os: windows
 
@@ -44,18 +44,18 @@ stages:
   - template: pipeline-templates/upstream-verify.yaml
     parameters:
       pool:
-        name: $(DncEngPublicBuildPool)
+        name: $(DncEngInternalBuildPool)
         image: 'windows-latest'
         os: windows
   - template: pipeline-templates/lint.yaml
     parameters:
       pool:
-        name: $(DncEngPublicBuildPool)
+        name: $(DncEngInternalBuildPool)
         image: 'windows-latest'
         os: windows
   - template: pipeline-templates/package-vsix.yaml
     parameters:
       pool:
-        name: $(DncEngPublicBuildPool)
+        name: $(DncEngInternalBuildPool)
         image: 'windows-latest'
         os: windows
