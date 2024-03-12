@@ -22,10 +22,10 @@ parameters:
   type: object
   default:
   - name: NetCore-Svc-Public
-    image: 1es-ubuntu-2204-pt
+    image: ubuntu.2204.amd64.open
     os: linux
   - name: NetCore-Svc-Public
-    image: macOS-latest
+    image: osx.14.amd64.open
     os: macOS
   - name: NetCore-Svc-Public
     image: 1es-windows-2022-open
