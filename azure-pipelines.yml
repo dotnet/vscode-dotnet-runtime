@@ -43,6 +43,7 @@ stages:
         pool:
           name: ${{ image.name }}
           image: ${{ image.image }}
+          vmImage: ${{ image.vmImage }}
           os: ${{ image.os }}
   - template: pipeline-templates/upstream-verify.yaml
     parameters:
