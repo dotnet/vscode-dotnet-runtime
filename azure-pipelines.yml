@@ -21,13 +21,16 @@ parameters:
 - name: pools
   type: object
   default:
-  - name: NetCore-Svc-Public
+  - name: NetCore-Public
+    vmImage: ubuntu-latest
     image: ubuntu.2204.amd64.open
     os: linux
-  - name: NetCore-Svc-Public
+  - name: NetCore-Public
+    vmImage: macOS-latest
     image: osx.14.amd64.open
     os: macOS
-  - name: NetCore-Svc-Public
+  - name: NetCore-Public
+    vmImage: windows-latest
     image: 1es-windows-2022-open
     os: windows
 
@@ -44,18 +47,18 @@ stages:
   - template: pipeline-templates/upstream-verify.yaml
     parameters:
       pool:
-        name: NetCore-Svc-Public
+        name: NetCore-Public
         image: 1es-windows-2022-open
         os: windows
   - template: pipeline-templates/lint.yaml
     parameters:
       pool:
-        name: NetCore-Svc-Public
+        name: NetCore-Public
         image: 1es-windows-2022-open
         os: windows
   - template: pipeline-templates/package-vsix.yaml
     parameters:
       pool:
-        name: NetCore-Svc-Public
+        name: NetCore-Public
         image: 1es-windows-2022-open
         os: windows
