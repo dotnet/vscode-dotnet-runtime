@@ -22,9 +22,9 @@ parameters:
   type: object
   default:
   - name: NetCore-Svc-Public
-    image: build.ubuntu.2204.amd64
+    image: 1es-ubuntu-2204-pt
     os: linux
-  - name: Azure Pipelines
+  - name: NetCore-Svc-Public
     image: macOS-latest
     os: macOS
   - name: NetCore-Svc-Public
