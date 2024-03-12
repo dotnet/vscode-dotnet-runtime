@@ -44,18 +44,18 @@ stages:
   - template: pipeline-templates/upstream-verify.yaml
     parameters:
       pool:
-        name: $(DncEngInternalBuildPool)
-        image: 'windows-latest'
+        name: NetCore-Svc-Public
+        image: 1es-windows-2022-open
         os: windows
   - template: pipeline-templates/lint.yaml
     parameters:
       pool:
-        name: $(DncEngInternalBuildPool)
-        image: 'windows-latest'
+        name: NetCore-Svc-Public
+        image: 1es-windows-2022-open
         os: windows
   - template: pipeline-templates/package-vsix.yaml
     parameters:
       pool:
-        name: $(DncEngInternalBuildPool)
-        image: 'windows-latest'
+        name: NetCore-Svc-Public
+        image: 1es-windows-2022-open
         os: windows
