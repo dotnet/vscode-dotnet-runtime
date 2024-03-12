@@ -14,21 +14,21 @@ jobs:
       artifactName: '${{ parameters.pool.os }} logs'
   steps:
   - template: install-node.yaml
-  - script: build.cmd
-    displayName: 💻 Build Windows
-    condition: eq(variables['Agent.OS'], 'Windows_NT')
-  - script: test.cmd
-    displayName: 🔍 Test Windows
-    condition: eq(variables['Agent.OS'], 'Windows_NT')
-  - bash: |
-      /usr/bin/Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
-      echo ">>> Started xvfb"
-    displayName: 🎮 Start xvfb
-    condition: and(succeeded(), eq(variables['Agent.OS'], 'Linux'))
-  - script: ./build.sh
-    displayName: 🐧 Build Mac and Linux
-    condition: or(eq(variables['Agent.OS'], 'Darwin'), eq(variables['Agent.OS'], 'Linux'))
-  - script: ./test.sh
-    displayName: 🔎 Test Mac and Linux
-    env: {DISPLAY: ':99.0'}
-    condition: or(eq(variables['Agent.OS'], 'Darwin'), eq(variables['Agent.OS'], 'Linux'))
+  - ${{ if eq(variables['Agent.OS'], 'Windows_NT') }}:
+    - script: build.cmd
+      displayName: 💻 Build Windows
+      condition:
+    - script: test.cmd
+      displayName: 🔍 Test Windows
+  - ${{ if and(succeeded(), eq(variables['Agent.OS'], 'Linux')) }}:
+    - bash: |
+        /usr/bin/Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+        echo ">>> Started xvfb"
+      displayName: 🎮 Start xvfb
+  - ${{ if or(eq(variables['Agent.OS'], 'Darwin'), eq(variables['Agent.OS'], 'Linux')) }}:
+    - script: ./build.sh
+      displayName: 🐧 Build Mac and Linux
+      condition:
+    - script: ./test.sh
+      displayName: 🔎 Test Mac and Linux
+      env: {DISPLAY: ':99.0'}
