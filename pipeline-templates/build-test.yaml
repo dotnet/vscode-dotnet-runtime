@@ -20,7 +20,7 @@ jobs:
       condition:
     - script: test.cmd
       displayName: 🔍 Test Windows
-  - ${{ if and(succeeded(), eq(variables['Agent.OS'], 'Linux')) }}:
+  - ${{ if eq(variables['Agent.OS'], 'Linux')) }}:
     - bash: |
         /usr/bin/Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
         echo ">>> Started xvfb"
