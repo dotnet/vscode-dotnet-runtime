@@ -11,8 +11,9 @@ jobs:
       displayName: '🌐 Publish Logs'
       condition: always()
       targetPath: '$(Build.SourcesDirectory)/vscode-dotnet-runtime-extension/dist/test/functional/logs'
-      artifactName: 'logs'
+      artifactName: '${{ parameters.pool.os }} logs'
   steps:
+  - template: install-node.yaml
   - script: build.cmd
     displayName: 💻 Build Windows
     condition: eq(variables['Agent.OS'], 'Windows_NT')

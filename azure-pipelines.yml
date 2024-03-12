@@ -32,7 +32,7 @@ parameters:
     os: windows
 
 stages:
-- stage: Build
+- stage: o # o is just used so it looks like a bullet point in the output of devops
   jobs:
   - ${{ each image in parameters.pools }}:
     - template: pipeline-templates/build-test.yaml
