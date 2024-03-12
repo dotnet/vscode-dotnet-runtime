@@ -21,13 +21,13 @@ parameters:
 - name: pools
   type: object
   default:
-  - name: NetCore1ESPool-Internal
-    image: 1es-ubuntu-2204-pt
+  - name: NetCore-Svc-Public
+    image: build.ubuntu.2204.amd64
     os: linux
   - name: Azure Pipelines
     image: macOS-latest
     os: macOS
-  - name: NetCore1ESPool-Internal
+  - name: NetCore-Svc-Public
     image: 1es-windows-2022-open
     os: windows
 
