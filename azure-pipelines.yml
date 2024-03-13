@@ -22,16 +22,13 @@ parameters:
   type: object
   default:
   - name: NetCore-Public
-    vmImage: ubuntu-latest
-    image: ubuntu.2204.amd64.open
+    vmImage: ubuntu-latest # The public PR pool schema is different from the 1ES one. We use 'vmImage' which is a default azure pipeline schema.
     os: linux
   - name: NetCore-Public
-    vmImage: macOS-latest
-    image: osx.14.amd64.open
+    vmImage: macOS-latest # 1ES uses 'image' but defining an image this way using our public pools does not work as they aren't configured this way.
     os: macOS
   - name: NetCore-Public
-    vmImage: windows-latest
-    image: 1es-windows-2022-open
+    vmImage: windows-latest # We add the flag 'oes' or one engineering system: false or true in all tasks to determine if we use vmImage or a 1es pool object.
     os: windows
 
 stages:
@@ -41,26 +38,24 @@ stages:
     - template: pipeline-templates/build-test.yaml
       parameters:
         pool:
-          name: ${{ image.name }}
-          image: ${{ image.image }}
           vmImage: ${{ image.vmImage }}
           os: ${{ image.os }}
         oes: false
   - template: pipeline-templates/upstream-verify.yaml
     parameters:
       pool:
-        name: NetCore-Public
-        image: 1es-windows-2022-open
+        vmImage: windows-latest
         os: windows
+      oes: false
   - template: pipeline-templates/lint.yaml
     parameters:
       pool:
-        name: NetCore-Public
-        image: 1es-windows-2022-open
+        vmImage: windows-latest
         os: windows
+      oes: false
   - template: pipeline-templates/package-vsix.yaml
     parameters:
       pool:
-        name: NetCore-Public
-        image: 1es-windows-2022-open
+        vmImage: windows-latest
         os: windows
+      oes: false

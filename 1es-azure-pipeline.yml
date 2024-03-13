@@ -60,21 +60,25 @@ extends:
               name: ${{ image.name }}
               image: ${{ image.image }}
               os: ${{ image.os }}
+            oes: true
       - template: pipeline-templates/upstream-verify.yaml@self
         parameters:
           pool:
             name: NetCore1ESPool-Internal
             image: 1es-windows-2022-pt
             os: windows
+          oes: true
       - template: pipeline-templates/lint.yaml@self
         parameters:
           pool:
             name: NetCore1ESPool-Internal
             image: 1es-windows-2022-pt
             os: windows
+          oes: true
       - template: pipeline-templates/package-vsix.yaml@self
         parameters:
           pool:
             name: NetCore1ESPool-Internal
             image: 1es-windows-2022-pt
             os: windows
+          oes: true

@@ -3,7 +3,11 @@ parameters:
 
 jobs:
 - job: SyncPackageManagers
-  pool: ${{ parameters.pool }}
+  pool:
+    ${{ if eq(parameters.oes, 'true') }}:
+        ${{ parameters.pool }}
+    ${{ else }}:
+        vmImage: ${{ parameters.pool.vmImage }}
   displayName: '♻️ Verify NPM & Yarn In-Sync [Local Copy of Target Branch Must Be Up to Date]'
   steps:
   - task: UsePythonVersion@0

@@ -3,7 +3,11 @@ parameters:
 
 jobs:
 - job: ${{ parameters.pool.os }}_Package
-  pool: ${{ parameters.pool }}
+  pool:
+    ${{ if eq(parameters.oes, 'true') }}:
+        ${{ parameters.pool }}
+    ${{ else }}:
+        vmImage: ${{ parameters.pool.vmImage }}
   displayName: '📦 Package and Publish'
   dependsOn:
   - ${{ parameters.pool.os }}_Build

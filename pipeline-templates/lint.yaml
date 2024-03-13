@@ -3,7 +3,11 @@ parameters:
 
 jobs:
   - job: TSLint
-    pool: ${{ parameters.pool }}
+  pool:
+    ${{ if eq(parameters.oes, 'true') }}:
+        ${{ parameters.pool }}
+    ${{ else }}:
+        vmImage: ${{ parameters.pool.vmImage }}
     displayName: '🧶 TSLint'
     steps:
     - template: install-node.yaml
