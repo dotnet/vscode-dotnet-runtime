@@ -3,10 +3,10 @@ parameters:
 
 jobs:
   - job: TSLint
-  pool:
-    ${{ if eq(parameters.oes, 'true') }}:
+    pool:
+      ${{ if eq(parameters.oes, 'true') }}:
         ${{ parameters.pool }}
-    ${{ else }}:
+      ${{ else }}:
         vmImage: ${{ parameters.pool.vmImage }}
     displayName: '🧶 TSLint'
     steps:
