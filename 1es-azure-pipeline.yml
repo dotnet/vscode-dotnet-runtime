@@ -1,0 +1,88 @@
+# Name: dotnet.vscode-dotnet-runtime
+
+# URL: https://dev.azure.com/dnceng/internal/_build?definitionId=656
+
+trigger:
+  batch: true
+  branches:
+    include:
+    - main
+  tags:
+    include:
+    - SDK-v*
+    - Runtime-v*
+pr:
+  autoCancel: false
+  branches:
+    include:
+    - '*'
+
+variables:
+- name: is-runtime-release
+  value: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/Runtime-v')]
+- name: is-sdk-release
+  value: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/SDK-v')]
+- name: Codeql.Enabled
+  value: true
+
+resources:
+  repositories:
+  - repository: 1esPipelines
+    type: git
+    name: 1ESPipelineTemplates/1ESPipelineTemplates
+    ref: refs/tags/release
+
+parameters:
+- name: pools
+  type: object
+  default:
+  - name: NetCore1ESPool-Internal
+    image: 1es-ubuntu-2204
+    os: linux
+  - name: Azure Pipelines
+    image: macOS-latest
+    os: macOS
+  - name: NetCore1ESPool-Internal
+    image: 1es-windows-2022
+    os: windows
+
+extends:
+  template: v1/1ES.Unofficial.PipelineTemplate.yml@1esPipelines
+  parameters:
+    sdl:
+      sourceAnalysisPool:
+        name: NetCore1ESPool-Internal
+        image: 1es-windows-2022
+        os: windows
+    stages:
+    - stage: Internal
+      jobs:
+      - ${{ each image in parameters.pools }}:
+        - template: pipeline-templates/build-test.yaml@self
+          parameters:
+            pool:
+              name: ${{ image.name }}
+              image: ${{ image.image }}
+              os: ${{ image.os }}
+            useOneEngineeringPool: true
+      - template: pipeline-templates/upstream-verify.yaml@self
+        parameters:
+          pool:
+            name: NetCore1ESPool-Internal
+            image: 1es-windows-2022
+            os: windows
+          useOneEngineeringPool: true
+      - template: pipeline-templates/lint.yaml@self
+        parameters:
+          pool:
+            name: NetCore1ESPool-Internal
+            image: 1es-windows-2022
+            os: windows
+          useOneEngineeringPool: true
+      - template: pipeline-templates/package-vsix.yaml@self
+        parameters:
+          pool:
+            name: NetCore1ESPool-Internal
+            image: 1es-windows-2022
+            os: windows
+          useOneEngineeringPool: true

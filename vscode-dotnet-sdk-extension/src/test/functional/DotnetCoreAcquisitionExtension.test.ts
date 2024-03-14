@@ -41,7 +41,7 @@ chai.use(chaiAsPromised);
 /* tslint:disable:no-any */
 /* tslint:disable:no-unsafe-finally */
 
-const currentSDKVersion = '6.0';
+const currentSDKVersion = '7.0';
 suite('DotnetCoreAcquisitionExtension End to End', function ()
 {
 suite('DotnetCoreAcquisitionExtension End to End', function()

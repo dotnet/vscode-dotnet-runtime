@@ -1,0 +1,38 @@
+parameters:
+  pool: ''
+
+jobs:
+- job: ${{ parameters.pool.os }}_Build
+  pool:
+    ${{ if eq(parameters.useOneEngineeringPool, 'true') }}:
+        ${{ parameters.pool }}
+    ${{ else }}:
+        vmImage: ${{ parameters.pool.vmImage }}
+  displayName: '🔨 ${{ parameters.pool.os }} Build and Test'
+  templateContext:
+    outputs:
+    - output: pipelineArtifact
+      displayName: '🌐 Publish Logs'
+      condition: always()
+      targetPath: '$(Build.SourcesDirectory)/vscode-dotnet-runtime-extension/dist/test/functional/logs'
+      artifactName: '${{ parameters.pool.os }} logs'
+  steps:
+  - template: install-node.yaml
+  - ${{ if eq(parameters.pool.os, 'windows') }}:
+    - script: build.cmd
+      displayName: 💻 Build Windows
+      condition:
+    - script: test.cmd
+      displayName: 🔍 Test Windows
+  - ${{ if eq(parameters.pool.os, 'linux') }}:
+    - bash: |
+        /usr/bin/Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+        echo ">>> Started xvfb"
+      displayName: 🎮 Start xvfb
+  - ${{ if or(eq(parameters.pool.os, 'macOS'), eq(parameters.pool.os, 'linux')) }}:
+    - script: ./build.sh
+      displayName: 🐧 Build Mac and Linux
+      condition:
+    - script: ./test.sh
+      displayName: 🔎 Test Mac and Linux
+      env: {DISPLAY: ':99.0'}
