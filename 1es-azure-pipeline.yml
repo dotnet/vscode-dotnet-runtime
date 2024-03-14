@@ -1,3 +1,7 @@
+# Name: dotnet.vscode-dotnet-runtime
+
+# URL: https://dev.azure.com/dnceng/internal/_build?definitionId=656
+
 trigger:
   batch: true
   branches:
@@ -33,13 +37,13 @@ parameters:
   type: object
   default:
   - name: NetCore1ESPool-Internal
-    image: 1es-ubuntu-2204-pt
+    image: 1es-ubuntu-2204
     os: linux
   - name: Azure Pipelines
     image: macOS-latest
     os: macOS
   - name: NetCore1ESPool-Internal
-    image: 1es-windows-2022-pt
+    image: 1es-windows-2022
     os: windows
 
 extends:
@@ -48,7 +52,7 @@ extends:
     sdl:
       sourceAnalysisPool:
         name: NetCore1ESPool-Internal
-        image: 1es-windows-2022-pt
+        image: 1es-windows-2022
         os: windows
     stages:
     - stage: Internal
@@ -60,25 +64,25 @@ extends:
               name: ${{ image.name }}
               image: ${{ image.image }}
               os: ${{ image.os }}
-            oes: true
+            useOneEngineeringPool: true
       - template: pipeline-templates/upstream-verify.yaml@self
         parameters:
           pool:
             name: NetCore1ESPool-Internal
-            image: 1es-windows-2022-pt
+            image: 1es-windows-2022
             os: windows
-          oes: true
+          useOneEngineeringPool: true
       - template: pipeline-templates/lint.yaml@self
         parameters:
           pool:
             name: NetCore1ESPool-Internal
-            image: 1es-windows-2022-pt
+            image: 1es-windows-2022
             os: windows
-          oes: true
+          useOneEngineeringPool: true
       - template: pipeline-templates/package-vsix.yaml@self
         parameters:
           pool:
             name: NetCore1ESPool-Internal
-            image: 1es-windows-2022-pt
+            image: 1es-windows-2022
             os: windows
-          oes: true
+          useOneEngineeringPool: true
