@@ -226,7 +226,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     });
 
     const dotnetRecommendedVersionRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.recommendedVersion}`,
-    async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) : Promise<string> =>
+    async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) : Promise<IDotnetListVersionsResult> =>
     {
         const availableVersions = await getAvailableVersions(commandContext, customWebWorker, true);
         const activeSupportVersions = availableVersions?.filter( (version : IDotnetVersion) => version.supportPhase === 'active');
@@ -237,20 +237,21 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             globalEventStream.post(new DotnetVersionResolutionError(err as EventCancellationError, 'recommended'));
             if(!availableVersions || availableVersions.length < 1)
             {
-                return '';
+                return [];
             }
-            return availableVersions[0].version;
+            return [availableVersions[0]];
         }
 
         // The first item will be the newest version.
-        return activeSupportVersions[0].version;
+        return[ activeSupportVersions[0]];
     });
 
     const acquireGlobalSDKPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.globalAcquireSDKPublic}`, async (commandContext: IDotnetAcquireContext) =>
     {
         globalEventStream.post(new GlobalAcquisitionContextMenuOpened(`The user has opened the global SDK acquisition context menu.`));
 
-        const recommendedVersion : string = await vscode.commands.executeCommand('dotnet.recommendedVersion') ?? '';
+        const recommendedVersionResult : IDotnetListVersionsResult = await vscode.commands.executeCommand('dotnet.recommendedVersion');
+        const recommendedVersion : string = recommendedVersionResult ? recommendedVersionResult[0].version : '';
 
         const chosenVersion = await vscode.window.showInputBox(
         {
