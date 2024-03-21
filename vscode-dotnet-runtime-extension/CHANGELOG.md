@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+## [2.0.3] - 2024-02-05
+
+Breaking change to the recommended version API introduced in 2.0.2.
+Previously the API would return a string, now it will return an `IDotnetVersion` with more information.
+The old string value containing the version can be accessed by calling .version on the returned object.
+
 ## [2.0.2] - 2024-02-05
 
 Allow users to call code to install Global SDKs on their own.
