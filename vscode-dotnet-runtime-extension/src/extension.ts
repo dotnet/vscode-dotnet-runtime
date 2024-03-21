@@ -243,7 +243,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         }
 
         // The first item will be the newest version.
-        return[ activeSupportVersions[0]];
+        return [activeSupportVersions[0]];
     });
 
     const acquireGlobalSDKPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.globalAcquireSDKPublic}`, async (commandContext: IDotnetAcquireContext) =>
