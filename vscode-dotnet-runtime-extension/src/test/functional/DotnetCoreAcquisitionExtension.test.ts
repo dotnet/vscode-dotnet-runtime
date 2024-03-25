@@ -292,15 +292,15 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     const webWorker = new MockWebRequestWorker(mockAcquisitionContext, '');
     webWorker.response = JSON.parse(mockReleasesData);
 
-    const result = await vscode.commands.executeCommand<string>('dotnet.recommendedVersion', null, webWorker);
+    const result = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet.recommendedVersion', null, webWorker);
     assert.exists(result);
     if(os.platform() !== 'linux')
     {
-      assert.equal(result, '7.0.202', 'The SDK did not recommend the version it was supposed to, which should be {7.0.200} from the mock data.');
+      assert.equal(result[0].version, '7.0.202', 'The SDK did not recommend the version it was supposed to, which should be {7.0.200} from the mock data.');
     }
     else
     {
-      assert.equal(result, '8.0.1xx', 'The SDK did not recommend the version it was supposed to, which should be N.0.1xx based on surface level distro knowledge. If a new version is available, this test may need to be updated to the newest version.');
+      assert.equal(result[0].version, '8.0.1xx', 'The SDK did not recommend the version it was supposed to, which should be N.0.1xx based on surface level distro knowledge. If a new version is available, this test may need to be updated to the newest version.');
 
     }
   }).timeout(standardTimeoutTime);
