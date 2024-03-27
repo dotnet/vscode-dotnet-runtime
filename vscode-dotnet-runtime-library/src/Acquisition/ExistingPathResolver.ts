@@ -5,21 +5,45 @@
 
 import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
-import { IExistingPath } from '../IExtensionContext';
+import { IExistingPaths, ILocalExistingPath } from '../IExtensionContext';
 
 export class ExistingPathResolver {
-    public resolveExistingPath(existingPaths: IExistingPath[] | undefined, extensionId: string | undefined, windowDisplayWorker: IWindowDisplayWorker): IDotnetAcquireResult | undefined {
+    // public resolveExistingPath(existingPaths: ILocalExistingPath[] | undefined, extensionId: string | undefined, windowDisplayWorker: IWindowDisplayWorker): IDotnetAcquireResult | undefined {
+    //     if (existingPaths) {
+    //         if (!extensionId) {
+    //             // Use the global path if it is specified
+    //             if (existingPaths)
+    //             windowDisplayWorker.showWarningMessage(
+    //                 'Ignoring existing .NET paths defined in settings.json because requesting extension does not define its extension ID. Please file a bug against the requesting extension.',
+    //                 () => { /* No callback */ },
+    //             );
+    //             return;
+    //         }
+    //         const existingPath = existingPaths.filter((pair) => pair.extensionId === extensionId);
+    //         if (existingPath && existingPath.length > 0) {
+    //             return { dotnetPath: existingPath![0].path };
+    //         }
+    //     }
+    // }
+    public resolveExistingPath(existingPaths: IExistingPaths | undefined, extensionId: string | undefined, windowDisplayWorker: IWindowDisplayWorker): IDotnetAcquireResult | undefined {
         if (existingPaths) {
             if (!extensionId) {
+                // Use the global path if it is specified
+                if (existingPaths.globalExistingPathKey)
+                {
+                    return { dotnetPath: existingPaths.globalExistingPathKey}
+                }
                 windowDisplayWorker.showWarningMessage(
                     'Ignoring existing .NET paths defined in settings.json because requesting extension does not define its extension ID. Please file a bug against the requesting extension.',
                     () => { /* No callback */ },
                 );
                 return;
             }
-            const existingPath = existingPaths.filter((pair) => pair.extensionId === extensionId);
-            if (existingPath && existingPath.length > 0) {
-                return { dotnetPath: existingPath![0].path };
+            else {
+                const existingLocalPath = existingPaths.iLocalExsitingPaths.filter((pair) => pair.extensionId === extensionId);
+                if (existingLocalPath && existingLocalPath.length > 0) {
+                    return { dotnetPath: existingLocalPath![0].path };
+                }
             }
         }
     }

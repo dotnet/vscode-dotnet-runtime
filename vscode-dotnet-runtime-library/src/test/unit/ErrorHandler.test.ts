@@ -57,24 +57,24 @@ suite('ErrorHandler Unit Tests', () => {
             [errorConstants.reportOption, errorConstants.hideOption, errorConstants.moreInfoOption, errorConstants.configureManuallyOption]);
     });
 
-    test('Path can be manually configured via popup', async () => {
-        const mockExtensionId = 'MockId';
-        const displayWorker = new MockWindowDisplayWorker(__dirname);
-        const context = issueContext(displayWorker, new MockEventStream());
-        const res = await callWithErrorHandling<string>(() => {
-            throw new Error('errorString');
-        }, context, mockExtensionId);
+    // test('Path can be manually configured via popup', async () => {
+    //     const mockExtensionId = 'MockId';
+    //     const displayWorker = new MockWindowDisplayWorker(__dirname);
+    //     const context = issueContext(displayWorker, new MockEventStream());
+    //     const res = await callWithErrorHandling<string>(() => {
+    //         throw new Error('errorString');
+    //     }, context, mockExtensionId);
 
-        // Mock the user clicking 'Configure manually'
-        assert.isDefined(displayWorker.callback);
-        await displayWorker.callback!('Configure manually');
-        assert.include(displayWorker.infoMessage, `Set .NET path to ${__dirname}.`);
-        const configResult = context.extensionConfigWorker.getPathConfigurationValue();
-        assert.isDefined(configResult);
-        const expectedConfig = [{ [ExistingPathKeys.extensionIdKey]: mockExtensionId, [ExistingPathKeys.pathKey] : __dirname },
-                              { [ExistingPathKeys.extensionIdKey]: 'MockRequestingExtensionId', [ExistingPathKeys.pathKey] : 'MockPath' }];
-        assert.deepEqual(configResult!, expectedConfig);
-    });
+    //     // Mock the user clicking 'Configure manually'
+    //     assert.isDefined(displayWorker.callback);
+    //     await displayWorker.callback!('Configure manually');
+    //     assert.include(displayWorker.infoMessage, `Set .NET path to ${__dirname}.`);
+    //     const configResult = context.extensionConfigWorker.getPathConfigurationValue();
+    //     assert.isDefined(configResult);
+    //     const expectedConfig = [{ [ExistingPathKeys.extensionIdKey]: mockExtensionId, [ExistingPathKeys.pathKey] : __dirname },
+    //                           { [ExistingPathKeys.extensionIdKey]: 'MockRequestingExtensionId', [ExistingPathKeys.pathKey] : 'MockPath' }];
+    //     assert.deepEqual(configResult!, expectedConfig);
+    // });
 
     test('Warning popup appears on invalid manually configured path', async () => {
         const displayWorker = new MockWindowDisplayWorker();

@@ -35,7 +35,8 @@ import {
   WinMacGlobalInstaller,
   MockIndexWebRequestWorker,
   MockVSCodeExtensionContext,
-  getMockUtilityContext
+  getMockUtilityContext,
+  IExistingPaths
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { uninstallSDKExtension } from '../../ExtensionUninstall';
@@ -84,6 +85,9 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
   const mockDisplayWorker = new MockWindowDisplayWorker();
   const environmentVariableCollection = new MockEnvironmentVariableCollection();
   let extensionContext: vscode.ExtensionContext;
+  const mockExistingPaths: IExistingPaths = {
+    iLocalExsitingPaths: [{extensionId: 'alternative.extension', path: 'foo'}]
+}
 
   this.beforeAll(async () => {
     extensionContext = {
@@ -96,7 +100,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     } as any;
     extension.activate(extensionContext, {
       telemetryReporter: new MockTelemetryReporter(),
-      extensionConfiguration: new MockExtensionConfiguration([{ extensionId: 'ms-dotnettools.sample-extension', path: 'foo' }], true),
+      // extensionConfiguration: new MockExtensionConfiguration([{ extensionId: 'ms-dotnettools.sample-extension', path: 'foo' }], true),
+      extensionConfiguration: new MockExtensionConfiguration(mockExistingPaths, true),
       displayWorker: mockDisplayWorker,
     });
   });

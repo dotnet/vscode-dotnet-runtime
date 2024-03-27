@@ -16,7 +16,7 @@ import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStream
 import { IEvent } from '../../EventStream/IEvent';
 import { ILoggingObserver } from '../../EventStream/ILoggingObserver';
 import { ITelemetryReporter } from '../../EventStream/TelemetryObserver';
-import { IExistingPath, IExtensionConfiguration } from '../../IExtensionContext';
+import { IExistingPaths, IExtensionConfiguration } from '../../IExtensionContext';
 import { IExtensionState } from '../../IExtensionState';
 import { WebRequestWorker } from '../../Utils/WebRequestWorker';
 import { CommandExecutorCommand, ICommandExecutor } from '../../Utils/ICommandExecutor';
@@ -507,7 +507,8 @@ export class MockLoggingObserver implements ILoggingObserver {
 }
 
 export class MockExtensionConfiguration implements IExtensionConfiguration {
-    constructor(private readonly existingPaths: IExistingPath[], private readonly enableTelemetry: boolean) { }
+    // constructor(private readonly existingPaths: IExistingPath[], private readonly enableTelemetry: boolean) { }
+    constructor(private readonly existingPaths: IExistingPaths, private readonly enableTelemetry: boolean) { }
 
     public update<T>(section: string, value: T): Thenable<void> {
         // Not used, stubbed to implement interface

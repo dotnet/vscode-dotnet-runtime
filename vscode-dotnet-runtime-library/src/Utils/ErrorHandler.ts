@@ -8,7 +8,7 @@ import {
     DotnetCommandFailed,
     DotnetCommandSucceeded,
 } from '../EventStream/EventStreamEvents';
-import { ExistingPathKeys, IExistingPath } from '../IExtensionContext';
+import { ExistingPathKeys, ILocalExistingPath } from '../IExtensionContext';
 import { IIssueContext } from './IIssueContext';
 import { formatIssueUrl } from './IssueReporter';
 
@@ -94,10 +94,10 @@ async function configureManualInstall(context: IIssueContext, requestingExtensio
     const manualPath = await context.displayWorker.displayPathConfigPopUp();
     if (manualPath && fs.existsSync(manualPath)) {
         try {
-            let configVal: IExistingPath[] = [{ [ExistingPathKeys.extensionIdKey]: requestingExtensionId, [ExistingPathKeys.pathKey] : manualPath}];
+            let configVal: ILocalExistingPath[] = [{ [ExistingPathKeys.extensionIdKey]: requestingExtensionId, [ExistingPathKeys.pathKey] : manualPath}];
             const existingConfigVal = context.extensionConfigWorker.getPathConfigurationValue();
             if (existingConfigVal) {
-                configVal = configVal.concat(existingConfigVal);
+                configVal = configVal.concat(existingConfigVal.iLocalExsitingPaths);
             }
             await context.extensionConfigWorker.setPathConfigurationValue(configVal);
             context.displayWorker.showInformationMessage(`Set .NET path to ${manualPath}. Please reload VSCode to apply settings.`, () => { /* No callback needed */});

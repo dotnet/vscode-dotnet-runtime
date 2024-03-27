@@ -21,7 +21,12 @@ export namespace ExistingPathKeys {
     export const pathKey = 'path';
 }
 
-export interface IExistingPath {
+export interface ILocalExistingPath {
     [ExistingPathKeys.extensionIdKey]: string;
     [ExistingPathKeys.pathKey]: string;
+}
+
+export interface IExistingPaths{
+    iLocalExsitingPaths: ILocalExistingPath[];
+    globalExistingPathKey? : string;
 }
