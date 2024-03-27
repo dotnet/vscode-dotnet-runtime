@@ -17,10 +17,17 @@ export class ExtensionConfigurationWorker implements IExtensionConfigurationWork
         return this.pathConfigValueName ? this.extensionConfiguration.get(this.pathConfigValueName) : undefined;
     }
 
-    public async setPathConfigurationValue(configValue: ILocalExistingPath[]): Promise<void> {
+    public async setLocalPathConfigurationValue(configValue: ILocalExistingPath[]): Promise<void> {
         if (!this.pathConfigValueName) {
             throw Error('Existing path configuration not supported.');
         }
         await this.extensionConfiguration.update<ILocalExistingPath[]>(this.pathConfigValueName, configValue, true);
+    }
+
+    public async setGlobalPathConfigrationValue(configValue: string): Promise<void> {
+        if (!this.pathConfigValueName) {
+            throw Error('Existing path configuration not supported.');
+        }
+        await this.extensionConfiguration.update<string>(this.pathConfigValueName, configValue, true);
     }
 }

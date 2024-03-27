@@ -40,7 +40,7 @@ export class ExistingPathResolver {
                 return;
             }
             else {
-                const existingLocalPath = existingPaths.iLocalExsitingPaths.filter((pair) => pair.extensionId === extensionId);
+                const existingLocalPath = existingPaths.localExsitingPaths.filter((pair) => pair.extensionId === extensionId);
                 if (existingLocalPath && existingLocalPath.length > 0) {
                     return { dotnetPath: existingLocalPath![0].path };
                 }

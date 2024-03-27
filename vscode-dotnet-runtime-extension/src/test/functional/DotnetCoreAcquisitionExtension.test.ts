@@ -39,8 +39,13 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   let extensionContext: vscode.ExtensionContext;
 
   const mockExistingPaths: IExistingPaths = {
-      iLocalExsitingPaths: [{extensionId: 'alternative.extension', path: 'foo'}]
+      localExsitingPaths: [{extensionId: 'alternative.extension', path: 'foo'}]
   }
+
+  const mockExistingPathsWithGlobalConfig: IExistingPaths = {
+    localExsitingPaths: [{extensionId: 'alternative.extension', path: 'foo'}],
+    globalExistingPathKey: 'bar'
+}
 
   this.beforeAll(async () => {
     extensionContext = {
@@ -231,11 +236,26 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   });
 
   test('Install Local Runtime Command With Global Path Config Defined', async () => {
-    const context: IDotnetAcquireContext = { version: '0.1', requestingExtensionId: 'alternative.extension' };
+    const context: IDotnetAcquireContext = { version: '0.1' };
+    
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
     assert.exists(result);
     assert.exists(result!.dotnetPath);
-    assert.equal(result!.dotnetPath, 'foo');
+    assert.equal(result!.dotnetPath, 'bar');
+  });
+
+  test('Install Local Runtime Command With Global Path Config and Local Path Config Defined', async () => {
+    const context: IDotnetAcquireContext = { version: '0.1', requestingExtensionId: 'alternative.extension' };
+    extension.activate(extensionContext, {
+      telemetryReporter: new MockTelemetryReporter(),
+      // extensionConfiguration: new MockExtensionConfiguration([{extensionId: 'alternative.extension', path: 'foo'}], true),
+      extensionConfiguration: new MockExtensionConfiguration(mockExistingPathsWithGlobalConfig, true),
+      displayWorker: mockDisplayWorker,
+    });
+    const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
+    assert.exists(result);
+    assert.exists(result!.dotnetPath);
+    assert.equal(result!.dotnetPath, 'bar');
   });
 /*
   test('Install Runtime Status Command', async () => {

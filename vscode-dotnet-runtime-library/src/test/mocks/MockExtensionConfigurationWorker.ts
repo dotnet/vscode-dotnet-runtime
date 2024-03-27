@@ -11,7 +11,7 @@ export class MockExtensionConfigurationWorker implements IExtensionConfiguration
 
     constructor(
         private mockPaths: IExistingPaths = {
-        iLocalExsitingPaths: [{ [ExistingPathKeys.extensionIdKey]: 'MockRequestingExtensionId', [ExistingPathKeys.pathKey] : 'MockPath' }]}
+        localExsitingPaths: [{ [ExistingPathKeys.extensionIdKey]: 'MockRequestingExtensionId', [ExistingPathKeys.pathKey] : 'MockPath' }]}
     ) {}
 
     // public getPathConfigurationValue(): IExistingPath[] | undefined {
@@ -27,8 +27,13 @@ export class MockExtensionConfigurationWorker implements IExtensionConfiguration
     //     return new Promise((resolve) => { resolve(); });
     // }
 
-    public setPathConfigurationValue(configValue: ILocalExistingPath[]): Promise<void> {
-        this.mockPaths.iLocalExsitingPaths = configValue;
+    public setLocalPathConfigurationValue(configValue: ILocalExistingPath[]): Promise<void> {
+        this.mockPaths.localExsitingPaths = configValue;
+        return new Promise((resolve) => { resolve(); });
+    }
+
+    public setGlobalPathConfigrationValue(configValue: string): Promise<void> {
+        this.mockPaths.globalExistingPathKey = configValue;
         return new Promise((resolve) => { resolve(); });
     }
 }
