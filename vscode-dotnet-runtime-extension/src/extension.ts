@@ -56,6 +56,7 @@ import {
     UserManualInstallSuccess,
     UserManualInstallFailure,
     EventCancellationError,
+    NoUninstallVersionProvidedError,
 } from 'vscode-dotnet-runtime-library';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 import { IAcquisitionWorkerContext } from 'vscode-dotnet-runtime-library/dist/Acquisition/IAcquisitionWorkerContext';
@@ -293,10 +294,16 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
     const dotnetUninstallLocalRuntimePublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallLocalRuntimePublic}`, async () =>
     {
-        const chosenVersion = await vscode.window.showQuickPick([runtimeAcquisitionWorker.getExistingLocalRuntimes()]);
+        const chosenVersion = await vscode.window.showQuickPick(await runtimeAcquisitionWorker.getExistingLocalRuntimes());
+        return uninstallRuntime({ version: chosenVersion, errorConfiguration: AcquireErrorConfiguration.DisplayAllErrorPopups});
     });
 
     const dotnetUninstallLocalRuntimeRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallLocalRuntime}`, async (commandContext: IDotnetUninstallContext | undefined) =>
+    {
+        return uninstallRuntime(commandContext);
+    });
+
+    async function uninstallRuntime(commandContext : IDotnetUninstallContext | undefined) : Promise<void>
     {
         await callWithErrorHandling(async () =>
         {
@@ -310,7 +317,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(commandContext!.version!, os.arch());
             runtimeAcquisitionWorker.uninstallLocalRuntimeOrSDK(installKey)
         }, runtimeIssueContextFunctor(commandContext ? commandContext.errorConfiguration : undefined, 'uninstallLocalRuntime'));
-    });
+    }
 
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallAll}`, async (commandContext: IDotnetUninstallContext | undefined) => {
         await callWithErrorHandling(() => runtimeAcquisitionWorker.uninstallAll(), runtimeIssueContextFunctor(commandContext ? commandContext.errorConfiguration : undefined, 'uninstallAll'));
