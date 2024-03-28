@@ -11,6 +11,10 @@ export interface IDotnetCoreAcquisitionWorker
 {
     uninstallAll(): void;
 
+    uninstallLocal(installKey : string) : Promise<void>;
+
+    getExistingLocalRuntimes() : Promise<string[]>;
+
     acquireRuntime(version: string, invoker : IAcquisitionInvoker): Promise<IDotnetAcquireResult>;
 
     acquireSDK(version: string, invoker : IAcquisitionInvoker): Promise<IDotnetAcquireResult>;
