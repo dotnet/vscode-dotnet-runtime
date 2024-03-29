@@ -295,7 +295,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     const dotnetUninstallLocalRuntimePublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallLocalRuntimePublic}`, async () =>
     {
         const chosenVersion = await vscode.window.showQuickPick(await runtimeAcquisitionWorker.getExistingLocalRuntimes());
-        return uninstallRuntime({ version: chosenVersion, errorConfiguration: AcquireErrorConfiguration.DisplayAllErrorPopups});
+        return uninstallRuntime({ version: chosenVersion, errorConfiguration: undefined});
     });
 
     const dotnetUninstallLocalRuntimeRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallLocalRuntime}`, async (commandContext: IDotnetUninstallContext | undefined) =>
@@ -309,12 +309,11 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         {
             if(!commandContext?.version)
             {
-                const errorStr = `No local .NET version was defined to uninstall.`
-                const error = new Error(errorStr)
-                globalEventStream.post(new NoUninstallVersionProvidedError((error as Error), errorStr));
+                const error = new Error(`No local .NET version was defined to uninstall.`);
+                globalEventStream.post(new NoUninstallVersionProvidedError(error as Error));
                 throw error;
             }
-            const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(commandContext!.version!, os.arch());
+            const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(commandContext!.version!, os.arch())
             runtimeAcquisitionWorker.uninstallLocalRuntimeOrSDK(installKey)
         }, runtimeIssueContextFunctor(commandContext ? commandContext.errorConfiguration : undefined, 'uninstallLocalRuntime'));
     }
