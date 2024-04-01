@@ -9,10 +9,6 @@ export class ExtensionConfigurationWorker implements IExtensionConfigurationWork
     constructor(private readonly extensionConfiguration: IExtensionConfiguration,
                 private readonly pathConfigValueName: string | undefined) {}
 
-    // public getPathConfigurationValue(): IExistingPath[] | undefined {
-    //     return this.pathConfigValueName ? this.extensionConfiguration.get(this.pathConfigValueName) : undefined;
-    // }
-
     public getPathConfigurationValue(): IExistingPaths | undefined {
         return this.pathConfigValueName ? this.extensionConfiguration.get(this.pathConfigValueName) : undefined;
     }
