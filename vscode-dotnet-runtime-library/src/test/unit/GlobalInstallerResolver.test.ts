@@ -8,6 +8,7 @@ import * as os from 'os';
 import { FileWebRequestWorker, MockEventStream, MockExtensionContext } from '../mocks/MockObjects';
 import { GlobalInstallerResolver } from '../../Acquisition/GlobalInstallerResolver';
 import path = require('path');
+import { getMockAcquisitionContext } from './TestUtility';
 const assert = chai.assert;
 
 const mockVersion = '7.0.306';
@@ -19,20 +20,23 @@ const majorMinorOnly = '7.0';
 const context = new MockExtensionContext();
 const eventStream = new MockEventStream();
 const filePath = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-channel-7-index.json');
-const webWorker = new FileWebRequestWorker(context, eventStream, '', '', filePath);
 const timeoutTime = 10000;
 
 suite('Global Installer Resolver Tests', () =>
 {
     test('It finds the newest patch version given a feature band', async () => {
-        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, featureBandVersion, timeoutTime, undefined);
+        const acquisitionContext = getMockAcquisitionContext(true, featureBandVersion);
+        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, featureBandVersion);
+        const webWorker = new FileWebRequestWorker(acquisitionContext, '', filePath);
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullySpecifiedVersion(), newestFeatureBandedVersion);
     });
 
     test('It finds the correct installer download url for the os', async () => {
-        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, mockVersion, timeoutTime, undefined);
+        const acquisitionContext = getMockAcquisitionContext(true, mockVersion);
+        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, mockVersion);
+        const webWorker = new FileWebRequestWorker(acquisitionContext, '', filePath);
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullySpecifiedVersion(), mockVersion);
@@ -50,21 +54,28 @@ suite('Global Installer Resolver Tests', () =>
     });
 
     test('It parses the major format', async () => {
-        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, majorMinorOnly, timeoutTime, undefined);
+        const acquisitionContext = getMockAcquisitionContext(true, majorMinorOnly);
+        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, majorMinorOnly);
+        const webWorker = new FileWebRequestWorker(acquisitionContext, '', filePath);
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullySpecifiedVersion(), mockVersion);
     });
 
     test('It parses the major.minor format', async () => {
-        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, majorOnly, timeoutTime, undefined);
+        const acquisitionContext = getMockAcquisitionContext(true, majorOnly);
+        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, majorOnly);
+        const webWorker = new FileWebRequestWorker(acquisitionContext, '', filePath);
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullySpecifiedVersion(), mockVersion);
     });
 
     test('It rejects correctly with undiscoverable feature band', async () => {
-        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(context, eventStream, '7.0.500', timeoutTime, undefined);
+        const version = '7.0.500';
+        const acquisitionContext = getMockAcquisitionContext(true, version);
+        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, version);
+        const webWorker = new FileWebRequestWorker(acquisitionContext, '', filePath);
         provider.customWebRequestWorker = webWorker;
 
         assert.isRejected(provider.getFullySpecifiedVersion());

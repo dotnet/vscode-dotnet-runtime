@@ -8,16 +8,16 @@ import { IEventStream } from '../EventStream/EventStream';
 
 export abstract class IFileUtilities
 {
-    public abstract writeFileOntoDisk(scriptContent: string, filePath: string, eventStream : IEventStream) : void;
+    public abstract writeFileOntoDisk(scriptContent: string, filePath: string, alreadyHoldingLock : boolean, eventStream? : IEventStream) : void;
 
     /**
-     * @param directoryToWipe the directory to delete all of the files in if privellege to do so exists.
+     * @param directoryToWipe the directory to delete all of the files in if privilege to do so exists.
      */
-    public abstract wipeDirectory(directoryToWipe : string) : void;
+    public abstract wipeDirectory(directoryToWipe : string, eventStream? : IEventStream, fileExtensionsToDelete? : string[]) : void;
 
     /**
      *
-     * @returns true if the process is running with admin privelleges on windows.
+     * @returns true if the process is running with admin privileges on windows.
      */
     public abstract isElevated(eventStream? : IEventStream) : boolean;
 
