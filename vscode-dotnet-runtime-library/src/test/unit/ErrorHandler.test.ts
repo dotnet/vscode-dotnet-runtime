@@ -5,6 +5,7 @@
 import * as chai from 'chai';
 import { DotnetCommandFailed, DotnetCommandSucceeded } from '../../EventStream/EventStreamEvents';
 import { ExistingPathKeys, IExistingPaths } from '../../IExtensionContext';
+import { DotnetCommandFailed, DotnetCommandSucceeded, DotnetNotInstallRelatedCommandFailed } from '../../EventStream/EventStreamEvents';
 import {
     errorConstants,
     timeoutConstants,
@@ -118,6 +119,6 @@ suite('ErrorHandler Unit Tests', () => {
             throw new Error(timeoutConstants.timeoutMessage);
         }, issueContext(displayWorker, eventStream));
 
-        assert.exists(eventStream.events.find(event => event instanceof DotnetCommandFailed));
+        assert.exists(eventStream.events.find(event => event instanceof DotnetNotInstallRelatedCommandFailed));
     });
 });

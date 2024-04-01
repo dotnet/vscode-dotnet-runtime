@@ -4,8 +4,9 @@
 *--------------------------------------------------------------------------------------------*/
 
 import * as path from 'path';
+import * as os from 'os';
 
-import { runTests } from 'vscode-test';
+import { runTests } from '@vscode/test-electron';
 
 async function main() {
   try {
@@ -17,14 +18,33 @@ async function main() {
     // Passed to --extensionTestsPath
     const extensionTestsPath = path.resolve(__dirname, './index');
 
+    let platformValue = '';
+    switch(os.platform())
+    {
+      case 'win32':
+        platformValue = 'win32-x64-archive';
+        break;
+      case 'darwin':
+        platformValue = 'darwin';
+        break;
+      case 'linux':
+        platformValue = 'linux-x64';
+        break;
+    }
+
     // Download VS Code, unzip it and run the integration test
-    await runTests({
-      extensionDevelopmentPath,
-      extensionTestsPath,
-      launchArgs: [
-        // This disables all extensions except the one being testing
-        '--disable-extensions',
-      ]});
+    await runTests(
+      {
+        ...(platformValue !== '' && {platform: platformValue}),
+        extensionDevelopmentPath,
+        extensionTestsPath,
+        launchArgs: [
+          // This disables all extensions except the one being testing
+          '--disable-extensions',
+        ],
+        extensionTestsEnv : { DOTNET_INSTALL_TOOL_UNDER_TEST : 'true' }
+      }
+      );
   } catch (err) {
     console.error('Failed to run tests');
     process.exit(1);

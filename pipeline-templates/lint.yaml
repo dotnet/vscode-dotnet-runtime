@@ -1,0 +1,18 @@
+parameters:
+  pool: ''
+
+jobs:
+  - job: TSLint
+    pool:
+      ${{ if eq(parameters.useOneEngineeringPool, 'true') }}:
+        ${{ parameters.pool }}
+      ${{ else }}:
+        vmImage: ${{ parameters.pool.vmImage }}
+    displayName: '🧶 TSLint'
+    steps:
+    - template: install-node.yaml
+    - bash: |
+        npm install --cache /temp/empty-cache
+        npm install tslint --reg https://registry.npmjs.org/ --verbose
+        npm run lint
+      displayName: 🧶 Run Lint

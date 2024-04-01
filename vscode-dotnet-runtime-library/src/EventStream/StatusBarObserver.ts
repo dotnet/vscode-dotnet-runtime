@@ -23,6 +23,7 @@ export class StatusBarObserver implements IEventStreamObserver {
                 this.setAndShowStatusBar('$(cloud-download) Downloading .NET...', this.showLogCommand, '', 'Downloading .NET...');
                 break;
             case EventType.DotnetAcquisitionCompleted:
+            case EventType.DotnetInstallExpectedAbort:
                 this.resetAndHideStatusBar();
                 break;
             case EventType.DotnetAcquisitionError:
