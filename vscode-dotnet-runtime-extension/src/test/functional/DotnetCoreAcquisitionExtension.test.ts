@@ -76,7 +76,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.isAbove(extensionContext.subscriptions.length, 0);
   }).timeout(standardTimeoutTime);
 
-  
   test('Install Local Runtime Command', async () => {
     const context: IDotnetAcquireContext = { version: '2.2', requestingExtensionId };
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
