@@ -30,9 +30,9 @@ import {
   MockIndexWebRequestWorker,
   MockVSCodeExtensionContext,
   getMockUtilityContext,
-  IExistingPaths
+  IExistingPaths,
   getMockAcquisitionContext,
-  getMockAcquisitionWorker
+  getMockAcquisitionWorker,
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { uninstallSDKExtension } from '../../ExtensionUninstall';
