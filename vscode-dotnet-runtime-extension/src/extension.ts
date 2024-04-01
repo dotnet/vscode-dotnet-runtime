@@ -88,7 +88,7 @@ namespace commandKeys {
 
 const commandPrefix = 'dotnet';
 const configPrefix = 'dotnetAcquisitionExtension';
-const displayChannelName = '.NET Runtime';
+const displayChannelName = '.NET Install Tool';
 const defaultTimeoutValue = 600;
 const moreInfoUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md';
 let disableActivationUnderTest = true;
@@ -213,6 +213,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             }
 
             const globalInstallerResolver = new GlobalInstallerResolver(sdkContext, commandContext.version);
+            outputChannel.show(true);
             const dotnetPath = await sdkAcquisitionWorker.acquireGlobalSDK(globalInstallerResolver);
 
             new CommandExecutor(sdkContext, utilContext).setPathEnvVar(dotnetPath.dotnetPath, moreInfoUrl, displayWorker, vsCodeExtensionContext, true);
