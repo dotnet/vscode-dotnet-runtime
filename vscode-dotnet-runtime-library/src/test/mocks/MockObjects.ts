@@ -507,7 +507,6 @@ export class MockLoggingObserver implements ILoggingObserver {
 }
 
 export class MockExtensionConfiguration implements IExtensionConfiguration {
-    // constructor(private readonly existingPaths: IExistingPath[], private readonly enableTelemetry: boolean) { }
     constructor(private readonly existingPaths: IExistingPaths, private readonly enableTelemetry: boolean) { }
 
     public update<T>(section: string, value: T): Thenable<void> {

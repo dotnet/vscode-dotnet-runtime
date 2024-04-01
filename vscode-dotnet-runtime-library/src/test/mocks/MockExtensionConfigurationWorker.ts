@@ -6,26 +6,14 @@ import { ExistingPathKeys, IExistingPaths, ILocalExistingPath} from '../../IExte
 import { IExtensionConfigurationWorker } from '../../Utils/IExtensionConfigurationWorker';
 
 export class MockExtensionConfigurationWorker implements IExtensionConfigurationWorker {
-    // constructor(private mockPaths: ILocalExistingPath[] = 
-    //     [{ [ExistingPathKeys.extensionIdKey]: 'MockRequestingExtensionId', [ExistingPathKeys.pathKey] : 'MockPath' }]) { }
-
     constructor(
         private mockPaths: IExistingPaths = {
         localExsitingPaths: [{ [ExistingPathKeys.extensionIdKey]: 'MockRequestingExtensionId', [ExistingPathKeys.pathKey] : 'MockPath' }]}
     ) {}
 
-    // public getPathConfigurationValue(): IExistingPath[] | undefined {
-    //     return this.mockPaths;
-    // }
-
     public getPathConfigurationValue(): IExistingPaths | undefined {
         return this.mockPaths;
     }
-
-    // public setPathConfigurationValue(configValue: IExistingPath[]): Promise<void> {
-    //     this.mockPaths = configValue;
-    //     return new Promise((resolve) => { resolve(); });
-    // }
 
     public setLocalPathConfigurationValue(configValue: ILocalExistingPath[]): Promise<void> {
         this.mockPaths.localExsitingPaths = configValue;
