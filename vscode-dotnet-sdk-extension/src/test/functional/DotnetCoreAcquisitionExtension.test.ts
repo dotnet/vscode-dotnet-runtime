@@ -100,7 +100,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     } as any;
     extension.activate(extensionContext, {
       telemetryReporter: new MockTelemetryReporter(),
-      // extensionConfiguration: new MockExtensionConfiguration([{ extensionId: 'ms-dotnettools.sample-extension', path: 'foo' }], true),
       extensionConfiguration: new MockExtensionConfiguration(mockExistingPaths, true),
       displayWorker: mockDisplayWorker,
     });
