@@ -126,7 +126,8 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
 async function configureManualInstall(context: IIssueContext, requestingExtensionId: string): Promise<void> {
     const manualPath = await context.displayWorker.displayPathConfigPopUp();
 
-    if (manualPath && fs.existsSync(manualPath)) {
+    if (manualPath && fs.existsSync(manualPath))
+    {
         try {
             let configVal: ILocalExistingPath[] = [{ [ExistingPathKeys.extensionIdKey]: requestingExtensionId, [ExistingPathKeys.pathKey] : manualPath}];
             const existingConfigVal = context.extensionConfigWorker.getPathConfigurationValue();

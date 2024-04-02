@@ -5,7 +5,7 @@
 
 import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
-import { IExistingPaths, ILocalExistingPath } from '../IExtensionContext';
+import { IExistingPaths } from '../IExtensionContext';
 
 export class ExistingPathResolver {
     public resolveExistingPath(existingPaths: IExistingPaths | undefined, extensionId: string | undefined, windowDisplayWorker: IWindowDisplayWorker): IDotnetAcquireResult | undefined {
