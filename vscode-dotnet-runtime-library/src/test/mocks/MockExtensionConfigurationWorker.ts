@@ -19,9 +19,4 @@ export class MockExtensionConfigurationWorker implements IExtensionConfiguration
         this.mockPaths.localExsitingPaths = configValue;
         return new Promise((resolve) => { resolve(); });
     }
-
-    public setGlobalPathConfigrationValue(configValue: string): Promise<void> {
-        this.mockPaths.globalExistingPathKey = configValue;
-        return new Promise((resolve) => { resolve(); });
-    }
 }

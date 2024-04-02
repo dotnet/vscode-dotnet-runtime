@@ -8,5 +8,4 @@ import { IExistingPaths, ILocalExistingPath } from '..';
 export interface IExtensionConfigurationWorker {
     getPathConfigurationValue(): IExistingPaths | undefined;
     setLocalPathConfigurationValue(configValue: ILocalExistingPath[]): Promise<void>;
-    setGlobalPathConfigrationValue(configValue: string): Promise<void>;
 }
