@@ -3,7 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as cp from 'child_process';
-import * as isOnline from 'is-online';
+import * as dns from 'dns';
 import * as os from 'os';
 import path = require('path');
 
@@ -43,6 +43,22 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         this.fileUtilities = new FileUtilities();
     }
 
+    private async isOnline(installContext : IDotnetInstallationContext) : Promise<boolean>
+    {
+        const googleDNS = '8.8.8.8';
+        const expectedDNSResolutionTime = installContext.timeoutSeconds / 10; // Assumption: DNS resolution should take less than 10% of the time it'd take to download .NET
+        const DNSResolver = new dns.Resolver({ timeout: expectedDNSResolutionTime });
+        let online = true;
+        await DNSResolver.resolve(googleDNS,  function(error : any)
+        {
+            if (error)
+            {
+                online = false;
+            }
+        });
+        return online;
+    }
+
     public async installDotnet(installContext: IDotnetInstallationContext): Promise<void>
     {
         const winOS = os.platform() === 'win32';
@@ -75,8 +91,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                             this.eventStream.post(new DotnetAcquisitionScriptOutput(installKey, `STDERR: ${TelemetryUtilities.HashAllPaths(stderr)}`));
                         }
 
-                        const online = await isOnline.default();
-                        if (!online)
+                        if (!(await this.isOnline(installContext)))
                         {
                             const offlineError = new Error('No internet connection: Cannot install .NET');
                             this.eventStream.post(new DotnetOfflineFailure(offlineError, installKey));
