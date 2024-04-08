@@ -75,7 +75,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                             this.eventStream.post(new DotnetAcquisitionScriptOutput(installKey, `STDERR: ${TelemetryUtilities.HashAllPaths(stderr)}`));
                         }
 
-                        const online = await isOnline();
+                        const online = await isOnline.default();
                         if (!online)
                         {
                             const offlineError = new Error('No internet connection: Cannot install .NET');
