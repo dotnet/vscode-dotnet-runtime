@@ -23,10 +23,22 @@ export class ExistingPathResolver {
                 return;
             }
             else {
-                const existingLocalPath = existingPaths.localExsitingPaths.filter((pair) => pair.extensionId === extensionId);
-                if (existingLocalPath && existingLocalPath.length > 0) {
-                    return { dotnetPath: existingLocalPath![0].path };
+                // check if there are local paths
+                if (existingPaths.localExsitingPaths)
+                {
+                    const existingLocalPath = existingPaths.localExsitingPaths.filter((pair) => pair.extensionId === extensionId);
+                    if (existingLocalPath && existingLocalPath.length > 0) {
+                        return { dotnetPath: existingLocalPath![0].path };
+                    }
                 }
+                else if (existingPaths.globalExistingPathKey)
+                {
+                    return { dotnetPath: existingPaths.globalExistingPathKey}
+                }
+                windowDisplayWorker.showWarningMessage(
+                    'Ignoring existing .NET paths defined in settings.json because requesting extension does not define its extension ID. Please file a bug against the requesting extension.',
+                    () => { /* No callback */ },
+                );
             }
         }
     }
