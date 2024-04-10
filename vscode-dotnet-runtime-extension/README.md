@@ -20,10 +20,9 @@ The above extensions call into this extension to provide a unified way of downlo
 ## [Preview] Using the extension yourself
 
 As of version 2.0.2, you can install the .NET SDK using part of our private API via the VS Code Command Palette!
-This feature is in preview and still undergoing testing. To use it, you must enable preview features for the extension.
-To do so, go to the 'Extensions' tab in VS Code, right click the '.NET Install Tool' and go to 'Extension Settings', then click the box to Enable Preview Features.
+This feature is in preview and still undergoing testing.
 
-To then use the feature:
+To use the feature:
 Bring up the command palette (ctrl + shift + p) and run the command:
 .NET Install Tool - Install the .NET SDK System-Wide.
 
