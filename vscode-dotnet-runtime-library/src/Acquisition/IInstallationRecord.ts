@@ -3,13 +3,14 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
+import * as os from 'os';
 import { DotnetCoreAcquisitionWorker } from "./DotnetCoreAcquisitionWorker";
 
 /**
  * @remarks
  * A string representing the installation of either a .NET runtime or .NET SDK.
  */
-export interface IInstallKey
+export interface DotnetInstall
 {
     installKey: string;
     version: string;
@@ -18,13 +19,74 @@ export interface IInstallKey
     isRuntime: boolean;
 }
 
-function IsEquivalentInstallationFile(a: IInstallKey, b: IInstallKey): boolean
+function IsEquivalentInstallationFile(a: DotnetInstall, b: DotnetInstall): boolean
 {
     return a.version === b.version && a.architecture === b.architecture &&
     a.isGlobal === b.isGlobal && a.isRuntime === b.isRuntime
 }
 
-export function GenerateNewInstallKey(version: string, installRuntime: boolean, isGlobal : boolean, architecture : string) : IInstallKey
+export function InstallToStrings(key : DotnetInstall | null)
+{
+    if(!key)
+    {
+        return { installKey: '', version: '', architecture: '', isGlobal: '', isRuntime: '' };
+    }
+
+    return {
+        installKey: key.installKey,
+        version: key.version,
+        architecture: key.architecture,
+        isGlobal: key.isGlobal.toString(),
+        isRuntime: key.isRuntime.toString()
+    }
+}
+
+export function getArchFromLegacyInstallKey(installKey : string) : string | undefined
+{
+    const splitKey = installKey.split('~');
+    if(splitKey.length === 2)
+    {
+        return splitKey[1];
+    }
+    return undefined;
+}
+
+export function getVersionFromLegacyInstallKey(installKey : string) : string
+{
+    if(isGlobalLegacyInstallKey(installKey))
+    {
+        const splitKey = installKey.split('-');
+        return splitKey[0];
+    }
+    else if(installKey.includes('~'))
+    {
+        const splitKey = installKey.split('~');
+        return splitKey[0];
+    }
+    else // legacy, legacy install key (before it included the arch)
+    {
+        return installKey;
+    }
+}
+
+export function looksLikeRuntimeVersion(version : string) : boolean
+{
+    const band : string | undefined = version.split('.')?.at(2);
+    return !band || band.length <= 2; // assumption : there exists no runtime version at this point over 99 sub versions
+}
+
+export function isRuntimeInstallKey(installKey : string) : boolean
+{
+    const installKeyVersion = getVersionFromLegacyInstallKey(installKey);
+    return !installKey.includes('sdk') && looksLikeRuntimeVersion(installKeyVersion);
+}
+
+export function isGlobalLegacyInstallKey(installKey : string) : boolean
+{
+    return installKey.toLowerCase().includes('global');
+}
+
+export function GetDotnetInstallInfo(version: string, installRuntime: boolean, isGlobal : boolean, architecture : string) : DotnetInstall
 {
     return {
         installKey : DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, architecture),
@@ -32,14 +94,24 @@ export function GenerateNewInstallKey(version: string, installRuntime: boolean, 
         architecture : architecture,
         isGlobal : isGlobal,
         isRuntime : installRuntime,
-    } as IInstallKey;
+    } as DotnetInstall;
 }
 
-
+export function installKeyStringToDotnetInstall(installKey : string) : DotnetInstall
+{
+    return {
+        installKey: installKey,
+        version: getVersionFromLegacyInstallKey(installKey),
+        architecture: getArchFromLegacyInstallKey(installKey) ?? os.arch(),
+        isGlobal: isGlobalLegacyInstallKey(installKey),
+        isRuntime: isRuntimeInstallKey(installKey)
+    }
+}
 /**
  * @remarks
  * The string containing the extensionid of the extension which requested the install.
  * 'user' if the user installed it themselves.
+ * 'external' if the install was done by an external source, including a different user on the machine through our extension. (they should manage it.)
  * null if we don't know because the install was done before we kept track of these things.
  */
 export type InstallOwner = string | null;
@@ -50,36 +122,33 @@ export type InstallOwner = string | null;
  * Some of the types exist due to a need to support existing installs before this type existed.
  * All discovered old installs should be replaced with the new type.
  */
-export interface IInstallationRecord
+export interface InstallationRecord
 {
-    installKey: InstallKey;
+    dotnetInstall: DotnetInstall;
     installingExtensions: InstallOwner[];
-    installDirectory: string;
 }
 
+
+// we might be able to get rid of this
 /**
  * @remarks
  * The record can be the type or it can be a 'legacy' record from old installs which is just a string with the install key.
  */
-export type InstallRecord = IInstallationRecord | string;
+export type InstallRecordOrStr = InstallationRecord | string;
 
 
 /**
  * @remarks
  * The key can be a type containing all of the information or the 'legacy' key which is a string that contains all of the information.
  */
-export type InstallKey = IInstallKey | string;
+export type DotnetInstallOrStr = DotnetInstall | string;
 
 
 interface InProgressInstall
 {
-    installKey: InstallKey;
+    dotnetInstall: DotnetInstall;
+    // The string is the path of the install once completed.
     installingPromise: Promise<string>;
-}
-
-function convertInstallKeyToLegacyKey(key : IInstallKey) : string
-{
-    return `${key.version}-${key.architecture}~${key.isGlobal}`;
 }
 
 export class InProgressInstallManager
@@ -91,7 +160,12 @@ export class InProgressInstallManager
         this.inProgressInstalls.clear();
     }
 
-    public contains(key : InstallKey) : boolean
+    /**
+     *
+     * @param key the install key to get a working install promise for.
+     * @returns null if there is no promise for this install, otherwise the promise.
+     */
+    public getPromise(key : DotnetInstallOrStr) : Promise<string> | null
     {
         if (typeof key === 'string')
         {
@@ -107,36 +181,36 @@ export class InProgressInstallManager
                 }
                 else
                 {
-                    const xAsKey = x.installKey as IInstallKey;
+                    const xAsKey = x.dotnetInstall as DotnetInstall;
                     if(IsEquivalentInstallationFile(xAsKey, key))
                     {
-                        return true;
+                        return x.installingPromise;
                     }
                 }
             });
         }
 
-        return false;
+        return null;
     }
 
-    public add(key : InstallKey, workingInstall : Promise<string>) : void
+    public add(key : DotnetInstallOrStr, workingInstall : Promise<string>) : void
     {
         if (typeof key === 'string')
         {
             throw new Error(`When adding in progress installs, use only the new type.`);
         }
 
-        this.inProgressInstalls.add({ installKey: key, installingPromise: workingInstall });
+        this.inProgressInstalls.add({ dotnetInstall: key, installingPromise: workingInstall });
     }
 
-    public remove(key : InstallKey) : void
+    public remove(key : DotnetInstallOrStr) : void
     {
         if (typeof key === 'string')
         {
             throw new Error(`When completing in progress installs, use only the new type.`);
         }
 
-        const resolvedInstall : InProgressInstall | undefined = [...this.inProgressInstalls].find(x => IsEquivalentInstallationFile(x.installKey as IInstallKey, key));
+        const resolvedInstall : InProgressInstall | undefined = [...this.inProgressInstalls].find(x => IsEquivalentInstallationFile(x.dotnetInstall as DotnetInstall, key));
         if(!resolvedInstall)
         {
             // todo : event stream?
