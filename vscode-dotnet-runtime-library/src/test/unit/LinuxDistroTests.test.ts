@@ -14,9 +14,10 @@ const assert = chai.assert;
 const standardTimeoutTime = 100000;
 
 const mockVersion = '7.0.103';
-const mockExecutor = new MockCommandExecutor(new MockEventStream(), getMockUtilityContext());
+const acquisitionContext = getMockAcquisitionContext(false, mockVersion);
+const mockExecutor = new MockCommandExecutor(acquisitionContext, getMockUtilityContext());
 const pair : DistroVersionPair = { distro : 'Ubuntu', version : '22.04' };
-const provider : GenericDistroSDKProvider = new GenericDistroSDKProvider(pair, getMockAcquisitionContext(false), getMockUtilityContext(), mockExecutor);
+const provider : GenericDistroSDKProvider = new GenericDistroSDKProvider(pair, acquisitionContext, getMockUtilityContext(), mockExecutor);
 const shouldRun = os.platform() === 'linux';
 const installType : LinuxInstallType = 'sdk';
 const noDotnetString = `
@@ -60,7 +61,7 @@ suite('Linux Distro Logic Unit Tests', () =>
         if(shouldRun)
         {
             const microsoftFeedDir = await provider.getExpectedDotnetMicrosoftFeedInstallationDirectory();
-            assert.equal(microsoftFeedDir, '/usr/bin/dotnet');
+            assert.equal(microsoftFeedDir, '/usr/share/dotnet');
         }
     }).timeout(standardTimeoutTime);
 
@@ -103,7 +104,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
         if(shouldRun)
         {
             await provider.getInstalledGlobalDotnetPathIfExists(installType);
-            assert.equal(mockExecutor.attemptedCommand, 'which dotnet');
+            assert.equal(mockExecutor.attemptedCommand, 'readlink -f /usr/bin/dotnet');
         }
     }).timeout(standardTimeoutTime);
 
@@ -126,15 +127,15 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
         if(shouldRun)
         {
             const recVersion = await provider.getRecommendedDotnetVersion(installType);
-            assert.equal(mockExecutor.attemptedCommand, 'apt-cache search dotnet-sdk-7.0');
-            assert.equal(recVersion, '7.0.1xx');
+            assert.equal(mockExecutor.attemptedCommand, 'dotnet --version', 'Searched for the newest package last with regex');
+            assert.equal(recVersion, '8.0.1xx', 'Resolved the most recent available version : will eventually break if the mock data is not updated');
         }
     }).timeout(standardTimeoutTime);
 
     test('Gives Correct Version Support Info', async () => {
         if(shouldRun)
         {
-            let supported = await provider.isDotnetVersionSupported('8.0.101', installType);
+            let supported = await provider.isDotnetVersionSupported('11.0.101', installType);
             // In the mock data, 8.0 is not supported, so it should be false.
             assert.equal(supported, false);
             supported = await provider.isDotnetVersionSupported('7.0.101', installType);
