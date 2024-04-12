@@ -3,10 +3,6 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-export * from './test/mocks/MockObjects';
-export * from './test/mocks/MockWindowDisplayWorker';
-export * from './test/mocks/MockEnvironmentVariableCollection';
-export * from './test/unit/TestUtility';
 export * from './IExtensionContext';
 export * from './IDotnetAcquireContext';
 export * from './IDotnetListVersionsContext';
@@ -25,6 +21,7 @@ export * from './EventStream/EventStreamEvents';
 export * from './Utils/CommandExecutor';
 export * from './Utils/Debugging';
 export * from './Utils/ErrorHandler';
+export * from './Utils/ExtensionConfigurationWorker';
 export * from './Utils/FileUtilities';
 export * from './Utils/ICommandExecutor';
 export * from './Utils/IFileUtilities';
@@ -38,6 +35,7 @@ export * from './Acquisition/DotnetCoreAcquisitionWorker';
 export * from './Acquisition/AcquisitionInvoker';
 export * from './Acquisition/DotnetCoreDependencyInstaller'
 export * from './Acquisition/LinuxVersionResolver';
+export * from './Acquisition/LinuxInstallType';
 export * from './Acquisition/GenericDistroSDKProvider';
 export * from './Acquisition/GlobalInstallerResolver';
 export * from './Acquisition/InstallationValidator';
@@ -45,8 +43,10 @@ export * from './Acquisition/IVersionResolver';
 export * from './Acquisition/LinuxGlobalInstaller';
 export * from './Acquisition/VersionResolver';
 export * from './Acquisition/WinMacGlobalInstaller';
-export * from './Utils/ExtensionConfigurationWorker';
-export * from './Utils/WebRequestWorker';
 export * from './Acquisition/ExistingPathResolver';
 export * from './Acquisition/SdkInstallationDirectoryProvider';
 export * from './Acquisition/RuntimeInstallationDirectoryProvider';
+export * from './test/mocks/MockObjects';
+export * from './test/mocks/MockWindowDisplayWorker';
+export * from './test/mocks/MockEnvironmentVariableCollection';
+export * from './test/unit/TestUtility';

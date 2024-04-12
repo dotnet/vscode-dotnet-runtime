@@ -5,7 +5,8 @@
 
 import { AcquireErrorConfiguration } from './Utils/ErrorHandler';
 
-export interface IDotnetAcquireContext {
+export interface IDotnetAcquireContext
+{
     /**
      * @remarks
      * The data required to acquire either the sdk or the runtime.
