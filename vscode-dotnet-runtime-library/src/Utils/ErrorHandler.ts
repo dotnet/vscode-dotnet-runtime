@@ -129,12 +129,12 @@ async function configureManualInstall(context: IIssueContext, requestingExtensio
     if (manualPath && fs.existsSync(manualPath))
     {
         try {
-            let configVal: ILocalExistingPath[] = [{ [ExistingPathKeys.extensionIdKey]: requestingExtensionId, [ExistingPathKeys.pathKey] : manualPath}];
+            let configVal: string = manualPath;
             const existingConfigVal = context.extensionConfigWorker.getPathConfigurationValue();
-            if (existingConfigVal) {
-                configVal = configVal.concat(existingConfigVal.localExsitingPaths);
+            if (existingConfigVal && existingConfigVal.globalExistingPathKey) {
+                configVal = existingConfigVal.globalExistingPathKey;
             }
-            await context.extensionConfigWorker.setLocalPathConfigurationValue(configVal);
+            await context.extensionConfigWorker.setGlobalPathConfigurationValue(configVal);
             context.displayWorker.showInformationMessage(`Set .NET path to ${manualPath}. Please reload VSCode to apply settings.`, () => { /* No callback needed */});
         }
         catch (e)

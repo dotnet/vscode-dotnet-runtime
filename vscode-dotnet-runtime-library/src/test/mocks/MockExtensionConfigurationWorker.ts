@@ -8,7 +8,8 @@ import { IExtensionConfigurationWorker } from '../../Utils/IExtensionConfigurati
 export class MockExtensionConfigurationWorker implements IExtensionConfigurationWorker {
     constructor(
         private mockPaths: IExistingPaths = {
-        localExsitingPaths: [{ [ExistingPathKeys.extensionIdKey]: 'MockRequestingExtensionId', [ExistingPathKeys.pathKey] : 'MockPath' }]}
+        localExsitingPaths: [{ [ExistingPathKeys.extensionIdKey]: 'MockRequestingExtensionId', [ExistingPathKeys.pathKey] : 'MockPath' }],
+        globalExistingPathKey: 'MockGlobalPath'}
     ) {}
 
     public getPathConfigurationValue(): IExistingPaths | undefined {
@@ -17,6 +18,11 @@ export class MockExtensionConfigurationWorker implements IExtensionConfiguration
 
     public setLocalPathConfigurationValue(configValue: ILocalExistingPath[]): Promise<void> {
         this.mockPaths.localExsitingPaths = configValue;
+        return new Promise((resolve) => { resolve(); });
+    }
+
+    public setGlobalPathConfigurationValue(configValue: string): Promise<void> {
+        this.mockPaths.globalExistingPathKey = configValue;
         return new Promise((resolve) => { resolve(); });
     }
 }

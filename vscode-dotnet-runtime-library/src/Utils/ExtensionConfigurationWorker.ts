@@ -19,4 +19,11 @@ export class ExtensionConfigurationWorker implements IExtensionConfigurationWork
         }
         await this.extensionConfiguration.update<ILocalExistingPath[]>(this.pathConfigValueName, configValue, true);
     }
+
+    public async setGlobalPathConfigurationValue(configValue: string): Promise<void> {
+        if (!this.pathConfigValueName) {
+            throw Error('Existing path configuration not supported.');
+        }
+        await this.extensionConfiguration.update<string>(this.pathConfigValueName, configValue, true);
+    }
 }
