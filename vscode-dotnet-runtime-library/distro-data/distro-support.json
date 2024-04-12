@@ -40,7 +40,7 @@
 			{
 				"runUnderSudo": false,
 				"commandRoot": "apt-cache",
-				"commandParts": ["search", "{packageName}"]
+				"commandParts": ["search", "--names-only", "^{packageName}$"]
 			}
 		],
 		"isInstalledCommand":
@@ -59,8 +59,16 @@
 				"commandParts": ["-l", "{packageName}"]
 			}
 		],
+		"readSymLinkCommand":
+		[
+			{
+				"runUnderSudo": false,
+				"commandRoot": "readlink",
+				"commandParts": ["-f", "{path}"]
+			}
+		],
 		"expectedDistroFeedInstallDirectory" : "/usr/lib/dotnet",
-        "expectedMicrosoftFeedInstallDirectory" : "/usr/bin/dotnet",
+        "expectedMicrosoftFeedInstallDirectory" : "/usr/share/dotnet",
 		"installedSDKVersionsCommand":
 		[
 			{
@@ -124,17 +132,36 @@
 				[
 					"aspnetcore-runtime-7.0"
 				]
+			},
+			{
+				"version": "8.0",
+				"sdk": [
+					"dotnet-sdk-8.0"
+				],
+				"runtime": [
+					"dotnet-runtime-8.0"
+				],
+				"aspnetcore": [
+					"aspnetcore-runtime-8.0"
+				]
+			},
+			{
+				"version": "9.0",
+				"sdk": [
+					"dotnet-sdk-9.0"
+				],
+				"runtime": [
+					"dotnet-runtime-9.0"
+				],
+				"aspnetcore": [
+					"aspnetcore-runtime-9.0"
+				]
 			}
 		],
 		"versions": [{
 				"version": "18.04",
 				"preInstallCommands":
 				[
-					{
-						"runUnderSudo": true,
-						"commandRoot": "apt-get",
-						"commandParts": ["update"]
-					},
 					{
 						"runUnderSudo": true,
 						"commandRoot": "apt-get",
@@ -149,6 +176,11 @@
 						"runUnderSudo": true,
 						"commandRoot": "dpkg",
 						"commandParts": ["-i", "packages-microsoft-prod.deb"]
+					},
+					{
+						"runUnderSudo": true,
+						"commandRoot": "apt-get",
+						"commandParts": ["update"]
 					}
 				]
 			},
@@ -255,7 +287,15 @@
 				]
 			}
 		],
-		"expectedDistroFeedInstallDirectory": "/usr/lib64/dotnet/dotnet",
+		"readSymLinkCommand":
+		[
+			{
+				"runUnderSudo": false,
+				"commandRoot": "readlink",
+				"commandParts": ["-f", "{path}"]
+			}
+		],
+		"expectedDistroFeedInstallDirectory": "/usr/lib64/dotnet",
 		"expectedMicrosoftFeedInstallDirectory": "",
 		"installedSDKVersionsCommand": [
 			{
@@ -316,6 +356,30 @@
 				],
 				"aspnetcore": [
 					"aspnetcore-runtime-7.0"
+				]
+			},
+			{
+				"version": "8.0",
+				"sdk": [
+					"dotnet-sdk-8.0"
+				],
+				"runtime": [
+					"dotnet-runtime-8.0"
+				],
+				"aspnetcore": [
+					"aspnetcore-runtime-8.0"
+				]
+			},
+			{
+				"version": "9.0",
+				"sdk": [
+					"dotnet-sdk-9.0"
+				],
+				"runtime": [
+					"dotnet-runtime-9.0"
+				],
+				"aspnetcore": [
+					"aspnetcore-runtime-9.0"
 				]
 			}
 		],
