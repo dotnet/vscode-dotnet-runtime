@@ -165,7 +165,7 @@ ${stderr}`);
 
         try
         {
-            await vscode.commands.executeCommand('dotnet-sdk.showAcquisitionLog');
+            await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
             let commandContext : IDotnetAcquireContext = { version, requestingExtensionId, installType: 'global' };
             await vscode.commands.executeCommand('dotnet.acquireGlobalSDK', commandContext);
         }
