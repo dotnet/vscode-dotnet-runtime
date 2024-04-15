@@ -46,17 +46,21 @@ You will need to restart VS Code after these changes. If PowerShell is still not
     private async isOnline(installContext : IDotnetInstallationContext) : Promise<boolean>
     {
         const googleDNS = '8.8.8.8';
-        const expectedDNSResolutionTime = installContext.timeoutSeconds / 10; // Assumption: DNS resolution should take less than 10% of the time it'd take to download .NET
+        const expectedDNSResolutionTime = Math.max(installContext.timeoutSeconds * 10, 100); // Assumption: DNS resolution should take less than 1/100 of the time it'd take to download .NET, 100 is there to prevent 0 error
         const DNSResolver = new dns.Resolver({ timeout: expectedDNSResolutionTime });
-        let online = true;
-        await DNSResolver.resolve(googleDNS,  function(error : any)
+        await Promise.resolve(DNSResolver.resolve(googleDNS,  function(error : any)
         {
             if (error)
             {
-                online = false;
+                return false;
             }
+            return true;
+        })).then(function(dnsRes)
+        {
+            return dnsRes;
         });
-        return online;
+
+        return false;
     }
 
     public async installDotnet(installContext: IDotnetInstallationContext): Promise<void>
@@ -93,7 +97,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
 
                         if (!(await this.isOnline(installContext)))
                         {
-                            const offlineError = new Error('No internet connection: Cannot install .NET');
+                            const offlineError = new Error('No internet connection detected: Cannot install .NET');
                             this.eventStream.post(new DotnetOfflineFailure(offlineError, installKey));
                             reject(offlineError);
                         }
