@@ -254,8 +254,8 @@ ${stderr}`);
 
     const sampleSDKrecommendedVersion = vscode.commands.registerCommand('sample.dotnet-sdk.recommendedVersion', async (getRuntimes : boolean) => {
         try {
-            const result : IDotnetVersion | undefined = await vscode.commands.executeCommand('dotnet-sdk.recommendedVersion', { listRuntimes: getRuntimes });
-            vscode.window.showInformationMessage(`Recommended SDK Version to Install: ${result?.version}`);
+            const result : IDotnetListVersionsResult | undefined = await vscode.commands.executeCommand('dotnet.recommendedVersion', { listRuntimes: getRuntimes });
+            vscode.window.showInformationMessage(`Recommended SDK Version to Install: ${result?.at(0)?.version}`);
         } catch (error) {
             vscode.window.showErrorMessage((error as Error).toString());
         }
