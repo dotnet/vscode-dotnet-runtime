@@ -10,7 +10,6 @@ import {
     DotnetInstallExpectedAbort,
     DotnetNotInstallRelatedCommandFailed
 } from '../EventStream/EventStreamEvents';
-import { ExistingPathKeys, ILocalExistingPath } from '../IExtensionContext';
 import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
 import { IIssueContext } from './IIssueContext';
 import { formatIssueUrl } from './IssueReporter';
@@ -128,7 +127,8 @@ async function configureManualInstall(context: IIssueContext, requestingExtensio
 
     if (manualPath && fs.existsSync(manualPath))
     {
-        try {
+        try
+        {
             let configVal: string = manualPath;
             const existingConfigVal = context.extensionConfigWorker.getPathConfigurationValue();
             if (existingConfigVal && existingConfigVal.globalExistingPathKey) {
