@@ -29,6 +29,7 @@ import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
+/* tslint:disable:no-any */
 
 export class AcquisitionInvoker extends IAcquisitionInvoker {
     protected readonly scriptWorker: IInstallScriptAcquisitionWorker;
@@ -46,9 +47,11 @@ You will need to restart VS Code after these changes. If PowerShell is still not
     private async isOnline(installContext : IDotnetInstallationContext) : Promise<boolean>
     {
         const googleDNS = '8.8.8.8';
-        const expectedDNSResolutionTime = Math.max(installContext.timeoutSeconds * 10, 100); // Assumption: DNS resolution should take less than 1/100 of the time it'd take to download .NET, 100 is there to prevent 0 error
-        const DNSResolver = new dns.Resolver({ timeout: expectedDNSResolutionTime });
-        await Promise.resolve(DNSResolver.resolve(googleDNS,  function(error : any)
+        const expectedDNSResolutionTime = Math.max(installContext.timeoutSeconds * 10, 100); // Assumption: DNS resolution should take less than 1/100 of the time it'd take to download .NET.
+        // ... 100 ms is there as a default to prevent the dns resolver from throwing a runtime error if the user sets timeoutSeconds to 0.
+
+        const dnsResolver = new dns.Resolver({ timeout: expectedDNSResolutionTime });
+        await Promise.resolve(dnsResolver.resolve(googleDNS,  function(error : any)
         {
             if (error)
             {
