@@ -45,7 +45,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
 
   const mockExistingPathsWithGlobalConfig: IExistingPaths = {
     localExsitingPaths: [{extensionId: 'alternative.extension', path: 'foo'}],
-    globalExistingPathKey: 'bar'
+    globalExistingPath: 'bar'
 }
 
   const mockReleasesData = `{

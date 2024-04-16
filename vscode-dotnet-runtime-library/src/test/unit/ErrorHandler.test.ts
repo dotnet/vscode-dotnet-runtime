@@ -73,7 +73,7 @@ suite('ErrorHandler Unit Tests', () => {
         assert.isDefined(configResult);
         const expectedConfig : IExistingPaths = {
             localExsitingPaths: [{ [ExistingPathKeys.extensionIdKey]: 'MockRequestingExtensionId', [ExistingPathKeys.pathKey] : 'MockPath' }],
-            globalExistingPathKey: 'MockGlobalPath'};
+            globalExistingPath: 'MockGlobalPath'};
         assert.deepEqual(configResult!, expectedConfig);
     });
 

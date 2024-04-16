@@ -68,6 +68,7 @@ namespace configKeys {
     export const installTimeoutValue = 'installTimeoutValue';
     export const enableTelemetry = 'enableTelemetry';
     export const existingPath = 'existingDotnetPath';
+    export const existingSharedPath = 'sharedExistingDotnetPath'
     export const proxyUrl = 'proxyUrl';
 }
 namespace commandKeys {
@@ -133,7 +134,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
 
     // Setting up command-shared classes for Runtime & SDK Acquisition
-    const existingPathConfigWorker = new ExtensionConfigurationWorker(extensionConfiguration, configKeys.existingPath);
+    const existingPathConfigWorker = new ExtensionConfigurationWorker(extensionConfiguration, configKeys.existingPath, configKeys.existingSharedPath);
 
     const runtimeContext = getAcquisitionWorkerContext(true);
     const runtimeVersionResolver = new VersionResolver(runtimeContext);

@@ -80,6 +80,13 @@
 						"/usr/lib/dotnet/dotnet"
 					]
 				},
+				"dotnetAcquisitionExtension.sharedExistingDotnetPath": {
+					"type": "string",
+					"description": "File Path across all existing installation of .NET. Used for both the .NET SDK and .NET Runtime.",
+					"examples": [
+						"/usr/share/dotnet/dotnet"
+					]
+				},
 				"dotnetAcquisitionExtension.proxyUrl": {
 					"type": "string",
 					"description": "URL to a proxy if you use one, such as: https://proxy:port"

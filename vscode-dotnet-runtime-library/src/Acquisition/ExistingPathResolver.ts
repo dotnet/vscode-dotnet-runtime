@@ -12,9 +12,9 @@ export class ExistingPathResolver {
         if (existingPaths) {
             if (!extensionId) {
                 // Use the global path if it is specified
-                if (existingPaths.globalExistingPathKey)
+                if (existingPaths.globalExistingPath)
                 {
-                    return { dotnetPath: existingPaths.globalExistingPathKey}
+                    return { dotnetPath: existingPaths.globalExistingPath}
                 }
                 windowDisplayWorker.showWarningMessage(
                     'Ignoring existing .NET paths defined in settings.json because requesting extension does not define its extension ID. Please file a bug against the requesting extension.',
@@ -31,9 +31,9 @@ export class ExistingPathResolver {
                         return { dotnetPath: existingLocalPath![0].path };
                     }
                 }
-                else if (existingPaths.globalExistingPathKey)
+                else if (existingPaths.globalExistingPath)
                 {
-                    return { dotnetPath: existingPaths.globalExistingPathKey}
+                    return { dotnetPath: existingPaths.globalExistingPath}
                 }
                 windowDisplayWorker.showWarningMessage(
                     'Ignoring existing .NET paths defined in settings.json because requesting extension does not define its extension ID. Please file a bug against the requesting extension.',

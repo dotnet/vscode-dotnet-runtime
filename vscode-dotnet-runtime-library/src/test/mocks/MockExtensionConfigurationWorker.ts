@@ -9,10 +9,14 @@ export class MockExtensionConfigurationWorker implements IExtensionConfiguration
     constructor(
         private mockPaths: IExistingPaths = {
         localExsitingPaths: [{ [ExistingPathKeys.extensionIdKey]: 'MockRequestingExtensionId', [ExistingPathKeys.pathKey] : 'MockPath' }],
-        globalExistingPathKey: 'MockGlobalPath'}
+        globalExistingPath: 'MockGlobalPath'}
     ) {}
 
     public getPathConfigurationValue(): IExistingPaths | undefined {
+        return this.mockPaths;
+    }
+
+    public getSharedPathConfigurationValue(): IExistingPaths | undefined {
         return this.mockPaths;
     }
 
@@ -22,7 +26,7 @@ export class MockExtensionConfigurationWorker implements IExtensionConfiguration
     }
 
     public setGlobalPathConfigurationValue(configValue: string): Promise<void> {
-        this.mockPaths.globalExistingPathKey = configValue;
+        this.mockPaths.globalExistingPath = configValue;
         return new Promise((resolve) => { resolve(); });
     }
 }
