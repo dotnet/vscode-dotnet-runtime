@@ -24,9 +24,9 @@ export class ExistingPathResolver {
             }
             else {
                 // check if there are local paths
-                if (existingPaths.localExsitingPaths)
+                if (existingPaths.localExistingPaths)
                 {
-                    const existingLocalPath = existingPaths.localExsitingPaths.filter((pair) => pair.extensionId === extensionId);
+                    const existingLocalPath = existingPaths.localExistingPaths.filter((pair) => pair.extensionId === extensionId);
                     if (existingLocalPath && existingLocalPath.length > 0) {
                         return { dotnetPath: existingLocalPath![0].path };
                     }
