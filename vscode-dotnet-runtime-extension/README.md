@@ -48,6 +48,18 @@ Try adding the requesting extension to the `dotnetAcquisitionExtension.existingD
     ]
 ```
 
+### I already have a .NET Runtime or SDK installed, and I want to use it for all extensions
+
+Try adding the global shared path for extension to the `dotnetAcquisitionExtension.sharedExistingDotnetPath` setting in your package.json settings file. You can read more about [using external installations] in our documentation, but here's an example of how to tell all the [C#] extension to use your existing .NET installation:
+
+```json
+    "dotnetAcquisitionExtension.sharedExistingDotnetPath": [
+        {
+            "path": "/usr/share/dotnet/dotnet"
+        }
+    ]
+```
+
 For [C# Dev Kit] you would use the same thing, but with the extension ID `ms-dotnettools.csdevkit`.  Other extensions, like the MAUI and Unity extensions, will have their own extension IDs that you can find in the extension pane by right-clicking on them and choosing 'Copy Extension ID'.
 
 > NOTE:
