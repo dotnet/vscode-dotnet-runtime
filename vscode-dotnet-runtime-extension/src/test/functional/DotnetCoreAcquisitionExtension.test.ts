@@ -44,7 +44,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   let extensionContext: vscode.ExtensionContext;
 
   const mockExistingPathsWithGlobalConfig: IExistingPaths = {
-    localExsitingPaths: [{extensionId: 'alternative.extension', path: 'foo'}],
+    localExistingPaths: [{extensionId: 'alternative.extension', path: 'foo'}],
     globalExistingPath: 'bar'
 }
 

@@ -58,7 +58,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
   const environmentVariableCollection = new MockEnvironmentVariableCollection();
   let extensionContext: vscode.ExtensionContext;
   const mockExistingPaths: IExistingPaths = {
-    localExsitingPaths: [{extensionId: 'alternative.extension', path: 'foo'}]
+    localExistingPaths: [{extensionId: 'alternative.extension', path: 'foo'}]
 }
 
   this.beforeAll(async () => {
