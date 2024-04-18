@@ -3,7 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as cp from 'child_process';
-import * as isOnline from 'is-online';
+import * as dns from 'dns';
 import * as os from 'os';
 import path = require('path');
 
@@ -29,6 +29,7 @@ import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
+/* tslint:disable:no-any */
 
 export class AcquisitionInvoker extends IAcquisitionInvoker {
     protected readonly scriptWorker: IInstallScriptAcquisitionWorker;
@@ -41,6 +42,28 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         super(workerContext.eventStream);
         this.scriptWorker = new InstallScriptAcquisitionWorker(workerContext);
         this.fileUtilities = new FileUtilities();
+    }
+
+    private async isOnline(installContext : IDotnetInstallationContext) : Promise<boolean>
+    {
+        const googleDNS = '8.8.8.8';
+        const expectedDNSResolutionTime = Math.max(installContext.timeoutSeconds * 10, 100); // Assumption: DNS resolution should take less than 1/100 of the time it'd take to download .NET.
+        // ... 100 ms is there as a default to prevent the dns resolver from throwing a runtime error if the user sets timeoutSeconds to 0.
+
+        const dnsResolver = new dns.Resolver({ timeout: expectedDNSResolutionTime });
+        await Promise.resolve(dnsResolver.resolve(googleDNS,  function(error : any)
+        {
+            if (error)
+            {
+                return false;
+            }
+            return true;
+        })).then(function(dnsRes)
+        {
+            return dnsRes;
+        });
+
+        return false;
     }
 
     public async installDotnet(installContext: IDotnetInstallationContext): Promise<void>
@@ -75,10 +98,9 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                             this.eventStream.post(new DotnetAcquisitionScriptOutput(installKey, `STDERR: ${TelemetryUtilities.HashAllPaths(stderr)}`));
                         }
 
-                        const online = await isOnline();
-                        if (!online)
+                        if (!(await this.isOnline(installContext)))
                         {
-                            const offlineError = new Error('No internet connection: Cannot install .NET');
+                            const offlineError = new Error('No internet connection detected: Cannot install .NET');
                             this.eventStream.post(new DotnetOfflineFailure(offlineError, installKey));
                             reject(offlineError);
                         }
