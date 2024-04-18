@@ -101,11 +101,6 @@
     "@nodelib/fs.scandir" "2.1.5"
     "fastq" "^1.6.0"
 
-"@sindresorhus/is@^0.14.0":
-  "integrity" "sha1-n7OjzzEyMoFR81PeRjLgHlIQK+o="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@sindresorhus/is/-/is-0.14.0.tgz"
-  "version" "0.14.0"
-
 "@sindresorhus/is@^4.0.0":
   "integrity" "sha1-PHycRuZ4/u/nouW7YJ09vWZf+z8="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@sindresorhus/is/-/is-4.6.0.tgz"
@@ -115,13 +110,6 @@
   "integrity" "sha1-Qd1gk9NGUs3bXVve7gTq/DOCZmg="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@sindresorhus/is/-/is-5.6.0.tgz"
   "version" "5.6.0"
-
-"@szmarczak/http-timer@^1.1.2":
-  "integrity" "sha1-sWZeLEYaLNkvTBu/UNVFTeDUtCE="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@szmarczak/http-timer/-/http-timer-1.1.2.tgz"
-  "version" "1.1.2"
-  dependencies:
-    "defer-to-connect" "^1.0.1"
 
 "@szmarczak/http-timer@^4.0.5":
   "integrity" "sha1-tKkUu2LnwnLU5Zif5EQPgSqx2Ac="
@@ -194,9 +182,9 @@
     "@types/node" "*"
 
 "@types/http-cache-semantics@*", "@types/http-cache-semantics@^4.0.1":
-  "integrity" "sha1-Dqe2FJaQK5WJDcTDoRa2DLja6BI="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/http-cache-semantics/-/http-cache-semantics-4.0.1.tgz"
-  "version" "4.0.1"
+  "integrity" "sha1-uXnrrTkZeZyXmxfHJiHAvAoxxsQ="
+  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/http-cache-semantics/-/http-cache-semantics-4.0.4.tgz"
+  "version" "4.0.4"
 
 "@types/json-schema@*", "@types/json-schema@^7.0.8":
   "integrity" "sha1-1CG2xSejA398hEM/0sQingFoY9M="
@@ -432,14 +420,6 @@
   dependencies:
     "debug" "4"
 
-"aggregate-error@^3.0.0":
-  "integrity" "sha1-kmcP9Q9TWb23o+DUDQ7DDFc3aHo="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/aggregate-error/-/aggregate-error-3.1.0.tgz"
-  "version" "3.1.0"
-  dependencies:
-    "clean-stack" "^2.0.0"
-    "indent-string" "^4.0.0"
-
 "ajv-keywords@^3.5.2":
   "integrity" "sha1-MfKdpatuANHC0yms97WSlhTVAU0="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/ajv-keywords/-/ajv-keywords-3.5.2.tgz"
@@ -635,19 +615,6 @@
     "normalize-url" "^8.0.0"
     "responselike" "^3.0.0"
 
-"cacheable-request@^6.0.0":
-  "integrity" "sha1-IP+4vRYrpL4R6VZ9gj22UQUsqRI="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/cacheable-request/-/cacheable-request-6.1.0.tgz"
-  "version" "6.1.0"
-  dependencies:
-    "clone-response" "^1.0.2"
-    "get-stream" "^5.1.0"
-    "http-cache-semantics" "^4.0.0"
-    "keyv" "^3.0.0"
-    "lowercase-keys" "^2.0.0"
-    "normalize-url" "^4.1.0"
-    "responselike" "^1.0.2"
-
 "cacheable-request@^7.0.2":
   "integrity" "sha1-6g0LiJNkolhUdXMByhKy2nf5HSc="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/cacheable-request/-/cacheable-request-7.0.2.tgz"
@@ -747,11 +714,6 @@
   "integrity" "sha1-EBXs7UdB4V0GZkqVfbv1DQQeJqw="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/chrome-trace-event/-/chrome-trace-event-1.0.3.tgz"
   "version" "1.0.3"
-
-"clean-stack@^2.0.0":
-  "integrity" "sha1-7oRy27Ep5yezHooQpCfe6d/kAIs="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/clean-stack/-/clean-stack-2.2.0.tgz"
-  "version" "2.2.0"
 
 "cliui@^7.0.2":
   "integrity" "sha1-oCZe5lVHb8gHrqnfPfjfd4OAi08="
@@ -875,13 +837,6 @@
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/decamelize/-/decamelize-4.0.0.tgz"
   "version" "4.0.0"
 
-"decompress-response@^3.3.0":
-  "integrity" "sha1-gKTdMjdIOEv6JICDYirt7Jgq3/M="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/decompress-response/-/decompress-response-3.3.0.tgz"
-  "version" "3.3.0"
-  dependencies:
-    "mimic-response" "^1.0.0"
-
 "decompress-response@^6.0.0":
   "integrity" "sha1-yjh2Et234QS9FthaqwDV7PCcZvw="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/decompress-response/-/decompress-response-6.0.0.tgz"
@@ -895,11 +850,6 @@
   "version" "3.0.1"
   dependencies:
     "type-detect" "^4.0.0"
-
-"defer-to-connect@^1.0.1":
-  "integrity" "sha1-MxrgUMCNz3ifjIOnuB8O2U9KxZE="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/defer-to-connect/-/defer-to-connect-1.1.3.tgz"
-  "version" "1.1.3"
 
 "defer-to-connect@^2.0.0", "defer-to-connect@^2.0.1":
   "integrity" "sha1-gBa9tBQ+RjK3ejRJxiNid95SBYc="
@@ -960,11 +910,6 @@
   "version" "4.2.2"
   dependencies:
     "dns-packet" "^5.2.4"
-
-"duplexer3@^0.1.4":
-  "integrity" "sha1-C15Ne61d6JAepEQGJMjh0gCZIX4="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/duplexer3/-/duplexer3-0.1.5.tgz"
-  "version" "0.1.5"
 
 "electron-to-chromium@^1.4.188":
   "integrity" "sha1-Ad1L8yUCpIziS/OJC1VTocX5NTk="
@@ -1164,9 +1109,9 @@
   "version" "5.0.2"
 
 "follow-redirects@^1.15.4":
-  "integrity" "sha1-VNTW0GLA+n2dF/6wCEYVUOO6gCA="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/follow-redirects/-/follow-redirects-1.15.5.tgz"
-  "version" "1.15.5"
+  "integrity" "sha1-f4FcDNpCScdP8J6V75fCO1/QOZs="
+  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/follow-redirects/-/follow-redirects-1.15.6.tgz"
+  "version" "1.15.6"
 
 "form-data-encoder@^2.1.2":
   "integrity" "sha1-Jh6jXSpw1I0w7HqWAxMPpVFenNU="
@@ -1211,13 +1156,6 @@
     "has-proto" "^1.0.1"
     "has-symbols" "^1.0.3"
     "hasown" "^2.0.0"
-
-"get-stream@^4.1.0":
-  "integrity" "sha1-wbJVV189wh1Zv8ec09K0axw6VLU="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/get-stream/-/get-stream-4.1.0.tgz"
-  "version" "4.1.0"
-  dependencies:
-    "pump" "^3.0.0"
 
 "get-stream@^5.1.0":
   "integrity" "sha1-SWaheV7lrOZecGxLe+txJX1uItM="
@@ -1305,23 +1243,6 @@
   dependencies:
     "get-intrinsic" "^1.1.3"
 
-"got@^11.8.0", "got@11.8.5":
-  "integrity" "sha1-znfQRRNt5W6PAkvruC6jSbxzAEY="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/got/-/got-11.8.5.tgz"
-  "version" "11.8.5"
-  dependencies:
-    "@sindresorhus/is" "^4.0.0"
-    "@szmarczak/http-timer" "^4.0.5"
-    "@types/cacheable-request" "^6.0.1"
-    "@types/responselike" "^1.0.0"
-    "cacheable-lookup" "^5.0.3"
-    "cacheable-request" "^7.0.2"
-    "decompress-response" "^6.0.0"
-    "http2-wrapper" "^1.0.0-beta.5.2"
-    "lowercase-keys" "^2.0.0"
-    "p-cancelable" "^2.0.0"
-    "responselike" "^2.0.0"
-
 "got@^12.0.0":
   "integrity" "sha1-iGlWDRODNTIEtalDX3gt+cCR9Uk="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/got/-/got-12.6.1.tgz"
@@ -1339,22 +1260,22 @@
     "p-cancelable" "^3.0.0"
     "responselike" "^3.0.0"
 
-"got@^9.6.0":
-  "integrity" "sha1-7fRefWf5lUVwXeH3u+7rEhdl7YU="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/got/-/got-9.6.0.tgz"
-  "version" "9.6.0"
+"got@11.8.5":
+  "integrity" "sha1-znfQRRNt5W6PAkvruC6jSbxzAEY="
+  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/got/-/got-11.8.5.tgz"
+  "version" "11.8.5"
   dependencies:
-    "@sindresorhus/is" "^0.14.0"
-    "@szmarczak/http-timer" "^1.1.2"
-    "cacheable-request" "^6.0.0"
-    "decompress-response" "^3.3.0"
-    "duplexer3" "^0.1.4"
-    "get-stream" "^4.1.0"
-    "lowercase-keys" "^1.0.1"
-    "mimic-response" "^1.0.1"
-    "p-cancelable" "^1.0.0"
-    "to-readable-stream" "^1.0.0"
-    "url-parse-lax" "^3.0.0"
+    "@sindresorhus/is" "^4.0.0"
+    "@szmarczak/http-timer" "^4.0.5"
+    "@types/cacheable-request" "^6.0.1"
+    "@types/responselike" "^1.0.0"
+    "cacheable-lookup" "^5.0.3"
+    "cacheable-request" "^7.0.2"
+    "decompress-response" "^6.0.0"
+    "http2-wrapper" "^1.0.0-beta.5.2"
+    "lowercase-keys" "^2.0.0"
+    "p-cancelable" "^2.0.0"
+    "responselike" "^2.0.0"
 
 "graceful-fs@^4.1.2", "graceful-fs@^4.2.4", "graceful-fs@^4.2.9":
   "integrity" "sha1-FH06AG2kyjzhRyjHrvwofDZ9emw="
@@ -1505,11 +1426,6 @@
     "pkg-dir" "^4.2.0"
     "resolve-cwd" "^3.0.0"
 
-"indent-string@^4.0.0":
-  "integrity" "sha1-Yk+PRJfWGbLZdoUx1Y9BIoVNclE="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/indent-string/-/indent-string-4.0.0.tgz"
-  "version" "4.0.0"
-
 "inflight@^1.0.4":
   "integrity" "sha1-Sb1jMdfQLQwJvJEKEHW6gWW1bfk="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/inflight/-/inflight-1.0.6.tgz"
@@ -1585,16 +1501,6 @@
   "integrity" "sha1-dTU0W4lnNNX4DE0GxQlVUnoU8Ss="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/is-number/-/is-number-7.0.0.tgz"
   "version" "7.0.0"
-
-"is-online@^9.0.1":
-  "integrity" "sha1-caNCAvqCa65vP/i+pCDFZXNEil8="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/is-online/-/is-online-9.0.1.tgz"
-  "version" "9.0.1"
-  dependencies:
-    "got" "^11.8.0"
-    "p-any" "^3.0.0"
-    "p-timeout" "^3.2.0"
-    "public-ip" "^4.0.4"
 
 "is-plain-obj@^2.1.0":
   "integrity" "sha1-ReQuN/zPH0Dajl927iFRWEDAkoc="
@@ -1687,11 +1593,6 @@
   dependencies:
     "argparse" "^2.0.1"
 
-"json-buffer@3.0.0":
-  "integrity" "sha1-Wx85evx11ne96Lz8Dkfh+aPZqJg="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/json-buffer/-/json-buffer-3.0.0.tgz"
-  "version" "3.0.0"
-
 "json-buffer@3.0.1":
   "integrity" "sha1-kziAKjDTtmBfvgYT4JQAjKjAWhM="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/json-buffer/-/json-buffer-3.0.1.tgz"
@@ -1716,13 +1617,6 @@
     "pako" "~1.0.2"
     "readable-stream" "~2.3.6"
     "setimmediate" "^1.0.5"
-
-"keyv@^3.0.0":
-  "integrity" "sha1-7MIoSG9pmR5J6UdkhaW+Ho/FxNk="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/keyv/-/keyv-3.1.0.tgz"
-  "version" "3.1.0"
-  dependencies:
-    "json-buffer" "3.0.0"
 
 "keyv@^4.0.0", "keyv@^4.5.3":
   "integrity" "sha1-AIc9KwRt9zeWMVe9BPKUyoGMnCU="
@@ -1774,16 +1668,6 @@
   dependencies:
     "chalk" "^4.1.0"
     "is-unicode-supported" "^0.1.0"
-
-"lowercase-keys@^1.0.0":
-  "integrity" "sha1-b54wtHCE2XGnyCD/FabFFnt0wm8="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/lowercase-keys/-/lowercase-keys-1.0.1.tgz"
-  "version" "1.0.1"
-
-"lowercase-keys@^1.0.1":
-  "integrity" "sha1-b54wtHCE2XGnyCD/FabFFnt0wm8="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/lowercase-keys/-/lowercase-keys-1.0.1.tgz"
-  "version" "1.0.1"
 
 "lowercase-keys@^2.0.0":
   "integrity" "sha1-JgPni3tLAAbLyi+8yKMgJVislHk="
@@ -1837,7 +1721,7 @@
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/mimic-fn/-/mimic-fn-2.1.0.tgz"
   "version" "2.1.0"
 
-"mimic-response@^1.0.0", "mimic-response@^1.0.1":
+"mimic-response@^1.0.0":
   "integrity" "sha1-SSNTiHju9CBjy4o+OweYeBSHqxs="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/mimic-response/-/mimic-response-1.0.1.tgz"
   "version" "1.0.1"
@@ -1960,11 +1844,6 @@
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/normalize-path/-/normalize-path-3.0.0.tgz"
   "version" "3.0.0"
 
-"normalize-url@^4.1.0":
-  "integrity" "sha1-DdkM8SiO4dExO4cIHJpZMu5IUYo="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/normalize-url/-/normalize-url-4.5.1.tgz"
-  "version" "4.5.1"
-
 "normalize-url@^6.0.1":
   "integrity" "sha1-QNCIW1Nd7/4/MUe+yHfQX+TFZoo="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/normalize-url/-/normalize-url-6.1.0.tgz"
@@ -2010,19 +1889,6 @@
     "is-docker" "^2.1.1"
     "is-wsl" "^2.2.0"
 
-"p-any@^3.0.0":
-  "integrity" "sha1-eYR67tcLXToQ6mJSlsDD0ukKh7k="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/p-any/-/p-any-3.0.0.tgz"
-  "version" "3.0.0"
-  dependencies:
-    "p-cancelable" "^2.0.0"
-    "p-some" "^5.0.0"
-
-"p-cancelable@^1.0.0":
-  "integrity" "sha1-0HjRWjr0CSIMiG8dmgyi5EGrJsw="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/p-cancelable/-/p-cancelable-1.1.0.tgz"
-  "version" "1.1.0"
-
 "p-cancelable@^2.0.0":
   "integrity" "sha1-qrf71BZYL6MqPbSYWcEiSHxe0s8="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/p-cancelable/-/p-cancelable-2.1.1.tgz"
@@ -2032,11 +1898,6 @@
   "integrity" "sha1-Y4JmlLVNYcocIOvLbT7PXhTNgFA="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/p-cancelable/-/p-cancelable-3.0.0.tgz"
   "version" "3.0.0"
-
-"p-finally@^1.0.0":
-  "integrity" "sha1-P7z7FbiZpEEjs0ttzBi3JDNqLK4="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/p-finally/-/p-finally-1.0.0.tgz"
-  "version" "1.0.0"
 
 "p-limit@^2.2.0":
   "integrity" "sha1-PdM8ZHohT9//2DWTPrCG2g3CHbE="
@@ -2065,21 +1926,6 @@
   "version" "5.0.0"
   dependencies:
     "p-limit" "^3.0.2"
-
-"p-some@^5.0.0":
-  "integrity" "sha1-i3MMdLT+UWnXJkokCtAQtuvGhqQ="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/p-some/-/p-some-5.0.0.tgz"
-  "version" "5.0.0"
-  dependencies:
-    "aggregate-error" "^3.0.0"
-    "p-cancelable" "^2.0.0"
-
-"p-timeout@^3.2.0":
-  "integrity" "sha1-x+F6vJcdKnli74NiazXWNazyPf4="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/p-timeout/-/p-timeout-3.2.0.tgz"
-  "version" "3.2.0"
-  dependencies:
-    "p-finally" "^1.0.0"
 
 "p-try@^2.0.0":
   "integrity" "sha1-yyhoVA4xPWHeWPr741zpAE1VQOY="
@@ -2138,11 +1984,6 @@
   dependencies:
     "find-up" "^4.0.0"
 
-"prepend-http@^2.0.0":
-  "integrity" "sha1-6SQ0v6XqjBn0HN/UAddBo8gZ2Jc="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/prepend-http/-/prepend-http-2.0.0.tgz"
-  "version" "2.0.0"
-
 "process-nextick-args@~2.0.0":
   "integrity" "sha1-eCDZsWEgzFXKmud5JoCufbptf+I="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/process-nextick-args/-/process-nextick-args-2.0.1.tgz"
@@ -2162,15 +2003,6 @@
   "integrity" "sha1-4QLxbKNVQkhldV0sno6k8k1Yw+I="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/proxy-from-env/-/proxy-from-env-1.1.0.tgz"
   "version" "1.1.0"
-
-"public-ip@^4.0.4":
-  "integrity" "sha1-s3hKWh/xuB0BW5oYRQvmX/2SnrM="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/public-ip/-/public-ip-4.0.4.tgz"
-  "version" "4.0.4"
-  dependencies:
-    "dns-socket" "^4.2.2"
-    "got" "^9.6.0"
-    "is-ip" "^3.1.0"
 
 "public-ip@5.0.0":
   "integrity" "sha1-s5L8yIVSw7NpM6KGBolIgWUV+So="
@@ -2280,13 +2112,6 @@
     "is-core-module" "^2.9.0"
     "path-parse" "^1.0.7"
     "supports-preserve-symlinks-flag" "^1.0.0"
-
-"responselike@^1.0.2":
-  "integrity" "sha1-kYcg7ztjHFZCvgaPFa3lpG9Loec="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/responselike/-/responselike-1.0.2.tgz"
-  "version" "1.0.2"
-  dependencies:
-    "lowercase-keys" "^1.0.0"
 
 "responselike@^2.0.0":
   "integrity" "sha1-JjkbzDF091D5p56sxAoSpcQtdyM="
@@ -2559,11 +2384,6 @@
     "commander" "^2.20.0"
     "source-map-support" "~0.5.20"
 
-"to-readable-stream@^1.0.0":
-  "integrity" "sha1-zgqgwvPfat+FLvtASng+d8BHV3E="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/to-readable-stream/-/to-readable-stream-1.0.0.tgz"
-  "version" "1.0.0"
-
 "to-regex-range@^5.0.1":
   "integrity" "sha1-FkjESq58jZiKMmAY7XL1tN0DkuQ="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/to-regex-range/-/to-regex-range-5.0.1.tgz"
@@ -2644,13 +2464,6 @@
   dependencies:
     "punycode" "^2.1.0"
 
-"url-parse-lax@^3.0.0":
-  "integrity" "sha1-FrXK/Afb42dsGxmZF3gj1lA6yww="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/url-parse-lax/-/url-parse-lax-3.0.0.tgz"
-  "version" "3.0.0"
-  dependencies:
-    "prepend-http" "^2.0.0"
-
 "util-deprecate@~1.0.1":
   "integrity" "sha1-RQ1Nyfpw3nMnYvvS1KKJgUGaDM8="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/util-deprecate/-/util-deprecate-1.0.2.tgz"
@@ -2681,7 +2494,6 @@
     "got" "11.8.5"
     "http-cache-semantics" "4.1.1"
     "https-proxy-agent" "^7.0.2"
-    "is-online" "9.0.1"
     "mocha" "^9.1.3"
     "open" "^8.4.0"
     "p-retry" "^4.6.1"
