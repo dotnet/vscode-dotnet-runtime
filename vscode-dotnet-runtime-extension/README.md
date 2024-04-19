@@ -40,11 +40,7 @@ The rest of the extension functionality is still limited to other extensions tha
 Set the  `dotnetAcquisitionExtension.sharedExistingDotnetPath` to use it for all extensions. If you want more granular control, add the requesting extension to the `dotnetAcquisitionExtension.existingDotnetPath` setting in your vscode.json settings file. You can read more about [using external installations] in our documentation, but here's an example of how to tell the [C#] extension to use your existing .NET installation:
 
 ```json
-    "dotnetAcquisitionExtension.sharedExistingDotnetPath": [
-        {
-            "path": "/usr/share/dotnet/dotnet"
-        }
-    ]
+    "dotnetAcquisitionExtension.sharedExistingDotnetPath": "/usr/share/dotnet/dotnet"
 ```
 
 ```json
