@@ -14,6 +14,7 @@ import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
 import { IIssueContext } from './IIssueContext';
 import { formatIssueUrl } from './IssueReporter';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
+import { StringLiteral } from 'typescript';
 
 
 export enum AcquireErrorConfiguration {
@@ -129,12 +130,7 @@ async function configureManualInstall(context: IIssueContext, requestingExtensio
     {
         try
         {
-            let configVal: string = manualPath;
-            const existingConfigVal = context.extensionConfigWorker.getPathConfigurationValue();
-            if (existingConfigVal && existingConfigVal.globalExistingPath) {
-                configVal = existingConfigVal.globalExistingPath;
-            }
-            await context.extensionConfigWorker.setGlobalPathConfigurationValue(configVal);
+            await context.extensionConfigWorker.setGlobalPathConfigurationValue(manualPath);
             context.displayWorker.showInformationMessage(`Set .NET path to ${manualPath}. Please reload VSCode to apply settings.`, () => { /* No callback needed */});
         }
         catch (e)
