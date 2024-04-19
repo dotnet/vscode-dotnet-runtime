@@ -1,5 +1,6 @@
-# Troubleshooting Issues with the .NET Install Tool
-
+    "dotnetAcquisitionExtension.existingDotnetPath": [
+        {"extensionId": "msazurermtools.azurerm-vscode-tools", "path": "C:\\Program Files\\dotnet\\dotnet.exe"}
+    ]
 ## Install Script Timeouts
 
 Please note that, depending on your network speed, installing the .NET Core runtime might take some time. By default, the installation terminates unsuccessfully if it takes longer than 10 minutes to finish. If you believe this is too little (or too much) time to allow for the download, you can change the timeout value by setting `dotnetAcquisitionExtension.installTimeoutValue` to a custom value.
