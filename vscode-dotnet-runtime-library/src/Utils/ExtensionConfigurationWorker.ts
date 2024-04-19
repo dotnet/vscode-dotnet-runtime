@@ -14,21 +14,23 @@ export class ExtensionConfigurationWorker implements IExtensionConfigurationWork
         return this.pathConfigValueName ? this.extensionConfiguration.get(this.pathConfigValueName) : undefined;
     }
 
-    public getSharedPathConfigurationValue(): IExistingPaths | undefined {
-        return this.sharedExistingDotnetPath ? this.extensionConfiguration.get(this.sharedExistingDotnetPath) : undefined;
-    }
-
-    public async setLocalPathConfigurationValue(configValue: ILocalExistingPath[]): Promise<void> {
+    public async setPathConfigurationValue(configValue: string, setGlobalSetting : boolean): Promise<void> {
         if (!this.pathConfigValueName) {
             throw Error('Existing path configuration not supported.');
         }
-        await this.extensionConfiguration.update<ILocalExistingPath[]>(this.pathConfigValueName, configValue, true);
-    }
 
-    public async setGlobalPathConfigurationValue(configValue: string): Promise<void> {
-        if (!this.sharedExistingDotnetPath) {
-            throw Error('Existing path configuration not supported.');
-        }
-        await this.extensionConfiguration.update<string>(this.sharedExistingDotnetPath, configValue, true);
+
+        let existingSettings = this.getPathConfigurationValue();
+        let newSettings = {
+            localExistingPaths : !setGlobalSetting ? existingSettings?.localExistingPaths?.concat(
+                {
+                    extensionId: this.sharedExistingDotnetPath as string,
+                    path: configValue
+                }
+            ) : existingSettings?.localExistingPaths,
+            globalExistingPath : setGlobalSetting ? configValue : existingSettings?.globalExistingPath,
+        } as IExistingPaths;
+
+        await this.extensionConfiguration.update<IExistingPaths>(this.pathConfigValueName, newSettings, true);
     }
 }

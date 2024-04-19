@@ -3,6 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import { ExistingPathKeys, IExistingPaths, ILocalExistingPath} from '../../IExtensionContext';
+import { ExtensionConfigurationWorker } from '../../Utils/ExtensionConfigurationWorker';
 import { IExtensionConfigurationWorker } from '../../Utils/IExtensionConfigurationWorker';
 
 export class MockExtensionConfigurationWorker implements IExtensionConfigurationWorker {
@@ -11,6 +12,11 @@ export class MockExtensionConfigurationWorker implements IExtensionConfiguration
         localExistingPaths: [{ [ExistingPathKeys.extensionIdKey]: 'MockRequestingExtensionId', [ExistingPathKeys.pathKey] : 'MockPath' }],
         globalExistingPath: 'MockGlobalPath'}
     ) {}
+
+    async setPathConfigurationValue(configValue: string, setGlobalSetting: boolean): Promise<void> {
+        setGlobalSetting ? this.setGlobalPathConfigurationValue(configValue) :
+            this.setLocalPathConfigurationValue([{ [ExistingPathKeys.extensionIdKey]: 'MockRequestingExtensionId', [ExistingPathKeys.pathKey] : configValue }]);
+    }
 
     public getPathConfigurationValue(): IExistingPaths | undefined {
         return this.mockPaths;

@@ -27,6 +27,6 @@ export interface ILocalExistingPath {
 }
 
 export interface IExistingPaths {
-    localExistingPaths: ILocalExistingPath[];
+    localExistingPaths?: ILocalExistingPath[];
     globalExistingPath? : string;
 }
