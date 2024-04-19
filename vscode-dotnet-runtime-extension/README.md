@@ -37,25 +37,21 @@ The rest of the extension functionality is still limited to other extensions tha
 
 ### I already have a .NET Runtime or SDK installed, and I want to use it
 
-Try adding the requesting extension to the `dotnetAcquisitionExtension.existingDotnetPath` setting in your vscode.json settings file. You can read more about [using external installations] in our documentation, but here's an example of how to tell the [C#] extension to use your existing .NET installation:
+Set the  `dotnetAcquisitionExtension.sharedExistingDotnetPath` to use it for all extensions. If you want more granular control, add the requesting extension to the `dotnetAcquisitionExtension.existingDotnetPath` setting in your vscode.json settings file. You can read more about [using external installations] in our documentation, but here's an example of how to tell the [C#] extension to use your existing .NET installation:
+
+```json
+    "dotnetAcquisitionExtension.sharedExistingDotnetPath": [
+        {
+            "path": "/usr/share/dotnet/dotnet"
+        }
+    ]
+```
 
 ```json
     "dotnetAcquisitionExtension.existingDotnetPath": [
         {
             "extensionId": "ms-dotnettools.csharp",
             "path": "C:\\Program Files\\dotnet\\dotnet.exe"
-        }
-    ]
-```
-
-### I already have a .NET Runtime or SDK installed, and I want to use it for all extensions
-
-Try adding the global shared path for extension to the `dotnetAcquisitionExtension.sharedExistingDotnetPath` setting in your package.json settings file. You can read more about [using external installations] in our documentation, but here's an example of how to tell all the [C#] extension to use your existing .NET installation:
-
-```json
-    "dotnetAcquisitionExtension.sharedExistingDotnetPath": [
-        {
-            "path": "/usr/share/dotnet/dotnet"
         }
     ]
 ```
