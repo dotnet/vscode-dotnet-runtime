@@ -59,6 +59,7 @@ import {
 } from 'vscode-dotnet-runtime-library';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 import { IAcquisitionWorkerContext } from 'vscode-dotnet-runtime-library/dist/Acquisition/IAcquisitionWorkerContext';
+import { DotnetInstall, GetDotnetInstallInfo } from 'vscode-dotnet-runtime-library/dist/Acquisition/IInstallationRecord';
 
 // tslint:disable no-var-requires
 const packageJson = require('../package.json');
@@ -178,8 +179,9 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             return runtimeAcquisitionWorker.acquireRuntime(version, acquisitionInvoker);
         }, runtimeIssueContextFunctor(commandContext.errorConfiguration, 'acquire', commandContext.version), commandContext.requestingExtensionId, runtimeContext);
 
-        const installKey = runtimeAcquisitionWorker.getInstallKey(fullyResolvedVersion);
-        globalEventStream.post(new DotnetRuntimeAcquisitionTotalSuccessEvent(commandContext.version, installKey, commandContext.requestingExtensionId ?? '', dotnetPath?.dotnetPath ?? ''));
+        const iKey = runtimeAcquisitionWorker.getInstallKey(fullyResolvedVersion);
+        const install = {installKey : iKey, version : fullyResolvedVersion, isRuntime: true, isGlobal: false, architecture: commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture()} as DotnetInstall;
+        globalEventStream.post(new DotnetRuntimeAcquisitionTotalSuccessEvent(commandContext.version, install, commandContext.requestingExtensionId ?? '', dotnetPath?.dotnetPath ?? ''));
         return dotnetPath;
     });
 
@@ -235,7 +237,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         if (!activeSupportVersions || activeSupportVersions.length < 1)
         {
             const err = new Error(`An active-support version of dotnet couldn't be found. Discovered versions: ${JSON.stringify(availableVersions)}`);
-            globalEventStream.post(new DotnetVersionResolutionError(err as EventCancellationError, 'recommended'));
+            globalEventStream.post(new DotnetVersionResolutionError(err as EventCancellationError, null));
             if(!availableVersions || availableVersions.length < 1)
             {
                 return [];

@@ -19,7 +19,7 @@ export interface DotnetInstall
     isRuntime: boolean;
 }
 
-function IsEquivalentInstallationFile(a: DotnetInstall, b: DotnetInstall): boolean
+export function IsEquivalentInstallationFile(a: DotnetInstall, b: DotnetInstall): boolean
 {
     return a.version === b.version && a.architecture === b.architecture &&
     a.isGlobal === b.isGlobal && a.isRuntime === b.isRuntime
@@ -111,8 +111,9 @@ export function installKeyStringToDotnetInstall(installKey : string) : DotnetIns
  * @remarks
  * The string containing the extensionid of the extension which requested the install.
  * 'user' if the user installed it themselves.
- * 'external' if the install was done by an external source, including a different user on the machine through our extension. (they should manage it.)
  * null if we don't know because the install was done before we kept track of these things.
+ * It can also be null if the install was done by an external source ...
+ * including a different user on the machine through our extension. (they should manage it.)
  */
 export type InstallOwner = string | null;
 
@@ -122,7 +123,7 @@ export type InstallOwner = string | null;
  * Some of the types exist due to a need to support existing installs before this type existed.
  * All discovered old installs should be replaced with the new type.
  */
-export interface InstallationRecord
+export interface InstallRecord
 {
     dotnetInstall: DotnetInstall;
     installingExtensions: InstallOwner[];
@@ -134,7 +135,7 @@ export interface InstallationRecord
  * @remarks
  * The record can be the type or it can be a 'legacy' record from old installs which is just a string with the install key.
  */
-export type InstallRecordOrStr = InstallationRecord | string;
+export type InstallRecordOrStr = InstallRecord | string;
 
 
 /**
