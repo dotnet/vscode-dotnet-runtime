@@ -82,7 +82,7 @@ export abstract class IDistroDotnetSDKProvider {
         if(!distroVersion || !this.distroJson || !((this.distroJson as any)[this.distroVersion.distro]))
         {
             const error = new DotnetAcquisitionDistroUnknownError(new Error(`Automated installation for the distro ${this.distroVersion.distro} is not yet supported.
-Please install the .NET SDK manually: dotnet.microsoft.com/download.`),
+Please install the .NET SDK manually: https://dotnet.microsoft.com/download`),
                 getInstallKeyFromContext(this.context.acquisitionContext));
             throw error.error;
         }
