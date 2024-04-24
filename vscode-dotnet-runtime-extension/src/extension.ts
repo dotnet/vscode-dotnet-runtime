@@ -376,10 +376,12 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
                     supportPhase: resolvedSupportPhase }
                 ];
             }
+            // tslint:disable no-any
             catch(error : any)
             {
                 return [];
             }
+            // tslint:enable no-any
         }
     }
 
