@@ -218,7 +218,7 @@ If you're on a proxy and disable registry access, you must set the proxy in our 
                 }
                 else
                 {
-                    const genericError = new Error(`Web Request to ${this.url} Failed: ${error.message}. Aborting. Please ensure that you are online.`);
+                    const genericError = new Error(`Web Request to ${this.url} Failed: ${error.message}. Aborting. Stack: ${'stack' in error ? error?.stack : 'unavailable.'}`);
                     this.context.eventStream.post(new WebRequestError(genericError, getInstallKeyFromContext(this.context.acquisitionContext)));
                     throw genericError;
                 }
