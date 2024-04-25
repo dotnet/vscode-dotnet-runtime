@@ -37,11 +37,15 @@ The rest of the extension functionality is still limited to other extensions tha
 
 ### I already have a .NET Runtime or SDK installed, and I want to use it
 
-Set the  `dotnetAcquisitionExtension.sharedExistingDotnetPath` to use it for all extensions. If you want more granular control, add the requesting extension to the `dotnetAcquisitionExtension.existingDotnetPath` setting in your vscode.json settings file. You can read more about [using external installations] in our documentation, but here's an example of how to tell the [C#] extension to use your existing .NET installation:
+If you want to use your own installation(s) of .NET, you can either use them for all extensions in VS Code, or use different installations for specific extensions.
+
+If you want to use the installation for all extensions, set the `dotnetAcquisitionExtension.sharedExistingDotnetPath`.
 
 ```json
     "dotnetAcquisitionExtension.sharedExistingDotnetPath": "/usr/share/dotnet/dotnet"
 ```
+
+If instead you want more granular control, add the requesting extension to the `dotnetAcquisitionExtension.existingDotnetPath` setting in your vscode.json settings file. You can read more about [using external installations] in our documentation, but here's an example of how to tell the [C#] extension to use your existing .NET installation:
 
 ```json
     "dotnetAcquisitionExtension.existingDotnetPath": [
