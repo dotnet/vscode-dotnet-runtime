@@ -12,9 +12,9 @@ export class ExistingPathResolver {
         if (existingPaths) {
             if (!extensionId) {
                 // Use the global path if it is specified
-                if (existingPaths.globalExistingPath)
+                if (existingPaths.sharedExistingPath)
                 {
-                    return { dotnetPath: existingPaths.globalExistingPath}
+                    return { dotnetPath: existingPaths.sharedExistingPath}
                 }
                 windowDisplayWorker.showWarningMessage(
                     'Ignoring existing .NET paths defined in settings.json because requesting extension does not define its extension ID. Please file a bug against the requesting extension.',
@@ -24,16 +24,16 @@ export class ExistingPathResolver {
             }
             else {
                 // check if there are local paths
-                if (existingPaths.localExistingPaths)
+                if (existingPaths.individualizedExtensionPaths)
                 {
-                    const existingLocalPath = existingPaths.localExistingPaths.filter((pair) => pair.extensionId === extensionId);
+                    const existingLocalPath = existingPaths.individualizedExtensionPaths.filter((pair) => pair.extensionId === extensionId);
                     if (existingLocalPath && existingLocalPath.length > 0) {
                         return { dotnetPath: existingLocalPath![0].path };
                     }
                 }
-                else if (existingPaths.globalExistingPath)
+                else if (existingPaths.sharedExistingPath)
                 {
-                    return { dotnetPath: existingPaths.globalExistingPath}
+                    return { dotnetPath: existingPaths.sharedExistingPath}
                 }
                 windowDisplayWorker.showWarningMessage(
                     'Ignoring existing .NET paths defined in settings.json because requesting extension does not define its extension ID. Please file a bug against the requesting extension.',

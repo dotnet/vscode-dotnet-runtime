@@ -5,7 +5,9 @@
 
 import { IExistingPaths, ILocalExistingPath } from '..';
 
-export interface IExtensionConfigurationWorker {
-    getPathConfigurationValue(): IExistingPaths | undefined;
-    setPathConfigurationValue(configValue: string, setGlobalSetting : boolean): Promise<void>;
+export interface IExtensionConfigurationWorker
+{
+    getAllPathConfigurationValues(): IExistingPaths | undefined;
+    getSharedPathConfigurationValue(): string | undefined;
+    setSharedPathConfigurationValue(configValue: string): Promise<void>;
 }

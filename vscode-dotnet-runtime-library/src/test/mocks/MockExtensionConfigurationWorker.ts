@@ -9,30 +9,30 @@ import { IExtensionConfigurationWorker } from '../../Utils/IExtensionConfigurati
 export class MockExtensionConfigurationWorker implements IExtensionConfigurationWorker {
     constructor(
         private mockPaths: IExistingPaths = {
-        localExistingPaths: [{ [ExistingPathKeys.extensionIdKey]: 'MockRequestingExtensionId', [ExistingPathKeys.pathKey] : 'MockPath' }],
-        globalExistingPath: 'MockGlobalPath'}
+        individualizedExtensionPaths: [{ [ExistingPathKeys.extensionIdKey]: 'MockRequestingExtensionId', [ExistingPathKeys.pathKey] : 'MockPath' }],
+        sharedExistingPath: 'MockGlobalPath'}
     ) {}
 
     async setPathConfigurationValue(configValue: string, setGlobalSetting: boolean): Promise<void> {
-        setGlobalSetting ? this.setGlobalPathConfigurationValue(configValue) :
+        setGlobalSetting ? this.setSharedPathConfigurationValue(configValue) :
             this.setLocalPathConfigurationValue([{ [ExistingPathKeys.extensionIdKey]: 'MockRequestingExtensionId', [ExistingPathKeys.pathKey] : configValue }]);
     }
 
-    public getPathConfigurationValue(): IExistingPaths | undefined {
+    public getAllPathConfigurationValues(): IExistingPaths | undefined {
         return this.mockPaths;
     }
 
-    public getSharedPathConfigurationValue(): IExistingPaths | undefined {
-        return this.mockPaths;
+    public getSharedPathConfigurationValue(): string | undefined {
+        return this.mockPaths.sharedExistingPath;
     }
 
     public setLocalPathConfigurationValue(configValue: ILocalExistingPath[]): Promise<void> {
-        this.mockPaths.localExistingPaths = configValue;
+        this.mockPaths.individualizedExtensionPaths = configValue;
         return new Promise((resolve) => { resolve(); });
     }
 
-    public setGlobalPathConfigurationValue(configValue: string): Promise<void> {
-        this.mockPaths.globalExistingPath = configValue;
+    public setSharedPathConfigurationValue(configValue: string): Promise<void> {
+        this.mockPaths.sharedExistingPath = configValue;
         return new Promise((resolve) => { resolve(); });
     }
 }
