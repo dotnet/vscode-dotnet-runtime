@@ -9,6 +9,7 @@ import { CommandExecutorCommand } from '../Utils/CommandExecutorCommand';
 import { DotnetDistroSupportStatus } from './LinuxVersionResolver';
 import { LinuxInstallType } from './LinuxInstallType';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
+import { DotnetVersionResolutionError } from '../EventStream/EventStreamEvents';
 /* tslint:disable:no-any */
 
 export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
@@ -207,6 +208,14 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
             {
                 maxVersion = dotnetPackages.version;
             }
+        }
+
+        if(maxVersion === '0')
+        {
+            const err = new DotnetVersionResolutionError(new Error(`No packages for .NET are available.
+Please refer to https://learn.microsoft.com/en-us/dotnet/core/install/linux if you'd link to install .NET.`), null);
+            this.context.eventStream.post(err);
+            throw(err);
         }
 
         // Most distros support only 100 band .NET versions, so we default to that here.
