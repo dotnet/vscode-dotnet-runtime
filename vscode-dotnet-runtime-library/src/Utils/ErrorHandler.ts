@@ -130,7 +130,7 @@ async function configureManualInstall(context: IIssueContext, requestingExtensio
     {
         try
         {
-            await context.extensionConfigWorker.setPathConfigurationValue(manualPath, true);
+            await context.extensionConfigWorker.setSharedPathConfigurationValue(manualPath);
             context.displayWorker.showInformationMessage(`Set .NET path to ${manualPath}. Please reload VSCode to apply settings.`, () => { /* No callback needed */});
         }
         catch (e)

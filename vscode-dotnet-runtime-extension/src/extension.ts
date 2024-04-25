@@ -324,7 +324,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     {
         const existingPathResolver = new ExistingPathResolver();
 
-        const existingPath = existingPathResolver.resolveExistingPath(configResolver.getPathConfigurationValue(), commandContext.requestingExtensionId, displayWorker);
+        const existingPath = existingPathResolver.resolveExistingPath(configResolver.getAllPathConfigurationValues(), commandContext.requestingExtensionId, displayWorker);
         if (existingPath) {
             globalEventStream.post(new DotnetExistingPathResolutionCompleted(existingPath.dotnetPath));
             return new Promise((resolve) => {

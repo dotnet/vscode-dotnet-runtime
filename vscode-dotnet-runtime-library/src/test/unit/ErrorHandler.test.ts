@@ -69,7 +69,7 @@ suite('ErrorHandler Unit Tests', () => {
         assert.isDefined(displayWorker.callback);
         await displayWorker.callback!('Configure manually');
         assert.include(displayWorker.infoMessage, `Set .NET path to ${__dirname}.`);
-        const configResult = context.extensionConfigWorker.getSharedPathConfigurationValue();
+        const configResult = context.extensionConfigWorker.getAllPathConfigurationValues();
         assert.isDefined(configResult);
         const expectedConfig : IExistingPaths = {
             individualizedExtensionPaths: [{ [ExistingPathKeys.extensionIdKey]: 'MockRequestingExtensionId', [ExistingPathKeys.pathKey] : 'MockPath' }],
