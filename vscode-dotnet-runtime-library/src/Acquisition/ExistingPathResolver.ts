@@ -31,9 +31,10 @@ export class ExistingPathResolver
             }
             else
             {
-                if (existingPaths.individualizedExtensionPaths?.some((pair) => pair.extensionId === extensionId))
+                const matchingExtensions = existingPaths.individualizedExtensionPaths?.filter((pair) => pair.extensionId === extensionId);
+                if(matchingExtensions && matchingExtensions.length > 0)
                 {
-                    const existingLocalPath = existingPaths.individualizedExtensionPaths.filter((pair) => pair.extensionId === extensionId);
+                    const existingLocalPath = existingPaths.individualizedExtensionPaths?.filter((pair) => pair.extensionId === extensionId);
                     if (existingLocalPath && existingLocalPath.length > 0) {
                         return { dotnetPath: existingLocalPath![0].path };
                     }
