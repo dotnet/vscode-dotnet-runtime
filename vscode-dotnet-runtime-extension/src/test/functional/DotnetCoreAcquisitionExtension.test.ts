@@ -80,7 +80,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     } as any;
 
     process.env.DOTNET_INSTALL_TOOL_UNDER_TEST = 'true';
-    extension.skipTestActivation();
+    extension.ReEnableActivationForManualActivation();
     extension.activate(extensionContext, {
       telemetryReporter: new MockTelemetryReporter(),
       extensionConfiguration: new MockExtensionConfiguration(mockExistingPathsWithGlobalConfig, true),
