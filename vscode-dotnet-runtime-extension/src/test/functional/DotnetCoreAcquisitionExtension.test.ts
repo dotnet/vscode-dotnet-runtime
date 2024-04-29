@@ -80,11 +80,11 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     } as any;
 
     extension.allowManualTestActivation();
-    extension.activate(extensionContext, {
-      telemetryReporter: new MockTelemetryReporter(),
-      extensionConfiguration: new MockExtensionConfiguration(mockExistingPathsWithGlobalConfig, true),
-      displayWorker: mockDisplayWorker,
-    });
+    //extension.activate(extensionContext, {
+    //  telemetryReporter: new MockTelemetryReporter(),
+    //  extensionConfiguration: new MockExtensionConfiguration(mockExistingPathsWithGlobalConfig, true),
+    //  displayWorker: mockDisplayWorker,
+    //});
   });
 
   this.afterEach(async () => {
