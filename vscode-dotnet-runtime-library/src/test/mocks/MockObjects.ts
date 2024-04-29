@@ -9,7 +9,7 @@ import { InstallScriptAcquisitionWorker } from '../../Acquisition/InstallScriptA
 import { VersionResolver } from '../../Acquisition/VersionResolver';
 import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
 import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStream/EventStreamEvents';
-import { IExistingPaths, IExtensionConfiguration } from '../../IExtensionContext';
+import { IExistingPaths, IExtensionConfiguration, ILocalExistingPath } from '../../IExtensionContext';
 import { FileUtilities } from '../../Utils/FileUtilities';
 import { WebRequestWorker } from '../../Utils/WebRequestWorker';
 import { CommandExecutor } from '../../Utils/CommandExecutor';
@@ -549,19 +549,29 @@ export class MockLoggingObserver implements ILoggingObserver {
 }
 
 export class MockExtensionConfiguration implements IExtensionConfiguration {
-    constructor(private readonly existingPaths: IExistingPaths, private readonly enableTelemetry: boolean) { }
+    constructor(private readonly existingPaths: ILocalExistingPath[], private readonly enableTelemetry: boolean, private readonly existingSharedPath: string) { }
 
     public update<T>(section: string, value: T): Thenable<void> {
         // Not used, stubbed to implement interface
         return new Promise((resolve) => resolve());
     }
 
-    public get<T>(name: string): T | undefined {
-        if (name === 'existingDotnetPath') {
+    public get<T>(name: string): T | undefined
+    {
+        if (name === 'existingDotnetPath')
+        {
             return this.existingPaths as unknown as T;
-        } else if (name === 'enableTelemetry') {
+        }
+        else if(name === 'sharedExistingDotnetPath')
+        {
+            return this.existingSharedPath as unknown as T;
+        }
+        else if (name === 'enableTelemetry')
+        {
             return this.enableTelemetry as unknown as T;
-        } else {
+        }
+        else
+        {
             return undefined;
         }
     }

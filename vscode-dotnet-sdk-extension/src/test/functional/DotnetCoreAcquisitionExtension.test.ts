@@ -72,7 +72,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     } as any;
     extension.activate(extensionContext, {
       telemetryReporter: new MockTelemetryReporter(),
-      extensionConfiguration: new MockExtensionConfiguration(mockExistingPaths, true),
+      extensionConfiguration: new MockExtensionConfiguration(mockExistingPaths.individualizedExtensionPaths!, true, ''),
       displayWorker: mockDisplayWorker,
     });
   });

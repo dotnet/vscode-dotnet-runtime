@@ -45,7 +45,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
 
   const mockExistingPathsWithGlobalConfig: IExistingPaths = {
     individualizedExtensionPaths: [{extensionId: 'alternative.extension', path: 'foo'}],
-    sharedExistingPath: 'bar'
+    sharedExistingPath: undefined
 }
 
   const mockReleasesData = `{
@@ -83,7 +83,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     extension.ReEnableActivationForManualActivation();
     extension.activate(extensionContext, {
       telemetryReporter: new MockTelemetryReporter(),
-      extensionConfiguration: new MockExtensionConfiguration(mockExistingPathsWithGlobalConfig, true),
+      extensionConfiguration: new MockExtensionConfiguration(mockExistingPathsWithGlobalConfig.individualizedExtensionPaths!, true, mockExistingPathsWithGlobalConfig.sharedExistingPath!),
       displayWorker: mockDisplayWorker,
     });
   });
@@ -254,15 +254,16 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     }
   }).timeout(standardTimeoutTime/2);
 
-  test('Install Local Runtime Command With Global Path Config Defined', async () => {
-    const context: IDotnetAcquireContext = { version: '0.1' };
+  test('Install Local Runtime Command Passes With Warning With No RequestingExtensionId', async () => {
+    const context: IDotnetAcquireContext = { version: '3.1' };
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
     assert.exists(result);
     assert.exists(result!.dotnetPath);
-    assert.equal(result!.dotnetPath, 'bar');
+    assert.include(result!.dotnetPath, context.version);
+    assert.include(mockDisplayWorker.warningMessage, 'Ignoring existing .NET paths');
   }).timeout(standardTimeoutTime);
 
-  test('Install Local Runtime Command With Global Path Config and Local Path Config Defined', async () => {
+  test('Install Local Runtime Command With Path Config Defined', async () => {
     const context: IDotnetAcquireContext = { version: '0.1', requestingExtensionId: 'alternative.extension' };
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
     assert.exists(result);
