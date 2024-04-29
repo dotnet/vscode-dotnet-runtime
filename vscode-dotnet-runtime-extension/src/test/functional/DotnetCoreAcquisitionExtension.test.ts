@@ -79,12 +79,13 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       logPath,
     } as any;
 
-    extension.allowManualTestActivation();
-    //extension.activate(extensionContext, {
-    //  telemetryReporter: new MockTelemetryReporter(),
-    //  extensionConfiguration: new MockExtensionConfiguration(mockExistingPathsWithGlobalConfig, true),
-    //  displayWorker: mockDisplayWorker,
-    //});
+    process.env.DOTNET_INSTALL_TOOL_UNDER_TEST = 'true';
+    extension.skipTestActivation();
+    extension.activate(extensionContext, {
+      telemetryReporter: new MockTelemetryReporter(),
+      extensionConfiguration: new MockExtensionConfiguration(mockExistingPathsWithGlobalConfig, true),
+      displayWorker: mockDisplayWorker,
+    });
   });
 
   this.afterEach(async () => {
@@ -104,11 +105,11 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   test('Install Local Runtime Command', async () => {
     const context: IDotnetAcquireContext = { version: '2.2', requestingExtensionId };
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
-    assert.exists(result);
-    assert.exists(result!.dotnetPath);
-    assert.isTrue(fs.existsSync(result!.dotnetPath));
-    assert.include(result!.dotnetPath, '.dotnet');
-    assert.include(result!.dotnetPath, context.version);
+    assert.exists(result, 'Command results a result');
+    assert.exists(result!.dotnetPath, 'The return type of the local runtime install command has a .dotnetPath property');
+    assert.isTrue(fs.existsSync(result!.dotnetPath), 'The returned path of .net does exist');
+    assert.include(result!.dotnetPath, '.dotnet', '.dotnet is in the path of the local runtime install');
+    assert.include(result!.dotnetPath, context.version, 'the path of the local runtime install includes the version of the runtime requested');
   }).timeout(standardTimeoutTime);
 
   test('Uninstall Local Runtime Command', async () => {

@@ -89,12 +89,12 @@ const configPrefix = 'dotnetAcquisitionExtension';
 const displayChannelName = '.NET Install Tool';
 const defaultTimeoutValue = 600;
 const moreInfoUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md';
-let disableActivationUnderTest = true;
+let disableActivationUnderTest = false;
 
 export function activate(context: vscode.ExtensionContext, extensionContext?: IExtensionContext)
 {
 
-    if(process.env.DOTNET_INSTALL_TOOL_UNDER_TEST === 'true' && disableActivationUnderTest)
+    if(disableActivationUnderTest)
     {
         return;
     }
@@ -437,7 +437,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         ...eventStreamObservers);
 }
 
-export function allowManualTestActivation()
+export function skipTestActivation()
 {
-    disableActivationUnderTest = false;
+    disableActivationUnderTest = true;
 }
