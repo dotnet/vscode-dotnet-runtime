@@ -16,8 +16,15 @@ Fixes a bug with uninstall management where all .net installs would be removed i
 Fixes other book keeping code regarding .NET runtime and sdk installs.
 Improves storage mechanism to allow installing other types of runtimes in the future (aspnet, etc).
 
-## [2.0.4]
+## [2.0.4] - 2024-05-03
+Adds the setting `sharedExistingDotnetPath` to use an existing install for all extensions, instead of having to set the setting for every individual extension.
 
+UX improvements for C# DevKit and the Global SDK API.\
+Bug fixes for the recommended version API when the user is offline or on an unsupported distro.
+
+Improved error logging for diagnosing issues that users report.\
+Improved error messages.\
+Updates to dependencies and a simplified dependency chain.
 
 ## [2.0.3] - 2024-03-21
 
