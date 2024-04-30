@@ -11,7 +11,7 @@ export class ExistingPathResolver
 {
     public resolveExistingPath(existingPaths: IExistingPaths | undefined, extensionId: string | undefined, windowDisplayWorker: IWindowDisplayWorker): IDotnetAcquireResult | undefined
     {
-        if (existingPaths?.individualizedExtensionPaths || existingPaths?.sharedExistingPath)
+        if (existingPaths && ((existingPaths?.individualizedExtensionPaths?.length ?? 0) > 0 || existingPaths?.sharedExistingPath))
         {
             if (!extensionId)
             {
