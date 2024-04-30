@@ -26,6 +26,8 @@ import {
     ExtensionConfigurationWorker,
     formatIssueUrl,
     IDotnetAcquireContext,
+    IAcquisitionWorkerContext,
+
     IDotnetAcquireResult,
     IDotnetEnsureDependenciesContext,
     IDotnetUninstallContext,
@@ -55,11 +57,10 @@ import {
     UserManualInstallRequested,
     UserManualInstallSuccess,
     UserManualInstallFailure,
+    DotnetInstall,
     EventCancellationError,
 } from 'vscode-dotnet-runtime-library';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
-import { IAcquisitionWorkerContext } from 'vscode-dotnet-runtime-library/dist/Acquisition/IAcquisitionWorkerContext';
-import { DotnetInstall, GetDotnetInstallInfo } from 'vscode-dotnet-runtime-library/dist/Acquisition/IInstallationRecord';
 
 // tslint:disable no-var-requires
 const packageJson = require('../package.json');

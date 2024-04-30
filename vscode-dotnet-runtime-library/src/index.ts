@@ -32,6 +32,8 @@ export * from './Utils/VSCodeEnvironment';
 export * from './Utils/IUtilityContext';
 export * from './Utils/WebRequestWorker';
 export * from './Acquisition/DotnetCoreAcquisitionWorker';
+export * from './Acquisition/IAcquisitionWorkerContext';
+export * from './Acquisition/IInstallationRecord';
 export * from './Acquisition/AcquisitionInvoker';
 export * from './Acquisition/DotnetCoreDependencyInstaller'
 export * from './Acquisition/LinuxVersionResolver';

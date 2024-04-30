@@ -102,7 +102,7 @@ export class VersionResolver implements IVersionResolver {
     }
 
     /**
-     * @param getRuntimeVersion - True for getting the full runtime version, false for the SDk version.
+     * @param getRuntimeVersion - True for getting the full runtime version, false for the SDK version.
      */
     private async getFullVersion(version: string, getRuntimeVersion: boolean): Promise<string>
     {
