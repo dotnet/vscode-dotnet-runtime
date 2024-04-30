@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning].
 ## [2.0.4] - 2024-05-03
 Adds the setting `sharedExistingDotnetPath` to use an existing install for all extensions, instead of having to set the setting for every individual extension.
 
-UX improvements for C# DevKit and the Global SDK API.
+UX improvements for C# DevKit and the Global SDK API.\
 Bug fixes for the recommended version API when the user is offline or on an unsupported distro.
 
 Improved error logging for diagnosing issues that users report.
