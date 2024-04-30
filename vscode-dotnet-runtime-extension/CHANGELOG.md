@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+## [2.0.5]
+
+Keeps track of which extensions manage which installs to allow for better cleanup of old runtimes and sdks.
+
+Fixes a bug with uninstall management where all .net installs would be removed if one install was corrupted.
+
+Fixes other book keeping code regarding .NET runtime and sdk installs.
+Improves storage mechanism to allow installing other types of runtimes in the future (aspnet, etc).
+
 ## [2.0.4]
 
 
