@@ -14,7 +14,7 @@ UX improvements for C# DevKit and the Global SDK API.
 Bug fixes for the recommended version API when the user is offline or on an unsupported distro.
 
 Improved error logging for diagnosing issues that users report.
-Improved error messages.
+Improved error messages.\
 Updates to dependencies and a simplified dependency chain.
 
 ## [2.0.3] - 2024-03-21
