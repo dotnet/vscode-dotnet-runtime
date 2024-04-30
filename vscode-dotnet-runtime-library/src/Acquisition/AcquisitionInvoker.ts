@@ -87,17 +87,16 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                         { cwd: process.cwd(), maxBuffer: 500 * 1024, timeout: 1000 * installContext.timeoutSeconds, killSignal: 'SIGKILL' },
                         async (error, stdout, stderr) =>
                 {
+                    if (stdout)
+                    {
+                            this.eventStream.post(new DotnetAcquisitionScriptOutput(installKey, TelemetryUtilities.HashAllPaths(stdout)));
+                    }
+                    if (stderr)
+                    {
+                            this.eventStream.post(new DotnetAcquisitionScriptOutput(installKey, `STDERR: ${TelemetryUtilities.HashAllPaths(stderr)}`));
+                    }
                     if (error)
                     {
-                        if (stdout)
-                        {
-                            this.eventStream.post(new DotnetAcquisitionScriptOutput(installKey, TelemetryUtilities.HashAllPaths(stdout)));
-                        }
-                        if (stderr)
-                        {
-                            this.eventStream.post(new DotnetAcquisitionScriptOutput(installKey, `STDERR: ${TelemetryUtilities.HashAllPaths(stderr)}`));
-                        }
-
                         if (!(await this.isOnline(installContext)))
                         {
                             const offlineError = new Error('No internet connection detected: Cannot install .NET');
@@ -117,7 +116,6 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                     }
                     else if (stderr && stderr.length > 0)
                     {
-                        this.eventStream.post(new DotnetAcquisitionScriptOutput(installKey, `STDERR: ${TelemetryUtilities.HashAllPaths(stderr)}`));
                         this.eventStream.post(new DotnetAcquisitionCompleted(installKey, installContext.dotnetPath, installContext.version));
                         resolve();
                     }

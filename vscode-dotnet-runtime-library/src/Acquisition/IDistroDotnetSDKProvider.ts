@@ -81,7 +81,8 @@ export abstract class IDistroDotnetSDKProvider {
         this.distroJson = JSON.parse(fs.readFileSync(distroDataFile, 'utf8'));
         if(!distroVersion || !this.distroJson || !((this.distroJson as any)[this.distroVersion.distro]))
         {
-            const error = new DotnetAcquisitionDistroUnknownError(new Error('We are unable to detect the distro or version of your machine'),
+            const error = new DotnetAcquisitionDistroUnknownError(new Error(`Automated installation for the distro ${this.distroVersion.distro} is not yet supported.
+Please install the .NET SDK manually: https://dotnet.microsoft.com/download`),
                 getInstallKeyFromContext(this.context.acquisitionContext));
             throw error.error;
         }
