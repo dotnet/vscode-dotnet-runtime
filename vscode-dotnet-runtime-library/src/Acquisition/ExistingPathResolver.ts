@@ -11,7 +11,7 @@ export class ExistingPathResolver
 {
     public resolveExistingPath(existingPaths: IExistingPaths | undefined, extensionId: string | undefined, windowDisplayWorker: IWindowDisplayWorker): IDotnetAcquireResult | undefined
     {
-        if (existingPaths)
+        if (existingPaths?.individualizedExtensionPaths || existingPaths?.sharedExistingPath)
         {
             if (!extensionId)
             {
@@ -46,7 +46,7 @@ export class ExistingPathResolver
                 else
                 {
                     windowDisplayWorker.showWarningMessage(
-                        'Ignoring existing .NET paths defined in settings.json because requesting extension does not define its extension ID. Please file a bug against the requesting extension.',
+                        `Ignoring existing .NET paths defined in settings.json because the setting is only set for other extensions, and not for ${extensionId}`,
                         () => { /* No callback */ },
                     );
                 }
