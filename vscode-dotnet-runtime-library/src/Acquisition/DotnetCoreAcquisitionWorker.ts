@@ -48,21 +48,20 @@ import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetCoreAcquisitionWorker } from './IDotnetCoreAcquisitionWorker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 import { GetDotnetInstallInfo, getArchFromLegacyInstallKey, getVersionFromLegacyInstallKey, InstallRecord, DotnetInstall, InProgressInstallManager, DotnetInstallOrStr, InstallOwner, InstallRecordOrStr, isGlobalLegacyInstallKey, isRuntimeInstallKey, installKeyStringToDotnetInstall, IsEquivalentInstallationFile } from './IInstallationRecord';
-import { install } from 'source-map-support';
+import { InstallationGraveyard } from './InstallationGraveyard';
 /* tslint:disable:no-any */
 
 export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 {
     private readonly installingVersionsKey = 'installing';
     private readonly installedVersionsKey = 'installed';
-    // The 'graveyard' includes failed uninstall paths and their install key.
-    // These will become marked for attempted 'garbage collection' at the end of every acquisition.
-    private readonly installPathsGraveyardKey = 'installPathsGraveyard';
+
     public installingArchitecture : string | null;
     private readonly dotnetExecutable: string;
     private globalResolver: GlobalInstallerResolver | null;
 
     private acquisitionPromises: InProgressInstallManager;
+    private graveyard : InstallationGraveyard;
     private extensionContext : IVSCodeExtensionContext;
 
     // @member usingNoInstallInvoker - Only use this for test when using the No Install Invoker to fake the worker into thinking a path is on disk.
@@ -70,6 +69,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
     constructor(protected readonly context: IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext, extensionContext : IVSCodeExtensionContext) {
         const dotnetExtension = os.platform() === 'win32' ? '.exe' : '';
+        this.graveyard = new InstallationGraveyard(context);
         this.dotnetExecutable = `dotnet${dotnetExtension}`;
         this.acquisitionPromises = new InProgressInstallManager();
         // null deliberately allowed to use old behavior below
@@ -244,7 +244,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      */
     private async acquireLocalCore(version: string, installRuntime: boolean, installKey : DotnetInstall, acquisitionInvoker : IAcquisitionInvoker): Promise<string>
     {
-        this.checkForPartialInstalls(installKey, version, installRuntime, !installRuntime);
+        this.checkForPartialInstalls(installKey);
 
         let installedVersions = this.getExistingInstalls(true);
         const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(installKey.installKey);
@@ -295,16 +295,27 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         return dotnetPath;
     }
 
-    private async checkForPartialInstalls(installKey : DotnetInstall, version : string, uninstallLocalRuntime : boolean, uninstallLocalSDK : boolean)
+    private async checkForPartialInstalls(installKey : DotnetInstall)
     {
         const installingVersions = this.getExistingInstalls(false);
-        const partialInstall = installingVersions.indexOf(installKey) >= 0;
-        if (partialInstall)
+        const partialInstall = installingVersions.some(x => x.dotnetInstall.installKey === installKey.installKey);
+
+        if (partialInstall && this.acquisitionPromises.getPromise(installKey) === null) // the promises get wiped out upon reload, so we can check this.
         {
             // Partial install, we never updated our extension to no longer be 'installing'. Maybe someone killed the vscode process or we failed in an unexpected way.
             this.context.eventStream.post(new DotnetAcquisitionPartialInstallation(installKey));
 
             // Delete the existing local files so we can re-install. For global installs, let the installer handle it.
+            await this.uninstallLocalRuntimeOrSDK(installKey);
+        }
+    }
+
+    public async tryCleanUpInstallGraveyard() : Promise<void>
+    {
+        for(const installKey of this.graveyard)
+        {
+            this.context.eventStream.post(new DotnetInstallGraveyardEvent(
+                `Attempting to remove .NET at ${installKey.installKey} again, as it was left in the graveyard.`));
             await this.uninstallLocalRuntimeOrSDK(installKey);
         }
     }
@@ -318,7 +329,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     {
         const installingVersion = await globalInstallerResolver.getFullySpecifiedVersion();
         this.context.eventStream.post(new DotnetGlobalVersionResolutionCompletionEvent(`The version we resolved that was requested is: ${installingVersion}.`));
-        this.checkForPartialInstalls(installKey, installingVersion, false, false);
+        this.checkForPartialInstalls(installKey);
 
         const installer : IGlobalInstaller = os.platform() === 'linux' ?
             new LinuxGlobalInstaller(this.context, this.utilityContext, installingVersion) :
@@ -388,15 +399,15 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      *
      * Note : only local installs were ever 'legacy.'
      */
-    private async removeMatchingLegacyInstall(installedVersions : string[], version : string)
+    private async removeMatchingLegacyInstall(installedVersions : InstallRecord[], version : string)
     {
         const legacyInstalls = this.existingLegacyInstalls(installedVersions);
         for(const legacyInstall of legacyInstalls)
         {
-            if(legacyInstall.includes(version))
+            if(legacyInstall.dotnetInstall.installKey.includes(version))
             {
                 this.context.eventStream.post(new DotnetLegacyInstallRemovalRequestEvent(`Trying to remove legacy install: ${legacyInstall} of ${version}.`));
-                await this.uninstallLocalRuntimeOrSDK(legacyInstall);
+                await this.uninstallLocalRuntimeOrSDK(legacyInstall.dotnetInstall);
             }
         }
     }
@@ -406,13 +417,13 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      * @param allInstalls all of the existing installs.
      * @returns All existing installs made by the extension that don't include a - for the architecture. Not all of the ones which use a string type.
      */
-    private existingLegacyInstalls(allInstalls : string[]) : string[]
+    private existingLegacyInstalls(allInstalls : InstallRecord[]) : InstallRecord[]
     {
-        let legacyInstalls : string[] = [];
+        let legacyInstalls : InstallRecord[] = [];
         for(const install of allInstalls)
         {
             // Assumption: .NET versions so far did not include ~ in them, but we do for our non-legacy keys.
-            if(!install.includes('~'))
+            if(!install.dotnetInstall.installKey.includes('~'))
             {
                 this.context.eventStream.post(new DotnetLegacyInstallDetectedEvent(`A legacy install was detected -- ${install}.`));
                 legacyInstalls = legacyInstalls.concat(install);
@@ -421,39 +432,6 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         return legacyInstalls;
     }
 
-    private async tryCleanUpInstallGraveyard() : Promise<void>
-    {
-        const graveyard = this.getGraveyard();
-        for(const installKey of Object.keys(graveyard))
-        {
-            this.context.eventStream.post(new DotnetInstallGraveyardEvent(
-                `Attempting to remove .NET at ${installKey} again, as it was left in the graveyard.`));
-            await this.uninstallLocalRuntimeOrSDK(installKey);
-        }
-    }
-
-    protected getGraveyard() : { [installKeys: string]: string }
-    {
-        return this.context.extensionState.get<{ [installKeys: string]: string }>(this.installPathsGraveyardKey, {});
-    }
-
-    /**
-     *
-     * @param newPath Leaving this empty will delete the key from the graveyard.
-     */
-    protected async updateGraveyard(installKey : DotnetInstall, newPath? : string | undefined)
-    {
-        const graveyard = this.getGraveyard();
-        if(newPath)
-        {
-            graveyard[installKey] = newPath;
-        }
-        else
-        {
-            delete graveyard[installKey];
-        }
-        await this.context.extensionState.update(this.installPathsGraveyardKey, graveyard);
-    }
 
     public async uninstallLocalRuntimeOrSDK(installKey : DotnetInstall)
     {
@@ -467,7 +445,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             this.acquisitionPromises.remove(installKey);
             const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(installKey.installKey);
 
-            this.updateGraveyard(installKey, dotnetInstallDir);
+            this.graveyard.add(installKey, dotnetInstallDir);
             this.context.eventStream.post(new DotnetInstallGraveyardEvent(`Attempting to remove .NET at ${installKey} in path ${dotnetInstallDir}`));
 
             this.removeFolderRecursively(dotnetInstallDir);
@@ -476,7 +454,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             // this is the only place where installed and installing could deal with pre existing installing key
             await this.removeVersionFromExtensionState(this.installingVersionsKey, installKey);
 
-            this.updateGraveyard(installKey);
+            this.graveyard.remove(installKey);
             this.context.eventStream.post(new DotnetInstallGraveyardEvent(`Success at uninstalling ${installKey} in path ${dotnetInstallDir}`));
         }
         catch(error : any)
