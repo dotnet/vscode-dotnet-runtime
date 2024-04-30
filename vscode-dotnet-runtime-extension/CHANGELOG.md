@@ -13,7 +13,7 @@ Adds the setting `sharedExistingDotnetPath` to use an existing install for all e
 UX improvements for C# DevKit and the Global SDK API.\
 Bug fixes for the recommended version API when the user is offline or on an unsupported distro.
 
-Improved error logging for diagnosing issues that users report.
+Improved error logging for diagnosing issues that users report.\
 Improved error messages.\
 Updates to dependencies and a simplified dependency chain.
 
