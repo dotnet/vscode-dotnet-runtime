@@ -367,7 +367,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
                 const osAgnosticVersionData = await getAvailableVersions(commandContext, customWebWorker, !onRecommendationMode);
                 const resolvedSupportPhase = osAgnosticVersionData?.find((version : IDotnetVersion) =>
                     customVersionResolver.getMajorMinor(version.version) === customVersionResolver.getMajorMinor(suggestedVersion))?.supportPhase ?? 'active';
-                    // Assumption : The newest version is 'active' support, but we can't gaurantee that.
+                    // Assumption : The newest version is 'active' support, but we can't guarantee that.
                     // If the linux version is too old it will eventually support no active versions of .NET, which would cause a failure.
                     // The best we can give it is the newest working version, which is the most likely to be supported, and mark it as active so we can use it.
 
