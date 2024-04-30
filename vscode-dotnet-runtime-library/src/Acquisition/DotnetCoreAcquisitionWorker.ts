@@ -258,7 +258,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         if (installedVersions.some(x => x.dotnetInstall.installKey == installKey.installKey) && (fs.existsSync(dotnetPath) || this.usingNoInstallInvoker)) {
             // Version requested has already been installed.
             // We don't do this check with global acquisition, since external sources can more easily tamper with installs.
-            this.context.installationValidator.validateDotnetInstall(installKey.installKey, dotnetPath);
+            this.context.installationValidator.validateDotnetInstall(installKey, dotnetPath);
 
             this.context.eventStream.post(new DotnetAcquisitionAlreadyInstalled(installKey,
                 (this.context.acquisitionContext && this.context.acquisitionContext.requestingExtensionId)
@@ -283,7 +283,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         await acquisitionInvoker.installDotnet(installContext, installKey).catch((reason) => {
             throw Error(`Installation failed: ${reason}`);
         });
-        this.context.installationValidator.validateDotnetInstall(installKey.installKey, dotnetPath);
+        this.context.installationValidator.validateDotnetInstall(installKey, dotnetPath);
 
         await this.removeMatchingLegacyInstall(installedVersions, version);
         await this.tryCleanUpInstallGraveyard();
@@ -325,19 +325,19 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         return os.arch();
     }
 
-    private async acquireGlobalCore(globalInstallerResolver : GlobalInstallerResolver, installKey : DotnetInstall): Promise<string>
+    private async acquireGlobalCore(globalInstallerResolver : GlobalInstallerResolver, install : DotnetInstall): Promise<string>
     {
         const installingVersion = await globalInstallerResolver.getFullySpecifiedVersion();
         this.context.eventStream.post(new DotnetGlobalVersionResolutionCompletionEvent(`The version we resolved that was requested is: ${installingVersion}.`));
-        this.checkForPartialInstalls(installKey);
+        this.checkForPartialInstalls(install);
 
         const installer : IGlobalInstaller = os.platform() === 'linux' ?
             new LinuxGlobalInstaller(this.context, this.utilityContext, installingVersion) :
             new WinMacGlobalInstaller(this.context, this.utilityContext, installingVersion, await globalInstallerResolver.getInstallerUrl(), await globalInstallerResolver.getInstallerHash());
 
         // Indicate that we're beginning to do the install.
-        await this.addVersionToExtensionState(this.installingVersionsKey, installKey);
-        this.context.eventStream.post(new DotnetAcquisitionStarted(installKey, installingVersion, this.context.acquisitionContext?.requestingExtensionId));
+        await this.addVersionToExtensionState(this.installingVersionsKey, install);
+        this.context.eventStream.post(new DotnetAcquisitionStarted(install, installingVersion, this.context.acquisitionContext?.requestingExtensionId));
 
         // See if we should return a fake path instead of running the install
         if(process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH && process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH === 'true')
@@ -346,13 +346,13 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             return 'fake-sdk';
         }
 
-        this.context.eventStream.post(new DotnetBeginGlobalInstallerExecution(`Beginning to run installer for ${installKey} in ${os.platform()}.`))
-        const installerResult = await installer.installSDK();
-        this.context.eventStream.post(new DotnetCompletedGlobalInstallerExecution(`Completed installer for ${installKey} in ${os.platform()}.`))
+        this.context.eventStream.post(new DotnetBeginGlobalInstallerExecution(`Beginning to run installer for ${install} in ${os.platform()}.`))
+        const installerResult = await installer.installSDK(install);
+        this.context.eventStream.post(new DotnetCompletedGlobalInstallerExecution(`Completed installer for ${install} in ${os.platform()}.`))
 
         if(installerResult !== '0')
         {
-            const err = new DotnetNonZeroInstallerExitCodeError(new Error(`An error was raised by the .NET SDK installer. The exit code it gave us: ${installerResult}`), installKey);
+            const err = new DotnetNonZeroInstallerExitCodeError(new Error(`An error was raised by the .NET SDK installer. The exit code it gave us: ${installerResult}`), install);
             this.context.eventStream.post(err);
             throw err;
         }
@@ -361,16 +361,16 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         TelemetryUtilities.setDotnetSDKTelemetryToMatch(this.context.isExtensionTelemetryInitiallyEnabled, this.extensionContext, this.context, this.utilityContext);
 
-        this.context.installationValidator.validateDotnetInstall(installingVersion, installedSDKPath, os.platform() !== 'win32');
+        this.context.installationValidator.validateDotnetInstall(install, installedSDKPath, os.platform() !== 'win32');
 
-        this.context.eventStream.post(new DotnetAcquisitionCompleted(installKey, installedSDKPath, installingVersion));
+        this.context.eventStream.post(new DotnetAcquisitionCompleted(install, installedSDKPath, installingVersion));
 
         // Remove the indication that we're installing and replace it notifying of the real installation completion.
-        await this.removeVersionFromExtensionState(this.installingVersionsKey, installKey);
-        await this.addVersionToExtensionState(this.installedVersionsKey, installKey);
+        await this.removeVersionFromExtensionState(this.installingVersionsKey, install);
+        await this.addVersionToExtensionState(this.installedVersionsKey, install);
 
-        this.context.eventStream.post(new DotnetGlobalAcquisitionCompletionEvent(`The version ${installKey} completed successfully.`));
-        this.acquisitionPromises.remove(installKey);
+        this.context.eventStream.post(new DotnetGlobalAcquisitionCompletionEvent(`The version ${install} completed successfully.`));
+        this.acquisitionPromises.remove(install);
         return installedSDKPath;
     }
 

@@ -43,7 +43,7 @@ export class OutputChannelObserver implements IEventStreamObserver {
             case EventType.DotnetAcquisitionStart:
                 const acquisitionStarted = event as DotnetAcquisitionStarted;
 
-                this.inProgressDownloads.push(acquisitionStarted.installKey);
+                this.inProgressDownloads.push(acquisitionStarted.installKey.installKey);
 
                 if (this.inProgressDownloads.length > 1) {
                     // Already a download in progress
@@ -62,7 +62,7 @@ export class OutputChannelObserver implements IEventStreamObserver {
                 this.outputChannel.appendLine(`.NET ${acquisitionCompleted.installKey} executable path: ${acquisitionCompleted.dotnetPath}`);
                 this.outputChannel.appendLine('');
 
-                this.inProgressVersionDone(acquisitionCompleted.installKey);
+                this.inProgressVersionDone(acquisitionCompleted.installKey.installKey);
 
                 if (this.inProgressDownloads.length > 0) {
                     const completedVersionString = `'${this.inProgressDownloads.join('\', \'')}'`;
@@ -103,14 +103,14 @@ export class OutputChannelObserver implements IEventStreamObserver {
                 this.outputChannel.appendLine(error.error.message);
                 this.outputChannel.appendLine('');
 
-                this.updateDownloadIndicators(error.installKey);
+                this.updateDownloadIndicators(error.installKey?.installKey);
                 break;
             case EventType.DotnetInstallExpectedAbort:
                 const abortEvent = event as DotnetInstallExpectedAbort;
                 this.outputChannel.appendLine(`Cancelled Installation of .NET ${abortEvent.installKey}.`);
                 this.outputChannel.appendLine(abortEvent.error.message);
 
-                this.updateDownloadIndicators(abortEvent.installKey);
+                this.updateDownloadIndicators(abortEvent.installKey?.installKey);
                 break;
             case EventType.DotnetUpgradedEvent:
                 const upgradeMessage = event as DotnetUpgradedEvent;

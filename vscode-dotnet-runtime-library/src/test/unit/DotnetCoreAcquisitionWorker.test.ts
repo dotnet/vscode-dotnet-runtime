@@ -29,7 +29,7 @@ import {
 } from '../mocks/MockObjects';
 import { getMockAcquisitionContext, getMockAcquisitionWorker } from './TestUtility';
 import { IAcquisitionInvoker } from '../../Acquisition/IAcquisitionInvoker';
-import { escape } from 'querystring';
+
 const assert = chai.assert;
 chai.use(chaiAsPromised);
 const expectedTimeoutTime = 6000;
@@ -83,10 +83,10 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         //  No errors in event stream
         assert.notExists(eventStream.events.find(event => event.type === EventType.DotnetAcquisitionError));
         const startEvent = eventStream.events
-            .find(event => event instanceof DotnetAcquisitionStarted && (event as DotnetAcquisitionStarted).installKey === installKey);
+            .find(event => event instanceof DotnetAcquisitionStarted && (event as DotnetAcquisitionStarted).installKey.installKey === installKey);
         assert.exists(startEvent, 'The acquisition started event appears');
         const completedEvent = eventStream.events
-            .find(event => event instanceof DotnetAcquisitionCompleted && (event as DotnetAcquisitionCompleted).installKey === installKey
+            .find(event => event instanceof DotnetAcquisitionCompleted && (event as DotnetAcquisitionCompleted).installKey.installKey === installKey
                 && (event as DotnetAcquisitionCompleted).dotnetPath === expectedPath);
         assert.exists(completedEvent, 'The acquisition completed event appears');
 

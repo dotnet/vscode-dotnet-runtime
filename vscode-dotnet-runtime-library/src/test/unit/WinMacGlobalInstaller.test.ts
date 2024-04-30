@@ -11,8 +11,10 @@ import { MockCommandExecutor, MockFileUtilities } from '../mocks/MockObjects';
 import { WinMacGlobalInstaller } from '../../Acquisition/WinMacGlobalInstaller';
 import { FileUtilities } from '../../Utils/FileUtilities';
 import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
+import { GetDotnetInstallInfo } from '../../Acquisition/IInstallationRecord';
 const assert = chai.assert;
 const standardTimeoutTime = 100000;
+
 
 suite('Windows & Mac Global Installer Tests', () =>
 {
@@ -100,7 +102,8 @@ suite('Windows & Mac Global Installer Tests', () =>
            ${mockVersion}    REG_DWORD    0x1
        `;
 
-           const result = await installer.installSDK();
+           const install = GetDotnetInstallInfo(mockVersion, false, true, os.arch());
+           const result = await installer.installSDK(install);
            assert.exists(result);
            assert.equal(result, '0');
 
@@ -113,7 +116,8 @@ suite('Windows & Mac Global Installer Tests', () =>
     {
         mockExecutor.fakeReturnValue = `0`;
         installer.cleanupInstallFiles = false;
-        const result = await installer.installSDK();
+        const install = GetDotnetInstallInfo(mockVersion, false, true, os.arch());
+        const result = await installer.installSDK(install);
         assert.exists(result);
         assert.equal(result, '0');
 
@@ -133,7 +137,7 @@ suite('Windows & Mac Global Installer Tests', () =>
 
         // Rerun install to clean it up.
         installer.cleanupInstallFiles = true;
-        await installer.installSDK();
+        await installer.installSDK(install);
         mockExecutor.fakeReturnValue = ``;
     }).timeout(150000);
 
@@ -141,7 +145,8 @@ suite('Windows & Mac Global Installer Tests', () =>
     {
         mockExecutor.fakeReturnValue = `0`;
         installer.cleanupInstallFiles = false;
-        const result = await installer.installSDK();
+        const install = GetDotnetInstallInfo(mockVersion, false, true, os.arch());
+        const result = await installer.installSDK(install);
         assert.exists(result, 'The installation on test was successful');
         assert.equal(result, '0', 'No errors were reported by the fake install');
 
@@ -153,7 +158,7 @@ suite('Windows & Mac Global Installer Tests', () =>
 
 
         installer.cleanupInstallFiles = true;
-        await installer.installSDK();
+        await installer.installSDK(install);
         // The installer files should be removed. Note this doesn't really check the default as we changed it manually
 
         if(new FileUtilities().isElevated())

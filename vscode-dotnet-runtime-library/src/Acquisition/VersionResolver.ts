@@ -25,6 +25,7 @@ import { DotnetVersionSupportPhase,
     IDotnetVersion
 } from '../IDotnetListVersionsContext';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { getVersionFromLegacyInstallKey, installKeyStringToDotnetInstall } from './IInstallationRecord';
 /* tslint:disable:no-any */
 
 export class VersionResolver implements IVersionResolver {
@@ -126,7 +127,7 @@ export class VersionResolver implements IVersionResolver {
             }
             catch (error)
             {
-                this.context.eventStream.post(new DotnetVersionResolutionError(error as EventCancellationError, version));
+                this.context.eventStream.post(new DotnetVersionResolutionError(error as EventCancellationError, installKeyStringToDotnetInstall(version)));
                 reject(error);
             }
         });
@@ -145,7 +146,7 @@ export class VersionResolver implements IVersionResolver {
         }
         if (!matchingVersion || matchingVersion.length < 1)
         {
-            const err = new DotnetVersionResolutionError(new EventCancellationError(`The requested and or resolved version is invalid.`), version);
+            const err = new DotnetVersionResolutionError(new EventCancellationError(`The requested and or resolved version is invalid.`), installKeyStringToDotnetInstall(version));
             this.context.eventStream.post(err);
             throw err.error;
         }
@@ -169,7 +170,7 @@ export class VersionResolver implements IVersionResolver {
         if (!parsedVer || (version.split('.').length !== 2 && version.split('.').length !== 3))
         {
             Debugging.log(`Resolving the version: ${version} ... it is invalid!`, this.context.eventStream);
-            const err = new DotnetVersionResolutionError(new EventCancellationError(`An invalid version was requested. Version: ${version}`), version);
+            const err = new DotnetVersionResolutionError(new EventCancellationError(`An invalid version was requested. Version: ${version}`), installKeyStringToDotnetInstall(version));
             this.context.eventStream.post(err);
             throw err.error;
         }

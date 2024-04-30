@@ -7,6 +7,7 @@
 import path = require('path');
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
+import { DotnetInstall } from './IInstallationRecord';
 
 export abstract class IGlobalInstaller {
 
@@ -18,7 +19,7 @@ export abstract class IGlobalInstaller {
         this.utilityContext = utilContext;
     }
 
-    public abstract installSDK() : Promise<string>
+    public abstract installSDK(install : DotnetInstall) : Promise<string>
 
     public abstract getExpectedGlobalSDKPath(specificSDKVersionInstalled : string, installedArch : string) : Promise<string>
 

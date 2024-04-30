@@ -529,7 +529,7 @@ export class MockTelemetryReporter implements ITelemetryReporter {
 }
 
 export class MockInstallationValidator extends IInstallationValidator {
-    public validateDotnetInstall(version: string, dotnetPath: string): void {
+    public validateDotnetInstall(version: DotnetVersion, dotnetPath: string): void {
         // Always validate
     }
 }
@@ -553,7 +553,7 @@ export class MockExtensionConfiguration implements IExtensionConfiguration {
 
     public update<T>(section: string, value: T): Thenable<void> {
         // Not used, stubbed to implement interface
-        return new Promise((resolve) => resolve());
+        return new Promise<void>((resolve) => resolve());
     }
 
     public get<T>(name: string): T | undefined {

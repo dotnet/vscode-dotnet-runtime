@@ -29,6 +29,7 @@ import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IFileUtilities } from '../Utils/IFileUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { DotnetInstall } from './IInstallationRecord';
 /* tslint:disable:only-arrow-functions */
 /* tslint:disable:no-empty */
 /* tslint:disable:no-any */
@@ -70,7 +71,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         this.webWorker = new WebRequestWorker(context, installerUrl);
     }
 
-    public async installSDK(): Promise<string>
+    public async installSDK(install : DotnetInstall): Promise<string>
     {
         // Check for conflicting windows installs
         if(os.platform() === 'win32')
@@ -81,7 +82,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
                 if(conflictingVersion === this.installingVersion)
                 {
                     // The install already exists, we can just exit with Ok.
-                    this.acquisitionContext.eventStream.post(new DotnetAcquisitionAlreadyInstalled(getInstallKeyFromContext(this.acquisitionContext.acquisitionContext) ?? '',
+                    this.acquisitionContext.eventStream.post(new DotnetAcquisitionAlreadyInstalled(install,
                         (this.acquisitionContext.acquisitionContext && this.acquisitionContext.acquisitionContext.requestingExtensionId)
                         ? this.acquisitionContext.acquisitionContext.requestingExtensionId : null));
                     return '0';
