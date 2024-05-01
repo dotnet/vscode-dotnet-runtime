@@ -57,7 +57,8 @@ import {
     installKeyStringToDotnetInstall,
     IsEquivalentInstallationFile,
     InstallToStrings,
-    IsEquivalentInstallation
+    IsEquivalentInstallation,
+    getVersionFromLegacyInstallKey
 } from './IInstallationRecord';
 import { InstallationGraveyard } from './InstallationGraveyard';
 /* tslint:disable:no-any */
@@ -152,12 +153,6 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(installKey.installKey);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
         let installedVersions = this.getExistingInstalls(true);
-
-        if (installedVersions.length === 0 && fs.existsSync(dotnetPath) && !installRuntime)
-        {
-            // The education bundle already laid down a local install, add it to our managed installs
-            installedVersions = await this.checkForUnrecordedLocalSDKSuccessfulInstall(dotnetInstallDir, installedVersions);
-        }
 
         if (installedVersions.some(x => IsEquivalentInstallationFile(x.dotnetInstall, installKey)) && (fs.existsSync(dotnetPath) || this.usingNoInstallInvoker ))
         {
@@ -588,7 +583,6 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         }
     }
 
-    // todo: this is called in the global code. Do we actually want that?
     private async checkForUnrecordedLocalSDKSuccessfulInstall(dotnetInstallDir: string, installedInstallKeys: InstallRecord[]): Promise<InstallRecord[]>
     {
         let localSDKDirectoryKeyIter = '';
@@ -601,7 +595,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             for (const installKey of installKeys)
             {
                 localSDKDirectoryKeyIter = installKey;
-                const installRecord = GetDotnetInstallInfo(installKey, false, false, DotnetCoreAcquisitionWorker.defaultArchitecture());
+                const installRecord = GetDotnetInstallInfo(getVersionFromLegacyInstallKey(installKey), false, false, DotnetCoreAcquisitionWorker.defaultArchitecture());
                 this.context.eventStream.post(new DotnetPreinstallDetected(installRecord));
                 await this.addVersionToExtensionState(this.installedVersionsKey, installRecord);
                 installedInstallKeys.push({ dotnetInstall: installRecord, installingExtensions: [ null ] } as InstallRecord);
