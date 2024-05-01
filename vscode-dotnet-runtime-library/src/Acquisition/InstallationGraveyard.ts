@@ -1,6 +1,9 @@
-import { DotnetInstallGraveyardEvent } from "../EventStream/EventStreamEvents";
-import { IAcquisitionWorkerContext } from "./IAcquisitionWorkerContext";
-import { DotnetInstall, GetDotnetInstallInfo, installKeyStringToDotnetInstall, IsEquivalentInstallationFile } from "./IInstallationRecord";
+/*---------------------------------------------------------------------------------------------
+*  Licensed to the .NET Foundation under one or more agreements.
+*  The .NET Foundation licenses this file to you under the MIT license.
+*--------------------------------------------------------------------------------------------*/
+import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { DotnetInstall, installKeyStringToDotnetInstall, IsEquivalentInstallationFile } from './IInstallationRecord';
 
 interface LocalDotnetInstall
 {

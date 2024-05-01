@@ -47,7 +47,15 @@ import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetCoreAcquisitionWorker } from './IDotnetCoreAcquisitionWorker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
-import { GetDotnetInstallInfo, getArchFromLegacyInstallKey, getVersionFromLegacyInstallKey, InstallRecord, DotnetInstall, InProgressInstallManager, DotnetInstallOrStr, InstallOwner, InstallRecordOrStr, isGlobalLegacyInstallKey, isRuntimeInstallKey, installKeyStringToDotnetInstall, IsEquivalentInstallationFile } from './IInstallationRecord';
+import {
+    GetDotnetInstallInfo,
+    InstallRecord,
+    DotnetInstall,
+    InProgressInstallManager,
+    InstallRecordOrStr,
+    installKeyStringToDotnetInstall,
+    IsEquivalentInstallationFile
+} from './IInstallationRecord';
 import { InstallationGraveyard } from './InstallationGraveyard';
 /* tslint:disable:no-any */
 
@@ -255,7 +263,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             installedVersions = await this.checkForUnrecordedLocalSDKSuccessfulInstall(dotnetInstallDir, installedVersions);
         }
 
-        if (installedVersions.some(x => x.dotnetInstall.installKey == installKey.installKey) && (fs.existsSync(dotnetPath) || this.usingNoInstallInvoker)) {
+        if (installedVersions.some(x => x.dotnetInstall.installKey === installKey.installKey) && (fs.existsSync(dotnetPath) || this.usingNoInstallInvoker)) {
             // Version requested has already been installed.
             // We don't do this check with global acquisition, since external sources can more easily tamper with installs.
             this.context.installationValidator.validateDotnetInstall(installKey, dotnetPath);

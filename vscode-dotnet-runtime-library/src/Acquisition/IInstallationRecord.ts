@@ -4,7 +4,7 @@
 *--------------------------------------------------------------------------------------------*/
 
 import * as os from 'os';
-import { DotnetCoreAcquisitionWorker } from "./DotnetCoreAcquisitionWorker";
+import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 
 /**
  * @remarks
@@ -86,25 +86,25 @@ export function isGlobalLegacyInstallKey(installKey : string) : boolean
     return installKey.toLowerCase().includes('global');
 }
 
-export function GetDotnetInstallInfo(version: string, installRuntime: boolean, isGlobal : boolean, architecture : string) : DotnetInstall
+export function GetDotnetInstallInfo(installVersion: string, installRuntime: boolean, isGlobalInstall : boolean, installArchitecture : string) : DotnetInstall
 {
     return {
-        installKey : DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, architecture),
-        version : version,
-        architecture : architecture,
-        isGlobal : isGlobal,
+        installKey : DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(installVersion, installArchitecture),
+        version : installVersion,
+        architecture : installArchitecture,
+        isGlobal : isGlobalInstall,
         isRuntime : installRuntime,
     } as DotnetInstall;
 }
 
-export function installKeyStringToDotnetInstall(installKey : string) : DotnetInstall
+export function installKeyStringToDotnetInstall(key : string) : DotnetInstall
 {
     return {
-        installKey: installKey,
-        version: getVersionFromLegacyInstallKey(installKey),
-        architecture: getArchFromLegacyInstallKey(installKey) ?? os.arch(),
-        isGlobal: isGlobalLegacyInstallKey(installKey),
-        isRuntime: isRuntimeInstallKey(installKey)
+        installKey: key,
+        version: getVersionFromLegacyInstallKey(key),
+        architecture: getArchFromLegacyInstallKey(key) ?? os.arch(),
+        isGlobal: isGlobalLegacyInstallKey(key),
+        isRuntime: isRuntimeInstallKey(key)
     }
 }
 /**

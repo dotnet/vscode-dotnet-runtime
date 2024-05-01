@@ -181,7 +181,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         }, runtimeIssueContextFunctor(commandContext.errorConfiguration, 'acquire', commandContext.version), commandContext.requestingExtensionId, runtimeContext);
 
         const iKey = runtimeAcquisitionWorker.getInstallKey(fullyResolvedVersion);
-        const install = {installKey : iKey, version : fullyResolvedVersion, isRuntime: true, isGlobal: false, architecture: commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture()} as DotnetInstall;
+        const install = {installKey : iKey, version : fullyResolvedVersion, isRuntime: true, isGlobal: false,
+            architecture: commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture()} as DotnetInstall;
         globalEventStream.post(new DotnetRuntimeAcquisitionTotalSuccessEvent(commandContext.version, install, commandContext.requestingExtensionId ?? '', dotnetPath?.dotnetPath ?? ''));
         return dotnetPath;
     });
