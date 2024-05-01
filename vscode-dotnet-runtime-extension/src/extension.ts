@@ -27,7 +27,7 @@ import {
     formatIssueUrl,
     IDotnetAcquireContext,
     IAcquisitionWorkerContext,
-
+    NoExtensionIdProvided,
     IDotnetAcquireResult,
     IDotnetEnsureDependenciesContext,
     IDotnetUninstallContext,
@@ -157,6 +157,13 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
             runtimeAcquisitionWorker.setAcquisitionContext(commandContext);
             telemetryObserver?.setAcquisitionContext(runtimeContext, commandContext);
+
+            if(!commandContext.requestingExtensionId)
+            {
+                globalEventStream.post(new NoExtensionIdProvided(`No requesting extension id was provided for the request ${commandContext.version}.`));
+                vscode.window.showWarningMessage(`One of your extensions is attempting to install .NET without providing an extension id.
+                This install cannot be properly maintained. Please report this to the extension author.`)
+            }
 
             if (!commandContext.version || commandContext.version === 'latest') {
                 throw new Error(`Cannot acquire .NET version "${commandContext.version}". Please provide a valid version.`);

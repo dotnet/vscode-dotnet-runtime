@@ -30,7 +30,8 @@ import {
     DotnetBeginGlobalInstallerExecution,
     DotnetCompletedGlobalInstallerExecution,
     DotnetFakeSDKEnvironmentVariableTriggered,
-    SuppressedAcquisitionError
+    SuppressedAcquisitionError,
+    DuplicateInstallDetected
 } from '../EventStream/EventStreamEvents';
 
 import { GlobalInstallerResolver } from './GlobalInstallerResolver';
@@ -54,7 +55,9 @@ import {
     InProgressInstallManager,
     InstallRecordOrStr,
     installKeyStringToDotnetInstall,
-    IsEquivalentInstallationFile
+    IsEquivalentInstallationFile,
+    InstallToStrings,
+    IsEquivalentInstallation
 } from './IInstallationRecord';
 import { InstallationGraveyard } from './InstallationGraveyard';
 /* tslint:disable:no-any */
@@ -93,7 +96,6 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         this.removeFolderRecursively(this.context.installDirectoryProvider.getStoragePath());
 
         // This does not uninstall global things yet, so don't remove their keys.
-        // todo wrapper around this to auto update existing keys to new type
         const installingVersions = this.getExistingInstalls(false);
         const remainingInstallingVersions = installingVersions.filter(x => x.dotnetInstall.isGlobal);
         await this.context.extensionState.update(this.installingVersionsKey, remainingInstallingVersions);
@@ -504,43 +506,45 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
     private async removeVersionFromExtensionState(key: string, installKey: DotnetInstall) {
         const existingInstalls = this.getExistingInstalls(key === this.installedVersionsKey);
-        const installRecord = existingInstalls.filter(x => x.dotnetInstall === (installKey));
+        const installRecord = existingInstalls.filter(x => IsEquivalentInstallation(x.dotnetInstall, installKey));
 
         if(installRecord)
         {
             if(installRecord.length > 1)
             {
-                // todo: event stream report that this happened it is very weird
+                this.context.eventStream.post(new DuplicateInstallDetected(`The install
+                    ${(installKey)} has a duplicated record ${installRecord.length} times in the extension state.
+                    ${installRecord.map(x => x.installingExtensions.join(' ') + InstallToStrings(x.dotnetInstall)).join(' ') + '\n'}`));
             }
 
             const preExistingRecord = installRecord.at(0);
             const owners = preExistingRecord?.installingExtensions.filter(x => x !== this.context.acquisitionContext?.requestingExtensionId);
-            if(!owners)
+            if((owners?.length ?? 0) < 1)
             {
                 // There are no more references/extensions that depend on this install, so remove the install from the list entirely.
                 // For installing versions, there should only ever be 1 owner.
                 // For installed versions, there can be N owners.
-                await this.context.extensionState.update(key, existingInstalls.filter(x => x.dotnetInstall !== (installKey)));
+                await this.context.extensionState.update(key, existingInstalls.filter(x => IsEquivalentInstallation(x.dotnetInstall, installKey)));
             }
             else
             {
                 // There are still other extensions that depend on this install, so merely remove this requesting extension from the list of owners.
-                await this.context.extensionState.update(key, existingInstalls.map(x => x.dotnetInstall === (installKey) ?
+                await this.context.extensionState.update(key, existingInstalls.map(x => IsEquivalentInstallation(x.dotnetInstall, installKey) ?
                     { dotnetInstall: installKey, installingExtensions: owners } as InstallRecord : x));
             }
         }
     }
 
-    private async addVersionToExtensionState(key: string, installKey: DotnetInstall) {
+    private async addVersionToExtensionState(key: string, install: DotnetInstall) {
         const existingVersions = this.getExistingInstalls(key === this.installedVersionsKey);
-        const sameInstallManagedByOtherExtensions = existingVersions.find(x => x.dotnetInstall === installKey);
+        const sameInstallManagedByOtherExtensions = existingVersions.find(x => IsEquivalentInstallation(x.dotnetInstall, install));
 
         const installOwners = sameInstallManagedByOtherExtensions ? sameInstallManagedByOtherExtensions.installingExtensions.concat(
             this.context.acquisitionContext?.requestingExtensionId ?? null) : [ this.context.acquisitionContext?.requestingExtensionId ?? null ];
 
         existingVersions.push(
             {
-                dotnetInstall: installKey,
+                dotnetInstall: install,
                 installingExtensions: installOwners
             } as InstallRecord
         );

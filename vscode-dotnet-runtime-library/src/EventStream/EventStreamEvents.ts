@@ -495,6 +495,15 @@ export class DotnetVersionCategorizedEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetVersionCategorizedEvent';
 }
 
+export class DuplicateInstallDetected extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DuplicateInstallDetected';
+}
+
+export class NoExtensionIdProvided extends DotnetCustomMessageEvent {
+    public readonly eventName = 'NoExtensionIdProvided';
+}
+
+
 export class DotnetWSLCheckEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetWSLCheckEvent';
 }
@@ -770,6 +779,7 @@ export class DotnetAcquisitionAlreadyInstalled extends IEvent {
 export class DotnetAcquisitionMissingLinuxDependencies extends DotnetAcquisitionMessage {
     public readonly eventName = 'DotnetAcquisitionMissingLinuxDependencies';
 }
+
 
 export class DotnetAcquisitionScriptOutput extends DotnetAcquisitionMessage {
     public readonly eventName = 'DotnetAcquisitionScriptOutput';

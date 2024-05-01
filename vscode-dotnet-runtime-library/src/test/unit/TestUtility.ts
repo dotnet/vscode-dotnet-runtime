@@ -60,7 +60,8 @@ export function getMockAcquireContext(nextAcquiringVersion : string, legacy = fa
     const acquireContext : IDotnetAcquireContext =
     {
         version: nextAcquiringVersion,
-        architecture: legacy ? null : os.arch()
+        architecture: legacy ? null : os.arch(),
+        requestingExtensionId: 'test'
     };
     return acquireContext;
 }
