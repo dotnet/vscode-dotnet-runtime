@@ -29,7 +29,7 @@ import {
 } from '../mocks/MockObjects';
 import { getMockAcquisitionContext, getMockAcquisitionWorker } from './TestUtility';
 import { IAcquisitionInvoker } from '../../Acquisition/IAcquisitionInvoker';
-import { GetDotnetInstallInfo } from '../../Acquisition/IInstallationRecord';
+import { DotnetInstall, DotnetInstallOrStr, GetDotnetInstallInfo, InstallRecord } from '../../Acquisition/IInstallationRecord';
 
 const assert = chai.assert;
 chai.use(chaiAsPromised);
@@ -79,7 +79,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         // Should be finished installing
         assert.isEmpty(context.get<string[]>(installingVersionsKey, []), 'There are no versions marked as still installing');
         assert.isNotEmpty(context.get<string[]>(installedVersionsKey, []), 'There is a version marked as installed');
-        assert.include(context.get<string[]>(installedVersionsKey, []), installKey, 'The version marked as installed is the expected version');
+        assert.include(context.get<InstallRecord[]>(installedVersionsKey, []).map(x => x.dotnetInstall.installKey), installKey, 'The version marked as installed is the expected version');
 
         //  No errors in event stream
         assert.notExists(eventStream.events.find(event => event.type === EventType.DotnetAcquisitionError));
