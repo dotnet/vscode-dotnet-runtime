@@ -61,7 +61,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     private globalResolver: GlobalInstallerResolver | null;
 
     private acquisitionPromises: InProgressInstallManager;
-    private graveyard : InstallationGraveyard;
+    protected graveyard : InstallationGraveyard;
     private extensionContext : IVSCodeExtensionContext;
 
     // @member usingNoInstallInvoker - Only use this for test when using the No Install Invoker to fake the worker into thinking a path is on disk.

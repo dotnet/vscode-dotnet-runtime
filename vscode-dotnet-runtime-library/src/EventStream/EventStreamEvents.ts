@@ -29,6 +29,7 @@ export class DotnetAcquisitionStarted extends IEvent {
         return {
                 ...InstallToStrings(this.installKey),
                 AcquisitionStartVersion : this.startingVersion,
+                AcquisitionInstallKey : this.installKey.installKey,
                 extensionId : this.requestingExtensionId
             };
     }

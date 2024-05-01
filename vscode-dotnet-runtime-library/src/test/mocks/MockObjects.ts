@@ -37,6 +37,7 @@ import { IUtilityContext } from '../../Utils/IUtilityContext';
 import { IVSCodeEnvironment } from '../../Utils/IVSCodeEnvironment';
 import { IDotnetAcquireResult } from '../../IDotnetAcquireResult';
 import { IDotnetCoreAcquisitionWorker } from '../../Acquisition/IDotnetCoreAcquisitionWorker';
+import { DotnetInstall, GetDotnetInstallInfo } from '../../Acquisition/IInstallationRecord';
 
 const testDefaultTimeoutTimeMs = 60000;
 /* tslint:disable:no-any */
@@ -75,9 +76,9 @@ export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker {
     public installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             this.eventStream.post(new TestAcquireCalled(installContext));
+            const install = GetDotnetInstallInfo(installContext.version, installContext.installRuntime, false, installContext.architecture)
             this.eventStream.post(new DotnetAcquisitionCompleted(
-                DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(installContext.version, installContext.architecture),
-                installContext.dotnetPath, installContext.version));
+                install, installContext.dotnetPath, installContext.version));
             resolve();
 
         });
@@ -93,9 +94,9 @@ export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker {
 
 export class MockDotnetCoreAcquisitionWorker extends DotnetCoreAcquisitionWorker
 {
-    public AddToGraveyard(installKey : string, installPath : string)
+    public AddToGraveyard(install : DotnetInstall, installPath : string)
     {
-        this.updateGraveyard(installKey, installPath);
+        this.graveyard.add(install, installPath);
     }
 
     public acquireSDK(version: string, invoker: IAcquisitionInvoker): Promise<IDotnetAcquireResult>
@@ -529,7 +530,7 @@ export class MockTelemetryReporter implements ITelemetryReporter {
 }
 
 export class MockInstallationValidator extends IInstallationValidator {
-    public validateDotnetInstall(version: DotnetVersion, dotnetPath: string): void {
+    public validateDotnetInstall(version: DotnetInstall, dotnetPath: string): void {
         // Always validate
     }
 }

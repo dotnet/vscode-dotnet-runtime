@@ -109,12 +109,12 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
       .filter(event => event instanceof DotnetPreinstallDetected)
       .map(event => event as DotnetPreinstallDetected);
     assert.equal(preinstallEvents.length, 2);
-    assert.exists(preinstallEvents.find(event => event.installKey === sdkCurrentInstallKey));
-    assert.exists(preinstallEvents.find(event => event.installKey === sdkEarlierInstallKey));
+    assert.exists(preinstallEvents.find(event => event.installKey.installKey === sdkCurrentInstallKey));
+    assert.exists(preinstallEvents.find(event => event.installKey.installKey === sdkEarlierInstallKey));
     const alreadyInstalledEvent = eventStream.events
       .find(event => event instanceof DotnetAcquisitionAlreadyInstalled) as DotnetAcquisitionAlreadyInstalled;
     assert.exists(alreadyInstalledEvent);
-    assert.equal(alreadyInstalledEvent.installKey, sdkCurrentInstallKey);
+    assert.equal(alreadyInstalledEvent.installKey.installKey, sdkCurrentInstallKey);
 
     // Clean up storage
     rimraf.sync(dotnetDir);

@@ -29,6 +29,7 @@ import {
 } from '../mocks/MockObjects';
 import { getMockAcquisitionContext, getMockAcquisitionWorker } from './TestUtility';
 import { IAcquisitionInvoker } from '../../Acquisition/IAcquisitionInvoker';
+import { GetDotnetInstallInfo } from '../../Acquisition/IInstallationRecord';
 
 const assert = chai.assert;
 chai.use(chaiAsPromised);
@@ -216,9 +217,11 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         const version = '1.0';
         const [acquisitionWorker, eventStream, context, invoker] = setupWorker(true, version);
         const installKey = acquisitionWorker.getInstallKey(version);
+        const install = GetDotnetInstallInfo(version, true, false, os.arch());
+
         const res = await acquisitionWorker.acquireRuntime(version, invoker);
         await assertAcquisitionSucceeded(installKey, res.dotnetPath, eventStream, context);
-        acquisitionWorker.AddToGraveyard(installKey, 'Not applicable');
+        acquisitionWorker.AddToGraveyard(install, 'Not applicable');
 
         const versionToKeep = '5.0';
         const versionToKeepKey = acquisitionWorker.getInstallKey(versionToKeep);
