@@ -180,20 +180,26 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      */
     private async acquire(version: string, installRuntime: boolean, globalInstallerResolver : GlobalInstallerResolver | null = null, localInvoker? : IAcquisitionInvoker): Promise<IDotnetAcquireResult>
     {
-        let installKey = GetDotnetInstallInfo(version, installRuntime, globalInstallerResolver !== null, this.installingArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
+        let install = GetDotnetInstallInfo(version, installRuntime, globalInstallerResolver !== null, this.installingArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
 
         // Allow for the architecture to be null, which is a legacy behavior.
         if(this.context.acquisitionContext?.architecture === null && this.context.acquisitionContext?.architecture !== undefined)
         {
-            installKey.installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, null, globalInstallerResolver !== null);
+            install =
+            {
+                installKey: DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, null, globalInstallerResolver !== null),
+                version: install.version,
+                isGlobal: install.isGlobal,
+                isRuntime: install.isRuntime,
+            } as DotnetInstall
         }
 
-        this.context.eventStream.post(new DotnetInstallKeyCreatedEvent(`The requested version ${version} is now marked under the install key: ${installKey}.`));
-        const existingAcquisitionPromise = this.acquisitionPromises.getPromise(installKey);
+        this.context.eventStream.post(new DotnetInstallKeyCreatedEvent(`The requested version ${version} is now marked under the install key: ${install}.`));
+        const existingAcquisitionPromise = this.acquisitionPromises.getPromise(install);
         if (existingAcquisitionPromise)
         {
             // This version of dotnet is already being acquired. Memoize the promise.
-            this.context.eventStream.post(new DotnetAcquisitionInProgress(installKey,
+            this.context.eventStream.post(new DotnetAcquisitionInProgress(install,
                     (this.context.acquisitionContext && this.context.acquisitionContext.requestingExtensionId)
                     ? this.context.acquisitionContext!.requestingExtensionId : null));
             return existingAcquisitionPromise.then((res) => ({ dotnetPath: res }));
@@ -206,9 +212,9 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             {
                 Debugging.log(`The Acquisition Worker has Determined a Global Install was requested.`, this.context.eventStream);
 
-                acquisitionPromise = this.acquireGlobalCore(globalInstallerResolver, installKey).catch((error: Error) => {
-                    this.removeVersionFromExtensionState(this.installingVersionsKey, installKey);
-                    this.acquisitionPromises.remove(installKey);
+                acquisitionPromise = this.acquireGlobalCore(globalInstallerResolver, install).catch((error: Error) => {
+                    this.removeVersionFromExtensionState(this.installingVersionsKey, install);
+                    this.acquisitionPromises.remove(install);
                     error.message = `.NET Acquisition Failed: ${error.message}`;
                     throw error;
                 });
@@ -217,9 +223,9 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             {
                 Debugging.log(`The Acquisition Worker has Determined a Local Install was requested.`, this.context.eventStream);
 
-                acquisitionPromise = this.acquireLocalCore(version, installRuntime, installKey, localInvoker!).catch((error: Error) => {
-                    this.removeVersionFromExtensionState(this.installingVersionsKey, installKey);
-                    this.acquisitionPromises.remove(installKey);
+                acquisitionPromise = this.acquireLocalCore(version, installRuntime, install, localInvoker!).catch((error: Error) => {
+                    this.removeVersionFromExtensionState(this.installingVersionsKey, install);
+                    this.acquisitionPromises.remove(install);
                     error.message = `.NET Acquisition Failed: ${error.message}`;
                     throw error;
                 });
@@ -227,7 +233,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
             // Put this promise into the list so we can let other requests run at the same time
             // Allows us to return the end result of this current request for any following duplicates while we are still running.
-            this.acquisitionPromises.add(installKey, acquisitionPromise);
+            this.acquisitionPromises.add(install, acquisitionPromise);
             return acquisitionPromise.then((res) => ({ dotnetPath: res }));
         }
     }
@@ -330,7 +336,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
     public async tryCleanUpInstallGraveyard() : Promise<void>
     {
-        for(const installKey of this.graveyard)
+        const installsToRemove = await this.graveyard.get();
+        for(const installKey of installsToRemove)
         {
             this.context.eventStream.post(new DotnetInstallGraveyardEvent(
                 `Attempting to remove .NET at ${installKey.installKey} again, as it was left in the graveyard.`));

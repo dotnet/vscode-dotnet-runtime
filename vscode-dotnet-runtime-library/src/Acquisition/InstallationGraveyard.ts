@@ -16,7 +16,6 @@ type LegacyGraveyardOrModernGraveyard = { [installKeys: string]: string } | Set<
 
 export class InstallationGraveyard
 {
-    private inProgressInstalls: Set<LocalDotnetInstall> = new Set<LocalDotnetInstall>();
     // The 'graveyard' includes failed uninstall paths and their install key.
     // These will become marked for attempted 'garbage collection' at the end of every acquisition.
     private readonly installPathsGraveyardKey = 'installPathsGraveyard';
@@ -24,17 +23,6 @@ export class InstallationGraveyard
     constructor(private readonly context : IAcquisitionWorkerContext)
     {
 
-    }
-
-
-    public clear() : void
-    {
-        this.inProgressInstalls.clear();
-    }
-
-    [Symbol.iterator]() : IterableIterator<DotnetInstall>
-    {
-        return [...this.inProgressInstalls].map(x => x.dotnetInstall as DotnetInstall)[Symbol.iterator]();
     }
 
     protected async getGraveyard() : Promise<Set<LocalDotnetInstall>>
@@ -51,17 +39,22 @@ export class InstallationGraveyard
         return graveyard;
     }
 
+    public async get() : Promise<Set<DotnetInstall>>
+    {
+        let graveyard = await this.getGraveyard();
+        return new Set([...graveyard].map(x => x.dotnetInstall));
+    }
 
     public async add(installKey : DotnetInstall, newPath : string)
     {
-        const graveyard = await this.getGraveyard();
-        graveyard.add({ dotnetInstall: installKey, path: newPath } as LocalDotnetInstall);
-        await this.context.extensionState.update(this.installPathsGraveyardKey, graveyard);
+        let graveyard = await this.getGraveyard();
+        const newGraveyard = graveyard.add({ dotnetInstall: installKey, path: newPath } as LocalDotnetInstall);
+        await this.context.extensionState.update(this.installPathsGraveyardKey, newGraveyard);
     }
 
     public async remove(installKey : DotnetInstall)
     {
-        const graveyard = await this.getGraveyard();
+        let graveyard = await this.getGraveyard();
         const newGraveyard : Set<LocalDotnetInstall> = new Set([...graveyard].filter(x => !IsEquivalentInstallationFile(x.dotnetInstall, installKey)));
         await this.context.extensionState.update(this.installPathsGraveyardKey, newGraveyard);
     }

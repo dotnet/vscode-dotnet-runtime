@@ -27,7 +27,7 @@ export function getMockAcquisitionContext(runtimeInstall: boolean, version : str
         storagePath: '',
         extensionState: extensionContext,
         eventStream: myEventStream,
-        acquisitionContext: getMockAcquireContext(version),
+        acquisitionContext: getMockAcquireContext(version, arch === null),
         installationValidator: new MockInstallationValidator(myEventStream),
         timeoutSeconds: timeoutTime,
         installingArchitecture: arch,

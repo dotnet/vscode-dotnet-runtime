@@ -104,17 +104,17 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     // Assert preinstalled SDKs are detected
     const acquisitionInvoker = new NoInstallAcquisitionInvoker(eventStream, acquisitionWorker);
     const result = await acquisitionWorker.acquireSDK(version, acquisitionInvoker);
-    assert.equal(path.dirname(result.dotnetPath), dotnetDir);
+    assert.equal(path.dirname(result.dotnetPath), dotnetDir, 'preinstalled sdk path is the same as installed sdk path on api call');
     const preinstallEvents = eventStream.events
       .filter(event => event instanceof DotnetPreinstallDetected)
       .map(event => event as DotnetPreinstallDetected);
     assert.equal(preinstallEvents.length, 2);
-    assert.exists(preinstallEvents.find(event => event.installKey.installKey === sdkCurrentInstallKey));
-    assert.exists(preinstallEvents.find(event => event.installKey.installKey === sdkEarlierInstallKey));
+    assert.exists(preinstallEvents.find(event => event.installKey.installKey === sdkCurrentInstallKey), 'The current sdk install key exists');
+    assert.exists(preinstallEvents.find(event => event.installKey.installKey === sdkEarlierInstallKey), 'The earlier sdk install key exists');
     const alreadyInstalledEvent = eventStream.events
       .find(event => event instanceof DotnetAcquisitionAlreadyInstalled) as DotnetAcquisitionAlreadyInstalled;
-    assert.exists(alreadyInstalledEvent);
-    assert.equal(alreadyInstalledEvent.installKey.installKey, sdkCurrentInstallKey);
+    assert.exists(alreadyInstalledEvent, 'An already installed event was posted');
+    assert.equal(alreadyInstalledEvent.installKey.installKey, sdkCurrentInstallKey, 'the current install is what was already installed');
 
     // Clean up storage
     rimraf.sync(dotnetDir);

@@ -29,7 +29,7 @@ import {
 } from '../mocks/MockObjects';
 import { getMockAcquisitionContext, getMockAcquisitionWorker } from './TestUtility';
 import { IAcquisitionInvoker } from '../../Acquisition/IAcquisitionInvoker';
-import { DotnetInstall, DotnetInstallOrStr, GetDotnetInstallInfo, InstallRecord } from '../../Acquisition/IInstallationRecord';
+import { DotnetInstall, DotnetInstallOrStr, GetDotnetInstallInfo, InstallOwner, InstallRecord } from '../../Acquisition/IInstallationRecord';
 
 const assert = chai.assert;
 chai.use(chaiAsPromised);
@@ -229,8 +229,23 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         await acquisitionWorker.acquireRuntime(versionToKeep, invoker);
 
         assert.exists(eventStream.events.find(event => event instanceof DotnetInstallGraveyardEvent), 'The graveyard tried to uninstall .NET');
-        assert.isEmpty(context.get<string[]>(installingVersionsKey, []), 'We did not hang/ get interrupted during the install.');
-        assert.deepEqual(context.get<string[]>(installedVersionsKey, []), [versionToKeepKey], '.NET was successfully uninstalled and cleaned up properly when marked to be.');
+        assert.isEmpty(context.get<InstallRecord[]>(installingVersionsKey, []), 'We did not hang/ get interrupted during the install.');
+        assert.deepEqual(context.get<InstallRecord[]>(installedVersionsKey, []),
+        [
+          {
+            dotnetInstall: {
+              architecture: "x64",
+              installKey: "5.0~x64",
+              isGlobal: false,
+              isRuntime: true,
+              version: "5.0",
+            },
+            installingExtensions: [
+              "test"
+            ] as InstallOwner[],
+          }
+        ] as InstallRecord[],
+        '.NET was successfully uninstalled and cleaned up properly when marked to be.');
     });
 
     test('Correctly Removes Legacy (No-Architecture) Installs', async () =>
