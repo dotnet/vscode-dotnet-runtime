@@ -49,13 +49,10 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         return [acquisitionWorker, eventStream, context, invoker];
     }
 
-    function migrateWorkerToNewInstall(worker : MockDotnetCoreAcquisitionWorker, newVersion : string, newArch? : string | null)
+    function migrateWorkerToNewInstall(worker : MockDotnetCoreAcquisitionWorker, newVersion : string, newArch : string | null)
     {
         worker.updateVersion(newVersion);
-        if(newArch)
-        {
-            worker.updateArch(newArch);
-        }
+        worker.updateArch(newArch);
         return worker;
     }
 
@@ -186,7 +183,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         for (const version of versions)
         {
             const installKey = acquisitionWorker.getInstallKey(version);
-            migrateWorkerToNewInstall(acquisitionWorker, version);
+            migrateWorkerToNewInstall(acquisitionWorker, version, os.arch());
             const res = await acquisitionWorker.acquireRuntime(version, invoker);
             await assertAcquisitionSucceeded(installKey, res.dotnetPath, eventStream, context);
         }
@@ -225,7 +222,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
 
         const versionToKeep = '5.0';
         const versionToKeepKey = acquisitionWorker.getInstallKey(versionToKeep);
-        migrateWorkerToNewInstall(acquisitionWorker, versionToKeep);
+        migrateWorkerToNewInstall(acquisitionWorker, versionToKeep, os.arch());
         await acquisitionWorker.acquireRuntime(versionToKeep, invoker);
 
         assert.exists(eventStream.events.find(event => event instanceof DotnetInstallGraveyardEvent), 'The graveyard tried to uninstall .NET');
@@ -269,25 +266,28 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
 
         // Install 5.0 runtime with an architecture. Share the same event stream and context.
         runtimeWorker.installingArchitecture = os.arch();
-        migrateWorkerToNewInstall(runtimeWorker, runtimeV5);
+        migrateWorkerToNewInstall(runtimeWorker, runtimeV5, runtimeWorker.installingArchitecture);
         await AssertInstallRuntime(runtimeWorker, context, events, runtimeV5, runtimeInvoker);
 
         // 5.0 legacy runtime should be replaced, but 6.0 runtime should remain, and all SDK items should remain.
-        let remainingInstalls = context.get<string[]>(installedVersionsKey, []).concat(sdkContext.get<string[]>(installedVersionsKey, []));
+        let detailedRemainingInstalls : InstallRecord[] = context.get<InstallRecord[]>(installedVersionsKey, []).concat(sdkContext.get<InstallRecord[]>(installedVersionsKey, []));
+        let remainingInstalls : string[] = detailedRemainingInstalls.map(x => x.dotnetInstall.installKey);
         assert.deepStrictEqual(remainingInstalls, [runtimeV6, '5.0.00~x64', sdkV5, sdkV6],
             'Only The Requested Legacy Runtime is replaced when new runtime is installed');
 
         // Install a legacy runtime again to make sure its not removed when installing a new SDK with the same version
         runtimeWorker.installingArchitecture = null;
+        migrateWorkerToNewInstall(runtimeWorker, runtimeV5, null);
         await AssertInstallRuntime(runtimeWorker, context, events, runtimeV5, runtimeInvoker);
 
         // Install non-legacy SDK
         sdkWorker.installingArchitecture = os.arch();
-        migrateWorkerToNewInstall(sdkWorker, sdkV5);
+        migrateWorkerToNewInstall(sdkWorker, sdkV5, sdkWorker.installingArchitecture);
         await AssertInstallSDK(sdkWorker, sdkContext, sdkEvents, sdkV5, sdkInvoker);
 
         // 6.0 sdk legacy should remain, as well as 5.0 and 6.0 runtime. 5.0 SDK should be removed.
-        remainingInstalls = context.get<string[]>(installedVersionsKey, []).concat(sdkContext.get<string[]>(installedVersionsKey, []));
+        detailedRemainingInstalls = context.get<InstallRecord[]>(installedVersionsKey, []).concat(sdkContext.get<InstallRecord[]>(installedVersionsKey, []));
+        remainingInstalls = detailedRemainingInstalls.map(x => x.dotnetInstall.installKey);
         assert.deepStrictEqual(remainingInstalls, [runtimeV6, '5.0.00~x64', runtimeV5, sdkV6, '5.0.100~x64'],
             'Only The Requested Legacy SDK is replaced when new SDK is installed');
     });

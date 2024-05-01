@@ -118,7 +118,7 @@ export class MockDotnetCoreAcquisitionWorker extends DotnetCoreAcquisitionWorker
         this.context.acquisitionContext!.version = newVersion;
     }
 
-    public updateArch(newArch : string)
+    public updateArch(newArch : string | null)
     {
         this.installingArchitecture = newArch;
         this.context.installingArchitecture = newArch;
