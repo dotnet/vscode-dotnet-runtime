@@ -152,13 +152,25 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(installKey.installKey);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
-        let installedVersions = this.getExistingInstalls(true);
+        const installedVersions = this.getExistingInstalls(true);
 
         if (installedVersions.some(x => IsEquivalentInstallationFile(x.dotnetInstall, installKey)) && (fs.existsSync(dotnetPath) || this.usingNoInstallInvoker ))
         {
-            // Requested version has already been installed. But we don't want to add a ref count, since we are just checking the status.
+            // Requested version has already been installed.
             this.context.eventStream.post(new DotnetAcquisitionStatusResolved(installKey, version));
             return { dotnetPath };
+        }
+        else if(installedVersions.length === 0 && fs.existsSync(dotnetPath) && !installRuntime)
+        {
+            // The education bundle already laid down a local install, add it to our managed installs
+            const preinstalledVersions = await this.checkForUnrecordedLocalSDKSuccessfulInstall(dotnetInstallDir, installedVersions);
+            if (preinstalledVersions.some(x => IsEquivalentInstallationFile(x.dotnetInstall, installKey)) &&
+                (fs.existsSync(dotnetPath) || this.usingNoInstallInvoker ))
+            {
+                // Requested version has already been installed.
+                this.context.eventStream.post(new DotnetAcquisitionStatusResolved(installKey, version));
+                return { dotnetPath };
+            }
         }
 
         // Version is not installed
@@ -522,6 +534,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         {
             if(installRecord.length > 1)
             {
+                /* tslint:disable:prefer-template */
                 this.context.eventStream.post(new DuplicateInstallDetected(`The install
                     ${(installKey)} has a duplicated record ${installRecord.length} times in the extension state.
                     ${installRecord.map(x => x.installingExtensions.join(' ') + InstallToStrings(x.dotnetInstall)).join(' ') + '\n'}`));

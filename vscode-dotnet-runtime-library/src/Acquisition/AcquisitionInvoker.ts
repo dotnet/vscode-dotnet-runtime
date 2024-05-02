@@ -31,6 +31,7 @@ import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
 import { DotnetInstall } from './IInstallationRecord';
 /* tslint:disable:no-any */
+/* tslint:disable:only-arrow-functions */
 
 export class AcquisitionInvoker extends IAcquisitionInvoker {
     protected readonly scriptWorker: IInstallScriptAcquisitionWorker;

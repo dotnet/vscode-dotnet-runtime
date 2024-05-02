@@ -41,20 +41,20 @@ export class InstallationGraveyard
 
     public async get() : Promise<Set<DotnetInstall>>
     {
-        let graveyard = await this.getGraveyard();
+        const graveyard = await this.getGraveyard();
         return new Set([...graveyard].map(x => x.dotnetInstall));
     }
 
     public async add(installKey : DotnetInstall, newPath : string)
     {
-        let graveyard = await this.getGraveyard();
+        const graveyard = await this.getGraveyard();
         const newGraveyard = graveyard.add({ dotnetInstall: installKey, path: newPath } as LocalDotnetInstall);
         await this.context.extensionState.update(this.installPathsGraveyardKey, newGraveyard);
     }
 
     public async remove(installKey : DotnetInstall)
     {
-        let graveyard = await this.getGraveyard();
+        const graveyard = await this.getGraveyard();
         const newGraveyard : Set<LocalDotnetInstall> = new Set([...graveyard].filter(x => !IsEquivalentInstallationFile(x.dotnetInstall, installKey)));
         await this.context.extensionState.update(this.installPathsGraveyardKey, newGraveyard);
     }

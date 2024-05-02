@@ -231,14 +231,14 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         [
           {
             dotnetInstall: {
-              architecture: "x64",
-              installKey: "5.0~x64",
+              architecture: 'x64',
+              installKey: '5.0~x64',
               isGlobal: false,
               isRuntime: true,
-              version: "5.0",
+              version: '5.0',
             },
             installingExtensions: [
-              "test"
+              'test'
             ] as InstallOwner[],
           }
         ] as InstallRecord[],
