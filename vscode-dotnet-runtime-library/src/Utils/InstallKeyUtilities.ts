@@ -7,7 +7,7 @@ import { DotnetCoreAcquisitionWorker } from '../Acquisition/DotnetCoreAcquisitio
 import { looksLikeRuntimeVersion } from '../Acquisition/DotnetInstall';
 import { DotnetInstall } from '../Acquisition/DotnetInstall';
 import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
-import * as os from "os";
+import * as os from 'os';
 
 export function getInstallKeyFromContext(ctx : IDotnetAcquireContext | undefined | null) : DotnetInstall | null
 {
