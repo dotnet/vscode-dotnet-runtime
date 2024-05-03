@@ -177,6 +177,11 @@ export class InProgressInstallManager
 {
     private inProgressInstalls: Set<InProgressInstall> = new Set<InProgressInstall>();
 
+    public constructor(private readonly context : IAcquisitionWorkerContext)
+    {
+
+    }
+
     public clear() : void
     {
         this.inProgressInstalls.clear();
@@ -187,51 +192,27 @@ export class InProgressInstallManager
      * @param key the install key to get a working install promise for.
      * @returns null if there is no promise for this install, otherwise the promise.
      */
-    public getPromise(key : DotnetInstallOrStr) : Promise<string> | null
+    public getPromise(key : DotnetInstall) : Promise<string> | null
     {
-        if (typeof key === 'string')
+        this.inProgressInstalls.forEach(x =>
         {
-            throw new Error(`When searching for in progress installs, use only the new type.`);
-        }
-        else
-        {
-            this.inProgressInstalls.forEach(x =>
+            const xAsKey = x.dotnetInstall as DotnetInstall;
+            if(IsEquivalentInstallationFile(xAsKey, key))
             {
-                if(typeof x === 'string')
-                {
-                    throw new Error(`In progress installed pointed to a string installation key: ${x}, which is unexpected. All managed installs should be the new type.`);
-                }
-                else
-                {
-                    const xAsKey = x.dotnetInstall as DotnetInstall;
-                    if(IsEquivalentInstallationFile(xAsKey, key))
-                    {
-                        return x.installingPromise;
-                    }
-                }
-            });
-        }
+                return x.installingPromise;
+            }
+        })
 
         return null;
     }
 
-    public add(key : DotnetInstallOrStr, workingInstall : Promise<string>) : void
+    public add(key : DotnetInstall, workingInstall : Promise<string>) : void
     {
-        if (typeof key === 'string')
-        {
-            throw new Error(`When adding in progress installs, use only the new type.`);
-        }
-
         this.inProgressInstalls.add({ dotnetInstall: key, installingPromise: workingInstall });
     }
 
-    public remove(key : DotnetInstallOrStr) : void
+    public remove(key : DotnetInstall) : void
     {
-        if (typeof key === 'string')
-        {
-            throw new Error(`When completing in progress installs, use only the new type.`);
-        }
-
         const resolvedInstall : InProgressInstall | undefined = [...this.inProgressInstalls].find(x => IsEquivalentInstallationFile(x.dotnetInstall as DotnetInstall, key));
         if(!resolvedInstall)
         {
