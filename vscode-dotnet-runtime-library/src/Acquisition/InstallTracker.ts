@@ -233,7 +233,7 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).jo
 
     protected async addVersionToExtensionState(key: string, install: DotnetInstall, alreadyHoldingLock = false)
     {
-        return await this.executeWithLock( alreadyHoldingLock async (key: string, install: DotnetInstall) =>
+        return await this.executeWithLock( alreadyHoldingLock, async (key: string, install: DotnetInstall) =>
         {
             const existingVersions = await this.getExistingInstalls(key === this.installedVersionsKey, true);
             const sameInstallManagedByOtherExtensions = existingVersions.find(x => IsEquivalentInstallation(x.dotnetInstall, install));
