@@ -5,6 +5,8 @@
 
 import * as os from 'os';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
+import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { NoMatchingInstallToStopTracking } from '../EventStream/EventStreamEvents';
 
 /**
  * @remarks
@@ -213,10 +215,11 @@ export class InProgressInstallManager
 
     public remove(key : DotnetInstall) : void
     {
-        const resolvedInstall : InProgressInstall | undefined = [...this.inProgressInstalls].find(x => IsEquivalentInstallationFile(x.dotnetInstall as DotnetInstall, key));
+        const resolvedInstall : InProgressInstall | undefined = [...this.inProgressInstalls].find(x => IsEquivalentInstallation(x.dotnetInstall as DotnetInstall, key));
         if(!resolvedInstall)
         {
-            // todo : event stream?
+            this.context.eventStream.post(new NoMatchingInstallToStopTracking(`No matching install to stop tracking for ${key.installKey}.
+Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).join(', ')}`));
             return;
         }
         this.inProgressInstalls.delete(resolvedInstall);

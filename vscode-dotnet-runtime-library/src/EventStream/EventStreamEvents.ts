@@ -544,6 +544,10 @@ export class CommandExecutionStdOut extends DotnetCustomMessageEvent {
     public readonly eventName = 'CommandExecutionStdOut';
 }
 
+export class NoMatchingInstallToStopTracking extends DotnetCustomMessageEvent {
+    public readonly eventName = 'NoMatchingInstallToStopTracking';
+}
+
 export class CommandExecutionStdError extends DotnetCustomMessageEvent {
     public readonly eventName = 'CommandExecutionStdError';
 }
