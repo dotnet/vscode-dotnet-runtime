@@ -9,7 +9,7 @@ import {
     DotnetInstallationValidationError,
 } from '../EventStream/EventStreamEvents';
 import { IInstallationValidator } from './IInstallationValidator';
-import { DotnetInstall } from './IInstallationRecord';
+import { DotnetInstall } from './DotnetInstall';
 
 export class InstallationValidator extends IInstallationValidator {
     public validateDotnetInstall(install: DotnetInstall, dotnetPath: string, isDotnetFolder = false): void {

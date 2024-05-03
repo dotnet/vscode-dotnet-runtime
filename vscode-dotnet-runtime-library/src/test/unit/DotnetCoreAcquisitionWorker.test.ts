@@ -29,7 +29,10 @@ import {
 } from '../mocks/MockObjects';
 import { getMockAcquisitionContext, getMockAcquisitionWorker } from './TestUtility';
 import { IAcquisitionInvoker } from '../../Acquisition/IAcquisitionInvoker';
-import { DotnetInstall, DotnetInstallOrStr, GetDotnetInstallInfo, InstallOwner, InstallRecord } from '../../Acquisition/IInstallationRecord';
+import { InstallOwner, InstallRecord } from '../../Acquisition/InstallRecord';
+import { GetDotnetInstallInfo } from '../../Acquisition/DotnetInstall';
+import { DotnetInstallOrStr } from '../../Acquisition/DotnetInstall';
+import { DotnetInstall } from '../../Acquisition/DotnetInstall';
 
 const assert = chai.assert;
 chai.use(chaiAsPromised);

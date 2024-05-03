@@ -7,7 +7,7 @@
 import path = require('path');
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { DotnetInstall } from './IInstallationRecord';
+import { DotnetInstall } from './DotnetInstall';
 
 export abstract class IGlobalInstaller {
 

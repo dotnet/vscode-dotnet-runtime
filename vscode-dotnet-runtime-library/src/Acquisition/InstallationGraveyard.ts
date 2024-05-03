@@ -3,7 +3,9 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
-import { DotnetInstall, installKeyStringToDotnetInstall, IsEquivalentInstallationFile } from './IInstallationRecord';
+import { IsEquivalentInstallationFile } from './DotnetInstall';
+import { installKeyStringToDotnetInstall } from '../Utils/InstallKeyUtilities';
+import { DotnetInstall } from './DotnetInstall';
 
 interface LocalDotnetInstall
 {

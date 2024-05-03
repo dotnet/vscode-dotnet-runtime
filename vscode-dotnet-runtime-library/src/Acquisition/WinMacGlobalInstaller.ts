@@ -9,7 +9,7 @@ import * as path from 'path';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { VersionResolver } from './VersionResolver';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
-import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
+import { getInstallKeyFromContext } from '../Utils/InstallKeyUtilities';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import {
     DotnetAcquisitionAlreadyInstalled,
@@ -29,7 +29,7 @@ import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IFileUtilities } from '../Utils/IFileUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
-import { DotnetInstall } from './IInstallationRecord';
+import { DotnetInstall } from './DotnetInstall';
 /* tslint:disable:only-arrow-functions */
 /* tslint:disable:no-empty */
 /* tslint:disable:no-any */

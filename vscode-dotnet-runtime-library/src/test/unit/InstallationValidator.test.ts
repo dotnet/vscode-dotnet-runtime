@@ -6,7 +6,7 @@ import * as chai from 'chai';
 import { InstallationValidator } from '../../Acquisition/InstallationValidator';
 import { MockEventStream } from '../mocks/MockObjects';
 import * as os from 'os';
-import { GetDotnetInstallInfo } from '../../Acquisition/IInstallationRecord';
+import { GetDotnetInstallInfo } from '../../Acquisition/DotnetInstall';
 
 const assert = chai.assert;
 

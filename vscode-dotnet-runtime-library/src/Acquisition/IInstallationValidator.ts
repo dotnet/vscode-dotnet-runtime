@@ -4,7 +4,7 @@
 *--------------------------------------------------------------------------------------------*/
 
 import { IEventStream } from '../EventStream/EventStream';
-import { DotnetInstall } from './IInstallationRecord';
+import { DotnetInstall } from './DotnetInstall';
 
 export abstract class IInstallationValidator {
     constructor(protected readonly eventStream: IEventStream) {}

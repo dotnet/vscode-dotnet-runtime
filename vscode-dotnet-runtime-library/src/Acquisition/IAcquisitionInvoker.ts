@@ -6,7 +6,7 @@ import { InstallationValidator } from './InstallationValidator';
 import { IEventStream } from '../EventStream/EventStream';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 import { IInstallationValidator } from './IInstallationValidator';
-import { DotnetInstall } from './IInstallationRecord';
+import { DotnetInstall } from './DotnetInstall';
 
 export abstract class IAcquisitionInvoker {
     public readonly installationValidator: IInstallationValidator;

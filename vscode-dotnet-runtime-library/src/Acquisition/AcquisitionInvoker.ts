@@ -29,7 +29,7 @@ import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
-import { DotnetInstall } from './IInstallationRecord';
+import { DotnetInstall } from './DotnetInstall';
 /* tslint:disable:no-any */
 /* tslint:disable:only-arrow-functions */
 

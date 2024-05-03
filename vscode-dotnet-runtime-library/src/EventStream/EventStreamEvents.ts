@@ -8,7 +8,8 @@ import { IDotnetInstallationContext } from '../Acquisition/IDotnetInstallationCo
 import { EventType } from './EventType';
 import { IEvent } from './IEvent';
 import { TelemetryUtilities } from './TelemetryUtilities';
-import { DotnetInstall, InstallToStrings } from '../Acquisition/IInstallationRecord';
+import { InstallToStrings } from '../Acquisition/DotnetInstall';
+import { DotnetInstall } from '../Acquisition/DotnetInstall';
 
 // tslint:disable max-classes-per-file
 

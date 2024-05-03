@@ -14,7 +14,7 @@ import {
     EventCancellationError
 } from '../EventStream/EventStreamEvents';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
-import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
+import { getInstallKeyFromContext } from '../Utils/InstallKeyUtilities';
 import { Debugging } from '../Utils/Debugging';
 
 import { IVersionResolver } from './IVersionResolver';
@@ -25,7 +25,8 @@ import { DotnetVersionSupportPhase,
     IDotnetVersion
 } from '../IDotnetListVersionsContext';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
-import { getVersionFromLegacyInstallKey, installKeyStringToDotnetInstall } from './IInstallationRecord';
+import { installKeyStringToDotnetInstall } from '../Utils/InstallKeyUtilities';
+import { getVersionFromLegacyInstallKey } from '../Utils/InstallKeyUtilities';
 /* tslint:disable:no-any */
 
 export class VersionResolver implements IVersionResolver {

@@ -10,7 +10,7 @@ import {
     DotnetInstallExpectedAbort,
     DotnetNotInstallRelatedCommandFailed
 } from '../EventStream/EventStreamEvents';
-import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
+import { getInstallKeyFromContext } from './InstallKeyUtilities';
 
 import { ExistingPathKeys, IExistingPath } from '../IExtensionContext';
 import { IIssueContext } from './IIssueContext';

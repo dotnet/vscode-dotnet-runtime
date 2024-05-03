@@ -37,7 +37,8 @@ import { IUtilityContext } from '../../Utils/IUtilityContext';
 import { IVSCodeEnvironment } from '../../Utils/IVSCodeEnvironment';
 import { IDotnetAcquireResult } from '../../IDotnetAcquireResult';
 import { IDotnetCoreAcquisitionWorker } from '../../Acquisition/IDotnetCoreAcquisitionWorker';
-import { DotnetInstall, GetDotnetInstallInfo } from '../../Acquisition/IInstallationRecord';
+import { GetDotnetInstallInfo } from '../../Acquisition/DotnetInstall';
+import { DotnetInstall } from '../../Acquisition/DotnetInstall';
 
 const testDefaultTimeoutTimeMs = 60000;
 /* tslint:disable:no-any */

@@ -11,7 +11,7 @@ import { MockCommandExecutor, MockFileUtilities } from '../mocks/MockObjects';
 import { WinMacGlobalInstaller } from '../../Acquisition/WinMacGlobalInstaller';
 import { FileUtilities } from '../../Utils/FileUtilities';
 import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
-import { GetDotnetInstallInfo } from '../../Acquisition/IInstallationRecord';
+import { GetDotnetInstallInfo } from '../../Acquisition/DotnetInstall';
 const assert = chai.assert;
 const standardTimeoutTime = 100000;
 
