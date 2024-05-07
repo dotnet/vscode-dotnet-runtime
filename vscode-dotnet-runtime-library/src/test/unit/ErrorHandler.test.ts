@@ -3,8 +3,8 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
+import { ExistingPathKeys, IExistingPaths } from '../../IExtensionContext';
 import { DotnetCommandFailed, DotnetCommandSucceeded, DotnetNotInstallRelatedCommandFailed } from '../../EventStream/EventStreamEvents';
-import { ExistingPathKeys } from '../../IExtensionContext';
 import {
     errorConstants,
     timeoutConstants,
@@ -69,10 +69,11 @@ suite('ErrorHandler Unit Tests', () => {
         assert.isDefined(displayWorker.callback);
         await displayWorker.callback!('Configure manually');
         assert.include(displayWorker.infoMessage, `Set .NET path to ${__dirname}.`);
-        const configResult = context.extensionConfigWorker.getPathConfigurationValue();
+        const configResult = context.extensionConfigWorker.getAllPathConfigurationValues();
         assert.isDefined(configResult);
-        const expectedConfig = [{ [ExistingPathKeys.extensionIdKey]: mockExtensionId, [ExistingPathKeys.pathKey] : __dirname },
-                              { [ExistingPathKeys.extensionIdKey]: 'MockRequestingExtensionId', [ExistingPathKeys.pathKey] : 'MockPath' }];
+        const expectedConfig : IExistingPaths = {
+            individualizedExtensionPaths: [{ [ExistingPathKeys.extensionIdKey]: 'MockRequestingExtensionId', [ExistingPathKeys.pathKey] : 'MockPath' }],
+            sharedExistingPath: __dirname};
         assert.deepEqual(configResult!, expectedConfig);
     });
 
