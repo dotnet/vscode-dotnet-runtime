@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+## [2.0.6] - Unreleased
+
+Keeps track of which extensions manage which installs to allow for better cleanup of old runtimes and sdks.
+
+Fixes a bug with uninstall management where all .net installs would be removed if one install was corrupted.
+
+Fixes other book keeping code regarding .NET runtime and sdk installs.
+Improves storage mechanism to allow installing other types of runtimes in the future (aspnet, etc).
+
+# [2.0.5] - 2024-05-07
+
+Includes some minor bug fixes and error message improvements.
+
 ## [2.0.4] - 2024-05-03
 Adds the setting `sharedExistingDotnetPath` to use an existing install for all extensions, instead of having to set the setting for every individual extension.
 

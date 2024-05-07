@@ -13,7 +13,7 @@
 	"description": "This extension installs and manages different versions of the .NET SDK and Runtime.",
 	"appInsightsKey": "02dc18e0-7494-43b2-b2a3-18ada5fcb522",
 	"icon": "images/dotnetIcon.png",
-	"version": "2.0.4",
+	"version": "2.0.5",
 	"publisher": "ms-dotnettools",
 	"engines": {
 		"vscode": "^1.74.0"
