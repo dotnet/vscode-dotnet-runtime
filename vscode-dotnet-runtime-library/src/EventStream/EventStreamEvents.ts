@@ -452,7 +452,7 @@ export abstract class DotnetAcquisitionMessage extends IEvent {
     public type = EventType.DotnetAcquisitionMessage;
 
     public getProperties(): { [key: string]: string } | undefined {
-        return undefined;
+        return {};
     }
 }
 

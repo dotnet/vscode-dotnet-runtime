@@ -73,7 +73,16 @@
 				},
 				"dotnetAcquisitionExtension.existingDotnetPath": {
 					"type": "array",
-					"description": "File Path to an existing installation of .NET. Used for both the .NET SDK and .NET Runtime.",
+					"description": "File Path to an existing installation of .NET to be used by one extension. Used for both the .NET SDK and .NET Runtime. Restart VS Code to apply changes.",
+					"examples": [
+						"C:\\Program Files\\dotnet\\dotnet.exe",
+						"/usr/local/share/dotnet/dotnet",
+						"/usr/lib/dotnet/dotnet"
+					]
+				},
+				"dotnetAcquisitionExtension.sharedExistingDotnetPath": {
+					"type": "string",
+					"description": "The path of the preexisting .NET SDK and .NET Runtime you'd like to use for ALL extensions. Restart VS Code to apply changes.",
 					"examples": [
 						"C:\\Program Files\\dotnet\\dotnet.exe",
 						"/usr/local/share/dotnet/dotnet",

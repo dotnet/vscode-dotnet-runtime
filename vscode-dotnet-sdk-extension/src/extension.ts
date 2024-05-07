@@ -95,7 +95,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     } as IEventStreamContext;
     const [eventStream, outputChannel, loggingObserver, eventStreamObservers, telemetryObserver] = registerEventStream(eventStreamContext, vsCodeExtensionContext, utilContext);
 
-    const extensionConfigWorker = new ExtensionConfigurationWorker(extensionConfiguration, undefined);
+    const extensionConfigWorker = new ExtensionConfigurationWorker(extensionConfiguration, undefined, undefined);
     const issueContext = (errorConfiguration: ErrorConfiguration | undefined, commandName: string, version?: string) => {
         return {
             logger: loggingObserver,
