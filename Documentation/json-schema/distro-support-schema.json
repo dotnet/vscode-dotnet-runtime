@@ -2,51 +2,127 @@
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
     "properties": {
-      "DISTRO": {
+        "$schema": {
+            "type": "string"
+        }
+    },
+    "$defs": {
+        "executable_command": {
+            "$schema": "http://json-schema.org/draft-04/schema#",
+            "type": "object",
+            "properties": {
+                "runUnderSudo": {
+                    "type": "boolean",
+                    "description": "true if this command should be executed under sudo on linux"
+                },
+                "commandRoot": {
+                    "type": "string",
+                    "description": "The first word in the command, e.g. if apt-get install foo, it would be the string apt."
+                },
+                "commandParts": {
+                    "type": "array",
+                    "description": "The remaining parts of the command in an array, for apt-get install {0} it would be [install, {0}] as strings"
+                }
+            },
+            "additionalProperties": false
+        },
+        "required_packages": {
+            "$schema": "http://json-schema.org/draft-04/schema#",
+            "type": "object",
+            "properties": {
+                "version": {
+                    "type": "string",
+                    "description": "The version major.minor of dotnet"
+                },
+                "sdk": {
+                    "type": "array",
+                    "items": [
+                        {
+                            "type": "string",
+                            "description": "a collection of all potential package names for this version of the dotnet sdk on this distro"
+                        }
+                    ]
+                },
+                "runtime": {
+                    "type": "array",
+                    "items": [
+                        {
+                            "type": "string",
+                            "description": "a collection of all potential package names for this version of the dotnet runtime on this distro"
+                        }
+                    ]
+                },
+                "aspnetcore": {
+                    "type": "array",
+                    "items": [
+                        {
+                            "type": "string",
+                            "description": "a collection of all potential package names for this version of aspnet on this distro"
+                        }
+                    ]
+                },
+                "required": [
+                    "version",
+                    "sdk",
+                    "runtime",
+                    "aspnetcore"
+                ]
+            },
+            "additionalProperties": false
+        }
+    },
+    "additionalProperties": {
         "description": "The Distro name as in cat etc/os-release. Multiple distros are added to the same file.",
         "type": "object",
-        "properties":
-        {
+        "additionalProperties": false,
+        "properties": {
             "installCommand": {
                 "type": "array",
-                "typeDefinition" : {
-                    "runUnderSudo":
-                    {
-                        "type": "boolean",
-                        "description": "true if this command should be executed under sudo on linux"
-                    },
-                    "commandRoot":
-                    {
-                        "type": "string",
-                        "description": "The first word in the command, e.g. if apt-get install foo, it would be the string apt."
-                    },
-                    "commandParts":
-                    {
-                        "type": "array",
-                        "description": "The remaining parts of the command in an array, for apt-get install {0} it would be [install, {0}] as strings"
-                    },
-                    "description": "An array of these command objects needed to run in-order"
+                "items": {
+                    "$ref": "#/$defs/executable_command"
                 },
                 "description": "The command(s) needed to install dotnet for this distro. Use {0} for the package to install"
             },
             "uninstallCommand": {
                 "type": "array",
+                "items": {
+                    "$ref": "#/$defs/executable_command"
+                },
                 "description": "The command(s) needed to uninstall dotnet. Use {0} for the package"
             },
             "updateCommand": {
                 "type": "array",
+                "items": {
+                    "$ref": "#/$defs/executable_command"
+                },
                 "description": "The command(s) needed to update dotnet. Use {0} for the package"
             },
             "searchCommand": {
                 "type": "array",
+                "items": {
+                    "$ref": "#/$defs/executable_command"
+                },
                 "description": "The command(s) needed to see if a package is available. Use {0} for the package"
             },
             "isInstalledCommand": {
                 "type": "array",
+                "items": {
+                    "$ref": "#/$defs/executable_command"
+                },
                 "description": "The command(s) needed that will return true if dotnet is installed on the machine"
             },
             "packageLookupCommand": {
                 "type": "array",
+                "items": {
+                    "$ref": "#/$defs/executable_command"
+                },
+                "description": "The command(s) needed that will return true if a given package is installed on the machine"
+            },
+            "readSymLinkCommand": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/$defs/executable_command"
+                },
                 "description": "The command(s) needed that will return true if a given package is installed on the machine"
             },
             "expectedDistroFeedInstallDirectory": {
@@ -59,98 +135,67 @@
             },
             "installedSDKVersionsCommand": {
                 "type": "array",
+                "items": {
+                    "$ref": "#/$defs/executable_command"
+                },
                 "description": "The command needed to get all installed dotnet sdk versions on the machine"
             },
             "installedRuntimeVersionsCommand": {
                 "type": "array",
+                "items": {
+                    "$ref": "#/$defs/executable_command"
+                },
                 "description": "The command needed to get all installed dotnet runtime versions on the machine"
             },
             "currentInstallationVersionCommand": {
                 "type": "array",
+                "items": {
+                    "$ref": "#/$defs/executable_command"
+                },
                 "description": "The command needed to get the version of the installed dotnet on the machine if available"
             },
             "currentInstallPathCommand": {
                 "type": "array",
+                "items": {
+                    "$ref": "#/$defs/executable_command"
+                },
                 "description": "The command needed to get the path of the installed dotnet on the machine if available"
             },
             "packages": {
                 "type": "array",
                 "description": "Lists all of the packages that MAY be supported or found on the system per each version of .NET",
                 "items": [
-                  {
-                    "type": "object",
-                    "properties": {
-                      "version": {
-                        "type": "string",
-                        "description": "The version major.minor of dotnet"
-                      },
-                      "sdk": {
-                        "type": "array",
-                        "items": [
-                          {
-                            "type": "string",
-                            "description": "a collection of all potential package names for this version of the dotnet sdk on this distro"
-                          }
-                        ]
-                      },
-                      "runtime": {
-                        "type": "array",
-                        "items": [
-                            {
-                                "type": "string",
-                                "description": "a collection of all potential package names for this version of the dotnet runtime on this distro"
-                            }
-                        ]
-                      },
-                      "aspnetcore": {
-                        "type": "array",
-                        "items": [
-                            {
-                                "type": "string",
-                                "description": "a collection of all potential package names for this version of aspnet on this distro"
-                            }
-                        ]
-                      }
-                    },
-                    "required": [
-                      "version",
-                      "sdk",
-                      "runtime",
-                      "aspnetcore"
-                    ]
-                }]
+                    {
+                        "$ref": "#/$defs/required_packages"
+                    }
+                ]
             },
-            "versions":
-            {
+            "versions": {
                 "type": "array",
                 "description": "The versions of the distro that we support as in etc/os-release or similar. Each one has info on what dotnet versions are supported",
                 "items": [
-                {
-                    "type": "object",
-                    "description": "An object representing a version of the distro and which package names it supports",
-                    "properties": {
-                    "version": {
-                        "type": "string",
-                        "description": "The distro version mapped to this object"
-                    },
-                    "preInstallCommands":
                     {
-                        "type": "array",
-                        "description": "A set of commands needed to install microsoft package feeds if needed",
-                        "items": [
-                        {
-                            "type": "string"
-                        }
+                        "type": "object",
+                        "description": "An object representing a version of the distro and which package names it supports",
+                        "properties": {
+                            "version": {
+                                "type": "string",
+                                "description": "The distro version mapped to this object"
+                            },
+                            "preInstallCommands": {
+                                "type": "array",
+                                "description": "A set of commands needed to install microsoft package feeds if needed",
+                                "items": {
+                                    "$ref": "#/$defs/executable_command"
+                                }
+                            }
+                        },
+                        "required": [
+                            "version"
                         ]
                     }
-                    },
-                    "required": [
-                    "version",
-                    "preInstallCommands"
-                    ]
-                 }]
+                ]
             }
         }
     }
-  }
 }
