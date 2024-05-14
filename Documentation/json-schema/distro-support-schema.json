@@ -24,6 +24,11 @@
                     "description": "The remaining parts of the command in an array, for apt-get install {0} it would be [install, {0}] as strings"
                 }
             },
+            "required": [
+                "runUnderSudo",
+                "commandRoot",
+                "commandParts"
+            ],
             "additionalProperties": false
         },
         "required_packages": {
@@ -60,16 +65,16 @@
                             "description": "a collection of all potential package names for this version of aspnet on this distro"
                         }
                     ]
-                },
-                "required": [
-                    "version",
-                    "sdk",
-                    "runtime",
-                    "aspnetcore"
-                ]
+                }
             },
-            "additionalProperties": false
-        }
+            "required": [
+                "version",
+                "sdk",
+                "runtime",
+                "aspnetcore"
+            ]
+        },
+        "additionalProperties": false
     },
     "additionalProperties": {
         "description": "The Distro name as in cat etc/os-release. Multiple distros are added to the same file.",
