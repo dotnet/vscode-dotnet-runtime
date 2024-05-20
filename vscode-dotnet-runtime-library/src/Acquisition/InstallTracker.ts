@@ -6,7 +6,15 @@ import * as fs from 'fs';
 import * as lockfile from 'proper-lockfile';
 import * as path from 'path';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
-import { DotnetAcquisitionStatusResolved, DotnetLockAttemptingAcquireEvent, DotnetLockErrorEvent, DotnetPreinstallDetected, DotnetPreinstallDetectionError, DuplicateInstallDetected, NoMatchingInstallToStopTracking } from '../EventStream/EventStreamEvents';
+import {
+    DotnetAcquisitionStatusResolved,
+    DotnetLockAttemptingAcquireEvent,
+    DotnetLockErrorEvent,
+    DotnetPreinstallDetected,
+    DotnetPreinstallDetectionError,
+    DuplicateInstallDetected,
+    NoMatchingInstallToStopTracking
+} from '../EventStream/EventStreamEvents';
 import {
     DotnetInstall,
     GetDotnetInstallInfo,
@@ -18,6 +26,7 @@ import { getVersionFromLegacyInstallKey, installKeyStringToDotnetInstall } from 
 import { InstallRecord, InstallRecordOrStr } from './InstallRecord';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { error } from 'console';
+/* tslint:disable:no-any */
 
 
 interface InProgressInstall
@@ -95,17 +104,17 @@ export class InstallTracker
             return null;
     }
 
-    public async addPromise(key : DotnetInstall, workingInstall : Promise<string>) : Promise<void>
+    public async addPromise(installKey : DotnetInstall, installPromise : Promise<string>) : Promise<void>
     {
-        return await this.executeWithLock( false, (key : DotnetInstall, workingInstall : Promise<string>) =>
+        return this.executeWithLock( false, (key : DotnetInstall, workingInstall : Promise<string>) =>
         {
             this.inProgressInstalls.add({ dotnetInstall: key, installingPromise: workingInstall });
-        }, key, workingInstall);
+        }, installKey, installPromise);
     }
 
-    protected async removePromise(key : DotnetInstall) : Promise<void>
+    protected async removePromise(installKey : DotnetInstall) : Promise<void>
     {
-        return await this.executeWithLock( false, (key : DotnetInstall) =>
+        return this.executeWithLock( false, (key : DotnetInstall) =>
         {
             const resolvedInstall : InProgressInstall | undefined = [...this.inProgressInstalls].find(x => IsEquivalentInstallation(x.dotnetInstall as DotnetInstall, key));
             if(!resolvedInstall)
@@ -115,12 +124,12 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).jo
                 return;
             }
             this.inProgressInstalls.delete(resolvedInstall);
-        }, key);
+        }, installKey);
     }
 
     public async uninstallAllRecords() : Promise<void>
     {
-        return await this.executeWithLock( false, async () =>
+        return this.executeWithLock( false, async () =>
         {
             // This does not uninstall global things yet, so don't remove their keys.
             const installingVersions = await this.getExistingInstalls(false, true);
@@ -137,9 +146,9 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).jo
      *
      * @param getAlreadyInstalledVersions - Whether to get the versions that are already installed. If true, gets installed, if false, gets what's still being installed / installing.
      */
-    public async getExistingInstalls(getAlreadyInstalledVersions : boolean, alreadyHoldingLock = false) : Promise<InstallRecord[]>
+    public async getExistingInstalls(getAlreadyInstalledVersion : boolean, alreadyHoldingLock = false) : Promise<InstallRecord[]>
     {
-        return await this.executeWithLock( alreadyHoldingLock, (getAlreadyInstalledVersions : boolean) =>
+        return this.executeWithLock( alreadyHoldingLock, (getAlreadyInstalledVersions : boolean) =>
         {
             const extensionStateAccessor = getAlreadyInstalledVersions ? this.installedVersionsKey : this.installingVersionsKey;
             const existingInstalls = this.context.extensionState.get<InstallRecordOrStr[]>(extensionStateAccessor, []);
@@ -164,7 +173,7 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).jo
 
             this.context.extensionState.update(extensionStateAccessor, convertedInstalls);
             return convertedInstalls;
-        }, getAlreadyInstalledVersions);
+        }, getAlreadyInstalledVersion);
     }
 
 
@@ -185,9 +194,9 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).jo
         await this.removeVersionFromExtensionState(this.installedVersionsKey, install);
     }
 
-    protected async removeVersionFromExtensionState(key: string, installKey: DotnetInstall)
+    protected async removeVersionFromExtensionState(keyStr: string, installKeyObj: DotnetInstall)
     {
-        return await this.executeWithLock( false, async (key: string, installKey: DotnetInstall) =>
+        return this.executeWithLock( false, async (key: string, installKey: DotnetInstall) =>
         {
             const existingInstalls = await this.getExistingInstalls(key === this.installedVersionsKey);
             const installRecord = existingInstalls.filter(x => IsEquivalentInstallation(x.dotnetInstall, installKey));
@@ -218,7 +227,7 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).jo
                         { dotnetInstall: installKey, installingExtensions: owners } as InstallRecord : x));
                 }
             }
-        }, key, installKey);
+        }, keyStr, installKeyObj);
     }
 
     public async trackInstallingVersion(install: DotnetInstall)
@@ -231,9 +240,9 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).jo
         await this.addVersionToExtensionState(this.installedVersionsKey, install);
     }
 
-    protected async addVersionToExtensionState(key: string, install: DotnetInstall, alreadyHoldingLock = false)
+    protected async addVersionToExtensionState(keyStr: string, installObj: DotnetInstall, alreadyHoldingLock = false)
     {
-        return await this.executeWithLock( alreadyHoldingLock, async (key: string, install: DotnetInstall) =>
+        return this.executeWithLock( alreadyHoldingLock, async (key: string, install: DotnetInstall) =>
         {
             const existingVersions = await this.getExistingInstalls(key === this.installedVersionsKey, true);
             const sameInstallManagedByOtherExtensions = existingVersions.find(x => IsEquivalentInstallation(x.dotnetInstall, install));
@@ -249,12 +258,12 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).jo
             );
 
             await this.context.extensionState.update(key, existingVersions);
-        }, key, install);
+        }, keyStr, installObj);
     }
 
-    public async checkForUnrecordedLocalSDKSuccessfulInstall(dotnetInstallDir: string, installedInstallKeys: InstallRecord[]): Promise<InstallRecord[]>
+    public async checkForUnrecordedLocalSDKSuccessfulInstall(dotnetInstallDirectory: string, installedInstallKeysList: InstallRecord[]): Promise<InstallRecord[]>
     {
-        return await this.executeWithLock( false, async (dotnetInstallDir: string, installedInstallKeys: InstallRecord[]) =>
+        return this.executeWithLock( false, async (dotnetInstallDir: string, installedInstallKeys: InstallRecord[]) =>
         {
             let localSDKDirectoryKeyIter = '';
             try
@@ -278,6 +287,6 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).jo
                     DotnetCoreAcquisitionWorker.defaultArchitecture())));
             }
             return installedInstallKeys;
-        }, dotnetInstallDir, installedInstallKeys);
+        }, dotnetInstallDirectory, installedInstallKeysList);
     }
 }
