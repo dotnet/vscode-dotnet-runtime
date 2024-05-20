@@ -198,7 +198,7 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).jo
     {
         return this.executeWithLock( false, async (key: string, installKey: DotnetInstall) =>
         {
-            const existingInstalls = await this.getExistingInstalls(key === this.installedVersionsKey);
+            const existingInstalls = await this.getExistingInstalls(key === this.installedVersionsKey, true);
             const installRecord = existingInstalls.filter(x => IsEquivalentInstallation(x.dotnetInstall, installKey));
 
             if(installRecord)
