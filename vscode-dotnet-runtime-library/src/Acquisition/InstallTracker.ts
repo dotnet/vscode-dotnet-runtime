@@ -37,27 +37,15 @@ interface InProgressInstall
 }
 
 
-export class InstallTrackerSingleton
+export class InstallTracker
 {
-    private static instance: InstallTrackerSingleton;
-
     private inProgressInstalls: Set<InProgressInstall> = new Set<InProgressInstall>();
     private readonly installingVersionsKey = 'installing';
     private readonly installedVersionsKey = 'installed';
 
-    protected constructor(private readonly context : IAcquisitionWorkerContext)
+    public constructor(private readonly context : IAcquisitionWorkerContext)
     {
 
-    }
-
-    public static getInstance(context: IAcquisitionWorkerContext) : InstallTrackerSingleton
-    {
-        if(!InstallTrackerSingleton.instance)
-            {
-                InstallTrackerSingleton.instance = new InstallTrackerSingleton(context);
-            }
-
-        return InstallTrackerSingleton.instance;
     }
 
     protected executeWithLock = async <A extends any[], R>(alreadyHoldingLock : boolean, f: (...args: A) => R, ...args: A): Promise<R> =>

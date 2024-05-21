@@ -21,8 +21,6 @@ import {
     DotnetInstallKeyCreatedEvent,
     DotnetLegacyInstallDetectedEvent,
     DotnetLegacyInstallRemovalRequestEvent,
-    DotnetPreinstallDetected,
-    DotnetPreinstallDetectionError,
     DotnetUninstallAllCompleted,
     DotnetUninstallAllStarted,
     DotnetGlobalAcquisitionCompletionEvent,
@@ -57,8 +55,9 @@ import {
 } from './DotnetInstall';
 import { DotnetInstall } from './DotnetInstall';
 import { InstallationGraveyard } from './InstallationGraveyard';
-import { InstallTrackerSingleton } from './InstallTrackerSingleton';
+import { InstallTracker } from './InstallTracker';
 import { DotnetInstallMode } from './DotnetInstallMode';
+
 /* tslint:disable:no-any */
 
 export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
@@ -67,7 +66,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     private readonly dotnetExecutable: string;
     private globalResolver: GlobalInstallerResolver | null;
 
-    protected installTracker: InstallTrackerSingleton;
+    protected installTracker: InstallTracker;
     protected graveyard : InstallationGraveyard;
     private extensionContext : IVSCodeExtensionContext;
 
@@ -78,7 +77,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         const dotnetExtension = os.platform() === 'win32' ? '.exe' : '';
         this.graveyard = new InstallationGraveyard(context);
         this.dotnetExecutable = `dotnet${dotnetExtension}`;
-        this.installTracker = InstallTrackerSingleton.getInstance(this.context);
+        this.installTracker = new InstallTracker(this.context);
         // null deliberately allowed to use old behavior below
         this.installingArchitecture = this.context.installingArchitecture === undefined ? os.arch() : this.context.installingArchitecture;
         this.globalResolver = null;

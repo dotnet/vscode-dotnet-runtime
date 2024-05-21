@@ -39,7 +39,7 @@ import { IDotnetAcquireResult } from '../../IDotnetAcquireResult';
 import { IDotnetCoreAcquisitionWorker } from '../../Acquisition/IDotnetCoreAcquisitionWorker';
 import { GetDotnetInstallInfo } from '../../Acquisition/DotnetInstall';
 import { DotnetInstall } from '../../Acquisition/DotnetInstall';
-import { InstallTrackerSingleton } from '../../Acquisition/InstallTrackerSingleton';
+import { InstallTracker } from '../../Acquisition/InstallTracker';
 
 const testDefaultTimeoutTimeMs = 60000;
 /* tslint:disable:no-any */
@@ -100,8 +100,6 @@ export class MockDotnetCoreAcquisitionWorker extends DotnetCoreAcquisitionWorker
     public constructor(context: IAcquisitionWorkerContext, utilityContext : IUtilityContext, extensionContext : IVSCodeExtensionContext)
     {
         super(context, utilityContext, extensionContext);
-        // The singleton pattern does not work under test because each test needs its own context.
-        this.installTracker = new MockInstallTracker(context);
     }
 
     public AddToGraveyard(install : DotnetInstall, installPath : string)
@@ -588,7 +586,7 @@ export class MockExtensionConfiguration implements IExtensionConfiguration {
     }
 }
 
-export class MockInstallTracker extends InstallTrackerSingleton
+export class MockInstallTracker extends InstallTracker
 {
     constructor(context : IAcquisitionWorkerContext)
     {
