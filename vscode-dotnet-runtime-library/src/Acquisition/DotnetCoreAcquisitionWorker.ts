@@ -31,7 +31,6 @@ import {
     DotnetCompletedGlobalInstallerExecution,
     DotnetFakeSDKEnvironmentVariableTriggered,
     SuppressedAcquisitionError,
-    DuplicateInstallDetected
 } from '../EventStream/EventStreamEvents';
 
 import { GlobalInstallerResolver } from './GlobalInstallerResolver';
@@ -50,19 +49,15 @@ import { IDotnetCoreAcquisitionWorker } from './IDotnetCoreAcquisitionWorker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 import {
     InstallRecord,
-    InstallRecordOrStr
 } from './InstallRecord';
 import {
     GetDotnetInstallInfo,
     IsEquivalentInstallationFile,
-    InstallToStrings,
     IsEquivalentInstallation
 } from './DotnetInstall';
-import { installKeyStringToDotnetInstall } from '../Utils/InstallKeyUtilities';
-import { getVersionFromLegacyInstallKey } from '../Utils/InstallKeyUtilities';
 import { DotnetInstall } from './DotnetInstall';
 import { InstallationGraveyard } from './InstallationGraveyard';
-import { InstallTracker } from './InstallTracker';
+import { InstallTrackerSingleton } from './InstallTracker';
 /* tslint:disable:no-any */
 
 export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
@@ -71,7 +66,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     private readonly dotnetExecutable: string;
     private globalResolver: GlobalInstallerResolver | null;
 
-    private installTracker: InstallTracker;
+    private installTracker: InstallTrackerSingleton;
     protected graveyard : InstallationGraveyard;
     private extensionContext : IVSCodeExtensionContext;
 
@@ -82,7 +77,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         const dotnetExtension = os.platform() === 'win32' ? '.exe' : '';
         this.graveyard = new InstallationGraveyard(context);
         this.dotnetExecutable = `dotnet${dotnetExtension}`;
-        this.installTracker = new InstallTracker(this.context);
+        this.installTracker = InstallTrackerSingleton.getInstance(this.context);
         // null deliberately allowed to use old behavior below
         this.installingArchitecture = this.context.installingArchitecture === undefined ? os.arch() : this.context.installingArchitecture;
         this.globalResolver = null;

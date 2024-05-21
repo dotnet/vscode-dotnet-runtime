@@ -124,7 +124,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
 
     // Clean up storage
     rimraf.sync(dotnetDir);
-  });
+  }).timeout(standardTimeoutTime);
 
   test('Install Status Command with Preinstalled SDK', async () => {
     // Set up acquisition worker
@@ -152,7 +152,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
 
     // Clean up storage
     rimraf.sync(dotnetDir);
-  });
+  }).timeout(standardTimeoutTime);
 
   test('Install Command', async () => {
     const context: IDotnetAcquireContext = { version: currentSDKVersion, requestingExtensionId: 'ms-dotnettools.sample-extension' };
