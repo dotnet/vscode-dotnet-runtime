@@ -57,7 +57,7 @@ import {
 } from './DotnetInstall';
 import { DotnetInstall } from './DotnetInstall';
 import { InstallationGraveyard } from './InstallationGraveyard';
-import { InstallTrackerSingleton } from './InstallTracker';
+import { InstallTrackerSingleton } from './InstallTrackerSingleton';
 import { DotnetInstallMode } from './DotnetInstallMode';
 /* tslint:disable:no-any */
 
@@ -67,7 +67,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     private readonly dotnetExecutable: string;
     private globalResolver: GlobalInstallerResolver | null;
 
-    private installTracker: InstallTrackerSingleton;
+    protected installTracker: InstallTrackerSingleton;
     protected graveyard : InstallationGraveyard;
     private extensionContext : IVSCodeExtensionContext;
 
@@ -174,9 +174,10 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      * @param globalInstallerResolver Create this and add it to install globally.
      * @returns the dotnet acquisition result.
      */
-    private async acquire(version: string, installMode: DotnetInstallMode, globalInstallerResolver : GlobalInstallerResolver | null = null, localInvoker? : IAcquisitionInvoker): Promise<IDotnetAcquireResult>
+    private async acquire(version: string, mode: DotnetInstallMode,
+        globalInstallerResolver : GlobalInstallerResolver | null = null, localInvoker? : IAcquisitionInvoker): Promise<IDotnetAcquireResult>
     {
-        let install = GetDotnetInstallInfo(version, installMode, globalInstallerResolver !== null, this.installingArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
+        let install = GetDotnetInstallInfo(version, mode, globalInstallerResolver !== null, this.installingArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
 
         // Allow for the architecture to be null, which is a legacy behavior.
         if(this.context.acquisitionContext?.architecture === null && this.context.acquisitionContext?.architecture !== undefined)
@@ -186,7 +187,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
                 installKey: DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, null, globalInstallerResolver !== null),
                 version: install.version,
                 isGlobal: install.isGlobal,
-                installMode: installMode,
+                installMode: mode,
             } as DotnetInstall
         }
 
@@ -218,7 +219,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             {
                 Debugging.log(`The Acquisition Worker has Determined a Local Install was requested.`, this.context.eventStream);
 
-                acquisitionPromise = this.acquireLocalCore(version, installMode, install, localInvoker!).catch(async (error: Error) => {
+                acquisitionPromise = this.acquireLocalCore(version, mode, install, localInvoker!).catch(async (error: Error) => {
                     await this.installTracker.untrackInstallingVersion(install);
                     error.message = `.NET Acquisition Failed: ${error.message}`;
                     throw error;
@@ -259,7 +260,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      *
      * @remarks it is called "core" because it is the meat of the actual acquisition work; this has nothing to do with .NET core vs framework.
      */
-    private async acquireLocalCore(version: string, installMode: DotnetInstallMode, install : DotnetInstall, acquisitionInvoker : IAcquisitionInvoker): Promise<string>
+    private async acquireLocalCore(version: string, mode: DotnetInstallMode, install : DotnetInstall, acquisitionInvoker : IAcquisitionInvoker): Promise<string>
     {
         this.checkForPartialInstalls(install);
 
@@ -294,8 +295,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             version,
             dotnetPath,
             timeoutSeconds: this.context.timeoutSeconds,
-            installRuntime : installMode === 'runtime',
-            installMode : installMode,
+            installRuntime : mode === 'runtime',
+            installMode : mode,
             architecture: this.installingArchitecture
         } as IDotnetInstallationContext;
         this.context.eventStream.post(new DotnetAcquisitionStarted(install, version, this.context.acquisitionContext?.requestingExtensionId));

@@ -397,7 +397,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         }
     }
 
-    function getAcquisitionWorkerContext(installMode : DotnetInstallMode) : IAcquisitionWorkerContext
+    function getAcquisitionWorkerContext(mode : DotnetInstallMode) : IAcquisitionWorkerContext
     {
         return {
             storagePath: context.globalStoragePath,
@@ -405,8 +405,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             eventStream: globalEventStream,
             installationValidator: new InstallationValidator(globalEventStream),
             timeoutSeconds: resolvedTimeoutSeconds,
-            installMode: installMode,
-            installDirectoryProvider: installMode === 'runtime' ? new RuntimeInstallationDirectoryProvider(context.globalStoragePath): new SdkInstallationDirectoryProvider(context.globalStoragePath),
+            installMode: mode,
+            installDirectoryProvider: mode === 'runtime' ? new RuntimeInstallationDirectoryProvider(context.globalStoragePath): new SdkInstallationDirectoryProvider(context.globalStoragePath),
             proxyUrl: proxyLink,
             isExtensionTelemetryInitiallyEnabled: isExtensionTelemetryEnabled
         }

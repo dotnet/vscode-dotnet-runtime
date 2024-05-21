@@ -45,7 +45,7 @@ export class InstallTrackerSingleton
     private readonly installingVersionsKey = 'installing';
     private readonly installedVersionsKey = 'installed';
 
-    private constructor(private readonly context : IAcquisitionWorkerContext)
+    protected constructor(private readonly context : IAcquisitionWorkerContext)
     {
 
     }

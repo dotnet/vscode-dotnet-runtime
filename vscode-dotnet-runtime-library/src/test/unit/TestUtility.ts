@@ -18,7 +18,7 @@ import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 
 const standardTimeoutTime = 100000;
 
-export function getMockAcquisitionContext(installMode: DotnetInstallMode, version : string, timeoutTime : number = standardTimeoutTime, customEventStream? : IEventStream,
+export function getMockAcquisitionContext(mode: DotnetInstallMode, version : string, timeoutTime : number = standardTimeoutTime, customEventStream? : IEventStream,
     customContext? : MockExtensionContext, arch? : string | null, directory? : IInstallationDirectoryProvider): IAcquisitionWorkerContext
 {
     const extensionContext = customContext ?? new MockExtensionContext();
@@ -31,10 +31,10 @@ export function getMockAcquisitionContext(installMode: DotnetInstallMode, versio
         acquisitionContext: getMockAcquireContext(version, arch === null),
         installationValidator: new MockInstallationValidator(myEventStream),
         timeoutSeconds: timeoutTime,
-        installMode: installMode,
+        installMode: mode,
         installingArchitecture: arch,
         proxyUrl: undefined,
-        installDirectoryProvider: directory ? directory : installMode === 'runtime' ? new RuntimeInstallationDirectoryProvider('') : new SdkInstallationDirectoryProvider(''),
+        installDirectoryProvider: directory ? directory : mode === 'runtime' ? new RuntimeInstallationDirectoryProvider('') : new SdkInstallationDirectoryProvider(''),
         isExtensionTelemetryInitiallyEnabled: true
     };
     return workerContext;
