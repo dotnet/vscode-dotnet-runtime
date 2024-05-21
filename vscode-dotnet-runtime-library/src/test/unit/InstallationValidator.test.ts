@@ -15,7 +15,7 @@ suite('InstallationValidator Unit Tests', () => {
     const validator = new InstallationValidator(eventStream);
 
     test('Error With Invalid File Structure', async () => {
-        const install = GetDotnetInstallInfo('7.0', true, false, os.arch());
+        const install = GetDotnetInstallInfo('7.0', 'runtime', false, os.arch());
         assert.throws(() => validator.validateDotnetInstall(install, ''), `Validation of .dotnet installation for version`);
         assert.throws(() => validator.validateDotnetInstall(install, ''), `fail`);
     });

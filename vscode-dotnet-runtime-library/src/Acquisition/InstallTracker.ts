@@ -172,7 +172,7 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).jo
                 {
                     convertedInstalls.push(
                         {
-                            dotnetInstall: installKeyStringToDotnetInstall(install),
+                            dotnetInstall: installKeyStringToDotnetInstall(this.context, install),
                             installingExtensions: [ null ],
                         } as InstallRecord
                     );
@@ -287,7 +287,7 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).jo
                 for (const installKey of installKeys)
                 {
                     localSDKDirectoryKeyIter = installKey;
-                    const installRecord = GetDotnetInstallInfo(getVersionFromLegacyInstallKey(installKey), false, false, DotnetCoreAcquisitionWorker.defaultArchitecture());
+                    const installRecord = GetDotnetInstallInfo(getVersionFromLegacyInstallKey(installKey), 'sdk', false, DotnetCoreAcquisitionWorker.defaultArchitecture());
                     this.context.eventStream.post(new DotnetPreinstallDetected(installRecord));
                     await this.addVersionToExtensionState(this.installedVersionsKey, installRecord, true);
                     installedInstallKeys.push({ dotnetInstall: installRecord, installingExtensions: [ null ] } as InstallRecord);
@@ -295,7 +295,7 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).jo
             }
             catch (error)
             {
-                this.context.eventStream.post(new DotnetPreinstallDetectionError(error as Error, GetDotnetInstallInfo(localSDKDirectoryKeyIter, false, false,
+                this.context.eventStream.post(new DotnetPreinstallDetectionError(error as Error, GetDotnetInstallInfo(localSDKDirectoryKeyIter, 'sdk', false,
                     DotnetCoreAcquisitionWorker.defaultArchitecture())));
             }
             return installedInstallKeys;

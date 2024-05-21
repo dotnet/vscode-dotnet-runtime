@@ -7,7 +7,7 @@ import * as path from 'path';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { CommandExecutorCommand } from '../Utils/CommandExecutorCommand';
 import { DotnetDistroSupportStatus } from './LinuxVersionResolver';
-import { LinuxInstallType } from './LinuxInstallType';
+import { DotnetInstallMode } from './DotnetInstallMode';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 import { DotnetVersionResolutionError } from '../EventStream/EventStreamEvents';
 /* tslint:disable:no-any */
@@ -16,7 +16,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 {
     protected resolvePathAsSymlink = true;
 
-    public async installDotnet(fullySpecifiedVersion : string, installType : LinuxInstallType): Promise<string>
+    public async installDotnet(fullySpecifiedVersion : string, installType : DotnetInstallMode): Promise<string>
     {
         await this.injectPMCFeed(fullySpecifiedVersion, installType);
 
@@ -33,7 +33,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         return installCommandResult;
     }
 
-    public async getInstalledGlobalDotnetPathIfExists(installType : LinuxInstallType) : Promise<string | null>
+    public async getInstalledGlobalDotnetPathIfExists(installType : DotnetInstallMode) : Promise<string | null>
     {
         const commandResult = await this.commandRunner.executeMultipleCommands(this.myDistroCommands(this.currentInstallPathCommandKey));
 
@@ -66,7 +66,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         return commandResult[0] ?? null;
     }
 
-    public async dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion : string, installType : LinuxInstallType) : Promise<boolean>
+    public async dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion : string, installType : DotnetInstallMode) : Promise<boolean>
     {
         let command = this.myDistroCommands(this.packageLookupCommandKey);
         const sdkPackage = await this.myDotnetVersionPackageName(this.JsonDotnetVersion(fullySpecifiedDotnetVersion), installType);
@@ -87,7 +87,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         return this.myDistroStrings(this.expectedMicrosoftFeedInstallDirKey);
     }
 
-    public async upgradeDotnet(versionToUpgrade : string, installType : LinuxInstallType): Promise<string>
+    public async upgradeDotnet(versionToUpgrade : string, installType : DotnetInstallMode): Promise<string>
     {
         const oldReturnStatusSetting = this.commandRunner.returnStatus;
         this.commandRunner.returnStatus = true;
@@ -101,7 +101,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         return commandResult[0];
     }
 
-    public async uninstallDotnet(versionToUninstall : string, installType : LinuxInstallType): Promise<string>
+    public async uninstallDotnet(versionToUninstall : string, installType : DotnetInstallMode): Promise<string>
     {
         let command = this.myDistroCommands(this.uninstallCommandKey);
         const sdkPackage = await this.myDotnetVersionPackageName(versionToUninstall, installType);
@@ -169,7 +169,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         }
     }
 
-    public async getDotnetVersionSupportStatus(fullySpecifiedVersion: string, installType : LinuxInstallType): Promise<DotnetDistroSupportStatus>
+    public async getDotnetVersionSupportStatus(fullySpecifiedVersion: string, installType : DotnetInstallMode): Promise<DotnetDistroSupportStatus>
     {
         if(this.versionResolver.getFeatureBandFromVersion(fullySpecifiedVersion) !== '1' || Number(this.versionResolver.getMajor(fullySpecifiedVersion)) < 6)
         {
@@ -198,7 +198,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         return Promise.resolve(DotnetDistroSupportStatus.Unknown);
     }
 
-    public async getRecommendedDotnetVersion(installType : LinuxInstallType) : Promise<string>
+    public async getRecommendedDotnetVersion(installType : DotnetInstallMode) : Promise<string>
     {
         let maxVersion = '0';
         const json = await this.myVersionPackages(installType, this.isMidFeedInjection);

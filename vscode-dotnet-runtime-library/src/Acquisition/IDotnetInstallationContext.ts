@@ -3,11 +3,14 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
+import { DotnetInstallMode } from "./DotnetInstallMode";
+
 export interface IDotnetInstallationContext {
     installDir: string;
     version: string;
     dotnetPath: string;
     timeoutSeconds: number;
-    installRuntime: boolean;
+    installRuntime: boolean; // kept to remove breaking change
+    installMode : DotnetInstallMode;
     architecture: string;
 }

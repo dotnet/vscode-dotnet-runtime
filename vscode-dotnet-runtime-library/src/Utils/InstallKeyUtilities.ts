@@ -6,23 +6,26 @@
 import { DotnetCoreAcquisitionWorker } from '../Acquisition/DotnetCoreAcquisitionWorker';
 import { looksLikeRuntimeVersion } from '../Acquisition/DotnetInstall';
 import { DotnetInstall } from '../Acquisition/DotnetInstall';
+import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
 import * as os from 'os';
 
-export function getInstallKeyFromContext(ctx : IDotnetAcquireContext | undefined | null) : DotnetInstall | null
+export function getInstallKeyFromContext(ctx : IAcquisitionWorkerContext | undefined | null) : DotnetInstall | null
 {
-    if(!ctx)
+    if(!ctx || !ctx.acquisitionContext)
     {
         return null;
     }
 
+    const acquireContext = ctx.acquisitionContext!;
+
     return {
-        installKey : DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(ctx.version, ctx.architecture,
-            ctx.installType ? ctx.installType === 'global' : false),
-        version: ctx.version,
-        architecture: ctx.architecture,
-        isGlobal: ctx.installType ? ctx.installType === 'global' : false,
-        isRuntime: looksLikeRuntimeVersion(ctx.version)
+        installKey : DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(acquireContext.version, acquireContext.architecture,
+            acquireContext.installType ? acquireContext.installType === 'global' : false),
+        version: acquireContext.version,
+        architecture: acquireContext.architecture,
+        isGlobal: acquireContext.installType ? acquireContext.installType === 'global' : false,
+        installMode: ctx.installMode
     } as DotnetInstall;
 
 
@@ -56,13 +59,13 @@ export function getVersionFromLegacyInstallKey(installKey: string): string {
         return installKey;
     }
 }
-export function installKeyStringToDotnetInstall(key: string): DotnetInstall {
+export function installKeyStringToDotnetInstall(context : IAcquisitionWorkerContext, key: string): DotnetInstall {
     return {
         installKey: key,
         version: getVersionFromLegacyInstallKey(key),
         architecture: getArchFromLegacyInstallKey(key) ?? os.arch(),
         isGlobal: isGlobalLegacyInstallKey(key),
-        isRuntime: isRuntimeInstallKey(key)
+        installMode: context.installMode
     };
 }
 

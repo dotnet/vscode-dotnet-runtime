@@ -47,7 +47,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
     {
         const context = new MockExtensionContext();
         const eventStream = new MockEventStream();
-        const acquisitionWorker = getMockAcquisitionWorker(isRuntimeWorker, version, arch, eventStream, context);
+        const acquisitionWorker = getMockAcquisitionWorker(isRuntimeWorker ? 'runtime' : 'sdk', version, arch, eventStream, context);
         const invoker = new NoInstallAcquisitionInvoker(eventStream, acquisitionWorker);
         return [acquisitionWorker, eventStream, context, invoker];
     }
@@ -135,13 +135,13 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         const version = '5.0';
         const [acquisitionWorker, eventStream, context, invoker] = setupWorker(false, version);
         const installKey = acquisitionWorker.getInstallKey(version);
-        let result = await acquisitionWorker.acquireStatus(version, false);
+        let result = await acquisitionWorker.acquireStatus(version, 'sdk');
         assert.isUndefined(result);
         const undefinedEvent = eventStream.events.find(event => event instanceof DotnetAcquisitionStatusUndefined);
         assert.exists(undefinedEvent, 'Undefined event exists');
 
         await acquisitionWorker.acquireSDK(version, invoker);
-        result = await acquisitionWorker.acquireStatus(version, false, undefined);
+        result = await acquisitionWorker.acquireStatus(version, 'sdk', undefined);
         await assertAcquisitionSucceeded(installKey, result!.dotnetPath, eventStream, context, false);
         const resolvedEvent = eventStream.events.find(event => event instanceof DotnetAcquisitionStatusResolved);
         assert.exists(resolvedEvent, 'The sdk is resolved');
@@ -151,13 +151,13 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         const version = '5.0';
         const [acquisitionWorker, eventStream, context, invoker] = setupWorker(true, version);
         const installKey = acquisitionWorker.getInstallKey(version);
-        let result = await acquisitionWorker.acquireStatus(version, true);
+        let result = await acquisitionWorker.acquireStatus(version, 'sdk');
         assert.isUndefined(result);
         const undefinedEvent = eventStream.events.find(event => event instanceof DotnetAcquisitionStatusUndefined);
         assert.exists(undefinedEvent);
 
         await acquisitionWorker.acquireRuntime(version, invoker);
-        result = await acquisitionWorker.acquireStatus(version, true, undefined);
+        result = await acquisitionWorker.acquireStatus(version, 'runtime', undefined);
         await assertAcquisitionSucceeded(installKey, result!.dotnetPath, eventStream, context, true);
         const resolvedEvent = eventStream.events.find(event => event instanceof DotnetAcquisitionStatusResolved);
         assert.exists(resolvedEvent);
@@ -217,7 +217,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         const version = '1.0';
         const [acquisitionWorker, eventStream, context, invoker] = setupWorker(true, version);
         const installKey = acquisitionWorker.getInstallKey(version);
-        const install = GetDotnetInstallInfo(version, true, false, os.arch());
+        const install = GetDotnetInstallInfo(version, 'runtime', false, os.arch());
 
         const res = await acquisitionWorker.acquireRuntime(version, invoker);
         await assertAcquisitionSucceeded(installKey, res.dotnetPath, eventStream, context);
@@ -237,7 +237,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
               architecture: 'x64',
               installKey: '5.0~x64',
               isGlobal: false,
-              isRuntime: true,
+              installMode: 'runtime',
               version: '5.0',
             },
             installingExtensions: [
@@ -333,8 +333,8 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         if(os.platform() === 'win32'){
             const installApostropheFolder = `test' for' apostrophe`;
             const version = '1.0';
-            const acquisitionContext = getMockAcquisitionContext(false, version);
-            const acquisitionWorker = getMockAcquisitionWorker(true, version);
+            const acquisitionContext = getMockAcquisitionContext('runtime', version);
+            const acquisitionWorker = getMockAcquisitionWorker('runtime', version);
             const acquisitionInvoker = new MockAcquisitionInvoker(acquisitionContext, installApostropheFolder);
 
             const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, os.arch());

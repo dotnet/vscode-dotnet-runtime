@@ -14,10 +14,11 @@ import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerC
 import { IEventStream } from '../../EventStream/EventStream';
 import { IUtilityContext } from '../../Utils/IUtilityContext';
 import { IInstallationDirectoryProvider } from '../../Acquisition/IInstallationDirectoryProvider';
+import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 
 const standardTimeoutTime = 100000;
 
-export function getMockAcquisitionContext(runtimeInstall: boolean, version : string, timeoutTime : number = standardTimeoutTime, customEventStream? : IEventStream,
+export function getMockAcquisitionContext(installMode: DotnetInstallMode, version : string, timeoutTime : number = standardTimeoutTime, customEventStream? : IEventStream,
     customContext? : MockExtensionContext, arch? : string | null, directory? : IInstallationDirectoryProvider): IAcquisitionWorkerContext
 {
     const extensionContext = customContext ?? new MockExtensionContext();
@@ -30,18 +31,19 @@ export function getMockAcquisitionContext(runtimeInstall: boolean, version : str
         acquisitionContext: getMockAcquireContext(version, arch === null),
         installationValidator: new MockInstallationValidator(myEventStream),
         timeoutSeconds: timeoutTime,
+        installMode: installMode,
         installingArchitecture: arch,
         proxyUrl: undefined,
-        installDirectoryProvider: directory ? directory : runtimeInstall ? new RuntimeInstallationDirectoryProvider('') : new SdkInstallationDirectoryProvider(''),
+        installDirectoryProvider: directory ? directory : installMode === 'runtime' ? new RuntimeInstallationDirectoryProvider('') : new SdkInstallationDirectoryProvider(''),
         isExtensionTelemetryInitiallyEnabled: true
     };
     return workerContext;
 }
 
-export function getMockAcquisitionWorker(runtimeInstall: boolean, version : string, arch? : string | null, customEventStream? : MockEventStream,
+export function getMockAcquisitionWorker(installMode: DotnetInstallMode, version : string, arch? : string | null, customEventStream? : MockEventStream,
     customContext? : MockExtensionContext, directory? : IInstallationDirectoryProvider) : MockDotnetCoreAcquisitionWorker
 {
-    const acquisitionWorker = new MockDotnetCoreAcquisitionWorker(getMockAcquisitionContext(runtimeInstall, version, undefined, customEventStream, customContext, arch, directory),
+    const acquisitionWorker = new MockDotnetCoreAcquisitionWorker(getMockAcquisitionContext(installMode, version, undefined, customEventStream, customContext, arch, directory),
         getMockUtilityContext(), new MockVSCodeExtensionContext());
     return acquisitionWorker;
 }

@@ -160,7 +160,7 @@ export class GlobalInstallerResolver {
             return [installerUrlAndHash[0], fullySpecifiedVersionRequested, installerUrlAndHash[1]];
         }
 
-        const err = new DotnetVersionResolutionError(new EventCancellationError(`${this.badResolvedVersionErrorString} ${version}`), getInstallKeyFromContext(this.context.acquisitionContext));
+        const err = new DotnetVersionResolutionError(new EventCancellationError(`${this.badResolvedVersionErrorString} ${version}`), getInstallKeyFromContext(this.context));
         this.context.eventStream.post(err);
         throw err.error;
     }
@@ -177,7 +177,7 @@ export class GlobalInstallerResolver {
         if(specificVersion === null || specificVersion === undefined || specificVersion === '')
         {
             const versionErr = new DotnetVersionResolutionError(new EventCancellationError(`${this.badResolvedVersionErrorString} ${specificVersion}.`),
-                getInstallKeyFromContext(this.context.acquisitionContext));
+                getInstallKeyFromContext(this.context));
             this.context.eventStream.post(versionErr);
             throw versionErr.error;
         }
@@ -185,7 +185,7 @@ export class GlobalInstallerResolver {
         const convertedOs = this.fileUtilities.nodeOSToDotnetOS(os.platform(), this.context.eventStream);
         if(convertedOs === 'auto')
         {
-            const osErr = new DotnetUnexpectedInstallerOSError(new Error(`The OS ${os.platform()} is currently unsupported or unknown.`), getInstallKeyFromContext(this.context.acquisitionContext));
+            const osErr = new DotnetUnexpectedInstallerOSError(new Error(`The OS ${os.platform()} is currently unsupported or unknown.`), getInstallKeyFromContext(this.context));
             this.context.eventStream.post(osErr);
             throw osErr.error;
         }
@@ -194,7 +194,7 @@ export class GlobalInstallerResolver {
         if(convertedArch === 'auto')
         {
             const archErr = new DotnetUnexpectedInstallerArchitectureError(new Error(`The architecture ${os.arch()} is currently unsupported or unknown.
-                Your architecture: ${os.arch()}. Your OS: ${os.platform()}.`), getInstallKeyFromContext(this.context.acquisitionContext));
+                Your architecture: ${os.arch()}. Your OS: ${os.platform()}.`), getInstallKeyFromContext(this.context));
             this.context.eventStream.post(archErr);
             throw archErr.error;
         }
@@ -205,7 +205,7 @@ export class GlobalInstallerResolver {
         const releases = indexJson![this.releasesJsonKey];
         if(releases.length === 0)
         {
-            const jsonErr = new DotnetInvalidReleasesJSONError(new Error(`${this.releasesJsonErrorString}${indexUrl}`), getInstallKeyFromContext(this.context.acquisitionContext));
+            const jsonErr = new DotnetInvalidReleasesJSONError(new Error(`${this.releasesJsonErrorString}${indexUrl}`), getInstallKeyFromContext(this.context));
             this.context.eventStream.post(jsonErr);
             throw jsonErr.error;
         }
@@ -232,7 +232,7 @@ export class GlobalInstallerResolver {
                         {
                             const releaseJsonErr = new DotnetInvalidReleasesJSONError(new Error(`URL for ${desiredRidPackage} on ${specificVersion} is unavailable:
 The version may be Out of Support, or the releases json format used by ${indexUrl} may be invalid and the extension needs to be updated.`),
-                                getInstallKeyFromContext(this.context.acquisitionContext));
+                                getInstallKeyFromContext(this.context));
                             this.context.eventStream.post(releaseJsonErr);
                             throw releaseJsonErr.error;
                         }
@@ -240,7 +240,7 @@ The version may be Out of Support, or the releases json format used by ${indexUr
                         {
                             const releaseJsonErr = new DotnetInvalidReleasesJSONError(new Error(`The url: ${installerUrl} is hosted on an unexpected domain.
 We cannot verify that .NET downloads are hosted in a secure location, so we have rejected .NET. The url should be download.visualstudio.microsoft.com.
-Please report this issue so it can be remedied or investigated.`), getInstallKeyFromContext(this.context.acquisitionContext));
+Please report this issue so it can be remedied or investigated.`), getInstallKeyFromContext(this.context));
                             this.context.eventStream.post(releaseJsonErr);
                             throw releaseJsonErr.error;
                         }
@@ -259,7 +259,7 @@ Please report this issue so it can be remedied or investigated.`), getInstallKey
                 }
 
                 const installerErr = new DotnetNoInstallerFileExistsError(new Error(`An installer for the runtime ${desiredRidPackage} could not be found for version ${specificVersion}.`),
-                    getInstallKeyFromContext(this.context.acquisitionContext));
+                    getInstallKeyFromContext(this.context));
                 this.context.eventStream.post(installerErr);
                 throw installerErr.error;
             }
@@ -267,7 +267,7 @@ Please report this issue so it can be remedied or investigated.`), getInstallKey
 
         const fileErr = new DotnetNoInstallerFileExistsError(new Error(`The SDK installation files for version ${specificVersion} running on ${desiredRidPackage} couldn't be found.
 Is the version in support? Note that -preview versions or versions with build numbers aren't yet supported.
-Visit https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core for support information.`), getInstallKeyFromContext(this.context.acquisitionContext));
+Visit https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core for support information.`), getInstallKeyFromContext(this.context));
         this.context.eventStream.post(fileErr);
         throw fileErr.error;
     }
@@ -297,7 +297,7 @@ Visit https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core for
             const err = new DotnetInvalidReleasesJSONError(new Error(`${this.releasesJsonErrorString}
                 ${this.getIndexUrl(this.versionResolver.getMajorMinor(version))}.
 The json does not have the parameter ${this.releasesSdkNameKey} which means the API publisher has published invalid dotnet release data.
-Please file an issue at https://github.com/dotnet/vscode-dotnet-runtime.`), getInstallKeyFromContext(this.context.acquisitionContext));
+Please file an issue at https://github.com/dotnet/vscode-dotnet-runtime.`), getInstallKeyFromContext(this.context));
             this.context.eventStream.post(err);
             throw err.error;
         }
@@ -321,7 +321,7 @@ Please file an issue at https://github.com/dotnet/vscode-dotnet-runtime.`), getI
             default:
             {
                 const err = new DotnetUnexpectedInstallerOSError(new Error(`The SDK Extension failed to map the OS ${operatingSystemInDotnetFormat} to a proper package type.
-Your architecture: ${os.arch()}. Your OS: ${os.platform()}.`), getInstallKeyFromContext(this.context.acquisitionContext));
+Your architecture: ${os.arch()}. Your OS: ${os.platform()}.`), getInstallKeyFromContext(this.context));
                 this.context.eventStream.post(err);
                 throw err.error;
             }
@@ -346,7 +346,7 @@ Your architecture: ${os.arch()}. Your OS: ${os.platform()}.`), getInstallKeyFrom
 
         if(releases.length === 0)
         {
-            const badJsonErr = new DotnetInvalidReleasesJSONError(new Error(`${this.releasesJsonErrorString}${indexUrl}`), getInstallKeyFromContext(this.context.acquisitionContext));
+            const badJsonErr = new DotnetInvalidReleasesJSONError(new Error(`${this.releasesJsonErrorString}${indexUrl}`), getInstallKeyFromContext(this.context));
             this.context.eventStream.post(badJsonErr);
             throw badJsonErr.error;
         }
@@ -366,7 +366,7 @@ Your architecture: ${os.arch()}. Your OS: ${os.platform()}.`), getInstallKeyFrom
 
         const availableBands = Array.from(new Set(sdks.map((x : any) => this.versionResolver.getFeatureBandFromVersion(x[this.releasesSdkVersionKey]))));
         const err = new DotnetFeatureBandDoesNotExistError(new Error(`The feature band '${band}' doesn't exist for the SDK major version '${version}'.
-Available feature bands for this SDK version are ${availableBands}.`), getInstallKeyFromContext(this.context.acquisitionContext));
+Available feature bands for this SDK version are ${availableBands}.`), getInstallKeyFromContext(this.context));
         this.context.eventStream.post(err);
         throw err.error;
     }

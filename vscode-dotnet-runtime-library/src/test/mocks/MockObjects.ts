@@ -14,7 +14,7 @@ import { FileUtilities } from '../../Utils/FileUtilities';
 import { WebRequestWorker } from '../../Utils/WebRequestWorker';
 import { CommandExecutor } from '../../Utils/CommandExecutor';
 import { AcquisitionInvoker } from '../../Acquisition/AcquisitionInvoker';
-import { LinuxInstallType } from '../../Acquisition/LinuxInstallType';
+import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProvider';
 import { getMockUtilityContext } from '../unit/TestUtility';
 import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
@@ -77,7 +77,7 @@ export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker {
     public installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             this.eventStream.post(new TestAcquireCalled(installContext));
-            const install = GetDotnetInstallInfo(installContext.version, installContext.installRuntime, false, installContext.architecture)
+            const install = GetDotnetInstallInfo(installContext.version, installContext.installMode, false, installContext.architecture)
             this.eventStream.post(new DotnetAcquisitionCompleted(
                 install, installContext.dotnetPath, installContext.version));
             resolve();
@@ -464,7 +464,7 @@ export class MockDistroProvider extends IDistroDotnetSDKProvider
         return Promise.resolve(this.supportStatusReturnValue);
     }
 
-    public getRecommendedDotnetVersion(installType : LinuxInstallType): Promise<string> {
+    public getRecommendedDotnetVersion(installType : DotnetInstallMode): Promise<string> {
         this.commandRunner.execute(CommandExecutor.makeCommand(`recommended`, [`version`]));
         return Promise.resolve(this.recommendedVersionReturnValue);
     }

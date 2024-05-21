@@ -50,7 +50,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
         catch (error)
         {
             Debugging.log('An error occurred processing the install script.');
-            this.context.eventStream.post(new DotnetInstallScriptAcquisitionError(error as Error, getInstallKeyFromContext(this.context.acquisitionContext)));
+            this.context.eventStream.post(new DotnetInstallScriptAcquisitionError(error as Error, getInstallKeyFromContext(this.context)));
 
             // Try to use fallback install script
             const fallbackPath = this.getFallbackScriptPath();

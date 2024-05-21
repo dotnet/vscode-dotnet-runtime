@@ -4,13 +4,14 @@
 *--------------------------------------------------------------------------------------------*/
 
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
+import { DotnetInstallMode } from './DotnetInstallMode';
 
 export interface DotnetInstall {
     installKey: string;
     version: string;
     architecture: string;
     isGlobal: boolean;
-    isRuntime: boolean;
+    installMode: DotnetInstallMode;
 }
 
 /**
@@ -30,7 +31,7 @@ export type DotnetInstallOrStr = DotnetInstall | string;
  */
 export function IsEquivalentInstallationFile(a: DotnetInstall, b: DotnetInstall): boolean {
     return a.version === b.version && a.architecture === b.architecture &&
-        a.isGlobal === b.isGlobal && a.isRuntime === b.isRuntime;
+        a.isGlobal === b.isGlobal && a.installMode === b.installMode;
 }
 
 /**
@@ -49,7 +50,7 @@ export function IsEquivalentInstallation(a: DotnetInstall, b: DotnetInstall): bo
  */
 export function InstallToStrings(key: DotnetInstall | null) {
     if (!key) {
-        return { installKey: '', version: '', architecture: '', isGlobal: '', isRuntime: '' };
+        return { installKey: '', version: '', architecture: '', isGlobal: '', installMode: '' };
     }
 
     return {
@@ -57,7 +58,7 @@ export function InstallToStrings(key: DotnetInstall | null) {
         version: key.version,
         architecture: key.architecture,
         isGlobal: key.isGlobal.toString(),
-        isRuntime: key.isRuntime.toString()
+        installMode: key.installMode.toString()
     };
 }
 
@@ -66,12 +67,12 @@ export function looksLikeRuntimeVersion(version: string): boolean {
     return !band || band.length <= 2; // assumption : there exists no runtime version at this point over 99 sub versions
 }
 
-export function GetDotnetInstallInfo(installVersion: string, installRuntime: boolean, isGlobalInstall: boolean, installArchitecture: string): DotnetInstall {
+export function GetDotnetInstallInfo(installVersion: string, installationMode: DotnetInstallMode, isGlobalInstall: boolean, installArchitecture: string): DotnetInstall {
     return {
         installKey: DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(installVersion, installArchitecture),
         version: installVersion,
         architecture: installArchitecture,
         isGlobal: isGlobalInstall,
-        isRuntime: installRuntime,
+        installMode: installationMode,
     } as DotnetInstall;
 }

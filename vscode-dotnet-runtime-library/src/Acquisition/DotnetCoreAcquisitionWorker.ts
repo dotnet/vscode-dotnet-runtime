@@ -58,6 +58,7 @@ import {
 import { DotnetInstall } from './DotnetInstall';
 import { InstallationGraveyard } from './InstallationGraveyard';
 import { InstallTrackerSingleton } from './InstallTracker';
+import { DotnetInstallMode } from './DotnetInstallMode';
 /* tslint:disable:no-any */
 
 export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
@@ -101,13 +102,13 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      * @returns the requested dotnet path.
      */
     public async acquireSDK(version: string, invoker : IAcquisitionInvoker): Promise<IDotnetAcquireResult> {
-        return this.acquire(version, false, undefined, invoker);
+        return this.acquire(version, 'sdk', undefined, invoker);
     }
 
     public async acquireGlobalSDK(installerResolver: GlobalInstallerResolver): Promise<IDotnetAcquireResult>
     {
         this.globalResolver = installerResolver;
-        return this.acquire(await installerResolver.getFullySpecifiedVersion(), false, installerResolver);
+        return this.acquire(await installerResolver.getFullySpecifiedVersion(), 'sdk', installerResolver);
     }
 
     /**
@@ -116,7 +117,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      * @returns the requested dotnet path.
      */
     public async acquireRuntime(version: string, invoker : IAcquisitionInvoker): Promise<IDotnetAcquireResult> {
-        return this.acquire(version, true, undefined, invoker);
+        return this.acquire(version, 'runtime', undefined, invoker);
     }
 
     /**
@@ -126,9 +127,9 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      * @param architecture The architecture of the install. Undefined means it will be the default arch, which is the node platform arch.
      * @returns The result of the install with the path to dotnet if installed, else undefined.
      */
-    public async acquireStatus(version: string, installRuntime: boolean, architecture? : string): Promise<IDotnetAcquireResult | undefined>
+    public async acquireStatus(version: string, installMode: DotnetInstallMode, architecture? : string): Promise<IDotnetAcquireResult | undefined>
     {
-        const installKey = GetDotnetInstallInfo(version, installRuntime, false, architecture ? architecture : this.installingArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture())
+        const installKey = GetDotnetInstallInfo(version, installMode, false, architecture ? architecture : this.installingArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture())
 
         const existingAcquisitionPromise = this.installTracker.getPromise(installKey);
         if (existingAcquisitionPromise)
@@ -148,7 +149,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             this.context.eventStream.post(new DotnetAcquisitionStatusResolved(installKey, version));
             return { dotnetPath };
         }
-        else if(installedVersions.length === 0 && fs.existsSync(dotnetPath) && !installRuntime)
+        else if(installedVersions.length === 0 && fs.existsSync(dotnetPath) && installMode !== 'runtime')
         {
             // The education bundle already laid down a local install, add it to our managed installs
             const preinstalledVersions = await this.installTracker.checkForUnrecordedLocalSDKSuccessfulInstall(dotnetInstallDir, installedVersions);
@@ -173,9 +174,9 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      * @param globalInstallerResolver Create this and add it to install globally.
      * @returns the dotnet acquisition result.
      */
-    private async acquire(version: string, installRuntime: boolean, globalInstallerResolver : GlobalInstallerResolver | null = null, localInvoker? : IAcquisitionInvoker): Promise<IDotnetAcquireResult>
+    private async acquire(version: string, installMode: DotnetInstallMode, globalInstallerResolver : GlobalInstallerResolver | null = null, localInvoker? : IAcquisitionInvoker): Promise<IDotnetAcquireResult>
     {
-        let install = GetDotnetInstallInfo(version, installRuntime, globalInstallerResolver !== null, this.installingArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
+        let install = GetDotnetInstallInfo(version, installMode, globalInstallerResolver !== null, this.installingArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
 
         // Allow for the architecture to be null, which is a legacy behavior.
         if(this.context.acquisitionContext?.architecture === null && this.context.acquisitionContext?.architecture !== undefined)
@@ -185,7 +186,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
                 installKey: DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, null, globalInstallerResolver !== null),
                 version: install.version,
                 isGlobal: install.isGlobal,
-                isRuntime: install.isRuntime,
+                installMode: installMode,
             } as DotnetInstall
         }
 
@@ -217,7 +218,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             {
                 Debugging.log(`The Acquisition Worker has Determined a Local Install was requested.`, this.context.eventStream);
 
-                acquisitionPromise = this.acquireLocalCore(version, installRuntime, install, localInvoker!).catch(async (error: Error) => {
+                acquisitionPromise = this.acquireLocalCore(version, installMode, install, localInvoker!).catch(async (error: Error) => {
                     await this.installTracker.untrackInstallingVersion(install);
                     error.message = `.NET Acquisition Failed: ${error.message}`;
                     throw error;
@@ -258,7 +259,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      *
      * @remarks it is called "core" because it is the meat of the actual acquisition work; this has nothing to do with .NET core vs framework.
      */
-    private async acquireLocalCore(version: string, installRuntime: boolean, install : DotnetInstall, acquisitionInvoker : IAcquisitionInvoker): Promise<string>
+    private async acquireLocalCore(version: string, installMode: DotnetInstallMode, install : DotnetInstall, acquisitionInvoker : IAcquisitionInvoker): Promise<string>
     {
         this.checkForPartialInstalls(install);
 
@@ -293,7 +294,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             version,
             dotnetPath,
             timeoutSeconds: this.context.timeoutSeconds,
-            installRuntime,
+            installRuntime : installMode === 'runtime',
+            installMode : installMode,
             architecture: this.installingArchitecture
         } as IDotnetInstallationContext;
         this.context.eventStream.post(new DotnetAcquisitionStarted(install, version, this.context.acquisitionContext?.requestingExtensionId));
