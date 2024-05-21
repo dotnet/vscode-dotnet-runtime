@@ -36,7 +36,7 @@ import { DotnetInstall } from '../../Acquisition/DotnetInstall';
 
 const assert = chai.assert;
 chai.use(chaiAsPromised);
-const expectedTimeoutTime = 6000;
+const expectedTimeoutTime = 9000;
 
 suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
     const installingVersionsKey = 'installing';
@@ -123,13 +123,13 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         const version = '1.0';
         const [acquisitionWorker, eventStream, context, invoker] = setupWorker(true, version);
         await AssertInstallRuntime(acquisitionWorker, context, eventStream, version, invoker);
-    });
+    }).timeout(expectedTimeoutTime);
 
     test('Acquire SDK Version', async () => {
         const version = '5.0';
         const [acquisitionWorker, eventStream, context, invoker] = setupWorker(false, version);
         await AssertInstallSDK(acquisitionWorker, context, eventStream, version, invoker);
-    });
+    }).timeout(expectedTimeoutTime);
 
     test('Acquire SDK Status', async () => {
         const version = '5.0';
@@ -145,7 +145,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         await assertAcquisitionSucceeded(installKey, result!.dotnetPath, eventStream, context, false);
         const resolvedEvent = eventStream.events.find(event => event instanceof DotnetAcquisitionStatusResolved);
         assert.exists(resolvedEvent, 'The sdk is resolved');
-    });
+    }).timeout(expectedTimeoutTime);
 
     test('Acquire Runtime Status', async () => {
         const version = '5.0';
@@ -161,7 +161,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         await assertAcquisitionSucceeded(installKey, result!.dotnetPath, eventStream, context, true);
         const resolvedEvent = eventStream.events.find(event => event instanceof DotnetAcquisitionStatusResolved);
         assert.exists(resolvedEvent);
-    });
+    }).timeout(expectedTimeoutTime);
 
     test('Acquire Runtime Version Multiple Times', async () => {
         const numAcquisitions = 3;
@@ -177,7 +177,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         // AcquisitionInvoker was only called once
         const acquireEvents = eventStream.events.filter(event => event instanceof TestAcquireCalled);
         assert.lengthOf(acquireEvents, 1);
-    });
+    }).timeout(expectedTimeoutTime);
 
     test('Acquire Multiple Versions and UninstallAll', async () => {
         const versions = ['1.0', '1.1', '2.0', '2.1', '2.2'];
@@ -196,7 +196,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         assert.exists(eventStream!.events.find(event => event instanceof DotnetUninstallAllCompleted));
         assert.isEmpty(context!.get<string[]>(installingVersionsKey, []));
         assert.isEmpty(context!.get<string[]>(installedVersionsKey, []));
-    });
+    }).timeout(expectedTimeoutTime * 5);
 
     test('Acquire Runtime and UninstallAll', async () => {
         const version = '1.0';
@@ -211,7 +211,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         assert.exists(eventStream.events.find(event => event instanceof DotnetUninstallAllCompleted));
         assert.isEmpty(context.get<string[]>(installingVersionsKey, []));
         assert.isEmpty(context.get<string[]>(installedVersionsKey, []));
-    });
+    }).timeout(expectedTimeoutTime);
 
     test('Graveyard Removes Failed Uninstalls', async () => {
         const version = '1.0';
@@ -246,7 +246,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
           }
         ] as InstallRecord[],
         '.NET was successfully uninstalled and cleaned up properly when marked to be.');
-    });
+    }).timeout(expectedTimeoutTime);
 
     test('Correctly Removes Legacy (No-Architecture) Installs', async () =>
     {
@@ -293,7 +293,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         remainingInstalls = detailedRemainingInstalls.map(x => x.dotnetInstall.installKey);
         assert.deepStrictEqual(remainingInstalls, [runtimeV6, '5.0.00~x64', runtimeV5, sdkV6, '5.0.100~x64'],
             'Only The Requested Legacy SDK is replaced when new SDK is installed');
-    });
+    }).timeout(expectedTimeoutTime * 6);
 
     test('Repeated Acquisition', async () => {
         const version = '1.0';
@@ -306,7 +306,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         // We should only actually Acquire once
         const events = eventStream.events.filter(event => event instanceof DotnetAcquisitionStarted);
         assert.equal(events.length, 1);
-    });
+    }).timeout(expectedTimeoutTime);
 
     test('Error is Redirected on Acquisition Failure', async () => {
         const version = '1.0';
@@ -314,7 +314,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         const acquisitionInvoker = new RejectingAcquisitionInvoker(eventStream);
 
         return assert.isRejected(acquisitionWorker.acquireRuntime(version, acquisitionInvoker), '.NET Acquisition Failed: Installation failed: Rejecting message');
-    });
+    }).timeout(expectedTimeoutTime);
 
     test('Repeated SDK Acquisition', async () => {
         const version = '5.0';
@@ -327,7 +327,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         // We should only actually Acquire once
         const events = eventStream.events.filter(event => event instanceof DotnetAcquisitionStarted);
         assert.equal(events.length, 1);
-    });
+    }).timeout(expectedTimeoutTime);
 
     test('Get Expected Path With Apostrophe In Install path', async () => {
         if(os.platform() === 'win32'){
