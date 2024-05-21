@@ -13,7 +13,7 @@
 	"description": "This extension installs and manages different versions of the .NET SDK and Runtime.",
 	"appInsightsKey": "02dc18e0-7494-43b2-b2a3-18ada5fcb522",
 	"icon": "images/dotnetIcon.png",
-	"version": "2.0.4",
+	"version": "2.0.5",
 	"publisher": "ms-dotnettools",
 	"engines": {
 		"vscode": "^1.74.0"
@@ -73,7 +73,16 @@
 				},
 				"dotnetAcquisitionExtension.existingDotnetPath": {
 					"type": "array",
-					"description": "File Path to an existing installation of .NET. Used for both the .NET SDK and .NET Runtime.",
+					"description": "File Path to an existing installation of .NET to be used by one extension. Used for both the .NET SDK and .NET Runtime. Restart VS Code to apply changes.",
+					"examples": [
+						"C:\\Program Files\\dotnet\\dotnet.exe",
+						"/usr/local/share/dotnet/dotnet",
+						"/usr/lib/dotnet/dotnet"
+					]
+				},
+				"dotnetAcquisitionExtension.sharedExistingDotnetPath": {
+					"type": "string",
+					"description": "The path of the preexisting .NET SDK and .NET Runtime you'd like to use for ALL extensions. Restart VS Code to apply changes.",
 					"examples": [
 						"C:\\Program Files\\dotnet\\dotnet.exe",
 						"/usr/local/share/dotnet/dotnet",

@@ -3,9 +3,11 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-import { IExistingPath } from '..';
+import { IExistingPaths, ILocalExistingPath } from '..';
 
-export interface IExtensionConfigurationWorker {
-    getPathConfigurationValue(): IExistingPath[] | undefined;
-    setPathConfigurationValue(configValue: IExistingPath[]): Promise<void>;
+export interface IExtensionConfigurationWorker
+{
+    getAllPathConfigurationValues(): IExistingPaths | undefined;
+    getSharedPathConfigurationValue(): string | undefined;
+    setSharedPathConfigurationValue(configValue: string): Promise<void>;
 }

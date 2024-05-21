@@ -5,21 +5,51 @@
 
 import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
-import { IExistingPath } from '../IExtensionContext';
+import { IExistingPaths } from '../IExtensionContext';
 
-export class ExistingPathResolver {
-    public resolveExistingPath(existingPaths: IExistingPath[] | undefined, extensionId: string | undefined, windowDisplayWorker: IWindowDisplayWorker): IDotnetAcquireResult | undefined {
-        if (existingPaths) {
-            if (!extensionId) {
-                windowDisplayWorker.showWarningMessage(
-                    'Ignoring existing .NET paths defined in settings.json because requesting extension does not define its extension ID. Please file a bug against the requesting extension.',
-                    () => { /* No callback */ },
-                );
-                return;
+export class ExistingPathResolver
+{
+    public resolveExistingPath(existingPaths: IExistingPaths | undefined, extensionId: string | undefined, windowDisplayWorker: IWindowDisplayWorker): IDotnetAcquireResult | undefined
+    {
+        if (existingPaths && ((existingPaths?.individualizedExtensionPaths?.length ?? 0) > 0 || existingPaths?.sharedExistingPath))
+        {
+            if (!extensionId)
+            {
+                // Use the global path if it is specified
+                if (existingPaths.sharedExistingPath)
+                {
+                    return { dotnetPath: existingPaths.sharedExistingPath}
+                }
+                else
+                {
+                    windowDisplayWorker.showWarningMessage(
+                        'Ignoring existing .NET paths defined in settings.json because requesting extension does not define its extension ID. Please file a bug against the requesting extension.',
+                        () => { /* No callback */ },
+                    );
+                    return;
+                }
             }
-            const existingPath = existingPaths.filter((pair) => pair.extensionId === extensionId);
-            if (existingPath && existingPath.length > 0) {
-                return { dotnetPath: existingPath![0].path };
+            else
+            {
+                const matchingExtensions = existingPaths.individualizedExtensionPaths?.filter((pair) => pair.extensionId === extensionId);
+                if(matchingExtensions && matchingExtensions.length > 0)
+                {
+                    const existingLocalPath = existingPaths.individualizedExtensionPaths?.filter((pair) => pair.extensionId === extensionId);
+                    if (existingLocalPath && existingLocalPath.length > 0) {
+                        return { dotnetPath: existingLocalPath![0].path };
+                    }
+                }
+                else if (existingPaths.sharedExistingPath)
+                {
+                    return { dotnetPath: existingPaths.sharedExistingPath}
+                }
+                else
+                {
+                    windowDisplayWorker.showWarningMessage(
+                        `Ignoring existing .NET paths defined in settings.json because the setting is only set for other extensions, and not for ${extensionId}`,
+                        () => { /* No callback */ },
+                    );
+                }
             }
         }
     }

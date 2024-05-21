@@ -11,12 +11,9 @@ import {
     DotnetNotInstallRelatedCommandFailed
 } from '../EventStream/EventStreamEvents';
 import { getInstallKeyFromContext } from './InstallKeyUtilities';
-
-import { ExistingPathKeys, IExistingPath } from '../IExtensionContext';
 import { IIssueContext } from './IIssueContext';
 import { formatIssueUrl } from './IssueReporter';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
-
 
 export enum AcquireErrorConfiguration {
     DisplayAllErrorPopups = 0,
@@ -126,17 +123,12 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
 
 async function configureManualInstall(context: IIssueContext, requestingExtensionId: string): Promise<void> {
     const manualPath = await context.displayWorker.displayPathConfigPopUp();
+
     if (manualPath && fs.existsSync(manualPath))
     {
         try
         {
-            let configVal: IExistingPath[] = [{ [ExistingPathKeys.extensionIdKey]: requestingExtensionId, [ExistingPathKeys.pathKey] : manualPath}];
-            const existingConfigVal = context.extensionConfigWorker.getPathConfigurationValue();
-            if (existingConfigVal)
-            {
-                configVal = configVal.concat(existingConfigVal);
-            }
-            await context.extensionConfigWorker.setPathConfigurationValue(configVal);
+            await context.extensionConfigWorker.setSharedPathConfigurationValue(manualPath);
             context.displayWorker.showInformationMessage(`Set .NET path to ${manualPath}. Please reload VSCode to apply settings.`, () => { /* No callback needed */});
         }
         catch (e)
