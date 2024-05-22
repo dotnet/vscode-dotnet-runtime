@@ -11,7 +11,8 @@ import { IDotnetAcquireContext } from '../../IDotnetAcquireContext';
 import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
 import { IEventStream } from '../../EventStream/EventStream';
 import { IUtilityContext } from '../../Utils/IUtilityContext';
-import { getDirectoryPerMode, IInstallationDirectoryProvider } from '../../Acquisition/IInstallationDirectoryProvider';
+import { IInstallationDirectoryProvider } from '../../Acquisition/IInstallationDirectoryProvider';
+import { getDirectoryPerMode } from '../../Acquisition/getDirectoryPerMode';
 import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 
 const standardTimeoutTime = 100000;

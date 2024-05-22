@@ -3,9 +3,6 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as path from 'path';
-import { SdkInstallationDirectoryProvider } from './SdkInstallationDirectoryProvider';
-import { RuntimeInstallationDirectoryProvider } from './RuntimeInstallationDirectoryProvider';
-import { DotnetInstallMode } from './DotnetInstallMode';
 
 export abstract class IInstallationDirectoryProvider {
     constructor(protected storagePath: string) { }
@@ -18,7 +15,4 @@ export abstract class IInstallationDirectoryProvider {
     }
 }
 
-export function getDirectoryPerMode(mode : DotnetInstallMode, storagePath : string)
-{
-    return mode === 'runtime' ? new RuntimeInstallationDirectoryProvider(storagePath) : new SdkInstallationDirectoryProvider(storagePath);
-}
+
