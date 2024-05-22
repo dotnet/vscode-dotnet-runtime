@@ -37,9 +37,18 @@ const mockContext = getMockAcquisitionContext(defaultMode, defaultVersion, defau
 const mockContextFromOtherExtension = getMockAcquisitionContext(defaultMode, defaultVersion, defaultTimeoutTime, eventStream);
 (mockContextFromOtherExtension.acquisitionContext)!.requestingExtensionId = 'testOther';
 
+function resetExtensionState()
+{
+    mockContext.extensionState.update('installed', []);
+    mockContext.extensionState.update('installing', []);
+
+}
+
 suite('InstallTracker Unit Tests', () => {
 
     test('It Creates a New Record for a New Install', async () => {
+        resetExtensionState();
+
         const validator = new MockInstallTracker(mockContext);
         await validator.trackInstallingVersion(defaultInstall);
 
@@ -50,10 +59,11 @@ suite('InstallTracker Unit Tests', () => {
             } as InstallRecord,
         ]
         assert.deepStrictEqual(await validator.getExistingInstalls(false), expected, 'It created a new record for the install');
-
     }).timeout(defaultTimeoutTime);
 
     test('Re-Tracking is a No-Op', async () => {
+        resetExtensionState();
+
         const validator = new MockInstallTracker(mockContext);
         await validator.trackInstallingVersion(defaultInstall);
         await validator.trackInstallingVersion(defaultInstall);
@@ -74,6 +84,8 @@ suite('InstallTracker Unit Tests', () => {
     }).timeout(defaultTimeoutTime);
 
     test('It Only Adds the Extension Id to an Existing Install Copy', async () => {
+        resetExtensionState();
+
         const validator = new MockInstallTracker(mockContext);
         await validator.trackInstalledVersion(defaultInstall);
 
@@ -94,6 +106,8 @@ suite('InstallTracker Unit Tests', () => {
     }).timeout(defaultTimeoutTime);
 
     test('It Works With Different Installs From Multiple or Same Requesters', async () => {
+        resetExtensionState();
+
         const validator = new MockInstallTracker(mockContext);
         validator.trackInstalledVersion(defaultInstall);
 
@@ -118,6 +132,8 @@ suite('InstallTracker Unit Tests', () => {
     }).timeout(defaultTimeoutTime);
 
     test('It Removes the Record if No Other Owners Exist', async () => {
+        resetExtensionState();
+
         const validator = new MockInstallTracker(mockContext);
         await validator.trackInstallingVersion(defaultInstall);
         await validator.trackInstalledVersion(defaultInstall);
@@ -129,6 +145,8 @@ suite('InstallTracker Unit Tests', () => {
     }).timeout(defaultTimeoutTime);
 
     test('It Only Removes the Extension Id if Other Owners Exist', async () => {
+        resetExtensionState();
+
         const validator = new MockInstallTracker(mockContext);
         await validator.trackInstalledVersion(defaultInstall);
 
@@ -152,6 +170,8 @@ suite('InstallTracker Unit Tests', () => {
     }).timeout(defaultTimeoutTime);
 
     test('It Converts Legacy Install Key String to New Type with Null Owner', async () => {
+        resetExtensionState();
+
         const validator = new MockInstallTracker(mockContext);
 
         const extensionStateWithLegacyStrings = new MockExtensionContext();
@@ -174,6 +194,8 @@ suite('InstallTracker Unit Tests', () => {
     }).timeout(defaultTimeoutTime);
 
     test('It Handles Null Owner Gracefully on Duplicate Install and Removal', async () => {
+        resetExtensionState();
+
         const validator = new MockInstallTracker(mockContext);
 
         const extensionStateWithLegacyStrings = new MockExtensionContext();
@@ -214,6 +236,8 @@ suite('InstallTracker Unit Tests', () => {
 
 
     test('It Can Reclassify an Install from Installing to Installed', async () => {
+        resetExtensionState();
+
         const validator = new MockInstallTracker(mockContext);
         await validator.trackInstallingVersion(defaultInstall);
 
@@ -245,11 +269,11 @@ suite('InstallTracker Unit Tests', () => {
 
         expectedInstalled = [
             {
-                dotnetInstall : defaultInstall,
-                installingExtensions : ['test', 'testOther']
+                dotnetInstall : secondInstall,
+                installingExtensions : ['testOther']
             } as InstallRecord,
             {
-                dotnetInstall : secondInstall,
+                dotnetInstall : defaultInstall,
                 installingExtensions : ['testOther']
             } as InstallRecord,
         ]
@@ -272,6 +296,10 @@ was moved from installing to installed`);
         // The design could go either way and migrate them all at once, but there is logic that relies on the installing state to be updated on a per extension basis.
         // So this is the safer option.
         assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls(false), expectedInstalling, 'The installing version from another extension does NOT get moved');
+
+        await validator.reclassifyInstallingVersionToInstalled(defaultInstall);
+
+        assert.deepStrictEqual(await validator.getExistingInstalls(false), [], 'The installing version gets cleared.');
 
     }).timeout(defaultTimeoutTime);
 });
