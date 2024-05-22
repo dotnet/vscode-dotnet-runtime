@@ -120,7 +120,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     const alreadyInstalledEvent = eventStream.events
       .find(event => event instanceof DotnetAcquisitionAlreadyInstalled) as DotnetAcquisitionAlreadyInstalled;
     assert.exists(alreadyInstalledEvent, 'An already installed event was posted');
-    assert.equal(alreadyInstalledEvent.installKey.installKey, sdkCurrentInstallKey, 'the current install is what was already installed');
+    assert.equal(alreadyInstalledEvent.install.installKey, sdkCurrentInstallKey, 'the current install is what was already installed');
 
     // Clean up storage
     rimraf.sync(dotnetDir);
