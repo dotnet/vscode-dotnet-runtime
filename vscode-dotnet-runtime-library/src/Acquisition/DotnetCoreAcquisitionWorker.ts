@@ -128,41 +128,41 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      */
     public async acquireStatus(version: string, installMode: DotnetInstallMode, architecture? : string): Promise<IDotnetAcquireResult | undefined>
     {
-        const installKey = GetDotnetInstallInfo(version, installMode, false, architecture ? architecture : this.installingArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture())
+        const install = GetDotnetInstallInfo(version, installMode, false, architecture ? architecture : this.installingArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture())
 
-        const existingAcquisitionPromise = this.installTracker.getPromise(installKey);
+        const existingAcquisitionPromise = this.installTracker.getPromise(install);
         if (existingAcquisitionPromise)
         {
             // Requested version is being acquired
-            this.context.eventStream.post(new DotnetAcquisitionStatusResolved(installKey, version));
+            this.context.eventStream.post(new DotnetAcquisitionStatusResolved(install, version));
             return existingAcquisitionPromise.then((res) => ({ dotnetPath: res }));
         }
 
-        const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(installKey.installKey);
+        const dotnetInstallDir = this.context.installDirectoryProvider.getInstallDir(install.installKey);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
         const installedVersions = await this.installTracker.getExistingInstalls(true);
 
-        if (installedVersions.some(x => IsEquivalentInstallationFile(x.dotnetInstall, installKey)) && (fs.existsSync(dotnetPath) || this.usingNoInstallInvoker ))
+        if (installedVersions.some(x => IsEquivalentInstallationFile(x.dotnetInstall, install)) && (fs.existsSync(dotnetPath) || this.usingNoInstallInvoker ))
         {
             // Requested version has already been installed.
-            this.context.eventStream.post(new DotnetAcquisitionStatusResolved(installKey, version));
+            this.context.eventStream.post(new DotnetAcquisitionStatusResolved(install, version));
             return { dotnetPath };
         }
-        else if(installedVersions.length === 0 && fs.existsSync(dotnetPath) && installMode !== 'runtime')
+        else if(installedVersions.length === 0 && fs.existsSync(dotnetPath) && installMode === 'sdk')
         {
             // The education bundle already laid down a local install, add it to our managed installs
             const preinstalledVersions = await this.installTracker.checkForUnrecordedLocalSDKSuccessfulInstall(dotnetInstallDir, installedVersions);
-            if (preinstalledVersions.some(x => IsEquivalentInstallationFile(x.dotnetInstall, installKey)) &&
+            if (preinstalledVersions.some(x => IsEquivalentInstallationFile(x.dotnetInstall, install)) &&
                 (fs.existsSync(dotnetPath) || this.usingNoInstallInvoker ))
             {
                 // Requested version has already been installed.
-                this.context.eventStream.post(new DotnetAcquisitionStatusResolved(installKey, version));
+                this.context.eventStream.post(new DotnetAcquisitionStatusResolved(install, version));
                 return { dotnetPath };
             }
         }
 
         // Version is not installed
-        this.context.eventStream.post(new DotnetAcquisitionStatusUndefined(installKey));
+        this.context.eventStream.post(new DotnetAcquisitionStatusUndefined(install));
         return undefined;
     }
 

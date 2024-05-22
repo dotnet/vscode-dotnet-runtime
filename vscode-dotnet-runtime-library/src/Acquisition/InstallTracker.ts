@@ -88,7 +88,6 @@ export class InstallTracker
     /**
      *
      * @param key the install key to get a working install promise for.
-     * @remarks THROWS ERROR if no promise is found (because we cant await a promise of a promise and get a promise object back.)
      */
     public getPromise(key : DotnetInstall) : Promise<string> | null
     {
