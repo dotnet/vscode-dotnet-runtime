@@ -245,17 +245,28 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).jo
         return this.executeWithLock( alreadyHoldingLock, async (key: string, install: DotnetInstall) =>
         {
             const existingVersions = await this.getExistingInstalls(key === this.installedVersionsKey, true);
-            const sameInstallManagedByOtherExtensions = existingVersions.find(x => IsEquivalentInstallation(x.dotnetInstall, install));
+            const preExistingInstallIndex = existingVersions.findIndex(x => IsEquivalentInstallation(x.dotnetInstall, install));
 
-            const installOwners = sameInstallManagedByOtherExtensions ? sameInstallManagedByOtherExtensions.installingExtensions.concat(
-                this.context.acquisitionContext?.requestingExtensionId ?? null) : [ this.context.acquisitionContext?.requestingExtensionId ?? null ];
+            if(preExistingInstallIndex !== -1)
+            {
+                let existingInstall = existingVersions.find(x => IsEquivalentInstallation(x.dotnetInstall, install));
 
-            existingVersions.push(
+                // Did this extension already mark itself as having ownership of this install? If so, we can skip re-adding it.
+                if(!(existingInstall?.installingExtensions.includes(this.context.acquisitionContext?.requestingExtensionId ?? null)))
                 {
-                    dotnetInstall: install,
-                    installingExtensions: installOwners
-                } as InstallRecord
-            );
+                    existingInstall!.installingExtensions.push(this.context.acquisitionContext?.requestingExtensionId ?? null);
+                    existingVersions[preExistingInstallIndex] = existingInstall!;
+                }
+            }
+            else
+            {
+                existingVersions.push(
+                    {
+                        dotnetInstall: install,
+                        installingExtensions: [ this.context.acquisitionContext?.requestingExtensionId ?? null ]
+                    } as InstallRecord
+                );
+            }
 
             await this.context.extensionState.update(key, existingVersions);
         }, keyStr, installObj);
