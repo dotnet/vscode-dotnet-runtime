@@ -4,7 +4,7 @@
 *--------------------------------------------------------------------------------------------*/
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IsEquivalentInstallationFile } from './DotnetInstall';
-import { installKeyStringToDotnetInstall } from '../Utils/InstallKeyUtilities';
+import { getAssumedInstallInfo } from '../Utils/InstallKeyUtilities';
 import { DotnetInstall } from './DotnetInstall';
 
 interface LocalDotnetInstall
@@ -33,7 +33,7 @@ export class InstallationGraveyard
         if(!(graveyard instanceof Set))
         {
             graveyard = new Set<LocalDotnetInstall>(
-                Object.entries(graveyard).map(([key, path]) => ({ dotnetInstall: installKeyStringToDotnetInstall(this.context, key), path }) as LocalDotnetInstall)
+                Object.entries(graveyard).map(([key, path]) => ({ dotnetInstall: getAssumedInstallInfo(this.context, key, null), path }) as LocalDotnetInstall)
             );
         }
 

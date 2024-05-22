@@ -22,7 +22,7 @@ import {
     IsEquivalentInstallation,
     IsEquivalentInstallationFile
 } from './DotnetInstall';
-import { getVersionFromLegacyInstallKey, installKeyStringToDotnetInstall } from '../Utils/InstallKeyUtilities';
+import { getVersionFromLegacyInstallKey, getAssumedInstallInfo } from '../Utils/InstallKeyUtilities';
 import { InstallRecord, InstallRecordOrStr } from './InstallRecord';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { error } from 'console';
@@ -160,7 +160,7 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).jo
                 {
                     convertedInstalls.push(
                         {
-                            dotnetInstall: installKeyStringToDotnetInstall(this.context, install),
+                            dotnetInstall: getAssumedInstallInfo(this.context, install, null),
                             installingExtensions: [ null ],
                         } as InstallRecord
                     );

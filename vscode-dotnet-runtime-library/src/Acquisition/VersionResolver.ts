@@ -25,8 +25,8 @@ import { DotnetVersionSupportPhase,
     IDotnetVersion
 } from '../IDotnetListVersionsContext';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
-import { installKeyStringToDotnetInstall } from '../Utils/InstallKeyUtilities';
-import { getVersionFromLegacyInstallKey } from '../Utils/InstallKeyUtilities';
+import { getAssumedInstallInfo } from '../Utils/InstallKeyUtilities';
+import { DotnetInstallMode } from './DotnetInstallMode';
 /* tslint:disable:no-any */
 
 export class VersionResolver implements IVersionResolver {
@@ -96,22 +96,22 @@ export class VersionResolver implements IVersionResolver {
     }
 
     public async getFullRuntimeVersion(version: string): Promise<string> {
-        return this.getFullVersion(version, true);
+        return this.getFullVersion(version, 'runtime');
     }
 
     public async getFullSDKVersion(version: string): Promise<string> {
-        return this.getFullVersion(version, false);
+        return this.getFullVersion(version, 'sdk');
     }
 
     /**
      * @param getRuntimeVersion - True for getting the full runtime version, false for the SDK version.
      */
-    private async getFullVersion(version: string, getRuntimeVersion: boolean): Promise<string>
+    private async getFullVersion(version: string, mode: DotnetInstallMode): Promise<string>
     {
         let releasesVersions : IDotnetListVersionsResult;
         try
         {
-            releasesVersions = await this.getReleasesInfo(getRuntimeVersion);
+            releasesVersions = await this.getReleasesInfo(mode);
         }
         catch(error)
         {
@@ -128,7 +128,7 @@ export class VersionResolver implements IVersionResolver {
             }
             catch (error)
             {
-                this.context.eventStream.post(new DotnetVersionResolutionError(error as EventCancellationError, installKeyStringToDotnetInstall(this.context, version)));
+                this.context.eventStream.post(new DotnetVersionResolutionError(error as EventCancellationError, getAssumedInstallInfo(this.context, version, mode)));
                 reject(error);
             }
         });
@@ -147,7 +147,8 @@ export class VersionResolver implements IVersionResolver {
         }
         if (!matchingVersion || matchingVersion.length < 1)
         {
-            const err = new DotnetVersionResolutionError(new EventCancellationError(`The requested and or resolved version is invalid.`), installKeyStringToDotnetInstall(this.context, version));
+            const err = new DotnetVersionResolutionError(new EventCancellationError(`The requested and or resolved version is invalid.`),
+                getAssumedInstallInfo(this.context, version, this.context.installMode));
             this.context.eventStream.post(err);
             throw err.error;
         }
@@ -171,16 +172,17 @@ export class VersionResolver implements IVersionResolver {
         if (!parsedVer || (version.split('.').length !== 2 && version.split('.').length !== 3))
         {
             Debugging.log(`Resolving the version: ${version} ... it is invalid!`, this.context.eventStream);
-            const err = new DotnetVersionResolutionError(new EventCancellationError(`An invalid version was requested. Version: ${version}`), installKeyStringToDotnetInstall(this.context, version));
+            const err = new DotnetVersionResolutionError(new EventCancellationError(`An invalid version was requested. Version: ${version}`),
+                getAssumedInstallInfo(this.context, version, this.context.installMode));
             this.context.eventStream.post(err);
             throw err.error;
         }
         Debugging.log(`The version ${version} was determined to be valid.`, this.context.eventStream);
     }
 
-    private async getReleasesInfo(getRuntimeVersion : boolean): Promise<IDotnetListVersionsResult>
+    private async getReleasesInfo(mode : DotnetInstallMode): Promise<IDotnetListVersionsResult>
     {
-        const apiContext: IDotnetListVersionsContext = { listRuntimes: getRuntimeVersion };
+        const apiContext: IDotnetListVersionsContext = { listRuntimes: mode === 'runtime' };
 
         const response = await this.GetAvailableDotnetVersions(apiContext);
         if (!response)

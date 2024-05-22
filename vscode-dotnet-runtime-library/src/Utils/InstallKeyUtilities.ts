@@ -6,7 +6,7 @@
 import { DotnetCoreAcquisitionWorker } from '../Acquisition/DotnetCoreAcquisitionWorker';
 import { looksLikeRuntimeVersion } from '../Acquisition/DotnetInstall';
 import { DotnetInstall } from '../Acquisition/DotnetInstall';
-import { DOTNET_INSTALL_MODE_LIST } from '../Acquisition/DotnetInstallMode';
+import { DOTNET_INSTALL_MODE_LIST, DotnetInstallMode } from '../Acquisition/DotnetInstallMode';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import * as os from 'os';
 
@@ -38,7 +38,9 @@ export function isRuntimeInstallKey(installKey: string): boolean {
 
 export function isGlobalLegacyInstallKey(installKey: string): boolean {
     return installKey.toLowerCase().includes('global');
-}export function getArchFromLegacyInstallKey(installKey: string): string | undefined {
+}
+
+export function getArchFromLegacyInstallKey(installKey: string): string | undefined {
     const splitKey = installKey.split('~');
     if (splitKey.length === 2) {
         return splitKey[1];
@@ -60,13 +62,21 @@ export function getVersionFromLegacyInstallKey(installKey: string): string {
         return installKey;
     }
 }
-export function installKeyStringToDotnetInstall(context : IAcquisitionWorkerContext, key: string): DotnetInstall {
+
+/**
+ * @deprecated This function is for legacy install keys only. Do not use for new code.
+ */
+export function getAssumedInstallInfo(context : IAcquisitionWorkerContext, key: string, mode : DotnetInstallMode | null): DotnetInstall {
     return {
         installKey: key,
         version: getVersionFromLegacyInstallKey(key),
-        architecture: getArchFromLegacyInstallKey(key) ?? os.arch(),
+        architecture: getArchFromLegacyInstallKey(key) ?? DotnetCoreAcquisitionWorker.defaultArchitecture(),
         isGlobal: isGlobalLegacyInstallKey(key),
-        installMode: context.installMode
+
+        // This code is for legacy install strings where the info was not recorded.
+        // At the time only runtime or sdk was permitted and there were no outlier edge case versions that would be wrong.
+        // So this assumption can hold true below. Do not utilize this going forward for new code.
+        installMode: mode ?? isRuntimeInstallKey(key) ? 'runtime' : 'sdk'
     };
 }
 

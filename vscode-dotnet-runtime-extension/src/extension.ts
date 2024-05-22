@@ -405,7 +405,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             installationValidator: new InstallationValidator(globalEventStream),
             timeoutSeconds: resolvedTimeoutSeconds,
             installMode: mode,
-            installDirectoryProvider: getDirectoryPerMode(mode, context.storagePath),
+            installDirectoryProvider: getDirectoryPerMode(mode, context.globalStoragePath),
             proxyUrl: proxyLink,
             isExtensionTelemetryInitiallyEnabled: isExtensionTelemetryEnabled
         }
