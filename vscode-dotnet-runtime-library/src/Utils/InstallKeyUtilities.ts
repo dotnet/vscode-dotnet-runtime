@@ -6,8 +6,8 @@
 import { DotnetCoreAcquisitionWorker } from '../Acquisition/DotnetCoreAcquisitionWorker';
 import { looksLikeRuntimeVersion } from '../Acquisition/DotnetInstall';
 import { DotnetInstall } from '../Acquisition/DotnetInstall';
+import { DotnetInstallModeList } from '../Acquisition/DotnetInstallMode';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
-import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
 import * as os from 'os';
 
 export function getInstallKeyFromContext(ctx : IAcquisitionWorkerContext | undefined | null) : DotnetInstall | null
@@ -32,7 +32,8 @@ export function getInstallKeyFromContext(ctx : IAcquisitionWorkerContext | undef
 }
 export function isRuntimeInstallKey(installKey: string): boolean {
     const installKeyVersion = getVersionFromLegacyInstallKey(installKey);
-    return !installKey.includes('sdk') && looksLikeRuntimeVersion(installKeyVersion);
+    return !(DotnetInstallModeList.filter( (x : string) => x !== 'runtime')).some( (mode) => installKey.includes(mode))
+        && looksLikeRuntimeVersion(installKeyVersion);
 }
 
 export function isGlobalLegacyInstallKey(installKey: string): boolean {

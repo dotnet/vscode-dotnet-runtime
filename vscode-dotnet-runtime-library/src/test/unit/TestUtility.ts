@@ -5,15 +5,13 @@
  * ------------------------------------------------------------------------------------------ */
 import * as os from 'os';
 
-import { RuntimeInstallationDirectoryProvider } from '../../Acquisition/RuntimeInstallationDirectoryProvider';
-import { SdkInstallationDirectoryProvider } from '../../Acquisition/SdkInstallationDirectoryProvider';
 import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
 import { MockDotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext, MockInstallationValidator, MockVSCodeEnvironment, MockVSCodeExtensionContext } from '../mocks/MockObjects';
 import { IDotnetAcquireContext } from '../../IDotnetAcquireContext';
 import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
 import { IEventStream } from '../../EventStream/EventStream';
 import { IUtilityContext } from '../../Utils/IUtilityContext';
-import { IInstallationDirectoryProvider } from '../../Acquisition/IInstallationDirectoryProvider';
+import { getDirectoryPerMode, IInstallationDirectoryProvider } from '../../Acquisition/IInstallationDirectoryProvider';
 import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 
 const standardTimeoutTime = 100000;
@@ -34,7 +32,7 @@ export function getMockAcquisitionContext(mode: DotnetInstallMode, version : str
         installMode: mode,
         installingArchitecture: arch,
         proxyUrl: undefined,
-        installDirectoryProvider: directory ? directory : mode === 'runtime' ? new RuntimeInstallationDirectoryProvider('') : new SdkInstallationDirectoryProvider(''),
+        installDirectoryProvider: directory ? directory : getDirectoryPerMode(mode, ''),
         isExtensionTelemetryInitiallyEnabled: true
     };
     return workerContext;

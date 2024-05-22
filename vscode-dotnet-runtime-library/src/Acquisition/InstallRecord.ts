@@ -28,7 +28,6 @@ export interface InstallRecord
 }
 
 
-// we might be able to get rid of this
 /**
  * @remarks
  * The record can be the type or it can be a 'legacy' record from old installs which is just a string with the install key.

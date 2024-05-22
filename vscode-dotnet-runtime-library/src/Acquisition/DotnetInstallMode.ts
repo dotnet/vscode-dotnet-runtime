@@ -4,3 +4,5 @@
 *--------------------------------------------------------------------------------------------*/
 
 export type DotnetInstallMode = 'sdk' | 'runtime' | 'aspnetcore';
+
+export const DotnetInstallModeList = ['sdk', 'runtime', 'aspnetcore'];

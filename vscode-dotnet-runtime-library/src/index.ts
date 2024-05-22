@@ -47,6 +47,7 @@ export * from './Acquisition/LinuxGlobalInstaller';
 export * from './Acquisition/VersionResolver';
 export * from './Acquisition/WinMacGlobalInstaller';
 export * from './Acquisition/ExistingPathResolver';
+export * from './Acquisition/IInstallationDirectoryProvider';
 export * from './Acquisition/SdkInstallationDirectoryProvider';
 export * from './Acquisition/RuntimeInstallationDirectoryProvider';
 export * from './test/mocks/MockObjects';
