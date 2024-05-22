@@ -51,7 +51,7 @@ suite('InstallTracker Unit Tests', () => {
         ]
         assert.deepStrictEqual(expected, await validator.getExistingInstalls(false))
 
-    });
+    }).timeout(defaultTimeoutTime);
 
     test('It Only Adds the Extension Id to an Existing Install Copy', async () => {
         const validator = new MockInstallTracker(mockContext);
@@ -71,7 +71,7 @@ suite('InstallTracker Unit Tests', () => {
 
         assert.deepStrictEqual(expected, await otherRequesterValidator.getExistingInstalls(false), 'The second extension validator found the result');
 
-    });
+    }).timeout(defaultTimeoutTime);
 
     test('It Works With Different Installs From Multiple or Same Requesters', async () => {
         const validator = new MockInstallTracker(mockContext);
@@ -95,7 +95,7 @@ suite('InstallTracker Unit Tests', () => {
 
         assert.deepStrictEqual(expected, await otherRequesterValidator.getExistingInstalls(false), 'The second extension validator found the result');
 
-    });
+    }).timeout(defaultTimeoutTime);
 
     test('It Removes the Record if No Other Owners Exist', async () => {
         const validator = new MockInstallTracker(mockContext);
@@ -106,7 +106,7 @@ suite('InstallTracker Unit Tests', () => {
         assert.deepStrictEqual([], await validator.getExistingInstalls(false));
         validator.untrackInstalledVersion(defaultInstall);
         assert.deepStrictEqual([], await validator.getExistingInstalls(true));
-    });
+    }).timeout(defaultTimeoutTime);
 
     test('It Only Removes the Extension Id if Other Owners Exist', async () => {
         const validator = new MockInstallTracker(mockContext);
@@ -129,7 +129,7 @@ suite('InstallTracker Unit Tests', () => {
 
         assert.deepStrictEqual(expected, await otherRequesterValidator.getExistingInstalls(false));
 
-    });
+    }).timeout(defaultTimeoutTime);
 
     test('It Converts Legacy Install Key String to New Type with Null Owner', async () => {
         const validator = new MockInstallTracker(mockContext);
@@ -151,7 +151,7 @@ suite('InstallTracker Unit Tests', () => {
 
         assert.deepStrictEqual(expected, await validator.getExistingInstalls(false));
 
-    });
+    }).timeout(defaultTimeoutTime);
 
     test('It Handles Null Owner Gracefully on Duplicate Install and Removal', async () => {
         const validator = new MockInstallTracker(mockContext);
@@ -188,9 +188,8 @@ suite('InstallTracker Unit Tests', () => {
                 installingExtensions : [null]
             }
         ]
-        assert.deepStrictEqual(expected, await validator.getExistingInstalls(false));
 
-
-    });
+        assert.deepStrictEqual(expectedTwo, await validator.getExistingInstalls(false));
+    }).timeout(defaultTimeoutTime);
 
 });
