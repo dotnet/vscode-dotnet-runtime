@@ -82,7 +82,7 @@ export class OutputChannelObserver implements IEventStreamObserver {
                     this.outputChannel.append(`${
                         (event as DotnetAcquisitionAlreadyInstalled).requestingExtensionId
                     }: Trying to install .NET ${
-                        (event as DotnetAcquisitionAlreadyInstalled).installKey
+                        (event as DotnetAcquisitionAlreadyInstalled).install
                     } but it already exists. No downloads or changes were made.\n`);
                 }
                 break;
@@ -99,11 +99,11 @@ export class OutputChannelObserver implements IEventStreamObserver {
             case EventType.DotnetAcquisitionError:
                 const error = event as DotnetAcquisitionError;
                 this.outputChannel.appendLine('Error');
-                this.outputChannel.appendLine(`Failed to download .NET ${error.installKey}:`);
+                this.outputChannel.appendLine(`Failed to download .NET ${error.install}:`);
                 this.outputChannel.appendLine(error.error.message);
                 this.outputChannel.appendLine('');
 
-                this.updateDownloadIndicators(error.installKey?.installKey);
+                this.updateDownloadIndicators(error.install?.installKey);
                 break;
             case EventType.DotnetInstallExpectedAbort:
                 const abortEvent = event as DotnetInstallExpectedAbort;
