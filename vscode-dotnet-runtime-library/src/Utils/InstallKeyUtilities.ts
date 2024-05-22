@@ -6,7 +6,7 @@
 import { DotnetCoreAcquisitionWorker } from '../Acquisition/DotnetCoreAcquisitionWorker';
 import { looksLikeRuntimeVersion } from '../Acquisition/DotnetInstall';
 import { DotnetInstall } from '../Acquisition/DotnetInstall';
-import { DotnetInstallModeList } from '../Acquisition/DotnetInstallMode';
+import { DOTNET_INSTALL_MODE_LIST } from '../Acquisition/DotnetInstallMode';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import * as os from 'os';
 
@@ -32,7 +32,7 @@ export function getInstallKeyFromContext(ctx : IAcquisitionWorkerContext | undef
 }
 export function isRuntimeInstallKey(installKey: string): boolean {
     const installKeyVersion = getVersionFromLegacyInstallKey(installKey);
-    return !(DotnetInstallModeList.filter( (x : string) => x !== 'runtime')).some( (mode) => installKey.includes(mode))
+    return !(DOTNET_INSTALL_MODE_LIST.filter( (x : string) => x !== 'runtime')).some( (mode) => installKey.includes(mode))
         && looksLikeRuntimeVersion(installKeyVersion);
 }
 

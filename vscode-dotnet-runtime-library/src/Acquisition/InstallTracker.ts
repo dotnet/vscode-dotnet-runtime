@@ -249,7 +249,7 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).jo
 
             if(preExistingInstallIndex !== -1)
             {
-                let existingInstall = existingVersions.find(x => IsEquivalentInstallation(x.dotnetInstall, install));
+                const existingInstall = existingVersions.find(x => IsEquivalentInstallation(x.dotnetInstall, install));
 
                 // Did this extension already mark itself as having ownership of this install? If so, we can skip re-adding it.
                 if(!(existingInstall?.installingExtensions.includes(this.context.acquisitionContext?.requestingExtensionId ?? null)))
