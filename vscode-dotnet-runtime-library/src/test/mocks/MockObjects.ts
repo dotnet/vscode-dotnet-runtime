@@ -592,4 +592,14 @@ export class MockInstallTracker extends InstallTracker
     {
         super(context);
     }
+
+    public getExtensionState() : IExtensionState
+    {
+        return this.context.extensionState;
+    }
+
+    public setExtensionState(extensionState : IExtensionState) : void
+    {
+        this.context.extensionState = extensionState;
+    }
 }

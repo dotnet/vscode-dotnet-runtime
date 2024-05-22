@@ -39,11 +39,11 @@ interface InProgressInstall
 
 export class InstallTracker
 {
-    private inProgressInstalls: Set<InProgressInstall> = new Set<InProgressInstall>();
+    protected inProgressInstalls: Set<InProgressInstall> = new Set<InProgressInstall>();
     private readonly installingVersionsKey = 'installing';
     private readonly installedVersionsKey = 'installed';
 
-    public constructor(private readonly context : IAcquisitionWorkerContext)
+    public constructor(protected readonly context : IAcquisitionWorkerContext)
     {
 
     }
