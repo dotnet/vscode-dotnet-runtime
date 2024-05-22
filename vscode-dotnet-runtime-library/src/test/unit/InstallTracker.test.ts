@@ -34,7 +34,7 @@ const defaultTimeoutTime = 5000;
 const eventStream = new MockEventStream();
 
 const mockContext = getMockAcquisitionContext(defaultMode, defaultVersion, defaultTimeoutTime, eventStream);
-let mockContextFromOtherExtension = getMockAcquisitionContext(defaultMode, defaultVersion, defaultTimeoutTime, eventStream);
+const mockContextFromOtherExtension = getMockAcquisitionContext(defaultMode, defaultVersion, defaultTimeoutTime, eventStream);
 (mockContextFromOtherExtension.acquisitionContext)!.requestingExtensionId = 'testOther';
 
 suite('InstallTracker Unit Tests', () => {
@@ -49,7 +49,7 @@ suite('InstallTracker Unit Tests', () => {
                 installingExtensions : ['test']
             } as InstallRecord,
         ]
-        assert.deepStrictEqual(expected, await validator.getExistingInstalls(false))
+        assert.deepStrictEqual(await validator.getExistingInstalls(false), expected, 'It created a new record for the install');
 
     }).timeout(defaultTimeoutTime);
 
@@ -57,7 +57,7 @@ suite('InstallTracker Unit Tests', () => {
         const validator = new MockInstallTracker(mockContext);
         validator.trackInstalledVersion(defaultInstall);
 
-        let otherRequesterValidator = new MockInstallTracker(mockContextFromOtherExtension);
+        const otherRequesterValidator = new MockInstallTracker(mockContextFromOtherExtension);
         // Inject the extension state from the old class into the new one, because in vscode its a shared global state but here its mocked
         otherRequesterValidator.setExtensionState(validator.getExtensionState());
         otherRequesterValidator.trackInstalledVersion(defaultInstall);
@@ -69,7 +69,7 @@ suite('InstallTracker Unit Tests', () => {
             } as InstallRecord,
         ]
 
-        assert.deepStrictEqual(expected, await otherRequesterValidator.getExistingInstalls(false), 'The second extension validator found the result');
+        assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls(true), expected, 'The second extension validator added its id to the existing install');
 
     }).timeout(defaultTimeoutTime);
 
@@ -77,7 +77,7 @@ suite('InstallTracker Unit Tests', () => {
         const validator = new MockInstallTracker(mockContext);
         validator.trackInstalledVersion(defaultInstall);
 
-        let otherRequesterValidator = new MockInstallTracker(mockContextFromOtherExtension);
+        const otherRequesterValidator = new MockInstallTracker(mockContextFromOtherExtension);
         // Inject the extension state from the old class into the new one, because in vscode its a shared global state but here its mocked
         otherRequesterValidator.setExtensionState(validator.getExtensionState());
         otherRequesterValidator.trackInstalledVersion(secondInstall);
@@ -93,7 +93,7 @@ suite('InstallTracker Unit Tests', () => {
             } as InstallRecord,
         ]
 
-        assert.deepStrictEqual(expected, await otherRequesterValidator.getExistingInstalls(true), 'The second extension validator found the result');
+        assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls(true), expected, 'Multiple installs are tracked separately');
 
     }).timeout(defaultTimeoutTime);
 
@@ -103,16 +103,16 @@ suite('InstallTracker Unit Tests', () => {
         validator.trackInstalledVersion(defaultInstall);
 
         validator.untrackInstallingVersion(defaultInstall);
-        assert.deepStrictEqual([], await validator.getExistingInstalls(false));
+        assert.deepStrictEqual(await validator.getExistingInstalls(false), [], 'Installing version gets removed with no further owners');
         validator.untrackInstalledVersion(defaultInstall);
-        assert.deepStrictEqual([], await validator.getExistingInstalls(true));
+        assert.deepStrictEqual(await validator.getExistingInstalls(true), [], 'Installed version gets removed with no further owners (installing must be ok)');
     }).timeout(defaultTimeoutTime);
 
     test('It Only Removes the Extension Id if Other Owners Exist', async () => {
         const validator = new MockInstallTracker(mockContext);
         validator.trackInstalledVersion(defaultInstall);
 
-        let otherRequesterValidator = new MockInstallTracker(mockContextFromOtherExtension);
+        const otherRequesterValidator = new MockInstallTracker(mockContextFromOtherExtension);
         // Inject the extension state from the old class into the new one, because in vscode its a shared global state but here its mocked
         otherRequesterValidator.setExtensionState(validator.getExtensionState());
         otherRequesterValidator.trackInstalledVersion(defaultInstall);
@@ -127,14 +127,14 @@ suite('InstallTracker Unit Tests', () => {
             } as InstallRecord,
         ]
 
-        assert.deepStrictEqual(expected, await otherRequesterValidator.getExistingInstalls(false));
+        assert.deepStrictEqual(expected, await otherRequesterValidator.getExistingInstalls(true), 'The second extension validator removed its id from the existing install');
 
     }).timeout(defaultTimeoutTime);
 
     test('It Converts Legacy Install Key String to New Type with Null Owner', async () => {
         const validator = new MockInstallTracker(mockContext);
 
-        let extensionStateWithLegacyStrings = new MockExtensionContext();
+        const extensionStateWithLegacyStrings = new MockExtensionContext();
         extensionStateWithLegacyStrings.update('installed', [defaultInstall.installKey, secondInstall.installKey]);
         validator.setExtensionState(extensionStateWithLegacyStrings);
 
@@ -149,14 +149,14 @@ suite('InstallTracker Unit Tests', () => {
             }
         ]
 
-        assert.deepStrictEqual(expected, await validator.getExistingInstalls(false));
+        assert.deepStrictEqual(await validator.getExistingInstalls(true), expected, 'It converted the legacy strings to the new type');
 
     }).timeout(defaultTimeoutTime);
 
     test('It Handles Null Owner Gracefully on Duplicate Install and Removal', async () => {
         const validator = new MockInstallTracker(mockContext);
 
-        let extensionStateWithLegacyStrings = new MockExtensionContext();
+        const extensionStateWithLegacyStrings = new MockExtensionContext();
         extensionStateWithLegacyStrings.update('installed', [defaultInstall.installKey, secondInstall.installKey]);
         validator.setExtensionState(extensionStateWithLegacyStrings);
 
@@ -173,7 +173,7 @@ suite('InstallTracker Unit Tests', () => {
 
         validator.trackInstalledVersion(defaultInstall);
 
-        assert.deepStrictEqual(expected, await validator.getExistingInstalls(false));
+        assert.deepStrictEqual(expected, await validator.getExistingInstalls(true), 'It added the new owner to the existing null install');
 
         validator.untrackInstalledVersion(defaultInstall);
         validator.untrackInstalledVersion(secondInstall);
@@ -189,7 +189,7 @@ suite('InstallTracker Unit Tests', () => {
             }
         ]
 
-        assert.deepStrictEqual(expectedTwo, await validator.getExistingInstalls(false));
+        assert.deepStrictEqual(await validator.getExistingInstalls(true), expectedTwo, 'It removed the owner from the existing null install');
     }).timeout(defaultTimeoutTime);
 
 });
