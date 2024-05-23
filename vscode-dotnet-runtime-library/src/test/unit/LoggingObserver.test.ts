@@ -30,7 +30,7 @@ suite('LoggingObserver Unit Tests', () => {
         // Check if the log file content is same as expected content
         fs.readdirSync(tempPath).forEach(file => {
             const logContent = fs.readFileSync(path.join(tempPath, file)).toString();
-            assert.include(logContent, fakeEvent.eventName, 'The log file does not contain the expected content that should be written to it?');
+            assert.include(logContent, fakeEvent.eventName, 'The log file does not contain the expected content that should be written to it');
         });
 
     }).timeout(4000);
