@@ -36,13 +36,13 @@ import {
     IIssueContext,
     InstallationValidator,
     registerEventStream,
+    getDirectoryByMode,
     VersionResolver,
     VSCodeExtensionContext,
     VSCodeEnvironment,
     WindowDisplayWorker,
     DotnetSDKAcquisitionStarted,
     GlobalInstallerResolver,
-    getDirectoryPerMode,
     CommandExecutor,
     IDotnetListVersionsContext,
     WebRequestWorker,
@@ -405,7 +405,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             installationValidator: new InstallationValidator(globalEventStream),
             timeoutSeconds: resolvedTimeoutSeconds,
             installMode: mode,
-            installDirectoryProvider: getDirectoryPerMode(mode, context.globalStoragePath),
+            installDirectoryProvider: getDirectoryByMode(mode, context.globalStoragePath),
             proxyUrl: proxyLink,
             isExtensionTelemetryInitiallyEnabled: isExtensionTelemetryEnabled
         }
