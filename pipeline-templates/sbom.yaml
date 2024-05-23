@@ -1,0 +1,15 @@
+jobs:
+- job: sbom
+  displayName: 📝 SBOM Generation
+  pool: VSEngSS-MicroBuild2022-1ES
+  steps:
+    - task: ManifestGeneratorTask@0
+      displayName: 📃 SBOM generation
+      inputs:
+        BuildDropPath: $(System.DefaultWorkingDirectory)
+  templateContext:
+    outputs:
+    - output: pipelineArtifact
+      displayName: 📢 Publishing SBOM
+      artifact: SBOM
+      targetPath: $(System.DefaultWorkingDirectory)/_manifest
