@@ -180,6 +180,11 @@ export class DotnetInstallScriptAcquisitionError extends DotnetAcquisitionError 
     public readonly eventName = 'DotnetInstallScriptAcquisitionError';
 }
 
+export class NoUninstallVersionProvidedError extends DotnetNonAcquisitionError
+{
+    public readonly eventName = 'NoUninstallVersionProvidedError';
+}
+
 export class UserManualInstallFailure extends SuppressedAcquisitionError {
     eventName = 'UserManualInstallFailure';
 }

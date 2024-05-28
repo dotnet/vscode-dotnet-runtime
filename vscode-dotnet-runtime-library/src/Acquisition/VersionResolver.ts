@@ -193,6 +193,16 @@ export class VersionResolver implements IVersionResolver {
     }
 
     /**
+     * Returns true if the version appears to be a runtime one, false if its an SDK version. This is based exclusively on the fact that SDKs have feature bands and runtimes do not.
+     * @param version The version to analyze.
+     */
+    public looksLikeRuntimeVersion(version : string) : boolean
+    {
+        const band : string | undefined = version.split('.')?.at(2);
+        return !band;
+    }
+
+    /**
      *
      * @param fullySpecifiedVersion the fully specified version of the sdk, e.g. 7.0.301 to get the major from.
      * @returns the major.minor in the form of '3', etc.

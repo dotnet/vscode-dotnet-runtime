@@ -6,5 +6,6 @@
 import { UninstallErrorConfiguration } from './Utils/ErrorHandler';
 
 export interface IDotnetUninstallContext {
+    version?: string // Provide this when uninstalling a specific version. If you want to uninstall all local items, then call the uninstallAll api without a version.
     errorConfiguration?: UninstallErrorConfiguration;
 }

@@ -47,6 +47,7 @@ import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetCoreAcquisitionWorker } from './IDotnetCoreAcquisitionWorker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
+import { VersionResolver } from './VersionResolver';
 /* tslint:disable:no-any */
 
 export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
@@ -59,6 +60,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     public installingArchitecture : string | null;
     private readonly dotnetExecutable: string;
     private globalResolver: GlobalInstallerResolver | null;
+    private versionResolver : VersionResolver;
 
     private acquisitionPromises: { [installKey: string]: Promise<string> | undefined };
     private extensionContext : IVSCodeExtensionContext;
@@ -74,6 +76,17 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         this.installingArchitecture = this.context.installingArchitecture === undefined ? os.arch() : this.context.installingArchitecture;
         this.globalResolver = null;
         this.extensionContext = extensionContext;
+        this.versionResolver = new VersionResolver(context);
+    }
+
+    public async getExistingLocalRuntimes() : Promise<string[]>
+    {
+        return this.context.extensionState.get<string[]>(this.installedVersionsKey, []).filter(installKey => !this.isGlobalInstallKey(installKey) && this.isRuntimeInstallKey(installKey));
+    }
+
+    public async uninstallLocal(installKey: string): Promise<void>
+    {
+        await this.uninstallLocalRuntimeOrSDK(installKey);
     }
 
     public async uninstallAll() {
@@ -112,6 +125,12 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     private isGlobalInstallKey(installKey : string) : boolean
     {
         return installKey.toLowerCase().includes('global');
+    }
+
+    private isRuntimeInstallKey(installKey : string) : boolean
+    {
+        const versionFromKey = installKey.includes('-') ? installKey.split('-').at(0) : installKey.includes('~') ? installKey : installKey.split('~').at(0)
+        return this.versionResolver.looksLikeRuntimeVersion(versionFromKey!);
     }
 
     /**
