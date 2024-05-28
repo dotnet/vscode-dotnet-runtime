@@ -54,6 +54,9 @@ extends:
         name: NetCore1ESPool-Internal
         image: 1es-windows-2022
         os: windows
+      policheck:
+        enabled: true
+        exclusionsFile: $(System.DefaultWorkingDirectory)\PoliCheckExclusions.xml
     stages:
     - stage: Internal
       jobs:
