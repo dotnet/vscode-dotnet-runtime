@@ -12,7 +12,7 @@ import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerC
 import { IEventStream } from '../../EventStream/EventStream';
 import { IUtilityContext } from '../../Utils/IUtilityContext';
 import { IInstallationDirectoryProvider } from '../../Acquisition/IInstallationDirectoryProvider';
-import { getDirectoryPerMode } from '../../Acquisition/getDirectoryPerMode';
+import { getDirectoryByMode } from '../../Acquisition/GetDirectoryPerMode';
 import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 
 const standardTimeoutTime = 100000;
@@ -33,7 +33,7 @@ export function getMockAcquisitionContext(mode: DotnetInstallMode, version : str
         installMode: mode,
         installingArchitecture: arch,
         proxyUrl: undefined,
-        installDirectoryProvider: directory ? directory : getDirectoryPerMode(mode, ''),
+        installDirectoryProvider: directory ? directory : getDirectoryByMode(mode, ''),
         isExtensionTelemetryInitiallyEnabled: true
     };
     return workerContext;

@@ -109,7 +109,7 @@ suite('InstallTracker Unit Tests', () => {
         resetExtensionState();
 
         const validator = new MockInstallTracker(mockContext);
-        validator.trackInstalledVersion(defaultInstall);
+        await validator.trackInstalledVersion(defaultInstall);
 
         const otherRequesterValidator = new MockInstallTracker(mockContextFromOtherExtension);
         // Inject the extension state from the old class into the new one, because in vscode its a shared global state but here its mocked
