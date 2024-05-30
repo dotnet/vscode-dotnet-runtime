@@ -1,7 +1,17 @@
+parameters:
+  pool: ''
+
 jobs:
-- job: sbom
+- job: SBOM
+  pool:
+    ${{ if eq(parameters.useOneEngineeringPool, 'true') }}:
+        ${{ parameters.pool }}
+    ${{ else }}:
+        vmImage: ${{ parameters.pool.vmImage }}
   displayName: 📝 SBOM Generation
-  pool: VSEngSS-MicroBuild2022-1ES
+  dependsOn:
+  - ${{ parameters.pool.os }}_Build
+  - ${{ parameters.pool.os }}_Package
   steps:
     - task: ManifestGeneratorTask@0
       displayName: 📃 SBOM generation

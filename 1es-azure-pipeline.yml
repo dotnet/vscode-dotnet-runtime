@@ -91,7 +91,10 @@ extends:
             image: 1es-windows-2022
             os: windows
           useOneEngineeringPool: true
-    - stage: Compliance
-        dependsOn: Internal
-        jobs:
-        - template: pipeline-templates/sbom.yaml@self
+      - template: pipeline-templates/sbom.yaml@self
+        parameters:
+          pool:
+            name: NetCore1ESPool-Internal
+            image: 1es-windows-2022
+            os: windows
+          useOneEngineeringPool: true
