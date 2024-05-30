@@ -51,3 +51,4 @@ vscode-dotnet-runtime-extension/LICENSE.txt
 vscode-dotnet-sdk-extension/LICENSE.txt
 .vscode/launch.json
 rimraf
+test-results.xml

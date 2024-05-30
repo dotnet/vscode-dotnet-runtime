@@ -24,6 +24,11 @@ jobs:
       condition:
     - script: test.cmd
       displayName: 🔍 Test Windows
+    - task: PublishTestResults@2
+      condition: succeededOrFailed()
+      inputs:
+        testRunner: JUnit
+        testResultsFiles: '**/test-results.xml'
   - ${{ if eq(parameters.pool.os, 'linux') }}:
     - bash: |
         /usr/bin/Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
@@ -36,3 +41,8 @@ jobs:
     - script: ./test.sh
       displayName: 🔎 Test Mac and Linux
       env: {DISPLAY: ':99.0'}
+    - task: PublishTestResults@2
+      condition: succeededOrFailed()
+      inputs:
+        testRunner: JUnit
+        testResultsFiles: '**/test-results.xml'

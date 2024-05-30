@@ -13,7 +13,7 @@ export function run(): Promise<void> {
   const mocha = new Mocha({
     ui: 'tdd',
     color: true,
-  });
+  }).reporter('spec').reporter('mocha-junit-reporter');
 
   const testsRoot = path.resolve(__dirname, '..');
 
