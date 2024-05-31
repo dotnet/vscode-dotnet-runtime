@@ -55,7 +55,7 @@ extends:
         image: 1es-windows-2022
         os: windows
       sbom:
-        enabled: false # SBOM requires very special setup, and is done in compliance.yml
+        enabled: false # SBOM requires a special setup for node.js projects to ensure all dependencies are included.
       policheck:
         enabled: true
         exclusionsFile: $(System.DefaultWorkingDirectory)\PoliCheckExclusions.xml
