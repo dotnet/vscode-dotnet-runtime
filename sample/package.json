@@ -104,7 +104,7 @@
 		"@vscode/vsce": "^2.19.0",
 		"graceful-fs": "^4.2.11",
 		"minimatch": "3.0.5",
-		"nanoid": "3.3.1",
+		"nanoid": "3.3.7",
 		"open": "^8.4.2",
 		"vscode-dotnet-runtime": "file:../vscode-dotnet-runtime-extension",
 		"vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library",
