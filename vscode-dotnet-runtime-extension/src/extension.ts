@@ -206,6 +206,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
         const pathResult = await callWithErrorHandling(async () =>
         {
+            sdkAcquisitionWorker.setAcquisitionContext(commandContext);
+            telemetryObserver?.setAcquisitionContext(sdkContext, commandContext);
 
             if(commandContext.version === '' || !commandContext.version)
             {
@@ -220,10 +222,6 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             {
                 return Promise.resolve(existingPath);
             }
-
-            sdkAcquisitionWorker.setAcquisitionContext(commandContext);
-            telemetryObserver?.setAcquisitionContext(sdkContext, commandContext);
-
 
             const globalInstallerResolver = new GlobalInstallerResolver(sdkContext, commandContext.version);
             fullyResolvedVersion = await globalInstallerResolver.getFullySpecifiedVersion();
