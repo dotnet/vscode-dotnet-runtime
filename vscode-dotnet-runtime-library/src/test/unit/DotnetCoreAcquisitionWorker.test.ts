@@ -31,8 +31,6 @@ import { getMockAcquisitionContext, getMockAcquisitionWorker } from './TestUtili
 import { IAcquisitionInvoker } from '../../Acquisition/IAcquisitionInvoker';
 import { InstallOwner, InstallRecord } from '../../Acquisition/InstallRecord';
 import { GetDotnetInstallInfo } from '../../Acquisition/DotnetInstall';
-import { DotnetInstallOrStr } from '../../Acquisition/DotnetInstall';
-import { DotnetInstall } from '../../Acquisition/DotnetInstall';
 import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 
 const assert = chai.assert;

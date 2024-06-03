@@ -106,6 +106,25 @@ export class DotnetRuntimeAcquisitionTotalSuccessEvent extends IEvent
     }
 }
 
+export class DotnetGlobalSDKAcquisitionTotalSuccessEvent extends IEvent
+{
+    public readonly eventName = 'DotnetGlobalSDKAcquisitionTotalSuccessEvent';
+    public readonly type = EventType.DotnetTotalSuccessEvent;
+
+    constructor(public readonly startingVersion: string, public readonly installKey: DotnetInstall, public readonly requestingExtensionId = '', public readonly finalPath: string) {
+        super();
+    }
+
+    public getProperties() {
+        return {
+                AcquisitionStartVersion : this.startingVersion,
+                ...InstallToStrings(this.installKey),
+                ExtensionId : TelemetryUtilities.HashData(this.requestingExtensionId),
+                FinalPath : this.finalPath,
+            };
+    }
+}
+
 export abstract class DotnetAcquisitionError extends IEvent {
     public readonly type = EventType.DotnetAcquisitionError;
     public isError = true;
@@ -130,11 +149,16 @@ export abstract class DotnetAcquisitionError extends IEvent {
     }
 }
 
+/**
+ * @remarks A wrapper around events to detect them as a failure to install the Global SDK.
+ * This allows us to count all errors and analyze them into categories.
+ * The event name for the failure cause is stored in the originalEventName property.
+ */
 export class DotnetGlobalSDKAcquisitionError extends DotnetAcquisitionError
 {
     public eventName = 'DotnetGlobalSDKAcquisitionError';
 
-    constructor(public readonly error: Error, public readonly install: DotnetInstall | null)
+    constructor(public readonly error: Error, originalEventName : string, public readonly install: DotnetInstall | null)
     {
         super(error, install);
     }

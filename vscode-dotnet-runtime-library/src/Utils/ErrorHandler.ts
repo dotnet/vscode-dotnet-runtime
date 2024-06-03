@@ -7,6 +7,7 @@ import * as open from 'open';
 import {
     DotnetCommandFailed,
     DotnetCommandSucceeded,
+    DotnetGlobalSDKAcquisitionError,
     DotnetInstallExpectedAbort,
     DotnetNotInstallRelatedCommandFailed
 } from '../EventStream/EventStreamEvents';
@@ -14,6 +15,7 @@ import { getInstallKeyFromContext } from './InstallKeyUtilities';
 import { IIssueContext } from './IIssueContext';
 import { formatIssueUrl } from './IssueReporter';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
+import { GetDotnetInstallInfo } from '../Acquisition/DotnetInstall';
 
 export enum AcquireErrorConfiguration {
     DisplayAllErrorPopups = 0,
@@ -71,7 +73,8 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
 
         if(acquireContext?.installMode === 'sdk' && acquireContext.acquisitionContext?.installType === 'global')
         {
-            context.eventStream.post(new DotnetGlobalSDKAcquisitionError(caughtError));
+            context.eventStream.post(new DotnetGlobalSDKAcquisitionError(error, error?.constructor['name'] ?? 'Unknown',
+             GetDotnetInstallInfo(acquireContext.acquisitionContext.version, acquireContext.installMode, true, acquireContext.installingArchitecture ?? 'unknown')));
         }
 
         if (context.errorConfiguration === AcquireErrorConfiguration.DisplayAllErrorPopups)

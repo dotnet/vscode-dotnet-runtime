@@ -20,6 +20,7 @@ import {
     DotnetExistingPathResolutionCompleted,
     DotnetRuntimeAcquisitionStarted,
     DotnetRuntimeAcquisitionTotalSuccessEvent,
+    DotnetGlobalSDKAcquisitionTotalSuccessEvent,
     enableExtensionTelemetry,
     ErrorConfiguration,
     ExistingPathResolver,
@@ -201,8 +202,16 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             return Promise.reject('No requesting extension id was provided.');
         }
 
-        const pathResult = callWithErrorHandling(async () =>
+        let fullyResolvedVersion = '';
+
+        const pathResult = await callWithErrorHandling(async () =>
         {
+
+            if(commandContext.version === '' || !commandContext.version)
+            {
+                    throw Error(`No version was defined to install.`);
+            }
+
             globalEventStream.post(new DotnetSDKAcquisitionStarted(commandContext.requestingExtensionId));
             globalEventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
 
@@ -215,12 +224,9 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             sdkAcquisitionWorker.setAcquisitionContext(commandContext);
             telemetryObserver?.setAcquisitionContext(sdkContext, commandContext);
 
-            if(commandContext.version === '' || !commandContext.version)
-            {
-                throw Error(`No version was defined to install.`);
-            }
 
             const globalInstallerResolver = new GlobalInstallerResolver(sdkContext, commandContext.version);
+            fullyResolvedVersion = await globalInstallerResolver.getFullySpecifiedVersion();
             outputChannel.show(true);
             const dotnetPath = await sdkAcquisitionWorker.acquireGlobalSDK(globalInstallerResolver);
 
@@ -228,6 +234,11 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             return dotnetPath;
         }, sdkIssueContextFunctor(commandContext.errorConfiguration, commandKeys.acquireGlobalSDK), commandContext.requestingExtensionId, sdkContext);
 
+        const iKey = sdkAcquisitionWorker.getInstallKey(fullyResolvedVersion);
+        const install = {installKey : iKey, version : fullyResolvedVersion, installMode: 'sdk', isGlobal: true,
+        architecture: commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture()} as DotnetInstall;
+
+        globalEventStream.post(new DotnetGlobalSDKAcquisitionTotalSuccessEvent(commandContext.version, install, commandContext.requestingExtensionId ?? '', pathResult?.dotnetPath ?? ''));
         return pathResult;
     });
 
