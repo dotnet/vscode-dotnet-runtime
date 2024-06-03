@@ -73,7 +73,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
 
         if(acquireContext?.installMode === 'sdk' && acquireContext.acquisitionContext?.installType === 'global')
         {
-            context.eventStream.post(new DotnetGlobalSDKAcquisitionError(error, error?.constructor['name'] ?? 'Unknown',
+            context.eventStream.post(new DotnetGlobalSDKAcquisitionError(error, error?.constructor?.name ?? 'Unknown',
              GetDotnetInstallInfo(acquireContext.acquisitionContext.version, acquireContext.installMode, true, acquireContext.installingArchitecture ?? 'unknown')));
         }
 
