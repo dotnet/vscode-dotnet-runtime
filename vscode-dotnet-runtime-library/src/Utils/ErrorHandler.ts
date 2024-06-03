@@ -69,6 +69,11 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
             );
         }
 
+        if(acquireContext?.installMode === 'sdk' && acquireContext.acquisitionContext?.installType === 'global')
+        {
+            context.eventStream.post(new DotnetGlobalSDKAcquisitionError(caughtError));
+        }
+
         if (context.errorConfiguration === AcquireErrorConfiguration.DisplayAllErrorPopups)
         {
             if ((error.message as string).includes(timeoutConstants.timeoutMessage))

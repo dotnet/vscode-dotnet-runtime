@@ -130,6 +130,16 @@ export abstract class DotnetAcquisitionError extends IEvent {
     }
 }
 
+export class DotnetGlobalSDKAcquisitionError extends DotnetAcquisitionError
+{
+    public eventName = 'DotnetGlobalSDKAcquisitionError';
+
+    constructor(public readonly error: Error, public readonly install: DotnetInstall | null)
+    {
+        super(error, install);
+    }
+}
+
 export abstract class DotnetNonAcquisitionError extends IEvent {
     public readonly type = EventType.DotnetAcquisitionError;
     public isError = true;
