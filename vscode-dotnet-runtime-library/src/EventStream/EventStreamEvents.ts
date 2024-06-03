@@ -158,9 +158,20 @@ export class DotnetGlobalSDKAcquisitionError extends DotnetAcquisitionError
 {
     public eventName = 'DotnetGlobalSDKAcquisitionError';
 
-    constructor(public readonly error: Error, originalEventName : string, public readonly install: DotnetInstall | null)
+    constructor(public readonly error: Error, public readonly originalEventName : string, public readonly install: DotnetInstall | null)
     {
         super(error, install);
+    }
+
+    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+        return {
+                FailureMode: this.originalEventName,
+                ErrorName : this.error.name,
+                ErrorMessage : this.error.message,
+                StackTrace : this.error.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : '',
+                InstallKey : this.install?.installKey ?? 'null',
+                ...InstallToStrings(this.install!)
+            };
     }
 }
 
