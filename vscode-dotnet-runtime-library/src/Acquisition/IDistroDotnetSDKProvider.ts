@@ -8,7 +8,7 @@ import * as fs from 'fs';
 import path = require('path');
 
 import { DistroVersionPair, DotnetDistroSupportStatus } from './LinuxVersionResolver';
-import { DotnetAcquisitionDistroUnknownError, DotnetVersionResolutionError, SuppressedAcquisitionError } from '../EventStream/EventStreamEvents';
+import { DotnetAcquisitionDistroUnknownError, DotnetVersionResolutionError, EventBasedError, EventCancellationError, SuppressedAcquisitionError } from '../EventStream/EventStreamEvents';
 import { VersionResolver } from './VersionResolver';
 import { CommandExecutorCommand } from '../Utils/CommandExecutorCommand';
 import { CommandExecutor } from '../Utils/CommandExecutor';
@@ -81,7 +81,8 @@ export abstract class IDistroDotnetSDKProvider {
         this.distroJson = JSON.parse(fs.readFileSync(distroDataFile, 'utf8'));
         if(!distroVersion || !this.distroJson || !((this.distroJson as any)[this.distroVersion.distro]))
         {
-            const error = new DotnetAcquisitionDistroUnknownError(new Error(`Automated installation for the distro ${this.distroVersion.distro} is not yet supported.
+            const error = new DotnetAcquisitionDistroUnknownError(new EventBasedError('DotnetAcquisitionDistroUnknownError',
+            `Automated installation for the distro ${this.distroVersion.distro} is not yet supported.
 Please install the .NET SDK manually: https://dotnet.microsoft.com/download`),
                 getInstallKeyFromContext(this.context));
             throw error.error;
@@ -361,7 +362,7 @@ Please install the .NET SDK manually: https://dotnet.microsoft.com/download`),
                 return dotnetPackage.packages[0];
             }
         }
-        const err = new Error(`Could not find a .NET package for version ${fullySpecifiedDotnetVersion}. Found only: ${JSON.stringify(myDotnetVersions)}`);
+        const err = new EventCancellationError('DotnetVersionResolutionError', `Could not find a .NET package for version ${fullySpecifiedDotnetVersion}. Found only: ${JSON.stringify(myDotnetVersions)}`);
         this.context.eventStream.post(new DotnetVersionResolutionError(err, getInstallKeyFromContext(this.context)));
         throw err;
     }

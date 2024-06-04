@@ -9,7 +9,8 @@ import {
     DotnetCommandSucceeded,
     DotnetGlobalSDKAcquisitionError,
     DotnetInstallExpectedAbort,
-    DotnetNotInstallRelatedCommandFailed
+    DotnetNotInstallRelatedCommandFailed,
+    EventCancellationError
 } from '../EventStream/EventStreamEvents';
 import { getInstallKeyFromContext } from './InstallKeyUtilities';
 import { IIssueContext } from './IIssueContext';
@@ -59,7 +60,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
         context.eventStream.post(new DotnetCommandSucceeded(context.commandName));
         return result;
     }
-    catch (caughtError)
+    catch (caughtError : any)
     {
         const error = caughtError as Error;
         if(!isCancellationStyleError(error))
@@ -73,7 +74,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
 
         if(acquireContext?.installMode === 'sdk' && acquireContext.acquisitionContext?.installType === 'global')
         {
-            context.eventStream.post(new DotnetGlobalSDKAcquisitionError(error, error?.constructor?.name ?? 'Unknown',
+            context.eventStream.post(new DotnetGlobalSDKAcquisitionError(error, (caughtError?.eventType) ?? 'Unknown',
              GetDotnetInstallInfo(acquireContext.acquisitionContext.version, acquireContext.installMode, true, acquireContext.installingArchitecture ?? 'unknown')));
         }
 
@@ -153,5 +154,6 @@ async function configureManualInstall(context: IIssueContext, requestingExtensio
 function isCancellationStyleError(error : Error)
 {
     // Handle both when the event.error or event itself is posted.
-    return error && error.constructor && (error.constructor.name === 'UserCancelledError' || error.constructor.name === 'EventCancellationError') || error instanceof DotnetInstallExpectedAbort;
+    return error && error.constructor && (error.constructor.name === 'UserCancelledError' || error.constructor.name === 'EventCancellationError') ||
+        error instanceof DotnetInstallExpectedAbort || error instanceof EventCancellationError;
 }

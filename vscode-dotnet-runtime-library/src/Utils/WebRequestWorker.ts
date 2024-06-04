@@ -7,7 +7,7 @@ import axiosRetry from 'axios-retry';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { getProxySettings } from 'get-proxy-settings';
 import { AxiosCacheInstance, buildMemoryStorage, setupCache } from 'axios-cache-interceptor';
-import {SuppressedAcquisitionError, WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
+import {EventBasedError, SuppressedAcquisitionError, WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
 import { getInstallKeyFromContext } from './InstallKeyUtilities';
 
 import * as fs from 'fs';
@@ -69,7 +69,7 @@ export class WebRequestWorker
     {
         if(url === '' || !url)
         {
-            throw new Error(`Request to the url ${this.url} failed, as the URL is invalid.`);
+            throw new EventBasedError('AxiosGetFailedWithInvalidURL', `Request to the url ${this.url} failed, as the URL is invalid.`);
         }
 
         const response = await this.client.get(url, { ...options });
@@ -207,7 +207,7 @@ export class WebRequestWorker
                 if(isAxiosError(error))
                 {
                     const axiosBasedError = error as AxiosError;
-                    const summarizedError = new Error(
+                    const summarizedError = new EventBasedError('WebRequestFailedFromAxios',
 `Request to ${this.url} Failed: ${axiosBasedError.message}. Aborting.
 ${axiosBasedError.cause? `Error Cause: ${axiosBasedError.cause!.message}` : ``}
 Please ensure that you are online.
@@ -218,7 +218,8 @@ If you're on a proxy and disable registry access, you must set the proxy in our 
                 }
                 else
                 {
-                    const genericError = new Error(`Web Request to ${this.url} Failed: ${error.message}. Aborting. Stack: ${'stack' in error ? error?.stack : 'unavailable.'}`);
+                    const genericError = new EventBasedError('WebRequestFailedGenerically',
+                        `Web Request to ${this.url} Failed: ${error.message}. Aborting. Stack: ${'stack' in error ? error?.stack : 'unavailable.'}`);
                     this.context.eventStream.post(new WebRequestError(genericError, getInstallKeyFromContext(this.context)));
                     throw genericError;
                 }

@@ -22,6 +22,7 @@ import {
     DotnetRuntimeAcquisitionTotalSuccessEvent,
     DotnetGlobalSDKAcquisitionTotalSuccessEvent,
     enableExtensionTelemetry,
+    EventBasedError,
     ErrorConfiguration,
     ExistingPathResolver,
     ExtensionConfigurationWorker,
@@ -167,7 +168,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             }
 
             if (!commandContext.version || commandContext.version === 'latest') {
-                throw new Error(`Cannot acquire .NET version "${commandContext.version}". Please provide a valid version.`);
+                throw new EventBasedError('BadContextualVersion',
+                    `Cannot acquire .NET version "${commandContext.version}". Please provide a valid version.`);
             }
 
             const existingPath = await resolveExistingPathIfExists(existingPathConfigWorker, commandContext);
@@ -211,7 +213,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
             if(commandContext.version === '' || !commandContext.version)
             {
-                    throw Error(`No version was defined to install.`);
+                    throw new EventCancellationError('BadContextualRuntimeVersionError',
+                        `No version was defined to install.`);
             }
 
             globalEventStream.post(new DotnetSDKAcquisitionStarted(commandContext.requestingExtensionId));
@@ -254,8 +257,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
         if (!activeSupportVersions || activeSupportVersions.length < 1)
         {
-            const err = new Error(`An active-support version of dotnet couldn't be found. Discovered versions: ${JSON.stringify(availableVersions)}`);
-            globalEventStream.post(new DotnetVersionResolutionError(err as EventCancellationError, null));
+            const err = new EventCancellationError('DotnetVersionResolutionError', `An active-support version of dotnet couldn't be found. Discovered versions: ${JSON.stringify(availableVersions)}`);
+            globalEventStream.post(new DotnetVersionResolutionError(err, null));
             if(!availableVersions || availableVersions.length < 1)
             {
                 return [];

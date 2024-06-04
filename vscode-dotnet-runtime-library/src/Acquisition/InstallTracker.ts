@@ -13,6 +13,7 @@ import {
     DotnetPreinstallDetected,
     DotnetPreinstallDetectionError,
     DuplicateInstallDetected,
+    EventBasedError,
     NoMatchingInstallToStopTracking
 } from '../EventStream/EventStreamEvents';
 import {
@@ -76,7 +77,7 @@ export class InstallTracker
         {
             // Either the lock could not be acquired or releasing it failed
             this.context.eventStream.post(new DotnetLockErrorEvent(e, e?.message ?? 'Unable to acquire lock to update installation state', new Date().toISOString(), lockPath, lockPath));
-            throw error();
+            throw new EventBasedError('DotnetLockErrorEvent', e?.message, e?.stack);
         }
     }
 

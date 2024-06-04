@@ -29,6 +29,7 @@ import {
     DotnetCompletedGlobalInstallerExecution,
     DotnetFakeSDKEnvironmentVariableTriggered,
     SuppressedAcquisitionError,
+    EventBasedError,
 } from '../EventStream/EventStreamEvents';
 
 import { GlobalInstallerResolver } from './GlobalInstallerResolver';
@@ -300,7 +301,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         } as IDotnetInstallationContext;
         this.context.eventStream.post(new DotnetAcquisitionStarted(install, version, this.context.acquisitionContext?.requestingExtensionId));
         await acquisitionInvoker.installDotnet(installContext, install).catch((reason) => {
-            throw Error(`Installation failed: ${reason}`);
+            reason.message = (`Installation failed: ${reason.message}`);
+            throw reason;
         });
         this.context.installationValidator.validateDotnetInstall(install, dotnetPath);
 
@@ -371,7 +373,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         if(installerResult !== '0')
         {
-            const err = new DotnetNonZeroInstallerExitCodeError(new Error(`An error was raised by the .NET SDK installer. The exit code it gave us: ${installerResult}`), install);
+            const err = new DotnetNonZeroInstallerExitCodeError(new EventBasedError('DotnetNonZeroInstallerExitCodeError',
+                `An error was raised by the .NET SDK installer. The exit code it gave us: ${installerResult}`), install);
             this.context.eventStream.post(err);
             throw err;
         }

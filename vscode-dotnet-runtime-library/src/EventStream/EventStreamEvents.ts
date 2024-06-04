@@ -15,7 +15,18 @@ import { DotnetInstall } from '../Acquisition/DotnetInstall';
 
 export class EventCancellationError extends Error
 {
+    constructor(public readonly eventType : string, msg : string, stack ? : string)
+    {
+        super(msg);
+    }
+}
 
+export class EventBasedError extends Error
+{
+    constructor(public readonly eventType : string, msg : string, stack? : string)
+    {
+        super(msg);
+    }
 }
 
 export class DotnetAcquisitionStarted extends IEvent {

@@ -15,6 +15,7 @@ import {
     DotnetAcquisitionTimeoutError,
     DotnetAcquisitionUnexpectedError,
     DotnetOfflineFailure,
+    EventBasedError,
 } from '../EventStream/EventStreamEvents';
 
 import { timeoutConstants } from '../Utils/ErrorHandler';
@@ -100,19 +101,22 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                     {
                         if (!(await this.isOnline(installContext)))
                         {
-                            const offlineError = new Error('No internet connection detected: Cannot install .NET');
+                            const offlineError = new EventBasedError('DotnetOfflineFailure', 'No internet connection detected: Cannot install .NET');
                             this.eventStream.post(new DotnetOfflineFailure(offlineError, installKey));
                             reject(offlineError);
                         }
                         else if (error.signal === 'SIGKILL') {
-                            error.message = timeoutConstants.timeoutMessage;
+                            const newError = new EventBasedError('DotnetAcquisitionTimeoutError',
+                                `${timeoutConstants.timeoutMessage}, MESSAGE: ${error.message}, CODE: ${error.code}, KILLED: ${error.killed}`, error.stack);
                             this.eventStream.post(new DotnetAcquisitionTimeoutError(error, installKey, installContext.timeoutSeconds));
-                            reject(error);
+                            reject(newError);
                         }
                         else
                         {
-                            this.eventStream.post(new DotnetAcquisitionInstallError(error, installKey));
-                            reject(error);
+                            const newError = new EventBasedError('DotnetAcquisitionInstallError',
+                                `${timeoutConstants.timeoutMessage}, MESSAGE: ${error.message}, CODE: ${error.code}, SIGNAL: ${error.signal}`, error.stack);
+                            this.eventStream.post(new DotnetAcquisitionInstallError(newError, installKey));
+                            reject(newError);
                         }
                     }
                     else if (stderr && stderr.length > 0)
@@ -127,10 +131,11 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                     }
                 });
             }
-            catch (error)
+            catch (error : any)
             {
-                this.eventStream.post(new DotnetAcquisitionUnexpectedError(error as Error, installKey));
-                reject(error);
+                const newError = new EventBasedError('DotnetAcquisitionUnexpectedError', error?.message, error?.stack)
+                this.eventStream.post(new DotnetAcquisitionUnexpectedError(newError, installKey));
+                reject(newError);
             }
         });
     }
@@ -211,7 +216,7 @@ If you cannot safely and confidently change the execution policy, try setting a 
                 error = err;
             }
         }
-        catch(err)
+        catch(err : any)
         {
             if(!knownError)
             {
@@ -222,7 +227,7 @@ If you cannot safely and confidently change the execution policy, try setting a 
         if(error != null)
         {
             this.eventStream.post(new DotnetAcquisitionScriptError(error as Error, installKey));
-            throw error;
+            throw new EventBasedError('DotnetAcquisitionScriptError', error?.message, error?.stack);
         }
 
         return command!.commandRoot;
