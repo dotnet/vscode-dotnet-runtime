@@ -47,7 +47,7 @@ export class OutputChannelObserver implements IEventStreamObserver {
 
                 if (this.inProgressDownloads.length > 1) {
                     // Already a download in progress
-                    this.outputChannel.appendLine(` -- Concurrent download of '${acquisitionStarted.installKey}' started!`);
+                    this.outputChannel.appendLine(` -- Concurrent download of '${acquisitionStarted.installKey.installKey}' started!`);
                     this.outputChannel.appendLine('');
                 } else {
                     this.startDownloadIndicator();
@@ -59,7 +59,7 @@ export class OutputChannelObserver implements IEventStreamObserver {
             case EventType.DotnetAcquisitionCompleted:
                 const acquisitionCompleted = event as DotnetAcquisitionCompleted;
                 this.outputChannel.appendLine(' Done!');
-                this.outputChannel.appendLine(`.NET ${acquisitionCompleted.installKey} executable path: ${acquisitionCompleted.dotnetPath}`);
+                this.outputChannel.appendLine(`.NET ${acquisitionCompleted.installKey.installKey} executable path: ${acquisitionCompleted.dotnetPath}`);
                 this.outputChannel.appendLine('');
 
                 this.inProgressVersionDone(acquisitionCompleted.installKey.installKey);
@@ -82,7 +82,7 @@ export class OutputChannelObserver implements IEventStreamObserver {
                     this.outputChannel.append(`${
                         (event as DotnetAcquisitionAlreadyInstalled).requestingExtensionId
                     }: Trying to install .NET ${
-                        (event as DotnetAcquisitionAlreadyInstalled).install
+                        (event as DotnetAcquisitionAlreadyInstalled).install.installKey
                     } but it already exists. No downloads or changes were made.\n`);
                 }
                 break;
@@ -107,7 +107,7 @@ export class OutputChannelObserver implements IEventStreamObserver {
                 break;
             case EventType.DotnetInstallExpectedAbort:
                 const abortEvent = event as DotnetInstallExpectedAbort;
-                this.outputChannel.appendLine(`Cancelled Installation of .NET ${abortEvent.installKey}.`);
+                this.outputChannel.appendLine(`Cancelled Installation of .NET ${abortEvent.installKey?.installKey}.`);
                 this.outputChannel.appendLine(abortEvent.error.message);
 
                 this.updateDownloadIndicators(abortEvent.installKey?.installKey);
