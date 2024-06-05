@@ -1,0 +1,25 @@
+parameters:
+  pool: ''
+
+jobs:
+- job: SBOM
+  pool:
+    ${{ if eq(parameters.useOneEngineeringPool, 'true') }}:
+      ${{ parameters.pool }}
+    ${{ else }}:
+      vmImage: ${{ parameters.pool.vmImage }}
+  displayName: 📝 SBOM Generation
+  dependsOn:
+  - ${{ parameters.pool.os }}_Build
+  - ${{ parameters.pool.os }}_Package
+  steps:
+    - task: ManifestGeneratorTask@0
+      displayName: 📃 SBOM generation
+      inputs:
+        BuildDropPath: $(System.DefaultWorkingDirectory)
+  templateContext:
+    outputs:
+    - output: pipelineArtifact
+      displayName: 📢 Publishing SBOM
+      artifact: SBOM
+      targetPath: $(System.DefaultWorkingDirectory)/_manifest

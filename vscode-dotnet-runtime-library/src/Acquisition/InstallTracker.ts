@@ -63,7 +63,7 @@ export class InstallTracker
             {
                 return await f(...(args));
             }
-            const release = await lockfile.lock(lockPath, { retries: { retries: 10, maxTimeout: 1000 } });
+            const release = await lockfile.lock(lockPath, { retries: { retries: 10, minTimeout: 5, maxTimeout: 2000 } });
             try
             {
                 return await f(...(args));
