@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-## [2.0.6] - Unreleased
+## [2.0.6] - 2024-06-10
 
 Keeps track of which extensions manage which installs to allow for better cleanup of old runtimes and sdks.
 
@@ -15,6 +15,11 @@ Fixes a bug with uninstall management where all .net installs would be removed i
 
 Fixes other book keeping code regarding .NET runtime and sdk installs.
 Improves storage mechanism to allow installing other types of runtimes in the future (aspnet, etc).
+
+Adds reportable SBOMs.
+Upgrades Axios Cache Interceptor with a patch for n[r].split errors.
+Improves error reporting.
+Improves Distro Json Schema file.
 
 # [2.0.5] - 2024-05-07
 
