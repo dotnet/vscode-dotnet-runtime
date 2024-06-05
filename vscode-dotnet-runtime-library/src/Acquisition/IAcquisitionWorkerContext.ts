@@ -7,6 +7,7 @@ import { IEventStream } from '../EventStream/EventStream';
 import { IExtensionState } from '../IExtensionState';
 import { IInstallationDirectoryProvider } from './IInstallationDirectoryProvider';
 import { IInstallationValidator } from './IInstallationValidator';
+import { DotnetInstallMode } from './DotnetInstallMode';
 
 export interface IAcquisitionWorkerContext
 {
@@ -17,6 +18,7 @@ export interface IAcquisitionWorkerContext
     timeoutSeconds: number;
     installDirectoryProvider: IInstallationDirectoryProvider;
     acquisitionContext? : IDotnetAcquireContext | null;
+    installMode: DotnetInstallMode;
     installingArchitecture? : string | undefined | null;
     proxyUrl? : string | undefined;
     isExtensionTelemetryInitiallyEnabled : boolean;

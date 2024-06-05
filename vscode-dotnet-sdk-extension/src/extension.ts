@@ -130,6 +130,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         extensionState: context.globalState,
         eventStream,
         installationValidator: new InstallationValidator(eventStream),
+        installMode: 'sdk',
         timeoutSeconds: resolvedTimeoutSeconds,
         installDirectoryProvider: new SdkInstallationDirectoryProvider(storagePath),
         acquisitionContext : null,
@@ -196,7 +197,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         const pathResult = callWithErrorHandling(async () => {
             eventStream.post(new DotnetAcquisitionStatusRequested(commandContext.version, commandContext.requestingExtensionId));
             const resolvedVersion = await versionResolver.getFullSDKVersion(commandContext.version);
-            const dotnetPath = await acquisitionWorker.acquireStatus(resolvedVersion, false);
+            const dotnetPath = await acquisitionWorker.acquireStatus(resolvedVersion, 'sdk');
             return dotnetPath;
         }, issueContext(commandContext.errorConfiguration, 'acquireSDKStatus'));
         return pathResult;

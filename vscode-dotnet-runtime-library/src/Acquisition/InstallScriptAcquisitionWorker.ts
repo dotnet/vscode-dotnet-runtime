@@ -13,7 +13,7 @@ import {
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { Debugging } from '../Utils/Debugging';
 import { FileUtilities } from '../Utils/FileUtilities';
-import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
+import { getInstallKeyFromContext } from '../Utils/InstallKeyUtilities';
 
 import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
@@ -50,7 +50,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
         catch (error)
         {
             Debugging.log('An error occurred processing the install script.');
-            this.context.eventStream.post(new DotnetInstallScriptAcquisitionError(error as Error, getInstallKeyFromContext(this.context.acquisitionContext)));
+            this.context.eventStream.post(new DotnetInstallScriptAcquisitionError(error as Error, getInstallKeyFromContext(this.context)));
 
             // Try to use fallback install script
             const fallbackPath = this.getFallbackScriptPath();

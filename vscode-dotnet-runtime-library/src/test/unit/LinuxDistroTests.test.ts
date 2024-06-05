@@ -9,17 +9,17 @@ import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProv
 import { MockCommandExecutor, MockEventStream } from '../mocks/MockObjects';
 import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
 import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
-import { LinuxInstallType } from '../../Acquisition/LinuxInstallType';
+import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 const assert = chai.assert;
 const standardTimeoutTime = 100000;
 
 const mockVersion = '7.0.103';
-const acquisitionContext = getMockAcquisitionContext(false, mockVersion);
+const acquisitionContext = getMockAcquisitionContext('sdk', mockVersion);
 const mockExecutor = new MockCommandExecutor(acquisitionContext, getMockUtilityContext());
 const pair : DistroVersionPair = { distro : 'Ubuntu', version : '22.04' };
 const provider : GenericDistroSDKProvider = new GenericDistroSDKProvider(pair, acquisitionContext, getMockUtilityContext(), mockExecutor);
 const shouldRun = os.platform() === 'linux';
-const installType : LinuxInstallType = 'sdk';
+const installType : DotnetInstallMode = 'sdk';
 const noDotnetString = `
 Command 'dotnet' not found, but can be installed with:
 

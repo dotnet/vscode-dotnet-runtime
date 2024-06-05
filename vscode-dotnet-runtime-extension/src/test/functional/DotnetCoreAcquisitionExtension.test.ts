@@ -272,7 +272,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   }).timeout(standardTimeoutTime);
 
   test('List Sdks & Runtimes', async () => {
-    const mockAcquisitionContext = getMockAcquisitionContext(false, '');
+    const mockAcquisitionContext = getMockAcquisitionContext('sdk', '');
     const webWorker = new MockWebRequestWorker(mockAcquisitionContext, '');
     webWorker.response = JSON.parse(mockReleasesData);
 
@@ -294,7 +294,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   }).timeout(standardTimeoutTime);
 
   test('Get Recommended SDK Version', async () => {
-    const mockAcquisitionContext = getMockAcquisitionContext(false, '');
+    const mockAcquisitionContext = getMockAcquisitionContext('sdk', '');
     const webWorker = new MockWebRequestWorker(mockAcquisitionContext, '');
     webWorker.response = JSON.parse(mockReleasesData);
 

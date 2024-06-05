@@ -44,7 +44,7 @@ import {
 import {exec} from '@vscode/sudo-prompt';
 import * as lockfile from 'proper-lockfile';
 import { CommandExecutorCommand } from './CommandExecutorCommand';
-import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
+import { getInstallKeyFromContext } from './InstallKeyUtilities';
 
 
 import { ICommandExecutor } from './ICommandExecutor';
@@ -125,7 +125,7 @@ status: ${commandResult.status?.toString()}`
 
             const err = new DotnetWSLSecurityError(new EventCancellationError(`Automatic .NET SDK Installation is not yet supported in WSL due to VS Code & WSL limitations.
 Please install the .NET SDK manually by following https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu. Then, add it to the path by following https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#manually-installing-net`,
-                ), getInstallKeyFromContext(this.context?.acquisitionContext!));
+                ), getInstallKeyFromContext(this.context));
             this.context?.eventStream.post(err);
             throw err.error;
         }
@@ -192,7 +192,7 @@ ${stderr}`));
                     {
                         const cancelledErr = new CommandExecutionUserRejectedPasswordRequest(new EventCancellationError(`Cancelling .NET Install, as command ${fullCommandString} failed.
 The user refused the password prompt.`),
-                            getInstallKeyFromContext(this.context?.acquisitionContext!));
+                            getInstallKeyFromContext(this.context));
                         this.context?.eventStream.post(cancelledErr);
                         return Promise.reject(cancelledErr.error);
                     }
@@ -200,7 +200,7 @@ The user refused the password prompt.`),
                     {
                         const securityErr = new CommandExecutionUnknownCommandExecutionAttempt(new EventCancellationError(`Cancelling .NET Install, as command ${fullCommandString} is UNKNOWN.
 Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
-                            getInstallKeyFromContext(this.context?.acquisitionContext!));
+                            getInstallKeyFromContext(this.context));
                         this.context?.eventStream.post(securityErr);
                         return Promise.reject(securityErr.error);
                     }
@@ -241,7 +241,7 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
 
         // Lock the directory -- this is not a system wide lock, only a library lock we must respect in the code.
         // This will allow the process to still edit the directory, but not our extension API calls from overlapping with one another.
-        await lockfile.lock(fakeLockFile, { lockfilePath: directoryLockPath, retries: { retries: 10, maxTimeout: 1000 } } )
+        await lockfile.lock(fakeLockFile, { lockfilePath: directoryLockPath, retries: { retries: 10, minTimeout: 5, maxTimeout: 2000 } } )
         .then(async (release: () => void) =>
         {
             this.context?.eventStream.post(new DotnetLockAcquiredEvent(`Lock Acquired.`, new Date().toISOString(), directoryLockPath, fakeLockFile));
@@ -272,7 +272,7 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
         {
             const err = new TimeoutSudoProcessSpawnerError(new Error(`We are unable to spawn the process to run commands under sudo for installing .NET.
 Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: ${errorIfDead}.
-It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFromContext(this.context?.acquisitionContext));
+It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFromContext(this.context));
             this.context?.eventStream.post(err);
             throw err.error;
         }
@@ -330,7 +330,7 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFrom
         // This will allow the process to still edit the directory, but not our extension API calls from overlapping with one another.
 
 
-        await lockfile.lock(fakeLockFile, { lockfilePath: directoryLockPath, retries: { retries: 10, maxTimeout: 1000 } } )
+        await lockfile.lock(fakeLockFile, { lockfilePath: directoryLockPath, retries: { retries: 10, minTimeout : 5, maxTimeout: 2000 } } )
         .then(async (release: () => any) =>
         {
             this.context?.eventStream.post(new DotnetLockAcquiredEvent(`Lock Acquired.`, new Date().toISOString(), directoryLockPath, fakeLockFile));
@@ -368,7 +368,7 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFrom
         {
             const err = new TimeoutSudoCommandExecutionError(new Error(`Timeout: The master process with command ${commandToExecuteString} never finished executing.
 Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: ${terminalFailure}.
-It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFromContext(this.context?.acquisitionContext));
+It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFromContext(this.context));
             this.context?.eventStream.post(err);
             throw err.error;
         }
@@ -398,7 +398,7 @@ ${stderr}`));
             if(statusCode !== '0' && failOnNonZeroExit)
             {
                 const err = new CommandExecutionNonZeroExitFailure(new Error(`Cancelling .NET Install, as command ${commandToExecuteString} returned with status ${statusCode}.`),
-                    getInstallKeyFromContext(this.context?.acquisitionContext!));
+                    getInstallKeyFromContext(this.context));
                 this.context?.eventStream.post(err);
                 throw err.error;
             }

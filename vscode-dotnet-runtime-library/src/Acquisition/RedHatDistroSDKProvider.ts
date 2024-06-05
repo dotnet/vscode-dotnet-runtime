@@ -7,7 +7,7 @@ import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { GenericDistroSDKProvider } from './GenericDistroSDKProvider';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
-import { LinuxInstallType } from './LinuxInstallType';
+import { DotnetInstallMode } from './DotnetInstallMode';
 import { DistroVersionPair } from './LinuxVersionResolver';
 /* tslint:disable:no-any */
 

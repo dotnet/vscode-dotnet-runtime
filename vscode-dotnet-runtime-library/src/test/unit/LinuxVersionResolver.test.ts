@@ -17,12 +17,12 @@ const assert = chai.assert;
 suite('Linux Version Resolver Tests', () =>
 {
     const mockVersion = '7.0.103';
-    const acquisitionContext = getMockAcquisitionContext(false, mockVersion);
+    const acquisitionContext = getMockAcquisitionContext('sdk', mockVersion);
     const mockExecutor = new MockCommandExecutor(acquisitionContext, getMockUtilityContext());
     const pair : DistroVersionPair = { distro : 'Ubuntu', version : '22.04' };
     const redHatPair: DistroVersionPair = { distro : 'Red Hat Enterprise Linux', version : '7.3' };
     const shouldRun = os.platform() === 'linux';
-    const context = util.getMockAcquisitionContext(false, mockVersion);
+    const context = util.getMockAcquisitionContext('sdk', mockVersion);
     const mockRedHatProvider = new MockDistroProvider(redHatPair, context, getMockUtilityContext(), mockExecutor);
     const mockDistroProvider = new MockDistroProvider(pair, context, getMockUtilityContext(), mockExecutor);
     const resolver : LinuxVersionResolver = new LinuxVersionResolver(context, getMockUtilityContext(), mockExecutor, mockDistroProvider);

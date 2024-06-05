@@ -29,7 +29,9 @@ import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
+import { DotnetInstall } from './DotnetInstall';
 /* tslint:disable:no-any */
+/* tslint:disable:only-arrow-functions */
 
 export class AcquisitionInvoker extends IAcquisitionInvoker {
     protected readonly scriptWorker: IInstallScriptAcquisitionWorker;
@@ -66,11 +68,10 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         return false;
     }
 
-    public async installDotnet(installContext: IDotnetInstallationContext): Promise<void>
+    public async installDotnet(installContext: IDotnetInstallationContext, installKey : DotnetInstall): Promise<void>
     {
         const winOS = os.platform() === 'win32';
         const installCommand = await this.getInstallCommand(installContext.version, installContext.installDir, installContext.installRuntime, installContext.architecture);
-        const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(installContext.version, installContext.architecture);
 
         return new Promise<void>(async (resolve, reject) =>
         {
@@ -79,7 +80,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                 let windowsFullCommand = `powershell.exe -NoProfile -NonInteractive -NoLogo -ExecutionPolicy unrestricted -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; & ${installCommand} }"`;
                 if(winOS)
                 {
-                    const powershellReference = await this.verifyPowershellCanRun(installContext);
+                    const powershellReference = await this.verifyPowershellCanRun(installContext, installKey);
                     windowsFullCommand = windowsFullCommand.replace('powershell.exe', powershellReference);
                 }
 
@@ -173,7 +174,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
      * @remarks Some users have reported not having powershell.exe or having execution policy that fails property evaluation functions in powershell install scripts.
      * We use this function to throw better errors if powershell is not configured correctly.
      */
-    private async verifyPowershellCanRun(installContext : IDotnetInstallationContext) : Promise<string>
+    private async verifyPowershellCanRun(installContext : IDotnetInstallationContext, installKey : DotnetInstall) : Promise<string>
     {
         let knownError = false;
         let error = null;
@@ -220,7 +221,6 @@ If you cannot safely and confidently change the execution policy, try setting a 
 
         if(error != null)
         {
-            const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(installContext.version, installContext.architecture);
             this.eventStream.post(new DotnetAcquisitionScriptError(error as Error, installKey));
             throw error;
         }

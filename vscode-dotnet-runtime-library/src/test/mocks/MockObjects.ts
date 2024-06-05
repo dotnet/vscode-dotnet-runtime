@@ -14,7 +14,7 @@ import { FileUtilities } from '../../Utils/FileUtilities';
 import { WebRequestWorker } from '../../Utils/WebRequestWorker';
 import { CommandExecutor } from '../../Utils/CommandExecutor';
 import { AcquisitionInvoker } from '../../Acquisition/AcquisitionInvoker';
-import { LinuxInstallType } from '../../Acquisition/LinuxInstallType';
+import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProvider';
 import { getMockUtilityContext } from '../unit/TestUtility';
 import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
@@ -37,6 +37,9 @@ import { IUtilityContext } from '../../Utils/IUtilityContext';
 import { IVSCodeEnvironment } from '../../Utils/IVSCodeEnvironment';
 import { IDotnetAcquireResult } from '../../IDotnetAcquireResult';
 import { IDotnetCoreAcquisitionWorker } from '../../Acquisition/IDotnetCoreAcquisitionWorker';
+import { GetDotnetInstallInfo } from '../../Acquisition/DotnetInstall';
+import { DotnetInstall } from '../../Acquisition/DotnetInstall';
+import { InstallTracker } from '../../Acquisition/InstallTracker';
 
 const testDefaultTimeoutTimeMs = 60000;
 /* tslint:disable:no-any */
@@ -75,9 +78,9 @@ export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker {
     public installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             this.eventStream.post(new TestAcquireCalled(installContext));
+            const install = GetDotnetInstallInfo(installContext.version, installContext.installMode, false, installContext.architecture)
             this.eventStream.post(new DotnetAcquisitionCompleted(
-                DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(installContext.version, installContext.architecture),
-                installContext.dotnetPath, installContext.version));
+                install, installContext.dotnetPath, installContext.version));
             resolve();
 
         });
@@ -93,9 +96,15 @@ export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker {
 
 export class MockDotnetCoreAcquisitionWorker extends DotnetCoreAcquisitionWorker
 {
-    public AddToGraveyard(installKey : string, installPath : string)
+
+    public constructor(context: IAcquisitionWorkerContext, utilityContext : IUtilityContext, extensionContext : IVSCodeExtensionContext)
     {
-        this.updateGraveyard(installKey, installPath);
+        super(context, utilityContext, extensionContext);
+    }
+
+    public AddToGraveyard(install : DotnetInstall, installPath : string)
+    {
+        this.graveyard.add(install, installPath);
     }
 
     public acquireSDK(version: string, invoker: IAcquisitionInvoker): Promise<IDotnetAcquireResult>
@@ -117,7 +126,7 @@ export class MockDotnetCoreAcquisitionWorker extends DotnetCoreAcquisitionWorker
         this.context.acquisitionContext!.version = newVersion;
     }
 
-    public updateArch(newArch : string)
+    public updateArch(newArch : string | null)
     {
         this.installingArchitecture = newArch;
         this.context.installingArchitecture = newArch;
@@ -462,7 +471,7 @@ export class MockDistroProvider extends IDistroDotnetSDKProvider
         return Promise.resolve(this.supportStatusReturnValue);
     }
 
-    public getRecommendedDotnetVersion(installType : LinuxInstallType): Promise<string> {
+    public getRecommendedDotnetVersion(installType : DotnetInstallMode): Promise<string> {
         this.commandRunner.execute(CommandExecutor.makeCommand(`recommended`, [`version`]));
         return Promise.resolve(this.recommendedVersionReturnValue);
     }
@@ -529,7 +538,7 @@ export class MockTelemetryReporter implements ITelemetryReporter {
 }
 
 export class MockInstallationValidator extends IInstallationValidator {
-    public validateDotnetInstall(version: string, dotnetPath: string): void {
+    public validateDotnetInstall(version: DotnetInstall, dotnetPath: string): void {
         // Always validate
     }
 }
@@ -553,7 +562,7 @@ export class MockExtensionConfiguration implements IExtensionConfiguration {
 
     public update<T>(section: string, value: T): Thenable<void> {
         // Not used, stubbed to implement interface
-        return new Promise((resolve) => resolve());
+        return new Promise<void>((resolve) => resolve());
     }
 
     public get<T>(name: string): T | undefined
@@ -574,5 +583,23 @@ export class MockExtensionConfiguration implements IExtensionConfiguration {
         {
             return undefined;
         }
+    }
+}
+
+export class MockInstallTracker extends InstallTracker
+{
+    constructor(context : IAcquisitionWorkerContext)
+    {
+        super(context);
+    }
+
+    public getExtensionState() : IExtensionState
+    {
+        return this.context.extensionState;
+    }
+
+    public setExtensionState(extensionState : IExtensionState) : void
+    {
+        this.context.extensionState = extensionState;
     }
 }

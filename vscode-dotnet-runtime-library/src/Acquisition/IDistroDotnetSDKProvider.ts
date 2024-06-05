@@ -12,12 +12,12 @@ import { DotnetAcquisitionDistroUnknownError, DotnetVersionResolutionError, Supp
 import { VersionResolver } from './VersionResolver';
 import { CommandExecutorCommand } from '../Utils/CommandExecutorCommand';
 import { CommandExecutor } from '../Utils/CommandExecutor';
-import { LinuxInstallType } from './LinuxInstallType';
+import { DotnetInstallMode } from './DotnetInstallMode';
 import { LinuxPackageCollection } from './LinuxPackageCollection';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
+import { getInstallKeyFromContext } from '../Utils/InstallKeyUtilities';
 /* tslint:disable:no-any */
 
 /**
@@ -83,7 +83,7 @@ export abstract class IDistroDotnetSDKProvider {
         {
             const error = new DotnetAcquisitionDistroUnknownError(new Error(`Automated installation for the distro ${this.distroVersion.distro} is not yet supported.
 Please install the .NET SDK manually: https://dotnet.microsoft.com/download`),
-                getInstallKeyFromContext(this.context.acquisitionContext));
+                getInstallKeyFromContext(this.context));
             throw error.error;
         }
 
@@ -96,7 +96,7 @@ Please install the .NET SDK manually: https://dotnet.microsoft.com/download`),
      * Return '0' on success.
      * @param installContext
      */
-    public abstract installDotnet(fullySpecifiedVersion : string, installType : LinuxInstallType): Promise<string>;
+    public abstract installDotnet(fullySpecifiedVersion : string, installType : DotnetInstallMode): Promise<string>;
 
     /**
      * Search the machine for all installed .NET SDKs and return a list of their fully specified versions.
@@ -115,7 +115,7 @@ Please install the .NET SDK manually: https://dotnet.microsoft.com/download`),
      * For the .NET SDK that should be on the path and or managed by the distro, return its path.
      * Return null if no installations can be found. Do NOT include the version of dotnet in this path.
      */
-    public abstract getInstalledGlobalDotnetPathIfExists(installType : LinuxInstallType) : Promise<string | null>;
+    public abstract getInstalledGlobalDotnetPathIfExists(installType : DotnetInstallMode) : Promise<string | null>;
 
     /**
      * For the .NET SDK that should be on the path and or managed by the distro, return its fully specified version.
@@ -137,32 +137,32 @@ Please install the .NET SDK manually: https://dotnet.microsoft.com/download`),
     /**
      * Return true if theres a package for the dotnet version on the system with the same major as the requested fullySpecifiedVersion, false else.
      */
-    public abstract dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion : string, installType : LinuxInstallType) : Promise<boolean>;
+    public abstract dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion : string, installType : DotnetInstallMode) : Promise<boolean>;
 
     /**
      * Return the support status for this distro and version. See DotnetDistroSupportStatus for more info.
      */
-    public abstract getDotnetVersionSupportStatus(fullySpecifiedVersion: string, installType : LinuxInstallType): Promise<DotnetDistroSupportStatus>;
+    public abstract getDotnetVersionSupportStatus(fullySpecifiedVersion: string, installType : DotnetInstallMode): Promise<DotnetDistroSupportStatus>;
 
     /**
      * @remarks Returns the newest in support version of the dotnet SDK that's available in this distro+version.
      * Generally should be of the form major.minor.band with no patch, so like 7.0.1xx.
      */
-    public abstract getRecommendedDotnetVersion(installType : LinuxInstallType) : Promise<string>;
+    public abstract getRecommendedDotnetVersion(installType : DotnetInstallMode) : Promise<string>;
 
     /**
      * Update the globally installed .NET to the newest in-support version of the same feature band and major.minor.
      * Return '0' on success.
      * @param versionToUpgrade The version of dotnet to upgrade.
      */
-    public abstract upgradeDotnet(versionToUpgrade : string, installType : LinuxInstallType): Promise<string>;
+    public abstract upgradeDotnet(versionToUpgrade : string, installType : DotnetInstallMode): Promise<string>;
 
     /**
      * Uninstall the .NET SDK.
      * @param versionToUninstall The fully specified version of the .NET SDK to uninstall.
      * Return '0' on success.
      */
-    public abstract uninstallDotnet(versionToUninstall : string, installType : LinuxInstallType): Promise<string>;
+    public abstract uninstallDotnet(versionToUninstall : string, installType : DotnetInstallMode): Promise<string>;
 
     /**
      *
@@ -179,14 +179,14 @@ Please install the .NET SDK manually: https://dotnet.microsoft.com/download`),
      * @param fullySpecifiedVersion The version of dotnet to check support for in the 3-part semver version.
      * @returns true if the version is supported by default within the distro, false else.
      */
-    public async isDotnetVersionSupported(fullySpecifiedVersion : string, installType : LinuxInstallType) : Promise<boolean>
+    public async isDotnetVersionSupported(fullySpecifiedVersion : string, installType : DotnetInstallMode) : Promise<boolean>
     {
         const supportStatus = await this.getDotnetVersionSupportStatus(fullySpecifiedVersion, installType);
         const supportedType : boolean = supportStatus === DotnetDistroSupportStatus.Distro || supportStatus === DotnetDistroSupportStatus.Microsoft;
         return supportedType;
     }
 
-    protected async myVersionPackages(installType : LinuxInstallType, haveTriedFeedInjectionAlready = false) : Promise<LinuxPackageCollection[]>
+    protected async myVersionPackages(installType : DotnetInstallMode, haveTriedFeedInjectionAlready = false) : Promise<LinuxPackageCollection[]>
     {
         if(this.cachedMyVersionPacakges)
         {
@@ -246,7 +246,7 @@ Please install the .NET SDK manually: https://dotnet.microsoft.com/download`),
         return this.cachedMyVersionPacakges;
     }
 
-    protected async injectPMCFeed(fullySpecifiedVersion : string, installType : LinuxInstallType)
+    protected async injectPMCFeed(fullySpecifiedVersion : string, installType : DotnetInstallMode)
     {
         if(this.isMidFeedInjection)
         {
@@ -350,7 +350,7 @@ Please install the .NET SDK manually: https://dotnet.microsoft.com/download`),
         return allPackages;
     }
 
-    protected async myDotnetVersionPackageName(fullySpecifiedDotnetVersion : string, installType : LinuxInstallType) : Promise<string>
+    protected async myDotnetVersionPackageName(fullySpecifiedDotnetVersion : string, installType : DotnetInstallMode) : Promise<string>
     {
         const myDotnetVersions = await this.myVersionPackages(installType, this.isMidFeedInjection);
         for(const dotnetPackage of myDotnetVersions)
@@ -362,7 +362,7 @@ Please install the .NET SDK manually: https://dotnet.microsoft.com/download`),
             }
         }
         const err = new Error(`Could not find a .NET package for version ${fullySpecifiedDotnetVersion}. Found only: ${JSON.stringify(myDotnetVersions)}`);
-        this.context.eventStream.post(new DotnetVersionResolutionError(err, getInstallKeyFromContext(this.context.acquisitionContext)));
+        this.context.eventStream.post(new DotnetVersionResolutionError(err, getInstallKeyFromContext(this.context)));
         throw err;
     }
 
