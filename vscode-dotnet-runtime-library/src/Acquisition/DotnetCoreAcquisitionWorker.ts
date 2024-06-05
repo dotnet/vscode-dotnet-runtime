@@ -30,6 +30,7 @@ import {
     DotnetFakeSDKEnvironmentVariableTriggered,
     SuppressedAcquisitionError,
     EventBasedError,
+    EventCancellationError,
 } from '../EventStream/EventStreamEvents';
 
 import { GlobalInstallerResolver } from './GlobalInstallerResolver';
@@ -209,20 +210,20 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             {
                 Debugging.log(`The Acquisition Worker has Determined a Global Install was requested.`, this.context.eventStream);
 
-                acquisitionPromise = this.acquireGlobalCore(globalInstallerResolver, install).catch(async (error: Error) => {
+                acquisitionPromise = this.acquireGlobalCore(globalInstallerResolver, install).catch(async (error: any) =>
+                {
                     await this.installTracker.untrackInstallingVersion(install);
-                    error.message = `.NET Acquisition Failed: ${error.message}`;
-                    throw error;
+                    const err = this.getErrorOrStringAsEventError(error);
+                    throw err;
                 });
             }
             else
             {
-                Debugging.log(`The Acquisition Worker has Determined a Local Install was requested.`, this.context.eventStream);
-
-                acquisitionPromise = this.acquireLocalCore(version, mode, install, localInvoker!).catch(async (error: Error) => {
+                acquisitionPromise = this.acquireLocalCore(version, mode, install, localInvoker!).catch(async (error: any) =>
+                {
                     await this.installTracker.untrackInstallingVersion(install);
-                    error.message = `.NET Acquisition Failed: ${error.message}`;
-                    throw error;
+                    const err = this.getErrorOrStringAsEventError(error);
+                    throw err;
                 });
             }
 
@@ -300,9 +301,9 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             architecture: this.installingArchitecture
         } as IDotnetInstallationContext;
         this.context.eventStream.post(new DotnetAcquisitionStarted(install, version, this.context.acquisitionContext?.requestingExtensionId));
-        await acquisitionInvoker.installDotnet(installContext, install).catch((reason) => {
-            reason.message = (`Installation failed: ${reason.message}`);
-            throw reason;
+        await acquisitionInvoker.installDotnet(installContext, install).catch((reason) =>
+        {
+            throw reason; // This will get handled and cast into an event based error by its caller.
         });
         this.context.installationValidator.validateDotnetInstall(install, dotnetPath);
 
@@ -345,6 +346,20 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     public static defaultArchitecture() : string
     {
         return os.arch();
+    }
+
+    private getErrorOrStringAsEventError(error : any)
+    {
+        if(error instanceof EventBasedError || error instanceof EventCancellationError)
+        {
+            error.message = `.NET Acquisition Failed: ${error.message}`;
+            return error;
+        }
+        else
+        {
+            const newError = new EventBasedError('DotnetAcquisitionError', `.NET Acquisition Failed: ${error?.message ?? error}`);
+            return newError;
+        }
     }
 
     private async acquireGlobalCore(globalInstallerResolver : GlobalInstallerResolver, install : DotnetInstall): Promise<string>

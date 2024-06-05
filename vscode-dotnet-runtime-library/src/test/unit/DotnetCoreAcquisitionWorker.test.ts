@@ -312,7 +312,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         const [acquisitionWorker, eventStream, _, __] = setupWorker('runtime', version);
         const acquisitionInvoker = new RejectingAcquisitionInvoker(eventStream);
 
-        return assert.isRejected(acquisitionWorker.acquireRuntime(version, acquisitionInvoker), '.NET Acquisition Failed: Installation failed: Rejecting message');
+        return assert.isRejected(acquisitionWorker.acquireRuntime(version, acquisitionInvoker), '.NET Acquisition Failed: Rejecting message');
     }).timeout(expectedTimeoutTime);
 
     test('Repeated SDK Acquisition', async () => {

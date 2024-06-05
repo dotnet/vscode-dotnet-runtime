@@ -8,7 +8,7 @@ import * as path from 'path';
 import { InstallScriptAcquisitionWorker } from '../../Acquisition/InstallScriptAcquisitionWorker';
 import { VersionResolver } from '../../Acquisition/VersionResolver';
 import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
-import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStream/EventStreamEvents';
+import { DotnetAcquisitionCompleted, EventBasedError, TestAcquireCalled } from '../../EventStream/EventStreamEvents';
 import { IExistingPaths, IExtensionConfiguration, ILocalExistingPath } from '../../IExtensionContext';
 import { FileUtilities } from '../../Utils/FileUtilities';
 import { WebRequestWorker } from '../../Utils/WebRequestWorker';
@@ -149,7 +149,7 @@ export class RejectingAcquisitionInvoker extends IAcquisitionInvoker {
 
 export class ErrorAcquisitionInvoker extends IAcquisitionInvoker {
     public installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
-        throw new Error('Command Failed');
+        throw new EventBasedError('MockErrorAcquisitionInvokerFailure', 'Command Failed');
     }
 }
 

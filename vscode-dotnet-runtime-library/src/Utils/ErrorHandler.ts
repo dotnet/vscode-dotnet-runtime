@@ -17,6 +17,7 @@ import { IIssueContext } from './IIssueContext';
 import { formatIssueUrl } from './IssueReporter';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { GetDotnetInstallInfo } from '../Acquisition/DotnetInstall';
+/* tslint:disable:no-any */
 
 export enum AcquireErrorConfiguration {
     DisplayAllErrorPopups = 0,
