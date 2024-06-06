@@ -356,7 +356,7 @@ export class MockCommandExecutor extends ICommandExecutor
             if(command.commandRoot.includes(commandPatternToLookFor) ||
                 command.commandParts.some((arg) => arg.includes(commandPatternToLookFor)))
             {
-                if(this.shouldReturnStatus() && this.otherCommandsStatusReturnValues)
+                if(this.shouldReturnStatus() && this.otherCommandsStatusReturnValues[i] !== null)
                 {
                         return this.otherCommandsStatusReturnValues[i];
                 }
