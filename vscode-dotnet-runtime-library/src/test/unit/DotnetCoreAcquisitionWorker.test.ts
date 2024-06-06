@@ -93,7 +93,8 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         //  Acquire got called with the correct args
         const acquireEvent = eventStream.events.find(event =>
             event instanceof TestAcquireCalled &&
-            ((DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture((event as TestAcquireCalled).context.version, (event as TestAcquireCalled).context.architecture, (event as TestAcquireCalled).context.installType)))
+            ((DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture((event as TestAcquireCalled).context.version,
+                (event as TestAcquireCalled).context.architecture, (event as TestAcquireCalled).context.installType)))
                 === installKey) as TestAcquireCalled;
         assert.exists(acquireEvent, 'The acquisition acquire event appears');
         assert.equal(acquireEvent!.context.dotnetPath, expectedPath, 'The acquisition went to the expected dotnetPath');
