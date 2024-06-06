@@ -325,6 +325,7 @@ export class MockCommandExecutor extends ICommandExecutor
 {
     private trueExecutor : CommandExecutor;
     public fakeReturnValue = '';
+    public fakeReturnStatus : string | null = null;
     public attemptedCommand = '';
 
     // If you expect several commands to be run and want to specify unique outputs for each, describe them in the same order using the below two arrays.
@@ -342,6 +343,10 @@ export class MockCommandExecutor extends ICommandExecutor
     {
         this.attemptedCommand = CommandExecutor.prettifyCommandExecutorCommand(command);
 
+        if(this.returnStatus && this.fakeReturnStatus)
+        {
+            return this.fakeReturnStatus;
+        }
         if(!command.runUnderSudo && this.fakeReturnValue === '')
         {
             this.trueExecutor.returnStatus = this.returnStatus;
