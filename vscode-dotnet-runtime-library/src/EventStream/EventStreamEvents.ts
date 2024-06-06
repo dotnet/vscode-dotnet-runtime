@@ -33,15 +33,15 @@ export class DotnetAcquisitionStarted extends IEvent {
     public readonly eventName = 'DotnetAcquisitionStarted';
     public readonly type = EventType.DotnetAcquisitionStart;
 
-    constructor(public readonly installKey: DotnetInstall, public readonly startingVersion: string, public readonly requestingExtensionId = '') {
+    constructor(public readonly install: DotnetInstall, public readonly startingVersion: string, public readonly requestingExtensionId = '') {
         super();
     }
 
     public getProperties() {
         return {
-                ...InstallToStrings(this.installKey),
+                ...InstallToStrings(this.install),
                 AcquisitionStartVersion : this.startingVersion,
-                AcquisitionInstallKey : this.installKey.installKey,
+                AcquisitionInstallKey : this.install.installKey,
                 extensionId : this.requestingExtensionId
             };
     }
@@ -77,19 +77,19 @@ export class DotnetAcquisitionCompleted extends IEvent {
     public readonly eventName = 'DotnetAcquisitionCompleted';
     public readonly type = EventType.DotnetAcquisitionCompleted;
 
-    constructor(public readonly installKey: DotnetInstall, public readonly dotnetPath: string, public readonly version: string) {
+    constructor(public readonly install: DotnetInstall, public readonly dotnetPath: string, public readonly version: string) {
         super();
     }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
         if (telemetry) {
-            return {...InstallToStrings(this.installKey),
-                    AcquisitionCompletedInstallKey : this.installKey.installKey,
+            return {...InstallToStrings(this.install),
+                    AcquisitionCompletedInstallKey : this.install.installKey,
                     AcquisitionCompletedVersion: this.version};
         } else {
-            return {...InstallToStrings(this.installKey),
+            return {...InstallToStrings(this.install),
                     AcquisitionCompletedVersion: this.version,
-                    AcquisitionCompletedInstallKey : this.installKey.installKey,
+                    AcquisitionCompletedInstallKey : this.install.installKey,
                     AcquisitionCompletedDotnetPath : this.dotnetPath};
         }
 
@@ -208,10 +208,10 @@ export abstract class DotnetInstallExpectedAbort extends IEvent {
     /**
      *
      * @param error The error that triggered, so the call stack, etc. can be analyzed.
-     * @param installKey For acquisition errors, you MUST include this install key. For commands unrelated to acquiring or managing a specific dotnet version, you
+     * @param install For acquisition errors, you MUST include this install key. For commands unrelated to acquiring or managing a specific dotnet version, you
      * have the option to leave this parameter null. If it is NULL during acquisition the extension CANNOT properly manage what it has finished installing or not.
      */
-    constructor(public readonly error: Error, public readonly installKey: DotnetInstall | null)
+    constructor(public readonly error: Error, public readonly install: DotnetInstall | null)
     {
         super();
     }
@@ -220,8 +220,8 @@ export abstract class DotnetInstallExpectedAbort extends IEvent {
         return {ErrorName : this.error.name,
                 ErrorMessage : this.error.message,
                 StackTrace : this.error.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : '',
-                InstallKey : this.installKey?.installKey ?? 'null',
-                ...InstallToStrings(this.installKey)};
+                InstallKey : this.install?.installKey ?? 'null',
+                ...InstallToStrings(this.install)};
     }
 }
 
@@ -462,8 +462,8 @@ export class DotnetAcquisitionDistroUnknownError extends DotnetInstallExpectedAb
         return {ErrorMessage : this.error.message,
             ErrorName : this.error.name,
             StackTrace : this.error.stack ? this.error.stack : '',
-            InstallKey : this.installKey?.installKey ?? 'null',
-            ...InstallToStrings(this.installKey!)};
+            InstallKey : this.install?.installKey ?? 'null',
+            ...InstallToStrings(this.install!)};
     }
 }
 

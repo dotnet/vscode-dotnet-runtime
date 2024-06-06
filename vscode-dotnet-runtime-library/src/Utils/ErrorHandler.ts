@@ -17,6 +17,7 @@ import { IIssueContext } from './IIssueContext';
 import { formatIssueUrl } from './IssueReporter';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { GetDotnetInstallInfo } from '../Acquisition/DotnetInstall';
+import { DotnetCoreAcquisitionWorker } from '../Acquisition/DotnetCoreAcquisitionWorker';
 /* tslint:disable:no-any */
 
 export enum AcquireErrorConfiguration {
@@ -76,7 +77,9 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
         if(acquireContext?.installMode === 'sdk' && acquireContext.acquisitionContext?.installType === 'global')
         {
             context.eventStream.post(new DotnetGlobalSDKAcquisitionError(error, (caughtError?.eventType) ?? 'Unknown',
-             GetDotnetInstallInfo(acquireContext.acquisitionContext.version, acquireContext.installMode, true, acquireContext.installingArchitecture ?? 'unknown')));
+             GetDotnetInstallInfo(acquireContext.acquisitionContext.version, acquireContext.installMode, 'global', acquireContext.installingArchitecture ??
+                DotnetCoreAcquisitionWorker.defaultArchitecture()
+             )));
         }
 
         if (context.errorConfiguration === AcquireErrorConfiguration.DisplayAllErrorPopups)

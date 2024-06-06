@@ -208,6 +208,9 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
         const pathResult = await callWithErrorHandling(async () =>
         {
+            // Warning: Between now and later in this call-stack, the context 'version' is incomplete as it has not been resolved.
+            // Errors between here and the place where it is resolved cannot be routed to one another.
+
             sdkAcquisitionWorker.setAcquisitionContext(commandContext);
             telemetryObserver?.setAcquisitionContext(sdkContext, commandContext);
 
@@ -228,6 +231,12 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
             const globalInstallerResolver = new GlobalInstallerResolver(sdkContext, commandContext.version);
             fullyResolvedVersion = await globalInstallerResolver.getFullySpecifiedVersion();
+
+            // Reset context to point to the fully specified version so it is not possible for someone to access incorrect data during the install process.
+            commandContext.version = fullyResolvedVersion;
+            sdkAcquisitionWorker.setAcquisitionContext(commandContext);
+            telemetryObserver?.setAcquisitionContext(sdkContext, commandContext);
+
             outputChannel.show(true);
             const dotnetPath = await sdkAcquisitionWorker.acquireGlobalSDK(globalInstallerResolver);
 
