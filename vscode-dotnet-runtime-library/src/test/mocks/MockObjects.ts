@@ -330,7 +330,7 @@ export class MockCommandExecutor extends ICommandExecutor
 
     // If you expect several commands to be run and want to specify unique outputs for each, describe them in the same order using the below two arrays.
     // We will check for an includes match and not an exact match!
-    public otherCommandsToMock : string[] = [];
+    public otherCommandPatternsToMock : string[] = [];
     public otherCommandsReturnValues : string[] = [];
     public otherCommandsStatusReturnValues : string[] = [];
 
@@ -344,24 +344,29 @@ export class MockCommandExecutor extends ICommandExecutor
     {
         this.attemptedCommand = CommandExecutor.prettifyCommandExecutorCommand(command);
 
-        if(!command.runUnderSudo && this.fakeReturnValue === '')
+        if(this.shouldActuallyExecuteCommand(command))
         {
             this.trueExecutor.returnStatus = this.returnStatus;
             return this.trueExecutor.execute(command, options);
         }
-        else if(this.otherCommandsToMock.some(x => x.includes(command.commandRoot) || command.commandParts.some((part) => x.includes(part))))
+
+        for(let i = 0; i < this.otherCommandPatternsToMock.length; ++i)
         {
-            const fakeResultIndex = this.otherCommandsToMock.findIndex(x => x.includes(command.commandRoot));
-            // We don't need to verify the index since this is test code!
-            if(this.returnStatus)
+            const commandPatternToLookFor = this.otherCommandPatternsToMock[i];
+            if(command.commandRoot.includes(commandPatternToLookFor) ||
+                command.commandParts.some((arg) => arg.includes(commandPatternToLookFor)))
             {
-                return this.otherCommandsStatusReturnValues[fakeResultIndex];
+                if(this.shouldReturnStatus() && this.otherCommandsStatusReturnValues)
+                {
+                        return this.otherCommandsStatusReturnValues[i];
+                }
+                return this.otherCommandsReturnValues[i];
             }
-            return this.otherCommandsReturnValues[fakeResultIndex];
         }
-        else if(this.returnStatus && this.fakeReturnStatus)
+
+        if(this.shouldReturnStatus())
         {
-                return this.fakeReturnStatus;
+            return this.fakeReturnStatus!;
         }
         else
         {
@@ -381,6 +386,20 @@ export class MockCommandExecutor extends ICommandExecutor
 
     public async tryFindWorkingCommand(commands: CommandExecutorCommand[]): Promise<CommandExecutorCommand> {
         return commands[0];
+    }
+
+    /**
+     * @remarks For commands which dont edit the global system state or we don't need to mock their data, we can just execute them
+     * with a real command executor to provide better code coverage.
+     */
+    private shouldActuallyExecuteCommand(command : CommandExecutorCommand) : boolean
+    {
+        return !command.runUnderSudo && this.fakeReturnValue === '';
+    }
+
+    private shouldReturnStatus() : boolean
+    {
+        return this.returnStatus && (this.fakeReturnStatus !== null);
     }
 }
 
