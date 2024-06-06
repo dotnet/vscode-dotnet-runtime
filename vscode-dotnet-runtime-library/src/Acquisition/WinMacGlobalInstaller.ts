@@ -9,7 +9,7 @@ import * as path from 'path';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { VersionResolver } from './VersionResolver';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
-import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
+import { getInstallKeyFromContext } from '../Utils/InstallKeyUtilities';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import {
     DotnetAcquisitionAlreadyInstalled,
@@ -29,6 +29,7 @@ import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IFileUtilities } from '../Utils/IFileUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { DotnetInstall } from './DotnetInstall';
 /* tslint:disable:only-arrow-functions */
 /* tslint:disable:no-empty */
 /* tslint:disable:no-any */
@@ -70,7 +71,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         this.webWorker = new WebRequestWorker(context, installerUrl);
     }
 
-    public async installSDK(): Promise<string>
+    public async installSDK(install : DotnetInstall): Promise<string>
     {
         // Check for conflicting windows installs
         if(os.platform() === 'win32')
@@ -81,14 +82,14 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
                 if(conflictingVersion === this.installingVersion)
                 {
                     // The install already exists, we can just exit with Ok.
-                    this.acquisitionContext.eventStream.post(new DotnetAcquisitionAlreadyInstalled(getInstallKeyFromContext(this.acquisitionContext.acquisitionContext) ?? '',
+                    this.acquisitionContext.eventStream.post(new DotnetAcquisitionAlreadyInstalled(install,
                         (this.acquisitionContext.acquisitionContext && this.acquisitionContext.acquisitionContext.requestingExtensionId)
                         ? this.acquisitionContext.acquisitionContext.requestingExtensionId : null));
                     return '0';
                 }
                 const err = new DotnetConflictingGlobalWindowsInstallError(new EventCancellationError(`An global install is already on the machine: version ${conflictingVersion}, that conflicts with the requested version.
                     Please uninstall this version first if you would like to continue.
-                    If Visual Studio is installed, you may need to use the VS Setup Window to uninstall the SDK component.`), getInstallKeyFromContext(this.acquisitionContext.acquisitionContext));
+                    If Visual Studio is installed, you may need to use the VS Setup Window to uninstall the SDK component.`), getInstallKeyFromContext(this.acquisitionContext));
                 this.acquisitionContext.eventStream.post(err);
                 throw err.error;
             }
@@ -99,7 +100,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         if(!canContinue)
         {
             const err = new DotnetConflictingGlobalWindowsInstallError(new EventCancellationError(`The integrity of the .NET install file is invalid, or there was no integrity to check and you denied the request to continue with those risks.
-We cannot verify .NET is safe to download at this time. Please try again later.`), getInstallKeyFromContext(this.acquisitionContext.acquisitionContext));
+We cannot verify .NET is safe to download at this time. Please try again later.`), getInstallKeyFromContext(this.acquisitionContext));
         this.acquisitionContext.eventStream.post(err);
         throw err.error;
         }
@@ -119,7 +120,7 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
         {
             // Special code for when user cancels the install
             const err = new DotnetInstallCancelledByUserError(new EventCancellationError(
-                `The install of .NET was cancelled by the user. Aborting.`), getInstallKeyFromContext(this.acquisitionContext.acquisitionContext));
+                `The install of .NET was cancelled by the user. Aborting.`), getInstallKeyFromContext(this.acquisitionContext));
             this.acquisitionContext.eventStream.post(err);
             throw err.error;
         }
@@ -204,7 +205,7 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
             return path.resolve(`/usr/local/share/dotnet/dotnet`);
         }
 
-        const err = new DotnetUnexpectedInstallerOSError(new Error(`The operating system ${os.platform()} is unsupported.`), getInstallKeyFromContext(this.acquisitionContext.acquisitionContext));
+        const err = new DotnetUnexpectedInstallerOSError(new Error(`The operating system ${os.platform()} is unsupported.`), getInstallKeyFromContext(this.acquisitionContext));
         this.acquisitionContext.eventStream.post(err);
         throw err.error;
     }
@@ -233,7 +234,7 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
             {
                 const error = new Error(`The 'open' command on OSX was not detected. This is likely due to the PATH environment variable on your system being clobbered by another program.
 Please correct your PATH variable or make sure the 'open' utility is installed so .NET can properly execute.`);
-                this.acquisitionContext.eventStream.post(new OSXOpenNotAvailableError(error, getInstallKeyFromContext(this.acquisitionContext.acquisitionContext)));
+                this.acquisitionContext.eventStream.post(new OSXOpenNotAvailableError(error, getInstallKeyFromContext(this.acquisitionContext)));
                 throw error;
             }
             else if(workingCommand.commandRoot === 'command')

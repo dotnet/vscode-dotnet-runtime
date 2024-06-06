@@ -8,19 +8,19 @@ import * as os from 'os';
 import { MockCommandExecutor, MockEventStream } from '../mocks/MockObjects';
 import { DistroVersionPair, DotnetDistroSupportStatus, LinuxVersionResolver } from '../../Acquisition/LinuxVersionResolver';
 import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
-import { LinuxInstallType } from '../../Acquisition/LinuxInstallType';
+import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 import { RedHatDistroSDKProvider } from '../../Acquisition/RedHatDistroSDKProvider';
 const assert = chai.assert;
 const standardTimeoutTime = 100000;
 
 const mockVersion = '7.0.103';
-const acquisitionContext = getMockAcquisitionContext(false, mockVersion);
+const acquisitionContext = getMockAcquisitionContext('sdk', mockVersion);
 const mockExecutor = new MockCommandExecutor(acquisitionContext, getMockUtilityContext());
 const pair : DistroVersionPair = { distro : 'Red Hat Enterprise Linux', version : '9.0' };
 const provider : RedHatDistroSDKProvider = new RedHatDistroSDKProvider(pair, acquisitionContext, getMockUtilityContext(), mockExecutor);
 const versionResolver = new LinuxVersionResolver(acquisitionContext, getMockUtilityContext(), mockExecutor);
 let shouldRun = os.platform() === 'linux';
-const installType : LinuxInstallType = 'sdk';
+const installType : DotnetInstallMode = 'sdk';
 const noDotnetString = `
 Command 'dotnet' not found, but can be installed with:
 

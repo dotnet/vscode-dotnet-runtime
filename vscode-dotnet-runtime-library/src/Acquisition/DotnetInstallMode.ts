@@ -3,4 +3,6 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-export type LinuxInstallType = 'sdk' | 'runtime' | 'aspnetcore';
+export type DotnetInstallMode = 'sdk' | 'runtime' | 'aspnetcore';
+
+export const DOTNET_INSTALL_MODE_LIST = ['sdk', 'runtime', 'aspnetcore'];

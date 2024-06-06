@@ -3,6 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
+import { DotnetInstallMode as DotnetInstallMode } from './Acquisition/DotnetInstallMode';
 import { AcquireErrorConfiguration } from './Utils/ErrorHandler';
 
 export interface IDotnetAcquireContext

@@ -10,12 +10,10 @@ import {
     DotnetInstallExpectedAbort,
     DotnetNotInstallRelatedCommandFailed
 } from '../EventStream/EventStreamEvents';
-import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
+import { getInstallKeyFromContext } from './InstallKeyUtilities';
 import { IIssueContext } from './IIssueContext';
 import { formatIssueUrl } from './IssueReporter';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
-import { StringLiteral } from 'typescript';
-
 
 export enum AcquireErrorConfiguration {
     DisplayAllErrorPopups = 0,
@@ -65,7 +63,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
         if(!isCancellationStyleError(error))
         {
             context.eventStream.post(isAcquisitionError ?
-                new DotnetCommandFailed(error, context.commandName, getInstallKeyFromContext(acquireContext?.acquisitionContext)) :
+                new DotnetCommandFailed(error, context.commandName, getInstallKeyFromContext(acquireContext)) :
                 // The output observer will keep track of installs and we don't want a non-install failure to make it think it should -=1 from the no. of installs
                 new DotnetNotInstallRelatedCommandFailed(error, context.commandName)
             );

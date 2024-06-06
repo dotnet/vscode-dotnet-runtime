@@ -8,7 +8,7 @@ import { HttpsProxyAgent } from 'https-proxy-agent';
 import { getProxySettings } from 'get-proxy-settings';
 import { AxiosCacheInstance, buildMemoryStorage, setupCache } from 'axios-cache-interceptor';
 import {SuppressedAcquisitionError, WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
-import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
+import { getInstallKeyFromContext } from './InstallKeyUtilities';
 
 import * as fs from 'fs';
 import { promisify } from 'util';
@@ -213,13 +213,13 @@ ${axiosBasedError.cause? `Error Cause: ${axiosBasedError.cause!.message}` : ``}
 Please ensure that you are online.
 
 If you're on a proxy and disable registry access, you must set the proxy in our extension settings. See https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`);
-                    this.context.eventStream.post(new WebRequestError(summarizedError, getInstallKeyFromContext(this.context.acquisitionContext)));
+                    this.context.eventStream.post(new WebRequestError(summarizedError, getInstallKeyFromContext(this.context)));
                     throw summarizedError;
                 }
                 else
                 {
                     const genericError = new Error(`Web Request to ${this.url} Failed: ${error.message}. Aborting. Stack: ${'stack' in error ? error?.stack : 'unavailable.'}`);
-                    this.context.eventStream.post(new WebRequestError(genericError, getInstallKeyFromContext(this.context.acquisitionContext)));
+                    this.context.eventStream.post(new WebRequestError(genericError, getInstallKeyFromContext(this.context)));
                     throw genericError;
                 }
             }
