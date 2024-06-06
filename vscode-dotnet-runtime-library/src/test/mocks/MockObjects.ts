@@ -344,7 +344,6 @@ export class MockCommandExecutor extends ICommandExecutor
     {
         this.attemptedCommand = CommandExecutor.prettifyCommandExecutorCommand(command);
 
-
         if(!command.runUnderSudo && this.fakeReturnValue === '')
         {
             this.trueExecutor.returnStatus = this.returnStatus;
