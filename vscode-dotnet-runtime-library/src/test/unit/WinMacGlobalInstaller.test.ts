@@ -52,6 +52,7 @@ suite('Windows & Mac Global Installer Tests', () =>
         `;
             mockExecutor.otherCommandsToMock = ['x86'] // make the 32 bit query error / have no result
             mockExecutor.otherCommandsReturnValues = [`ERROR: The system was unable to find the specified registry key or value.`];
+            mockExecutor.otherCommandsStatusReturnValues = ['1'];
             foundVersions = await installer.getGlobalSdkVersionsInstalledOnMachine();
             assert.deepStrictEqual(foundVersions, ['7.0.301']);
 
@@ -59,6 +60,7 @@ suite('Windows & Mac Global Installer Tests', () =>
             // Try throwing for  64 bit, and returning empty for 32 bit
             mockExecutor.fakeReturnValue = `ERROR: The system was unable to find the specified registry key or value.`;
             mockExecutor.otherCommandsReturnValues = [``];
+            mockExecutor.otherCommandsStatusReturnValues = ['1'];
             foundVersions = await installer.getGlobalSdkVersionsInstalledOnMachine();
             assert.deepStrictEqual(foundVersions, []);
             mockExecutor.fakeReturnValue = ``;

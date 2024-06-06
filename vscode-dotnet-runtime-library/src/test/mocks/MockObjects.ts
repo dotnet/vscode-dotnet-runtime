@@ -332,6 +332,7 @@ export class MockCommandExecutor extends ICommandExecutor
     // We will check for an includes match and not an exact match!
     public otherCommandsToMock : string[] = [];
     public otherCommandsReturnValues : string[] = [];
+    public otherCommandsStatusReturnValues : string[] = [];
 
     constructor(acquisitionContext : IAcquisitionWorkerContext, utilContext : IUtilityContext)
     {
@@ -343,10 +344,7 @@ export class MockCommandExecutor extends ICommandExecutor
     {
         this.attemptedCommand = CommandExecutor.prettifyCommandExecutorCommand(command);
 
-        if(this.returnStatus && this.fakeReturnStatus)
-        {
-            return this.fakeReturnStatus;
-        }
+
         if(!command.runUnderSudo && this.fakeReturnValue === '')
         {
             this.trueExecutor.returnStatus = this.returnStatus;
@@ -356,7 +354,15 @@ export class MockCommandExecutor extends ICommandExecutor
         {
             const fakeResultIndex = this.otherCommandsToMock.findIndex(x => x.includes(command.commandRoot));
             // We don't need to verify the index since this is test code!
+            if(this.returnStatus)
+            {
+                return this.otherCommandsStatusReturnValues[fakeResultIndex];
+            }
             return this.otherCommandsReturnValues[fakeResultIndex];
+        }
+        else if(this.returnStatus && this.fakeReturnStatus)
+        {
+                return this.fakeReturnStatus;
         }
         else
         {
