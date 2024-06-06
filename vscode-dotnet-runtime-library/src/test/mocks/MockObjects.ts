@@ -350,7 +350,7 @@ export class MockCommandExecutor extends ICommandExecutor
             this.trueExecutor.returnStatus = this.returnStatus;
             return this.trueExecutor.execute(command, options);
         }
-        else if(this.otherCommandsToMock.some(x => x.includes(command.commandRoot)))
+        else if(this.otherCommandsToMock.some(x => x.includes(command.commandRoot) || command.commandParts.some((part) => x.includes(part))))
         {
             const fakeResultIndex = this.otherCommandsToMock.findIndex(x => x.includes(command.commandRoot));
             // We don't need to verify the index since this is test code!
