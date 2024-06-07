@@ -278,7 +278,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
      */
     private extractVersionsOutOfRegistryKeyStrings(registryQueryResult : string) : string[]
     {
-        if(registryQueryResult.includes('ERROR') || registryQueryResult === '')
+        if(registryQueryResult === '')
         {
                 return [];
         }
@@ -346,8 +346,19 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
                 {
                     const registryQueryCommand = path.join(`${process.env.SystemRoot}`, `System32\\reg.exe`);
                     // /reg:32 is added because all keys on 64 bit machines are all put into the WOW node. They won't be on the WOW node on a 32 bit machine.
-                    const fullQuery = `${registryQueryCommand}`;
-                    const installRecordKeysOfXBit = await this.commandRunner.execute(CommandExecutor.makeCommand(registryQueryCommand, [`query`, `${query}`, `\/reg:32`]));
+                    const command = CommandExecutor.makeCommand(registryQueryCommand, [`query`, `${query}`, `\/reg:32`]);
+
+                    let installRecordKeysOfXBit = '';
+                    const oldReturnStatusSetting = this.commandRunner.returnStatus;
+                    this.commandRunner.returnStatus = true;
+                    const registryLookupStatusCode = await this.commandRunner.execute(command);
+                    this.commandRunner.returnStatus = oldReturnStatusSetting;
+
+                    if(registryLookupStatusCode === '0')
+                    {
+                        installRecordKeysOfXBit = await this.commandRunner.execute(command);
+                    }
+
                     const installedSdks = this.extractVersionsOutOfRegistryKeyStrings(installRecordKeysOfXBit);
                     // Append any newly found sdk versions
                     sdks = sdks.concat(installedSdks.filter((item) => sdks.indexOf(item) < 0));
