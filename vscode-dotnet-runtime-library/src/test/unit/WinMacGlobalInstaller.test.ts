@@ -22,9 +22,11 @@ suite('Windows & Mac Global Installer Tests', () =>
     const mockUrl = 'https://download.visualstudio.microsoft.com/download/pr/4c0aaf08-3fa1-4fa0-8435-73b85eee4b32/e8264b3530b03b74b04ecfcf1666fe93/dotnet-sdk-7.0.306-win-x64.exe';
     const mockHash = '';
     const mockExecutor = new MockCommandExecutor(getMockAcquisitionContext('sdk', mockVersion), getMockUtilityContext());
+    mockExecutor.fakeReturnStatus = '0';
     const mockFileUtils = new MockFileUtilities();
     const installer : WinMacGlobalInstaller = new WinMacGlobalInstaller(getMockAcquisitionContext('sdk', mockVersion), getMockUtilityContext(), mockVersion, mockUrl, mockHash, mockExecutor);
     installer.file = mockFileUtils;
+
 
     test('It reads SDK registry entries correctly on windows', async () =>
     {
@@ -48,21 +50,26 @@ suite('Windows & Mac Global Installer Tests', () =>
             mockExecutor.fakeReturnValue = `
             7.0.301    REG_DWORD    0x1
         `;
-            mockExecutor.otherCommandsToMock = ['x86'] // make the 32 bit query error / have no result
+            mockExecutor.otherCommandPatternsToMock = ['x86'] // make the 32 bit query error / have no result
             mockExecutor.otherCommandsReturnValues = [`ERROR: The system was unable to find the specified registry key or value.`];
+            mockExecutor.otherCommandsStatusReturnValues = ['1'];
             foundVersions = await installer.getGlobalSdkVersionsInstalledOnMachine();
             assert.deepStrictEqual(foundVersions, ['7.0.301']);
 
             // no sdks exist
             // Try throwing for  64 bit, and returning empty for 32 bit
+            mockExecutor.fakeReturnStatus = '1';
             mockExecutor.fakeReturnValue = `ERROR: The system was unable to find the specified registry key or value.`;
             mockExecutor.otherCommandsReturnValues = [``];
+            mockExecutor.otherCommandsStatusReturnValues = ['1'];
             foundVersions = await installer.getGlobalSdkVersionsInstalledOnMachine();
             assert.deepStrictEqual(foundVersions, []);
-            mockExecutor.fakeReturnValue = ``;
 
-            mockExecutor.otherCommandsToMock = [];
+            mockExecutor.fakeReturnValue = ``;
+            mockExecutor.fakeReturnStatus = '0';
+            mockExecutor.otherCommandPatternsToMock = [];
             mockExecutor.otherCommandsReturnValues = [];
+            mockExecutor.otherCommandsStatusReturnValues = [];
 
             // Assert that it passes when running the command for real
             foundVersions = await installer.getGlobalSdkVersionsInstalledOnMachine();
