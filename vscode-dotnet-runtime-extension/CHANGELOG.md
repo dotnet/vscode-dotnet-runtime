@@ -20,6 +20,7 @@ Adds reportable SBOMs.
 Upgrades Axios Cache Interceptor with a patch for n[r].split errors.
 Improves error reporting.
 Improves Distro Json Schema file.
+Fix bug installing the .NET SDK when the machine has a different display language besides English.
 
 # [2.0.5] - 2024-05-07
 
