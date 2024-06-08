@@ -45,7 +45,7 @@
 		"debug": "^4.3.4",
 		"diff": ">=5.0.0",
 		"eol": "^0.9.1",
-		"es-abstract": "^1.19.1",
+		"es-abstract": "^1.23.3",
 		"get-proxy-settings": "^0.1.13",
 		"got": "11.8.5",
 		"http-cache-semantics": "4.1.1",
