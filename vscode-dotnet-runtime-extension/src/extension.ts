@@ -217,7 +217,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             if(commandContext.version === '' || !commandContext.version)
             {
                     throw new EventCancellationError('BadContextualRuntimeVersionError',
-                        `No version was defined to install.`);
+                    `No version was defined to install.`);
             }
 
             globalEventStream.post(new DotnetSDKAcquisitionStarted(commandContext.requestingExtensionId));
