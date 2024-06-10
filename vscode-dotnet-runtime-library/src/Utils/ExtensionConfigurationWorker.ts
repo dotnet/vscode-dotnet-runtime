@@ -2,6 +2,7 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
+import { EventBasedError } from '../EventStream/EventStreamEvents';
 import { IExistingPaths, IExtensionConfiguration, ILocalExistingPath } from '../IExtensionContext';
 import { IExtensionConfigurationWorker } from './IExtensionConfigurationWorker';
 
@@ -26,14 +27,14 @@ export class ExtensionConfigurationWorker implements IExtensionConfigurationWork
     public getSharedPathConfigurationValue(): string | undefined
     {
         if (!this.sharedExistingDotnetPath) {
-            throw Error(this.unsupportedMessage);
+            throw new EventBasedError('unsupportedSharedPathConfiguration', this.unsupportedMessage);
         }
         return this.pathConfigValueName ? this.extensionConfiguration.get(this.sharedExistingDotnetPath) : undefined;
     }
 
     public async setSharedPathConfigurationValue(configValue: string): Promise<void> {
         if (!this.sharedExistingDotnetPath) {
-            throw Error(this.unsupportedMessage);
+            throw new EventBasedError('unsupportedSharedExistingPathConfiguration', this.unsupportedMessage);
         }
         await this.extensionConfiguration.update<string>(this.sharedExistingDotnetPath, configValue, true);
     }

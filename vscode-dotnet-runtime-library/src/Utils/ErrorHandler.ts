@@ -7,13 +7,18 @@ import * as open from 'open';
 import {
     DotnetCommandFailed,
     DotnetCommandSucceeded,
+    DotnetGlobalSDKAcquisitionError,
     DotnetInstallExpectedAbort,
-    DotnetNotInstallRelatedCommandFailed
+    DotnetNotInstallRelatedCommandFailed,
+    EventCancellationError
 } from '../EventStream/EventStreamEvents';
 import { getInstallKeyFromContext } from './InstallKeyUtilities';
 import { IIssueContext } from './IIssueContext';
 import { formatIssueUrl } from './IssueReporter';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
+import { GetDotnetInstallInfo } from '../Acquisition/DotnetInstall';
+import { DotnetCoreAcquisitionWorker } from '../Acquisition/DotnetCoreAcquisitionWorker';
+/* tslint:disable:no-any */
 
 export enum AcquireErrorConfiguration {
     DisplayAllErrorPopups = 0,
@@ -57,7 +62,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
         context.eventStream.post(new DotnetCommandSucceeded(context.commandName));
         return result;
     }
-    catch (caughtError)
+    catch (caughtError : any)
     {
         const error = caughtError as Error;
         if(!isCancellationStyleError(error))
@@ -67,6 +72,15 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
                 // The output observer will keep track of installs and we don't want a non-install failure to make it think it should -=1 from the no. of installs
                 new DotnetNotInstallRelatedCommandFailed(error, context.commandName)
             );
+        }
+
+        if(acquireContext?.installMode === 'sdk' && acquireContext.acquisitionContext?.installType === 'global')
+        {
+            context.eventStream.post(new DotnetGlobalSDKAcquisitionError(error, (caughtError?.eventType) ?? 'Unknown',
+               GetDotnetInstallInfo(acquireContext.acquisitionContext.version, acquireContext.installMode, 'global', acquireContext.installingArchitecture ??
+
+                DotnetCoreAcquisitionWorker.defaultArchitecture()
+             )));
         }
 
         if (context.errorConfiguration === AcquireErrorConfiguration.DisplayAllErrorPopups)
@@ -145,5 +159,6 @@ async function configureManualInstall(context: IIssueContext, requestingExtensio
 function isCancellationStyleError(error : Error)
 {
     // Handle both when the event.error or event itself is posted.
-    return error && error.constructor && (error.constructor.name === 'UserCancelledError' || error.constructor.name === 'EventCancellationError') || error instanceof DotnetInstallExpectedAbort;
+    return error && error.constructor && (error.constructor.name === 'UserCancelledError' || error.constructor.name === 'EventCancellationError') ||
+        error instanceof DotnetInstallExpectedAbort || error instanceof EventCancellationError;
 }

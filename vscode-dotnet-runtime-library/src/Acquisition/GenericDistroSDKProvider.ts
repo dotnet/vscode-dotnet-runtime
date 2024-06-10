@@ -9,7 +9,7 @@ import { CommandExecutorCommand } from '../Utils/CommandExecutorCommand';
 import { DotnetDistroSupportStatus } from './LinuxVersionResolver';
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
-import { DotnetVersionResolutionError } from '../EventStream/EventStreamEvents';
+import { DotnetVersionResolutionError, EventBasedError } from '../EventStream/EventStreamEvents';
 /* tslint:disable:no-any */
 
 export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
@@ -212,7 +212,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 
         if(maxVersion === '0')
         {
-            const err = new DotnetVersionResolutionError(new Error(`No packages for .NET are available.
+            const err = new DotnetVersionResolutionError(new EventBasedError('DotnetVersionResolutionError', `No packages for .NET are available.
 Please refer to https://learn.microsoft.com/en-us/dotnet/core/install/linux if you'd link to install .NET.`), null);
             this.context.eventStream.post(err);
             throw(err);

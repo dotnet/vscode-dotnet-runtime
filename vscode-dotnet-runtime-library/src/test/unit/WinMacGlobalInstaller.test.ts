@@ -109,7 +109,7 @@ suite('Windows & Mac Global Installer Tests', () =>
            ${mockVersion}    REG_DWORD    0x1
        `;
 
-           const install = GetDotnetInstallInfo(mockVersion, 'sdk', true, os.arch());
+           const install = GetDotnetInstallInfo(mockVersion, 'sdk', 'global', os.arch());
            const result = await installer.installSDK(install);
            assert.exists(result);
            assert.equal(result, '0');
@@ -123,7 +123,7 @@ suite('Windows & Mac Global Installer Tests', () =>
     {
         mockExecutor.fakeReturnValue = `0`;
         installer.cleanupInstallFiles = false;
-        const install = GetDotnetInstallInfo(mockVersion, 'sdk', true, os.arch());
+        const install = GetDotnetInstallInfo(mockVersion, 'sdk', 'global', os.arch());
         const result = await installer.installSDK(install);
         assert.exists(result);
         assert.equal(result, '0');
@@ -152,7 +152,7 @@ suite('Windows & Mac Global Installer Tests', () =>
     {
         mockExecutor.fakeReturnValue = `0`;
         installer.cleanupInstallFiles = false;
-        const install = GetDotnetInstallInfo(mockVersion, 'sdk', true, os.arch());
+        const install = GetDotnetInstallInfo(mockVersion, 'sdk', 'global', os.arch());
         const result = await installer.installSDK(install);
         assert.exists(result, 'The installation on test was successful');
         assert.equal(result, '0', 'No errors were reported by the fake install');

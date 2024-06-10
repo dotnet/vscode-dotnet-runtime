@@ -13,6 +13,7 @@ import {
     DotnetPreinstallDetected,
     DotnetPreinstallDetectionError,
     DuplicateInstallDetected,
+    EventBasedError,
     NoMatchingInstallToStopTracking
 } from '../EventStream/EventStreamEvents';
 import {
@@ -76,7 +77,7 @@ export class InstallTracker
         {
             // Either the lock could not be acquired or releasing it failed
             this.context.eventStream.post(new DotnetLockErrorEvent(e, e?.message ?? 'Unable to acquire lock to update installation state', new Date().toISOString(), lockPath, lockPath));
-            throw error();
+            throw new EventBasedError('DotnetLockErrorEvent', e?.message, e?.stack);
         }
     }
 
@@ -285,7 +286,7 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).jo
                 for (const installKey of installKeys)
                 {
                     localSDKDirectoryKeyIter = installKey;
-                    const installRecord = GetDotnetInstallInfo(getVersionFromLegacyInstallKey(installKey), 'sdk', false, DotnetCoreAcquisitionWorker.defaultArchitecture());
+                    const installRecord = GetDotnetInstallInfo(getVersionFromLegacyInstallKey(installKey), 'sdk', 'local', DotnetCoreAcquisitionWorker.defaultArchitecture());
                     this.context.eventStream.post(new DotnetPreinstallDetected(installRecord));
                     await this.addVersionToExtensionState(this.installedVersionsKey, installRecord, true);
                     installedInstallKeys.push({ dotnetInstall: installRecord, installingExtensions: [ null ] } as InstallRecord);
@@ -293,7 +294,7 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).jo
             }
             catch (error)
             {
-                this.context.eventStream.post(new DotnetPreinstallDetectionError(error as Error, GetDotnetInstallInfo(localSDKDirectoryKeyIter, 'sdk', false,
+                this.context.eventStream.post(new DotnetPreinstallDetectionError(error as Error, GetDotnetInstallInfo(localSDKDirectoryKeyIter, 'sdk', 'local',
                     DotnetCoreAcquisitionWorker.defaultArchitecture())));
             }
             return installedInstallKeys;

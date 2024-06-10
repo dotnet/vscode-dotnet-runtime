@@ -24,7 +24,7 @@ import {
     IDotnetAcquireContext,
     IDotnetListVersionsContext,
     IDotnetUninstallContext,
-    IDotnetListVersionsResult,
+    EventBasedError,
     IDotnetVersion,
     IEventStreamContext,
     IExtensionContext,
@@ -164,7 +164,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
                 if(commandContext.version === '' || !commandContext.version)
                 {
-                    throw Error(`No version was defined to install.`);
+                    throw new EventBasedError('BadContextualSDKExtensionVersionError',
+                        `No version was defined to install.`);
                 }
 
                 const globalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, commandContext.version);

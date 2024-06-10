@@ -21,7 +21,7 @@ export function getInstallKeyFromContext(ctx : IAcquisitionWorkerContext | undef
 
     return {
         installKey : DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(acquireContext.version, acquireContext.architecture,
-            acquireContext.installType ? acquireContext.installType === 'global' : false),
+            acquireContext.installType),
         version: acquireContext.version,
         architecture: acquireContext.architecture,
         isGlobal: acquireContext.installType ? acquireContext.installType === 'global' : false,

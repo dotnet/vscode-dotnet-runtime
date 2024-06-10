@@ -9,6 +9,7 @@ import {
     DotnetFallbackInstallScriptUsed,
     DotnetInstallScriptAcquisitionCompleted,
     DotnetInstallScriptAcquisitionError,
+    EventBasedError,
 } from '../EventStream/EventStreamEvents';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { Debugging } from '../Utils/Debugging';
@@ -40,7 +41,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
             const script = await this.webWorker.getCachedData();
             if (!script) {
                 Debugging.log('The request to acquire the script failed.');
-                throw new Error('Unable to get script path.');
+                throw new EventBasedError('NoInstallScriptPathExists', 'Unable to get script path.');
             }
 
             await this.fileUtilities.writeFileOntoDisk(script, this.scriptFilePath, false, this.context.eventStream);
@@ -60,7 +61,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
                 return fallbackPath;
             }
 
-            throw new Error(`Failed to Acquire Dotnet Install Script: ${error}`);
+            throw new EventBasedError('UnableToAcquireDotnetInstallScript', `Failed to Acquire Dotnet Install Script: ${error}`);
         }
     }
 
