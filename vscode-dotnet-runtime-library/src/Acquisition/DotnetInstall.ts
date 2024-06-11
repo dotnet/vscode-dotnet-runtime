@@ -3,6 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
+import { DotnetInstallType } from '..';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { DotnetInstallMode } from './DotnetInstallMode';
 
@@ -67,12 +68,12 @@ export function looksLikeRuntimeVersion(version: string): boolean {
     return !band || band.length <= 2; // assumption : there exists no runtime version at this point over 99 sub versions
 }
 
-export function GetDotnetInstallInfo(installVersion: string, installationMode: DotnetInstallMode, isGlobalInstall: boolean, installArchitecture: string): DotnetInstall {
+export function GetDotnetInstallInfo(installVersion: string, installationMode: DotnetInstallMode, installType: DotnetInstallType, installArchitecture: string): DotnetInstall {
     return {
-        installKey: DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(installVersion, installArchitecture),
+        installKey: DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(installVersion, installArchitecture, installType),
         version: installVersion,
         architecture: installArchitecture,
-        isGlobal: isGlobalInstall,
+        isGlobal: installType === 'global',
         installMode: installationMode,
     } as DotnetInstall;
 }

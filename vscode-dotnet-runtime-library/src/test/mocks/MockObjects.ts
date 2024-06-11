@@ -8,7 +8,7 @@ import * as path from 'path';
 import { InstallScriptAcquisitionWorker } from '../../Acquisition/InstallScriptAcquisitionWorker';
 import { VersionResolver } from '../../Acquisition/VersionResolver';
 import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
-import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStream/EventStreamEvents';
+import { DotnetAcquisitionCompleted, EventBasedError, TestAcquireCalled } from '../../EventStream/EventStreamEvents';
 import { IExistingPaths, IExtensionConfiguration, ILocalExistingPath } from '../../IExtensionContext';
 import { FileUtilities } from '../../Utils/FileUtilities';
 import { WebRequestWorker } from '../../Utils/WebRequestWorker';
@@ -36,7 +36,6 @@ import { ITelemetryReporter } from '../../EventStream/TelemetryObserver';
 import { IUtilityContext } from '../../Utils/IUtilityContext';
 import { IVSCodeEnvironment } from '../../Utils/IVSCodeEnvironment';
 import { IDotnetAcquireResult } from '../../IDotnetAcquireResult';
-import { IDotnetCoreAcquisitionWorker } from '../../Acquisition/IDotnetCoreAcquisitionWorker';
 import { GetDotnetInstallInfo } from '../../Acquisition/DotnetInstall';
 import { DotnetInstall } from '../../Acquisition/DotnetInstall';
 import { InstallTracker } from '../../Acquisition/InstallTracker';
@@ -78,7 +77,7 @@ export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker {
     public installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             this.eventStream.post(new TestAcquireCalled(installContext));
-            const install = GetDotnetInstallInfo(installContext.version, installContext.installMode, false, installContext.architecture)
+            const install = GetDotnetInstallInfo(installContext.version, installContext.installMode, 'local', installContext.architecture)
             this.eventStream.post(new DotnetAcquisitionCompleted(
                 install, installContext.dotnetPath, installContext.version));
             resolve();
@@ -149,7 +148,7 @@ export class RejectingAcquisitionInvoker extends IAcquisitionInvoker {
 
 export class ErrorAcquisitionInvoker extends IAcquisitionInvoker {
     public installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
-        throw new Error('Command Failed');
+        throw new EventBasedError('MockErrorAcquisitionInvokerFailure', 'Command Failed');
     }
 }
 

@@ -29,6 +29,8 @@ import {
     DotnetCompletedGlobalInstallerExecution,
     DotnetFakeSDKEnvironmentVariableTriggered,
     SuppressedAcquisitionError,
+    EventBasedError,
+    EventCancellationError,
 } from '../EventStream/EventStreamEvents';
 
 import { GlobalInstallerResolver } from './GlobalInstallerResolver';
@@ -36,7 +38,7 @@ import { WinMacGlobalInstaller } from './WinMacGlobalInstaller';
 import { LinuxGlobalInstaller } from './LinuxGlobalInstaller';
 import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
 import { Debugging } from '../Utils/Debugging';
-import { IDotnetAcquireContext} from '../IDotnetAcquireContext';
+import { DotnetInstallType, IDotnetAcquireContext} from '../IDotnetAcquireContext';
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
@@ -128,7 +130,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      */
     public async acquireStatus(version: string, installMode: DotnetInstallMode, architecture? : string): Promise<IDotnetAcquireResult | undefined>
     {
-        const install = GetDotnetInstallInfo(version, installMode, false, architecture ? architecture : this.installingArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture())
+        const install = GetDotnetInstallInfo(version, installMode, 'local', architecture ? architecture : this.installingArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture())
 
         const existingAcquisitionPromise = this.installTracker.getPromise(install);
         if (existingAcquisitionPromise)
@@ -176,14 +178,14 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     private async acquire(version: string, mode: DotnetInstallMode,
         globalInstallerResolver : GlobalInstallerResolver | null = null, localInvoker? : IAcquisitionInvoker): Promise<IDotnetAcquireResult>
     {
-        let install = GetDotnetInstallInfo(version, mode, globalInstallerResolver !== null, this.installingArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
+        let install = GetDotnetInstallInfo(version, mode, globalInstallerResolver !== null ? 'global' : 'local', this.installingArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
 
         // Allow for the architecture to be null, which is a legacy behavior.
         if(this.context.acquisitionContext?.architecture === null && this.context.acquisitionContext?.architecture !== undefined)
         {
             install =
             {
-                installKey: DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, null, globalInstallerResolver !== null),
+                installKey: DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, null, globalInstallerResolver !== null ? 'global' : 'local'),
                 version: install.version,
                 isGlobal: install.isGlobal,
                 installMode: mode,
@@ -208,20 +210,20 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             {
                 Debugging.log(`The Acquisition Worker has Determined a Global Install was requested.`, this.context.eventStream);
 
-                acquisitionPromise = this.acquireGlobalCore(globalInstallerResolver, install).catch(async (error: Error) => {
+                acquisitionPromise = this.acquireGlobalCore(globalInstallerResolver, install).catch(async (error: any) =>
+                {
                     await this.installTracker.untrackInstallingVersion(install);
-                    error.message = `.NET Acquisition Failed: ${error.message}`;
-                    throw error;
+                    const err = this.getErrorOrStringAsEventError(error);
+                    throw err;
                 });
             }
             else
             {
-                Debugging.log(`The Acquisition Worker has Determined a Local Install was requested.`, this.context.eventStream);
-
-                acquisitionPromise = this.acquireLocalCore(version, mode, install, localInvoker!).catch(async (error: Error) => {
+                acquisitionPromise = this.acquireLocalCore(version, mode, install, localInvoker!).catch(async (error: any) =>
+                {
                     await this.installTracker.untrackInstallingVersion(install);
-                    error.message = `.NET Acquisition Failed: ${error.message}`;
-                    throw error;
+                    const err = this.getErrorOrStringAsEventError(error);
+                    throw err;
                 });
             }
 
@@ -232,22 +234,23 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         }
     }
 
-    public static getInstallKeyCustomArchitecture(version : string, architecture: string | null | undefined, isGlobal = false) : string
+    public static getInstallKeyCustomArchitecture(version : string, architecture: string | null | undefined,
+        installType : DotnetInstallType = 'local') : string
     {
         if(!architecture)
         {
             // Use the legacy method (no architecture) of installs
-            return isGlobal ? `${version}-global` : version;
+            return installType === 'global' ? `${version}-global` : version;
         }
         else
         {
-            return isGlobal ? `${version}-global~${architecture}` : `${version}~${architecture}`;
+            return installType === 'global' ? `${version}-global~${architecture}` : `${version}~${architecture}`;
         }
     }
 
     public getInstallKey(version : string) : string
     {
-        return DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, this.installingArchitecture, this.globalResolver !== null);
+        return DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, this.installingArchitecture, this.globalResolver !== null ? 'global' : 'local');
     }
 
     /**
@@ -296,11 +299,13 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             timeoutSeconds: this.context.timeoutSeconds,
             installRuntime : mode === 'runtime',
             installMode : mode,
+            installType : this.context.acquisitionContext?.installType ?? 'local', // Before this API param existed, all calls were for local types.
             architecture: this.installingArchitecture
         } as IDotnetInstallationContext;
         this.context.eventStream.post(new DotnetAcquisitionStarted(install, version, this.context.acquisitionContext?.requestingExtensionId));
-        await acquisitionInvoker.installDotnet(installContext, install).catch((reason) => {
-            throw Error(`Installation failed: ${reason}`);
+        await acquisitionInvoker.installDotnet(installContext, install).catch((reason) =>
+        {
+            throw reason; // This will get handled and cast into an event based error by its caller.
         });
         this.context.installationValidator.validateDotnetInstall(install, dotnetPath);
 
@@ -345,6 +350,20 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         return os.arch();
     }
 
+    private getErrorOrStringAsEventError(error : any)
+    {
+        if(error instanceof EventBasedError || error instanceof EventCancellationError)
+        {
+            error.message = `.NET Acquisition Failed: ${error.message}`;
+            return error;
+        }
+        else
+        {
+            const newError = new EventBasedError('DotnetAcquisitionError', `.NET Acquisition Failed: ${error?.message ?? error}`);
+            return newError;
+        }
+    }
+
     private async acquireGlobalCore(globalInstallerResolver : GlobalInstallerResolver, install : DotnetInstall): Promise<string>
     {
         const installingVersion = await globalInstallerResolver.getFullySpecifiedVersion();
@@ -371,7 +390,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         if(installerResult !== '0')
         {
-            const err = new DotnetNonZeroInstallerExitCodeError(new Error(`An error was raised by the .NET SDK installer. The exit code it gave us: ${installerResult}`), install);
+            const err = new DotnetNonZeroInstallerExitCodeError(new EventBasedError('DotnetNonZeroInstallerExitCodeError',
+                `An error was raised by the .NET SDK installer. The exit code it gave us: ${installerResult}`), install);
             this.context.eventStream.post(err);
             throw err;
         }

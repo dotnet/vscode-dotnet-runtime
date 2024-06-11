@@ -20,7 +20,9 @@ import {
     DotnetExistingPathResolutionCompleted,
     DotnetRuntimeAcquisitionStarted,
     DotnetRuntimeAcquisitionTotalSuccessEvent,
+    DotnetGlobalSDKAcquisitionTotalSuccessEvent,
     enableExtensionTelemetry,
+    EventBasedError,
     ErrorConfiguration,
     ExistingPathResolver,
     ExtensionConfigurationWorker,
@@ -166,7 +168,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             }
 
             if (!commandContext.version || commandContext.version === 'latest') {
-                throw new Error(`Cannot acquire .NET version "${commandContext.version}". Please provide a valid version.`);
+                throw new EventBasedError('BadContextualVersion',
+                    `Cannot acquire .NET version "${commandContext.version}". Please provide a valid version.`);
             }
 
             const existingPath = await resolveExistingPathIfExists(existingPathConfigWorker, commandContext);
@@ -201,8 +204,22 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             return Promise.reject('No requesting extension id was provided.');
         }
 
-        const pathResult = callWithErrorHandling(async () =>
+        let fullyResolvedVersion = '';
+
+        const pathResult = await callWithErrorHandling(async () =>
         {
+            // Warning: Between now and later in this call-stack, the context 'version' is incomplete as it has not been resolved.
+            // Errors between here and the place where it is resolved cannot be routed to one another.
+
+            sdkAcquisitionWorker.setAcquisitionContext(commandContext);
+            telemetryObserver?.setAcquisitionContext(sdkContext, commandContext);
+
+            if(commandContext.version === '' || !commandContext.version)
+            {
+                    throw new EventCancellationError('BadContextualRuntimeVersionError',
+                    `No version was defined to install.`);
+            }
+
             globalEventStream.post(new DotnetSDKAcquisitionStarted(commandContext.requestingExtensionId));
             globalEventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
 
@@ -212,15 +229,14 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
                 return Promise.resolve(existingPath);
             }
 
+            const globalInstallerResolver = new GlobalInstallerResolver(sdkContext, commandContext.version);
+            fullyResolvedVersion = await globalInstallerResolver.getFullySpecifiedVersion();
+
+            // Reset context to point to the fully specified version so it is not possible for someone to access incorrect data during the install process.
+            commandContext.version = fullyResolvedVersion;
             sdkAcquisitionWorker.setAcquisitionContext(commandContext);
             telemetryObserver?.setAcquisitionContext(sdkContext, commandContext);
 
-            if(commandContext.version === '' || !commandContext.version)
-            {
-                throw Error(`No version was defined to install.`);
-            }
-
-            const globalInstallerResolver = new GlobalInstallerResolver(sdkContext, commandContext.version);
             outputChannel.show(true);
             const dotnetPath = await sdkAcquisitionWorker.acquireGlobalSDK(globalInstallerResolver);
 
@@ -228,6 +244,11 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             return dotnetPath;
         }, sdkIssueContextFunctor(commandContext.errorConfiguration, commandKeys.acquireGlobalSDK), commandContext.requestingExtensionId, sdkContext);
 
+        const iKey = sdkAcquisitionWorker.getInstallKey(fullyResolvedVersion);
+        const install = {installKey : iKey, version : fullyResolvedVersion, installMode: 'sdk', isGlobal: true,
+        architecture: commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture()} as DotnetInstall;
+
+        globalEventStream.post(new DotnetGlobalSDKAcquisitionTotalSuccessEvent(commandContext.version, install, commandContext.requestingExtensionId ?? '', pathResult?.dotnetPath ?? ''));
         return pathResult;
     });
 
@@ -245,8 +266,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
         if (!activeSupportVersions || activeSupportVersions.length < 1)
         {
-            const err = new Error(`An active-support version of dotnet couldn't be found. Discovered versions: ${JSON.stringify(availableVersions)}`);
-            globalEventStream.post(new DotnetVersionResolutionError(err as EventCancellationError, null));
+            const err = new EventCancellationError('DotnetVersionResolutionError', `An active-support version of dotnet couldn't be found. Discovered versions: ${JSON.stringify(availableVersions)}`);
+            globalEventStream.post(new DotnetVersionResolutionError(err, null));
             if(!availableVersions || availableVersions.length < 1)
             {
                 return [];

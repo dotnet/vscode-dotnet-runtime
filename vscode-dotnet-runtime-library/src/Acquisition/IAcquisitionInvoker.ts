@@ -14,5 +14,5 @@ export abstract class IAcquisitionInvoker {
         this.installationValidator = new InstallationValidator(eventStream);
     }
 
-    public abstract installDotnet(installContext: IDotnetInstallationContext, installKey : DotnetInstall): Promise<void>;
+    public abstract installDotnet(installContext: IDotnetInstallationContext, install : DotnetInstall): Promise<void>;
 }

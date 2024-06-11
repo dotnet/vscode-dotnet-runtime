@@ -31,8 +31,6 @@ import { getMockAcquisitionContext, getMockAcquisitionWorker } from './TestUtili
 import { IAcquisitionInvoker } from '../../Acquisition/IAcquisitionInvoker';
 import { InstallOwner, InstallRecord } from '../../Acquisition/InstallRecord';
 import { GetDotnetInstallInfo } from '../../Acquisition/DotnetInstall';
-import { DotnetInstallOrStr } from '../../Acquisition/DotnetInstall';
-import { DotnetInstall } from '../../Acquisition/DotnetInstall';
 import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 
 const assert = chai.assert;
@@ -85,17 +83,18 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         //  No errors in event stream
         assert.notExists(eventStream.events.find(event => event.type === EventType.DotnetAcquisitionError));
         const startEvent = eventStream.events
-            .find(event => event instanceof DotnetAcquisitionStarted && (event as DotnetAcquisitionStarted).installKey.installKey === installKey);
+            .find(event => event instanceof DotnetAcquisitionStarted && (event as DotnetAcquisitionStarted).install.installKey === installKey);
         assert.exists(startEvent, 'The acquisition started event appears');
         const completedEvent = eventStream.events
-            .find(event => event instanceof DotnetAcquisitionCompleted && (event as DotnetAcquisitionCompleted).installKey.installKey === installKey
+            .find(event => event instanceof DotnetAcquisitionCompleted && (event as DotnetAcquisitionCompleted).install.installKey === installKey
                 && (event as DotnetAcquisitionCompleted).dotnetPath === expectedPath);
         assert.exists(completedEvent, 'The acquisition completed event appears');
 
         //  Acquire got called with the correct args
         const acquireEvent = eventStream.events.find(event =>
             event instanceof TestAcquireCalled &&
-            ((DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture((event as TestAcquireCalled).context.version, (event as TestAcquireCalled).context.architecture)))
+            ((DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture((event as TestAcquireCalled).context.version,
+                (event as TestAcquireCalled).context.architecture, (event as TestAcquireCalled).context.installType)))
                 === installKey) as TestAcquireCalled;
         assert.exists(acquireEvent, 'The acquisition acquire event appears');
         assert.equal(acquireEvent!.context.dotnetPath, expectedPath, 'The acquisition went to the expected dotnetPath');
@@ -218,7 +217,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         const version = '1.0';
         const [acquisitionWorker, eventStream, context, invoker] = setupWorker('runtime', version);
         const installKey = acquisitionWorker.getInstallKey(version);
-        const install = GetDotnetInstallInfo(version, 'runtime', false, os.arch());
+        const install = GetDotnetInstallInfo(version, 'runtime', 'local', os.arch());
 
         const res = await acquisitionWorker.acquireRuntime(version, invoker);
         await assertAcquisitionSucceeded(installKey, res.dotnetPath, eventStream, context);
@@ -314,7 +313,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         const [acquisitionWorker, eventStream, _, __] = setupWorker('runtime', version);
         const acquisitionInvoker = new RejectingAcquisitionInvoker(eventStream);
 
-        return assert.isRejected(acquisitionWorker.acquireRuntime(version, acquisitionInvoker), '.NET Acquisition Failed: Installation failed: Rejecting message');
+        return assert.isRejected(acquisitionWorker.acquireRuntime(version, acquisitionInvoker), '.NET Acquisition Failed: Rejecting message');
     }).timeout(expectedTimeoutTime);
 
     test('Repeated SDK Acquisition', async () => {
@@ -338,7 +337,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
             const acquisitionWorker = getMockAcquisitionWorker('runtime', version);
             const acquisitionInvoker = new MockAcquisitionInvoker(acquisitionContext, installApostropheFolder);
 
-            const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, os.arch());
+            const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, os.arch(), 'local');
             const result = await acquisitionWorker.acquireRuntime(version, acquisitionInvoker);
             const expectedPath = getExpectedPath(installKey, true);
             assert.equal(result.dotnetPath, expectedPath);

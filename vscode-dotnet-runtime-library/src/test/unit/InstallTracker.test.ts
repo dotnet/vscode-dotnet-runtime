@@ -3,12 +3,10 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
-import { InstallationValidator } from '../../Acquisition/InstallationValidator';
 import { MockEventStream, MockExtensionContext, MockInstallTracker } from '../mocks/MockObjects';
 import * as os from 'os';
-import { DotnetInstall, GetDotnetInstallInfo } from '../../Acquisition/DotnetInstall';
+import { DotnetInstall } from '../../Acquisition/DotnetInstall';
 import { getMockAcquisitionContext } from './TestUtility';
-import { getInstallKeyFromContext } from '../../Utils/InstallKeyUtilities';
 import { InstallRecord } from '../../Acquisition/InstallRecord';
 
 const assert = chai.assert;

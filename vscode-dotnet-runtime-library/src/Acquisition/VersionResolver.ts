@@ -11,7 +11,8 @@ import {
     DotnetVersionResolutionCompleted,
     DotnetVersionResolutionError,
     DotnetVersionParseEvent,
-    EventCancellationError
+    EventCancellationError,
+    EventBasedError
 } from '../EventStream/EventStreamEvents';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { getInstallKeyFromContext } from '../Utils/InstallKeyUtilities';
@@ -113,9 +114,9 @@ export class VersionResolver implements IVersionResolver {
         {
             releasesVersions = await this.getReleasesInfo(mode);
         }
-        catch(error)
+        catch(error : any)
         {
-            throw error;
+            throw new EventBasedError(error, error?.message, error?.stack);
         }
 
         return new Promise<string>((resolve, reject) =>
@@ -126,9 +127,10 @@ export class VersionResolver implements IVersionResolver {
                 this.context.eventStream.post(new DotnetVersionResolutionCompleted(version, versionResult));
                 resolve(versionResult);
             }
-            catch (error)
+            catch (error : any)
             {
-                this.context.eventStream.post(new DotnetVersionResolutionError(error as EventCancellationError, getAssumedInstallInfo(this.context, version, mode)));
+                this.context.eventStream.post(new DotnetVersionResolutionError(new EventCancellationError('DotnetVersionResolutionError',
+                    error?.message ?? ''), getAssumedInstallInfo(this.context, version, mode)));
                 reject(error);
             }
         });
@@ -147,7 +149,8 @@ export class VersionResolver implements IVersionResolver {
         }
         if (!matchingVersion || matchingVersion.length < 1)
         {
-            const err = new DotnetVersionResolutionError(new EventCancellationError(`The requested and or resolved version is invalid.`),
+            const err = new DotnetVersionResolutionError(new EventCancellationError('DotnetVersionResolutionError',
+                `The requested and or resolved version is invalid.`),
                 getAssumedInstallInfo(this.context, version, this.context.installMode));
             this.context.eventStream.post(err);
             throw err.error;
@@ -172,7 +175,8 @@ export class VersionResolver implements IVersionResolver {
         if (!parsedVer || (version.split('.').length !== 2 && version.split('.').length !== 3))
         {
             Debugging.log(`Resolving the version: ${version} ... it is invalid!`, this.context.eventStream);
-            const err = new DotnetVersionResolutionError(new EventCancellationError(`An invalid version was requested. Version: ${version}`),
+            const err = new DotnetVersionResolutionError(new EventCancellationError('DotnetVersionResolutionError',
+                `An invalid version was requested. Version: ${version}`),
                 getAssumedInstallInfo(this.context, version, this.context.installMode));
             this.context.eventStream.post(err);
             throw err.error;
@@ -187,7 +191,7 @@ export class VersionResolver implements IVersionResolver {
         const response = await this.GetAvailableDotnetVersions(apiContext);
         if (!response)
         {
-            const err = new DotnetInvalidReleasesJSONError(new Error(`We could not reach the releases API ${this.releasesUrl} to download dotnet, is your machine offline or is this website down?`),
+            const err = new DotnetInvalidReleasesJSONError(new EventBasedError('DotnetInvalidReleasesJSONError', `We could not reach the releases API ${this.releasesUrl} to download dotnet, is your machine offline or is this website down?`),
                 getInstallKeyFromContext(this.context));
             this.context.eventStream.post(err);
             throw err.error;
@@ -216,7 +220,8 @@ export class VersionResolver implements IVersionResolver {
     {
         if(fullySpecifiedVersion.split('.').length < 2)
         {
-            const event = new DotnetVersionResolutionError(new EventCancellationError(`The requested version ${fullySpecifiedVersion} is invalid.`),
+            const event = new DotnetVersionResolutionError(new EventCancellationError('DotnetVersionResolutionError',
+                `The requested version ${fullySpecifiedVersion} is invalid.`),
                 getInstallKeyFromContext(this.context));
             this.context.eventStream.post(event);
             throw event.error;
@@ -236,7 +241,7 @@ export class VersionResolver implements IVersionResolver {
         const band : string | undefined = fullySpecifiedVersion.split('.')?.at(2)?.charAt(0);
         if(band === undefined)
         {
-            const event = new DotnetFeatureBandDoesNotExistError(new Error(`${VersionResolver.invalidFeatureBandErrorString}${fullySpecifiedVersion}.`),
+            const event = new DotnetFeatureBandDoesNotExistError(new EventCancellationError('DotnetFeatureBandDoesNotExistError', `${VersionResolver.invalidFeatureBandErrorString}${fullySpecifiedVersion}.`),
                 getInstallKeyFromContext(this.context));
             this.context.eventStream.post(event);
             throw event.error;
@@ -264,7 +269,8 @@ export class VersionResolver implements IVersionResolver {
         const patch : string | undefined = fullySpecifiedVersion.split('.')?.at(2)?.substring(1);
         if(patch === undefined || !this.isNumber(patch))
         {
-            const event = new DotnetFeatureBandDoesNotExistError(new Error(`${VersionResolver.invalidFeatureBandErrorString}${fullySpecifiedVersion}.`),
+            const event = new DotnetFeatureBandDoesNotExistError(new EventCancellationError('DotnetFeatureBandDoesNotExistError',
+                `${VersionResolver.invalidFeatureBandErrorString}${fullySpecifiedVersion}.`),
                 getInstallKeyFromContext(this.context));
             this.context.eventStream.post(event);
             throw event.error;

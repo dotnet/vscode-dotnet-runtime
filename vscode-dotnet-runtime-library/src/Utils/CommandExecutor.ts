@@ -39,7 +39,8 @@ import {
     SudoProcCommandExchangeEnd,
     SudoProcCommandExchangePing,
     TimeoutSudoCommandExecutionError,
-    TimeoutSudoProcessSpawnerError
+    TimeoutSudoProcessSpawnerError,
+    EventBasedError
 } from '../EventStream/EventStreamEvents';
 import {exec} from '@vscode/sudo-prompt';
 import * as lockfile from 'proper-lockfile';
@@ -123,7 +124,8 @@ status: ${commandResult.status?.toString()}`
             // GUI in WSL is not supported, so it will fail.
             // We had a working implementation that opens a vscode box and gets the user password, but that will require more security analysis.
 
-            const err = new DotnetWSLSecurityError(new EventCancellationError(`Automatic .NET SDK Installation is not yet supported in WSL due to VS Code & WSL limitations.
+            const err = new DotnetWSLSecurityError(new EventCancellationError('DotnetWSLSecurityError',
+            `Automatic .NET SDK Installation is not yet supported in WSL due to VS Code & WSL limitations.
 Please install the .NET SDK manually by following https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu. Then, add it to the path by following https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#manually-installing-net`,
                 ), getInstallKeyFromContext(this.context));
             this.context?.eventStream.post(err);
@@ -190,7 +192,8 @@ ${stderr}`));
                 {
                     if(error.code === 126)
                     {
-                        const cancelledErr = new CommandExecutionUserRejectedPasswordRequest(new EventCancellationError(`Cancelling .NET Install, as command ${fullCommandString} failed.
+                        const cancelledErr = new CommandExecutionUserRejectedPasswordRequest(new EventCancellationError('CommandExecutionUserRejectedPasswordRequest',
+                        `Cancelling .NET Install, as command ${fullCommandString} failed.
 The user refused the password prompt.`),
                             getInstallKeyFromContext(this.context));
                         this.context?.eventStream.post(cancelledErr);
@@ -198,7 +201,8 @@ The user refused the password prompt.`),
                     }
                     else if(error.code === 111777)
                     {
-                        const securityErr = new CommandExecutionUnknownCommandExecutionAttempt(new EventCancellationError(`Cancelling .NET Install, as command ${fullCommandString} is UNKNOWN.
+                        const securityErr = new CommandExecutionUnknownCommandExecutionAttempt(new EventCancellationError('CommandExecutionUnknownCommandExecutionAttempt',
+                        `Cancelling .NET Install, as command ${fullCommandString} is UNKNOWN.
 Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
                             getInstallKeyFromContext(this.context));
                         this.context?.eventStream.post(securityErr);
@@ -270,7 +274,7 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
 
         if(!isLive && errorIfDead)
         {
-            const err = new TimeoutSudoProcessSpawnerError(new Error(`We are unable to spawn the process to run commands under sudo for installing .NET.
+            const err = new TimeoutSudoProcessSpawnerError(new EventCancellationError('TimeoutSudoProcessSpawnerError', `We are unable to spawn the process to run commands under sudo for installing .NET.
 Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: ${errorIfDead}.
 It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFromContext(this.context));
             this.context?.eventStream.post(err);
@@ -366,7 +370,8 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFrom
 
         if(!commandOutputJson && terminalFailure)
         {
-            const err = new TimeoutSudoCommandExecutionError(new Error(`Timeout: The master process with command ${commandToExecuteString} never finished executing.
+            const err = new TimeoutSudoCommandExecutionError(new EventCancellationError('TimeoutSudoCommandExecutionError',
+            `Timeout: The master process with command ${commandToExecuteString} never finished executing.
 Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: ${terminalFailure}.
 It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFromContext(this.context));
             this.context?.eventStream.post(err);
@@ -397,7 +402,8 @@ ${stderr}`));
 
             if(statusCode !== '0' && failOnNonZeroExit)
             {
-                const err = new CommandExecutionNonZeroExitFailure(new Error(`Cancelling .NET Install, as command ${commandToExecuteString} returned with status ${statusCode}.`),
+                const err = new CommandExecutionNonZeroExitFailure(new EventBasedError('CommandExecutionNonZeroExitFailure',
+                    `Cancelling .NET Install, as command ${commandToExecuteString} returned with status ${statusCode}.`),
                     getInstallKeyFromContext(this.context));
                 this.context?.eventStream.post(err);
                 throw err.error;
