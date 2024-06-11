@@ -6,14 +6,15 @@
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
 import { GlobalInstallerResolver } from './GlobalInstallerResolver';
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';
+import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 
 export interface IDotnetCoreAcquisitionWorker
 {
-    uninstallAll(): void;
+    uninstallAll(eventStream : IEventStream, storagePath : string): void;
 
-    acquireRuntime(version: string, invoker : IAcquisitionInvoker): Promise<IDotnetAcquireResult>;
+    acquireRuntime(context: IAcquisitionWorkerContext, invoker : IAcquisitionInvoker): Promise<IDotnetAcquireResult>;
 
-    acquireSDK(version: string, invoker : IAcquisitionInvoker): Promise<IDotnetAcquireResult>;
+    acquireSDK(context: IAcquisitionWorkerContext, invoker : IAcquisitionInvoker): Promise<IDotnetAcquireResult>;
 
-    acquireGlobalSDK(installerResolver: GlobalInstallerResolver): Promise<IDotnetAcquireResult>;
+    acquireGlobalSDK(context: IAcquisitionWorkerContext, installerResolver: GlobalInstallerResolver): Promise<IDotnetAcquireResult>;
 }
