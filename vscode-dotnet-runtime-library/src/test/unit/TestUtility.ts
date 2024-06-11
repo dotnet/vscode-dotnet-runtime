@@ -41,8 +41,7 @@ export function getMockAcquisitionContext(mode: DotnetInstallMode, version : str
 
 export function getMockAcquisitionWorker(mockContext : IAcquisitionWorkerContext) : MockDotnetCoreAcquisitionWorker
 {
-    const acquisitionWorker = new MockDotnetCoreAcquisitionWorker(mockContext,
-        getMockUtilityContext(), new MockVSCodeExtensionContext());
+    const acquisitionWorker = new MockDotnetCoreAcquisitionWorker(getMockUtilityContext(), new MockVSCodeExtensionContext());
     return acquisitionWorker;
 }
 

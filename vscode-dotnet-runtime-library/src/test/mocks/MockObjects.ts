@@ -38,7 +38,8 @@ import { IVSCodeEnvironment } from '../../Utils/IVSCodeEnvironment';
 import { IDotnetAcquireResult } from '../../IDotnetAcquireResult';
 import { GetDotnetInstallInfo } from '../../Acquisition/DotnetInstall';
 import { DotnetInstall } from '../../Acquisition/DotnetInstall';
-import { InstallTracker } from '../../Acquisition/InstallTracker';
+import { InstallTrackerSingleton } from '../../Acquisition/InstallTrackerSingleton';
+import { InstallationGraveyard } from '../../Acquisition/InstallationGraveyard';
 
 const testDefaultTimeoutTimeMs = 60000;
 /* tslint:disable:no-any */
@@ -96,40 +97,14 @@ export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker {
 export class MockDotnetCoreAcquisitionWorker extends DotnetCoreAcquisitionWorker
 {
 
-    public constructor(context: IAcquisitionWorkerContext, utilityContext : IUtilityContext, extensionContext : IVSCodeExtensionContext)
+    public constructor(utilityContext : IUtilityContext, extensionContext : IVSCodeExtensionContext)
     {
-        super(context, utilityContext, extensionContext);
+        super(utilityContext, extensionContext);
     }
 
-    public AddToGraveyard(install : DotnetInstall, installPath : string)
+    public AddToGraveyard(context: IAcquisitionWorkerContext, install : DotnetInstall, installPath : string)
     {
-        this.graveyard.add(install, installPath);
-    }
-
-    public acquireSDK(version: string, invoker: IAcquisitionInvoker): Promise<IDotnetAcquireResult>
-    {
-        // In extension.ts, when we call set AcquisitionContext, the version is updated.
-        // That may not happen under test and we do not want to create a new worker for each version as we want to test functionality
-        // that shares the same worker, so we can use this hack.
-        this.context.acquisitionContext!.version = version;
-        return super.acquireSDK(version, invoker);
-    }
-
-    public acquireRuntime(version: string, invoker: IAcquisitionInvoker): Promise<IDotnetAcquireResult> {
-        this.context.acquisitionContext!.version = version;
-        return super.acquireRuntime(version, invoker);
-    }
-
-    public updateVersion(newVersion : string)
-    {
-        this.context.acquisitionContext!.version = newVersion;
-    }
-
-    public updateArch(newArch : string | null)
-    {
-        this.installingArchitecture = newArch;
-        this.context.installingArchitecture = newArch;
-        this.context.acquisitionContext!.architecture = newArch;
+        new InstallationGraveyard(context).add(install, installPath);
     }
 
     public enableNoInstallInvoker()
@@ -388,7 +363,7 @@ export class MockCommandExecutor extends ICommandExecutor
     }
 
     /**
-     * @remarks For commands which dont edit the global system state or we don't need to mock their data, we can just execute them
+     * @remarks For commands which do not edit the global system state or we don't need to mock their data, we can just execute them
      * with a real command executor to provide better code coverage.
      */
     private shouldActuallyExecuteCommand(command : CommandExecutorCommand) : boolean
@@ -614,20 +589,20 @@ export class MockExtensionConfiguration implements IExtensionConfiguration {
     }
 }
 
-export class MockInstallTracker extends InstallTracker
+export class MockInstallTracker extends InstallTrackerSingleton
 {
-    constructor(context : IAcquisitionWorkerContext)
+    constructor(eventStream : IEventStream, extensionState : IExtensionState)
     {
-        super(context);
+        super(eventStream, extensionState);
     }
 
     public getExtensionState() : IExtensionState
     {
-        return this.context.extensionState;
+        return this.extensionState;
     }
 
     public setExtensionState(extensionState : IExtensionState) : void
     {
-        this.context.extensionState = extensionState;
+        this.extensionState = extensionState;
     }
 }

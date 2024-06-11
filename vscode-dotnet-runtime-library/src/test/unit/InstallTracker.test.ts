@@ -47,7 +47,7 @@ suite('InstallTracker Unit Tests', () => {
     test('It Creates a New Record for a New Install', async () => {
         resetExtensionState();
 
-        const validator = new MockInstallTracker(mockContext);
+        const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
         await validator.trackInstallingVersion(mockContext, defaultInstall);
 
         const expected : InstallRecord[] = [
@@ -62,7 +62,7 @@ suite('InstallTracker Unit Tests', () => {
     test('Re-Tracking is a No-Op', async () => {
         resetExtensionState();
 
-        const validator = new MockInstallTracker(mockContext);
+        const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
         await validator.trackInstallingVersion(mockContext, defaultInstall);
         await validator.trackInstallingVersion(mockContext, defaultInstall);
 
@@ -84,13 +84,14 @@ suite('InstallTracker Unit Tests', () => {
     test('It Only Adds the Extension Id to an Existing Install Copy', async () => {
         resetExtensionState();
 
-        const validator = new MockInstallTracker(mockContext);
+        const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
         await validator.trackInstalledVersion(mockContext, defaultInstall);
 
-        const otherRequesterValidator = new MockInstallTracker(mockContextFromOtherExtension);
+        // TODO: verify these tests still work
+        const otherRequesterValidator = new MockInstallTracker(mockContextFromOtherExtension.eventStream, mockContext.extensionState);
         // Inject the extension state from the old class into the new one, because in vscode its a shared global state but here its mocked
         otherRequesterValidator.setExtensionState(validator.getExtensionState());
-        await otherRequesterValidator.trackInstalledVersion(mockContext, defaultInstall);
+        await otherRequesterValidator.trackInstalledVersion(mockContextFromOtherExtension, defaultInstall);
 
         const expected : InstallRecord[] = [
             {
@@ -106,13 +107,13 @@ suite('InstallTracker Unit Tests', () => {
     test('It Works With Different Installs From Multiple or Same Requesters', async () => {
         resetExtensionState();
 
-        const validator = new MockInstallTracker(mockContext);
+        const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
         await validator.trackInstalledVersion(mockContext, defaultInstall);
 
-        const otherRequesterValidator = new MockInstallTracker(mockContextFromOtherExtension);
+        const otherRequesterValidator = new MockInstallTracker(mockContextFromOtherExtension.eventStream, mockContext.extensionState);
         // Inject the extension state from the old class into the new one, because in vscode its a shared global state but here its mocked
         otherRequesterValidator.setExtensionState(validator.getExtensionState());
-        await otherRequesterValidator.trackInstalledVersion(mockContext, secondInstall);
+        await otherRequesterValidator.trackInstalledVersion(mockContextFromOtherExtension, secondInstall);
 
         const expected : InstallRecord[] = [
             {
@@ -132,7 +133,7 @@ suite('InstallTracker Unit Tests', () => {
     test('It Removes the Record if No Other Owners Exist', async () => {
         resetExtensionState();
 
-        const validator = new MockInstallTracker(mockContext);
+        const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
         await validator.trackInstallingVersion(mockContext, defaultInstall);
         await validator.trackInstalledVersion(mockContext, defaultInstall);
 
@@ -145,10 +146,10 @@ suite('InstallTracker Unit Tests', () => {
     test('It Only Removes the Extension Id if Other Owners Exist', async () => {
         resetExtensionState();
 
-        const validator = new MockInstallTracker(mockContext);
+        const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
         await validator.trackInstalledVersion(mockContext, defaultInstall);
 
-        const otherRequesterValidator = new MockInstallTracker(mockContextFromOtherExtension);
+        const otherRequesterValidator = new MockInstallTracker(mockContextFromOtherExtension.eventStream, mockContextFromOtherExtension.extensionState);
         // Inject the extension state from the old class into the new one, because in vscode its a shared global state but here its mocked
         otherRequesterValidator.setExtensionState(validator.getExtensionState());
         await otherRequesterValidator.trackInstalledVersion(mockContext, defaultInstall);
@@ -170,7 +171,7 @@ suite('InstallTracker Unit Tests', () => {
     test('It Converts Legacy Install Key String to New Type with Null Owner', async () => {
         resetExtensionState();
 
-        const validator = new MockInstallTracker(mockContext);
+        const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
 
         const extensionStateWithLegacyStrings = new MockExtensionContext();
         extensionStateWithLegacyStrings.update('installed', [defaultInstall.installKey, secondInstall.installKey]);
@@ -194,7 +195,7 @@ suite('InstallTracker Unit Tests', () => {
     test('It Handles Null Owner Gracefully on Duplicate Install and Removal', async () => {
         resetExtensionState();
 
-        const validator = new MockInstallTracker(mockContext);
+        const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
 
         const extensionStateWithLegacyStrings = new MockExtensionContext();
         extensionStateWithLegacyStrings.update('installed', [defaultInstall.installKey, secondInstall.installKey]);
@@ -236,15 +237,15 @@ suite('InstallTracker Unit Tests', () => {
     test('It Can Reclassify an Install from Installing to Installed', async () => {
         resetExtensionState();
 
-        const validator = new MockInstallTracker(mockContext);
+        const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
         await validator.trackInstallingVersion(mockContext, defaultInstall);
 
-        const otherRequesterValidator = new MockInstallTracker(mockContextFromOtherExtension);
+        const otherRequesterValidator = new MockInstallTracker(mockContextFromOtherExtension.eventStream, mockContext.extensionState);
         // Inject the extension state from the old class into the new one, because in vscode its a shared global state but here its mocked
         otherRequesterValidator.setExtensionState(validator.getExtensionState());
-        await otherRequesterValidator.trackInstallingVersion(mockContext, defaultInstall);
-        await otherRequesterValidator.trackInstallingVersion(mockContext, secondInstall);
-        await otherRequesterValidator.reclassifyInstallingVersionToInstalled(mockContext, secondInstall);
+        await otherRequesterValidator.trackInstallingVersion(mockContextFromOtherExtension, defaultInstall);
+        await otherRequesterValidator.trackInstallingVersion(mockContextFromOtherExtension, secondInstall);
+        await otherRequesterValidator.reclassifyInstallingVersionToInstalled(mockContextFromOtherExtension, secondInstall);
 
         let expectedInstalling : InstallRecord[] = [
             {
