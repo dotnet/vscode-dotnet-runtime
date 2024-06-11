@@ -593,8 +593,8 @@ export class MockInstallTracker extends InstallTrackerSingleton
 {
     constructor(eventStream : IEventStream, extensionState : IExtensionState)
     {
-        this.instance.eventStream = eventStream;
-        this.instance.extensionState = extensionState;
+        super(eventStream, extensionState);
+        this.overrideMembers(eventStream, extensionState);
     }
 
     public getExtensionState() : IExtensionState
