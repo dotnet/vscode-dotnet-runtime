@@ -66,7 +66,7 @@ export function getVersionFromLegacyInstallKey(installKey: string): string {
 /**
  * @deprecated This function is for legacy install keys only. Do not use for new code.
  */
-export function getAssumedInstallInfo(context : IAcquisitionWorkerContext, key: string, mode : DotnetInstallMode | null): DotnetInstall {
+export function getAssumedInstallInfo(key: string, mode : DotnetInstallMode | null): DotnetInstall {
     return {
         installKey: key,
         version: getVersionFromLegacyInstallKey(key),

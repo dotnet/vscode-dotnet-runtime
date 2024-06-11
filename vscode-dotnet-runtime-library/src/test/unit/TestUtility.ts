@@ -39,10 +39,9 @@ export function getMockAcquisitionContext(mode: DotnetInstallMode, version : str
     return workerContext;
 }
 
-export function getMockAcquisitionWorker(installMode: DotnetInstallMode, version : string, arch? : string | null, customEventStream? : MockEventStream,
-    customContext? : MockExtensionContext, directory? : IInstallationDirectoryProvider) : MockDotnetCoreAcquisitionWorker
+export function getMockAcquisitionWorker(mockContext : IAcquisitionWorkerContext) : MockDotnetCoreAcquisitionWorker
 {
-    const acquisitionWorker = new MockDotnetCoreAcquisitionWorker(getMockAcquisitionContext(installMode, version, undefined, customEventStream, customContext, arch, directory),
+    const acquisitionWorker = new MockDotnetCoreAcquisitionWorker(mockContext,
         getMockUtilityContext(), new MockVSCodeExtensionContext());
     return acquisitionWorker;
 }

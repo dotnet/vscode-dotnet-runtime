@@ -153,7 +153,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         else if(installedVersions.length === 0 && fs.existsSync(dotnetPath) && installMode === 'sdk')
         {
             // The education bundle already laid down a local install, add it to our managed installs
-            const preinstalledVersions = await this.installTracker.checkForUnrecordedLocalSDKSuccessfulInstall(dotnetInstallDir, installedVersions);
+            const preinstalledVersions = await this.installTracker.checkForUnrecordedLocalSDKSuccessfulInstall(context, dotnetInstallDir, installedVersions);
             if (preinstalledVersions.some(x => IsEquivalentInstallationFile(x.dotnetInstall, install)) &&
                 (fs.existsSync(dotnetPath) || this.usingNoInstallInvoker ))
             {
@@ -217,7 +217,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
                 acquisitionPromise = this.acquireGlobalCore(context, globalInstallerResolver, install).catch(async (error: any) =>
                 {
-                    await this.installTracker.untrackInstallingVersion(install);
+                    await this.installTracker.untrackInstallingVersion(context, install);
                     const err = this.getErrorOrStringAsEventError(error);
                     throw err;
                 });
@@ -226,7 +226,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             {
                 acquisitionPromise = this.acquireLocalCore(context, mode, install, localInvoker!).catch(async (error: any) =>
                 {
-                    await this.installTracker.untrackInstallingVersion(install);
+                    await this.installTracker.untrackInstallingVersion(context, install);
                     const err = this.getErrorOrStringAsEventError(error);
                     throw err;
                 });
@@ -280,7 +280,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         if (fs.existsSync(dotnetPath) && installedVersions.length === 0) {
             // The education bundle already laid down a local install, add it to our managed installs
-            installedVersions = await this.installTracker.checkForUnrecordedLocalSDKSuccessfulInstall(dotnetInstallDir, installedVersions);
+            installedVersions = await this.installTracker.checkForUnrecordedLocalSDKSuccessfulInstall(context, dotnetInstallDir, installedVersions);
         }
 
         if (installedVersions.some(x => IsEquivalentInstallation(x.dotnetInstall, install) && (fs.existsSync(dotnetPath) || this.usingNoInstallInvoker)))
@@ -293,12 +293,12 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
                 (context.acquisitionContext && context.acquisitionContext.requestingExtensionId)
                 ? context.acquisitionContext!.requestingExtensionId : null));
 
-            await this.installTracker.trackInstalledVersion(install);
+            await this.installTracker.trackInstalledVersion(context, install);
             return dotnetPath;
         }
 
         // We update the extension state to indicate we're starting a .NET Core installation.
-        await this.installTracker.trackInstallingVersion(install);
+        await this.installTracker.trackInstallingVersion(context, install);
 
         const installContext = {
             installDir: dotnetInstallDir,
@@ -320,7 +320,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         await this.removeMatchingLegacyInstall(context, installedVersions, version);
         await this.tryCleanUpInstallGraveyard(context);
 
-        await this.installTracker.reclassifyInstallingVersionToInstalled(install);
+        await this.installTracker.reclassifyInstallingVersionToInstalled(context, install);
 
         return dotnetPath;
     }
@@ -383,7 +383,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             new LinuxGlobalInstaller(context, this.utilityContext, installingVersion) :
             new WinMacGlobalInstaller(context, this.utilityContext, installingVersion, await globalInstallerResolver.getInstallerUrl(), await globalInstallerResolver.getInstallerHash());
 
-        await this.installTracker.trackInstallingVersion(install);
+        await this.installTracker.trackInstallingVersion(context, install);
         context.eventStream.post(new DotnetAcquisitionStarted(install, installingVersion, context.acquisitionContext?.requestingExtensionId));
 
         // See if we should return a fake path instead of running the install
@@ -413,7 +413,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         context.eventStream.post(new DotnetAcquisitionCompleted(install, installedSDKPath, installingVersion));
 
-        await this.installTracker.reclassifyInstallingVersionToInstalled(install);
+        await this.installTracker.reclassifyInstallingVersionToInstalled(context, install);
 
         context.eventStream.post(new DotnetGlobalAcquisitionCompletionEvent(`The version ${install} completed successfully.`));
         return installedSDKPath;
@@ -490,9 +490,9 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
             this.removeFolderRecursively(context.eventStream, dotnetInstallDir);
 
-            await this.installTracker.untrackInstalledVersion(install);
+            await this.installTracker.untrackInstalledVersion(context, install);
             // this is the only place where installed and installing could deal with pre existing installing key
-            await this.installTracker.untrackInstallingVersion(install);
+            await this.installTracker.untrackInstallingVersion(context, install);
 
             graveyard.remove(install);
             context.eventStream.post(new DotnetInstallGraveyardEvent(`Success at uninstalling ${install} in path ${dotnetInstallDir}`));
