@@ -126,7 +126,7 @@
 		"safe-array-concat": "^1.1.0",
 		"safe-regex-test": "^1.0.0",
 		"shelljs": "^0.8.5",
-		"ts-loader": "^9.2.6",
+		"ts-loader": "^9.5.1",
 		"tslint": "^5.20.1",
 		"typescript": "4.4.4",
 		"vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library",
