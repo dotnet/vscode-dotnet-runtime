@@ -24,6 +24,7 @@ import {
     MockDotnetCoreAcquisitionWorker,
     MockEventStream,
     MockExtensionContext,
+    MockInstallTracker,
     NoInstallAcquisitionInvoker,
     RejectingAcquisitionInvoker,
 } from '../mocks/MockObjects';
@@ -33,6 +34,7 @@ import { InstallOwner, InstallRecord } from '../../Acquisition/InstallRecord';
 import { GetDotnetInstallInfo } from '../../Acquisition/DotnetInstall';
 import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
+import { InstallTrackerSingleton } from '../../Acquisition/InstallTrackerSingleton';
 
 const assert = chai.assert;
 chai.use(chaiAsPromised);
@@ -51,6 +53,8 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         const acquireWorkerContext = getMockAcquisitionContext(mode, version, 100000, eventStream, context, arch)
         const acquisitionWorker = getMockAcquisitionWorker(acquireWorkerContext);
         const invoker = new NoInstallAcquisitionInvoker(eventStream, acquisitionWorker);
+
+        new MockInstallTracker(eventStream, context).setExtensionState(context);
         return [acquisitionWorker, eventStream, context, invoker, acquireWorkerContext];
     }
 

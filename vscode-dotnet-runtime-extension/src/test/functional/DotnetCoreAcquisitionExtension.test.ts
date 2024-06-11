@@ -120,7 +120,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.isTrue(fs.existsSync(result!.dotnetPath!));
     assert.include(result!.dotnetPath, context.version);
     await vscode.commands.executeCommand<string>('dotnet.uninstallAll', context.version);
-    assert.isFalse(fs.existsSync(result!.dotnetPath));
+    assert.isFalse(fs.existsSync(result!.dotnetPath), 'the dotnet path result does not exist after uninstall');
   }).timeout(standardTimeoutTime);
 
 

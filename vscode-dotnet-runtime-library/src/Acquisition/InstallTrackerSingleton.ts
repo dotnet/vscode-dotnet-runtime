@@ -42,13 +42,13 @@ interface InProgressInstall
 
 export class InstallTrackerSingleton
 {
-    private static instance: InstallTrackerSingleton;
+    protected static instance: InstallTrackerSingleton;
 
     protected inProgressInstalls: Set<InProgressInstall> = new Set<InProgressInstall>();
     private readonly installingVersionsKey = 'installing';
     private readonly installedVersionsKey = 'installed';
 
-    protected constructor(protected readonly eventStream : IEventStream, protected extensionState : IExtensionState)
+    protected constructor(protected eventStream : IEventStream, protected extensionState : IExtensionState)
     {
 
     }
@@ -61,6 +61,12 @@ export class InstallTrackerSingleton
             }
 
         return InstallTrackerSingleton.instance;
+    }
+
+    protected overrideMembers(eventStream : IEventStream, extensionState : IExtensionState)
+    {
+        InstallTrackerSingleton.instance.eventStream = eventStream;
+        InstallTrackerSingleton.instance.extensionState = extensionState;
     }
 
     protected executeWithLock = async <A extends any[], R>(alreadyHoldingLock : boolean, f: (...args: A) => R, ...args: A): Promise<R> =>

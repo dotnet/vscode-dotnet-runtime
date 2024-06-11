@@ -155,7 +155,7 @@ suite('InstallTracker Unit Tests', () => {
         await otherRequesterValidator.trackInstalledVersion(mockContext, defaultInstall);
 
         validator.setExtensionState(otherRequesterValidator.getExtensionState());
-        await validator.untrackInstalledVersion(mockContext, defaultInstall);
+        await validator.untrackInstalledVersion(mockContextFromOtherExtension, defaultInstall);
 
         const expected : InstallRecord[] = [
             {
@@ -264,7 +264,7 @@ suite('InstallTracker Unit Tests', () => {
         assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls(true), expectedInstalled, 'The installing version was moved from installing to installed');
         assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls(false), expectedInstalling, 'The installing version was not erroneously moved');
 
-        await otherRequesterValidator.reclassifyInstallingVersionToInstalled(mockContext, defaultInstall);
+        await otherRequesterValidator.reclassifyInstallingVersionToInstalled(mockContextFromOtherExtension, defaultInstall);
 
         expectedInstalled = [
             {
