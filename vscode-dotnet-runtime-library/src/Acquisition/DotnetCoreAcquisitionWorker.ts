@@ -60,6 +60,7 @@ import { InstallationGraveyard } from './InstallationGraveyard';
 import { InstallTracker } from './InstallTracker';
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { IEventStream } from '../EventStream/EventStream';
+import { strict } from 'assert';
 
 /* tslint:disable:no-any */
 
@@ -88,7 +89,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         eventStream.post(new DotnetUninstallAllStarted());
         await this.installTracker.clearPromises();
 
-        this.removeFolderRecursively(context, context.installDirectoryProvider.getStoragePath());
+        this.removeFolderRecursively(eventStream, storagePath);
 
         await this.installTracker.uninstallAllRecords();
 
@@ -487,7 +488,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             graveyard.add(install, dotnetInstallDir);
             context.eventStream.post(new DotnetInstallGraveyardEvent(`Attempting to remove .NET at ${install} in path ${dotnetInstallDir}`));
 
-            this.removeFolderRecursively(context, dotnetInstallDir);
+            this.removeFolderRecursively(context.eventStream, dotnetInstallDir);
 
             await this.installTracker.untrackInstalledVersion(install);
             // this is the only place where installed and installing could deal with pre existing installing key

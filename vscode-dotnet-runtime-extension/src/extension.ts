@@ -60,6 +60,7 @@ import {
     UserManualInstallFailure,
     DotnetInstall,
     EventCancellationError,
+    DotnetInstallType,
 } from 'vscode-dotnet-runtime-library';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 
@@ -145,6 +146,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     {
         let fullyResolvedVersion = '';
         const worker = getAcquisitionWorker();
+        const runtimeContext = getAcquisitionWorkerContext('runtime', commandContext);
 
         const dotnetPath = await callWithErrorHandling<Promise<IDotnetAcquireResult>>(async () =>
         {
@@ -171,9 +173,10 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
                 return existingPath;
             }
 
+            // Note: This will impact the context object given to the worker and error handler since objects own a copy of a reference in JS.
+            const runtimeVersionResolver = new VersionResolver(runtimeContext);
             commandContext.version = await runtimeVersionResolver.getFullRuntimeVersion(commandContext.version);
 
-            const runtimeContext = getAcquisitionWorkerContext('runtime', commandContext);
             const acquisitionInvoker = new AcquisitionInvoker(runtimeContext, utilContext);
             return worker.acquireRuntime(runtimeContext, acquisitionInvoker);
         }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, 'acquire', commandContext.version), commandContext.requestingExtensionId, runtimeContext);
@@ -222,6 +225,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             fullyResolvedVersion = await globalInstallerResolver.getFullySpecifiedVersion();
 
             // Reset context to point to the fully specified version so it is not possible for someone to access incorrect data during the install process.
+            // Note: This will impact the context object given to the worker and error handler since objects own a copy of a reference in JS.
             commandContext.version = fullyResolvedVersion;
             telemetryObserver?.setAcquisitionContext(sdkContext, commandContext);
 
@@ -308,8 +312,10 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             const workerContext = getAcquisitionWorkerContext(mode, commandContext);
 
             globalEventStream.post(new DotnetAcquisitionStatusRequested(commandContext.version, commandContext.requestingExtensionId));
+            const runtimeVersionResolver = new VersionResolver(workerContext);
             const resolvedVersion = await runtimeVersionResolver.getFullRuntimeVersion(commandContext.version);
-            const dotnetPath = await worker.acquireStatus(workerContext, resolvedVersion, 'runtime');
+            commandContext.version = resolvedVersion;
+            const dotnetPath = await worker.acquireStatus(workerContext, 'runtime');
             return dotnetPath;
         }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, 'acquireRuntimeStatus'));
         return pathResult;
@@ -381,7 +387,9 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     const getAvailableVersions = async (commandContext: IDotnetListVersionsContext | undefined,
         customWebWorker: WebRequestWorker | undefined, onRecommendationMode : boolean) : Promise<IDotnetListVersionsResult | undefined> =>
     {
-        const customVersionResolver = new VersionResolver(sdkContext, customWebWorker);
+        const mode = 'sdk' as DotnetInstallMode;
+        const context = getVersionResolverContext(mode, 'global', commandContext?.errorConfiguration);
+        const customVersionResolver = new VersionResolver(context, customWebWorker);
 
         if(os.platform() !== 'linux' || !onRecommendationMode)
         {
@@ -394,7 +402,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         }
         else
         {
-            const linuxResolver = new LinuxVersionResolver(sdkContext, utilContext);
+            const linuxResolver = new LinuxVersionResolver(context, utilContext);
             try
             {
                 const suggestedVersion = await linuxResolver.getRecommendedDotnetVersion('sdk' as DotnetInstallMode);
@@ -418,6 +426,24 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             }
             // tslint:enable no-any
         }
+    }
+
+    /**
+     * @returns A 'worker' context object that can be used for when there actually isn't any acquisition happening.
+     * Eventually the version resolver and web request worker should be decoupled from the context object, ...
+     * so we don't need to do this, but not doing this right now.
+     */
+    function getVersionResolverContext(mode : DotnetInstallMode, installType : DotnetInstallType, errorConfiguration? : ErrorConfiguration) : IAcquisitionWorkerContext
+    {
+        return getAcquisitionWorkerContext(mode,
+            {
+                requestingExtensionId: 'notProvided',
+                installType: installType,
+                version: 'notAnAcquisitionRequest',
+                errorConfiguration: errorConfiguration,
+                architecture: DotnetCoreAcquisitionWorker.defaultArchitecture()
+            } as IDotnetAcquireContext
+        )
     }
 
     function getAcquisitionWorkerContext(mode : DotnetInstallMode, acquiringContext : IDotnetAcquireContext) : IAcquisitionWorkerContext
