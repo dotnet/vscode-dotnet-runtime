@@ -127,8 +127,9 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      */
     public async acquireStatus(context: IAcquisitionWorkerContext, installMode: DotnetInstallMode, architecture? : string): Promise<IDotnetAcquireResult | undefined>
     {
-        const version = context.acquisitionContext?.version!;
-        const install = GetDotnetInstallInfo(version, installMode, 'local', architecture ? architecture : context.installingArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture())
+        const version = context.acquisitionContext.version!;
+        const install = GetDotnetInstallInfo(version, installMode, 'local',
+            architecture ? architecture : context.installingArchitecture ?? this.getDefaultInternalArchitecture(context.installingArchitecture))
 
         const existingAcquisitionPromise = InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getPromise(install);
         if (existingAcquisitionPromise)
@@ -178,17 +179,18 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     {
         if(globalInstallerResolver !== null)
         {
-            context.acquisitionContext!.version = await globalInstallerResolver.getFullySpecifiedVersion();
+            context.acquisitionContext.version = await globalInstallerResolver.getFullySpecifiedVersion();
         }
-        const version = context.acquisitionContext?.version!;
-        let install = GetDotnetInstallInfo(version, mode, globalInstallerResolver !== null ? 'global' : 'local', context.installingArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
+        const version = context.acquisitionContext.version;
+        let install = GetDotnetInstallInfo(version, mode, globalInstallerResolver !== null ? 'global' : 'local',
+            context.installingArchitecture ?? this.getDefaultInternalArchitecture(context.installingArchitecture));
 
         // Allow for the architecture to be null, which is a legacy behavior.
-        if(context.acquisitionContext?.architecture === null && context.acquisitionContext?.architecture !== undefined)
+        if(context.acquisitionContext.architecture === null && context.acquisitionContext.architecture !== undefined)
         {
             install =
             {
-                installKey: DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, null, globalInstallerResolver !== null ? 'global' : 'local'),
+                installKey: DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, context.acquisitionContext.architecture, globalInstallerResolver !== null ? 'global' : 'local'),
                 version: install.version,
                 isGlobal: install.isGlobal,
                 installMode: mode,
@@ -202,7 +204,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             // This version of dotnet is already being acquired. Memoize the promise.
             context.eventStream.post(new DotnetAcquisitionInProgress(install,
                     (context.acquisitionContext && context.acquisitionContext.requestingExtensionId)
-                    ? context.acquisitionContext!.requestingExtensionId : null));
+                    ? context.acquisitionContext.requestingExtensionId : null));
             return existingAcquisitionPromise.then((res) => ({ dotnetPath: res }));
         }
         else
@@ -240,22 +242,17 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     public static getInstallKeyCustomArchitecture(version : string, architecture: string | null | undefined,
         installType : DotnetInstallType = 'local') : string
     {
-        if(architecture === undefined)
+        if(architecture === null || architecture === 'null')
         {
             // Use the legacy method (no architecture) of installs
             return installType === 'global' ? `${version}-global` : version;
         }
-        else if(architecture === null)
+        else if(architecture === undefined)
         {
             architecture = DotnetCoreAcquisitionWorker.defaultArchitecture();
         }
 
         return installType === 'global' ? `${version}-global~${architecture}` : `${version}~${architecture}`;
-    }
-
-    public getInstallKey(version : string) : string
-    {
-        return DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, null, this.globalResolver !== null ? 'global' : 'local');
     }
 
     /**
@@ -269,7 +266,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      */
     private async acquireLocalCore(context: IAcquisitionWorkerContext, mode: DotnetInstallMode, install : DotnetInstall, acquisitionInvoker : IAcquisitionInvoker): Promise<string>
     {
-        const version = context.acquisitionContext?.version!;
+        const version = context.acquisitionContext.version!;
         this.checkForPartialInstalls(context, install);
 
         let installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(true);
@@ -290,7 +287,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
             context.eventStream.post(new DotnetAcquisitionAlreadyInstalled(install,
                 (context.acquisitionContext && context.acquisitionContext.requestingExtensionId)
-                ? context.acquisitionContext!.requestingExtensionId : null));
+                ? context.acquisitionContext.requestingExtensionId : null));
 
             await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).trackInstalledVersion(context, install);
             return dotnetPath;
@@ -306,10 +303,10 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             timeoutSeconds: context.timeoutSeconds,
             installRuntime : mode === 'runtime',
             installMode : mode,
-            installType : context.acquisitionContext?.installType ?? 'local', // Before this API param existed, all calls were for local types.
-            architecture: context.installingArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(),
+            installType : context.acquisitionContext.installType ?? 'local', // Before this API param existed, all calls were for local types.
+            architecture: context.installingArchitecture ?? this.getDefaultInternalArchitecture(context.installingArchitecture),
         } as IDotnetInstallationContext;
-        context.eventStream.post(new DotnetAcquisitionStarted(install, version, context.acquisitionContext?.requestingExtensionId));
+        context.eventStream.post(new DotnetAcquisitionStarted(install, version, context.acquisitionContext.requestingExtensionId));
         await acquisitionInvoker.installDotnet(installContext, install).catch((reason) =>
         {
             throw reason; // This will get handled and cast into an event based error by its caller.
@@ -353,6 +350,19 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         }
     }
 
+    private getDefaultInternalArchitecture(existingArch : string | null | undefined)
+    {
+        if(existingArch !== null && existingArch !== undefined)
+        {
+            return existingArch;
+        }
+        if(existingArch === null)
+        {
+            return 'null';
+        }
+        return DotnetCoreAcquisitionWorker.defaultArchitecture();
+    }
+
     public static defaultArchitecture() : string
     {
         return os.arch();
@@ -383,7 +393,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             new WinMacGlobalInstaller(context, this.utilityContext, installingVersion, await globalInstallerResolver.getInstallerUrl(), await globalInstallerResolver.getInstallerHash());
 
         await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).trackInstallingVersion(context, install);
-        context.eventStream.post(new DotnetAcquisitionStarted(install, installingVersion, context.acquisitionContext?.requestingExtensionId));
+        context.eventStream.post(new DotnetAcquisitionStarted(install, installingVersion, context.acquisitionContext.requestingExtensionId));
 
         // See if we should return a fake path instead of running the install
         if(process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH && process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH === 'true')
@@ -404,7 +414,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             throw err;
         }
 
-        const installedSDKPath : string = await installer.getExpectedGlobalSDKPath(installingVersion, DotnetCoreAcquisitionWorker.defaultArchitecture());
+        const installedSDKPath : string = await installer.getExpectedGlobalSDKPath(installingVersion, context.installingArchitecture ?? this.getDefaultInternalArchitecture(context.installingArchitecture));
 
         TelemetryUtilities.setDotnetSDKTelemetryToMatch(context.isExtensionTelemetryInitiallyEnabled, this.extensionContext, context, this.utilityContext);
 

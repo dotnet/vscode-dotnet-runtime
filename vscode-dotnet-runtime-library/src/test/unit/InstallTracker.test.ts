@@ -152,10 +152,10 @@ suite('InstallTracker Unit Tests', () => {
         const otherRequesterValidator = new MockInstallTracker(mockContextFromOtherExtension.eventStream, mockContextFromOtherExtension.extensionState);
         // Inject the extension state from the old class into the new one, because in vscode its a shared global state but here its mocked
         otherRequesterValidator.setExtensionState(validator.getExtensionState());
-        await otherRequesterValidator.trackInstalledVersion(mockContext, defaultInstall);
+        await otherRequesterValidator.trackInstalledVersion(mockContextFromOtherExtension, defaultInstall);
 
         validator.setExtensionState(otherRequesterValidator.getExtensionState());
-        await validator.untrackInstalledVersion(mockContextFromOtherExtension, defaultInstall);
+        await validator.untrackInstalledVersion(mockContext, defaultInstall);
 
         const expected : InstallRecord[] = [
             {

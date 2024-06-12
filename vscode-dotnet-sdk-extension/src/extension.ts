@@ -194,7 +194,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             const fakeContext = getContext(null);
             const versionResolver = new VersionResolver(fakeContext);
 
-            const resolvedVersion = await versionResolver.getFullSDKVersion(commandContext.version);
+            commandContext.version = await versionResolver.getFullSDKVersion(commandContext.version);
             const dotnetPath = await acquisitionWorker.acquireStatus(fakeContext, 'sdk');
             return dotnetPath;
         }, issueContext(commandContext.errorConfiguration, 'acquireSDKStatus'));

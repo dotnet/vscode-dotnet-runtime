@@ -181,7 +181,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             return worker.acquireRuntime(runtimeContext, acquisitionInvoker);
         }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, 'acquire', commandContext.version), commandContext.requestingExtensionId, runtimeContext);
 
-        const iKey = worker.getInstallKey(fullyResolvedVersion);
+        const iKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(commandContext.version, commandContext.architecture, 'local');
         const install = {installKey : iKey, version : fullyResolvedVersion, installMode: 'runtime', isGlobal: false,
             architecture: commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture()} as DotnetInstall;
         globalEventStream.post(new DotnetRuntimeAcquisitionTotalSuccessEvent(commandContext.version, install, commandContext.requestingExtensionId ?? '', dotnetPath?.dotnetPath ?? ''));
@@ -236,7 +236,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             return dotnetPath;
         }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, commandKeys.acquireGlobalSDK), commandContext.requestingExtensionId, sdkContext);
 
-        const iKey = worker.getInstallKey(fullyResolvedVersion);
+        const iKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(commandContext.version, commandContext.architecture, 'global');
         const install = {installKey : iKey, version : fullyResolvedVersion, installMode: 'sdk', isGlobal: true,
         architecture: commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture()} as DotnetInstall;
 

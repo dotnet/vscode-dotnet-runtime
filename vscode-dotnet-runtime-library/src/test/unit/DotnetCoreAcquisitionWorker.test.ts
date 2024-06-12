@@ -45,7 +45,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
     const installedVersionsKey = 'installed';
     const dotnetFolderName = `.dotnet O'Hare O'Donald`;
 
-    function setupWorker(mode : DotnetInstallMode, version : string, arch? : string | null): [MockDotnetCoreAcquisitionWorker, MockEventStream,
+    function setupWorker(mode : DotnetInstallMode, version : string, arch? : string | null | undefined): [MockDotnetCoreAcquisitionWorker, MockEventStream,
         MockExtensionContext, IAcquisitionInvoker, IAcquisitionWorkerContext]
     {
         const context = new MockExtensionContext();
@@ -58,7 +58,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         return [acquisitionWorker, eventStream, context, invoker, acquireWorkerContext];
     }
 
-    function migrateWorkerToNewInstall(worker : IAcquisitionWorkerContext, newVersion : string, newArch : string | null)
+    function migrateWorkerToNewInstall(worker : IAcquisitionWorkerContext, newVersion : string, newArch : string | null | undefined)
     {
         worker.acquisitionContext.version = newVersion;
         worker.installingArchitecture = newArch;
@@ -94,7 +94,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         const completedEvent = eventStream.events
             .find(event => event instanceof DotnetAcquisitionCompleted && (event as DotnetAcquisitionCompleted).install.installKey === installKey
                 && (event as DotnetAcquisitionCompleted).dotnetPath === expectedPath);
-        assert.exists(completedEvent, 'The acquisition completed event appears');
+        assert.exists(completedEvent, `The acquisition completed event appears for install key ${installKey} and path ${expectedPath}`);
 
         //  Acquire got called with the correct args
         const acquireEvent = eventStream.events.find(event =>
@@ -114,7 +114,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
     async function AssertInstallRuntime(acquisitionWorker : DotnetCoreAcquisitionWorker, context : MockExtensionContext, eventStream : MockEventStream, version : string,
         invoker : IAcquisitionInvoker, workerContext : IAcquisitionWorkerContext)
     {
-        const installKey = acquisitionWorker.getInstallKey(version);
+        const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(workerContext.acquisitionContext.version, workerContext.acquisitionContext.architecture, 'local');
         const result = await acquisitionWorker.acquireRuntime(workerContext, invoker);
         await assertAcquisitionSucceeded(installKey, result.dotnetPath, eventStream, context);
     }
@@ -122,7 +122,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
     async function AssertInstallSDK(acquisitionWorker : DotnetCoreAcquisitionWorker, context : MockExtensionContext, eventStream : MockEventStream, version : string,
         invoker : IAcquisitionInvoker, workerContext : IAcquisitionWorkerContext)
     {
-        const installKey = acquisitionWorker.getInstallKey(version);
+        const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(workerContext.acquisitionContext.version, workerContext.acquisitionContext.architecture, 'local');
         const result = await acquisitionWorker.acquireSDK(workerContext, invoker);
         await assertAcquisitionSucceeded(installKey, result.dotnetPath, eventStream, context, false);
     }
@@ -142,7 +142,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
     test('Acquire SDK Status', async () => {
         const version = '5.0';
         const [acquisitionWorker, eventStream, context, invoker, workerContext] = setupWorker('sdk', version);
-        const installKey = acquisitionWorker.getInstallKey(version);
+        const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(workerContext.acquisitionContext.version, workerContext.acquisitionContext.architecture, 'local');
         let result = await acquisitionWorker.acquireStatus(workerContext, 'sdk');
         assert.isUndefined(result);
         const undefinedEvent = eventStream.events.find(event => event instanceof DotnetAcquisitionStatusUndefined);
@@ -158,7 +158,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
     test('Acquire Runtime Status', async () => {
         const version = '5.0';
         const [acquisitionWorker, eventStream, context, invoker, workerContext] = setupWorker('runtime', version);
-        const installKey = acquisitionWorker.getInstallKey(version);
+        const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(workerContext.acquisitionContext.version, workerContext.acquisitionContext.architecture, 'local');
         let result = await acquisitionWorker.acquireStatus(workerContext, 'sdk');
         assert.isUndefined(result);
         const undefinedEvent = eventStream.events.find(event => event instanceof DotnetAcquisitionStatusUndefined);
@@ -178,7 +178,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
 
         for (let i = 0; i < numAcquisitions; i++) {
             const pathResult = await acquisitionWorker.acquireRuntime(workerContext, invoker);
-            const installKey = acquisitionWorker.getInstallKey(version);
+            const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(workerContext.acquisitionContext.version, workerContext.acquisitionContext.architecture, 'local');
             await assertAcquisitionSucceeded(installKey, pathResult.dotnetPath, eventStream, context);
         }
 
@@ -193,7 +193,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
 
         for (const version of versions)
         {
-            const installKey = acquisitionWorker.getInstallKey(version);
+            const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(workerContext.acquisitionContext.version, workerContext.acquisitionContext.architecture, 'local');
             migrateWorkerToNewInstall(workerContext, version, os.arch());
             const res = await acquisitionWorker.acquireRuntime(workerContext, invoker);
             await assertAcquisitionSucceeded(installKey, res.dotnetPath, eventStream, context);
@@ -210,7 +210,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         const version = '1.0';
         const [acquisitionWorker, eventStream, context, invoker, workerContext] = setupWorker('runtime', version);
 
-        const installKey = acquisitionWorker.getInstallKey(version);
+        const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(workerContext.acquisitionContext.version, workerContext.acquisitionContext.architecture, 'local');
         const res = await acquisitionWorker.acquireRuntime(workerContext, invoker);
         await assertAcquisitionSucceeded(installKey, res.dotnetPath, eventStream, context);
 
@@ -224,7 +224,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
     test('Graveyard Removes Failed Uninstalls', async () => {
         const version = '1.0';
         const [acquisitionWorker, eventStream, context, invoker, workerContext] = setupWorker('runtime', version);
-        const installKey = acquisitionWorker.getInstallKey(version);
+        const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(workerContext.acquisitionContext.version, workerContext.acquisitionContext.architecture, 'local');
         const install = GetDotnetInstallInfo(version, 'runtime', 'local', os.arch());
 
         const res = await acquisitionWorker.acquireRuntime(workerContext, invoker);
@@ -232,7 +232,6 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         acquisitionWorker.AddToGraveyard(workerContext, install, 'Not applicable');
 
         const versionToKeep = '5.0';
-        const versionToKeepKey = acquisitionWorker.getInstallKey(versionToKeep);
         migrateWorkerToNewInstall(workerContext, versionToKeep, os.arch());
         await acquisitionWorker.acquireRuntime(workerContext, invoker);
 
@@ -263,11 +262,11 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         const sdkV5 = '5.0.100';
         const sdkV6 = '6.0.100';
 
-        const [runtimeWorker, events, context, runtimeInvoker, workerContext] = setupWorker('runtime', runtimeV5, null);
+        const [runtimeWorker, events, context, runtimeInvoker, runtimeWorkerContext] = setupWorker('runtime', runtimeV5, null);
         // Install 5.0, 6.0 runtime without an architecture
-        await AssertInstallRuntime(runtimeWorker, context, events, runtimeV5, runtimeInvoker, workerContext);
-        migrateWorkerToNewInstall(workerContext, runtimeV6, null);
-        await AssertInstallRuntime(runtimeWorker, context, events, runtimeV6, runtimeInvoker, workerContext);
+        await AssertInstallRuntime(runtimeWorker, context, events, runtimeV5, runtimeInvoker, runtimeWorkerContext);
+        migrateWorkerToNewInstall(runtimeWorkerContext, runtimeV6, null);
+        await AssertInstallRuntime(runtimeWorker, context, events, runtimeV6, runtimeInvoker, runtimeWorkerContext);
 
         // Install similar SDKs without an architecture.
         const [sdkWorker, sdkEvents, sdkContext, sdkInvoker, sdkWorkerContext] = setupWorker('sdk', sdkV5, null);
@@ -276,8 +275,8 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         await AssertInstallSDK(sdkWorker, sdkContext, sdkEvents, sdkV6, sdkInvoker, sdkWorkerContext);
 
         // Install 5.0 runtime with an architecture. Share the same event stream and context.
-        migrateWorkerToNewInstall(workerContext, runtimeV5, os.arch());
-        await AssertInstallRuntime(runtimeWorker, context, events, runtimeV5, runtimeInvoker, workerContext);
+        migrateWorkerToNewInstall(runtimeWorkerContext, runtimeV5, os.arch());
+        await AssertInstallRuntime(runtimeWorker, context, events, runtimeV5, runtimeInvoker, runtimeWorkerContext);
 
         // 5.0 legacy runtime should be replaced, but 6.0 runtime should remain, and all SDK items should remain.
         let detailedRemainingInstalls : InstallRecord[] = context.get<InstallRecord[]>(installedVersionsKey, []).concat(sdkContext.get<InstallRecord[]>(installedVersionsKey, []));
@@ -286,8 +285,8 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
             'Only The Requested Legacy Runtime is replaced when new runtime is installed');
 
         // Install a legacy runtime again to make sure its not removed when installing a new SDK with the same version
-        migrateWorkerToNewInstall(workerContext, runtimeV5, null);
-        await AssertInstallRuntime(runtimeWorker, context, events, runtimeV5, runtimeInvoker, workerContext);
+        migrateWorkerToNewInstall(runtimeWorkerContext, runtimeV5, null);
+        await AssertInstallRuntime(runtimeWorker, context, events, runtimeV5, runtimeInvoker, runtimeWorkerContext);
 
         // Install non-legacy SDK
         migrateWorkerToNewInstall(sdkWorkerContext, sdkV5, os.arch());

@@ -594,6 +594,8 @@ export class MockInstallTracker extends InstallTrackerSingleton
     constructor(eventStream : IEventStream, extensionState : IExtensionState)
     {
         super(eventStream, extensionState);
+        // Cause an instance to exist so that we can override the members.
+        const _ = InstallTrackerSingleton.getInstance(eventStream, extensionState);
         this.overrideMembers(eventStream, extensionState);
     }
 
