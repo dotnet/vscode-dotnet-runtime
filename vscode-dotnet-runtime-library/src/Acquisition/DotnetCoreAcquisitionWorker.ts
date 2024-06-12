@@ -197,7 +197,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             } as DotnetInstall
         }
 
-        context.eventStream.post(new DotnetInstallKeyCreatedEvent(`The requested version ${version} is now marked under the install key: ${install}.`));
+        context.eventStream.post(new DotnetInstallKeyCreatedEvent(`The requested version ${version} is now marked under the install: ${JSON.stringify(install)}.`));
         const existingAcquisitionPromise = InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getPromise(install);
         if (existingAcquisitionPromise)
         {
@@ -474,7 +474,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             // Assumption: .NET versions so far did not include ~ in them, but we do for our non-legacy keys.
             if(!install.dotnetInstall.installKey.includes('~'))
             {
-                context.eventStream.post(new DotnetLegacyInstallDetectedEvent(`A legacy install was detected -- ${install}.`));
+                context.eventStream.post(new DotnetLegacyInstallDetectedEvent(`A legacy install was detected -- ${JSON.stringify(install)}.`));
                 legacyInstalls = legacyInstalls.concat(install);
             }
         }

@@ -540,7 +540,6 @@ export class DotnetAcquisitionDeletion extends DotnetAcquisitionMessage {
 export class DotnetFallbackInstallScriptUsed extends DotnetAcquisitionMessage {
     public readonly eventName = 'DotnetFallbackInstallScriptUsed';
 }
-
 export abstract class DotnetCustomMessageEvent extends DotnetAcquisitionMessage {
     constructor(public readonly eventMessage: string) { super(); }
 
@@ -561,6 +560,32 @@ export class NoExtensionIdProvided extends DotnetCustomMessageEvent {
     public readonly eventName = 'NoExtensionIdProvided';
 }
 
+
+export class ConvertingLegacyInstallRecord extends DotnetCustomMessageEvent {
+    public readonly eventName = 'ConvertingLegacyInstallRecord';
+}
+export class FoundTrackingVersions extends DotnetCustomMessageEvent {
+    public readonly eventName = 'FoundTrackingVersions';
+}
+export class RemovingVersionFromExtensionState extends DotnetCustomMessageEvent {
+    public readonly eventName = 'RemovingVersionFromExtensionState';
+}
+
+export class RemovingExtensionFromList extends DotnetCustomMessageEvent {
+    public readonly eventName = 'RemovingExtensionFromList';
+}
+
+export class RemovingOwnerFromList extends DotnetCustomMessageEvent {
+    public readonly eventName = 'RemovingOwnerFromList';
+}
+
+export class SkipAddingInstallEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'SkipAddingInstallEvent';
+}
+
+export class AddTrackingVersions extends DotnetCustomMessageEvent {
+    public readonly eventName = 'AddTrackingVersions';
+}
 
 export class DotnetWSLCheckEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetWSLCheckEvent';
