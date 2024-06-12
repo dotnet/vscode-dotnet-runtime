@@ -19,7 +19,6 @@ export interface IAcquisitionWorkerContext
     installDirectoryProvider: IInstallationDirectoryProvider;
     acquisitionContext : IDotnetAcquireContext;
     installMode: DotnetInstallMode;
-    installingArchitecture? : string | undefined | null;
     proxyUrl? : string | undefined;
     isExtensionTelemetryInitiallyEnabled : boolean;
 }

@@ -61,7 +61,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
     function migrateWorkerToNewInstall(worker : IAcquisitionWorkerContext, newVersion : string, newArch : string | null | undefined)
     {
         worker.acquisitionContext.version = newVersion;
-        worker.installingArchitecture = newArch;
+        worker.acquisitionContext.architecture = newArch;
     }
 
     function getExpectedPath(version: string, isRuntimeInstall: boolean): string {
@@ -193,9 +193,9 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
 
         for (const version of versions)
         {
-            const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(workerContext.acquisitionContext.version, workerContext.acquisitionContext.architecture, 'local');
             migrateWorkerToNewInstall(workerContext, version, os.arch());
             const res = await acquisitionWorker.acquireRuntime(workerContext, invoker);
+            const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(workerContext.acquisitionContext.version, workerContext.acquisitionContext.architecture, 'local');
             await assertAcquisitionSucceeded(installKey, res.dotnetPath, eventStream, context);
         }
 

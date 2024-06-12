@@ -129,7 +129,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     {
         const version = context.acquisitionContext.version!;
         const install = GetDotnetInstallInfo(version, installMode, 'local',
-            architecture ? architecture : context.installingArchitecture ?? this.getDefaultInternalArchitecture(context.installingArchitecture))
+            architecture ? architecture : context.acquisitionContext.architecture ?? this.getDefaultInternalArchitecture(context.acquisitionContext.architecture))
 
         const existingAcquisitionPromise = InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getPromise(install);
         if (existingAcquisitionPromise)
@@ -183,7 +183,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         }
         const version = context.acquisitionContext.version;
         let install = GetDotnetInstallInfo(version, mode, globalInstallerResolver !== null ? 'global' : 'local',
-            context.installingArchitecture ?? this.getDefaultInternalArchitecture(context.installingArchitecture));
+            context.acquisitionContext.architecture ?? this.getDefaultInternalArchitecture(context.acquisitionContext.architecture));
 
         // Allow for the architecture to be null, which is a legacy behavior.
         if(context.acquisitionContext.architecture === null && context.acquisitionContext.architecture !== undefined)
@@ -304,7 +304,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             installRuntime : mode === 'runtime',
             installMode : mode,
             installType : context.acquisitionContext.installType ?? 'local', // Before this API param existed, all calls were for local types.
-            architecture: context.installingArchitecture ?? this.getDefaultInternalArchitecture(context.installingArchitecture),
+            architecture: context.acquisitionContext.architecture ?? this.getDefaultInternalArchitecture(context.acquisitionContext.architecture),
         } as IDotnetInstallationContext;
         context.eventStream.post(new DotnetAcquisitionStarted(install, version, context.acquisitionContext.requestingExtensionId));
         await acquisitionInvoker.installDotnet(installContext, install).catch((reason) =>
@@ -414,7 +414,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             throw err;
         }
 
-        const installedSDKPath : string = await installer.getExpectedGlobalSDKPath(installingVersion, context.installingArchitecture ?? this.getDefaultInternalArchitecture(context.installingArchitecture));
+        const installedSDKPath : string = await installer.getExpectedGlobalSDKPath(installingVersion, context.acquisitionContext.architecture ?? this.getDefaultInternalArchitecture(context.acquisitionContext.architecture));
 
         TelemetryUtilities.setDotnetSDKTelemetryToMatch(context.isExtensionTelemetryInitiallyEnabled, this.extensionContext, context, this.utilityContext);
 
