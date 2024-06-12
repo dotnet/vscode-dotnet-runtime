@@ -105,7 +105,7 @@
 		"graceful-fs": "^4.2.11",
 		"minimatch": "3.0.5",
 		"nanoid": "3.3.7",
-		"open": "^8.4.2",
+		"open": "^10.1.0",
 		"vscode-dotnet-runtime": "file:../vscode-dotnet-runtime-extension",
 		"vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library",
 		"vscode-dotnet-sdk": "file:../vscode-dotnet-sdk-extension",
