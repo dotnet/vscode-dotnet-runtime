@@ -89,7 +89,7 @@
 		"@types/chai": "4.2.22",
 		"@types/chai-as-promised": "^7.1.4",
 		"@types/mocha": "^9.0.0",
-		"@types/node": "16.11.7",
+		"@types/node": "20.12.12",
 		"@types/rimraf": "3.0.2",
 		"@types/vscode": "1.74.0",
 		"@vscode/test-electron": "^2.3.9",
