@@ -302,7 +302,6 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             version,
             dotnetPath,
             timeoutSeconds: context.timeoutSeconds,
-            installRuntime : mode === 'runtime',
             installMode : mode,
             installType : context.acquisitionContext.installType ?? 'local', // Before this API param existed, all calls were for local types.
             architecture: context.acquisitionContext.architecture ?? this.getDefaultInternalArchitecture(context.acquisitionContext.architecture),
