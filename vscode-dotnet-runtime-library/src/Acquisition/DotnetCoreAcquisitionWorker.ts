@@ -342,11 +342,11 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     {
         const graveyard = new InstallationGraveyard(context);
         const installsToRemove = await graveyard.get();
-        for(const installKey of installsToRemove)
+        for(const install of installsToRemove)
         {
             context.eventStream.post(new DotnetInstallGraveyardEvent(
-                `Attempting to remove .NET at ${installKey.installKey} again, as it was left in the graveyard.`));
-            await this.uninstallLocalRuntimeOrSDK(context, installKey);
+                `Attempting to remove .NET at ${JSON.stringify(install)} again, as it was left in the graveyard.`));
+            await this.uninstallLocalRuntimeOrSDK(context, install);
         }
     }
 
@@ -504,7 +504,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstallingVersion(context, install);
 
             graveyard.remove(install);
-            context.eventStream.post(new DotnetInstallGraveyardEvent(`Success at uninstalling ${install} in path ${dotnetInstallDir}`));
+            context.eventStream.post(new DotnetInstallGraveyardEvent(`Success at uninstalling ${JSON.stringify(install)} in path ${dotnetInstallDir}`));
         }
         catch(error : any)
         {
