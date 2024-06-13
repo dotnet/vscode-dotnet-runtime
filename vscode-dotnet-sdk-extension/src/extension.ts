@@ -40,7 +40,7 @@ import {
     WindowDisplayWorker,
     Debugging,
     CommandExecutor,
-    getDirectoryByMode,
+    directoryProviderFactory,
 } from 'vscode-dotnet-runtime-library';
 
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
@@ -203,7 +203,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallAll}`, async (commandContext: IDotnetUninstallContext | undefined) => {
         await callWithErrorHandling(async () => {
-            await acquisitionWorker.uninstallAll(eventStream, getDirectoryByMode('sdk', storagePath).getStoragePath(), context.globalState);
+            await acquisitionWorker.uninstallAll(eventStream, directoryProviderFactory('sdk', storagePath).getStoragePath(), context.globalState);
         }, issueContext(commandContext ? commandContext.errorConfiguration : undefined, 'uninstallAll'));
     });
 

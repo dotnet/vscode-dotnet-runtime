@@ -38,7 +38,7 @@ import {
     IIssueContext,
     InstallationValidator,
     registerEventStream,
-    getDirectoryByMode,
+    directoryProviderFactory,
     VersionResolver,
     VSCodeExtensionContext,
     VSCodeEnvironment,
@@ -325,7 +325,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         {
             const mode = 'runtime' as DotnetInstallMode;
             const worker = getAcquisitionWorker();
-            const installDirectoryProvider = getDirectoryByMode(mode, context.globalStoragePath);
+            const installDirectoryProvider = directoryProviderFactory(mode, context.globalStoragePath);
 
             await worker.uninstallAll(globalEventStream, installDirectoryProvider.getStoragePath(), context.globalState);
         },
@@ -455,7 +455,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             timeoutSeconds: resolvedTimeoutSeconds,
             acquisitionContext: acquiringContext,
             installMode: mode,
-            installDirectoryProvider: getDirectoryByMode(mode, context.globalStoragePath),
+            installDirectoryProvider: directoryProviderFactory(mode, context.globalStoragePath),
             proxyUrl: proxyLink,
             isExtensionTelemetryInitiallyEnabled: isExtensionTelemetryEnabled
         }
