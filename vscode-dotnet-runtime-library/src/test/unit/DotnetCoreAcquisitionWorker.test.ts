@@ -51,7 +51,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
     {
         const extContext = new MockExtensionContext();
         const eventStream = new MockEventStream();
-        new MockInstallTracker(eventStream, extContext);
+        const _ = new MockInstallTracker(eventStream, extContext);
         return [eventStream, extContext];
     }
 
@@ -294,7 +294,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         await AssertInstallRuntime(worker, extensionContext, eventStream, runtimeV6, invoker, ctx);
 
         // Install similar SDKs without an architecture.
-        const sdkCtx = getMockAcquisitionContext('sdk', sdkV5, expectedTimeoutTime, eventStream, extensionContext);
+        const sdkCtx = getMockAcquisitionContext('sdk', sdkV5, expectedTimeoutTime, eventStream, extensionContext, null);
         await AssertInstallSDK(worker, extensionContext, eventStream, sdkV5, invoker, sdkCtx);
         migrateContextToNewInstall(sdkCtx, sdkV6, null);
         await AssertInstallSDK(worker, extensionContext, eventStream, sdkV6, invoker, sdkCtx);
@@ -304,9 +304,9 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         await AssertInstallRuntime(worker, extensionContext, eventStream, runtimeV5, invoker, ctx);
 
         // 5.0 legacy runtime should be replaced, but 6.0 runtime should remain, and all SDK items should remain.
-        let detailedRemainingInstalls : InstallRecord[] = extensionContext.get<InstallRecord[]>(installedVersionsKey, []).concat(extensionContext.get<InstallRecord[]>(installedVersionsKey, []));
+        let detailedRemainingInstalls : InstallRecord[] = extensionContext.get<InstallRecord[]>(installedVersionsKey, []);
         let remainingInstalls : string[] = detailedRemainingInstalls.map(x => x.dotnetInstall.installKey);
-        assert.deepStrictEqual(remainingInstalls, [runtimeV6, '5.0.00~x64', sdkV5, sdkV6],
+        assert.deepStrictEqual(remainingInstalls, ['5.0.00~x64', runtimeV6, sdkV5, sdkV6],
             'Only The Requested Legacy Runtime is replaced when new runtime is installed');
 
         // Install a legacy runtime again to make sure its not removed when installing a new SDK with the same version
@@ -318,11 +318,11 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         await AssertInstallSDK(worker, extensionContext, eventStream, sdkV5, invoker, sdkCtx);
 
         // 6.0 sdk legacy should remain, as well as 5.0 and 6.0 runtime. 5.0 SDK should be removed.
-        detailedRemainingInstalls = extensionContext.get<InstallRecord[]>(installedVersionsKey, []).concat(extensionContext.get<InstallRecord[]>(installedVersionsKey, []));
+        detailedRemainingInstalls = extensionContext.get<InstallRecord[]>(installedVersionsKey, []);
         remainingInstalls = detailedRemainingInstalls.map(x => x.dotnetInstall.installKey);
-        assert.deepStrictEqual(remainingInstalls, [runtimeV6, '5.0.00~x64', runtimeV5, sdkV6, '5.0.100~x64'],
+        assert.deepStrictEqual(remainingInstalls, ['5.0.00~x64', runtimeV6, sdkV6, runtimeV5, '5.0.100~x64'],
             'Only The Requested Legacy SDK is replaced when new SDK is installed');
-    }).timeout(expectedTimeoutTime * 600000);
+    }).timeout(expectedTimeoutTime * 6);
 
     test('Repeated Acquisition', async () => {
         const version = '1.0';

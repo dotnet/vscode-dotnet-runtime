@@ -144,7 +144,6 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     // Creating API Surfaces
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) =>
     {
-        let fullyResolvedVersion = '';
         const worker = getAcquisitionWorker();
         const runtimeContext = getAcquisitionWorkerContext('runtime', commandContext);
 
@@ -182,7 +181,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, 'acquire', commandContext.version), commandContext.requestingExtensionId, runtimeContext);
 
         const iKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(commandContext.version, commandContext.architecture, 'local');
-        const install = {installKey : iKey, version : fullyResolvedVersion, installMode: 'runtime', isGlobal: false,
+        const install = {installKey : iKey, version : commandContext.version, installMode: 'runtime', isGlobal: false,
             architecture: commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture()} as DotnetInstall;
         globalEventStream.post(new DotnetRuntimeAcquisitionTotalSuccessEvent(commandContext.version, install, commandContext.requestingExtensionId ?? '', dotnetPath?.dotnetPath ?? ''));
         return dotnetPath;
@@ -237,7 +236,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, commandKeys.acquireGlobalSDK), commandContext.requestingExtensionId, sdkContext);
 
         const iKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(commandContext.version, commandContext.architecture, 'global');
-        const install = {installKey : iKey, version : fullyResolvedVersion, installMode: 'sdk', isGlobal: true,
+        const install = {installKey : iKey, version : commandContext.version, installMode: 'sdk', isGlobal: true,
         architecture: commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture()} as DotnetInstall;
 
         globalEventStream.post(new DotnetGlobalSDKAcquisitionTotalSuccessEvent(commandContext.version, install, commandContext.requestingExtensionId ?? '', pathResult?.dotnetPath ?? ''));
@@ -328,7 +327,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             const worker = getAcquisitionWorker();
             const installDirectoryProvider = getDirectoryByMode(mode, context.globalStoragePath);
 
-            () => worker.uninstallAll(globalEventStream, installDirectoryProvider.getStoragePath(), context.globalState)
+            worker.uninstallAll(globalEventStream, installDirectoryProvider.getStoragePath(), context.globalState);
         },
             getIssueContext(existingPathConfigWorker)(commandContext ? commandContext.errorConfiguration : undefined, 'uninstallAll')
         );
@@ -433,14 +432,14 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
      * Eventually the version resolver and web request worker should be decoupled from the context object, ...
      * so we don't need to do this, but not doing this right now.
      */
-    function getVersionResolverContext(mode : DotnetInstallMode, installType : DotnetInstallType, errorConfiguration? : ErrorConfiguration) : IAcquisitionWorkerContext
+    function getVersionResolverContext(mode : DotnetInstallMode, typeOfInstall : DotnetInstallType, errorsConfiguration? : ErrorConfiguration) : IAcquisitionWorkerContext
     {
         return getAcquisitionWorkerContext(mode,
             {
                 requestingExtensionId: 'notProvided',
-                installType: installType,
+                installType: typeOfInstall,
                 version: 'notAnAcquisitionRequest',
-                errorConfiguration: errorConfiguration,
+                errorConfiguration: errorsConfiguration,
                 architecture: DotnetCoreAcquisitionWorker.defaultArchitecture()
             } as IDotnetAcquireContext
         )

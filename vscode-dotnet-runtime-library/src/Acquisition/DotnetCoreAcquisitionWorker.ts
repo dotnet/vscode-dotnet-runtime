@@ -152,7 +152,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         else if(installedVersions.length === 0 && fs.existsSync(dotnetPath) && installMode === 'sdk')
         {
             // The education bundle already laid down a local install, add it to our managed installs
-            const preinstalledVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).checkForUnrecordedLocalSDKSuccessfulInstall(context, dotnetInstallDir, installedVersions);
+            const preinstalledVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).checkForUnrecordedLocalSDKSuccessfulInstall(
+                context, dotnetInstallDir, installedVersions);
             if (preinstalledVersions.some(x => IsEquivalentInstallationFile(x.dotnetInstall, install)) &&
                 (fs.existsSync(dotnetPath) || this.usingNoInstallInvoker ))
             {
@@ -414,7 +415,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             throw err;
         }
 
-        const installedSDKPath : string = await installer.getExpectedGlobalSDKPath(installingVersion, context.acquisitionContext.architecture ?? this.getDefaultInternalArchitecture(context.acquisitionContext.architecture));
+        const installedSDKPath : string = await installer.getExpectedGlobalSDKPath(installingVersion,
+            context.acquisitionContext.architecture ?? this.getDefaultInternalArchitecture(context.acquisitionContext.architecture));
 
         TelemetryUtilities.setDotnetSDKTelemetryToMatch(context.isExtensionTelemetryInitiallyEnabled, this.extensionContext, context, this.utilityContext);
 

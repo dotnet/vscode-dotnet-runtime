@@ -257,7 +257,7 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).jo
                 else
                 {
                     // There are still other extensions that depend on this install, so merely remove this requesting extension from the list of owners.
-                    this.eventStream.post(new RemovingOwnerFromList(`The owner ${context.acquisitionContext?.requestingExtensionId} removed ${installKey} itself from the list, but ${owners?.join(", ")} remain.`));
+                    this.eventStream.post(new RemovingOwnerFromList(`The owner ${context.acquisitionContext?.requestingExtensionId} removed ${installKey} itself from the list, but ${owners?.join(', ')} remain.`));
                     await this.extensionState.update(key, existingInstalls.map(x => IsEquivalentInstallation(x.dotnetInstall, installKey) ?
                         { dotnetInstall: installKey, installingExtensions: owners } as InstallRecord : x));
                 }
