@@ -10,6 +10,7 @@ import { IEvent } from './IEvent';
 import { TelemetryUtilities } from './TelemetryUtilities';
 import { InstallToStrings } from '../Acquisition/DotnetInstall';
 import { DotnetInstall } from '../Acquisition/DotnetInstall';
+import { DotnetInstallMode } from '../Acquisition/DotnetInstallMode';
 
 // tslint:disable max-classes-per-file
 
@@ -29,12 +30,23 @@ export class EventBasedError extends Error
     }
 }
 
-export class DotnetAcquisitionStarted extends IEvent {
+export abstract class GenericModalEvent extends IEvent
+{
+    abstract readonly mode : DotnetInstallMode;
+    abstract innerEventArgs : any;
+}
+
+export class DotnetAcquisitionStarted extends GenericModalEvent
+{
     public readonly eventName = 'DotnetAcquisitionStarted';
     public readonly type = EventType.DotnetAcquisitionStart;
+    public readonly mode;
+    public readonly innerEventArgs: any;
 
     constructor(public readonly install: DotnetInstall, public readonly startingVersion: string, public readonly requestingExtensionId = '') {
         super();
+        this.mode = install.installMode;
+        this.innerEventArgs = this.requestingExtensionId;
     }
 
     public getProperties() {
@@ -63,6 +75,19 @@ export class DotnetRuntimeAcquisitionStarted extends IEvent {
 export class DotnetSDKAcquisitionStarted extends IEvent {
     public readonly eventName = 'DotnetSDKAcquisitionStarted';
     public readonly type = EventType.DotnetSDKAcquisitionStart;
+
+    constructor(public readonly requestingExtensionId = '') {
+        super();
+    }
+
+    public getProperties() {
+        return {extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
+    }
+}
+
+export class DotnetASPNetRuntimeAcquisitionStarted extends IEvent {
+    public readonly eventName = 'DotnetASPNetRuntimeAcquisitionStarted';
+    public readonly type = EventType.DotnetASPNetRuntimeAcquisitionStarted;
 
     constructor(public readonly requestingExtensionId = '') {
         super();

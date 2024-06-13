@@ -40,6 +40,11 @@ export class OutputChannelObserver implements IEventStreamObserver {
                 this.outputChannel.append(`${sdkAcquisitionStarted.requestingExtensionId} requested to download the .NET SDK.`);
                 this.outputChannel.appendLine('');
                 break;
+            case EventType.DotnetASPNetRuntimeAcquisitionStarted:
+                const aspAcquisitionStarted = event as DotnetAcquisitionStarted;
+                this.outputChannel.append(`${aspAcquisitionStarted.requestingExtensionId} requested to download ASP.NET.`);
+                this.outputChannel.appendLine('');
+                break;
             case EventType.DotnetAcquisitionStart:
                 const acquisitionStarted = event as DotnetAcquisitionStarted;
 

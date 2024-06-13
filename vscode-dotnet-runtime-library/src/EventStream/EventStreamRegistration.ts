@@ -43,6 +43,7 @@ export function registerEventStream(context: IEventStreamContext, extensionConte
 
     const logFile = path.join(context.logPath, `DotNetAcquisition-${context.extensionId}-${ new Date().getTime() }.txt`);
     const loggingObserver = new LoggingObserver(logFile);
+    const modalEventObserver = new ModalEventObserver();
     const eventStreamObservers: IEventStreamObserver[] =
     [
         new StatusBarObserver(vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, Number.MIN_VALUE), context.showLogCommand),
