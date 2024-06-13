@@ -403,9 +403,9 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             return 'fake-sdk';
         }
 
-        context.eventStream.post(new DotnetBeginGlobalInstallerExecution(`Beginning to run installer for ${install} in ${os.platform()}.`))
+        context.eventStream.post(new DotnetBeginGlobalInstallerExecution(`Beginning to run installer for ${JSON.stringify(install)} in ${os.platform()}.`))
         const installerResult = await installer.installSDK(install);
-        context.eventStream.post(new DotnetCompletedGlobalInstallerExecution(`Completed installer for ${install} in ${os.platform()}.`))
+        context.eventStream.post(new DotnetCompletedGlobalInstallerExecution(`Completed installer for ${JSON.stringify(install)} in ${os.platform()}.`))
 
         if(installerResult !== '0')
         {
@@ -426,7 +426,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).reclassifyInstallingVersionToInstalled(context, install);
 
-        context.eventStream.post(new DotnetGlobalAcquisitionCompletionEvent(`The version ${install} completed successfully.`));
+        context.eventStream.post(new DotnetGlobalAcquisitionCompletionEvent(`The version ${JSON.stringify(install)} completed successfully.`));
         return installedSDKPath;
     }
 

@@ -166,7 +166,7 @@ ${stderr}`);
         try
         {
             await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
-            let commandContext : IDotnetAcquireContext = { version, requestingExtensionId, installType: 'global' };
+            let commandContext : IDotnetAcquireContext = { version: version, requestingExtensionId: requestingExtensionId, installType: 'global' };
             await vscode.commands.executeCommand('dotnet.acquireGlobalSDK', commandContext);
         }
         catch (error)
@@ -208,7 +208,7 @@ ${stderr}`);
         try
         {
             await vscode.commands.executeCommand('dotnet-sdk.showAcquisitionLog');
-            let commandContext : IDotnetAcquireContext = { version, requestingExtensionId, installType: 'global' };
+            let commandContext : IDotnetAcquireContext = { version: version, requestingExtensionId: requestingExtensionId, installType: 'global' };
             await vscode.commands.executeCommand('dotnet-sdk.acquire', commandContext);
         }
         catch (error)

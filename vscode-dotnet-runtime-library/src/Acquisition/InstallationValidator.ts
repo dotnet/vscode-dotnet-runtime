@@ -14,7 +14,7 @@ import { DotnetInstall } from './DotnetInstall';
 
 export class InstallationValidator extends IInstallationValidator {
     public validateDotnetInstall(install: DotnetInstall, dotnetPath: string, isDotnetFolder = false): void {
-        const dotnetValidationFailed = `Validation of .dotnet installation for version ${install} failed:`;
+        const dotnetValidationFailed = `Validation of .dotnet installation for version ${JSON.stringify(install)} failed:`;
         const folder = path.dirname(dotnetPath);
 
         if(!isDotnetFolder)
