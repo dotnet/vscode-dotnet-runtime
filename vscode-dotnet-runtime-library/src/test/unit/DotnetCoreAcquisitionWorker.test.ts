@@ -69,19 +69,27 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         worker.acquisitionContext.architecture = newArch;
     }
 
-    function getExpectedPath(version: string, isRuntimeInstall: boolean): string {
-        return isRuntimeInstall ?
-            path.join(dotnetFolderName, version, os.platform() === 'win32' ? 'dotnet.exe' : 'dotnet') :
+    function getExpectedPath(installKey: string, mode: DotnetInstallMode): string
+    {
+        if(mode === 'runtime' || mode === 'aspnetcore')
+        {
+            path.join(dotnetFolderName, installKey, os.platform() === 'win32' ? 'dotnet.exe' : 'dotnet')
+        }
+        else if(mode === 'sdk')
+        {
             path.join(dotnetFolderName, os.platform() === 'win32' ? 'dotnet.exe' : 'dotnet');
+        }
+
+        return 'There is a mode without a designated return path';
     }
 
     async function assertAcquisitionSucceeded(installKey: string,
         exePath: string,
         eventStream: MockEventStream,
         context: MockExtensionContext,
-        isRuntimeInstall = true)
+        mode : DotnetInstallMode = 'runtime')
     {
-        const expectedPath = getExpectedPath(installKey, isRuntimeInstall);
+        const expectedPath = getExpectedPath(installKey, mode);
 
         // Path to exe should be correct
         assert.equal(exePath, expectedPath, 'The exe path is correct');
@@ -105,7 +113,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         const acquireEvent = eventStream.events.find(event =>
             event instanceof TestAcquireCalled &&
             ((DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture((event as TestAcquireCalled).context.version,
-                (event as TestAcquireCalled).context.architecture, (event as TestAcquireCalled).context.installType)))
+                (event as TestAcquireCalled).context.architecture, mode, (event as TestAcquireCalled).context.installType)))
                 === installKey) as TestAcquireCalled;
         assert.exists(acquireEvent, 'The acquisition acquire event appears');
         assert.equal(acquireEvent!.context.dotnetPath, expectedPath, 'The acquisition went to the expected dotnetPath');
@@ -119,7 +127,8 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
     async function AssertInstallRuntime(acquisitionWorker : DotnetCoreAcquisitionWorker, context : MockExtensionContext, eventStream : MockEventStream, version : string,
         invoker : IAcquisitionInvoker, workerContext : IAcquisitionWorkerContext)
     {
-        const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(workerContext.acquisitionContext.version, workerContext.acquisitionContext.architecture, 'local');
+        const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(workerContext.acquisitionContext.version, workerContext.acquisitionContext.architecture,
+            'runtime', 'local');
         const result = await acquisitionWorker.acquireRuntime(workerContext, invoker);
         await assertAcquisitionSucceeded(installKey, result.dotnetPath, eventStream, context);
     }
@@ -127,7 +136,8 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
     async function AssertInstallSDK(acquisitionWorker : DotnetCoreAcquisitionWorker, context : MockExtensionContext, eventStream : MockEventStream, version : string,
         invoker : IAcquisitionInvoker, workerContext : IAcquisitionWorkerContext)
     {
-        const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(workerContext.acquisitionContext.version, workerContext.acquisitionContext.architecture, 'local');
+        const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(workerContext.acquisitionContext.version, workerContext.acquisitionContext.architecture,
+            'sdk', 'local');
         const result = await acquisitionWorker.acquireSDK(workerContext, invoker);
         await assertAcquisitionSucceeded(installKey, result.dotnetPath, eventStream, context, false);
     }

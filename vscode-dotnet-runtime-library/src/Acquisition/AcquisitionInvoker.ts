@@ -31,6 +31,7 @@ import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
 import { DotnetInstall } from './DotnetInstall';
+import { DotnetInstallMode } from './DotnetInstallMode';
 /* tslint:disable:no-any */
 /* tslint:disable:only-arrow-functions */
 
@@ -72,7 +73,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
     public async installDotnet(installContext: IDotnetInstallationContext, installKey : DotnetInstall): Promise<void>
     {
         const winOS = os.platform() === 'win32';
-        const installCommand = await this.getInstallCommand(installContext.version, installContext.installDir, installContext.installRuntime, installContext.architecture);
+        const installCommand = await this.getInstallCommand(installContext.version, installContext.installDir, installContext.installMode, installContext.architecture);
 
         return new Promise<void>(async (resolve, reject) =>
         {
@@ -140,16 +141,20 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         });
     }
 
-    private async getInstallCommand(version: string, dotnetInstallDir: string, installRuntime: boolean, architecture: string): Promise<string> {
+    private async getInstallCommand(version: string, dotnetInstallDir: string, installMode: DotnetInstallMode, architecture: string): Promise<string> {
         const arch = this.fileUtilities.nodeArchToDotnetArch(architecture, this.eventStream);
         let args = [
             '-InstallDir', this.escapeFilePath(dotnetInstallDir),
             '-Version', version,
             '-Verbose'
         ];
-        if (installRuntime)
+        if (installMode === 'runtime')
         {
             args = args.concat('-Runtime', 'dotnet');
+        }
+        else if(installMode === 'aspnetcore')
+        {
+            args = args.concat('-Runtime', 'aspnet');
         }
         if(arch !== 'auto')
         {

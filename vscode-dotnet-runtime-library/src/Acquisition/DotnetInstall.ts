@@ -71,7 +71,7 @@ export function looksLikeRuntimeVersion(version: string): boolean {
 export function GetDotnetInstallInfo(installVersion: string, installationMode: DotnetInstallMode, installType: DotnetInstallType, installArchitecture: string): DotnetInstall
 {
     return {
-        installKey: DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(installVersion, installArchitecture, installType),
+        installKey: DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(installVersion, installArchitecture, installationMode, installType),
         version: installVersion,
         architecture: installArchitecture,
         isGlobal: installType === 'global',

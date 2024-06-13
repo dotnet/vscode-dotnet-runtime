@@ -202,7 +202,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
 
     const rntVersion = '2.2';
     const fullyResolvedVersion = '2.2.8'; // 2.2 is very much out of support, so we don't expect this to change to a newer version
-    const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(fullyResolvedVersion, os.arch());
+    const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(fullyResolvedVersion, os.arch(), 'runtime', 'local');
 
     const context: IDotnetAcquireContext = { version: rntVersion, requestingExtensionId };
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);

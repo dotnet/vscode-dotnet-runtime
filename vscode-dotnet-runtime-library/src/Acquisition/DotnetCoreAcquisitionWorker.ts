@@ -38,7 +38,7 @@ import { WinMacGlobalInstaller } from './WinMacGlobalInstaller';
 import { LinuxGlobalInstaller } from './LinuxGlobalInstaller';
 import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
 import { Debugging } from '../Utils/Debugging';
-import { DotnetInstallType, IDotnetAcquireContext} from '../IDotnetAcquireContext';
+import { DotnetInstallType } from '../IDotnetAcquireContext';
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
@@ -107,6 +107,11 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     {
         this.globalResolver = installerResolver;
         return this.acquire(context, 'sdk', installerResolver);
+    }
+
+    public async acquireLocalASPNET(context: IAcquisitionWorkerContext, invoker : IAcquisitionInvoker)
+    {
+        return this.acquire(context, 'aspnetcore', undefined, invoker);
     }
 
     /**
@@ -191,7 +196,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         {
             install =
             {
-                installKey: DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, context.acquisitionContext.architecture, globalInstallerResolver !== null ? 'global' : 'local'),
+                installKey: DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, context.acquisitionContext.architecture,
+                    context.installMode, globalInstallerResolver !== null ? 'global' : 'local'),
                 version: install.version,
                 isGlobal: install.isGlobal,
                 installMode: mode,
@@ -240,7 +246,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         }
     }
 
-    public static getInstallKeyCustomArchitecture(version : string, architecture: string | null | undefined,
+    public static getInstallKeyCustomArchitecture(version : string, architecture: string | null | undefined, mode: DotnetInstallMode,
         installType : DotnetInstallType = 'local') : string
     {
         if(architecture === null || architecture === 'null')
