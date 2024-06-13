@@ -34,7 +34,7 @@ export * from './Utils/WebRequestWorker';
 export * from './Acquisition/DotnetCoreAcquisitionWorker';
 export * from './Acquisition/DotnetInstall';
 export * from './Acquisition/IAcquisitionWorkerContext';
-export * from './Acquisition/GetDirectoryPerMode';
+export * from './Acquisition/DirectoryProviderFactory';
 export * from './Acquisition/InstallRecord';
 export * from './Acquisition/AcquisitionInvoker';
 export * from './Acquisition/DotnetCoreDependencyInstaller'

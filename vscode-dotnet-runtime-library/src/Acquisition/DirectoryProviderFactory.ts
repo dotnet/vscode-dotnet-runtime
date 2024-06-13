@@ -10,7 +10,7 @@ import { RuntimeInstallationDirectoryProvider } from './RuntimeInstallationDirec
 import { SdkInstallationDirectoryProvider } from './SdkInstallationDirectoryProvider';
 
 
-export function getDirectoryByMode(mode: DotnetInstallMode, storagePath: string) : IInstallationDirectoryProvider
+export function directoryProviderFactory(mode: DotnetInstallMode, storagePath: string) : IInstallationDirectoryProvider
 {
     return mode === 'runtime' ? new RuntimeInstallationDirectoryProvider(storagePath) : new SdkInstallationDirectoryProvider(storagePath);
 }

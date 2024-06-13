@@ -327,7 +327,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             const worker = getAcquisitionWorker();
             const installDirectoryProvider = getDirectoryByMode(mode, context.globalStoragePath);
 
-            worker.uninstallAll(globalEventStream, installDirectoryProvider.getStoragePath(), context.globalState);
+            await worker.uninstallAll(globalEventStream, installDirectoryProvider.getStoragePath(), context.globalState);
         },
             getIssueContext(existingPathConfigWorker)(commandContext ? commandContext.errorConfiguration : undefined, 'uninstallAll')
         );
