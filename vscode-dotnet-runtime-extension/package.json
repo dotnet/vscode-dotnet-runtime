@@ -131,7 +131,7 @@
 		"typescript": "5.4.5",
 		"vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library",
 		"webpack-permissions-plugin": "^1.0.9",
-		"yarn": "^1.22.19"
+		"yarn": "^2.4.3"
 	},
 	"devDependencies": {
 		"@types/chai": "^4.3.5",
