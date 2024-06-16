@@ -91,7 +91,7 @@
 		"@types/mocha": "^9.0.0",
 		"@types/node": "20.12.12",
 		"@types/rimraf": "3.0.2",
-		"@types/vscode": "1.74.0",
+		"@types/vscode": "1.89.0",
 		"@vscode/test-electron": "^2.3.9",
 		"array-buffer-byte-length": "^1.0.0",
 		"aws4": "^1.12.0",
