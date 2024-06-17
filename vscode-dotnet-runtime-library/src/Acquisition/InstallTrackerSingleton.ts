@@ -7,6 +7,8 @@ import * as lockfile from 'proper-lockfile';
 import * as path from 'path';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import {
+    AddTrackingVersions,
+    ConvertingLegacyInstallRecord,
     DotnetAcquisitionStatusResolved,
     DotnetLockAttemptingAcquireEvent,
     DotnetLockErrorEvent,
@@ -14,7 +16,12 @@ import {
     DotnetPreinstallDetectionError,
     DuplicateInstallDetected,
     EventBasedError,
-    NoMatchingInstallToStopTracking
+    FoundTrackingVersions,
+    NoMatchingInstallToStopTracking,
+    RemovingExtensionFromList,
+    RemovingOwnerFromList,
+    RemovingVersionFromExtensionState,
+    SkipAddingInstallEvent
 } from '../EventStream/EventStreamEvents';
 import {
     DotnetInstall,
@@ -27,6 +34,8 @@ import { getVersionFromLegacyInstallKey, getAssumedInstallInfo } from '../Utils/
 import { InstallRecord, InstallRecordOrStr } from './InstallRecord';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { error } from 'console';
+import { IEventStream } from '../EventStream/EventStream';
+import { IExtensionState } from '../IExtensionState';
 /* tslint:disable:no-any */
 
 
@@ -38,15 +47,33 @@ interface InProgressInstall
 }
 
 
-export class InstallTracker
+export class InstallTrackerSingleton
 {
+    protected static instance: InstallTrackerSingleton;
+
     protected inProgressInstalls: Set<InProgressInstall> = new Set<InProgressInstall>();
     private readonly installingVersionsKey = 'installing';
     private readonly installedVersionsKey = 'installed';
 
-    public constructor(protected readonly context : IAcquisitionWorkerContext)
+    protected constructor(protected eventStream : IEventStream, protected extensionState : IExtensionState)
     {
 
+    }
+
+    public static getInstance(eventStream : IEventStream, extensionState : IExtensionState) : InstallTrackerSingleton
+    {
+        if(!InstallTrackerSingleton.instance)
+        {
+            InstallTrackerSingleton.instance = new InstallTrackerSingleton(eventStream, extensionState);
+        }
+
+        return InstallTrackerSingleton.instance;
+    }
+
+    protected overrideMembers(eventStream : IEventStream, extensionState : IExtensionState)
+    {
+        InstallTrackerSingleton.instance.eventStream = eventStream;
+        InstallTrackerSingleton.instance.extensionState = extensionState;
     }
 
     protected executeWithLock = async <A extends any[], R>(alreadyHoldingLock : boolean, f: (...args: A) => R, ...args: A): Promise<R> =>
@@ -56,7 +83,7 @@ export class InstallTracker
         const lockPath = path.join(__dirname, trackingLock);
         fs.writeFileSync(lockPath, '', 'utf-8');
 
-        this.context.eventStream?.post(new DotnetLockAttemptingAcquireEvent(`Lock Acquisition request to begin.`, new Date().toISOString(), lockPath, lockPath));
+        this.eventStream?.post(new DotnetLockAttemptingAcquireEvent(`Lock Acquisition request to begin.`, new Date().toISOString(), lockPath, lockPath));
         try
         {
             if(alreadyHoldingLock)
@@ -76,7 +103,7 @@ export class InstallTracker
         catch(e : any)
         {
             // Either the lock could not be acquired or releasing it failed
-            this.context.eventStream.post(new DotnetLockErrorEvent(e, e?.message ?? 'Unable to acquire lock to update installation state', new Date().toISOString(), lockPath, lockPath));
+            this.eventStream.post(new DotnetLockErrorEvent(e, e?.message ?? 'Unable to acquire lock to update installation state', new Date().toISOString(), lockPath, lockPath));
             throw new EventBasedError('DotnetLockErrorEvent', e?.message, e?.stack);
         }
     }
@@ -97,7 +124,7 @@ export class InstallTracker
                 const xAsKey = x.dotnetInstall as DotnetInstall;
                 if(IsEquivalentInstallationFile(xAsKey, key))
                 {
-                    this.context.eventStream.post(new DotnetAcquisitionStatusResolved(key, key.version));
+                    this.eventStream.post(new DotnetAcquisitionStatusResolved(key, key.version));
                     return x.installingPromise;
                 }
             })
@@ -119,7 +146,7 @@ export class InstallTracker
             const resolvedInstall : InProgressInstall | undefined = [...this.inProgressInstalls].find(x => IsEquivalentInstallation(x.dotnetInstall as DotnetInstall, key));
             if(!resolvedInstall)
             {
-                this.context.eventStream.post(new NoMatchingInstallToStopTracking(`No matching install to stop tracking for ${key.installKey}.
+                this.eventStream.post(new NoMatchingInstallToStopTracking(`No matching install to stop tracking for ${key.installKey}.
 Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).join(', ')}`));
                 return;
             }
@@ -134,11 +161,11 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).jo
             // This does not uninstall global things yet, so don't remove their keys.
             const installingVersions = await this.getExistingInstalls(false, true);
             const remainingInstallingVersions = installingVersions.filter(x => x.dotnetInstall.isGlobal);
-            await this.context.extensionState.update(this.installingVersionsKey, remainingInstallingVersions);
+            await this.extensionState.update(this.installingVersionsKey, remainingInstallingVersions);
 
             const installedVersions = await this.getExistingInstalls(true, true);
             const remainingInstalledVersions = installedVersions.filter(x => x.dotnetInstall.isGlobal);
-            await this.context.extensionState.update(this.installedVersionsKey, remainingInstalledVersions);
+            await this.extensionState.update(this.installedVersionsKey, remainingInstalledVersions);
         }, );
     }
 
@@ -151,16 +178,18 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).jo
         return this.executeWithLock( alreadyHoldingLock, (getAlreadyInstalledVersions : boolean) =>
         {
             const extensionStateAccessor = getAlreadyInstalledVersions ? this.installedVersionsKey : this.installingVersionsKey;
-            const existingInstalls = this.context.extensionState.get<InstallRecordOrStr[]>(extensionStateAccessor, []);
+            const existingInstalls = this.extensionState.get<InstallRecordOrStr[]>(extensionStateAccessor, []);
             const convertedInstalls : InstallRecord[] = [];
 
             existingInstalls.forEach((install: InstallRecordOrStr) =>
             {
                 if(typeof install === 'string')
                 {
+                    this.eventStream.post(new ConvertingLegacyInstallRecord(`Converting legacy install record ${install} to a null owner. Assuming:
+                    ${JSON.stringify(InstallToStrings(getAssumedInstallInfo(install, null)))}`));
                     convertedInstalls.push(
                         {
-                            dotnetInstall: getAssumedInstallInfo(this.context, install, null),
+                            dotnetInstall: getAssumedInstallInfo(install, null),
                             installingExtensions: [ null ],
                         } as InstallRecord
                     );
@@ -171,79 +200,87 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).jo
                 }
             });
 
-            this.context.extensionState.update(extensionStateAccessor, convertedInstalls);
+            this.extensionState.update(extensionStateAccessor, convertedInstalls);
+
+            this.eventStream.post(new FoundTrackingVersions(`${getAlreadyInstalledVersions ? this.installedVersionsKey : this.installingVersionsKey} :
+${convertedInstalls.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.installingExtensions.map(owner => owner ?? 'null').join(', ')}\n`)}`));
             return convertedInstalls;
         }, getAlreadyInstalledVersion);
     }
 
 
-    public async reclassifyInstallingVersionToInstalled(install : DotnetInstall)
+    public async reclassifyInstallingVersionToInstalled(context : IAcquisitionWorkerContext, install : DotnetInstall)
     {
-        await this.untrackInstallingVersion(install);
-        await this.trackInstalledVersion(install);
+        await this.untrackInstallingVersion(context, install);
+        await this.trackInstalledVersion(context, install);
     }
 
-    public async untrackInstallingVersion(install : DotnetInstall)
+    public async untrackInstallingVersion(context : IAcquisitionWorkerContext, install : DotnetInstall)
     {
-        await this.removeVersionFromExtensionState(this.installingVersionsKey, install);
+        await this.removeVersionFromExtensionState(context, this.installingVersionsKey, install);
         this.removePromise(install);
     }
 
-    public async untrackInstalledVersion(install : DotnetInstall)
+    public async untrackInstalledVersion(context : IAcquisitionWorkerContext, install : DotnetInstall)
     {
-        await this.removeVersionFromExtensionState(this.installedVersionsKey, install);
+        await this.removeVersionFromExtensionState(context, this.installedVersionsKey, install);
     }
 
-    protected async removeVersionFromExtensionState(keyStr: string, installKeyObj: DotnetInstall)
+    protected async removeVersionFromExtensionState(context : IAcquisitionWorkerContext, keyStr: string, installKeyObj: DotnetInstall)
     {
-        return this.executeWithLock( false, async (key: string, installKey: DotnetInstall) =>
+        return this.executeWithLock( false, async (key: string, install: DotnetInstall) =>
         {
+            this.eventStream.post(new RemovingVersionFromExtensionState(`Removing ${JSON.stringify(install)} with key ${key} from the state.`));
             const existingInstalls = await this.getExistingInstalls(key === this.installedVersionsKey, true);
-            const installRecord = existingInstalls.filter(x => IsEquivalentInstallation(x.dotnetInstall, installKey));
+            const installRecord = existingInstalls.filter(x => IsEquivalentInstallation(x.dotnetInstall, install));
 
             if(installRecord)
             {
                 if(installRecord.length > 1)
                 {
                     /* tslint:disable:prefer-template */
-                    this.context.eventStream.post(new DuplicateInstallDetected(`The install
-                        ${(installKey)} has a duplicated record ${installRecord.length} times in the extension state.
+                    this.eventStream.post(new DuplicateInstallDetected(`The install
+                        ${(install)} has a duplicated record ${installRecord.length} times in the extension state.
                         ${installRecord.map(x => x.installingExtensions.join(' ') + InstallToStrings(x.dotnetInstall)).join(' ') + '\n'}`));
                 }
 
                 const preExistingRecord = installRecord.at(0);
-                const owners = preExistingRecord?.installingExtensions.filter(x => x !== this.context.acquisitionContext?.requestingExtensionId);
+                const owners = preExistingRecord?.installingExtensions.filter(x => x !== context.acquisitionContext?.requestingExtensionId);
                 if((owners?.length ?? 0) < 1)
                 {
                     // There are no more references/extensions that depend on this install, so remove the install from the list entirely.
                     // For installing versions, there should only ever be 1 owner.
                     // For installed versions, there can be N owners.
-                    await this.context.extensionState.update(key, existingInstalls.filter(x => !IsEquivalentInstallation(x.dotnetInstall, installKey)));
+                    this.eventStream.post(new RemovingExtensionFromList(`The last owner ${context.acquisitionContext?.requestingExtensionId} removed ${JSON.stringify(install)} entirely from the state.`));
+                    await this.extensionState.update(key, existingInstalls.filter(x => !IsEquivalentInstallation(x.dotnetInstall, install)));
                 }
                 else
                 {
                     // There are still other extensions that depend on this install, so merely remove this requesting extension from the list of owners.
-                    await this.context.extensionState.update(key, existingInstalls.map(x => IsEquivalentInstallation(x.dotnetInstall, installKey) ?
-                        { dotnetInstall: installKey, installingExtensions: owners } as InstallRecord : x));
+                    this.eventStream.post(new RemovingOwnerFromList(`The owner ${context.acquisitionContext?.requestingExtensionId} removed ${JSON.stringify(install)} itself from the list, but ${owners?.join(', ')} remain.`));
+                    await this.extensionState.update(key, existingInstalls.map(x => IsEquivalentInstallation(x.dotnetInstall, install) ?
+                        { dotnetInstall: install, installingExtensions: owners } as InstallRecord : x));
                 }
             }
         }, keyStr, installKeyObj);
     }
 
-    public async trackInstallingVersion(install: DotnetInstall)
+    public async trackInstallingVersion(context : IAcquisitionWorkerContext, install: DotnetInstall)
     {
-        await this.addVersionToExtensionState(this.installingVersionsKey, install);
+        await this.addVersionToExtensionState(context, this.installingVersionsKey, install);
     }
 
-    public async trackInstalledVersion(install: DotnetInstall)
+    public async trackInstalledVersion(context : IAcquisitionWorkerContext, install: DotnetInstall)
     {
-        await this.addVersionToExtensionState(this.installedVersionsKey, install);
+        await this.addVersionToExtensionState(context, this.installedVersionsKey, install);
     }
 
-    protected async addVersionToExtensionState(keyStr: string, installObj: DotnetInstall, alreadyHoldingLock = false)
+    protected async addVersionToExtensionState(context : IAcquisitionWorkerContext, keyStr: string, installObj: DotnetInstall, alreadyHoldingLock = false)
     {
         return this.executeWithLock( alreadyHoldingLock, async (key: string, install: DotnetInstall) =>
         {
+            this.eventStream.post(new RemovingVersionFromExtensionState(`Adding ${JSON.stringify(install)} with key ${key} from the state.`));
+
             const existingVersions = await this.getExistingInstalls(key === this.installedVersionsKey, true);
             const preExistingInstallIndex = existingVersions.findIndex(x => IsEquivalentInstallation(x.dotnetInstall, install));
 
@@ -252,9 +289,10 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).jo
                 const existingInstall = existingVersions.find(x => IsEquivalentInstallation(x.dotnetInstall, install));
 
                 // Did this extension already mark itself as having ownership of this install? If so, we can skip re-adding it.
-                if(!(existingInstall?.installingExtensions.includes(this.context.acquisitionContext?.requestingExtensionId ?? null)))
+                if(!(existingInstall?.installingExtensions.includes(context.acquisitionContext?.requestingExtensionId ?? null)))
                 {
-                    existingInstall!.installingExtensions.push(this.context.acquisitionContext?.requestingExtensionId ?? null);
+                    this.eventStream.post(new SkipAddingInstallEvent(`Skipped adding ${install} to the state because it was already there with the same owner.`));
+                    existingInstall!.installingExtensions.push(context.acquisitionContext?.requestingExtensionId ?? null);
                     existingVersions[preExistingInstallIndex] = existingInstall!;
                 }
             }
@@ -263,16 +301,18 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).jo
                 existingVersions.push(
                     {
                         dotnetInstall: install,
-                        installingExtensions: [ this.context.acquisitionContext?.requestingExtensionId ?? null ]
+                        installingExtensions: [context.acquisitionContext?.requestingExtensionId ?? null ]
                     } as InstallRecord
                 );
             }
 
-            await this.context.extensionState.update(key, existingVersions);
+            this.eventStream.post(new AddTrackingVersions(`Updated ${keyStr} :
+${existingVersions.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.installingExtensions.map(owner => owner ?? 'null').join(', ')}\n`)}`));
+            await this.extensionState.update(key, existingVersions);
         }, keyStr, installObj);
     }
 
-    public async checkForUnrecordedLocalSDKSuccessfulInstall(dotnetInstallDirectory: string, installedInstallKeysList: InstallRecord[]): Promise<InstallRecord[]>
+    public async checkForUnrecordedLocalSDKSuccessfulInstall(context : IAcquisitionWorkerContext, dotnetInstallDirectory: string, installedInstallKeysList: InstallRecord[]): Promise<InstallRecord[]>
     {
         return this.executeWithLock( false, async (dotnetInstallDir: string, installedInstallKeys: InstallRecord[]) =>
         {
@@ -287,14 +327,14 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).jo
                 {
                     localSDKDirectoryKeyIter = installKey;
                     const installRecord = GetDotnetInstallInfo(getVersionFromLegacyInstallKey(installKey), 'sdk', 'local', DotnetCoreAcquisitionWorker.defaultArchitecture());
-                    this.context.eventStream.post(new DotnetPreinstallDetected(installRecord));
-                    await this.addVersionToExtensionState(this.installedVersionsKey, installRecord, true);
+                    this.eventStream.post(new DotnetPreinstallDetected(installRecord));
+                    await this.addVersionToExtensionState(context, this.installedVersionsKey, installRecord, true);
                     installedInstallKeys.push({ dotnetInstall: installRecord, installingExtensions: [ null ] } as InstallRecord);
                 }
             }
             catch (error)
             {
-                this.context.eventStream.post(new DotnetPreinstallDetectionError(error as Error, GetDotnetInstallInfo(localSDKDirectoryKeyIter, 'sdk', 'local',
+                this.eventStream.post(new DotnetPreinstallDetectionError(error as Error, GetDotnetInstallInfo(localSDKDirectoryKeyIter, 'sdk', 'local',
                     DotnetCoreAcquisitionWorker.defaultArchitecture())));
             }
             return installedInstallKeys;

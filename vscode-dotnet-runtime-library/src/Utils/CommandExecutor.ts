@@ -445,7 +445,7 @@ ${stderr}`));
         else
         {
             this.context?.eventStream.post(new CommandExecutionEvent(`Executing command ${fullCommandStringForTelemetryOnly}
-with options ${options}.`));
+with options ${JSON.stringify(options)}.`));
             const commandResult = proc.spawnSync(command.commandRoot, command.commandParts, options);
             if(this.returnStatus)
             {

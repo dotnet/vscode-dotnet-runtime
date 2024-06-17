@@ -130,7 +130,7 @@ export class VersionResolver implements IVersionResolver {
             catch (error : any)
             {
                 this.context.eventStream.post(new DotnetVersionResolutionError(new EventCancellationError('DotnetVersionResolutionError',
-                    error?.message ?? ''), getAssumedInstallInfo(this.context, version, mode)));
+                    error?.message ?? ''), getAssumedInstallInfo(version, mode)));
                 reject(error);
             }
         });
@@ -151,7 +151,7 @@ export class VersionResolver implements IVersionResolver {
         {
             const err = new DotnetVersionResolutionError(new EventCancellationError('DotnetVersionResolutionError',
                 `The requested and or resolved version is invalid.`),
-                getAssumedInstallInfo(this.context, version, this.context.installMode));
+                getAssumedInstallInfo(version, this.context.installMode));
             this.context.eventStream.post(err);
             throw err.error;
         }
@@ -177,7 +177,7 @@ export class VersionResolver implements IVersionResolver {
             Debugging.log(`Resolving the version: ${version} ... it is invalid!`, this.context.eventStream);
             const err = new DotnetVersionResolutionError(new EventCancellationError('DotnetVersionResolutionError',
                 `An invalid version was requested. Version: ${version}`),
-                getAssumedInstallInfo(this.context, version, this.context.installMode));
+                getAssumedInstallInfo(version, this.context.installMode));
             this.context.eventStream.post(err);
             throw err.error;
         }

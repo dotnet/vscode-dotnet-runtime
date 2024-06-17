@@ -68,7 +68,8 @@ export function looksLikeRuntimeVersion(version: string): boolean {
     return !band || band.length <= 2; // assumption : there exists no runtime version at this point over 99 sub versions
 }
 
-export function GetDotnetInstallInfo(installVersion: string, installationMode: DotnetInstallMode, installType: DotnetInstallType, installArchitecture: string): DotnetInstall {
+export function GetDotnetInstallInfo(installVersion: string, installationMode: DotnetInstallMode, installType: DotnetInstallType, installArchitecture: string): DotnetInstall
+{
     return {
         installKey: DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(installVersion, installArchitecture, installType),
         version: installVersion,

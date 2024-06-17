@@ -33,7 +33,7 @@ export class InstallationGraveyard
         if(!(graveyard instanceof Set))
         {
             graveyard = new Set<LocalDotnetInstall>(
-                Object.entries(graveyard).map(([key, path]) => ({ dotnetInstall: getAssumedInstallInfo(this.context, key, null), path }) as LocalDotnetInstall)
+                Object.entries(graveyard).map(([key, path]) => ({ dotnetInstall: getAssumedInstallInfo(key, null), path }) as LocalDotnetInstall)
             );
         }
 

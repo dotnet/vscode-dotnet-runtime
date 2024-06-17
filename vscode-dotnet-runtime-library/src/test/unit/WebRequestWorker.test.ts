@@ -35,9 +35,10 @@ const staticWebsiteUrl = 'https://dotnetcli.blob.core.windows.net/dotnet/release
 suite('WebRequestWorker Unit Tests', () => {
     test('Acquire Version Network Failure', async () => {
         const eventStream = new MockEventStream();
-        const acquisitionWorker = new DotnetCoreAcquisitionWorker(getMockAcquisitionContext('runtime', '', undefined, eventStream), getMockUtilityContext(), new MockVSCodeExtensionContext());
+        const mockContext = getMockAcquisitionContext('runtime', '1.0', undefined, eventStream);
+        const acquisitionWorker = new DotnetCoreAcquisitionWorker(getMockUtilityContext(), new MockVSCodeExtensionContext());
         const invoker = new ErrorAcquisitionInvoker(eventStream);
-        return assert.isRejected(acquisitionWorker.acquireRuntime('1.0', invoker), Error, '.NET Acquisition Failed');
+        return assert.isRejected(acquisitionWorker.acquireRuntime(mockContext, invoker), Error, '.NET Acquisition Failed');
     }).timeout(maxTimeoutTime);
 
     test('Install Script Request Failure', async () => {

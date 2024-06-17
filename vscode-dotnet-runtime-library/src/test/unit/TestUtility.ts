@@ -12,7 +12,7 @@ import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerC
 import { IEventStream } from '../../EventStream/EventStream';
 import { IUtilityContext } from '../../Utils/IUtilityContext';
 import { IInstallationDirectoryProvider } from '../../Acquisition/IInstallationDirectoryProvider';
-import { getDirectoryByMode } from '../../Acquisition/GetDirectoryPerMode';
+import { directoryProviderFactory } from '../../Acquisition/DirectoryProviderFactory';
 import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 
 const standardTimeoutTime = 100000;
@@ -27,23 +27,20 @@ export function getMockAcquisitionContext(mode: DotnetInstallMode, version : str
         storagePath: '',
         extensionState: extensionContext,
         eventStream: myEventStream,
-        acquisitionContext: getMockAcquireContext(version, arch === null),
+        acquisitionContext: getMockAcquireContext(version, arch),
         installationValidator: new MockInstallationValidator(myEventStream),
         timeoutSeconds: timeoutTime,
         installMode: mode,
-        installingArchitecture: arch,
         proxyUrl: undefined,
-        installDirectoryProvider: directory ? directory : getDirectoryByMode(mode, ''),
+        installDirectoryProvider: directory ? directory : directoryProviderFactory(mode, ''),
         isExtensionTelemetryInitiallyEnabled: true
     };
     return workerContext;
 }
 
-export function getMockAcquisitionWorker(installMode: DotnetInstallMode, version : string, arch? : string | null, customEventStream? : MockEventStream,
-    customContext? : MockExtensionContext, directory? : IInstallationDirectoryProvider) : MockDotnetCoreAcquisitionWorker
+export function getMockAcquisitionWorker(mockContext : IAcquisitionWorkerContext) : MockDotnetCoreAcquisitionWorker
 {
-    const acquisitionWorker = new MockDotnetCoreAcquisitionWorker(getMockAcquisitionContext(installMode, version, undefined, customEventStream, customContext, arch, directory),
-        getMockUtilityContext(), new MockVSCodeExtensionContext());
+    const acquisitionWorker = new MockDotnetCoreAcquisitionWorker(getMockUtilityContext(), new MockVSCodeExtensionContext());
     return acquisitionWorker;
 }
 
@@ -56,12 +53,12 @@ export function getMockUtilityContext() : IUtilityContext
     return utilityContext;
 }
 
-export function getMockAcquireContext(nextAcquiringVersion : string, legacy = false) : IDotnetAcquireContext
+export function getMockAcquireContext(nextAcquiringVersion : string, arch : string | null | undefined) : IDotnetAcquireContext
 {
     const acquireContext : IDotnetAcquireContext =
     {
         version: nextAcquiringVersion,
-        architecture: legacy ? null : os.arch(),
+        architecture: arch,
         requestingExtensionId: 'test'
     };
     return acquireContext;
