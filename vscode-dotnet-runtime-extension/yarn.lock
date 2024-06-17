@@ -691,7 +691,7 @@
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/emoji-regex/-/emoji-regex-8.0.0.tgz"
   "version" "8.0.0"
 
-"enhanced-resolve@^5.15.0":
+"enhanced-resolve@^5.0.0", "enhanced-resolve@^5.15.0":
   "integrity" "sha1-GvlGx9k2A+uI6Yls7kkE3AEunDU="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/enhanced-resolve/-/enhanced-resolve-5.15.0.tgz"
   "version" "5.15.0"
@@ -1230,13 +1230,6 @@
     "chalk" "^4.1.0"
     "is-unicode-supported" "^0.1.0"
 
-"lru-cache@^6.0.0":
-  "integrity" "sha1-bW/mVw69lqr5D8rR2vo7JWbbOpQ="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/lru-cache/-/lru-cache-6.0.0.tgz"
-  "version" "6.0.0"
-  dependencies:
-    "yallist" "^4.0.0"
-
 "merge-stream@^2.0.0":
   "integrity" "sha1-UoI2KaFN0AyXcPtq1H3GMQ8sH2A="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/merge-stream/-/merge-stream-2.0.0.tgz"
@@ -1247,7 +1240,7 @@
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/merge2/-/merge2-1.4.1.tgz"
   "version" "1.4.1"
 
-"micromatch@^4.0.4":
+"micromatch@^4.0.0", "micromatch@^4.0.4":
   "integrity" "sha1-vImZp8u/d83InxMvbkZwUbSQkMY="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/micromatch/-/micromatch-4.0.5.tgz"
   "version" "4.0.5"
@@ -1635,12 +1628,10 @@
     "ajv" "^6.12.5"
     "ajv-keywords" "^3.5.2"
 
-"semver@^7.5.2":
-  "integrity" "sha1-Gkak20v/zM2Xt0O1AFyDJfI9Ti0="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/semver/-/semver-7.6.0.tgz"
-  "version" "7.6.0"
-  dependencies:
-    "lru-cache" "^6.0.0"
+"semver@^7.3.4", "semver@^7.5.2":
+  "integrity" "sha1-Hjs0dZ+Jbo8U1hNHMs55iusMbhM="
+  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/semver/-/semver-7.6.2.tgz"
+  "version" "7.6.2"
 
 "serialize-javascript@^6.0.0", "serialize-javascript@6.0.0":
   "integrity" "sha1-765diPRdeSQUHai1w6en5mP+/rg="
@@ -1711,6 +1702,11 @@
   "integrity" "sha1-dHIq8y6WFOnCh6jQu95IteLxomM="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/source-map/-/source-map-0.6.1.tgz"
   "version" "0.6.1"
+
+"source-map@^0.7.4":
+  "integrity" "sha1-qbvnBcnYhG9OCP9nZazw8bCJhlY="
+  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/source-map/-/source-map-0.7.4.tgz"
+  "version" "0.7.4"
 
 "string_decoder@~1.1.1":
   "integrity" "sha1-nPFhG6YmhdcDCunkujQUnDrwP8g="
@@ -1797,12 +1793,23 @@
   dependencies:
     "is-number" "^7.0.0"
 
+"ts-loader@^9.5.1":
+  "integrity" "sha1-Y9WRKoYxLx++Ms7whZ+4shk9m4k="
+  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/ts-loader/-/ts-loader-9.5.1.tgz"
+  "version" "9.5.1"
+  dependencies:
+    "chalk" "^4.1.0"
+    "enhanced-resolve" "^5.0.0"
+    "micromatch" "^4.0.0"
+    "semver" "^7.3.4"
+    "source-map" "^0.7.4"
+
 "type-detect@^4.0.0", "type-detect@^4.0.5":
   "integrity" "sha1-dkb7XxiHHPu3dJ5pvTmmOI63RQw="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/type-detect/-/type-detect-4.0.8.tgz"
   "version" "4.0.8"
 
-"typescript@4.4.4":
+"typescript@*", "typescript@4.4.4":
   "integrity" "sha1-LNAaGh8WBwTTEB/VpY/w+fy4Aww="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/typescript/-/typescript-4.4.4.tgz"
   "version" "4.4.4"
@@ -1912,7 +1919,7 @@
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/webpack-sources/-/webpack-sources-3.2.3.tgz"
   "version" "3.2.3"
 
-"webpack@^5.1.0", "webpack@4.x.x || 5.x.x", "webpack@5.88.2":
+"webpack@^5.0.0", "webpack@^5.1.0", "webpack@4.x.x || 5.x.x", "webpack@5.88.2":
   "integrity" "sha1-9itLhC8cb/WA8/yy7U8LV59MIQ4="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/webpack/-/webpack-5.88.2.tgz"
   "version" "5.88.2"
@@ -1977,11 +1984,6 @@
   "integrity" "sha1-f0k00PfKjFb5UxSTndzS3ZHOHVU="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/y18n/-/y18n-5.0.8.tgz"
   "version" "5.0.8"
-
-"yallist@^4.0.0":
-  "integrity" "sha1-m7knkNnA7/7GO+c1GeEaNQGaOnI="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/yallist/-/yallist-4.0.0.tgz"
-  "version" "4.0.0"
 
 "yargs-parser@^20.2.2", "yargs-parser@20.2.4":
   "integrity" "sha1-tCiQ8UVmeW+Fro46JSkNIF8VSlQ="
