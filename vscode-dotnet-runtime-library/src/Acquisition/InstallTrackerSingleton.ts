@@ -62,9 +62,9 @@ export class InstallTrackerSingleton
     public static getInstance(eventStream : IEventStream, extensionState : IExtensionState) : InstallTrackerSingleton
     {
         if(!InstallTrackerSingleton.instance)
-            {
-                InstallTrackerSingleton.instance = new InstallTrackerSingleton(eventStream, extensionState);
-            }
+        {
+            InstallTrackerSingleton.instance = new InstallTrackerSingleton(eventStream, extensionState);
+        }
 
         return InstallTrackerSingleton.instance;
     }
