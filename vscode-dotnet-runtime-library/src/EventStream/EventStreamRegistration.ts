@@ -15,6 +15,7 @@ import { StatusBarObserver } from './StatusBarObserver';
 import { ITelemetryReporter, TelemetryObserver } from './TelemetryObserver';
 import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
+import { ModalEventRepublisher } from './ModalEventPublisher';
 
 export interface IPackageJson {
     version: string;
@@ -43,7 +44,6 @@ export function registerEventStream(context: IEventStreamContext, extensionConte
 
     const logFile = path.join(context.logPath, `DotNetAcquisition-${context.extensionId}-${ new Date().getTime() }.txt`);
     const loggingObserver = new LoggingObserver(logFile);
-    const modalEventObserver = new ModalEventObserver();
     const eventStreamObservers: IEventStreamObserver[] =
     [
         new StatusBarObserver(vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, Number.MIN_VALUE), context.showLogCommand),
@@ -62,6 +62,9 @@ export function registerEventStream(context: IEventStreamContext, extensionConte
         telemetryObserver = new TelemetryObserver(context.packageJson, context.enableTelemetry, extensionContext, utilityContext, context.telemetryReporter);
         eventStream.subscribe(event => telemetryObserver!.post(event));
     }
+
+    const modalEventObserver = new ModalEventRepublisher(eventStream);
+    eventStream.subscribe(event => modalEventObserver.post(event));
 
     return [eventStream, outputChannel, loggingObserver, eventStreamObservers, telemetryObserver];
 }

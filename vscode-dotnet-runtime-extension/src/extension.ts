@@ -61,6 +61,7 @@ import {
     DotnetInstall,
     EventCancellationError,
     DotnetInstallType,
+    DotnetAcquisitionTotalSuccessEvent,
 } from 'vscode-dotnet-runtime-library';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 
@@ -145,7 +146,12 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) =>
     {
         const worker = getAcquisitionWorker();
-        const mode = 'runtime';
+        let mode = 'runtime' as DotnetInstallMode;
+        // Todo: remove below logic to make compiler happy
+        if(commandContext.requestingExtensionId === undefined)
+        {
+            mode = 'aspnetcore';
+        }
         const runtimeContext = getAcquisitionWorkerContext(mode, commandContext);
 
         const dotnetPath = await callWithErrorHandling<Promise<IDotnetAcquireResult>>(async () =>
@@ -184,7 +190,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         const iKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(commandContext.version, commandContext.architecture, mode, 'local');
         const install = {installKey : iKey, version : commandContext.version, installMode: mode, isGlobal: false,
             architecture: commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture()} as DotnetInstall;
-        globalEventStream.post(new DotnetRuntimeAcquisitionTotalSuccessEvent(commandContext.version, install, commandContext.requestingExtensionId ?? '', dotnetPath?.dotnetPath ?? ''));
+        globalEventStream.post(new DotnetAcquisitionTotalSuccessEvent(commandContext.version, install, commandContext.requestingExtensionId ?? '', dotnetPath?.dotnetPath ?? ''));
         return dotnetPath;
     });
 
@@ -240,7 +246,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         const install = {installKey : iKey, version : commandContext.version, installMode: 'sdk', isGlobal: true,
         architecture: commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture()} as DotnetInstall;
 
-        globalEventStream.post(new DotnetGlobalSDKAcquisitionTotalSuccessEvent(commandContext.version, install, commandContext.requestingExtensionId ?? '', pathResult?.dotnetPath ?? ''));
+        globalEventStream.post(new DotnetAcquisitionTotalSuccessEvent(commandContext.version, install, commandContext.requestingExtensionId ?? '', pathResult?.dotnetPath ?? ''));
         return pathResult;
     });
 

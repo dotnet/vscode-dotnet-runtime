@@ -99,10 +99,10 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     const dotnetDir = installDirectoryProvider.getInstallDir(version);
     const dotnetExePath = path.join(dotnetDir, `dotnet${os.platform() === 'win32' ? '.exe' : ''}`);
 
-    const sdkCurrentInstallKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, os.arch());
+    const sdkCurrentInstallKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, os.arch(), 'sdk', 'local');
     const sdkDirCurrent = path.join(dotnetDir, 'sdk', sdkCurrentInstallKey);
 
-    const sdkEarlierInstallKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(earlierVersion, os.arch());
+    const sdkEarlierInstallKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(earlierVersion, os.arch(), 'sdk', 'local');
     const sdkDirEarlier = path.join(dotnetDir, 'sdk', sdkEarlierInstallKey);
     fs.mkdirSync(sdkDirCurrent, { recursive: true });
     fs.mkdirSync(sdkDirEarlier, { recursive: true });
@@ -135,7 +135,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     const mockContext = getMockAcquisitionContext('sdk', version, 10000, undefined, undefined, undefined, installDirectoryProvider);
     const acquisitionWorker = getMockAcquisitionWorker(mockContext);
 
-    const currentVersionInstallKey =  DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, os.arch());
+    const currentVersionInstallKey =  DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, os.arch(), 'sdk', 'local');
     // Ensure nothing is returned when there is no preinstalled SDK
     const noPreinstallResult = await acquisitionWorker.acquireStatus(mockContext, 'sdk');
     assert.isUndefined(noPreinstallResult);
