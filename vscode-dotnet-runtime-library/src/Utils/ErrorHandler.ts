@@ -77,7 +77,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
         if(acquireContext)
         {
             context.eventStream.post(new DotnetAcquisitionFinalError(error, (caughtError?.eventType) ?? 'Unknown',
-            GetDotnetInstallInfo(acquireContext.acquisitionContext.version, acquireContext.installMode, 'global', acquireContext.acquisitionContext.architecture ??
+            GetDotnetInstallInfo(acquireContext.acquisitionContext.version, acquireContext.acquisitionContext.mode!, 'global', acquireContext.acquisitionContext.architecture ??
                 DotnetCoreAcquisitionWorker.defaultArchitecture()
             )));
         }

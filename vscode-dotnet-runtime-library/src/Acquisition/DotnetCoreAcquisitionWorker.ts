@@ -197,7 +197,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             install =
             {
                 installKey: DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, context.acquisitionContext.architecture,
-                    context.installMode, globalInstallerResolver !== null ? 'global' : 'local'),
+                    context.acquisitionContext.mode!, globalInstallerResolver !== null ? 'global' : 'local'),
                 version: install.version,
                 isGlobal: install.isGlobal,
                 installMode: mode,

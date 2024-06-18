@@ -20,12 +20,12 @@ export function getInstallKeyFromContext(ctx : IAcquisitionWorkerContext | undef
     const acquireContext = ctx.acquisitionContext!;
 
     return {
-        installKey : DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(acquireContext.version, acquireContext.architecture, ctx.installMode,
+        installKey : DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(acquireContext.version, acquireContext.architecture, ctx.acquisitionContext.mode!,
             acquireContext.installType),
         version: acquireContext.version,
         architecture: acquireContext.architecture,
         isGlobal: acquireContext.installType ? acquireContext.installType === 'global' : false,
-        installMode: ctx.installMode
+        installMode: ctx.acquisitionContext.mode!
     } as DotnetInstall;
 
 
