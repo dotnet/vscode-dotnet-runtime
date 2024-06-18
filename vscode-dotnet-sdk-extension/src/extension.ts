@@ -148,7 +148,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         const pathResult = callWithErrorHandling(async () => {
             eventStream.post(new DotnetSDKAcquisitionStarted(commandContext.requestingExtensionId));
 
-            eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
+            eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId ?? 'notProvided', 'sdk', 'local'));
             telemetryObserver?.setAcquisitionContext(acquisitionContext, commandContext);
 
             if(commandContext.installType === 'global')

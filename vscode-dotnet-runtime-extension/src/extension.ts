@@ -18,9 +18,6 @@ import {
     DotnetCoreAcquisitionWorker,
     DotnetCoreDependencyInstaller,
     DotnetExistingPathResolutionCompleted,
-    DotnetRuntimeAcquisitionStarted,
-    DotnetRuntimeAcquisitionTotalSuccessEvent,
-    DotnetGlobalSDKAcquisitionTotalSuccessEvent,
     enableExtensionTelemetry,
     EventBasedError,
     ErrorConfiguration,
@@ -43,7 +40,6 @@ import {
     VSCodeExtensionContext,
     VSCodeEnvironment,
     WindowDisplayWorker,
-    DotnetSDKAcquisitionStarted,
     GlobalInstallerResolver,
     CommandExecutor,
     IDotnetListVersionsContext,
@@ -156,8 +152,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
         const dotnetPath = await callWithErrorHandling<Promise<IDotnetAcquireResult>>(async () =>
         {
-            globalEventStream.post(new DotnetRuntimeAcquisitionStarted(commandContext.requestingExtensionId));
-            globalEventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
+            globalEventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId ?? 'notProvided', mode, commandContext.installType ?? 'local'));
 
             telemetryObserver?.setAcquisitionContext(runtimeContext, commandContext);
 
@@ -196,13 +191,16 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
     const dotnetAcquireGlobalSDKRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquireGlobalSDK}`, async (commandContext: IDotnetAcquireContext) =>
     {
+
+        const mode = 'sdk';
+
         if (commandContext.requestingExtensionId === undefined)
         {
             return Promise.reject('No requesting extension id was provided.');
         }
 
         let fullyResolvedVersion = '';
-        const sdkContext = getAcquisitionWorkerContext('runtime', commandContext);
+        const sdkContext = getAcquisitionWorkerContext(mode, commandContext);
         const worker = getAcquisitionWorker();
 
         const pathResult = await callWithErrorHandling(async () =>
@@ -218,8 +216,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
                     `No version was defined to install.`);
             }
 
-            globalEventStream.post(new DotnetSDKAcquisitionStarted(commandContext.requestingExtensionId));
-            globalEventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
+            globalEventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId ?? 'notProvided', mode, commandContext.installType ?? 'global'));
 
             const existingPath = await resolveExistingPathIfExists(existingPathConfigWorker, commandContext);
             if(existingPath)
@@ -242,8 +239,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             return dotnetPath;
         }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, commandKeys.acquireGlobalSDK), commandContext.requestingExtensionId, sdkContext);
 
-        const iKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(commandContext.version, commandContext.architecture, 'sdk', 'global');
-        const install = {installKey : iKey, version : commandContext.version, installMode: 'sdk', isGlobal: true,
+        const iKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(commandContext.version, commandContext.architecture, mode, 'global');
+        const install = {installKey : iKey, version : commandContext.version, installMode: mode, isGlobal: true,
         architecture: commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture()} as DotnetInstall;
 
         globalEventStream.post(new DotnetAcquisitionTotalSuccessEvent(commandContext.version, install, commandContext.requestingExtensionId ?? '', pathResult?.dotnetPath ?? ''));

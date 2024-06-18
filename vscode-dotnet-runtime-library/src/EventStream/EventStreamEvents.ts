@@ -11,6 +11,7 @@ import { TelemetryUtilities } from './TelemetryUtilities';
 import { InstallToStrings } from '../Acquisition/DotnetInstall';
 import { DotnetInstall } from '../Acquisition/DotnetInstall';
 import { DotnetInstallMode } from '../Acquisition/DotnetInstallMode';
+import { DotnetInstallType } from '..';
 
 // tslint:disable max-classes-per-file
 
@@ -33,6 +34,7 @@ export class EventBasedError extends Error
 export abstract class GenericModalEvent extends IEvent
 {
     abstract readonly mode : DotnetInstallMode;
+    abstract readonly installType : DotnetInstallType;
 }
 
 export class DotnetAcquisitionStarted extends GenericModalEvent
@@ -40,10 +42,12 @@ export class DotnetAcquisitionStarted extends GenericModalEvent
     public readonly eventName = 'DotnetAcquisitionStarted';
     public readonly type = EventType.DotnetAcquisitionStart;
     public readonly mode;
+    public readonly installType: DotnetInstallType;
 
     constructor(public readonly install: DotnetInstall, public readonly startingVersion: string, public readonly requestingExtensionId = '') {
         super();
         this.mode = install.installMode;
+        this.installType = install.isGlobal ? 'global' : 'local';
     }
 
     public getProperties() {
@@ -87,10 +91,12 @@ export class DotnetAcquisitionTotalSuccessEvent extends GenericModalEvent
     public readonly type = EventType.DotnetTotalSuccessEvent;
     public readonly eventName = 'DotnetAcquisitionTotalSuccessEvent';
     public readonly mode;
+    public readonly installType: DotnetInstallType;
 
     constructor(public readonly startingVersion: string, public readonly install: DotnetInstall, public readonly requestingExtensionId = '', public readonly finalPath: string) {
         super();
         this.mode = install.installMode;
+        this.installType = install.isGlobal ? 'global' : 'local';
     }
 
     public getProperties() {
@@ -132,6 +138,61 @@ export class DotnetGlobalSDKAcquisitionTotalSuccessEvent extends DotnetAcquisiti
 export class DotnetASPNetRuntimeAcquisitionTotalSuccessEvent extends DotnetAcquisitionTotalSuccessEventBase
 {
     public readonly eventName = 'DotnetASPNetRuntimeAcquisitionTotalSuccessEvent';
+}
+
+
+export class DotnetAcquisitionRequested extends GenericModalEvent
+{
+    public readonly eventName = 'DotnetAcquisitionRequested';
+    public readonly type = EventType.DotnetTotalSuccessEvent;
+    public readonly mode;
+    public readonly installType: DotnetInstallType;
+
+    constructor(public readonly startingVersion: string, public readonly requestingId = '', mode : DotnetInstallMode, installType : DotnetInstallType)
+    {
+        super();
+        this.mode = mode;
+        this.installType = installType;
+    }
+
+    public getProperties() {
+        return {AcquisitionStartVersion : this.startingVersion,
+                RequestingExtensionId: TelemetryUtilities.HashData(this.requestingId)};
+    }
+}
+
+
+abstract class DotnetAcquisitionRequestedEventBase extends IEvent
+{
+    public readonly type = EventType.DotnetModalChildEvent;
+
+    constructor(public readonly startingVersion: string, public readonly requestingId = '', public readonly mode : DotnetInstallMode) {
+        super();
+    }
+
+    public getProperties()
+    {
+        return {
+            AcquisitionStartVersion : this.startingVersion,
+            RequestingExtensionId: TelemetryUtilities.HashData(this.requestingId),
+            Mode: this.mode
+        };
+    }
+}
+
+export class DotnetRuntimeAcquisitionRequested extends DotnetAcquisitionRequestedEventBase
+{
+    public readonly eventName = 'DotnetRuntimeAcquisitionRequested';
+}
+
+export class DotnetGlobalSDKAcquisitionRequested extends DotnetAcquisitionRequestedEventBase
+{
+    public readonly eventName = 'DotnetGlobalSDKAcquisitionRequested';
+}
+
+export class DotnetASPNetRuntimeAcquisitionRequested extends DotnetAcquisitionRequestedEventBase
+{
+    public readonly eventName = 'DotnetASPNetRuntimeAcquisitionRequested';
 }
 
 
@@ -188,11 +249,13 @@ export class DotnetAcquisitionFinalError extends GenericModalEvent
     public readonly type = EventType.DotnetTotalSuccessEvent;
     public readonly eventName = 'DotnetAcquisitionTotalSuccessEvent';
     public readonly mode;
+    public readonly installType: DotnetInstallType;
 
     constructor(public readonly error: Error, public readonly originalEventName : string, public readonly install: DotnetInstall)
     {
         super();
         this.mode = install.installMode;
+        this.installType = install.isGlobal ? 'global' : 'local';
     }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
@@ -948,20 +1011,6 @@ export class DotnetInstallationValidated extends DotnetAcquisitionMessage {
             ValidatedInstallKey : this.install.installKey,
             ...InstallToStrings(this.install!)
         };
-    }
-}
-
-export class DotnetAcquisitionRequested extends DotnetAcquisitionMessage {
-    public readonly eventName = 'DotnetAcquisitionRequested';
-
-    constructor(public readonly startingVersion: string,
-                public readonly requestingId = '') {
-        super();
-    }
-
-    public getProperties() {
-        return {AcquisitionStartVersion : this.startingVersion,
-                RequestingExtensionId: TelemetryUtilities.HashData(this.requestingId)};
     }
 }
 

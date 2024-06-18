@@ -5,9 +5,9 @@
 import * as fs from 'fs';
 import * as open from 'open';
 import {
+    DotnetAcquisitionFinalError,
     DotnetCommandFailed,
     DotnetCommandSucceeded,
-    DotnetGlobalSDKAcquisitionError,
     DotnetInstallExpectedAbort,
     DotnetNotInstallRelatedCommandFailed,
     EventCancellationError
@@ -74,9 +74,9 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
             );
         }
 
-        if(acquireContext?.installMode === 'sdk' && acquireContext.acquisitionContext?.installType === 'global')
+        if(acquireContext)
         {
-            context.eventStream.post(new DotnetGlobalSDKAcquisitionError(error, (caughtError?.eventType) ?? 'Unknown',
+            context.eventStream.post(new DotnetAcquisitionFinalError(error, (caughtError?.eventType) ?? 'Unknown',
             GetDotnetInstallInfo(acquireContext.acquisitionContext.version, acquireContext.installMode, 'global', acquireContext.acquisitionContext.architecture ??
                 DotnetCoreAcquisitionWorker.defaultArchitecture()
             )));

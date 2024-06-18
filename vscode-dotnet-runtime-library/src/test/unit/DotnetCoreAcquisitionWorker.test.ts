@@ -73,11 +73,11 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
     {
         if(mode === 'runtime' || mode === 'aspnetcore')
         {
-            path.join(dotnetFolderName, installKey, os.platform() === 'win32' ? 'dotnet.exe' : 'dotnet')
+            return path.join(dotnetFolderName, installKey, os.platform() === 'win32' ? 'dotnet.exe' : 'dotnet')
         }
         else if(mode === 'sdk')
         {
-            path.join(dotnetFolderName, os.platform() === 'win32' ? 'dotnet.exe' : 'dotnet');
+            return path.join(dotnetFolderName, os.platform() === 'win32' ? 'dotnet.exe' : 'dotnet');
         }
 
         return 'There is a mode without a designated return path';
