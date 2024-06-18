@@ -142,12 +142,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) =>
     {
         const worker = getAcquisitionWorker();
-        let mode = 'runtime' as DotnetInstallMode;
-        // Todo: remove below logic to make compiler happy
-        if(commandContext.requestingExtensionId === undefined)
-        {
-            mode = 'aspnetcore';
-        }
+        let mode = commandContext.mode ?? 'runtime' as DotnetInstallMode;
         const runtimeContext = getAcquisitionWorkerContext(mode, commandContext);
 
         const dotnetPath = await callWithErrorHandling<Promise<IDotnetAcquireResult>>(async () =>

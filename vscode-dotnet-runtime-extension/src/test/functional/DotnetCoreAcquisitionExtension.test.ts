@@ -257,9 +257,9 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   test('Install Local Runtime Command Passes With Warning With No RequestingExtensionId', async () => {
     const context: IDotnetAcquireContext = { version: '3.1' };
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
-    assert.exists(result);
-    assert.exists(result!.dotnetPath);
-    assert.include(result!.dotnetPath, context.version);
+    assert.exists(result, 'A result from the API exists');
+    assert.exists(result!.dotnetPath, 'The result has a dotnet path');
+    assert.include(result!.dotnetPath, context.version, 'The version is included in the path');
     assert.include(mockDisplayWorker.warningMessage, 'Ignoring existing .NET paths');
   }).timeout(standardTimeoutTime);
 

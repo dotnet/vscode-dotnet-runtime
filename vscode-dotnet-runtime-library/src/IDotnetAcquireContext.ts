@@ -43,8 +43,7 @@ export interface IDotnetAcquireContext
     errorConfiguration?: AcquireErrorConfiguration;
     installType?: DotnetInstallType;
     architecture?: string | null | undefined;
-    // TODO: Keep or remove depending upon design decision
-    // mode? : DotnetInstallMode;
+    mode? : DotnetInstallMode;
 }
 
 /**
