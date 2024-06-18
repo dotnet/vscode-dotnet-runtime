@@ -212,7 +212,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
                     `No version was defined to install.`);
             }
 
-            globalEventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId ?? 'notProvided', commandContext.mode, commandContext.installType ?? 'global'));
+            globalEventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId ?? 'notProvided', commandContext.mode!, commandContext.installType ?? 'global'));
 
             const existingPath = await resolveExistingPathIfExists(existingPathConfigWorker, commandContext);
             if(existingPath)
@@ -454,7 +454,6 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             installationValidator: new InstallationValidator(globalEventStream),
             timeoutSeconds: resolvedTimeoutSeconds,
             acquisitionContext: acquiringContext,
-            installMode: mode,
             installDirectoryProvider: directoryProviderFactory(mode, context.globalStoragePath),
             proxyUrl: proxyLink,
             isExtensionTelemetryInitiallyEnabled: isExtensionTelemetryEnabled

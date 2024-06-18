@@ -139,7 +139,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(workerContext.acquisitionContext.version, workerContext.acquisitionContext.architecture,
             'sdk', 'local');
         const result = await acquisitionWorker.acquireSDK(workerContext, invoker);
-        await assertAcquisitionSucceeded(installKey, result.dotnetPath, eventStream, context, workerContext.installMode);
+        await assertAcquisitionSucceeded(installKey, result.dotnetPath, eventStream, context, workerContext.acquisitionContext.mode!);
     }
 
     test('Acquire Runtime Version', async () => {
@@ -385,7 +385,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
 
             const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, os.arch(), 'runtime', 'local');
             const result = await acquisitionWorker.acquireRuntime(acquisitionContext, acquisitionInvoker);
-            const expectedPath = getExpectedPath(installKey, acquisitionContext.installMode);
+            const expectedPath = getExpectedPath(installKey, acquisitionContext.acquisitionContext.mode!);
             assert.equal(result.dotnetPath, expectedPath);
             deleteFolderRecursive(path.join(process.cwd(), installApostropheFolder));
         }

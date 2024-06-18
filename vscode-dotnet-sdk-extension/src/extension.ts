@@ -222,13 +222,13 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             extensionState: context.globalState,
             eventStream,
             installationValidator: new InstallationValidator(eventStream),
-            installMode: 'sdk',
             timeoutSeconds: resolvedTimeoutSeconds,
             installDirectoryProvider: new SdkInstallationDirectoryProvider(storagePath),
             acquisitionContext : commandContext ?? { // See runtime extension for more details on this fake context.
                 version: 'unspecified',
                 architecture: os.arch(),
                 requestingExtensionId: 'notAnAcquisitionCall',
+                mode: 'sdk'
             },
             isExtensionTelemetryInitiallyEnabled : isExtensionTelemetryEnabled,
         };
