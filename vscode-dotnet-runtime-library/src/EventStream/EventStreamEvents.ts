@@ -33,7 +33,6 @@ export class EventBasedError extends Error
 export abstract class GenericModalEvent extends IEvent
 {
     abstract readonly mode : DotnetInstallMode;
-    abstract innerEventArgs : any[];
 }
 
 export class DotnetAcquisitionStarted extends GenericModalEvent
@@ -41,12 +40,10 @@ export class DotnetAcquisitionStarted extends GenericModalEvent
     public readonly eventName = 'DotnetAcquisitionStarted';
     public readonly type = EventType.DotnetAcquisitionStart;
     public readonly mode;
-    public readonly innerEventArgs: any[];
 
     constructor(public readonly install: DotnetInstall, public readonly startingVersion: string, public readonly requestingExtensionId = '') {
         super();
         this.mode = install.installMode;
-        this.innerEventArgs = [this.requestingExtensionId];
     }
 
     public getProperties() {
@@ -90,12 +87,10 @@ export class DotnetAcquisitionTotalSuccessEvent extends GenericModalEvent
     public readonly type = EventType.DotnetTotalSuccessEvent;
     public readonly eventName = 'DotnetAcquisitionTotalSuccessEvent';
     public readonly mode;
-    public readonly innerEventArgs: [DotnetInstall];
 
     constructor(public readonly startingVersion: string, public readonly install: DotnetInstall, public readonly requestingExtensionId = '', public readonly finalPath: string) {
         super();
         this.mode = install.installMode;
-        this.innerEventArgs = [install];
     }
 
     public getProperties() {
@@ -153,13 +148,14 @@ export class DotnetAcquisitionCompleted extends IEvent {
             return {...InstallToStrings(this.install),
                     AcquisitionCompletedInstallKey : this.install.installKey,
                     AcquisitionCompletedVersion: this.version};
-        } else {
+        }
+        else
+        {
             return {...InstallToStrings(this.install),
                     AcquisitionCompletedVersion: this.version,
                     AcquisitionCompletedInstallKey : this.install.installKey,
                     AcquisitionCompletedDotnetPath : this.dotnetPath};
         }
-
     }
 }
 
@@ -192,13 +188,11 @@ export class DotnetAcquisitionFinalError extends GenericModalEvent
     public readonly type = EventType.DotnetTotalSuccessEvent;
     public readonly eventName = 'DotnetAcquisitionTotalSuccessEvent';
     public readonly mode;
-    public readonly innerEventArgs: any[];
 
-    constructor(public readonly error: Error, public readonly install: DotnetInstall)
+    constructor(public readonly error: Error, public readonly originalEventName : string, public readonly install: DotnetInstall)
     {
         super();
-        this.mode = install?.installMode ?? '';
-        this.innerEventArgs = [error, install];
+        this.mode = install.installMode;
     }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
@@ -217,7 +211,7 @@ export class DotnetAcquisitionFinalError extends GenericModalEvent
  */
 abstract class DotnetAcquisitionFinalErrorBase extends DotnetAcquisitionError
 {
-    constructor(public readonly error: Error, public readonly originalEventName : string, public readonly install: DotnetInstall | null)
+    constructor(public readonly error: Error, public readonly originalEventName : string, public readonly install: DotnetInstall)
     {
         super(error, install);
     }

@@ -29,32 +29,31 @@ export class ModalEventRepublisher implements IModalEventRepublisher
     private getSpecificEvent(event : GenericModalEvent) : IEvent | null
     {
         const mode = event.mode;
-        const args = event.innerEventArgs;
 
         if(event instanceof DotnetAcquisitionStarted)
         {
             switch(mode)
             {
               case 'sdk':
-                return new DotnetSDKAcquisitionStarted(...(args));
+                return new DotnetSDKAcquisitionStarted(event.requestingExtensionId);
               case 'runtime':
-                return new DotnetRuntimeAcquisitionStarted(...(args));
+                return new DotnetRuntimeAcquisitionStarted(event.requestingExtensionId);
               case 'aspnetcore':
-                return new DotnetASPNetRuntimeAcquisitionStarted(...(args));
+                return new DotnetASPNetRuntimeAcquisitionStarted(event.requestingExtensionId);
               default:
                 break;
             }
         }
-        /*else if(event instanceof DotnetAcquisitionTotalSuccessEvent)
+        else if(event instanceof DotnetAcquisitionTotalSuccessEvent)
         {
           switch(mode)
           {
             case 'sdk':
-              return new DotnetGlobalSDKAcquisitionTotalSuccessEvent(...(args));
+              return new DotnetGlobalSDKAcquisitionTotalSuccessEvent(event.install);
             case 'runtime':
-              return new DotnetRuntimeAcquisitionTotalSuccessEvent(...(args));
+              return new DotnetRuntimeAcquisitionTotalSuccessEvent(event.install);
             case 'aspnetcore':
-              return new DotnetASPNetRuntimeAcquisitionTotalSuccessEvent(...(args));
+              return new DotnetASPNetRuntimeAcquisitionTotalSuccessEvent(event.install);
             default:
               break;
           }
@@ -64,16 +63,16 @@ export class ModalEventRepublisher implements IModalEventRepublisher
           switch(mode)
           {
             case 'sdk':
-              return new DotnetGlobalSDKAcquisitionError(...(args));
+              return new DotnetGlobalSDKAcquisitionError(event.error, event.originalEventName, event.install);
             case 'runtime':
-              return new DotnetRuntimeFinalAcquisitionError(...(args));
+              return new DotnetRuntimeFinalAcquisitionError(event.error, event.originalEventName, event.install);
             case 'aspnetcore':
-              return new DotnetASPNetRuntimeFinalAcquisitionError(...(args));
+              return new DotnetASPNetRuntimeFinalAcquisitionError(event.error, event.originalEventName, event.install);
             default:
               break;
           }
         }
-*/
+
         return null;
     }
 
