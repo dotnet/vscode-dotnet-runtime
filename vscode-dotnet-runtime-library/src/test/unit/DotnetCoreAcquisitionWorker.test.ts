@@ -123,10 +123,13 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         //  Acquire got called with the correct args
         const acquireEvent = eventStream.events.find(event =>
             event instanceof TestAcquireCalled &&
-            ((getInstallKeyCustomArchitecture((event as TestAcquireCalled).context.version,
-                (event as TestAcquireCalled).context.architecture, mode, (event as TestAcquireCalled).context.installType)))
-                === installKey) as TestAcquireCalled;
-        assert.exists(acquireEvent, 'The acquisition acquire event appears');
+            getInstallKeyCustomArchitecture((event as TestAcquireCalled).context.version,
+                (event as TestAcquireCalled).context.architecture, mode, (event as TestAcquireCalled).context.installType)
+            === installKey
+        ) as TestAcquireCalled;
+
+        assert.exists(acquireEvent, `The acquisition acquire event appears. Events: ${eventStream.events.filter(event =>
+            event instanceof TestAcquireCalled).map((e) => e.eventName).join(', ')};`);
         assert.equal(acquireEvent!.context.dotnetPath, expectedPath, 'The acquisition went to the expected dotnetPath');
         assert.equal(acquireEvent!.context.installDir, path.dirname(expectedPath), 'The acquisition went to the expected installation directory');
     }
@@ -199,7 +202,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
 
         const installKey = getInstallKeyCustomArchitecture(ctx.acquisitionContext.version, ctx.acquisitionContext.architecture, mode, type);
         const res = await callAcquire(ctx, acquisitionWorker, invoker);
-        await assertAcquisitionSucceeded(installKey, res.dotnetPath, eventStream, extContext);
+        await assertAcquisitionSucceeded(installKey, res.dotnetPath, eventStream, extContext, mode);
 
         await acquisitionWorker.uninstallAll(ctx.eventStream, ctx.installDirectoryProvider.getStoragePath(), ctx.extensionState);
         assert.exists(eventStream.events.find(event => event instanceof DotnetUninstallAllStarted));
