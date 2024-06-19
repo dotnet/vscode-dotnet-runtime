@@ -76,7 +76,7 @@ export class DotnetRuntimeAcquisitionStarted extends DotnetAcquisitionStartedBas
     public readonly type = EventType.DotnetModalChildEvent;
 }
 
-export class DotnetSDKAcquisitionStarted extends DotnetAcquisitionStartedBase {
+export class DotnetGlobalSDKAcquisitionStarted extends DotnetAcquisitionStartedBase {
     public readonly eventName = 'DotnetSDKAcquisitionStarted';
     public readonly type = EventType.DotnetModalChildEvent;
 }

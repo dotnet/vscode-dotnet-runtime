@@ -143,7 +143,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     {
         const worker = getAcquisitionWorker();
         commandContext.mode = commandContext.mode ?? 'runtime' as DotnetInstallMode;
-        let mode = commandContext.mode;
+        const mode = commandContext.mode;
 
         const runtimeContext = getAcquisitionWorkerContext(mode, commandContext);
 
