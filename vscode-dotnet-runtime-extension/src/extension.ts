@@ -176,7 +176,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             commandContext.version = await runtimeVersionResolver.getFullRuntimeVersion(commandContext.version);
 
             const acquisitionInvoker = new AcquisitionInvoker(runtimeContext, utilContext);
-            return mode === 'aspnetcore' ? worker.acquireLocalASPNET(runtimeContext, acquisitionInvoker) : worker.acquireRuntime(runtimeContext, acquisitionInvoker);
+            return mode === 'aspnetcore' ? worker.acquireLocalASPNET(runtimeContext, acquisitionInvoker) : worker.acquireLocalRuntime(runtimeContext, acquisitionInvoker);
         }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, 'acquire', commandContext.version), commandContext.requestingExtensionId, runtimeContext);
 
         const iKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(commandContext.version, commandContext.architecture, mode, 'local');

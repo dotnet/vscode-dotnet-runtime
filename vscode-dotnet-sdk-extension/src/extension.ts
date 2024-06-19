@@ -175,7 +175,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
                 const resolvedVersion = await versionResolver.getFullSDKVersion(commandContext.version);
                 acquisitionContext.acquisitionContext.version = resolvedVersion;
                 const acquisitionInvoker = new LocalAcquisitionInvoker(acquisitionContext, utilContext);
-                const dotnetPath = await acquisitionWorker.acquireSDK(acquisitionContext, acquisitionInvoker);
+                const dotnetPath = await acquisitionWorker.acquireLocalSDK(acquisitionContext, acquisitionInvoker);
 
                 const pathEnvVar = path.dirname(dotnetPath.dotnetPath);
                 new CommandExecutor(acquisitionContext, utilContext).setPathEnvVar(pathEnvVar, troubleshootingUrl, displayWorker, vsCodeExtensionContext, false);

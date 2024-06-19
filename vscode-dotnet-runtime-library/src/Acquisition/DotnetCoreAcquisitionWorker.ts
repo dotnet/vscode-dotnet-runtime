@@ -99,7 +99,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      * @remarks this is simply a wrapper around the acquire function.
      * @returns the requested dotnet path.
      */
-    public async acquireSDK(context: IAcquisitionWorkerContext, invoker : IAcquisitionInvoker): Promise<IDotnetAcquireResult> {
+    public async acquireLocalSDK(context: IAcquisitionWorkerContext, invoker : IAcquisitionInvoker): Promise<IDotnetAcquireResult> {
         return this.acquire(context, 'sdk', undefined, invoker);
     }
 
@@ -119,7 +119,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      * @remarks this is simply a wrapper around the acquire function.
      * @returns the requested dotnet path.
      */
-    public async acquireRuntime(context: IAcquisitionWorkerContext, invoker : IAcquisitionInvoker): Promise<IDotnetAcquireResult> {
+    public async acquireLocalRuntime(context: IAcquisitionWorkerContext, invoker : IAcquisitionInvoker): Promise<IDotnetAcquireResult>
+    {
         return this.acquire(context, 'runtime', undefined, invoker);
     }
 

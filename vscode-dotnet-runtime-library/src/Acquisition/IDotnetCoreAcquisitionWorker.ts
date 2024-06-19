@@ -14,9 +14,9 @@ export interface IDotnetCoreAcquisitionWorker
 {
     uninstallAll(eventStream : IEventStream, storagePath : string, extensionState : IExtensionState): void;
 
-    acquireRuntime(context: IAcquisitionWorkerContext, invoker : IAcquisitionInvoker): Promise<IDotnetAcquireResult>;
+    acquireLocalRuntime(context: IAcquisitionWorkerContext, invoker : IAcquisitionInvoker): Promise<IDotnetAcquireResult>;
 
-    acquireSDK(context: IAcquisitionWorkerContext, invoker : IAcquisitionInvoker): Promise<IDotnetAcquireResult>;
+    acquireLocalSDK(context: IAcquisitionWorkerContext, invoker : IAcquisitionInvoker): Promise<IDotnetAcquireResult>;
 
     acquireGlobalSDK(context: IAcquisitionWorkerContext, installerResolver: GlobalInstallerResolver): Promise<IDotnetAcquireResult>;
 }
