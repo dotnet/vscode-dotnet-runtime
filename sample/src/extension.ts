@@ -10,7 +10,6 @@ import {
     IDotnetAcquireContext,
     IDotnetAcquireResult,
     IDotnetListVersionsResult,
-    IDotnetVersion,
 } from 'vscode-dotnet-runtime-library';
 import * as runtimeExtension from 'vscode-dotnet-runtime';
 import * as sdkExtension from 'vscode-dotnet-sdk';

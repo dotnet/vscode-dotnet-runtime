@@ -16,16 +16,13 @@ import {
     DotnetAcquisitionStatusRequested,
     DotnetCoreAcquisitionWorker,
     DotnetSDKAcquisitionStarted,
-    DotnetVersionResolutionError,
     enableExtensionTelemetry,
     ErrorConfiguration,
     ExtensionConfigurationWorker,
     formatIssueUrl,
     IDotnetAcquireContext,
-    IDotnetListVersionsContext,
     IDotnetUninstallContext,
     EventBasedError,
-    IDotnetVersion,
     IEventStreamContext,
     IExtensionContext,
     IIssueContext,
@@ -35,13 +32,10 @@ import {
     VersionResolver,
     VSCodeExtensionContext,
     VSCodeEnvironment,
-    WebRequestWorker,
-    IWindowDisplayWorker,
     WindowDisplayWorker,
     Debugging,
     CommandExecutor,
     directoryProviderFactory,
-    DotnetGlobalSDKAcquisitionStarted,
 } from 'vscode-dotnet-runtime-library';
 
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
@@ -147,7 +141,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         const versionResolver = new VersionResolver(acquisitionContext);
 
         const pathResult = callWithErrorHandling(async () => {
-            eventStream.post(new DotnetGlobalSDKAcquisitionStarted(commandContext.requestingExtensionId));
+            eventStream.post(new DotnetSDKAcquisitionStarted(commandContext.requestingExtensionId));
 
             eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId ?? 'notProvided', 'sdk', 'local'));
             telemetryObserver?.setAcquisitionContext(acquisitionContext, commandContext);
