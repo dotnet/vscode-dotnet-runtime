@@ -111,7 +111,5 @@ export class ModalEventRepublisher implements IModalEventRepublisher
         }
     }
 
-    public dispose(): void
-    {
-    }
+    public dispose(): void { }
 }

@@ -4,6 +4,7 @@
 *--------------------------------------------------------------------------------------------*/
 
 import { DotnetInstallType } from '..';
+import { getInstallKeyCustomArchitecture } from '../Utils/InstallKeyUtilities';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { DotnetInstallMode } from './DotnetInstallMode';
 
@@ -71,7 +72,7 @@ export function looksLikeRuntimeVersion(version: string): boolean {
 export function GetDotnetInstallInfo(installVersion: string, installationMode: DotnetInstallMode, installType: DotnetInstallType, installArchitecture: string): DotnetInstall
 {
     return {
-        installKey: DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(installVersion, installArchitecture, installationMode, installType),
+        installKey: getInstallKeyCustomArchitecture(installVersion, installArchitecture, installationMode, installType),
         version: installVersion,
         architecture: installArchitecture,
         isGlobal: installType === 'global',

@@ -25,6 +25,7 @@ export * from './Utils/ExtensionConfigurationWorker';
 export * from './Utils/FileUtilities';
 export * from './Utils/ICommandExecutor';
 export * from './Utils/IFileUtilities';
+export * from './Utils/InstallKeyUtilities';
 export * from './Utils/IIssueContext';
 export * from './Utils/IssueReporter';
 export * from './Utils/IVSCodeEnvironment';

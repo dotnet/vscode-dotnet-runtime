@@ -9,14 +9,13 @@ import * as path from 'path';
 import * as rimraf from 'rimraf';
 import * as vscode from 'vscode';
 import {
-  DotnetCoreAcquisitionWorker,
   FileUtilities,
   IDotnetAcquireContext,
   IDotnetAcquireResult,
   IExistingPaths,
   IDotnetListVersionsContext,
   IDotnetListVersionsResult,
-  IDotnetVersion,
+  getInstallKeyCustomArchitecture,
   ITelemetryEvent,
   MockExtensionConfiguration,
   MockExtensionContext,
@@ -202,7 +201,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
 
     const rntVersion = '2.2';
     const fullyResolvedVersion = '2.2.8'; // 2.2 is very much out of support, so we don't expect this to change to a newer version
-    const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(fullyResolvedVersion, os.arch(), 'runtime', 'local');
+    const installKey = getInstallKeyCustomArchitecture(fullyResolvedVersion, os.arch(), 'runtime', 'local');
 
     const context: IDotnetAcquireContext = { version: rntVersion, requestingExtensionId };
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);

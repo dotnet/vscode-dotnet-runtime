@@ -62,6 +62,7 @@ import { DotnetInstallMode } from './DotnetInstallMode';
 import { IEventStream } from '../EventStream/EventStream';
 import { strict } from 'assert';
 import { IExtensionState } from '../IExtensionState';
+import { getInstallKeyCustomArchitecture } from '../Utils/InstallKeyUtilities';
 
 /* tslint:disable:no-any */
 
@@ -197,7 +198,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         {
             install =
             {
-                installKey: DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, context.acquisitionContext.architecture,
+                installKey: getInstallKeyCustomArchitecture(version, context.acquisitionContext.architecture,
                     context.acquisitionContext.mode!, globalInstallerResolver !== null ? 'global' : 'local'),
                 version: install.version,
                 isGlobal: install.isGlobal,
@@ -245,22 +246,6 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).addPromise(install, acquisitionPromise);
             return acquisitionPromise.then((res) => ({ dotnetPath: res }));
         }
-    }
-
-    public static getInstallKeyCustomArchitecture(version : string, architecture: string | null | undefined, mode: DotnetInstallMode,
-        installType : DotnetInstallType = 'local') : string
-    {
-        if(architecture === null || architecture === 'null')
-        {
-            // Use the legacy method (no architecture) of installs
-            return installType === 'global' ? `${version}-global` : version;
-        }
-        else if(architecture === undefined)
-        {
-            architecture = DotnetCoreAcquisitionWorker.defaultArchitecture();
-        }
-
-        return installType === 'global' ? `${version}-global~${architecture}` : `${version}~${architecture}`;
     }
 
     /**
