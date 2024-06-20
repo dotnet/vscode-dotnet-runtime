@@ -129,6 +129,7 @@
 		"@types/mocha": "^9.0.0",
 		"@types/node": "16.11.7",
 		"@types/rimraf": "3.0.2",
+		"@types/source-map-support": "^0.5.10",
 		"@types/vscode": "1.74.0",
 		"copy-webpack-plugin": "9.0.1",
 		"webpack": "5.88.2",
