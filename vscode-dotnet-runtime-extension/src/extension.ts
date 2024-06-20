@@ -174,7 +174,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
             // Note: This will impact the context object given to the worker and error handler since objects own a copy of a reference in JS.
             const runtimeVersionResolver = new VersionResolver(runtimeContext);
-            commandContext.version = await runtimeVersionResolver.getFullRuntimeVersion(commandContext.version);
+            commandContext.version = await runtimeVersionResolver.getFullVersion(commandContext.version, mode);
 
             const acquisitionInvoker = new AcquisitionInvoker(runtimeContext, utilContext);
             return mode === 'aspnetcore' ? worker.acquireLocalASPNET(runtimeContext, acquisitionInvoker) : worker.acquireLocalRuntime(runtimeContext, acquisitionInvoker);
@@ -320,7 +320,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
             globalEventStream.post(new DotnetAcquisitionStatusRequested(commandContext.version, commandContext.requestingExtensionId));
             const runtimeVersionResolver = new VersionResolver(workerContext);
-            const resolvedVersion = await runtimeVersionResolver.getFullRuntimeVersion(commandContext.version);
+            const resolvedVersion = await runtimeVersionResolver.getFullVersion(commandContext.version, mode);
             commandContext.version = resolvedVersion;
             const dotnetPath = await worker.acquireStatus(workerContext, 'runtime');
             return dotnetPath;

@@ -59,8 +59,7 @@ export class VersionResolver implements IVersionResolver {
      */
     public async GetAvailableDotnetVersions(commandContext: IDotnetListVersionsContext | undefined) : Promise<IDotnetListVersionsResult>
     {
-        // If shouldObtainSdkVersions === false, get Runtimes. Else, get Sdks.
-        const shouldObtainSdkVersions : boolean = !commandContext?.listRuntimes;
+        const getSdkVersions : boolean = !commandContext?.listRuntimes;
         const availableVersions : IDotnetListVersionsResult = [];
 
         const response : any = await this.webWorker.getCachedData();
@@ -75,17 +74,17 @@ export class VersionResolver implements IVersionResolver {
             }
             else
             {
-                const sdkDetailsJson = response['releases-index'];
+                const releases = response['releases-index'];
 
-                for(const availableSdk of sdkDetailsJson)
+                for(const release of releases)
                 {
-                    if(availableSdk['release-type'] === 'lts' || availableSdk['release-type'] === 'sts')
+                    if(release['release-type'] === 'lts' || release['release-type'] === 'sts')
                     {
                         availableVersions.push({
-                                supportStatus: (availableSdk['release-type'] as DotnetVersionSupportStatus),
-                                supportPhase: (availableSdk['support-phase'] as DotnetVersionSupportPhase),
-                                version: availableSdk[shouldObtainSdkVersions ? 'latest-sdk' : 'latest-runtime'],
-                                channelVersion: availableSdk['channel-version']
+                                supportStatus: (release['release-type'] as DotnetVersionSupportStatus),
+                                supportPhase: (release['support-phase'] as DotnetVersionSupportPhase),
+                                version: release[getSdkVersions ? 'latest-sdk' : 'latest-runtime'],
+                                channelVersion: release['channel-version']
                             } as IDotnetVersion
                         );
                     }
@@ -96,18 +95,7 @@ export class VersionResolver implements IVersionResolver {
         });
     }
 
-    public async getFullRuntimeVersion(version: string): Promise<string> {
-        return this.getFullVersion(version, 'runtime');
-    }
-
-    public async getFullSDKVersion(version: string): Promise<string> {
-        return this.getFullVersion(version, 'sdk');
-    }
-
-    /**
-     * @param getRuntimeVersion - True for getting the full runtime version, false for the SDK version.
-     */
-    private async getFullVersion(version: string, mode: DotnetInstallMode): Promise<string>
+    public async getFullVersion(version: string, mode: DotnetInstallMode): Promise<string>
     {
         let releasesVersions : IDotnetListVersionsResult;
         try
@@ -136,12 +124,13 @@ export class VersionResolver implements IVersionResolver {
         });
     }
 
-    private resolveVersion(version: string, releases: IDotnetListVersionsResult): string {
-        Debugging.log(`Resolving the version: ${version}`, this.context.eventStream);
+    private resolveVersion(version: string, releases: IDotnetListVersionsResult): string
+    {
         this.validateVersionInput(version);
 
         // Search for the specific version
         let matchingVersion = releases.filter((availableVersions : IDotnetVersion) => availableVersions.version === version);
+
         // If a x.y version is given, just find that instead (which is how almost all requests are given atm)
         if(!matchingVersion || matchingVersion.length < 1)
         {
@@ -186,7 +175,7 @@ export class VersionResolver implements IVersionResolver {
 
     private async getReleasesInfo(mode : DotnetInstallMode): Promise<IDotnetListVersionsResult>
     {
-        const apiContext: IDotnetListVersionsContext = { listRuntimes: mode === 'runtime' };
+        const apiContext: IDotnetListVersionsContext = { listRuntimes: mode === 'runtime' || mode === 'aspnetcore' };
 
         const response = await this.GetAvailableDotnetVersions(apiContext);
         if (!response)

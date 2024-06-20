@@ -167,7 +167,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             {
                 Debugging.log(`Acquisition Request was remarked as local.`, eventStream);
 
-                const resolvedVersion = await versionResolver.getFullSDKVersion(commandContext.version);
+                const resolvedVersion = await versionResolver.getFullVersion(commandContext.version, 'sdk');
                 acquisitionContext.acquisitionContext.version = resolvedVersion;
                 const acquisitionInvoker = new LocalAcquisitionInvoker(acquisitionContext, utilContext);
                 const dotnetPath = await acquisitionWorker.acquireLocalSDK(acquisitionContext, acquisitionInvoker);
@@ -189,7 +189,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             const fakeContext = getContext(null);
             const versionResolver = new VersionResolver(fakeContext);
 
-            commandContext.version = await versionResolver.getFullSDKVersion(commandContext.version);
+            commandContext.version = await versionResolver.getFullVersion(commandContext.version, 'sdk');
             const dotnetPath = await acquisitionWorker.acquireStatus(fakeContext, 'sdk');
             return dotnetPath;
         }, issueContext(commandContext.errorConfiguration, 'acquireSDKStatus'));
