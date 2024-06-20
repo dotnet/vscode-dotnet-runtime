@@ -18,10 +18,9 @@ import {
     EventBasedError,
 } from '../EventStream/EventStreamEvents';
 
-import { timeoutConstants } from '../Utils/ErrorHandler';
+import { timeoutConstants } from '../Utils/ErrorHandler'
 import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker';
 import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
-import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 
@@ -154,7 +153,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         }
         else if(installMode === 'aspnetcore')
         {
-            args = args.concat('-Runtime', 'aspnet');
+            args = args.concat('-Runtime', 'aspnetcore');
         }
         if(arch !== 'auto')
         {
