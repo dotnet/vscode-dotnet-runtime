@@ -7,12 +7,14 @@ import * as cp from 'child_process';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import {
+    DotnetInstallMode,
     IDotnetAcquireContext,
     IDotnetAcquireResult,
     IDotnetListVersionsResult,
 } from 'vscode-dotnet-runtime-library';
 import * as runtimeExtension from 'vscode-dotnet-runtime';
 import * as sdkExtension from 'vscode-dotnet-sdk';
+import { install } from 'source-map-support';
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -75,7 +77,8 @@ ${stderr}`);
         }
     });
 
-    const sampleAcquireRegistration = vscode.commands.registerCommand('sample.dotnet.acquire', async (version) => {
+    async function callAcquireAPI(version : string | undefined, installMode : DotnetInstallMode | undefined)
+    {
         if (!version) {
             version = await vscode.window.showInputBox({
                 placeHolder: '3.1',
@@ -86,10 +89,18 @@ ${stderr}`);
 
         try {
             await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
-            await vscode.commands.executeCommand('dotnet.acquire', { version, requestingExtensionId });
+            await vscode.commands.executeCommand('dotnet.acquire', { version, requestingExtensionId, mode: installMode });
         } catch (error) {
             vscode.window.showErrorMessage((error as Error).toString());
         }
+    }
+
+    const sampleAcquireRegistration = vscode.commands.registerCommand('sample.dotnet.acquire', async (version) => {
+        await callAcquireAPI(version, undefined);
+    });
+
+    const sampleAcquireASPNETRegistration = vscode.commands.registerCommand('sample.dotnet.acquireASPNET', async (version) => {
+        await callAcquireAPI(version, 'aspnetcore' );
     });
 
     const sampleAcquireStatusRegistration = vscode.commands.registerCommand('sample.dotnet.acquireStatus', async (version) => {
@@ -119,21 +130,33 @@ ${stderr}`);
         }
     });
 
-    const sampleConcurrentTest = vscode.commands.registerCommand('sample.dotnet.concurrentTest', async () => {
-        try {
+    async function acquireConcurrent(versions : [string, string, string], installMode? : DotnetInstallMode)
+    {
+        try
+        {
             vscode.commands.executeCommand('dotnet.showAcquisitionLog');
             const promises = [
-                vscode.commands.executeCommand('dotnet.acquire', { version: '2.0', requestingExtensionId }),
-                vscode.commands.executeCommand('dotnet.acquire', { version: '2.1', requestingExtensionId }),
-                vscode.commands.executeCommand('dotnet.acquire', { version: '2.2', requestingExtensionId })];
+                vscode.commands.executeCommand('dotnet.acquire', { version: versions[0], requestingExtensionId, mode: installMode }),
+                vscode.commands.executeCommand('dotnet.acquire', { version: versions[1], requestingExtensionId, mode: installMode }),
+                vscode.commands.executeCommand('dotnet.acquire', { version: versions[2], requestingExtensionId, mode: installMode })];
 
-            for (const promise of promises) {
+            for (const promise of promises)
+            {
                 // Await here so we can detect errors
                 await promise;
             }
-        } catch (error) {
+        } catch (error)
+        {
             vscode.window.showErrorMessage((error as Error).toString());
         }
+    }
+
+    const sampleConcurrentTest = vscode.commands.registerCommand('sample.dotnet.concurrentTest', async () => {
+        await acquireConcurrent(['2.0', '2.1', '2.2'], 'runtime');
+    });
+
+    const sampleConcurrentASPNETTest = vscode.commands.registerCommand('sample.dotnet.concurrentASPNETTest', async () => {
+        await acquireConcurrent(['2.0', '2.1', '2.2'], 'aspnetcore');
     });
 
     const sampleShowAcquisitionLogRegistration = vscode.commands.registerCommand('sample.dotnet.showAcquisitionLog', async () => {
@@ -147,9 +170,11 @@ ${stderr}`);
     context.subscriptions.push(
         sampleHelloWorldRegistration,
         sampleAcquireRegistration,
+        sampleAcquireASPNETRegistration,
         sampleAcquireStatusRegistration,
         sampleDotnetUninstallAllRegistration,
         sampleConcurrentTest,
+        sampleConcurrentASPNETTest,
         sampleShowAcquisitionLogRegistration,
     );
 

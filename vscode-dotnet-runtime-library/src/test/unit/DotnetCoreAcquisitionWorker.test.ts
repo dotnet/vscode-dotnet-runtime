@@ -389,7 +389,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         const [acquisitionWorker, _] = setupWorker(ctx, eventStream);
         const acquisitionInvoker = new RejectingAcquisitionInvoker(eventStream);
 
-        return assert.isRejected(acquisitionWorker.acquireLocalRuntime(ctx, acquisitionInvoker), '.NET Acquisition Failed: Rejecting message');
+        return assert.isRejected(acquisitionWorker.acquireLocalRuntime(ctx, acquisitionInvoker), '.NET Acquisition Failed: "Rejecting message"');
     }).timeout(expectedTimeoutTime);
 
     test('Get Expected Path With Apostrophe In Install path', async () => {

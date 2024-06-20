@@ -32,6 +32,11 @@
 				"category": "Sample"
 			},
 			{
+				"command": "sample.dotnet.acquireASPNET",
+				"title": "Acquire ASPNET runtime",
+				"category": "Sample"
+			},
+			{
 				"command": "sample.dotnet.acquireStatus",
 				"title": "Check the status of acquiring the .NET runtime",
 				"category": "Sample"
@@ -44,6 +49,11 @@
 			{
 				"command": "sample.dotnet.concurrentTest",
 				"title": "Concurrently acquire all 2.X .NET Core runtimes",
+				"category": "Sample"
+			},
+			{
+				"command": "sample.dotnet.concurrentASPNETTest",
+				"title": "Concurrently acquire all 2.X ASPNET Core runtimes",
 				"category": "Sample"
 			},
 			{

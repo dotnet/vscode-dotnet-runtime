@@ -246,7 +246,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
         if(pathResult !== undefined && pathResult?.dotnetPath !== null)
         {
-            globalEventStream.post(new DotnetAcquisitionTotalSuccessEvent(commandContext.version, install, commandContext.requestingExtensionId ?? '', pathResult.p));
+            globalEventStream.post(new DotnetAcquisitionTotalSuccessEvent(commandContext.version, install, commandContext.requestingExtensionId ?? '', pathResult.dotnetPath));
         }
         return pathResult;
     });
