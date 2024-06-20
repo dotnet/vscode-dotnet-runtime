@@ -183,7 +183,11 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         const iKey = getInstallKeyCustomArchitecture(commandContext.version, commandContext.architecture, mode, 'local');
         const install = {installKey : iKey, version : commandContext.version, installMode: mode, isGlobal: false,
             architecture: commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture()} as DotnetInstall;
-        globalEventStream.post(new DotnetAcquisitionTotalSuccessEvent(commandContext.version, install, commandContext.requestingExtensionId ?? '', dotnetPath?.dotnetPath ?? ''));
+
+        if(dotnetPath !== undefined && dotnetPath?.dotnetPath !== null)
+        {
+            globalEventStream.post(new DotnetAcquisitionTotalSuccessEvent(commandContext.version, install, commandContext.requestingExtensionId ?? '', dotnetPath.dotnetPath));
+        }
         return dotnetPath;
     });
 
@@ -240,7 +244,10 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         const install = {installKey : iKey, version : commandContext.version, installMode: commandContext.mode, isGlobal: true,
             architecture: commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture()} as DotnetInstall;
 
-        globalEventStream.post(new DotnetAcquisitionTotalSuccessEvent(commandContext.version, install, commandContext.requestingExtensionId ?? '', pathResult?.dotnetPath ?? ''));
+        if(pathResult !== undefined && pathResult?.dotnetPath !== null)
+        {
+            globalEventStream.post(new DotnetAcquisitionTotalSuccessEvent(commandContext.version, install, commandContext.requestingExtensionId ?? '', pathResult.p));
+        }
         return pathResult;
     });
 
