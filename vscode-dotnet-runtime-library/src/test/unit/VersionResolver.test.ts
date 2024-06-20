@@ -49,7 +49,7 @@ suite('VersionResolver Unit Tests', () => {
 
     test('Resolve Valid Runtime Versions', async () => {
         for (const version of versionPairs) {
-            assert.equal(await resolver.getFullVersion(version[0], 'sdk'), version[1]);
+            assert.equal(await resolver.getFullVersion(version[0], 'runtime'), version[1]);
         }
     });
 
