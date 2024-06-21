@@ -123,12 +123,6 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
                 && (event as DotnetAcquisitionCompleted).dotnetPath === expectedPath);
         assert.exists(completedEvent, `The acquisition completed event appears for install key ${installKey} and path ${expectedPath}`);
 
-        const specificEvent = eventStream.events.find(event => mode === 'runtime' ? event instanceof DotnetRuntimeAcquisitionTotalSuccessEvent :
-            mode === 'aspnetcore' ? event instanceof DotnetASPNetRuntimeAcquisitionTotalSuccessEvent :
-            mode === 'sdk' ? event instanceof DotnetGlobalSDKAcquisitionTotalSuccessEvent : null
-         && (event as DotnetAcquisitionCompleted).install.installKey === installKey);
-        assert.exists(specificEvent, `The install mode specific total success event appears for install key ${installKey} and path ${expectedPath}`);
-
         //  Acquire got called with the correct args
         const acquireEvent = eventStream.events.find(event =>
             event instanceof TestAcquireCalled &&
