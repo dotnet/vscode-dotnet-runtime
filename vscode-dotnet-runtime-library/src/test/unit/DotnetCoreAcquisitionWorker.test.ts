@@ -35,7 +35,7 @@ import { GetDotnetInstallInfo } from '../../Acquisition/DotnetInstall';
 import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
 import { IEventStream } from '../../EventStream/EventStream';
-import { DotnetInstallType } from '../..';
+import { DotnetASPNetRuntimeAcquisitionTotalSuccessEvent, DotnetGlobalSDKAcquisitionTotalSuccessEvent, DotnetInstallType, DotnetRuntimeAcquisitionTotalSuccessEvent } from '../..';
 import { getInstallKeyCustomArchitecture } from '../../Utils/InstallKeyUtilities';
 
 const assert = chai.assert;
@@ -119,6 +119,12 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
             .find(event => event instanceof DotnetAcquisitionCompleted && (event as DotnetAcquisitionCompleted).install.installKey === installKey
                 && (event as DotnetAcquisitionCompleted).dotnetPath === expectedPath);
         assert.exists(completedEvent, `The acquisition completed event appears for install key ${installKey} and path ${expectedPath}`);
+
+        const specificEvent = eventStream.events.find(event => mode === 'runtime' ? event instanceof DotnetRuntimeAcquisitionTotalSuccessEvent :
+            mode === 'aspnetcore' ? event instanceof DotnetASPNetRuntimeAcquisitionTotalSuccessEvent :
+            mode === 'sdk' ? event instanceof DotnetGlobalSDKAcquisitionTotalSuccessEvent : null
+         && (event as DotnetAcquisitionCompleted).install.installKey === installKey);
+        assert.exists(specificEvent, `The install mode specific total success event appears for install key ${installKey} and path ${expectedPath}`);
 
         //  Acquire got called with the correct args
         const acquireEvent = eventStream.events.find(event =>
