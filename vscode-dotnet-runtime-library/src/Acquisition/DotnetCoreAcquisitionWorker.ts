@@ -309,6 +309,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         await this.tryCleanUpInstallGraveyard(context);
 
         await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).reclassifyInstallingVersionToInstalled(context, install);
+        context.eventStream.post(new DotnetAcquisitionCompleted(install, dotnetPath, version));
 
         return dotnetPath;
     }
@@ -418,6 +419,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).reclassifyInstallingVersionToInstalled(context, install);
 
         context.eventStream.post(new DotnetGlobalAcquisitionCompletionEvent(`The version ${JSON.stringify(install)} completed successfully.`));
+
         return installedSDKPath;
     }
 

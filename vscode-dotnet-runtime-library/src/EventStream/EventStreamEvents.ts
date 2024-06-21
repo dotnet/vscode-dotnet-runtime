@@ -119,13 +119,13 @@ abstract class DotnetAcquisitionTotalSuccessEventBase extends IEvent
 {
     public readonly type = EventType.DotnetModalChildEvent;
 
-    constructor(public readonly installKey: DotnetInstall) {
+    constructor(public readonly install: DotnetInstall) {
         super();
     }
 
     public getProperties() {
         return {
-                ...InstallToStrings(this.installKey),
+                ...InstallToStrings(this.install),
             };
     }
 }
@@ -144,7 +144,6 @@ export class DotnetASPNetRuntimeAcquisitionTotalSuccessEvent extends DotnetAcqui
 {
     public readonly eventName = 'DotnetASPNetRuntimeAcquisitionTotalSuccessEvent';
 }
-
 
 export class DotnetAcquisitionRequested extends GenericModalEvent
 {
@@ -201,12 +200,16 @@ export class DotnetASPNetRuntimeAcquisitionRequested extends DotnetAcquisitionRe
 }
 
 
-export class DotnetAcquisitionCompleted extends IEvent {
+export class DotnetAcquisitionCompleted extends GenericModalEvent {
     public readonly eventName = 'DotnetAcquisitionCompleted';
     public readonly type = EventType.DotnetAcquisitionCompleted;
+    public readonly mode;
+    public readonly installType: DotnetInstallType;
 
     constructor(public readonly install: DotnetInstall, public readonly dotnetPath: string, public readonly version: string) {
         super();
+        this.mode = install.installMode;
+        this.installType = install.isGlobal ? 'global' : 'local';
     }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
@@ -223,6 +226,37 @@ export class DotnetAcquisitionCompleted extends IEvent {
                     AcquisitionCompletedDotnetPath : this.dotnetPath};
         }
     }
+}
+
+
+abstract class DotnetAcquisitionCompletionEventBase extends IEvent
+{
+    public readonly type = EventType.DotnetModalChildEvent;
+
+    constructor(public readonly install: DotnetInstall) {
+        super();
+    }
+
+    public getProperties() {
+        return {
+                ...InstallToStrings(this.install),
+            };
+    }
+}
+
+export class DotnetRuntimeAcquisitionCompletionEvent extends DotnetAcquisitionCompletionEventBase
+{
+    public readonly eventName = 'DotnetRuntimeAcquisitionCompletionEvent';
+}
+
+export class DotnetGlobalSDKAcquisitionCompletionEvent extends DotnetAcquisitionCompletionEventBase
+{
+    public readonly eventName = 'DotnetGlobalSDKAcquisitionCompletionEvent';
+}
+
+export class DotnetASPNetRuntimeAcquisitionCompletionEvent extends DotnetAcquisitionCompletionEventBase
+{
+    public readonly eventName = 'DotnetASPNetRuntimeAcquisitionCompletionEvent';
 }
 
 export abstract class DotnetAcquisitionError extends IEvent {

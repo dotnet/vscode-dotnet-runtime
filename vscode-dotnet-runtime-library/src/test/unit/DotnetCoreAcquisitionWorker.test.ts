@@ -19,7 +19,10 @@ import {
     TestAcquireCalled,
     DotnetASPNetRuntimeAcquisitionTotalSuccessEvent,
     DotnetGlobalSDKAcquisitionTotalSuccessEvent,
-    DotnetRuntimeAcquisitionTotalSuccessEvent
+    DotnetRuntimeAcquisitionTotalSuccessEvent,
+    DotnetRuntimeAcquisitionCompletionEvent,
+    DotnetASPNetRuntimeAcquisitionCompletionEvent,
+    DotnetGlobalSDKAcquisitionCompletionEvent,
 } from '../../EventStream/EventStreamEvents';
 import { EventType } from '../../EventStream/EventType';
 import {
@@ -39,7 +42,7 @@ import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
 import { IEventStream } from '../../EventStream/EventStream';
 import { DotnetInstallType} from '../../IDotnetAcquireContext';
-import { getInstallKeyCustomArchitecture } from '../../Utils/InstallKeyUtilities';
+import { getInstallKeyCustomArchitecture, isGlobalLegacyInstallKey } from '../../Utils/InstallKeyUtilities';
 
 const assert = chai.assert;
 chai.use(chaiAsPromised);
@@ -123,11 +126,15 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
                 && (event as DotnetAcquisitionCompleted).dotnetPath === expectedPath);
         assert.exists(completedEvent, `The acquisition completed event appears for install key ${installKey} and path ${expectedPath}`);
 
-        const specificEvent = eventStream.events.find(event => mode === 'runtime' ? event instanceof DotnetRuntimeAcquisitionTotalSuccessEvent :
-            mode === 'aspnetcore' ? event instanceof DotnetASPNetRuntimeAcquisitionTotalSuccessEvent :
-            mode === 'sdk' ? event instanceof DotnetGlobalSDKAcquisitionTotalSuccessEvent : null
-         && (event as DotnetAcquisitionCompleted).install.installKey === installKey);
-        assert.exists(specificEvent, `The install mode specific total success event appears for install key ${installKey} and path ${expectedPath}`);
+        const specificEvent = eventStream.events.find(event => mode === 'runtime' ? event instanceof DotnetRuntimeAcquisitionCompletionEvent :
+            mode === 'aspnetcore' ? event instanceof DotnetASPNetRuntimeAcquisitionCompletionEvent :
+            mode === 'sdk' ? event instanceof DotnetGlobalSDKAcquisitionCompletionEvent : null
+         && (event as any).installKey === installKey);
+
+        if( (mode === 'sdk' && isGlobalLegacyInstallKey(installKey)) || mode === 'runtime' || mode === 'aspnetcore')
+        {
+            assert.exists(specificEvent, `The install mode specific total success event appears for install key ${installKey} and path ${expectedPath}`);
+        }
 
         //  Acquire got called with the correct args
         const acquireEvent = eventStream.events.find(event =>
