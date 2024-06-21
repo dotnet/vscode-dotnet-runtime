@@ -20,11 +20,7 @@ import
   DotnetRuntimeAcquisitionTotalSuccessEvent,
   DotnetRuntimeFinalAcquisitionError,
   DotnetGlobalSDKAcquisitionStarted,
-  GenericModalEvent,
-  DotnetRuntimeAcquisitionCompletionEvent,
-  DotnetASPNetRuntimeAcquisitionCompletionEvent,
-  DotnetGlobalSDKAcquisitionCompletionEvent,
-  DotnetAcquisitionCompleted
+  GenericModalEvent
 } from '../EventStream/EventStreamEvents';
 import { IEventStream } from './EventStream';
 import { IEvent } from './IEvent';
@@ -49,20 +45,6 @@ export class ModalEventRepublisher implements IModalEventRepublisher
                 return new DotnetRuntimeAcquisitionStarted(event.requestingExtensionId);
               case 'aspnetcore':
                 return new DotnetASPNetRuntimeAcquisitionStarted(event.requestingExtensionId);
-              default:
-                break;
-            }
-        }
-        else if(event instanceof DotnetAcquisitionCompleted)
-        {
-            switch(mode)
-            {
-              case 'sdk':
-                return event.installType === 'global' ? new DotnetGlobalSDKAcquisitionCompletionEvent(event.install) : null;
-              case 'runtime':
-                return new DotnetRuntimeAcquisitionCompletionEvent(event.install);
-              case 'aspnetcore':
-                return new DotnetASPNetRuntimeAcquisitionCompletionEvent(event.install);
               default:
                 break;
             }
