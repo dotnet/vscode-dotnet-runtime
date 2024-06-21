@@ -93,10 +93,10 @@ const defaultTimeoutValue = 600;
 const moreInfoUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md';
 let disableActivationUnderTest = true;
 
-export function activate(context: vscode.ExtensionContext, extensionContext?: IExtensionContext)
+export function activate(vsCodeContext: vscode.ExtensionContext, extensionContext?: IExtensionContext)
 {
 
-    if((process.env.DOTNET_INSTALL_TOOL_UNDER_TEST === 'true' || (context?.extensionMode === vscode.ExtensionMode.Test)) && disableActivationUnderTest)
+    if((process.env.DOTNET_INSTALL_TOOL_UNDER_TEST === 'true' || (vsCodeContext?.extensionMode === vscode.ExtensionMode.Test)) && disableActivationUnderTest)
     {
         return;
     }
@@ -108,8 +108,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
     // Reading Extension Configuration
     const timeoutValue = extensionConfiguration.get<number>(configKeys.installTimeoutValue);
-    if (!fs.existsSync(context.globalStoragePath)) {
-        fs.mkdirSync(context.globalStoragePath);
+    if (!fs.existsSync(vsCodeContext.globalStoragePath)) {
+        fs.mkdirSync(vsCodeContext.globalStoragePath);
     }
     const resolvedTimeoutSeconds = timeoutValue === undefined ? defaultTimeoutValue : timeoutValue;
     const proxyLink = extensionConfiguration.get<string>(configKeys.proxyUrl);
@@ -122,10 +122,10 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         vsCodeEnv: new VSCodeEnvironment()
     }
 
-    const vsCodeExtensionContext = new VSCodeExtensionContext(context);
+    const vsCodeExtensionContext = new VSCodeExtensionContext(vsCodeContext);
     const eventStreamContext = {
         displayChannelName,
-        logPath: context.logPath,
+        logPath: vsCodeContext.logPath,
         extensionId: dotnetCoreAcquisitionExtensionId,
         enableTelemetry: isExtensionTelemetryEnabled,
         telemetryReporter: extensionContext ? extensionContext.telemetryReporter : undefined,
@@ -333,9 +333,9 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         {
             const mode = 'runtime' as DotnetInstallMode;
             const worker = getAcquisitionWorker();
-            const installDirectoryProvider = directoryProviderFactory(mode, context.globalStoragePath);
+            const installDirectoryProvider = directoryProviderFactory(mode, vsCodeContext.globalStoragePath);
 
-            await worker.uninstallAll(globalEventStream, installDirectoryProvider.getStoragePath(), context.globalState);
+            await worker.uninstallAll(globalEventStream, installDirectoryProvider.getStoragePath(), vsCodeContext.globalState);
         },
             getIssueContext(existingPathConfigWorker)(commandContext ? commandContext.errorConfiguration : undefined, 'uninstallAll')
         );
@@ -395,8 +395,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         customWebWorker: WebRequestWorker | undefined, onRecommendationMode : boolean) : Promise<IDotnetListVersionsResult | undefined> =>
     {
         const mode = 'sdk' as DotnetInstallMode;
-        const context = getVersionResolverContext(mode, 'global', commandContext?.errorConfiguration);
-        const customVersionResolver = new VersionResolver(context, customWebWorker);
+        const workercontext = getVersionResolverContext(mode, 'global', commandContext?.errorConfiguration);
+        const customVersionResolver = new VersionResolver(workercontext, customWebWorker);
 
         if(os.platform() !== 'linux' || !onRecommendationMode)
         {
@@ -409,7 +409,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         }
         else
         {
-            const linuxResolver = new LinuxVersionResolver(context, utilContext);
+            const linuxResolver = new LinuxVersionResolver(workercontext, utilContext);
             try
             {
                 const suggestedVersion = await linuxResolver.getRecommendedDotnetVersion('sdk' as DotnetInstallMode);
@@ -456,13 +456,13 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     function getAcquisitionWorkerContext(mode : DotnetInstallMode, acquiringContext : IDotnetAcquireContext) : IAcquisitionWorkerContext
     {
         return {
-            storagePath: context.globalStoragePath,
-            extensionState: context.globalState,
+            storagePath: vsCodeContext.globalStoragePath,
+            extensionState: vsCodeContext.globalState,
             eventStream: globalEventStream,
             installationValidator: new InstallationValidator(globalEventStream),
             timeoutSeconds: resolvedTimeoutSeconds,
             acquisitionContext: acquiringContext,
-            installDirectoryProvider: directoryProviderFactory(mode, context.globalStoragePath),
+            installDirectoryProvider: directoryProviderFactory(mode, vsCodeContext.globalStoragePath),
             proxyUrl: proxyLink,
             isExtensionTelemetryInitiallyEnabled: isExtensionTelemetryEnabled
         }
@@ -491,7 +491,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     }
 
     // Exposing API Endpoints
-    context.subscriptions.push(
+    vsCodeContext.subscriptions.push(
         dotnetAcquireRegistration,
         dotnetAcquireStatusRegistration,
         dotnetAcquireGlobalSDKRegistration,

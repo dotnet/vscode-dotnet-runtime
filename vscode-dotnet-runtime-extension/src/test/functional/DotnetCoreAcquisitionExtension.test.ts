@@ -103,9 +103,9 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     assert.isAbove(extensionContext.subscriptions.length, 0);
   }).timeout(standardTimeoutTime);
 
-  async function installRuntime(dotnetVersion : string, mode : DotnetInstallMode)
+  async function installRuntime(dotnetVersion : string, installMode : DotnetInstallMode)
   {
-    const context: IDotnetAcquireContext = { version: dotnetVersion, requestingExtensionId, mode: mode };
+    const context: IDotnetAcquireContext = { version: dotnetVersion, requestingExtensionId, mode: installMode };
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
     assert.exists(result, 'Command results a result');
     assert.exists(result!.dotnetPath, 'The return type of the local runtime install command has a .dotnetPath property');
@@ -124,9 +124,9 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     await installRuntime('2.2', 'aspnetcore');
   }).timeout(standardTimeoutTime);
 
-  async function installUninstallAll(dotnetVersion : string, mode : DotnetInstallMode)
+  async function installUninstallAll(dotnetVersion : string, installMode : DotnetInstallMode)
   {
-    const context: IDotnetAcquireContext = { version: dotnetVersion, requestingExtensionId, mode: mode };
+    const context: IDotnetAcquireContext = { version: dotnetVersion, requestingExtensionId, mode: installMode };
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
     assert.exists(result);
     assert.exists(result!.dotnetPath);
