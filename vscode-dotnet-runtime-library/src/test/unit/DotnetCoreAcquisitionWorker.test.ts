@@ -17,6 +17,9 @@ import {
     DotnetUninstallAllCompleted,
     DotnetUninstallAllStarted,
     TestAcquireCalled,
+    DotnetASPNetRuntimeAcquisitionTotalSuccessEvent,
+    DotnetGlobalSDKAcquisitionTotalSuccessEvent,
+    DotnetRuntimeAcquisitionTotalSuccessEvent
 } from '../../EventStream/EventStreamEvents';
 import { EventType } from '../../EventStream/EventType';
 import {
@@ -35,7 +38,7 @@ import { GetDotnetInstallInfo } from '../../Acquisition/DotnetInstall';
 import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
 import { IEventStream } from '../../EventStream/EventStream';
-import { DotnetASPNetRuntimeAcquisitionTotalSuccessEvent, DotnetGlobalSDKAcquisitionTotalSuccessEvent, DotnetInstallType, DotnetRuntimeAcquisitionTotalSuccessEvent } from '../..';
+import { DotnetInstallType} from '../../IDotnetAcquireContext';
 import { getInstallKeyCustomArchitecture } from '../../Utils/InstallKeyUtilities';
 
 const assert = chai.assert;

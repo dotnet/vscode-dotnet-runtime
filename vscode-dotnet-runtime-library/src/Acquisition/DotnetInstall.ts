@@ -3,9 +3,8 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-import { DotnetInstallType } from '..';
+import { DotnetInstallType } from '../IDotnetAcquireContext';
 import { getInstallKeyCustomArchitecture } from '../Utils/InstallKeyUtilities';
-import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { DotnetInstallMode } from './DotnetInstallMode';
 
 export interface DotnetInstall {

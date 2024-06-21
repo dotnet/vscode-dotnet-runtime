@@ -11,7 +11,7 @@ import { TelemetryUtilities } from './TelemetryUtilities';
 import { InstallToStrings } from '../Acquisition/DotnetInstall';
 import { DotnetInstall } from '../Acquisition/DotnetInstall';
 import { DotnetInstallMode } from '../Acquisition/DotnetInstallMode';
-import { DotnetInstallType } from '..';
+import { DotnetInstallType } from '../IDotnetAcquireContext';
 
 // tslint:disable max-classes-per-file
 
