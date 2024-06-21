@@ -43,6 +43,7 @@ import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerC
 import { IEventStream } from '../../EventStream/EventStream';
 import { DotnetInstallType} from '../../IDotnetAcquireContext';
 import { getInstallKeyCustomArchitecture, isGlobalLegacyInstallKey } from '../../Utils/InstallKeyUtilities';
+/* tslint:disable:no-any */
 
 const assert = chai.assert;
 chai.use(chaiAsPromised);
