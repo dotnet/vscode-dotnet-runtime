@@ -132,7 +132,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         showLogCommand: `${commandPrefix}.${commandKeys.showAcquisitionLog}`,
         packageJson
     } as IEventStreamContext;
-    const [globalEventStream, outputChannel, loggingObserver, eventStreamObservers, telemetryObserver] = registerEventStream(eventStreamContext, vsCodeExtensionContext, utilContext);
+    const [globalEventStream, outputChannel, loggingObserver,
+        eventStreamObservers, telemetryObserver, _] = registerEventStream(eventStreamContext, vsCodeExtensionContext, utilContext);
 
 
     // Setting up command-shared classes for Runtime & SDK Acquisition
@@ -188,6 +189,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         {
             globalEventStream.post(new DotnetAcquisitionTotalSuccessEvent(commandContext.version, install, commandContext.requestingExtensionId ?? '', dotnetPath.dotnetPath));
         }
+
+        loggingObserver.dispose();
         return dotnetPath;
     });
 
@@ -248,6 +251,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         {
             globalEventStream.post(new DotnetAcquisitionTotalSuccessEvent(commandContext.version, install, commandContext.requestingExtensionId ?? '', pathResult.dotnetPath));
         }
+
+        loggingObserver.dispose();
         return pathResult;
     });
 

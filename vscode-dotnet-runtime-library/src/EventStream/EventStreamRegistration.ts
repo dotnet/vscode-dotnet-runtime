@@ -34,7 +34,7 @@ export interface IEventStreamContext {
 }
 
 export function registerEventStream(context: IEventStreamContext, extensionContext : IVSCodeExtensionContext,
-    utilityContext : IUtilityContext): [EventStream, vscode.OutputChannel, LoggingObserver, IEventStreamObserver[], TelemetryObserver | null]
+    utilityContext : IUtilityContext): [EventStream, vscode.OutputChannel, LoggingObserver, IEventStreamObserver[], TelemetryObserver | null, ModalEventRepublisher]
 {
     const outputChannel = vscode.window.createOutputChannel(context.displayChannelName);
     if (!fs.existsSync(context.logPath))
@@ -66,7 +66,7 @@ export function registerEventStream(context: IEventStreamContext, extensionConte
     const modalEventObserver = new ModalEventRepublisher(eventStream);
     eventStream.subscribe(event => modalEventObserver.post(event));
 
-    return [eventStream, outputChannel, loggingObserver, eventStreamObservers, telemetryObserver];
+    return [eventStream, outputChannel, loggingObserver, eventStreamObservers, telemetryObserver, modalEventObserver];
 }
 
 export function enableExtensionTelemetry(extensionConfiguration: IExtensionConfiguration, enableTelemetryKey: string): boolean {
