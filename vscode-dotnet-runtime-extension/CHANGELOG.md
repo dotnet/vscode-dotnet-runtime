@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+## [2.0.8] - 2024-07-09
+
+Fixes issues with offline detection and timeouts.
+
 ## [2.0.7] - 2024-06-30
 
 Adds support for ASP.NET Core Runtime installation via the `acquire` API.
