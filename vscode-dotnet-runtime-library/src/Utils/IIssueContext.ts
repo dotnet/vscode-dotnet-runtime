@@ -3,7 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import { IEventStream } from '../EventStream/EventStream';
-import { ILoggingObserver } from '../test/ILoggingObserver';
+import { ILoggingObserver } from '../EventStream/ILoggingObserver';
 import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
 import { ErrorConfiguration } from './ErrorHandler';
 import { IExtensionConfigurationWorker } from './IExtensionConfigurationWorker';

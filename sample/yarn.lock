@@ -121,6 +121,13 @@
     "@types/glob" "*"
     "@types/node" "*"
 
+"@types/source-map-support@^0.5.10":
+  "integrity" "sha1-gk3O+YlJa66Y6dBMjcGsHXDhvTk="
+  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/source-map-support/-/source-map-support-0.5.10.tgz"
+  "version" "0.5.10"
+  dependencies:
+    "source-map" "^0.6.0"
+
 "@types/vscode@1.74.0":
   "integrity" "sha1-StwhtOf1J7iT3jQYwhqR8eUDvc0="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/vscode/-/vscode-1.74.0.tgz"
@@ -1814,6 +1821,7 @@
     "proper-lockfile" "^4.1.2"
     "rimraf" "3.0.2"
     "run-script-os" "^1.1.6"
+    "semver" "^7.6.2"
     "shelljs" "0.8.5"
     "typescript" "4.4.4"
     "vscode-extension-telemetry" "^0.4.3"
@@ -1823,7 +1831,7 @@
 
 "vscode-dotnet-runtime@file:../vscode-dotnet-runtime-extension":
   "resolved" "file:../vscode-dotnet-runtime-extension"
-  "version" "2.0.6"
+  "version" "2.0.7"
   dependencies:
     "@types/chai-as-promised" "^7.1.8"
     "@vscode/test-electron" "^2.3.9"
@@ -1837,6 +1845,7 @@
     "open" "^8.4.0"
     "rimraf" "3.0.2"
     "shelljs" "^0.8.5"
+    "ts-loader" "^9.5.1"
     "typescript" "4.4.4"
     "vscode-dotnet-runtime-library" "file:../vscode-dotnet-runtime-library"
     "webpack-permissions-plugin" "^1.0.9"
@@ -1865,6 +1874,7 @@
     "run-script-os" "^1.1.6"
     "shelljs" "^0.8.5"
     "source-map-support" "^0.5.21"
+    "ts-loader" "^9.5.1"
     "typescript" "4.4.4"
     "vscode-dotnet-runtime-library" "file:../vscode-dotnet-runtime-library"
 

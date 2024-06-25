@@ -16,16 +16,13 @@ import {
     DotnetAcquisitionStatusRequested,
     DotnetCoreAcquisitionWorker,
     DotnetSDKAcquisitionStarted,
-    DotnetVersionResolutionError,
     enableExtensionTelemetry,
     ErrorConfiguration,
     ExtensionConfigurationWorker,
     formatIssueUrl,
     IDotnetAcquireContext,
-    IDotnetListVersionsContext,
     IDotnetUninstallContext,
     EventBasedError,
-    IDotnetVersion,
     IEventStreamContext,
     IExtensionContext,
     IIssueContext,
@@ -35,8 +32,6 @@ import {
     VersionResolver,
     VSCodeExtensionContext,
     VSCodeEnvironment,
-    WebRequestWorker,
-    IWindowDisplayWorker,
     WindowDisplayWorker,
     Debugging,
     CommandExecutor,
@@ -94,7 +89,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         showLogCommand: `${commandPrefix}.${commandKeys.showAcquisitionLog}`,
         packageJson,
     } as IEventStreamContext;
-    const [eventStream, outputChannel, loggingObserver, eventStreamObservers, telemetryObserver] = registerEventStream(eventStreamContext, vsCodeExtensionContext, utilContext);
+    const [eventStream, outputChannel, loggingObserver, eventStreamObservers, telemetryObserver, _] = registerEventStream(eventStreamContext, vsCodeExtensionContext, utilContext);
 
     const extensionConfigWorker = new ExtensionConfigurationWorker(extensionConfiguration, undefined, undefined);
     const issueContext = (errorConfiguration: ErrorConfiguration | undefined, commandName: string, version?: string) => {
@@ -148,7 +143,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         const pathResult = callWithErrorHandling(async () => {
             eventStream.post(new DotnetSDKAcquisitionStarted(commandContext.requestingExtensionId));
 
-            eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId));
+            eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId ?? 'notProvided', 'sdk', 'local'));
             telemetryObserver?.setAcquisitionContext(acquisitionContext, commandContext);
 
             if(commandContext.installType === 'global')
@@ -172,10 +167,10 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             {
                 Debugging.log(`Acquisition Request was remarked as local.`, eventStream);
 
-                const resolvedVersion = await versionResolver.getFullSDKVersion(commandContext.version);
+                const resolvedVersion = await versionResolver.getFullVersion(commandContext.version, 'sdk');
                 acquisitionContext.acquisitionContext.version = resolvedVersion;
                 const acquisitionInvoker = new LocalAcquisitionInvoker(acquisitionContext, utilContext);
-                const dotnetPath = await acquisitionWorker.acquireSDK(acquisitionContext, acquisitionInvoker);
+                const dotnetPath = await acquisitionWorker.acquireLocalSDK(acquisitionContext, acquisitionInvoker);
 
                 const pathEnvVar = path.dirname(dotnetPath.dotnetPath);
                 new CommandExecutor(acquisitionContext, utilContext).setPathEnvVar(pathEnvVar, troubleshootingUrl, displayWorker, vsCodeExtensionContext, false);
@@ -194,7 +189,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             const fakeContext = getContext(null);
             const versionResolver = new VersionResolver(fakeContext);
 
-            commandContext.version = await versionResolver.getFullSDKVersion(commandContext.version);
+            commandContext.version = await versionResolver.getFullVersion(commandContext.version, 'sdk');
             const dotnetPath = await acquisitionWorker.acquireStatus(fakeContext, 'sdk');
             return dotnetPath;
         }, issueContext(commandContext.errorConfiguration, 'acquireSDKStatus'));
@@ -222,13 +217,13 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
             extensionState: context.globalState,
             eventStream,
             installationValidator: new InstallationValidator(eventStream),
-            installMode: 'sdk',
             timeoutSeconds: resolvedTimeoutSeconds,
             installDirectoryProvider: new SdkInstallationDirectoryProvider(storagePath),
             acquisitionContext : commandContext ?? { // See runtime extension for more details on this fake context.
                 version: 'unspecified',
                 architecture: os.arch(),
                 requestingExtensionId: 'notAnAcquisitionCall',
+                mode: 'sdk'
             },
             isExtensionTelemetryInitiallyEnabled : isExtensionTelemetryEnabled,
         };

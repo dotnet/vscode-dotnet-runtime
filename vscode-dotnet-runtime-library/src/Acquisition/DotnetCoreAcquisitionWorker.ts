@@ -38,7 +38,7 @@ import { WinMacGlobalInstaller } from './WinMacGlobalInstaller';
 import { LinuxGlobalInstaller } from './LinuxGlobalInstaller';
 import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
 import { Debugging } from '../Utils/Debugging';
-import { DotnetInstallType, IDotnetAcquireContext} from '../IDotnetAcquireContext';
+import { DotnetInstallType } from '../IDotnetAcquireContext';
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
@@ -62,6 +62,7 @@ import { DotnetInstallMode } from './DotnetInstallMode';
 import { IEventStream } from '../EventStream/EventStream';
 import { strict } from 'assert';
 import { IExtensionState } from '../IExtensionState';
+import { getInstallKeyCustomArchitecture } from '../Utils/InstallKeyUtilities';
 
 /* tslint:disable:no-any */
 
@@ -99,7 +100,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      * @remarks this is simply a wrapper around the acquire function.
      * @returns the requested dotnet path.
      */
-    public async acquireSDK(context: IAcquisitionWorkerContext, invoker : IAcquisitionInvoker): Promise<IDotnetAcquireResult> {
+    public async acquireLocalSDK(context: IAcquisitionWorkerContext, invoker : IAcquisitionInvoker): Promise<IDotnetAcquireResult> {
         return this.acquire(context, 'sdk', undefined, invoker);
     }
 
@@ -109,12 +110,18 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         return this.acquire(context, 'sdk', installerResolver);
     }
 
+    public async acquireLocalASPNET(context: IAcquisitionWorkerContext, invoker : IAcquisitionInvoker)
+    {
+        return this.acquire(context, 'aspnetcore', undefined, invoker);
+    }
+
     /**
      *
      * @remarks this is simply a wrapper around the acquire function.
      * @returns the requested dotnet path.
      */
-    public async acquireRuntime(context: IAcquisitionWorkerContext, invoker : IAcquisitionInvoker): Promise<IDotnetAcquireResult> {
+    public async acquireLocalRuntime(context: IAcquisitionWorkerContext, invoker : IAcquisitionInvoker): Promise<IDotnetAcquireResult>
+    {
         return this.acquire(context, 'runtime', undefined, invoker);
     }
 
@@ -191,7 +198,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         {
             install =
             {
-                installKey: DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(version, context.acquisitionContext.architecture, globalInstallerResolver !== null ? 'global' : 'local'),
+                installKey: getInstallKeyCustomArchitecture(version, context.acquisitionContext.architecture,
+                    context.acquisitionContext.mode!, globalInstallerResolver !== null ? 'global' : 'local'),
                 version: install.version,
                 isGlobal: install.isGlobal,
                 installMode: mode,
@@ -240,22 +248,6 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         }
     }
 
-    public static getInstallKeyCustomArchitecture(version : string, architecture: string | null | undefined,
-        installType : DotnetInstallType = 'local') : string
-    {
-        if(architecture === null || architecture === 'null')
-        {
-            // Use the legacy method (no architecture) of installs
-            return installType === 'global' ? `${version}-global` : version;
-        }
-        else if(architecture === undefined)
-        {
-            architecture = DotnetCoreAcquisitionWorker.defaultArchitecture();
-        }
-
-        return installType === 'global' ? `${version}-global~${architecture}` : `${version}~${architecture}`;
-    }
-
     /**
      *
      * @param version The version of the object to acquire.
@@ -302,7 +294,6 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             version,
             dotnetPath,
             timeoutSeconds: context.timeoutSeconds,
-            installRuntime : mode === 'runtime',
             installMode : mode,
             installType : context.acquisitionContext.installType ?? 'local', // Before this API param existed, all calls were for local types.
             architecture: context.acquisitionContext.architecture ?? this.getDefaultInternalArchitecture(context.acquisitionContext.architecture),
@@ -378,7 +369,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         }
         else
         {
-            const newError = new EventBasedError('DotnetAcquisitionError', `.NET Acquisition Failed: ${error?.message ?? error}`);
+            const newError = new EventBasedError('DotnetAcquisitionError', `.NET Acquisition Failed: ${error?.message ?? JSON.stringify(error)}`);
             return newError;
         }
     }

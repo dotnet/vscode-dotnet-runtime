@@ -8,7 +8,25 @@ import { looksLikeRuntimeVersion } from '../Acquisition/DotnetInstall';
 import { DotnetInstall } from '../Acquisition/DotnetInstall';
 import { DOTNET_INSTALL_MODE_LIST, DotnetInstallMode } from '../Acquisition/DotnetInstallMode';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
-import * as os from 'os';
+import { DotnetInstallType } from '../IDotnetAcquireContext';
+
+
+export function getInstallKeyCustomArchitecture(version : string, architecture: string | null | undefined, mode: DotnetInstallMode,
+    installType : DotnetInstallType = 'local') : string
+{
+    if(architecture === null || architecture === 'null')
+    {
+        // Use the legacy method (no architecture) of installs
+        return installType === 'global' ? `${version}-global` : version;
+    }
+    else if(architecture === undefined)
+    {
+        architecture = DotnetCoreAcquisitionWorker.defaultArchitecture();
+    }
+
+    return installType === 'global' ? `${version}-global~${architecture}${mode === 'aspnetcore' ? '~aspnetcore' : ''}` :
+        `${version}~${architecture}${mode === 'aspnetcore' ? '~aspnetcore' : ''}`;
+}
 
 export function getInstallKeyFromContext(ctx : IAcquisitionWorkerContext | undefined | null) : DotnetInstall | null
 {
@@ -20,12 +38,12 @@ export function getInstallKeyFromContext(ctx : IAcquisitionWorkerContext | undef
     const acquireContext = ctx.acquisitionContext!;
 
     return {
-        installKey : DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(acquireContext.version, acquireContext.architecture,
+        installKey : getInstallKeyCustomArchitecture(acquireContext.version, acquireContext.architecture, ctx.acquisitionContext.mode!,
             acquireContext.installType),
         version: acquireContext.version,
         architecture: acquireContext.architecture,
         isGlobal: acquireContext.installType ? acquireContext.installType === 'global' : false,
-        installMode: ctx.installMode
+        installMode: ctx.acquisitionContext.mode!
     } as DotnetInstall;
 
 
@@ -42,7 +60,7 @@ export function isGlobalLegacyInstallKey(installKey: string): boolean {
 
 export function getArchFromLegacyInstallKey(installKey: string): string | undefined {
     const splitKey = installKey.split('~');
-    if (splitKey.length === 2) {
+    if (splitKey.length >= 2) {
         return splitKey[1];
     }
     return undefined;

@@ -3,8 +3,8 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-import { DotnetInstallType } from '..';
-import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
+import { DotnetInstallType } from '../IDotnetAcquireContext';
+import { getInstallKeyCustomArchitecture } from '../Utils/InstallKeyUtilities';
 import { DotnetInstallMode } from './DotnetInstallMode';
 
 export interface DotnetInstall {
@@ -71,7 +71,7 @@ export function looksLikeRuntimeVersion(version: string): boolean {
 export function GetDotnetInstallInfo(installVersion: string, installationMode: DotnetInstallMode, installType: DotnetInstallType, installArchitecture: string): DotnetInstall
 {
     return {
-        installKey: DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(installVersion, installArchitecture, installType),
+        installKey: getInstallKeyCustomArchitecture(installVersion, installArchitecture, installationMode, installType),
         version: installVersion,
         architecture: installArchitecture,
         isGlobal: installType === 'global',

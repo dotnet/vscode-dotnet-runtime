@@ -111,7 +111,7 @@
 		"vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library"
 	},
 	"devDependencies": {
-		"@types/source-map-support": "^0.5.6",
+		"@types/source-map-support": "^0.5.10",
 		"copy-webpack-plugin": "^9.0.1",
 		"webpack": "5.76.0",
 		"webpack-cli": "4.9.1"

@@ -30,20 +30,18 @@ export class OutputChannelObserver implements IEventStreamObserver {
     {
         switch (event.type)
         {
-            case EventType.DotnetRuntimeAcquisitionStart:
-                const runtimeAcquisitionStarted = event as DotnetAcquisitionStarted;
-                this.outputChannel.append(`${runtimeAcquisitionStarted.requestingExtensionId} requested to download the .NET Runtime.`);
-                this.outputChannel.appendLine('');
-                break;
-            case EventType.DotnetSDKAcquisitionStart:
-                const sdkAcquisitionStarted = event as DotnetAcquisitionStarted;
-                this.outputChannel.append(`${sdkAcquisitionStarted.requestingExtensionId} requested to download the .NET SDK.`);
-                this.outputChannel.appendLine('');
-                break;
             case EventType.DotnetAcquisitionStart:
                 const acquisitionStarted = event as DotnetAcquisitionStarted;
 
                 this.inProgressDownloads.push(acquisitionStarted.install.installKey);
+
+                this.outputChannel.append(`${acquisitionStarted.requestingExtensionId} requested to download the ${
+                acquisitionStarted.install.installMode === 'sdk' ? '.NET SDK' :
+                acquisitionStarted.install.installMode === 'runtime' ? '.NET Runtime' :
+                '.NET ASP.NET Runtime'
+                }.`);
+
+                this.outputChannel.appendLine('');
 
                 if (this.inProgressDownloads.length > 1) {
                     // Already a download in progress

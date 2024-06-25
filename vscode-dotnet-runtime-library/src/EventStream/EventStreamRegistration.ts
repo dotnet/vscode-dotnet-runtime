@@ -15,6 +15,7 @@ import { StatusBarObserver } from './StatusBarObserver';
 import { ITelemetryReporter, TelemetryObserver } from './TelemetryObserver';
 import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
+import { ModalEventRepublisher } from './ModalEventPublisher';
 
 export interface IPackageJson {
     version: string;
@@ -33,7 +34,7 @@ export interface IEventStreamContext {
 }
 
 export function registerEventStream(context: IEventStreamContext, extensionContext : IVSCodeExtensionContext,
-    utilityContext : IUtilityContext): [EventStream, vscode.OutputChannel, LoggingObserver, IEventStreamObserver[], TelemetryObserver | null]
+    utilityContext : IUtilityContext): [EventStream, vscode.OutputChannel, LoggingObserver, IEventStreamObserver[], TelemetryObserver | null, ModalEventRepublisher]
 {
     const outputChannel = vscode.window.createOutputChannel(context.displayChannelName);
     if (!fs.existsSync(context.logPath))
@@ -62,7 +63,10 @@ export function registerEventStream(context: IEventStreamContext, extensionConte
         eventStream.subscribe(event => telemetryObserver!.post(event));
     }
 
-    return [eventStream, outputChannel, loggingObserver, eventStreamObservers, telemetryObserver];
+    const modalEventObserver = new ModalEventRepublisher(eventStream);
+    eventStream.subscribe(event => modalEventObserver.post(event));
+
+    return [eventStream, outputChannel, loggingObserver, eventStreamObservers, telemetryObserver, modalEventObserver];
 }
 
 export function enableExtensionTelemetry(extensionConfiguration: IExtensionConfiguration, enableTelemetryKey: string): boolean {

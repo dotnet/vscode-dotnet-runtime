@@ -87,7 +87,6 @@ suite('InstallTracker Unit Tests', () => {
         const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
         await validator.trackInstalledVersion(mockContext, defaultInstall);
 
-        // TODO: verify these tests still work
         const otherRequesterValidator = new MockInstallTracker(mockContextFromOtherExtension.eventStream, mockContext.extensionState);
         // Inject the extension state from the old class into the new one, because in vscode its a shared global state but here its mocked
         otherRequesterValidator.setExtensionState(validator.getExtensionState());

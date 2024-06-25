@@ -11,7 +11,6 @@ export interface IDotnetInstallationContext {
     version: string;
     dotnetPath: string;
     timeoutSeconds: number;
-    installRuntime: boolean; // kept to remove breaking change
     installMode : DotnetInstallMode;
     installType : DotnetInstallType;
     architecture: string;

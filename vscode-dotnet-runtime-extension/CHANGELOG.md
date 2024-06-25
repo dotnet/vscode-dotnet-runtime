@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+## [2.0.7] - 2024-06-30
+
+Adds support for ASP.NET Core Runtime installation via the `acquire` API.
+
+
+Smaller bug fixes for error handling and reporting.
+Updated dependencies and added additional notices to our main page.
+
 ## [2.0.6] - 2024-06-10
 
 Keeps track of which extensions manage which installs to allow for better cleanup of old runtimes and sdks.

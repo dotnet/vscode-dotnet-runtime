@@ -27,10 +27,9 @@ export function getMockAcquisitionContext(mode: DotnetInstallMode, version : str
         storagePath: '',
         extensionState: extensionContext,
         eventStream: myEventStream,
-        acquisitionContext: getMockAcquireContext(version, arch),
+        acquisitionContext: getMockAcquireContext(version, arch, mode),
         installationValidator: new MockInstallationValidator(myEventStream),
         timeoutSeconds: timeoutTime,
-        installMode: mode,
         proxyUrl: undefined,
         installDirectoryProvider: directory ? directory : directoryProviderFactory(mode, ''),
         isExtensionTelemetryInitiallyEnabled: true
@@ -53,13 +52,14 @@ export function getMockUtilityContext() : IUtilityContext
     return utilityContext;
 }
 
-export function getMockAcquireContext(nextAcquiringVersion : string, arch : string | null | undefined) : IDotnetAcquireContext
+export function getMockAcquireContext(nextAcquiringVersion : string, arch : string | null | undefined, installMode : DotnetInstallMode) : IDotnetAcquireContext
 {
     const acquireContext : IDotnetAcquireContext =
     {
         version: nextAcquiringVersion,
         architecture: arch,
-        requestingExtensionId: 'test'
+        requestingExtensionId: 'test',
+        mode: installMode
     };
     return acquireContext;
 }

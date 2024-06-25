@@ -33,7 +33,6 @@ import {
 import { getVersionFromLegacyInstallKey, getAssumedInstallInfo } from '../Utils/InstallKeyUtilities';
 import { InstallRecord, InstallRecordOrStr } from './InstallRecord';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
-import { error } from 'console';
 import { IEventStream } from '../EventStream/EventStream';
 import { IExtensionState } from '../IExtensionState';
 /* tslint:disable:no-any */

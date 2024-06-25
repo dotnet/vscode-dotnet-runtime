@@ -10,6 +10,8 @@ import { IEvent } from './IEvent';
 import { TelemetryUtilities } from './TelemetryUtilities';
 import { InstallToStrings } from '../Acquisition/DotnetInstall';
 import { DotnetInstall } from '../Acquisition/DotnetInstall';
+import { DotnetInstallMode } from '../Acquisition/DotnetInstallMode';
+import { DotnetInstallType } from '../IDotnetAcquireContext';
 
 // tslint:disable max-classes-per-file
 
@@ -29,12 +31,23 @@ export class EventBasedError extends Error
     }
 }
 
-export class DotnetAcquisitionStarted extends IEvent {
+export abstract class GenericModalEvent extends IEvent
+{
+    abstract readonly mode : DotnetInstallMode;
+    abstract readonly installType : DotnetInstallType;
+}
+
+export class DotnetAcquisitionStarted extends GenericModalEvent
+{
     public readonly eventName = 'DotnetAcquisitionStarted';
     public readonly type = EventType.DotnetAcquisitionStart;
+    public readonly mode : DotnetInstallMode;
+    public readonly installType: DotnetInstallType;
 
     constructor(public readonly install: DotnetInstall, public readonly startingVersion: string, public readonly requestingExtensionId = '') {
         super();
+        this.mode = install.installMode;
+        this.installType = install.isGlobal ? 'global' : 'local';
     }
 
     public getProperties() {
@@ -47,31 +60,146 @@ export class DotnetAcquisitionStarted extends IEvent {
     }
 }
 
-export class DotnetRuntimeAcquisitionStarted extends IEvent {
+abstract class DotnetAcquisitionStartedBase extends IEvent
+{
+    constructor(public readonly requestingExtensionId = '') {
+        super();
+    }
+
+    public getProperties() {
+        return {extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
+    }
+}
+
+export class DotnetRuntimeAcquisitionStarted extends DotnetAcquisitionStartedBase {
     public readonly eventName = 'DotnetRuntimeAcquisitionStarted';
-    public readonly type = EventType.DotnetRuntimeAcquisitionStart;
-
-    constructor(public readonly requestingExtensionId = '') {
-        super();
-    }
-
-    public getProperties() {
-        return {extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
-    }
+    public readonly type = EventType.DotnetModalChildEvent;
 }
 
-export class DotnetSDKAcquisitionStarted extends IEvent {
+export class DotnetSDKAcquisitionStarted extends DotnetAcquisitionStartedBase {
     public readonly eventName = 'DotnetSDKAcquisitionStarted';
-    public readonly type = EventType.DotnetSDKAcquisitionStart;
+    public readonly type = EventType.DotnetModalChildEvent;
+}
 
-    constructor(public readonly requestingExtensionId = '') {
+export class DotnetGlobalSDKAcquisitionStarted extends DotnetAcquisitionStartedBase {
+    public readonly eventName = 'DotnetGlobalSDKAcquisitionStarted';
+    public readonly type = EventType.DotnetModalChildEvent;
+}
+
+export class DotnetASPNetRuntimeAcquisitionStarted extends DotnetAcquisitionStartedBase {
+    public readonly eventName = 'DotnetASPNetRuntimeAcquisitionStarted';
+    public readonly type = EventType.DotnetModalChildEvent;
+}
+
+export class DotnetAcquisitionTotalSuccessEvent extends GenericModalEvent
+{
+    public readonly type = EventType.DotnetTotalSuccessEvent;
+    public readonly eventName = 'DotnetAcquisitionTotalSuccessEvent';
+    public readonly mode;
+    public readonly installType: DotnetInstallType;
+
+    constructor(public readonly startingVersion: string, public readonly install: DotnetInstall, public readonly requestingExtensionId = '', public readonly finalPath: string) {
+        super();
+        this.mode = install.installMode;
+        this.installType = install.isGlobal ? 'global' : 'local';
+    }
+
+    public getProperties() {
+        return {
+                AcquisitionStartVersion : this.startingVersion,
+                AcquisitionInstallKey : this.install.installKey,
+                ...InstallToStrings(this.install),
+                ExtensionId : TelemetryUtilities.HashData(this.requestingExtensionId),
+                FinalPath : this.finalPath,
+            };
+    }
+}
+
+abstract class DotnetAcquisitionTotalSuccessEventBase extends IEvent
+{
+    public readonly type = EventType.DotnetModalChildEvent;
+
+    constructor(public readonly installKey: DotnetInstall) {
         super();
     }
 
     public getProperties() {
-        return {extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
+        return {
+                ...InstallToStrings(this.installKey),
+            };
     }
 }
+
+export class DotnetRuntimeAcquisitionTotalSuccessEvent extends DotnetAcquisitionTotalSuccessEventBase
+{
+    public readonly eventName = 'DotnetRuntimeAcquisitionTotalSuccessEvent';
+}
+
+export class DotnetGlobalSDKAcquisitionTotalSuccessEvent extends DotnetAcquisitionTotalSuccessEventBase
+{
+    public readonly eventName = 'DotnetGlobalSDKAcquisitionTotalSuccessEvent';
+}
+
+export class DotnetASPNetRuntimeAcquisitionTotalSuccessEvent extends DotnetAcquisitionTotalSuccessEventBase
+{
+    public readonly eventName = 'DotnetASPNetRuntimeAcquisitionTotalSuccessEvent';
+}
+
+
+export class DotnetAcquisitionRequested extends GenericModalEvent
+{
+    public readonly eventName = 'DotnetAcquisitionRequested';
+    public readonly type = EventType.DotnetTotalSuccessEvent;
+    public readonly mode;
+    public readonly installType: DotnetInstallType;
+
+    constructor(public readonly startingVersion: string, public readonly requestingId = '', mode : DotnetInstallMode, installType : DotnetInstallType)
+    {
+        super();
+        this.mode = mode;
+        this.installType = installType;
+    }
+
+    public getProperties() {
+        return {AcquisitionStartVersion : this.startingVersion,
+                RequestingExtensionId: TelemetryUtilities.HashData(this.requestingId)};
+    }
+}
+
+
+abstract class DotnetAcquisitionRequestedEventBase extends IEvent
+{
+    public readonly type = EventType.DotnetModalChildEvent;
+
+    constructor(public readonly startingVersion: string, public readonly requestingId = '', public readonly mode : DotnetInstallMode) {
+        super();
+    }
+
+    public getProperties()
+    {
+        return {
+            AcquisitionStartVersion : this.startingVersion,
+            RequestingExtensionId: TelemetryUtilities.HashData(this.requestingId),
+            Mode: this.mode
+        };
+    }
+}
+
+export class DotnetRuntimeAcquisitionRequested extends DotnetAcquisitionRequestedEventBase
+{
+    public readonly eventName = 'DotnetRuntimeAcquisitionRequested';
+}
+
+export class DotnetGlobalSDKAcquisitionRequested extends DotnetAcquisitionRequestedEventBase
+{
+    public readonly eventName = 'DotnetGlobalSDKAcquisitionRequested';
+}
+
+export class DotnetASPNetRuntimeAcquisitionRequested extends DotnetAcquisitionRequestedEventBase
+{
+    public readonly eventName = 'DotnetASPNetRuntimeAcquisitionRequested';
+}
+
 
 export class DotnetAcquisitionCompleted extends IEvent {
     public readonly eventName = 'DotnetAcquisitionCompleted';
@@ -86,53 +214,14 @@ export class DotnetAcquisitionCompleted extends IEvent {
             return {...InstallToStrings(this.install),
                     AcquisitionCompletedInstallKey : this.install.installKey,
                     AcquisitionCompletedVersion: this.version};
-        } else {
+        }
+        else
+        {
             return {...InstallToStrings(this.install),
                     AcquisitionCompletedVersion: this.version,
                     AcquisitionCompletedInstallKey : this.install.installKey,
                     AcquisitionCompletedDotnetPath : this.dotnetPath};
         }
-
-    }
-}
-
-export class DotnetRuntimeAcquisitionTotalSuccessEvent extends IEvent
-{
-    public readonly eventName = 'DotnetRuntimeAcquisitionTotalSuccessEvent';
-    public readonly type = EventType.DotnetTotalSuccessEvent;
-
-
-    constructor(public readonly startingVersion: string, public readonly installKey: DotnetInstall, public readonly requestingExtensionId = '', public readonly finalPath: string) {
-        super();
-    }
-
-    public getProperties() {
-        return {
-                AcquisitionStartVersion : this.startingVersion,
-                AcquisitionInstallKey : this.installKey.installKey,
-                ...InstallToStrings(this.installKey),
-                ExtensionId : TelemetryUtilities.HashData(this.requestingExtensionId),
-                FinalPath : this.finalPath,
-            };
-    }
-}
-
-export class DotnetGlobalSDKAcquisitionTotalSuccessEvent extends IEvent
-{
-    public readonly eventName = 'DotnetGlobalSDKAcquisitionTotalSuccessEvent';
-    public readonly type = EventType.DotnetTotalSuccessEvent;
-
-    constructor(public readonly startingVersion: string, public readonly installKey: DotnetInstall, public readonly requestingExtensionId = '', public readonly finalPath: string) {
-        super();
-    }
-
-    public getProperties() {
-        return {
-                AcquisitionStartVersion : this.startingVersion,
-                ...InstallToStrings(this.installKey),
-                ExtensionId : TelemetryUtilities.HashData(this.requestingExtensionId),
-                FinalPath : this.finalPath,
-            };
     }
 }
 
@@ -160,16 +249,37 @@ export abstract class DotnetAcquisitionError extends IEvent {
     }
 }
 
+export class DotnetAcquisitionFinalError extends GenericModalEvent
+{
+    public readonly type = EventType.DotnetTotalSuccessEvent;
+    public readonly eventName = 'DotnetAcquisitionTotalSuccessEvent';
+    public readonly mode;
+    public readonly installType: DotnetInstallType;
+
+    constructor(public readonly error: Error, public readonly originalEventName : string, public readonly install: DotnetInstall)
+    {
+        super();
+        this.mode = install.installMode;
+        this.installType = install.isGlobal ? 'global' : 'local';
+    }
+
+    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+        return {ErrorName : this.error.name,
+                ErrorMessage : this.error.message,
+                StackTrace : this.error.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : '',
+                InstallKey : this.install?.installKey ?? 'null',
+                ...InstallToStrings(this.install!)};
+    }
+}
+
 /**
- * @remarks A wrapper around events to detect them as a failure to install the Global SDK.
+ * @remarks A wrapper around events to detect them as a failure to install.
  * This allows us to count all errors and analyze them into categories.
  * The event name for the failure cause is stored in the originalEventName property.
  */
-export class DotnetGlobalSDKAcquisitionError extends DotnetAcquisitionError
+abstract class DotnetAcquisitionFinalErrorBase extends DotnetAcquisitionError
 {
-    public eventName = 'DotnetGlobalSDKAcquisitionError';
-
-    constructor(public readonly error: Error, public readonly originalEventName : string, public readonly install: DotnetInstall | null)
+    constructor(public readonly error: Error, public readonly originalEventName : string, public readonly install: DotnetInstall)
     {
         super(error, install);
     }
@@ -184,6 +294,21 @@ export class DotnetGlobalSDKAcquisitionError extends DotnetAcquisitionError
                 ...InstallToStrings(this.install!)
             };
     }
+}
+
+export class DotnetGlobalSDKAcquisitionError extends DotnetAcquisitionFinalErrorBase
+{
+    public eventName = 'DotnetGlobalSDKAcquisitionError';
+}
+
+export class DotnetRuntimeFinalAcquisitionError extends DotnetAcquisitionFinalErrorBase
+{
+    public eventName = 'DotnetRuntimeFinalAcquisitionError';
+}
+
+export class DotnetASPNetRuntimeFinalAcquisitionError extends DotnetAcquisitionFinalErrorBase
+{
+    public eventName = 'DotnetASPNetRuntimeFinalAcquisitionError';
 }
 
 export abstract class DotnetNonAcquisitionError extends IEvent {
@@ -891,20 +1016,6 @@ export class DotnetInstallationValidated extends DotnetAcquisitionMessage {
             ValidatedInstallKey : this.install.installKey,
             ...InstallToStrings(this.install!)
         };
-    }
-}
-
-export class DotnetAcquisitionRequested extends DotnetAcquisitionMessage {
-    public readonly eventName = 'DotnetAcquisitionRequested';
-
-    constructor(public readonly startingVersion: string,
-                public readonly requestingId = '') {
-        super();
-    }
-
-    public getProperties() {
-        return {AcquisitionStartVersion : this.startingVersion,
-                RequestingExtensionId: TelemetryUtilities.HashData(this.requestingId)};
     }
 }
 
