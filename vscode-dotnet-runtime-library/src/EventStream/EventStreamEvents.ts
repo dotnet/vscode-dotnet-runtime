@@ -41,7 +41,7 @@ export class DotnetAcquisitionStarted extends GenericModalEvent
 {
     public readonly eventName = 'DotnetAcquisitionStarted';
     public readonly type = EventType.DotnetAcquisitionStart;
-    public readonly mode;
+    public readonly mode : DotnetInstallMode;
     public readonly installType: DotnetInstallType;
 
     constructor(public readonly install: DotnetInstall, public readonly startingVersion: string, public readonly requestingExtensionId = '') {
