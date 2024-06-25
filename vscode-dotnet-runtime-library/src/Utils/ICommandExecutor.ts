@@ -9,6 +9,7 @@ tslint:disable:no-any */
 import { CommandExecutorCommand } from './CommandExecutorCommand';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { IUtilityContext } from './IUtilityContext';
+import { CommandProcessorOutput } from './CommandProcessorOutput';
 
 export abstract class ICommandExecutor
 {
@@ -20,18 +21,12 @@ export abstract class ICommandExecutor
     protected utilityContext : IUtilityContext;
 
     /**
-     * @remarks Set this to true if you don't want to capture stdout and stderr, and just want to return the status / exit code.
-     * Note: For the .NET Installers, all they will return is a status.
-     */
-    public returnStatus = false;
-
-    /**
      *
      * @param workingDirectory The directory to execute in. Only works for non sudo commands.
      *
      * @returns the parsed result of the command.
      */
-    public abstract execute(command : CommandExecutorCommand, options? : any, terminalFailure? : boolean) : Promise<string>;
+    public abstract execute(command : CommandExecutorCommand, options? : any, terminalFailure? : boolean) : Promise<CommandProcessorOutput>;
 
     /**
      *
@@ -39,7 +34,7 @@ export abstract class ICommandExecutor
      *
      * @returns the result(s) of each command in the same order they were requested. Can throw generically if the command fails.
      */
-    public abstract executeMultipleCommands(commands : CommandExecutorCommand[], options? : any, terminalFailure? : boolean) : Promise<string[]>;
+    public abstract executeMultipleCommands(commands : CommandExecutorCommand[], options? : any, terminalFailure? : boolean) : Promise<CommandProcessorOutput[]>;
 
     /**
      *

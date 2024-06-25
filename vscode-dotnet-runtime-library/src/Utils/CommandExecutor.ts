@@ -111,7 +111,7 @@ status: ${commandResult.status?.toString()}`
      *
      * @returns The output of the command.
      */
-    private async ExecSudoAsync(command : CommandExecutorCommand, terminalFailure = true) : Promise<string>
+    private async ExecSudoAsync(command : CommandExecutorCommand, terminalFailure = true) : Promise<CommandProcessorOutput>
     {
         const fullCommandString = CommandExecutor.prettifyCommandExecutorCommand(command, false);
         this.context?.eventStream.post(new CommandExecutionUnderSudoEvent(`The command ${fullCommandString} is being ran under sudo.`));
@@ -132,10 +132,7 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
             throw err.error;
         }
 
-        const oldReturnStatusSetting = this.returnStatus;
-        this.returnStatus = true;
         const masterSudoProcessSpawnResult = this.startupSudoProc(fullCommandString, shellScript, terminalFailure);
-        this.returnStatus = oldReturnStatusSetting;
 
         await this.sudoProcIsLive(terminalFailure);
         return this.executeSudoViaProcessCommunication(fullCommandString, terminalFailure);
@@ -170,20 +167,11 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
         fs.chmodSync(shellScriptPath, 0o500);
         exec((`"${shellScriptPath}" "${this.sudoProcessCommunicationDir}" ${this.validSudoCommands?.join(' ')} &`), options, (error?: any, stdout?: any, stderr?: any) =>
         {
-            let commandResultString = '';
-
-            if (stdout)
-            {
                 this.context?.eventStream.post(new CommandExecutionStdOut(`The process spawn: ${fullCommandString} encountered stdout, continuing
 ${stdout}`));
-                commandResultString += stdout;
-            }
-            if (stderr)
-            {
+
                 this.context?.eventStream.post(new CommandExecutionStdError(`The process spawn: ${fullCommandString} encountered stderr, continuing
 ${stderr}`));
-                commandResultString += stderr;
-            }
 
             if (error)
             {
@@ -212,13 +200,13 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
                 }
                 else
                 {
-                    return Promise.resolve(this.returnStatus ? '1' : stderr);
+                    return Promise.resolve('1');
                 }
             }
             else
             {
                 this.context?.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The process spawn: ${fullCommandString} successfully ran under sudo.`));
-                return Promise.resolve(this.returnStatus ? '0' : commandResultString);
+                return Promise.resolve('0');
             }
         });
 
@@ -310,11 +298,10 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFrom
      * @param failOnNonZeroExit Whether to fail if we get an exit code from the command besides 0.
      * @returns The output string of the command, or the string status code, depending on the mode of execution.
      */
-    private async executeSudoViaProcessCommunication(commandToExecuteString : string, terminalFailure : boolean, failOnNonZeroExit = true) : Promise<string>
+    private async executeSudoViaProcessCommunication(commandToExecuteString : string, terminalFailure : boolean, failOnNonZeroExit = true) : Promise<CommandProcessorOutput>
     {
         let commandOutputJson : CommandProcessorOutput | null = null;
-        let statusCode = '1220'; // Special failure code for if code is never set error
-        let commandResultString = '';
+        let noStatusCodeErrorCode = '1220'; // Special failure code for if code is never set error
 
         const commandFile = path.join(this.sudoProcessCommunicationDir, 'command.txt');
         const stderrFile = path.join(this.sudoProcessCommunicationDir, 'stderr.txt');
@@ -384,36 +371,27 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFrom
         else
         {
             this.context?.eventStream.post(new CommandProcessorExecutionEnd(`The command ${commandToExecuteString} was finished by the master process, as ${outputFile} was found.`));
-            const stdout = commandOutputJson['stdout'];
-            const stderr = commandOutputJson['stderr'];
-            statusCode = commandOutputJson['status'];
-            if (stdout)
-            {
-                this.context?.eventStream.post(new CommandExecutionStdOut(`The command ${commandToExecuteString} encountered stdout, continuing
-${stdout}`));
-                commandResultString += stdout;
-            }
-            if (stderr)
-            {
-                this.context?.eventStream.post(new CommandExecutionStdError(`The command ${commandToExecuteString} encountered stderr, continuing
-${stderr}`));
-                commandResultString += stderr;
-            }
 
-            if(statusCode !== '0' && failOnNonZeroExit)
+            this.context?.eventStream.post(new CommandExecutionStdOut(`The command ${commandToExecuteString} encountered stdout, continuing
+${(commandOutputJson as CommandProcessorOutput).stdout}`));
+
+            this.context?.eventStream.post(new CommandExecutionStdError(`The command ${commandToExecuteString} encountered stderr, continuing
+${(commandOutputJson as CommandProcessorOutput).stderr}`));
+
+            if((commandOutputJson as CommandProcessorOutput).status !== '0' && failOnNonZeroExit)
             {
                 const err = new CommandExecutionNonZeroExitFailure(new EventBasedError('CommandExecutionNonZeroExitFailure',
-                    `Cancelling .NET Install, as command ${commandToExecuteString} returned with status ${statusCode}.`),
+                    `Cancelling .NET Install, as command ${commandToExecuteString} returned with status ${(commandOutputJson as CommandProcessorOutput).status}.`),
                     getInstallKeyFromContext(this.context));
                 this.context?.eventStream.post(err);
                 throw err.error;
             }
         }
 
-        return (this.returnStatus ? statusCode : commandResultString);
+        return commandOutputJson ?? { stdout: '', stderr : '', status: noStatusCodeErrorCode};
     }
 
-    public async executeMultipleCommands(commands: CommandExecutorCommand[], options?: any, terminalFailure = true): Promise<string[]>
+    public async executeMultipleCommands(commands: CommandExecutorCommand[], options?: any, terminalFailure = true): Promise<CommandProcessorOutput[]>
     {
         const results = [];
         for(const command of commands)
@@ -430,7 +408,7 @@ ${stderr}`));
      * @param terminalFailure Whether to throw up an error when executing under sudo or suppress it and return stderr
      * @returns the result(s) of each command. Can throw generically if the command fails.
      */
-    public async execute(command : CommandExecutorCommand, options : any | null = null, terminalFailure = true) : Promise<string>
+    public async execute(command : CommandExecutorCommand, options : any | null = null, terminalFailure = true) : Promise<CommandProcessorOutput>
     {
         const fullCommandStringForTelemetryOnly = `${command.commandRoot} ${command.commandParts.join(' ')}`;
         if(!options)
@@ -440,19 +418,20 @@ ${stderr}`));
 
         if(command.runUnderSudo)
         {
-            return this.ExecSudoAsync(command, terminalFailure) ?? '';
+            return this.ExecSudoAsync(command, terminalFailure);
         }
         else
         {
             this.context?.eventStream.post(new CommandExecutionEvent(`Executing command ${fullCommandStringForTelemetryOnly}
 with options ${JSON.stringify(options)}.`));
             const commandResult = proc.spawnSync(command.commandRoot, command.commandParts, options);
-            if(this.returnStatus)
+
+            this.logCommandResult(commandResult, fullCommandStringForTelemetryOnly);
+
+            const statusCode : string = (() =>
             {
                 if(commandResult.status !== null)
                 {
-                    this.context?.eventStream.post(new CommandExecutionStatusEvent(`The command ${fullCommandStringForTelemetryOnly} exited
-with status: ${commandResult.status.toString()}.`));
                     return commandResult.status.toString() ?? '';
                 }
                 else
@@ -460,8 +439,7 @@ with status: ${commandResult.status.toString()}.`));
                     // A signal is generally given if a status is not given, and they are 'equivalent' enough
                     if(commandResult.signal !== null)
                     {
-                        this.context?.eventStream.post(new CommandExecutionSignalSentEvent(`The command ${fullCommandStringForTelemetryOnly} exited
-with signal: ${commandResult.signal.toString()}.`));
+
                         return commandResult.signal.toString() ?? '';
                     }
                     else
@@ -471,29 +449,25 @@ result: ${commandResult.toString()} had no status or signal.`));
                         return '000751'; // Error code 000751 : The command did not report an exit code upon completion. This is never expected
                     }
                 }
-            }
-            else
-            {
-                if(!commandResult.stdout && !commandResult.stderr)
-                {
-                    return '';
-                }
-                else
-                {
-                    if(commandResult.stdout)
-                    {
-                    this.context?.eventStream.post(new CommandExecutionStdOut(`The command ${fullCommandStringForTelemetryOnly} encountered stdout:
-${commandResult.stdout}`));
-                    }
-                    if(commandResult.stderr)
-                    {
-                        this.context?.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandStringForTelemetryOnly} encountered stderr:
-${commandResult.stderr}`));
-                    }
-                    return commandResult.stdout?.toString() + commandResult.stderr?.toString() ?? '';
-                }
-            }
+            })();
+
+            return { status: statusCode, stderr: commandResult.stderr, stdout: commandResult.stdout}
         }
+    }
+
+    private logCommandResult(commandResult : any, fullCommandStringForTelemetryOnly : string)
+    {
+        this.context?.eventStream.post(new CommandExecutionStatusEvent(`The command ${fullCommandStringForTelemetryOnly} exited
+        with status: ${commandResult.status?.toString()}.`));
+
+                    this.context?.eventStream.post(new CommandExecutionSignalSentEvent(`The command ${fullCommandStringForTelemetryOnly} exited
+        with signal: ${commandResult.signal?.toString()}.`));
+
+                    this.context?.eventStream.post(new CommandExecutionStdOut(`The command ${fullCommandStringForTelemetryOnly} encountered stdout:
+        ${commandResult.stdout}`));
+
+                    this.context?.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandStringForTelemetryOnly} encountered stderr:
+        ${commandResult.stderr}`));
     }
 
     /**
@@ -504,16 +478,13 @@ ${commandResult.stderr}`));
      */
     public async tryFindWorkingCommand(commands : CommandExecutorCommand[]) : Promise<CommandExecutorCommand | null>
     {
-        const oldReturnStatusSetting = this.returnStatus;
-        this.returnStatus = true;
-
         let workingCommand : CommandExecutorCommand | null = null;
 
         for(const command of commands)
         {
             try
             {
-                const cmdFoundOutput = await this.execute(command);
+                const cmdFoundOutput = (await this.execute(command)).status;
                 if(cmdFoundOutput === '0')
                 {
                     workingCommand = command;
@@ -530,16 +501,13 @@ ${commandResult.stderr}`));
                 // Do nothing. The error should be raised higher up.
                 this.context?.eventStream.post(new DotnetCommandNotFoundEvent(`The command ${command.commandRoot} was NOT found, and we caught any errors.`));
             }
-        };
+        }
 
-        this.returnStatus = oldReturnStatusSetting;
         return workingCommand;
     }
 
     public async setEnvironmentVariable(variable : string, value : string, vscodeContext : IVSCodeExtensionContext, failureWarningMessage? : string, nonWinFailureMessage? : string)
     {
-        const oldReturnStatusSetting = this.returnStatus;
-        this.returnStatus = true;
         let environmentEditExitCode = 0;
 
         process.env[variable] = value;
@@ -551,9 +519,9 @@ ${commandResult.stderr}`));
             const setSystemVariable = CommandExecutor.makeCommand(`setx`, [`${variable}`, `"${value}"`]);
             try
             {
-                const shellEditResponse = await this.execute(setShellVariable);
+                const shellEditResponse = (await this.execute(setShellVariable)).status;
                 environmentEditExitCode += Number(shellEditResponse[0]);
-                const systemEditResponse = await this.execute(setSystemVariable)
+                const systemEditResponse = (await this.execute(setSystemVariable)).status
                 environmentEditExitCode += Number(systemEditResponse[0]);
             }
             catch(error)
@@ -573,7 +541,6 @@ ${commandResult.stderr}`));
         {
             this.utilityContext.ui.showWarningMessage(failureWarningMessage, () => {/* No Callback */}, );
         }
-        this.returnStatus = oldReturnStatusSetting;
     }
 
     public setPathEnvVar(pathAddition: string, troubleshootingUrl : string, displayWorker: IWindowDisplayWorker, vscodeContext : IVSCodeExtensionContext, isGlobal : boolean)
