@@ -71,9 +71,18 @@ export class WebRequestWorker
         {
             throw new EventBasedError('AxiosGetFailedWithInvalidURL', `Request to the url ${this.url} failed, as the URL is invalid.`);
         }
+        const timeoutCancelTokenHook = new AbortController();
+        const timeout = setTimeout(() =>
+        {
+            timeoutCancelTokenHook.abort();
+            const formattedError = new Error(`TIMEOUT: The request to ${this.url} timed out at ${this.websiteTimeoutMs} ms. This only occurs if your internet
+ or the url are experiencing connection difficulties; not if the server is being slow to respond. Check your connection, the url, and or increase the timeout value here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#install-script-timeouts`);
+            this.context.eventStream.post(new WebRequestError(new EventBasedError('WebRequestError', formattedError.message, formattedError.stack), null));
+            throw formattedError;
+        }, this.websiteTimeoutMs);
 
-        const response = await this.client.get(url, { ...options });
-
+        const response = await this.client.get(url, { signal: timeoutCancelTokenHook.signal, ...options });
+        clearTimeout(timeout);
         return response;
     }
 
