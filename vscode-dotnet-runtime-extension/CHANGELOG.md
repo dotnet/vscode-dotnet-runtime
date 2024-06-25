@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+## [2.0.9] - 2024-??-??
+
+
+
 ## [2.0.8] - 2024-07-09
 
 Fixes issues with offline detection and timeouts.

@@ -1831,7 +1831,7 @@
 
 "vscode-dotnet-runtime@file:../vscode-dotnet-runtime-extension":
   "resolved" "file:../vscode-dotnet-runtime-extension"
-  "version" "2.0.8"
+  "version" "2.0.9"
   dependencies:
     "@types/chai-as-promised" "^7.1.8"
     "@vscode/test-electron" "^2.3.9"
