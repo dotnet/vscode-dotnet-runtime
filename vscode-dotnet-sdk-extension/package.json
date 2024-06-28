@@ -102,7 +102,7 @@
 		"chai-as-promised": "^7.1.1",
 		"child_process": "^1.0.2",
 		"diff": ">=5.0.0",
-		"es-abstract": "1.19.1",
+		"es-abstract": "1.23.3",
 		"glob": "^7.2.0",
 		"hmac-drbg": "^1.0.1",
 		"http-cache-semantics": "4.1.1",
