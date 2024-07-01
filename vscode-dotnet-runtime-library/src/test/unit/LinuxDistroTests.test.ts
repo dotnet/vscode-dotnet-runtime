@@ -32,6 +32,16 @@ Command 'dotnet' not found, but can be installed with:
 
 suite('Linux Distro Logic Unit Tests', () =>
 {
+    test('Recommends Correct Version', async () => {
+        if(shouldRun)
+        {
+            const recVersion = await provider.getRecommendedDotnetVersion(installType);
+            assert.equal(mockExecutor.attemptedCommand, 'apt-cache search --names-only ^dotnet-sdk-9.0$', 'Searched for the newest package last with regex'); // this may fail if test not exec'd first
+            // the data is cached so --version may not be executed.
+            assert.equal(recVersion, '8.0.1xx', 'Resolved the most recent available version : will eventually break if the mock data is not updated');
+        }
+    }).timeout(standardTimeoutTime);
+
     test('Package Check Succeeds', async () => {
         if(shouldRun)
         {
@@ -120,15 +130,6 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`, std
             currentInfo = await provider.getInstalledGlobalDotnetVersionIfExists();
             mockExecutor.resetReturnValues();
             assert.equal(currentInfo, null);
-        }
-    }).timeout(standardTimeoutTime);
-
-    test('Recommends Correct Version', async () => {
-        if(shouldRun)
-        {
-            const recVersion = await provider.getRecommendedDotnetVersion(installType);
-            assert.equal(mockExecutor.attemptedCommand, 'dotnet --version', 'Searched for the newest package last with regex');
-            assert.equal(recVersion, '8.0.1xx', 'Resolved the most recent available version : will eventually break if the mock data is not updated');
         }
     }).timeout(standardTimeoutTime);
 
