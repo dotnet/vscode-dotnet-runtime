@@ -341,7 +341,7 @@ export abstract class DotnetInstallExpectedAbort extends IEvent {
         super();
     }
 
-    public getProperties(telemetry = false): { [key: string]: string } | undefined 
+    public getProperties(telemetry = false): { [key: string]: string } | undefined
     {
         if(this.install)
         {
@@ -531,7 +531,7 @@ export class DotnetAcquisitionTimeoutError extends DotnetAcquisitionVersionError
         super(error, installKey);
     }
 
-    public getProperties(telemetry = false): { [key: string]: string } | undefined 
+    public getProperties(telemetry = false): { [key: string]: string } | undefined
     {
         if(this.install)
         {

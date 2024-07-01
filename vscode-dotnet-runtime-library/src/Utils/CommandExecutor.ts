@@ -301,7 +301,7 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFrom
     private async executeSudoViaProcessCommunication(commandToExecuteString : string, terminalFailure : boolean, failOnNonZeroExit = true) : Promise<CommandProcessorOutput>
     {
         let commandOutputJson : CommandProcessorOutput | null = null;
-        let noStatusCodeErrorCode = '1220'; // Special failure code for if code is never set error
+        const noStatusCodeErrorCode = '1220'; // Special failure code for if code is never set error
 
         const commandFile = path.join(this.sudoProcessCommunicationDir, 'command.txt');
         const stderrFile = path.join(this.sudoProcessCommunicationDir, 'stderr.txt');
