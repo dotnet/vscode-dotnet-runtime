@@ -69,7 +69,7 @@ export class CommandExecutor extends ICommandExecutor
     private fileUtil : IFileUtilities;
     private hasEverLaunchedSudoFork = false;
 
-    constructor(context : IAcquisitionWorkerContext | null, utilContext : IUtilityContext,  protected readonly validSudoCommands? : string[])
+    constructor(context : IAcquisitionWorkerContext, utilContext : IUtilityContext,  protected readonly validSudoCommands? : string[])
     {
         super(context, utilContext);
         this.fileUtil = new FileUtilities();
@@ -451,7 +451,7 @@ result: ${commandResult.toString()} had no status or signal.`));
                 }
             })();
 
-            return { status: statusCode, stderr: commandResult.stderr, stdout: commandResult.stdout}
+            return { status: statusCode, stderr: commandResult.stderr?.toString() ?? '', stdout: commandResult.stdout?.toString() ?? ''}
         }
     }
 

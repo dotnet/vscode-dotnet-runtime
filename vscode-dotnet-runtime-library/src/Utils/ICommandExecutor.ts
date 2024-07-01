@@ -13,7 +13,7 @@ import { CommandProcessorOutput } from './CommandProcessorOutput';
 
 export abstract class ICommandExecutor
 {
-    constructor(protected readonly context : IAcquisitionWorkerContext | null, utilContext : IUtilityContext)
+    constructor(protected readonly context : IAcquisitionWorkerContext, utilContext : IUtilityContext)
     {
         this.utilityContext = utilContext;
     }
