@@ -30,7 +30,8 @@ export type DotnetInstallOrStr = DotnetInstall | string;
  * That is not the case at the moment, but it is a possibility.
  * Think carefully between using this and IsEquivalentInstallation
  */
-export function IsEquivalentInstallationFile(a: DotnetInstall, b: DotnetInstall): boolean {
+export function IsEquivalentInstallationFile(a: DotnetInstall, b: DotnetInstall): boolean
+{
     return a.version === b.version && a.architecture === b.architecture &&
         a.isGlobal === b.isGlobal && a.installMode === b.installMode;
 }
@@ -42,18 +43,16 @@ export function IsEquivalentInstallationFile(a: DotnetInstall, b: DotnetInstall)
  * (e.g. auto updating the '8.0' install.)
  * Think carefully between using this and IsEquivalentInstallationFile. There is no difference between the two *yet*
  */
-export function IsEquivalentInstallation(a: DotnetInstall, b: DotnetInstall): boolean {
+export function IsEquivalentInstallation(a: DotnetInstall, b: DotnetInstall): boolean
+{
     return a.installKey === b.installKey;
 }
 
 /**
  * @returns A string set representing the installation of either a .NET runtime or .NET SDK.
  */
-export function InstallToStrings(key: DotnetInstall) {
-    if (!key) {
-        return { installKey: '', version: '', architecture: '', isGlobal: '', installMode: '' };
-    }
-
+export function InstallToStrings(key: DotnetInstall)
+{
     return {
         installKey: key.installKey,
         version: key.version,
@@ -63,7 +62,8 @@ export function InstallToStrings(key: DotnetInstall) {
     };
 }
 
-export function looksLikeRuntimeVersion(version: string): boolean {
+export function looksLikeRuntimeVersion(version: string): boolean
+{
     const band: string | undefined = version.split('.')?.at(2);
     return !band || band.length <= 2; // assumption : there exists no runtime version at this point over 99 sub versions
 }
