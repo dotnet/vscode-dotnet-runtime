@@ -9,7 +9,7 @@ tslint:disable:no-any */
 import { CommandExecutorCommand } from './CommandExecutorCommand';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { IUtilityContext } from './IUtilityContext';
-import { CommandExecutorResult } from './CommandProcessorOutput';
+import { CommandExecutorResult } from './CommandExecutorResult';
 
 export abstract class ICommandExecutor
 {

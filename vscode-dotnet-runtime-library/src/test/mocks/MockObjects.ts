@@ -40,7 +40,7 @@ import { GetDotnetInstallInfo } from '../../Acquisition/DotnetInstall';
 import { DotnetInstall } from '../../Acquisition/DotnetInstall';
 import { InstallTrackerSingleton } from '../../Acquisition/InstallTrackerSingleton';
 import { InstallationGraveyard } from '../../Acquisition/InstallationGraveyard';
-import { CommandExecutorResult } from '../../Utils/CommandProcessorOutput';
+import { CommandExecutorResult } from '../../Utils/CommandExecutorResult';
 
 const testDefaultTimeoutTimeMs = 60000;
 /* tslint:disable:no-any */

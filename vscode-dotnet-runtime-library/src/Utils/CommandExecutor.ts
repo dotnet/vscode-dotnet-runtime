@@ -55,7 +55,7 @@ import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { FileUtilities } from './FileUtilities';
 import { IFileUtilities } from './IFileUtilities';
-import { CommandExecutorResult } from './CommandProcessorOutput';
+import { CommandExecutorResult } from './CommandExecutorResult';
 import { setTimeout } from 'timers';
 import { IEventStream } from '../EventStream/EventStream';
 
