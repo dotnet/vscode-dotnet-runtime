@@ -222,7 +222,6 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
      */
     public async executeInstall(installerPath : string) : Promise<string>
     {
-        this.commandRunner.returnStatus = true;
         if(os.platform() === 'darwin')
         {
             // For Mac:
@@ -254,8 +253,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
             );
             this.acquisitionContext.eventStream.post(new NetInstallerEndExecutionEvent(`The OS X .NET Installer has closed.`));
 
-            this.commandRunner.returnStatus = false;
-            return commandResult;
+            return commandResult.status;
         }
         else
         {
@@ -272,8 +270,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
             );
             this.acquisitionContext.eventStream.post(new NetInstallerEndExecutionEvent(`The Windows .NET Installer has closed.`));
 
-            this.commandRunner.returnStatus = false;
-            return commandResult;
+            return commandResult.status;
         }
     }
 
@@ -355,14 +352,11 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
                     const command = CommandExecutor.makeCommand(registryQueryCommand, [`query`, `${query}`, `\/reg:32`]);
 
                     let installRecordKeysOfXBit = '';
-                    const oldReturnStatusSetting = this.commandRunner.returnStatus;
-                    this.commandRunner.returnStatus = true;
-                    const registryLookupStatusCode = await this.commandRunner.execute(command);
-                    this.commandRunner.returnStatus = oldReturnStatusSetting;
+                    const registryLookup = (await this.commandRunner.execute(command));
 
-                    if(registryLookupStatusCode === '0')
+                    if(registryLookup.status === '0')
                     {
-                        installRecordKeysOfXBit = await this.commandRunner.execute(command);
+                        installRecordKeysOfXBit = registryLookup.stdout;
                     }
 
                     const installedSdks = this.extractVersionsOutOfRegistryKeyStrings(installRecordKeysOfXBit);

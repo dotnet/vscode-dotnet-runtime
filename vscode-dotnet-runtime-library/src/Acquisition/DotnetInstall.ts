@@ -49,7 +49,7 @@ export function IsEquivalentInstallation(a: DotnetInstall, b: DotnetInstall): bo
 /**
  * @returns A string set representing the installation of either a .NET runtime or .NET SDK.
  */
-export function InstallToStrings(key: DotnetInstall | null) {
+export function InstallToStrings(key: DotnetInstall) {
     if (!key) {
         return { installKey: '', version: '', architecture: '', isGlobal: '', installMode: '' };
     }
