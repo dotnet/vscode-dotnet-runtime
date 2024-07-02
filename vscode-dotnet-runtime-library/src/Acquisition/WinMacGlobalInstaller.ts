@@ -157,7 +157,7 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
 
             if(os.platform() === 'win32') // Windows does not have chmod +x ability with nodejs.
             {
-                const commandRes = await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', ['/grant', `"${installerPath}"`, `"%username%":F`, "/t", "/c"]), null, false);
+                const commandRes = await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', ['/grant', `"${installerPath}"`, `"%username%":F`, '/t', '/c']), null, false);
                 if(commandRes.stderr !== '')
                 {
                     const error = new EventBasedError('FailedToSetInstallerPermissions', `Failed to set icacls permissions on the installer file ${installerPath}. ${commandRes.stderr}`);
