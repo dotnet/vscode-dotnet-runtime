@@ -171,7 +171,7 @@ suite('Windows & Mac Global Installer Tests', () =>
         assert.equal(result, '0', 'No errors were reported by the fake install');
 
         const installerDownloadFolder = path.resolve(__dirname, '../../Acquisition/', 'installers');
-        const installersDir = WinMacGlobalInstaller.getDownloadedInstallFilesFolder('foo');
+        const installersDir = WinMacGlobalInstaller.getDownloadedInstallFilesFolder(mockUrl);
         assert.equal(path.dirname(installersDir), installerDownloadFolder, 'The expected installer folder is used');
 
         assert.isTrue(fs.existsSync(installerDownloadFolder), 'install folder is created when we do not clean it up');
