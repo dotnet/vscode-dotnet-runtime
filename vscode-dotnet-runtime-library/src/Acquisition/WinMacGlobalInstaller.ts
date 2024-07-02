@@ -160,7 +160,7 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
                 const commandRes = await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', ['/grant', `"${installerPath}"`, `"%username%":F`, "/t", "/c"]), null, false);
                 if(commandRes.stderr !== '')
                 {
-                    const error = new EventBasedError('FailedToSetInstallerPermissions', `Failed to set icalcs permissions on the installer file ${installerPath}. ${commandRes.stderr}`);
+                    const error = new EventBasedError('FailedToSetInstallerPermissions', `Failed to set icacls permissions on the installer file ${installerPath}. ${commandRes.stderr}`);
                     this.acquisitionContext.eventStream.post(new SuppressedAcquisitionError(error, error.message));
                 }
             }

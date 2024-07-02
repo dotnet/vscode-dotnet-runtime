@@ -32,6 +32,6 @@ export abstract class IGlobalInstaller {
      */
     public static getDownloadedInstallFilesFolder(uniqueInstallerId : string) : string
     {
-        return path.join(__dirname, 'installers', crypto.createHash('shake256', { outputLength : 4 }).update(uniqueInstallerId).digest('hex'));
+        return path.join(__dirname, 'installers', crypto.createHash('sha256').update(uniqueInstallerId).digest('hex'));
     }
 }
