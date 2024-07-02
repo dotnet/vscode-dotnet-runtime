@@ -65,7 +65,6 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, sdkPackage);
         const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
-        // todo: this seems very wrong
         const noPackageResult = 'no packages found';
         return commandResult.stdout.toLowerCase().includes(noPackageResult);
     }
