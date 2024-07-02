@@ -183,7 +183,8 @@ suite('Windows & Mac Global Installer Tests', () =>
 
         if(new FileUtilities().isElevated())
         {
-            assert.equal(fs.readdirSync(installerDownloadFolder).length, 0, 'the installer file was deleted upon exit');
+            assert.equal(fs.readdirSync(installersDir).length, 0, `the installer file was deleted upon exit. files:
+${fs.readdirSync(installerDownloadFolder).join(", ")}`);
             mockExecutor.resetReturnValues();
         }
         else
