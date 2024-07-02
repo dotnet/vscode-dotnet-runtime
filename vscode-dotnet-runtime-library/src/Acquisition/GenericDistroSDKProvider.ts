@@ -55,7 +55,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
             }
         }
 
-        return commandResult[0].stdout.trim() ?? null;
+        return commandResult[0].stdout ?? null;
     }
 
     public async dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion : string, installType : DotnetInstallMode) : Promise<boolean>
