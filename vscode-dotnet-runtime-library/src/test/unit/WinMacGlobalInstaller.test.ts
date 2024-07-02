@@ -48,7 +48,7 @@ suite('Windows & Mac Global Installer Tests', () =>
 
             let foundVersions = await installer.getGlobalSdkVersionsInstalledOnMachine();
             assert.deepStrictEqual(foundVersions, ['5.0.416', '8.0.100-preview.5.23265.7', '7.0.301', '6.0.416', '7.0.109', '7.0.304']);
-            assert.include(mockExecutor.attemptedCommand, 'query HKEY');
+            assert.include(mockExecutor.attemptedCommand, 'query HKEY', 'it finds sdks on the machine');
 
             // only 1 64 bit sdks exist
             mockExecutor.fakeReturnValue = {
@@ -61,14 +61,14 @@ suite('Windows & Mac Global Installer Tests', () =>
             mockExecutor.otherCommandPatternsToMock = ['x86'] // make the 32 bit query error / have no result
             mockExecutor.otherCommandsReturnValues = [{stderr: `ERROR: The system was unable to find the specified registry key or value.`, status: '1', stdout: ''}];
             foundVersions = await installer.getGlobalSdkVersionsInstalledOnMachine();
-            assert.deepStrictEqual(foundVersions, ['7.0.301']);
+            assert.deepStrictEqual(foundVersions, ['7.0.301'], 'it handles 32 bit sdk not found');
 
             // no sdks exist
             // Try throwing for  64 bit, and returning empty for 32 bit
             mockExecutor.fakeReturnValue = {stdout: `ERROR: The system was unable to find the specified registry key or value.`, status: '1', stderr: ''};
-            mockExecutor.resetReturnValues();
+            mockExecutor.otherCommandsReturnValues = [{stdout: '', status: '0', stderr: ''}];
             foundVersions = await installer.getGlobalSdkVersionsInstalledOnMachine();
-            assert.deepStrictEqual(foundVersions, []);
+            assert.deepStrictEqual(foundVersions, [], 'it finds nothing with empty string and or error status');
 
             mockExecutor.resetReturnValues();
             // Assert that it passes when running the command for real
@@ -91,7 +91,7 @@ suite('Windows & Mac Global Installer Tests', () =>
         let conflictExists = await installer.GlobalWindowsInstallWithConflictingVersionAlreadyExists(mockVersion);
         // The existing install is of a higher patch version than the attempted install, but the same band and major.minor.
         assert.deepStrictEqual(conflictExists, '7.0.307');
-        assert.include(mockExecutor.attemptedCommand, 'query HKEY');
+        assert.include(mockExecutor.attemptedCommand, 'query HKEY', 'it doesnt install if there is a conflicting install');
 
         // The major.minor is the same, but the band is not, so there is no conflict.
         mockExecutor.fakeReturnValue = { stdout: `
@@ -101,7 +101,7 @@ suite('Windows & Mac Global Installer Tests', () =>
                 stderr: ''
         };
         conflictExists = await installer.GlobalWindowsInstallWithConflictingVersionAlreadyExists(mockVersion);
-        assert.deepStrictEqual(conflictExists, '');
+        assert.deepStrictEqual(conflictExists, '', 'it finds no conflict with the same major.minor but different band');
 
         // Assert there is no conflict for upgrading to a newer patch version.
         mockExecutor.fakeReturnValue = { stdout: `
@@ -112,7 +112,7 @@ suite('Windows & Mac Global Installer Tests', () =>
         };
 
         conflictExists = await installer.GlobalWindowsInstallWithConflictingVersionAlreadyExists(mockVersion);
-        assert.deepStrictEqual(conflictExists, '');
+        assert.deepStrictEqual(conflictExists, '', 'it finds no conflict with a newer patch version');
 
         // Assert that if an existing install exists it just exits ok
         mockExecutor.fakeReturnValue = {stdout: `
@@ -128,7 +128,7 @@ suite('Windows & Mac Global Installer Tests', () =>
         assert.equal(result, '0');
 
         // Assert the reg query was the last command, aka it never attempted to install because it didn't need to
-        assert.include(mockExecutor.attemptedCommand, 'query HKEY');
+        assert.include(mockExecutor.attemptedCommand, 'query HKEY', 'reg query is the last command since install is skipped');
         }
     });
 

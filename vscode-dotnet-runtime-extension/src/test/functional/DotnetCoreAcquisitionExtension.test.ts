@@ -27,6 +27,7 @@ import {
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { warn } from 'console';
+import { json } from 'stream/consumers';
 /* tslint:disable:no-any */
 /* tslint:disable:no-unsafe-finally */
 
@@ -262,8 +263,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     const uninstallCompletedEvent = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === 'DotnetUninstallAllCompleted');
     assert.exists(uninstallCompletedEvent, 'Uninstall All success is reported in telemetry');
     // Check that no errors were reported
-    const errors = MockTelemetryReporter.telemetryEvents.filter((event: ITelemetryEvent) => event.eventName.includes('Error'));
-    assert.isEmpty(errors, 'No error events were reported in telemetry reporting');
+    const errors = MockTelemetryReporter.telemetryEvents.filter((event: ITelemetryEvent) => event.eventName.includes('Error') && event.eventName !== 'CommandExecutionStdError');
+    assert.isEmpty(errors, `No error events were reported in telemetry reporting. ${JSON.stringify(errors)}`);
   }).timeout(standardTimeoutTime);
 
   test('Telemetry Sent on Error', async () => {

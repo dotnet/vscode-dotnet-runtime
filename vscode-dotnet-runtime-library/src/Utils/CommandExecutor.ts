@@ -460,14 +460,14 @@ result: ${commandResult.toString()} had no status or signal.`));
         this.context?.eventStream.post(new CommandExecutionStatusEvent(`The command ${fullCommandStringForTelemetryOnly} exited
         with status: ${commandResult.status?.toString()}.`));
 
-                    this.context?.eventStream.post(new CommandExecutionSignalSentEvent(`The command ${fullCommandStringForTelemetryOnly} exited
-        with signal: ${commandResult.signal?.toString()}.`));
+        this.context?.eventStream.post(new CommandExecutionSignalSentEvent(`The command ${fullCommandStringForTelemetryOnly} exited
+with signal: ${commandResult.signal?.toString()}.`));
 
-                    this.context?.eventStream.post(new CommandExecutionStdOut(`The command ${fullCommandStringForTelemetryOnly} encountered stdout:
-        ${commandResult.stdout}`));
+        this.context?.eventStream.post(new CommandExecutionStdOut(`The command ${fullCommandStringForTelemetryOnly} encountered stdout:
+${commandResult.stdout}`));
 
-                    this.context?.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandStringForTelemetryOnly} encountered stderr:
-        ${commandResult.stderr}`));
+        this.context?.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandStringForTelemetryOnly} encountered stderr:
+${commandResult.stderr}`));
     }
 
     /**
