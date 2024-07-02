@@ -286,7 +286,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
                 if(error?.message?.includes('EPERM'))
                 {
                     error.message = `The installer does not have permission to execute. Please try running as an administrator. ${error.message}.
-Permissions: ${await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerPath}"`]))}`;
+Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerPath}"`])))}`;
                 }
                 else if(error?.message?.includes('ENOENT'))
                 {
