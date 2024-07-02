@@ -40,7 +40,7 @@ import { GetDotnetInstallInfo } from '../../Acquisition/DotnetInstall';
 import { DotnetInstall } from '../../Acquisition/DotnetInstall';
 import { InstallTrackerSingleton } from '../../Acquisition/InstallTrackerSingleton';
 import { InstallationGraveyard } from '../../Acquisition/InstallationGraveyard';
-import { CommandProcessorOutput } from '../../Utils/CommandProcessorOutput';
+import { CommandExecutorResult } from '../../Utils/CommandProcessorOutput';
 
 const testDefaultTimeoutTimeMs = 60000;
 /* tslint:disable:no-any */
@@ -305,7 +305,7 @@ export class MockCommandExecutor extends ICommandExecutor
     // If you expect several commands to be run and want to specify unique outputs for each, describe them in the same order using the below two arrays.
     // We will check for an includes match and not an exact match!
     public otherCommandPatternsToMock : string[] = [];
-    public otherCommandsReturnValues : CommandProcessorOutput[] = [];
+    public otherCommandsReturnValues : CommandExecutorResult[] = [];
 
     constructor(acquisitionContext : IAcquisitionWorkerContext, utilContext : IUtilityContext)
     {
@@ -313,7 +313,7 @@ export class MockCommandExecutor extends ICommandExecutor
         this.trueExecutor = new CommandExecutor(acquisitionContext, utilContext);
     }
 
-    public async execute(command: CommandExecutorCommand, options : object | null = null, terminalFailure? : boolean): Promise<CommandProcessorOutput>
+    public async execute(command: CommandExecutorCommand, options : object | null = null, terminalFailure? : boolean): Promise<CommandExecutorResult>
     {
         this.attemptedCommand = CommandExecutor.prettifyCommandExecutorCommand(command);
 
@@ -335,7 +335,7 @@ export class MockCommandExecutor extends ICommandExecutor
         return this.fakeReturnValue;
     }
 
-    public async executeMultipleCommands(commands: CommandExecutorCommand[], options?: any, terminalFailure? : boolean): Promise<CommandProcessorOutput[]>
+    public async executeMultipleCommands(commands: CommandExecutorCommand[], options?: any, terminalFailure? : boolean): Promise<CommandExecutorResult[]>
     {
         const result = [];
         for(const command of commands)

@@ -55,7 +55,7 @@ import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { FileUtilities } from './FileUtilities';
 import { IFileUtilities } from './IFileUtilities';
-import { CommandProcessorOutput } from './CommandProcessorOutput';
+import { CommandExecutorResult } from './CommandProcessorOutput';
 import { setTimeout } from 'timers';
 import { IEventStream } from '../EventStream/EventStream';
 
@@ -111,7 +111,7 @@ status: ${commandResult.status?.toString()}`
      *
      * @returns The output of the command.
      */
-    private async ExecSudoAsync(command : CommandExecutorCommand, terminalFailure = true) : Promise<CommandProcessorOutput>
+    private async ExecSudoAsync(command : CommandExecutorCommand, terminalFailure = true) : Promise<CommandExecutorResult>
     {
         const fullCommandString = CommandExecutor.prettifyCommandExecutorCommand(command, false);
         this.context?.eventStream.post(new CommandExecutionUnderSudoEvent(`The command ${fullCommandString} is being ran under sudo.`));
@@ -298,9 +298,9 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFrom
      * @param failOnNonZeroExit Whether to fail if we get an exit code from the command besides 0.
      * @returns The output string of the command, or the string status code, depending on the mode of execution.
      */
-    private async executeSudoViaProcessCommunication(commandToExecuteString : string, terminalFailure : boolean, failOnNonZeroExit = true) : Promise<CommandProcessorOutput>
+    private async executeSudoViaProcessCommunication(commandToExecuteString : string, terminalFailure : boolean, failOnNonZeroExit = true) : Promise<CommandExecutorResult>
     {
-        let commandOutputJson : CommandProcessorOutput | null = null;
+        let commandOutputJson : CommandExecutorResult | null = null;
         const noStatusCodeErrorCode = '1220'; // Special failure code for if code is never set error
 
         const commandFile = path.join(this.sudoProcessCommunicationDir, 'command.txt');
@@ -346,7 +346,7 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFrom
                 stdout : (fs.readFileSync(stdoutFile, 'utf8')).trim(),
                 stderr : (fs.readFileSync(stderrFile, 'utf8')).trim(),
                 status : (fs.readFileSync(statusFile, 'utf8')).trim()
-            } as CommandProcessorOutput;
+            } as CommandExecutorResult;
             this.context?.eventStream.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), directoryLockPath, fakeLockFile));
             await this.fileUtil.wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt']);
 
@@ -373,15 +373,15 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFrom
             this.context?.eventStream.post(new CommandProcessorExecutionEnd(`The command ${commandToExecuteString} was finished by the master process, as ${outputFile} was found.`));
 
             this.context?.eventStream.post(new CommandExecutionStdOut(`The command ${commandToExecuteString} encountered stdout, continuing
-${(commandOutputJson as CommandProcessorOutput).stdout}`));
+${(commandOutputJson as CommandExecutorResult).stdout}`));
 
             this.context?.eventStream.post(new CommandExecutionStdError(`The command ${commandToExecuteString} encountered stderr, continuing
-${(commandOutputJson as CommandProcessorOutput).stderr}`));
+${(commandOutputJson as CommandExecutorResult).stderr}`));
 
-            if((commandOutputJson as CommandProcessorOutput).status !== '0' && failOnNonZeroExit)
+            if((commandOutputJson as CommandExecutorResult).status !== '0' && failOnNonZeroExit)
             {
                 const err = new CommandExecutionNonZeroExitFailure(new EventBasedError('CommandExecutionNonZeroExitFailure',
-                    `Cancelling .NET Install, as command ${commandToExecuteString} returned with status ${(commandOutputJson as CommandProcessorOutput).status}.`),
+                    `Cancelling .NET Install, as command ${commandToExecuteString} returned with status ${(commandOutputJson as CommandExecutorResult).status}.`),
                     getInstallKeyFromContext(this.context));
                 this.context?.eventStream.post(err);
                 throw err.error;
@@ -391,7 +391,7 @@ ${(commandOutputJson as CommandProcessorOutput).stderr}`));
         return commandOutputJson ?? { stdout: '', stderr : '', status: noStatusCodeErrorCode};
     }
 
-    public async executeMultipleCommands(commands: CommandExecutorCommand[], options?: any, terminalFailure = true): Promise<CommandProcessorOutput[]>
+    public async executeMultipleCommands(commands: CommandExecutorCommand[], options?: any, terminalFailure = true): Promise<CommandExecutorResult[]>
     {
         const results = [];
         for(const command of commands)
@@ -408,7 +408,7 @@ ${(commandOutputJson as CommandProcessorOutput).stderr}`));
      * @param terminalFailure Whether to throw up an error when executing under sudo or suppress it and return stderr
      * @returns the result(s) of each command. Can throw generically if the command fails.
      */
-    public async execute(command : CommandExecutorCommand, options : any | null = null, terminalFailure = true) : Promise<CommandProcessorOutput>
+    public async execute(command : CommandExecutorCommand, options : any | null = null, terminalFailure = true) : Promise<CommandExecutorResult>
     {
         const fullCommandStringForTelemetryOnly = `${command.commandRoot} ${command.commandParts.join(' ')}`;
         if(!options)
