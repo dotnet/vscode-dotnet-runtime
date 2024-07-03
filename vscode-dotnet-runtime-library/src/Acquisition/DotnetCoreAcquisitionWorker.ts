@@ -38,7 +38,6 @@ import { WinMacGlobalInstaller } from './WinMacGlobalInstaller';
 import { LinuxGlobalInstaller } from './LinuxGlobalInstaller';
 import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
 import { Debugging } from '../Utils/Debugging';
-import { DotnetInstallType } from '../IDotnetAcquireContext';
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
@@ -60,7 +59,6 @@ import { InstallationGraveyard } from './InstallationGraveyard';
 import { InstallTrackerSingleton } from './InstallTrackerSingleton';
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { IEventStream } from '../EventStream/EventStream';
-import { strict } from 'assert';
 import { IExtensionState } from '../IExtensionState';
 import { getInstallKeyCustomArchitecture } from '../Utils/InstallKeyUtilities';
 

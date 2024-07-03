@@ -451,6 +451,10 @@ export class DotnetNoInstallerFileExistsError extends DotnetAcquisitionError {
     public readonly eventName = 'DotnetNoInstallerFileExistsError';
 }
 
+export class DotnetNoInstallerResponseError extends DotnetInstallExpectedAbort {
+    public readonly eventName = 'DotnetNoInstallerResponseError';
+}
+
 export class DotnetUnexpectedInstallerOSError extends DotnetAcquisitionError {
     public readonly eventName = 'DotnetUnexpectedInstallerOSError';
 }
@@ -888,6 +892,10 @@ export class SudoProcCommandExchangeBegin extends DotnetCustomMessageEvent {
 
 export class SudoProcCommandExchangePing extends DotnetCustomMessageEvent {
     public readonly eventName = 'SudoProcCommandExchangePing';
+}
+
+export class WaitingForDotnetInstallerResponse extends DotnetCustomMessageEvent {
+    public readonly eventName = 'WaitingForDotnetInstallerResponse';
 }
 
 export class SudoProcCommandExchangeEnd extends DotnetCustomMessageEvent {

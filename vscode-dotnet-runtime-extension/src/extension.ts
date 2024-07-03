@@ -59,6 +59,7 @@ import {
     getInstallKeyCustomArchitecture,
     DotnetInstallType,
     DotnetAcquisitionTotalSuccessEvent,
+    isRunningUnderWSL
 } from 'vscode-dotnet-runtime-library';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 
@@ -391,7 +392,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     function checkIfSDKAcquisitionIsSupported() : boolean
     {
         let isSupported = true;
-        isSupported = isSupported && !CommandExecutor.isRunningUnderWSL(globalEventStream);
+        isSupported = isSupported && !isRunningUnderWSL(globalEventStream);
         vscode.commands.executeCommand('setContext', 'dotnetAcquisitionExtension.isGlobalSDKUnsupported', !isSupported);
         return isSupported;
     }

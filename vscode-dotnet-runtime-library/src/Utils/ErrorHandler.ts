@@ -12,7 +12,7 @@ import {
     DotnetNotInstallRelatedCommandFailed,
     EventCancellationError
 } from '../EventStream/EventStreamEvents';
-import { getInstallKeyFromContext } from './InstallKeyUtilities';
+import { getInstallFromContext } from './InstallKeyUtilities';
 import { IIssueContext } from './IIssueContext';
 import { formatIssueUrl } from './IssueReporter';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
@@ -68,7 +68,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
         if(!isCancellationStyleError(error))
         {
             context.eventStream.post(isAcquisitionError ?
-                new DotnetCommandFailed(error, context.commandName, getInstallKeyFromContext(acquireContext!)) :
+                new DotnetCommandFailed(error, context.commandName, getInstallFromContext(acquireContext!)) :
                 // The output observer will keep track of installs and we don't want a non-install failure to make it think it should -=1 from the no. of installs
                 new DotnetNotInstallRelatedCommandFailed(error, context.commandName)
             );

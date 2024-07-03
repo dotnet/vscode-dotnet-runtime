@@ -30,8 +30,6 @@ import {
     DotnetCommandNotFoundEvent,
     DotnetLockAcquiredEvent,
     DotnetLockReleasedEvent,
-    DotnetWSLCheckEvent,
-    DotnetWSLOperationOutputEvent,
     DotnetWSLSecurityError,
     SudoProcAliveCheckBegin,
     SudoProcAliveCheckEnd,
@@ -45,7 +43,7 @@ import {
 import {exec} from '@vscode/sudo-prompt';
 import * as lockfile from 'proper-lockfile';
 import { CommandExecutorCommand } from './CommandExecutorCommand';
-import { getInstallKeyFromContext } from './InstallKeyUtilities';
+import { getInstallFromContext } from './InstallKeyUtilities';
 
 
 import { ICommandExecutor } from './ICommandExecutor';
@@ -56,8 +54,7 @@ import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerCont
 import { FileUtilities } from './FileUtilities';
 import { IFileUtilities } from './IFileUtilities';
 import { CommandExecutorResult } from './CommandExecutorResult';
-import { setTimeout } from 'timers';
-import { IEventStream } from '../EventStream/EventStream';
+import { isRunningUnderWSL, loopWithTimeoutOnCond } from './TypescriptUtilities';
 
 /* tslint:disable:no-any */
 /* tslint:disable:no-string-literal */
@@ -76,38 +73,6 @@ export class CommandExecutor extends ICommandExecutor
     }
 
     /**
-     * Returns true if the linux agent is running under WSL, else false.
-     */
-    public static isRunningUnderWSL(eventStream? : IEventStream) : boolean
-    {
-        // See https://github.com/microsoft/WSL/issues/4071 for evidence that we can rely on this behavior.
-
-        eventStream?.post(new DotnetWSLCheckEvent(`Checking if system is WSL. OS: ${os.platform()}`));
-
-        if(os.platform() !== 'linux')
-        {
-            return false;
-        }
-
-        const command = 'grep';
-        const args = ['-i', 'Microsoft', '/proc/version'];
-        const commandResult = proc.spawnSync(command, args);
-
-        eventStream?.post(new DotnetWSLOperationOutputEvent(`The output of the WSL check:
-stdout: ${commandResult.stdout?.toString()}
-stderr: ${commandResult.stderr?.toString()}
-status: ${commandResult.status?.toString()}`
-        ));
-
-        if(!commandResult || !commandResult.stdout)
-        {
-            return false;
-        }
-
-        return commandResult.stdout.toString() !== '';
-    }
-
-    /**
      *
      * @returns The output of the command.
      */
@@ -117,7 +82,7 @@ status: ${commandResult.status?.toString()}`
         this.context?.eventStream.post(new CommandExecutionUnderSudoEvent(`The command ${fullCommandString} is being ran under sudo.`));
         const shellScript = path.join(this.sudoProcessCommunicationDir, 'interprocess-communicator.sh');
 
-        if(CommandExecutor.isRunningUnderWSL(this.context?.eventStream))
+        if(isRunningUnderWSL(this.context?.eventStream))
         {
             // For WSL, vscode/sudo-prompt does not work.
             // This is because it relies on pkexec or a GUI app to popup and request sudo privilege.
@@ -127,7 +92,7 @@ status: ${commandResult.status?.toString()}`
             const err = new DotnetWSLSecurityError(new EventCancellationError('DotnetWSLSecurityError',
             `Automatic .NET SDK Installation is not yet supported in WSL due to VS Code & WSL limitations.
 Please install the .NET SDK manually by following https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu. Then, add it to the path by following https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#manually-installing-net`,
-                ), getInstallKeyFromContext(this.context));
+                ), getInstallFromContext(this.context));
             this.context?.eventStream.post(err);
             throw err.error;
         }
@@ -183,7 +148,7 @@ ${stderr}`));
                         const cancelledErr = new CommandExecutionUserRejectedPasswordRequest(new EventCancellationError('CommandExecutionUserRejectedPasswordRequest',
                         `Cancelling .NET Install, as command ${fullCommandString} failed.
 The user refused the password prompt.`),
-                            getInstallKeyFromContext(this.context));
+                            getInstallFromContext(this.context));
                         this.context?.eventStream.post(cancelledErr);
                         return Promise.reject(cancelledErr.error);
                     }
@@ -192,7 +157,7 @@ The user refused the password prompt.`),
                         const securityErr = new CommandExecutionUnknownCommandExecutionAttempt(new EventCancellationError('CommandExecutionUnknownCommandExecutionAttempt',
                         `Cancelling .NET Install, as command ${fullCommandString} is UNKNOWN.
 Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
-                            getInstallKeyFromContext(this.context));
+                            getInstallFromContext(this.context));
                         this.context?.eventStream.post(securityErr);
                         return Promise.reject(securityErr.error);
                     }
@@ -244,9 +209,11 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
             this.context?.eventStream.post(new SudoProcAliveCheckBegin(`Looking for Sudo Process Master, wrote OK file. ${new Date().toISOString()}`));
 
             const waitTime = this.context?.timeoutSeconds ? ((this.context?.timeoutSeconds/3) * 1000) : 180000;
-            await this.loopWithTimeoutOnCond(100, waitTime,
+            await loopWithTimeoutOnCond(100, waitTime,
                 function processRespondedByDeletingOkFile() : boolean { return !fs.existsSync(processAliveOkSentinelFile) },
-                function setProcessIsAlive() : void { isLive = true; }
+                function setProcessIsAlive() : void { isLive = true; },
+                this.context.eventStream,
+                new SudoProcCommandExchangePing(`Ping : Waiting. ${new Date().toISOString()}`)
             )
             .catch(error =>
             {
@@ -264,31 +231,12 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
         {
             const err = new TimeoutSudoProcessSpawnerError(new EventCancellationError('TimeoutSudoProcessSpawnerError', `We are unable to spawn the process to run commands under sudo for installing .NET.
 Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: ${errorIfDead}.
-It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFromContext(this.context));
+It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallFromContext(this.context));
             this.context?.eventStream.post(err);
             throw err.error;
         }
 
         return isLive;
-    }
-
-    private async loopWithTimeoutOnCond(sampleRatePerMs : number, durationToWaitBeforeTimeoutMs : number, conditionToStop : () => boolean, doAfterStop : () => void )
-    {
-        return new Promise(async (resolve, reject) =>
-        {
-            for (let i = 0; i < (durationToWaitBeforeTimeoutMs / sampleRatePerMs); i++)
-            {
-                if(conditionToStop())
-                {
-                    doAfterStop();
-                    return resolve('The promise succeeded.');
-                }
-                this.context?.eventStream.post(new SudoProcCommandExchangePing(`Ping : Waiting. ${new Date().toISOString()}`));
-                await new Promise(waitAndResolve => setTimeout(waitAndResolve, sampleRatePerMs));
-            }
-
-            return reject('The promise timed out.');
-        });
     }
 
     /**
@@ -333,9 +281,11 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFrom
 
 
             const waitTime = this.context?.timeoutSeconds ? (this.context?.timeoutSeconds * 1000) : 600000;
-            await this.loopWithTimeoutOnCond(100, waitTime,
+            await loopWithTimeoutOnCond(100, waitTime,
                 function ProcessFinishedExecutingAndWroteOutput() : boolean { return fs.existsSync(outputFile) },
-                function doNothing() : void { ; }
+                function doNothing() : void { ; },
+                this.context.eventStream,
+                new SudoProcCommandExchangePing(`Ping : Waiting. ${new Date().toISOString()}`)
             )
             .catch(error =>
             {
@@ -360,7 +310,7 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFrom
             const err = new TimeoutSudoCommandExecutionError(new EventCancellationError('TimeoutSudoCommandExecutionError',
             `Timeout: The master process with command ${commandToExecuteString} never finished executing.
 Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: ${terminalFailure}.
-It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFromContext(this.context));
+It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallFromContext(this.context));
             this.context?.eventStream.post(err);
             throw err.error;
         }
@@ -382,7 +332,7 @@ ${(commandOutputJson as CommandExecutorResult).stderr}`));
             {
                 const err = new CommandExecutionNonZeroExitFailure(new EventBasedError('CommandExecutionNonZeroExitFailure',
                     `Cancelling .NET Install, as command ${commandToExecuteString} returned with status ${(commandOutputJson as CommandExecutorResult).status}.`),
-                    getInstallKeyFromContext(this.context));
+                    getInstallFromContext(this.context));
                 this.context?.eventStream.post(err);
                 throw err.error;
             }
