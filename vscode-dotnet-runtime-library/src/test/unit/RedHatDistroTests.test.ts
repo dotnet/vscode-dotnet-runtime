@@ -72,16 +72,16 @@ suite('Red Hat For Linux Distro Logic Unit Tests', () =>
     {
         if(shouldRun)
         {
-            mockExecutor.fakeReturnValue = `
+            mockExecutor.fakeReturnValue = {stdout: `
 7.0.105 [/usr/lib/dotnet/sdk]
-7.0.104 [/usr/custom/dotnet/sdk]`;
+7.0.104 [/usr/custom/dotnet/sdk]`, stderr: '', status: '0'};
             let versions = await provider.getInstalledDotnetSDKVersions();
-            mockExecutor.fakeReturnValue = '';
+            mockExecutor.resetReturnValues();
             assert.deepStrictEqual(versions, ['7.0.105', '7.0.104']);
 
-            mockExecutor.fakeReturnValue = noDotnetString;
+            mockExecutor.fakeReturnValue = {stdout: noDotnetString, stderr: noDotnetString, status: '0'};
             versions = await provider.getInstalledDotnetSDKVersions();
-            mockExecutor.fakeReturnValue = '';
+            mockExecutor.resetReturnValues();
             assert.deepStrictEqual(versions, []);
         }
     }).timeout(standardTimeoutTime);
@@ -89,16 +89,16 @@ suite('Red Hat For Linux Distro Logic Unit Tests', () =>
     test('Gets Installed Runtimes', async () => {
         if(shouldRun)
         {
-            mockExecutor.fakeReturnValue = `
+            mockExecutor.fakeReturnValue = {stdout: `
 Microsoft.NETCore.App 6.0.16 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]
-Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
+Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`, stderr: '', status: '0'};
             let versions = await provider.getInstalledDotnetRuntimeVersions();
-            mockExecutor.fakeReturnValue = '';
+            mockExecutor.resetReturnValues();
             assert.deepStrictEqual(versions, ['6.0.16', '7.0.5']);
 
-            mockExecutor.fakeReturnValue = noDotnetString;
+            mockExecutor.fakeReturnValue = {stdout: noDotnetString, stderr: noDotnetString, status: '0'};
             versions = await provider.getInstalledDotnetRuntimeVersions();
-            mockExecutor.fakeReturnValue = '';
+            mockExecutor.resetReturnValues();
             assert.deepStrictEqual(versions, []);
         }
     }).timeout(standardTimeoutTime);
@@ -114,14 +114,14 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
     test('Finds Existing Global Dotnet Version', async () => {
         if(shouldRun)
         {
-            mockExecutor.fakeReturnValue = `7.0.105`;
+            mockExecutor.fakeReturnValue = {stdout: `7.0.105`, status: '0', stderr: ''};
             let currentInfo = await provider.getInstalledGlobalDotnetVersionIfExists();
-            mockExecutor.fakeReturnValue = '';
+            mockExecutor.resetReturnValues();
             assert.equal(currentInfo, '7.0.105');
 
-            mockExecutor.fakeReturnValue = noDotnetString;
+            mockExecutor.fakeReturnValue = {stdout: noDotnetString, stderr: noDotnetString, status: '0'};
             currentInfo = await provider.getInstalledGlobalDotnetVersionIfExists();
-            mockExecutor.fakeReturnValue = '';
+            mockExecutor.resetReturnValues();
             assert.equal(currentInfo, null);
         }
     }).timeout(standardTimeoutTime);

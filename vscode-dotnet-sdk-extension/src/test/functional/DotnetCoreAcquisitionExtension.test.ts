@@ -296,23 +296,22 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     // Install 6.0
     let version = currentSDKVersion;
     let result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', { version, requestingExtensionId: 'ms-dotnettools.sample-extension' });
-    assert.exists(result);
-    assert.exists(result!.dotnetPath);
+    assert.exists(result, 'basic install works');
+    assert.exists(result!.dotnetPath, 'basic install has path');
     let sdkDirs = fs.readdirSync(path.join(path.dirname(result!.dotnetPath), 'sdk'));
-    assert.isNotEmpty(sdkDirs.filter(dir => dir.includes(version)));
+    assert.isNotEmpty(sdkDirs.filter(dir => dir.includes(version)), 'sdk directories include version');
 
     // Install 5.0
     version = '5.0';
     result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', { version, requestingExtensionId: 'ms-dotnettools.sample-extension' });
-    assert.exists(result);
-    assert.exists(result!.dotnetPath);
+    assert.exists(result, 'acquire works a 2nd time');
+    assert.exists(result!.dotnetPath, 'acquire returns a path a 2nd time');
     sdkDirs = fs.readdirSync(path.join(path.dirname(result!.dotnetPath), 'sdk'));
-    assert.isNotEmpty(sdkDirs.filter(dir => dir.includes(version)));
+    assert.isNotEmpty(sdkDirs.filter(dir => dir.includes(version)), 'acquire sdk twice does not overwrite');
 
-    // 5.0 and 3.1 SDKs should still be installed
     sdkDirs = fs.readdirSync(path.join(path.dirname(result!.dotnetPath), 'sdk'));
-    assert.isNotEmpty(sdkDirs.filter(dir => dir.includes(currentSDKVersion)));
-    assert.isNotEmpty(sdkDirs.filter(dir => dir.includes('5.0')));
+    assert.isNotEmpty(sdkDirs.filter(dir => dir.includes(currentSDKVersion)), 'directories include a version.');
+    assert.isNotEmpty(sdkDirs.filter(dir => dir.includes('5.0')), 'old directories are preserved');
 
     // Clean up storage
     await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
