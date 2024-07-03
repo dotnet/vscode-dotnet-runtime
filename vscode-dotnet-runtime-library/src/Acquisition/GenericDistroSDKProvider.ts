@@ -65,8 +65,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, sdkPackage);
         const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
-        const noPackageResult = 'no packages found';
-        return commandResult.stdout.toLowerCase().includes(noPackageResult);
+        return commandResult.status === '0';
     }
 
     public getExpectedDotnetDistroFeedInstallationDirectory(): string
