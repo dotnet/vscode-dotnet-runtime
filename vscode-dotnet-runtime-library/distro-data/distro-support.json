@@ -10,7 +10,6 @@
                     "DPkg::Lock::Timeout=120",
                     "update",
                     "-y",
-                    "-V",
                     "||",
                     "apt-get",
                     "update",
@@ -25,7 +24,6 @@
                     "DPkg::Lock::Timeout=120",
                     "install",
                     "-y",
-                    "-V",
                     "{packageName}"
                 ]
             }
@@ -250,8 +248,7 @@
                             "-o",
                             "DPkg::Lock::Timeout=120",
                             "update",
-                            "-y",
-                            "-V"
+                            "-y"
                         ]
                     },
                     {
