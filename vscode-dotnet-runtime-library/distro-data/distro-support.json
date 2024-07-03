@@ -6,15 +6,26 @@
                 "runUnderSudo": true,
                 "commandRoot": "apt-get",
                 "commandParts": [
-                    "update"
+                    "-o",
+                    "DPkg::Lock::Timeout=120",
+                    "update",
+                    "-y",
+                    "-V",
+                    "||",
+                    "apt-get",
+                    "update",
+                    "-y"
                 ]
             },
             {
                 "runUnderSudo": true,
                 "commandRoot": "apt-get",
                 "commandParts": [
+                    "-o",
+                    "DPkg::Lock::Timeout=120",
                     "install",
                     "-y",
+                    "-V",
                     "{packageName}"
                 ]
             }
@@ -24,6 +35,8 @@
                 "runUnderSudo": true,
                 "commandRoot": "apt-get",
                 "commandParts": [
+                    "-o",
+                    "DPkg::Lock::Timeout=120",
                     "remove",
                     "{packageName}"
                 ]
@@ -34,6 +47,8 @@
                 "runUnderSudo": true,
                 "commandRoot": "apt-get",
                 "commandParts": [
+                    "-o",
+                    "DPkg::Lock::Timeout=120",
                     "update"
                 ]
             },
@@ -41,6 +56,8 @@
                 "runUnderSudo": true,
                 "commandRoot": "apt-get",
                 "commandParts": [
+                    "-o",
+                    "DPkg::Lock::Timeout=120",
                     "upgrade",
                     "-y",
                     "{packageName}"
@@ -52,6 +69,8 @@
                 "runUnderSudo": false,
                 "commandRoot": "apt-cache",
                 "commandParts": [
+                    "-o",
+                    "DPkg::Lock::Timeout=120",
                     "search",
                     "--names-only",
                     "^{packageName}$"
@@ -185,6 +204,8 @@
                         "runUnderSudo": true,
                         "commandRoot": "apt-get",
                         "commandParts": [
+                            "-o",
+                            "DPkg::Lock::Timeout=120",
                             "install",
                             "-y",
                             "wget"
@@ -211,7 +232,10 @@
                         "runUnderSudo": true,
                         "commandRoot": "apt-get",
                         "commandParts": [
-                            "update"
+                            "-o",
+                            "DPkg::Lock::Timeout=120",
+                            "update",
+                            "-y"
                         ]
                     }
                 ]
@@ -223,7 +247,11 @@
                         "runUnderSudo": true,
                         "commandRoot": "apt-get",
                         "commandParts": [
-                            "update"
+                            "-o",
+                            "DPkg::Lock::Timeout=120",
+                            "update",
+                            "-y",
+                            "-V"
                         ]
                     },
                     {
