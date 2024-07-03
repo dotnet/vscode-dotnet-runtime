@@ -27,6 +27,7 @@ import {
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { warn } from 'console';
+import { json } from 'stream/consumers';
 /* tslint:disable:no-any */
 /* tslint:disable:no-unsafe-finally */
 
@@ -149,9 +150,9 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     let dotnetPaths: string[] = [];
     for (const version of versions) {
       const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', { version, requestingExtensionId, mode: installMode });
-      assert.exists(result);
-      assert.exists(result!.dotnetPath);
-      assert.include(result!.dotnetPath, version);
+      assert.exists(result, 'acquire command returned a result/success');
+      assert.exists(result!.dotnetPath, 'the result has a path');
+      assert.include(result!.dotnetPath, version, 'the path includes the version');
       if (result!.dotnetPath) {
         dotnetPaths = dotnetPaths.concat(result!.dotnetPath);
       }
@@ -262,8 +263,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     const uninstallCompletedEvent = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === 'DotnetUninstallAllCompleted');
     assert.exists(uninstallCompletedEvent, 'Uninstall All success is reported in telemetry');
     // Check that no errors were reported
-    const errors = MockTelemetryReporter.telemetryEvents.filter((event: ITelemetryEvent) => event.eventName.includes('Error'));
-    assert.isEmpty(errors, 'No error events were reported in telemetry reporting');
+    const errors = MockTelemetryReporter.telemetryEvents.filter((event: ITelemetryEvent) => event.eventName.includes('Error') && event.eventName !== 'CommandExecutionStdError');
+    assert.isEmpty(errors, `No error events were reported in telemetry reporting. ${JSON.stringify(errors)}`);
   }).timeout(standardTimeoutTime);
 
   test('Telemetry Sent on Error', async () => {

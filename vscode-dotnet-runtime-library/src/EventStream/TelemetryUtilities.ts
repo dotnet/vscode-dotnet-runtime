@@ -55,7 +55,7 @@ export class TelemetryUtilities
         {
             TelemetryUtilities.logTelemetryChange(`Before disabling .NET SDK telemetry:`, isExtensionTelemetryEnabled, acquisitionContext?.eventStream, utilityContext);
 
-            await new CommandExecutor(acquisitionContext, utilityContext).setEnvironmentVariable(
+            await new CommandExecutor(acquisitionContext!, utilityContext).setEnvironmentVariable(
                 'DOTNET_CLI_TELEMETRY_OPTOUT',
                 'true',
                 extensionContext,
