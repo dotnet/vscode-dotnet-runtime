@@ -83,7 +83,8 @@ export abstract class IDistroDotnetSDKProvider {
         {
             const error = new DotnetAcquisitionDistroUnknownError(new EventBasedError('DotnetAcquisitionDistroUnknownError',
             `Automated installation for the distro ${this.distroVersion.distro} is not yet supported.
-Please install the .NET SDK manually: https://dotnet.microsoft.com/download`),
+Please install the .NET SDK manually: https://dotnet.microsoft.com/download.
+If you would like to contribute to the list of supported distros, please visit: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/adding-distros.md`),
                 getInstallKeyFromContext(this.context));
             throw error.error;
         }
