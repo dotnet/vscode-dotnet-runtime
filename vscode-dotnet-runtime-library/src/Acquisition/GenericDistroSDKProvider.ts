@@ -23,10 +23,13 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         let commands = this.myDistroCommands(this.installCommandKey);
         const sdkPackage = await this.myDotnetVersionPackageName(fullySpecifiedVersion, installType);
 
+        const oldReturnStatusSetting = this.commandRunner.returnStatus;
+        this.commandRunner.returnStatus = true;
         commands = CommandExecutor.replaceSubstringsInCommands(commands, this.missingPackageNameKey, sdkPackage);
         const updateCommandsResult = (await this.commandRunner.executeMultipleCommands(commands.slice(0, -1), undefined))[0];
-        const installCommandResult = (await this.commandRunner.execute(commands.slice(-1)[0])).status;
+        const installCommandResult = await this.commandRunner.execute(commands.slice(-1)[0]);
 
+        this.commandRunner.returnStatus = oldReturnStatusSetting;
         return installCommandResult;
     }
 
@@ -34,28 +37,33 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
     {
         const commandResult = await this.commandRunner.executeMultipleCommands(this.myDistroCommands(this.currentInstallPathCommandKey));
 
-        if(commandResult[0].status !== '0') // no dotnet error can be returned, dont want to try to parse this as a path
+        const oldReturnStatusSetting = this.commandRunner.returnStatus;
+        this.commandRunner.returnStatus = true;
+        const commandSignal = await this.commandRunner.executeMultipleCommands(this.myDistroCommands(this.currentInstallPathCommandKey));
+        this.commandRunner.returnStatus = oldReturnStatusSetting;
+
+        if(commandSignal[0] !== '0') // no dotnet error can be returned, dont want to try to parse this as a path
         {
             return null;
         }
 
-        if(commandResult[0].stdout)
+        if(commandResult[0])
         {
-            commandResult[0].stdout = commandResult[0].stdout.trim();
+            commandResult[0] = commandResult[0].trim();
         }
 
         if(commandResult[0] && this.resolvePathAsSymlink)
         {
             let symLinkReadCommand = this.myDistroCommands(this.readSymbolicLinkCommandKey);
-            symLinkReadCommand = CommandExecutor.replaceSubstringsInCommands(symLinkReadCommand, this.missingPathKey, commandResult[0].stdout);
-            const resolvedPath = (await this.commandRunner.executeMultipleCommands(symLinkReadCommand))[0].stdout;
+            symLinkReadCommand = CommandExecutor.replaceSubstringsInCommands(symLinkReadCommand, this.missingPathKey, commandResult[0]);
+            const resolvedPath = (await this.commandRunner.executeMultipleCommands(symLinkReadCommand))[0];
             if(resolvedPath)
             {
                 return path.dirname(resolvedPath.trim());
             }
         }
 
-        return commandResult[0].stdout ?? null;
+        return commandResult[0] ?? null;
     }
 
     public async dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion : string, installType : DotnetInstallMode) : Promise<boolean>
@@ -66,7 +74,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
         const noPackageResult = 'no packages found';
-        return commandResult.stdout.toLowerCase().includes(noPackageResult);
+        return commandResult[0].toLowerCase().includes(noPackageResult);
     }
 
     public getExpectedDotnetDistroFeedInstallationDirectory(): string
@@ -81,11 +89,15 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 
     public async upgradeDotnet(versionToUpgrade : string, installType : DotnetInstallMode): Promise<string>
     {
+        const oldReturnStatusSetting = this.commandRunner.returnStatus;
+        this.commandRunner.returnStatus = true;
+
         let command = this.myDistroCommands(this.updateCommandKey);
         const sdkPackage = await this.myDotnetVersionPackageName(versionToUpgrade, installType);
         command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, sdkPackage);
-        const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0].status;
+        const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
+        this.commandRunner.returnStatus = oldReturnStatusSetting;
         return commandResult[0];
     }
 
@@ -96,7 +108,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, sdkPackage);
         const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
-        return commandResult.stdout;
+        return commandResult[0];
     }
 
     public async getInstalledDotnetSDKVersions(): Promise<string[]>
@@ -104,14 +116,14 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         const command = this.myDistroCommands(this.installedSDKVersionsCommandKey);
         const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
-        const outputLines : string[] = commandResult.stdout.split('\n');
+        const outputLines : string[] = commandResult.split('\n');
         const versions : string[]  = [];
 
         for(const line of outputLines)
         {
             const splitLine = line.split(/\s+/);
             // list sdk lines shows in the form: version [path], so the version is the 2nd item
-            if(splitLine.length === 2 && splitLine[0] !== '')
+            if(splitLine.length === 2)
             {
                 versions.push(splitLine[0]);
             }
@@ -124,7 +136,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         const command = this.myDistroCommands(this.installedRuntimeVersionsCommandKey);
         const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
-        const outputLines : string[] = commandResult.stdout.split('\n');
+        const outputLines : string[] = commandResult.split('\n');
         const versions : string[]  = [];
 
         for(const line of outputLines)
@@ -145,15 +157,15 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 
         // we need to run this command in the root directory otherwise local dotnets on the path may interfere
         const rootDir = path.parse(__dirname).root;
-        const commandResult = (await this.commandRunner.executeMultipleCommands(command, { cwd: path.resolve(rootDir), shell: true }))[0];
+        let commandResult = (await this.commandRunner.executeMultipleCommands(command, { cwd: path.resolve(rootDir), shell: true }))[0];
 
-        commandResult.stdout = commandResult.stdout.replace('\n', '');
-        if(!this.versionResolver.isValidLongFormVersionFormat(commandResult.stdout))
+        commandResult = commandResult.replace('\n', '');
+        if(!this.versionResolver.isValidLongFormVersionFormat(commandResult))
         {
             return null;
         }
         {
-            return commandResult.stdout;
+            return commandResult;
         }
     }
 

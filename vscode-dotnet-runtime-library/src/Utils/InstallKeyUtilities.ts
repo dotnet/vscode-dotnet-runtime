@@ -28,8 +28,13 @@ export function getInstallKeyCustomArchitecture(version : string, architecture: 
         `${version}~${architecture}${mode === 'aspnetcore' ? '~aspnetcore' : ''}`;
 }
 
-export function getInstallKeyFromContext(ctx : IAcquisitionWorkerContext) : DotnetInstall
+export function getInstallKeyFromContext(ctx : IAcquisitionWorkerContext | undefined | null) : DotnetInstall | null
 {
+    if(!ctx || !ctx.acquisitionContext)
+    {
+        return null;
+    }
+
     const acquireContext = ctx.acquisitionContext!;
 
     return {

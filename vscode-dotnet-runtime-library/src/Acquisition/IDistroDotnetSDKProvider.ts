@@ -210,14 +210,14 @@ Please install the .NET SDK manually: https://dotnet.microsoft.com/download`),
                 let command = this.myDistroCommands(this.searchCommandKey);
                 command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, packageName);
 
-                const packageIsAvailableResult = (await this.commandRunner.executeMultipleCommands(command))[0];
-                packageIsAvailableResult.stdout = packageIsAvailableResult.stdout.trim();
-                packageIsAvailableResult.stderr = packageIsAvailableResult.stderr.trim();
-                packageIsAvailableResult.status = packageIsAvailableResult.status.trim();
+                const packageIsAvailableResult = (await this.commandRunner.executeMultipleCommands(command))[0].trim();
+                const oldReturnStatusSetting = this.commandRunner.returnStatus;
 
-                const packageExists = this.isPackageFoundInSearch(`${packageIsAvailableResult.stdout}${packageIsAvailableResult.stderr}`,
-                    packageIsAvailableResult.status);
+                this.commandRunner.returnStatus = true;
+                const packageAvailableExitCode = (await this.commandRunner.executeMultipleCommands(command))[0].trim();
+                this.commandRunner.returnStatus = oldReturnStatusSetting;
 
+                const packageExists = this.isPackageFoundInSearch(packageIsAvailableResult, packageAvailableExitCode);
                 if(packageExists)
                 {
                     thisVersionPackage.packages.push(packageName);

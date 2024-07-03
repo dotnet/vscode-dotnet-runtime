@@ -4,7 +4,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-export type CommandExecutorResult =
+export type CommandProcessorOutput =
 {
     /**
      * @property commandRoot

@@ -341,23 +341,12 @@ export abstract class DotnetInstallExpectedAbort extends IEvent {
         super();
     }
 
-    public getProperties(telemetry = false): { [key: string]: string } | undefined
-    {
-        if(this.install)
-        {
+    public getProperties(telemetry = false): { [key: string]: string } | undefined {
         return {ErrorName : this.error.name,
                 ErrorMessage : this.error.message,
                 StackTrace : this.error.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : '',
                 InstallKey : this.install?.installKey ?? 'null',
                 ...InstallToStrings(this.install)};
-        }
-        else
-        {
-            return {ErrorName : this.error.name,
-                    ErrorMessage : this.error.message,
-                    StackTrace : this.error.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : '',
-                    InstallKey : 'null'};
-        }
     }
 }
 
@@ -531,25 +520,13 @@ export class DotnetAcquisitionTimeoutError extends DotnetAcquisitionVersionError
         super(error, installKey);
     }
 
-    public getProperties(telemetry = false): { [key: string]: string } | undefined
-    {
-        if(this.install)
-        {
-            return {ErrorMessage : this.error.message,
-                TimeoutValue : this.timeoutValue.toString(),
-                ...InstallToStrings(this.install),
-                ErrorName : this.error.name,
-                StackTrace : this.error.stack ? this.error.stack : ''};
-        }
-        else
-        {
-            return {ErrorMessage : this.error.message,
-                TimeoutValue : this.timeoutValue.toString(),
-                ErrorName : this.error.name,
-                StackTrace : this.error.stack ? this.error.stack : ''};
-        }
+    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+        return {ErrorMessage : this.error.message,
+            TimeoutValue : this.timeoutValue.toString(),
+            ...InstallToStrings(this.install),
+            ErrorName : this.error.name,
+            StackTrace : this.error.stack ? this.error.stack : ''};
     }
-
 }
 
 export class DotnetVersionResolutionError extends DotnetInstallExpectedAbort {
@@ -567,31 +544,19 @@ export class DotnetCustomLinuxInstallExistsError extends DotnetInstallExpectedAb
 export class DotnetInstallationValidationError extends DotnetAcquisitionVersionError {
     public readonly eventName = 'DotnetInstallationValidationError';
     public readonly fileStructure: string;
-    constructor(error: Error, install: DotnetInstall, public readonly dotnetPath: string) {
+    constructor(error: Error, install: DotnetInstall | null, public readonly dotnetPath: string) {
         super(error, install);
         this.fileStructure = this.getFileStructure();
     }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {
-        if(this.install)
-        {
-            return {ErrorMessage : this.error.message,
-                AcquisitionErrorInstallKey : this.install?.installKey ?? 'null',
-                InstallKey : this.install?.installKey ?? 'null',
-                ...InstallToStrings(this.install),
-                ErrorName : this.error.name,
-                StackTrace : this.error.stack ? this.error.stack : '',
-                FileStructure : this.fileStructure};
-        }
-        else
-        {
-            return {ErrorMessage : this.error.message,
-                AcquisitionErrorInstallKey : 'null',
-                InstallKey : 'null',
-                ErrorName : this.error.name,
-                StackTrace : this.error.stack ? this.error.stack : '',
-                FileStructure : this.fileStructure};
-        }
+        return {ErrorMessage : this.error.message,
+            AcquisitionErrorInstallKey : this.install?.installKey ?? 'null',
+            InstallKey : this.install?.installKey ?? 'null',
+            ...InstallToStrings(this.install),
+            ErrorName : this.error.name,
+            StackTrace : this.error.stack ? this.error.stack : '',
+            FileStructure : this.fileStructure};
     }
 
     private getFileStructure(): string {

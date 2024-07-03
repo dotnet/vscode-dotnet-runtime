@@ -118,7 +118,7 @@ If you would like to contribute to the list of supported distros, please visit: 
 
         try
         {
-            const stdOut = commandResult.stdout.toString().split('\n');
+            const stdOut = commandResult.toString().split('\n');
             // We need to remove the quotes from the KEY="VALUE"\n pairs returned by the command stdout, and then turn it into a dictionary. We can't use replaceAll for older browsers.
             // Replace only replaces one quote, so we remove the 2nd one later.
             const stdOutWithQuotesRemoved = stdOut.map( x => x.replace('"', ''));

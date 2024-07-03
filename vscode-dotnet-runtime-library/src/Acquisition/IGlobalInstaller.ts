@@ -5,7 +5,6 @@
  * ------------------------------------------------------------------------------------------ */
 
 import path = require('path');
-import crypto = require('crypto')
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { DotnetInstall } from './DotnetInstall';
@@ -30,8 +29,8 @@ export abstract class IGlobalInstaller {
      *
      * @returns The folder where global sdk installers will be downloaded onto the disk.
      */
-    public static getDownloadedInstallFilesFolder(uniqueInstallerId : string) : string
+    public static getDownloadedInstallFilesFolder() : string
     {
-        return path.join(__dirname, 'installers', crypto.createHash('sha256').update(uniqueInstallerId).digest('hex'));
+        return path.join(__dirname, 'installers');
     }
 }

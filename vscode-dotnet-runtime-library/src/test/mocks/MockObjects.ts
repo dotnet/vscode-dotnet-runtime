@@ -40,7 +40,6 @@ import { GetDotnetInstallInfo } from '../../Acquisition/DotnetInstall';
 import { DotnetInstall } from '../../Acquisition/DotnetInstall';
 import { InstallTrackerSingleton } from '../../Acquisition/InstallTrackerSingleton';
 import { InstallationGraveyard } from '../../Acquisition/InstallationGraveyard';
-import { CommandExecutorResult } from '../../Utils/CommandExecutorResult';
 
 const testDefaultTimeoutTimeMs = 60000;
 /* tslint:disable:no-any */
@@ -299,13 +298,15 @@ export class MockAcquisitionInvoker extends AcquisitionInvoker
 export class MockCommandExecutor extends ICommandExecutor
 {
     private trueExecutor : CommandExecutor;
-    public fakeReturnValue = {status: '', stderr: '', stdout: ''};
+    public fakeReturnValue = '';
+    public fakeReturnStatus : string | null = null;
     public attemptedCommand = '';
 
     // If you expect several commands to be run and want to specify unique outputs for each, describe them in the same order using the below two arrays.
     // We will check for an includes match and not an exact match!
     public otherCommandPatternsToMock : string[] = [];
-    public otherCommandsReturnValues : CommandExecutorResult[] = [];
+    public otherCommandsReturnValues : string[] = [];
+    public otherCommandsStatusReturnValues : string[] = [];
 
     constructor(acquisitionContext : IAcquisitionWorkerContext, utilContext : IUtilityContext)
     {
@@ -313,12 +314,13 @@ export class MockCommandExecutor extends ICommandExecutor
         this.trueExecutor = new CommandExecutor(acquisitionContext, utilContext);
     }
 
-    public async execute(command: CommandExecutorCommand, options : object | null = null, terminalFailure? : boolean): Promise<CommandExecutorResult>
+    public async execute(command: CommandExecutorCommand, options : object | null = null, terminalFailure? : boolean): Promise<string>
     {
         this.attemptedCommand = CommandExecutor.prettifyCommandExecutorCommand(command);
 
         if(this.shouldActuallyExecuteCommand(command))
         {
+            this.trueExecutor.returnStatus = this.returnStatus;
             return this.trueExecutor.execute(command, options);
         }
 
@@ -328,14 +330,25 @@ export class MockCommandExecutor extends ICommandExecutor
             if(command.commandRoot.includes(commandPatternToLookFor) ||
                 command.commandParts.some((arg) => arg.includes(commandPatternToLookFor)))
             {
+                if(this.shouldReturnStatus() && this.otherCommandsStatusReturnValues[i] !== null)
+                {
+                        return this.otherCommandsStatusReturnValues[i];
+                }
                 return this.otherCommandsReturnValues[i];
             }
         }
 
-        return this.fakeReturnValue;
+        if(this.shouldReturnStatus())
+        {
+            return this.fakeReturnStatus!;
+        }
+        else
+        {
+            return this.fakeReturnValue;
+        }
     }
 
-    public async executeMultipleCommands(commands: CommandExecutorCommand[], options?: any, terminalFailure? : boolean): Promise<CommandExecutorResult[]>
+    public async executeMultipleCommands(commands: CommandExecutorCommand[], options?: any, terminalFailure? : boolean): Promise<string[]>
     {
         const result = [];
         for(const command of commands)
@@ -355,15 +368,12 @@ export class MockCommandExecutor extends ICommandExecutor
      */
     private shouldActuallyExecuteCommand(command : CommandExecutorCommand) : boolean
     {
-        return !command.runUnderSudo && this.fakeReturnValue.status === '' && this.fakeReturnValue.stderr === '' && this.fakeReturnValue.stdout === '';
+        return !command.runUnderSudo && this.fakeReturnValue === '';
     }
 
-    public resetReturnValues()
+    private shouldReturnStatus() : boolean
     {
-        this.fakeReturnValue = {status: '', stderr: '', stdout: ''};
-        this.attemptedCommand = '';
-        this.otherCommandPatternsToMock = [];
-        this.otherCommandsReturnValues = [];
+        return this.returnStatus && (this.fakeReturnStatus !== null);
     }
 }
 

@@ -115,7 +115,7 @@ export class FileUtilities extends IFileUtilities
            try
            {
                if(!fileExtensionsToDelete || path.extname(f).toLocaleLowerCase() in fileExtensionsToDelete)
-               fs.rmSync(path.join(directoryToWipe, f));
+               fs.rmSync(`${directoryToWipe}/${f}`);
            }
            catch(error : any)
            {
