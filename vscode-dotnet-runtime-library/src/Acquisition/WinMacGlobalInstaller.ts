@@ -141,19 +141,29 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
      */
     private async downloadInstaller(installerUrl : string) : Promise<string>
     {
-        const ourInstallerDownloadFolder = IGlobalInstaller.getDownloadedInstallFilesFolder();
+        const ourInstallerDownloadFolder = IGlobalInstaller.getDownloadedInstallFilesFolder(installerUrl);
         this.file.wipeDirectory(ourInstallerDownloadFolder, this.acquisitionContext.eventStream);
         const installerPath = path.join(ourInstallerDownloadFolder, `${installerUrl.split('/').slice(-1)}`);
 
         const installerDir = path.dirname(installerPath);
         if (!fs.existsSync(installerDir)){
-            fs.mkdirSync(installerDir);
+            fs.mkdirSync(installerDir, {recursive: true});
         }
 
         await this.webWorker.downloadFile(installerUrl, installerPath);
         try
         {
             fs.chmodSync(installerPath, 0o744);
+
+            if(os.platform() === 'win32') // Windows does not have chmod +x ability with nodejs.
+            {
+                const commandRes = await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', ['/grant', `"${installerPath}"`, `"%username%":F`, '/t', '/c']), null, false);
+                if(commandRes.stderr !== '')
+                {
+                    const error = new EventBasedError('FailedToSetInstallerPermissions', `Failed to set icacls permissions on the installer file ${installerPath}. ${commandRes.stderr}`);
+                    this.acquisitionContext.eventStream.post(new SuppressedAcquisitionError(error, error.message));
+                }
+            }
         }
         catch(error : any)
         {
@@ -222,7 +232,6 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
      */
     public async executeInstall(installerPath : string) : Promise<string>
     {
-        this.commandRunner.returnStatus = true;
         if(os.platform() === 'darwin')
         {
             // For Mac:
@@ -254,8 +263,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
             );
             this.acquisitionContext.eventStream.post(new NetInstallerEndExecutionEvent(`The OS X .NET Installer has closed.`));
 
-            this.commandRunner.returnStatus = false;
-            return commandResult;
+            return commandResult.status;
         }
         else
         {
@@ -267,13 +275,25 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
             }
 
             this.acquisitionContext.eventStream.post(new NetInstallerBeginExecutionEvent(`The Windows .NET Installer has been launched.`));
-            const commandResult = await this.commandRunner.execute(
-                CommandExecutor.makeCommand(command, commandOptions)
-            );
-            this.acquisitionContext.eventStream.post(new NetInstallerEndExecutionEvent(`The Windows .NET Installer has closed.`));
-
-            this.commandRunner.returnStatus = false;
-            return commandResult;
+            try
+            {
+                const commandResult = await this.commandRunner.execute(CommandExecutor.makeCommand(command, commandOptions));
+                this.acquisitionContext.eventStream.post(new NetInstallerEndExecutionEvent(`The Windows .NET Installer has closed.`));
+                return commandResult.status;
+            }
+            catch(error : any)
+            {
+                if(error?.message?.includes('EPERM'))
+                {
+                    error.message = `The installer does not have permission to execute. Please try running as an administrator. ${error.message}.
+Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerPath}"`])))}`;
+                }
+                else if(error?.message?.includes('ENOENT'))
+                {
+                    error.message = `The .NET Installation files were not found. Please try again. ${error.message}`;
+                }
+                throw error;
+            }
         }
     }
 
@@ -355,14 +375,11 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
                     const command = CommandExecutor.makeCommand(registryQueryCommand, [`query`, `${query}`, `\/reg:32`]);
 
                     let installRecordKeysOfXBit = '';
-                    const oldReturnStatusSetting = this.commandRunner.returnStatus;
-                    this.commandRunner.returnStatus = true;
-                    const registryLookupStatusCode = await this.commandRunner.execute(command);
-                    this.commandRunner.returnStatus = oldReturnStatusSetting;
+                    const registryLookup = (await this.commandRunner.execute(command));
 
-                    if(registryLookupStatusCode === '0')
+                    if(registryLookup.status === '0')
                     {
-                        installRecordKeysOfXBit = await this.commandRunner.execute(command);
+                        installRecordKeysOfXBit = registryLookup.stdout;
                     }
 
                     const installedSdks = this.extractVersionsOutOfRegistryKeyStrings(installRecordKeysOfXBit);
