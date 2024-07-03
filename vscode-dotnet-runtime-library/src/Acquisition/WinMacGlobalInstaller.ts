@@ -153,16 +153,18 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
         await this.webWorker.downloadFile(installerUrl, installerPath);
         try
         {
-            fs.chmodSync(installerPath, 0o744);
-
             if(os.platform() === 'win32') // Windows does not have chmod +x ability with nodejs.
             {
-                const commandRes = await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', ['/grant', `"${installerPath}"`, `"%username%":F`, '/t', '/c']), null, false);
+                const commandRes = await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerPath}"`, '/grant:r', `"%username%":F`, '/t', '/c']), null, false);
                 if(commandRes.stderr !== '')
                 {
                     const error = new EventBasedError('FailedToSetInstallerPermissions', `Failed to set icacls permissions on the installer file ${installerPath}. ${commandRes.stderr}`);
                     this.acquisitionContext.eventStream.post(new SuppressedAcquisitionError(error, error.message));
                 }
+            }
+            else
+            {
+                fs.chmodSync(installerPath, 0o744);
             }
         }
         catch(error : any)
