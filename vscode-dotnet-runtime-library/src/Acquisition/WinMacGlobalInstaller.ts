@@ -241,9 +241,6 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
      */
     public async executeInstall(installerPath : string) : Promise<string>
     {
-        proc.fork(`${path.join(__dirname, "InstallerTimeout.js")}`, [this.acquisitionContext.timeoutSeconds * 1000])
-
-
         if(os.platform() === 'darwin')
         {
             // For Mac:
