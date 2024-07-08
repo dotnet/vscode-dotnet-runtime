@@ -36,7 +36,7 @@ suite('Linux Distro Logic Unit Tests', () =>
         if(shouldRun)
         {
             const recVersion = await provider.getRecommendedDotnetVersion(installType);
-            assert.equal(mockExecutor.attemptedCommand, 'apt-cache search --names-only ^dotnet-sdk-9.0$', 'Searched for the newest package last with regex'); // this may fail if test not exec'd first
+            assert.equal(mockExecutor.attemptedCommand, 'apt-cache search -o DPkg::Lock::Timeout=120 --names-only ^dotnet-sdk-9.0$', 'Searched for the newest package last with regex'); // this may fail if test not exec'd first
             // the data is cached so --version may not be executed.
             assert.equal(recVersion, '8.0.1xx', 'Resolved the most recent available version : will eventually break if the mock data is not updated');
         }
@@ -151,7 +151,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`, std
         if(shouldRun)
         {
             await provider.installDotnet(mockVersion, installType);
-            assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get install -y dotnet-sdk-7.0');
+            assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get -o DPkg::Lock::Timeout=120 install -y dotnet-sdk-7.0');
         }
     }).timeout(standardTimeoutTime);
 
@@ -159,7 +159,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`, std
         if(shouldRun)
         {
             await provider.uninstallDotnet(mockVersion, installType);
-            assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get remove dotnet-sdk-7.0');
+            assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get  -o DPkg::Lock::Timeout=120 remove dotnet-sdk-7.0');
         }
     }).timeout(standardTimeoutTime);
 
@@ -167,7 +167,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`, std
         if(shouldRun)
         {
             await provider.upgradeDotnet(mockVersion, installType);
-            assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get upgrade -y dotnet-sdk-7.0');
+            assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get  -o DPkg::Lock::Timeout=120 upgrade -y dotnet-sdk-7.0');
         }
     }).timeout(standardTimeoutTime*1000);
 });
