@@ -5,9 +5,9 @@
 import * as proc from 'child_process';
 import * as os from 'os';
 
-import { IEventStream } from "../EventStream/EventStream";
-import { DotnetWSLCheckEvent, DotnetWSLOperationOutputEvent } from "../EventStream/EventStreamEvents";
-import { IEvent } from "../EventStream/IEvent";
+import { IEventStream } from '../EventStream/EventStream';
+import { DotnetWSLCheckEvent, DotnetWSLOperationOutputEvent } from '../EventStream/EventStreamEvents';
+import { IEvent } from '../EventStream/IEvent';
 
 export async function loopWithTimeoutOnCond(sampleRatePerMs : number, durationToWaitBeforeTimeoutMs : number, conditionToStop : () => boolean, doAfterStop : () => void,
     eventStream : IEventStream, waitEvent : IEvent)

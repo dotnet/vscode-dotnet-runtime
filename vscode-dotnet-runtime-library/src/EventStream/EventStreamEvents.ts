@@ -226,7 +226,7 @@ export class DotnetAcquisitionCompleted extends IEvent {
 }
 
 export abstract class DotnetAcquisitionError extends IEvent {
-    public readonly type = EventType.DotnetAcquisitionError;
+    public type = EventType.DotnetAcquisitionError;
     public isError = true;
 
     /**
@@ -251,8 +251,8 @@ export abstract class DotnetAcquisitionError extends IEvent {
 
 export class DotnetAcquisitionFinalError extends GenericModalEvent
 {
-    public readonly type = EventType.DotnetTotalSuccessEvent;
-    public readonly eventName = 'DotnetAcquisitionTotalSuccessEvent';
+    public readonly type = EventType.DotnetAcquisitionFinalError;
+    public readonly eventName = 'DotnetAcquisitionFinalError';
     public readonly mode;
     public readonly installType: DotnetInstallType;
 
@@ -279,9 +279,11 @@ export class DotnetAcquisitionFinalError extends GenericModalEvent
  */
 abstract class DotnetAcquisitionFinalErrorBase extends DotnetAcquisitionError
 {
+
     constructor(public readonly error: Error, public readonly originalEventName : string, public readonly install: DotnetInstall)
     {
         super(error, install);
+        this.type = EventType.DotnetAcquisitionFinalError;
     }
 
     public getProperties(telemetry = false): { [key: string]: string } | undefined {

@@ -380,6 +380,12 @@ ${(commandOutputJson as CommandExecutorResult).stderr}`));
 with options ${JSON.stringify(options)}.`));
             const commandResult = proc.spawnSync(command.commandRoot, command.commandParts, options);
 
+            if(os.platform() === 'win32')
+            {
+                proc.spawn('taskkill', ['/pid', commandResult.pid.toString(), '/f', '/t']);
+            }
+
+
             this.logCommandResult(commandResult, fullCommandStringForTelemetryOnly);
 
             const statusCode : string = (() =>

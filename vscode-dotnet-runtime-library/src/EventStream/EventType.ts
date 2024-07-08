@@ -10,6 +10,7 @@ export enum EventType {
     DotnetASPNetRuntimeAcquisitionStarted,
     DotnetAcquisitionCompleted,
     DotnetAcquisitionError,
+    DotnetAcquisitionFinalError,
     DotnetAcquisitionSuccessEvent,
     DotnetAcquisitionMessage,
     DotnetAcquisitionTest,

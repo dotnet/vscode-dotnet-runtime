@@ -19,7 +19,6 @@ import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProv
 import { getMockUtilityContext } from '../unit/TestUtility';
 import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
 import { CommandExecutorCommand } from '../../Utils/CommandExecutorCommand';
-
 import { IAcquisitionInvoker } from '../../Acquisition/IAcquisitionInvoker';
 import { ICommandExecutor } from '../../Utils/ICommandExecutor';
 import { IEvent } from '../../EventStream/IEvent';
@@ -35,7 +34,6 @@ import { IVSCodeExtensionContext } from '../../IVSCodeExtensionContext';
 import { ITelemetryReporter } from '../../EventStream/TelemetryObserver';
 import { IUtilityContext } from '../../Utils/IUtilityContext';
 import { IVSCodeEnvironment } from '../../Utils/IVSCodeEnvironment';
-import { IDotnetAcquireResult } from '../../IDotnetAcquireResult';
 import { GetDotnetInstallInfo } from '../../Acquisition/DotnetInstall';
 import { DotnetInstall } from '../../Acquisition/DotnetInstall';
 import { InstallTrackerSingleton } from '../../Acquisition/InstallTrackerSingleton';
