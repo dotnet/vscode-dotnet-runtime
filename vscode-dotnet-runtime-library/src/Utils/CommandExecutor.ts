@@ -361,9 +361,13 @@ ${(commandOutputJson as CommandExecutorResult).stderr}`));
     public async execute(command : CommandExecutorCommand, options : any | null = null, terminalFailure = true) : Promise<CommandExecutorResult>
     {
         const fullCommandStringForTelemetryOnly = `${command.commandRoot} ${command.commandParts.join(' ')}`;
-        if(!options)
+        if(!options?.cwd)
         {
-            options = {cwd : path.resolve(__dirname), shell: true};
+            options.cwd = path.resolve(__dirname);
+        }
+        if(!options?.shell)
+        {
+            options.shell = true;
         }
 
         if(command.runUnderSudo)

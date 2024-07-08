@@ -6,6 +6,8 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import * as proc from 'child_process';
+
 import { FileUtilities } from '../Utils/FileUtilities';
 import { VersionResolver } from './VersionResolver';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
@@ -33,7 +35,7 @@ import { IFileUtilities } from '../Utils/IFileUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { DotnetInstall } from './DotnetInstall';
-import { loopWithTimeoutOnCond } from '../Utils/TypescriptUtilities';
+import { updateNonNullExpression } from 'typescript';
 /* tslint:disable:only-arrow-functions */
 /* tslint:disable:no-empty */
 /* tslint:disable:no-any */
@@ -159,7 +161,8 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
         {
             if(os.platform() === 'win32') // Windows does not have chmod +x ability with nodejs.
             {
-                const commandRes = await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerPath}"`, '/grant:r', `"%username%":F`, '/t', '/c']), null, false);
+                const permissionsCommand = CommandExecutor.makeCommand('icacls', [`"${installerPath}"`, '/grant:r', `"%username%":F`, '/t', '/c']);
+                const commandRes = await this.commandRunner.execute(permissionsCommand, updateNonNullExpression, false);
                 if(commandRes.stderr !== '')
                 {
                     const error = new EventBasedError('FailedToSetInstallerPermissions', `Failed to set icacls permissions on the installer file ${installerPath}. ${commandRes.stderr}`);
@@ -238,23 +241,8 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
      */
     public async executeInstall(installerPath : string) : Promise<string>
     {
-        loopWithTimeoutOnCond(100,
-            this.acquisitionContext.timeoutSeconds * 1000,
-            () : boolean => {return this.completedInstall},
-            () : void => {
-                if(!this.completedInstall)
-                {
-                    const noResponseError = new DotnetNoInstallerResponseError(new EventBasedError('DotnetNoInstallerResponseError',
-`The .NET Installer did not complete after ${this.acquisitionContext.timeoutSeconds}.
-If you would like to install .NET, please proceed to interact with the .NET Installer pop-up.
-If you were waiting for the install to succeed, please extend the timeout setting of the .NET Install Tool extension.`), getInstallFromContext(this.acquisitionContext));
-                    this.acquisitionContext.eventStream.post(noResponseError);
-                    throw noResponseError.error;
-                }
-            },
-            this.acquisitionContext.eventStream,
-            new WaitingForDotnetInstallerResponse(`Waiting for the .NET installer to finish. ${new Date().toISOString()}`)
-        )
+        proc.fork(`${path.join(__dirname, "InstallerTimeout.js")}`, [this.acquisitionContext.timeoutSeconds * 1000])
+
 
         if(os.platform() === 'darwin')
         {
@@ -282,9 +270,9 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
             }
 
             this.acquisitionContext.eventStream.post(new NetInstallerBeginExecutionEvent(`The OS X .NET Installer has been launched.`));
-            const commandResult = await this.commandRunner.execute(
-                workingCommand
-            );
+
+            const commandResult = await this.commandRunner.execute(workingCommand, {timeout : this.acquisitionContext.timeoutSeconds * 1000});
+
             this.acquisitionContext.eventStream.post(new NetInstallerEndExecutionEvent(`The OS X .NET Installer has closed.`));
             this.completedInstall = true;
 
@@ -302,7 +290,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
             this.acquisitionContext.eventStream.post(new NetInstallerBeginExecutionEvent(`The Windows .NET Installer has been launched.`));
             try
             {
-                const commandResult = await this.commandRunner.execute(CommandExecutor.makeCommand(command, commandOptions));
+                const commandResult = await this.commandRunner.execute(CommandExecutor.makeCommand(command, commandOptions), {timeout : this.acquisitionContext.timeoutSeconds * 1000});
 
                 this.completedInstall = true;
                 this.acquisitionContext.eventStream.post(new NetInstallerEndExecutionEvent(`The Windows .NET Installer has closed.`));
