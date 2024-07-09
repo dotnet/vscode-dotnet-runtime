@@ -17,7 +17,7 @@ import { LinuxPackageCollection } from './LinuxPackageCollection';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { getInstallKeyFromContext } from '../Utils/InstallKeyUtilities';
+import { getInstallFromContext } from '../Utils/InstallKeyUtilities';
 /* tslint:disable:no-any */
 
 /**
@@ -85,7 +85,7 @@ export abstract class IDistroDotnetSDKProvider {
             `Automated installation for the distro ${this.distroVersion.distro} is not yet supported.
 Please install the .NET SDK manually: https://dotnet.microsoft.com/download.
 If you would like to contribute to the list of supported distros, please visit: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/adding-distros.md`),
-                getInstallKeyFromContext(this.context));
+                getInstallFromContext(this.context));
             throw error.error;
         }
 
@@ -364,7 +364,7 @@ If you would like to contribute to the list of supported distros, please visit: 
             }
         }
         const err = new EventCancellationError('DotnetVersionResolutionError', `Could not find a .NET package for version ${fullySpecifiedDotnetVersion}. Found only: ${JSON.stringify(myDotnetVersions)}`);
-        this.context.eventStream.post(new DotnetVersionResolutionError(err, getInstallKeyFromContext(this.context)));
+        this.context.eventStream.post(new DotnetVersionResolutionError(err, getInstallFromContext(this.context)));
         throw err;
     }
 

@@ -1,0 +1,22 @@
+# Editor config
+# http://EditorConfig.org
+
+root = true
+
+# Default rules applied to all file types
+[*]
+end_of_line = crlf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+
+# JavaScript-specific settings
+[*.{js,ts}]
+quote_type = single
+continuation_indent_size = 2
+curly_bracket_next_line = true
+indent_brace_style = BSD
+spaces_around_operators = true
+spaces_around_brackets = none

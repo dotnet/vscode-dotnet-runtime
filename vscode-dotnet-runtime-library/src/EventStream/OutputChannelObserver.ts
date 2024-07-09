@@ -96,7 +96,7 @@ export class OutputChannelObserver implements IEventStreamObserver {
                 break;
             case EventType.DotnetAcquisitionError:
                 const error = event as DotnetAcquisitionError;
-                this.outputChannel.appendLine('Error');
+                this.outputChannel.appendLine(`\nError : (${error.eventName ?? ''})`);
                 this.outputChannel.appendLine(`Failed to download .NET ${error.install?.installKey}:`);
                 this.outputChannel.appendLine(error.error.message);
                 this.outputChannel.appendLine('');
