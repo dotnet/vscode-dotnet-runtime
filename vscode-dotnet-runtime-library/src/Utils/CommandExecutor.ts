@@ -371,7 +371,7 @@ ${(commandOutputJson as CommandExecutorResult).stderr}`));
         }
         if(!options)
         {
-            options = {};
+            options = {cwd : path.resolve(__dirname), shell: true};
         }
 
         if(command.runUnderSudo)
