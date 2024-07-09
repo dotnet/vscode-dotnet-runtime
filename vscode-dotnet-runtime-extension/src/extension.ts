@@ -59,6 +59,7 @@ import {
     getInstallKeyCustomArchitecture,
     DotnetInstallType,
     DotnetAcquisitionTotalSuccessEvent,
+    isRunningUnderWSL
 } from 'vscode-dotnet-runtime-library';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 
@@ -185,7 +186,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         const install = {installKey : iKey, version : commandContext.version, installMode: mode, isGlobal: false,
             architecture: commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture()} as DotnetInstall;
 
-        if(dotnetPath !== undefined && dotnetPath?.dotnetPath !== null)
+        if(dotnetPath !== undefined && dotnetPath?.dotnetPath)
         {
             globalEventStream.post(new DotnetAcquisitionTotalSuccessEvent(commandContext.version, install, commandContext.requestingExtensionId ?? '', dotnetPath.dotnetPath));
         }
@@ -247,7 +248,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         const install = {installKey : iKey, version : commandContext.version, installMode: commandContext.mode, isGlobal: true,
             architecture: commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture()} as DotnetInstall;
 
-        if(pathResult !== undefined && pathResult?.dotnetPath !== null)
+        if(pathResult !== undefined && pathResult?.dotnetPath)
         {
             globalEventStream.post(new DotnetAcquisitionTotalSuccessEvent(commandContext.version, install, commandContext.requestingExtensionId ?? '', pathResult.dotnetPath));
         }
@@ -305,9 +306,11 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
             const userCommandContext : IDotnetAcquireContext = { version: chosenVersion, requestingExtensionId: 'user', installType: 'global' };
-            await vscode.commands.executeCommand('dotnet.acquireGlobalSDK', userCommandContext);
-            globalEventStream.post(new UserManualInstallSuccess(`The .NET SDK ${chosenVersion} was successfully installed.`));
-
+            const path : IDotnetAcquireResult = await vscode.commands.executeCommand('dotnet.acquireGlobalSDK', userCommandContext);
+            if(path && path?.dotnetPath)
+            {
+                globalEventStream.post(new UserManualInstallSuccess(`The .NET SDK ${chosenVersion} was successfully installed.`));
+            }
         }
         catch (error)
         {
@@ -391,7 +394,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     function checkIfSDKAcquisitionIsSupported() : boolean
     {
         let isSupported = true;
-        isSupported = isSupported && !CommandExecutor.isRunningUnderWSL(globalEventStream);
+        isSupported = isSupported && !isRunningUnderWSL(globalEventStream);
         vscode.commands.executeCommand('setContext', 'dotnetAcquisitionExtension.isGlobalSDKUnsupported', !isSupported);
         return isSupported;
     }

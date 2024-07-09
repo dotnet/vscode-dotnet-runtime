@@ -17,7 +17,7 @@ import { LinuxPackageCollection } from './LinuxPackageCollection';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { getInstallKeyFromContext } from '../Utils/InstallKeyUtilities';
+import { getInstallFromContext } from '../Utils/InstallKeyUtilities';
 /* tslint:disable:no-any */
 
 /**
@@ -84,7 +84,7 @@ export abstract class IDistroDotnetSDKProvider {
             const error = new DotnetAcquisitionDistroUnknownError(new EventBasedError('DotnetAcquisitionDistroUnknownError',
             `Automated installation for the distro ${this.distroVersion.distro} is not yet supported.
 Please install the .NET SDK manually: https://dotnet.microsoft.com/download`),
-                getInstallKeyFromContext(this.context));
+                getInstallFromContext(this.context));
             throw error.error;
         }
 
@@ -363,7 +363,7 @@ Please install the .NET SDK manually: https://dotnet.microsoft.com/download`),
             }
         }
         const err = new EventCancellationError('DotnetVersionResolutionError', `Could not find a .NET package for version ${fullySpecifiedDotnetVersion}. Found only: ${JSON.stringify(myDotnetVersions)}`);
-        this.context.eventStream.post(new DotnetVersionResolutionError(err, getInstallKeyFromContext(this.context)));
+        this.context.eventStream.post(new DotnetVersionResolutionError(err, getInstallFromContext(this.context)));
         throw err;
     }
 

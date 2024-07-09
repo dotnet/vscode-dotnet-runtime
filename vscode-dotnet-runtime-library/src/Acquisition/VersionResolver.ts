@@ -15,7 +15,7 @@ import {
     EventBasedError
 } from '../EventStream/EventStreamEvents';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
-import { getInstallKeyFromContext } from '../Utils/InstallKeyUtilities';
+import { getInstallFromContext } from '../Utils/InstallKeyUtilities';
 import { Debugging } from '../Utils/Debugging';
 
 import { IVersionResolver } from './IVersionResolver';
@@ -69,7 +69,7 @@ export class VersionResolver implements IVersionResolver {
             if (!response)
             {
                 const offlineError = new Error('Unable to connect to the index server: Cannot find .NET versions.');
-                this.context.eventStream.post(new DotnetOfflineFailure(offlineError, getInstallKeyFromContext(this.context)));
+                this.context.eventStream.post(new DotnetOfflineFailure(offlineError, getInstallFromContext(this.context)));
                 reject(offlineError);
             }
             else
@@ -181,7 +181,7 @@ export class VersionResolver implements IVersionResolver {
         if (!response)
         {
             const err = new DotnetInvalidReleasesJSONError(new EventBasedError('DotnetInvalidReleasesJSONError', `We could not reach the releases API ${this.releasesUrl} to download dotnet, is your machine offline or is this website down?`),
-                getInstallKeyFromContext(this.context));
+                getInstallFromContext(this.context));
             this.context.eventStream.post(err);
             throw err.error;
         }
@@ -211,7 +211,7 @@ export class VersionResolver implements IVersionResolver {
         {
             const event = new DotnetVersionResolutionError(new EventCancellationError('DotnetVersionResolutionError',
                 `The requested version ${fullySpecifiedVersion} is invalid.`),
-                getInstallKeyFromContext(this.context));
+                getInstallFromContext(this.context));
             this.context.eventStream.post(event);
             throw event.error;
         }
@@ -231,7 +231,7 @@ export class VersionResolver implements IVersionResolver {
         if(band === undefined)
         {
             const event = new DotnetFeatureBandDoesNotExistError(new EventCancellationError('DotnetFeatureBandDoesNotExistError', `${VersionResolver.invalidFeatureBandErrorString}${fullySpecifiedVersion}.`),
-                getInstallKeyFromContext(this.context));
+                getInstallFromContext(this.context));
             this.context.eventStream.post(event);
             throw event.error;
         }
@@ -260,7 +260,7 @@ export class VersionResolver implements IVersionResolver {
         {
             const event = new DotnetFeatureBandDoesNotExistError(new EventCancellationError('DotnetFeatureBandDoesNotExistError',
                 `${VersionResolver.invalidFeatureBandErrorString}${fullySpecifiedVersion}.`),
-                getInstallKeyFromContext(this.context));
+                getInstallFromContext(this.context));
             this.context.eventStream.post(event);
             throw event.error;
         }
