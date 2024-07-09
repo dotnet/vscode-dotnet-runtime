@@ -369,6 +369,10 @@ ${(commandOutputJson as CommandExecutorResult).stderr}`));
         {
             options.shell = true;
         }
+        if(!options)
+        {
+            options = {};
+        }
 
         if(command.runUnderSudo)
         {
