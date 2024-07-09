@@ -954,7 +954,7 @@ export abstract class DotnetLockEvent extends DotnetFileEvent
     constructor(public readonly eventMessage: string, public readonly time: string, public readonly lock: string, public readonly file: string) { super(eventMessage, time, file); }
 
     public getProperties() {
-        return {Message: this.eventMessage, Time: this.time, Lock: TelemetryUtilities.HashData(this.lock), File: TelemetryUtilities.HashData(this.file)};
+        return {Message: this.eventMessage, Time: this.time, Lock: this.lock, File: this.file};
     }
 }
 
