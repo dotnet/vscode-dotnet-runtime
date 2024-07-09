@@ -277,7 +277,7 @@ Please report this issue so it can be remedied or investigated.`), getInstallFro
         const fileErr = new DotnetNoInstallerFileExistsError(new EventBasedError('DotnetNoInstallerFileExistsError',
         `The SDK installation files for version ${specificVersion} running on ${desiredRidPackage} couldn't be found.
 Is the version in support? Note that -preview versions or versions with build numbers aren't yet supported.
-Visit https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core for support information.`), getInstallFromContext(this.context));
+Visit https://dotnet.microsoft.com/platform/support/policy/dotnet-core for support information.`), getInstallFromContext(this.context));
         this.context.eventStream.post(fileErr);
         throw fileErr.error;
     }
