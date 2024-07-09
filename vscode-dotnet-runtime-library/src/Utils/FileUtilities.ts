@@ -50,7 +50,7 @@ export class FileUtilities extends IFileUtilities
        if(!alreadyHoldingLock)
        {
            eventStream?.post(new DotnetLockAttemptingAcquireEvent(`Lock Acquisition request to begin.`, new Date().toISOString(), directoryLockPath, filePath));
-           await lockfile.lock(filePath, { lockfilePath: directoryLockPath, retries: { retries: 10, minTimeout: 5, maxTimeout: 2000 } } )
+           await lockfile.lock(filePath, { lockfilePath: directoryLockPath, retries: { retries: 10, minTimeout: 5, maxTimeout: 10000 } } )
            .then(async (release) =>
            {
                eventStream?.post(new DotnetLockAcquiredEvent(`Lock Acquired.`, new Date().toISOString(), directoryLockPath, filePath));
