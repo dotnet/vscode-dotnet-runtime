@@ -296,6 +296,10 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
             {
                 commandOptions = [`/quiet`, `/install`, `/norestart`];
             }
+            else
+            {
+                commandOptions = [`/passive`, `/install`, `/norestart`]
+            }
 
             this.acquisitionContext.eventStream.post(new NetInstallerBeginExecutionEvent(`The Windows .NET Installer has been launched.`));
             try
