@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 EXECFOLDER=$1 # First argument is the working folder as this is launched with cwd of /root
-TIMEOUT_MIN=$2
+TIMEOUT_SEC=$2
 OKSIGNALFILE="$EXECFOLDER/ok.txt"
 COMMANDTORUNFILE="$EXECFOLDER/command.txt"
 #OUTPUTFILE="/home/test_output_.txt"
@@ -32,7 +32,7 @@ do
                     rm "$COMMANDTORUNFILE"
                     exit 111777 # Special exit code - arbitrarily picked for when the command is not expected
                 fi
-                timeout $TIMEOUT_MIN sudo "${COMMANDARGS[@]}" 2> "$EXECFOLDER/stderr.txt" 1> "$EXECFOLDER/stdout.txt"
+                timeout $TIMEOUT_SEC sudo "${COMMANDARGS[@]}" 2> "$EXECFOLDER/stderr.txt" 1> "$EXECFOLDER/stdout.txt"
                 STATUSCODE=$?
                 echo $STATUSCODE > "$EXECFOLDER/status.txt"
                 rm "$COMMANDTORUNFILE"

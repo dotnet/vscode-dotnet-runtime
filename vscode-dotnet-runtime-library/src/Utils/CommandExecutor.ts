@@ -165,8 +165,8 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
         const options = { name: `${sanitizedCallerName ?? 'NET Install Tool'}` };
 
         fs.chmodSync(shellScriptPath, 0o500);
-        const timeoutTime = Math.max(1, this.context.timeoutSeconds/60/2);
-        exec((`"${shellScriptPath}" "${this.sudoProcessCommunicationDir}" "${timeoutTime}" ${this.validSudoCommands?.join(' ')} &`), options, (error?: any, stdout?: any, stderr?: any) =>
+        const timeoutSeconds = Math.max(100, this.context.timeoutSeconds);
+        exec((`"${shellScriptPath}" "${this.sudoProcessCommunicationDir}" "${timeoutSeconds}" ${this.validSudoCommands?.join(' ')} &`), options, (error?: any, stdout?: any, stderr?: any) =>
         {
                 this.context?.eventStream.post(new CommandExecutionStdOut(`The process spawn: ${fullCommandString} encountered stdout, continuing
 ${stdout}`));
