@@ -381,7 +381,8 @@ ${(commandOutputJson as CommandExecutorResult).stderr}`));
             if((commandOutputJson as CommandExecutorResult).status !== '0' && failOnNonZeroExit)
             {
                 const err = new CommandExecutionNonZeroExitFailure(new EventBasedError('CommandExecutionNonZeroExitFailure',
-                    `Cancelling .NET Install, as command ${commandToExecuteString} returned with status ${(commandOutputJson as CommandExecutorResult).status}.`),
+                    `Cancelling .NET Install, as command ${commandToExecuteString} returned with status ${(commandOutputJson as CommandExecutorResult).status}.
+${(commandOutputJson as CommandExecutorResult).stderr}.`),
                     getInstallKeyFromContext(this.context));
                 this.context?.eventStream.post(err);
                 throw err.error;
