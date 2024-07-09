@@ -361,11 +361,11 @@ ${(commandOutputJson as CommandExecutorResult).stderr}`));
     public async execute(command : CommandExecutorCommand, options : any | null = null, terminalFailure = true) : Promise<CommandExecutorResult>
     {
         const fullCommandStringForTelemetryOnly = `${command.commandRoot} ${command.commandParts.join(' ')}`;
-        if(!options?.cwd)
+        if(options && !options?.cwd)
         {
             options.cwd = path.resolve(__dirname);
         }
-        if(!options?.shell)
+        if(options && !options?.shell)
         {
             options.shell = true;
         }
