@@ -77,7 +77,6 @@ export class InstallTrackerSingleton
 
     protected executeWithLock = async <A extends any[], R>(alreadyHoldingLock : boolean, f: (...args: A) => R, ...args: A): Promise<R> =>
     {
-
         const trackingLock = 'tracking.lock';
         const lockPath = path.join(__dirname, trackingLock);
         fs.writeFileSync(lockPath, '', 'utf-8');
@@ -89,14 +88,17 @@ export class InstallTrackerSingleton
             {
                 return await f(...(args));
             }
-            const release = await lockfile.lock(lockPath, { retries: { retries: 10, minTimeout: 5, maxTimeout: 10000 } });
-            try
+            else
             {
-                return await f(...(args));
-            }
-            finally
-            {
-                await release();
+                const release = await lockfile.lock(lockPath, { retries: { retries: 10, minTimeout: 5, maxTimeout: 10000 } });
+                try
+                {
+                    return await f(...(args));
+                }
+                finally
+                {
+                    await release();
+                }
             }
         }
         catch(e : any)
