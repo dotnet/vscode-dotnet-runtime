@@ -12,6 +12,7 @@ import {
     DotnetAcquisitionStatusResolved,
     DotnetLockAttemptingAcquireEvent,
     DotnetLockErrorEvent,
+    DotnetLockReleasedEvent,
     DotnetPreinstallDetected,
     DotnetPreinstallDetectionError,
     DuplicateInstallDetected,
@@ -81,6 +82,8 @@ export class InstallTrackerSingleton
         const lockPath = path.join(__dirname, trackingLock);
         fs.writeFileSync(lockPath, '', 'utf-8');
 
+        let returnResult : any;
+
         this.eventStream?.post(new DotnetLockAttemptingAcquireEvent(`Lock Acquisition request to begin.`, new Date().toISOString(), lockPath, lockPath));
         try
         {
@@ -90,15 +93,18 @@ export class InstallTrackerSingleton
             }
             else
             {
-                const release = await lockfile.lock(lockPath, { retries: { retries: 10, minTimeout: 5, maxTimeout: 10000 } });
-                try
+                await lockfile.lock(lockPath, { retries: { retries: 10, minTimeout: 5, maxTimeout: 10000 } })
+                .then(async (release) =>
                 {
-                    return await f(...(args));
-                }
-                finally
-                {
+                    returnResult = await f(...(args));
+                    this.eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), lockPath, lockPath));
                     await release();
-                }
+                })
+                .catch((e : Error) =>
+                {
+                    // Either the lock could not be acquired or releasing it failed
+                    this.eventStream?.post(new DotnetLockErrorEvent(e, e.message, new Date().toISOString(), lockPath, lockPath));
+                });
             }
         }
         catch(e : any)
@@ -107,6 +113,8 @@ export class InstallTrackerSingleton
             this.eventStream.post(new DotnetLockErrorEvent(e, e?.message ?? 'Unable to acquire lock to update installation state', new Date().toISOString(), lockPath, lockPath));
             throw new EventBasedError('DotnetLockErrorEvent', e?.message, e?.stack);
         }
+
+        return returnResult;
     }
 
     public async clearPromises() : Promise<void>
