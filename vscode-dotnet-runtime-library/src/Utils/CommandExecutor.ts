@@ -130,7 +130,8 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
         const options = { name: `${sanitizedCallerName ?? 'NET Install Tool'}` };
 
         fs.chmodSync(shellScriptPath, 0o500);
-        exec((`"${shellScriptPath}" "${this.sudoProcessCommunicationDir}" ${this.validSudoCommands?.join(' ')} &`), options, (error?: any, stdout?: any, stderr?: any) =>
+        const timeoutSeconds = Math.max(100, this.context.timeoutSeconds);
+        exec((`"${shellScriptPath}" "${this.sudoProcessCommunicationDir}" "${timeoutSeconds}" ${this.validSudoCommands?.join(' ')} &`), options, (error?: any, stdout?: any, stderr?: any) =>
         {
                 this.context?.eventStream.post(new CommandExecutionStdOut(`The process spawn: ${fullCommandString} encountered stdout, continuing
 ${stdout}`));
@@ -198,7 +199,7 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
 
         // Lock the directory -- this is not a system wide lock, only a library lock we must respect in the code.
         // This will allow the process to still edit the directory, but not our extension API calls from overlapping with one another.
-        await lockfile.lock(fakeLockFile, { lockfilePath: directoryLockPath, retries: { retries: 10, minTimeout: 5, maxTimeout: 2000 } } )
+        await lockfile.lock(fakeLockFile, { lockfilePath: directoryLockPath, retries: { retries: 10, minTimeout: 5, maxTimeout: 10000 } } )
         .then(async (release: () => void) =>
         {
             this.context?.eventStream.post(new DotnetLockAcquiredEvent(`Lock Acquired.`, new Date().toISOString(), directoryLockPath, fakeLockFile));
@@ -269,7 +270,7 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallFromCon
         // This will allow the process to still edit the directory, but not our extension API calls from overlapping with one another.
 
 
-        await lockfile.lock(fakeLockFile, { lockfilePath: directoryLockPath, retries: { retries: 10, minTimeout : 5, maxTimeout: 2000 } } )
+        await lockfile.lock(fakeLockFile, { lockfilePath: directoryLockPath, retries: { retries: 10, minTimeout : 5, maxTimeout: 10000 } } )
         .then(async (release: () => any) =>
         {
             this.context?.eventStream.post(new DotnetLockAcquiredEvent(`Lock Acquired.`, new Date().toISOString(), directoryLockPath, fakeLockFile));
@@ -331,8 +332,9 @@ ${(commandOutputJson as CommandExecutorResult).stderr}`));
             if((commandOutputJson as CommandExecutorResult).status !== '0' && failOnNonZeroExit)
             {
                 const err = new CommandExecutionNonZeroExitFailure(new EventBasedError('CommandExecutionNonZeroExitFailure',
-                    `Cancelling .NET Install, as command ${commandToExecuteString} returned with status ${(commandOutputJson as CommandExecutorResult).status}.`),
-                    getInstallFromContext(this.context));
+                    `Cancelling .NET Install, as command ${commandToExecuteString} returned with status ${(commandOutputJson as CommandExecutorResult).status}.
+${(commandOutputJson as CommandExecutorResult).stderr}.`),
+                     getInstallFromContext(this.context));
                 this.context?.eventStream.post(err);
                 throw err.error;
             }
