@@ -98,7 +98,7 @@ export class InstallTrackerSingleton
                 {
                     returnResult = await f(...(args));
                     this.eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), lockPath, lockPath));
-                    await release();
+                    return release();
                 })
                 .catch((e : Error) =>
                 {
