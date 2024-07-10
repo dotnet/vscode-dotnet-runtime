@@ -168,7 +168,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`, std
         if(shouldRun)
         {
             await provider.upgradeDotnet(mockVersion, installType);
-            assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get -o DPkg::Lock::Timeout=120 upgrade dotnet-sdk-7.0');
+            assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get -o DPkg::Lock::Timeout=120 upgrade -y dotnet-sdk-7.0');
         }
     }).timeout(standardTimeoutTime*1000);
 });

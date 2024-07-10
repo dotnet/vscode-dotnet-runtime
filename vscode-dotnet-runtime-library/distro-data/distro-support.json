@@ -55,6 +55,7 @@
                     "-o",
                     "DPkg::Lock::Timeout=120",
                     "upgrade",
+                    "-y",
                     "{packageName}"
                 ]
             }
