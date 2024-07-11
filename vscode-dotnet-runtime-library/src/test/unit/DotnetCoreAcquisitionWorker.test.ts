@@ -236,6 +236,10 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         await acquireStatus('5.0', 'runtime', 'local');
     }).timeout(expectedTimeoutTime);
 
+    test('Acquire ASP.NET Runtime Status', async () => {
+        await acquireStatus('5.0', 'aspnetcore', 'local');
+    }).timeout(expectedTimeoutTime);
+
     test('Acquire Runtime Version Multiple Times', async () => {
         const numAcquisitions = 3;
         const version = '1.0';

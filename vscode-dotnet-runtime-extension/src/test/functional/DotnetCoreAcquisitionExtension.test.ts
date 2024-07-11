@@ -341,10 +341,10 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     }
   }).timeout(standardTimeoutTime);
 
-
-  test('Install Runtime Status Command', async () => {
+  async function testAcquire(installMode : DotnetInstallMode)
+  {
     // Runtime is not yet installed
-    const context: IDotnetAcquireContext = { version: '3.1', requestingExtensionId };
+    const context: IDotnetAcquireContext = { version: '3.1', requestingExtensionId, mode: installMode };
     let result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquireStatus', context);
     assert.notExists(result);
 
@@ -360,5 +360,16 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     assert.exists(result!.dotnetPath);
     assert.isTrue(fs.existsSync(result!.dotnetPath!));
     rimraf.sync(result!.dotnetPath!);
+  }
+
+  test('Install Runtime Status Command', async () =>
+  {
+    await testAcquire('runtime');
   }).timeout(standardTimeoutTime);
+
+  test('Install Aspnet runtime Status Command', async () =>
+  {
+    await testAcquire('aspnetcore');
+  }).timeout(standardTimeoutTime);
+
 });

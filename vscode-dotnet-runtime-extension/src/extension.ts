@@ -322,7 +322,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     const dotnetAcquireStatusRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquireStatus}`, async (commandContext: IDotnetAcquireContext) => {
         const pathResult = callWithErrorHandling(async () =>
         {
-            const mode = 'runtime' as DotnetInstallMode;
+            const mode = commandContext.mode ?? 'runtime' as DotnetInstallMode;
             const worker = getAcquisitionWorker();
             const workerContext = getAcquisitionWorkerContext(mode, commandContext);
 
@@ -330,9 +330,9 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             const runtimeVersionResolver = new VersionResolver(workerContext);
             const resolvedVersion = await runtimeVersionResolver.getFullVersion(commandContext.version, mode);
             commandContext.version = resolvedVersion;
-            const dotnetPath = await worker.acquireStatus(workerContext, 'runtime');
+            const dotnetPath = await worker.acquireStatus(workerContext, mode);
             return dotnetPath;
-        }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, 'acquireRuntimeStatus'));
+        }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, 'acquireStatus'));
         return pathResult;
     });
 
