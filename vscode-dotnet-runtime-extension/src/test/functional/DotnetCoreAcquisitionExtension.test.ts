@@ -372,4 +372,21 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     await testAcquire('aspnetcore');
   }).timeout(standardTimeoutTime);
 
+  test('acquireStatus does respect Mode', async () =>
+  {
+    const runtimeContext : IDotnetAcquireContext = { version: '5.0', requestingExtensionId, mode: 'runtime' };
+    const aspNetContext : IDotnetAcquireContext =  { version: '5.0', requestingExtensionId, mode: 'aspnetcore' };
+
+    let result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquireStatus', runtimeContext);
+    assert.notExists(result);
+    result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquireStatus', aspNetContext);
+    assert.notExists(result);
+
+    result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', runtimeContext);
+    assert.exists(result);
+
+    result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquireStatus', aspNetContext);
+    assert.equal(undefined, result, 'Acquire Status for no ASP.NET installed when Runtime is installed should not mistake Runtime Install as ASP.NET Install');
+  }).timeout(standardTimeoutTime);
+
 });
