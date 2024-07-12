@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-## [2.0.9] - 2024-??-??
+## [2.0.9] - 2024-07-12
 
 Fixes a bug where permissions were not granted to run the .NET Installer. (EPERM issue.)
 
@@ -16,6 +16,10 @@ Fixes a bug where the installer file would be deleted or not properly downloaded
 Performance improvements.
 
 Fixes a bug with apt-get lock holding (status 100) on Linux with package management.
+
+Adds acquireStatus support for ASP.NET runtime installs.
+
+Other bug fixes.
 
 ## [2.0.8] - 2024-07-09
 

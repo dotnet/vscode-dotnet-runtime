@@ -8,9 +8,6 @@
                 "commandParts": [
                     "-o",
                     "DPkg::Lock::Timeout=120",
-                    "update",
-                    "||",
-                    "apt-get",
                     "update"
                 ]
             },
