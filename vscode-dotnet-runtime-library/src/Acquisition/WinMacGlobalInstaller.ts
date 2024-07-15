@@ -17,6 +17,7 @@ import {
     DotnetAcquisitionAlreadyInstalled,
     DotnetConflictingGlobalWindowsInstallError,
     DotnetFileIntegrityCheckEvent,
+    DotnetFileIntegrityFailureEvent,
     DotnetInstallCancelledByUserError,
     DotnetNoInstallerResponseError,
     DotnetUnexpectedInstallerOSError,
@@ -42,7 +43,7 @@ import { CommandExecutorResult } from '../Utils/CommandExecutorResult';
 
 namespace validationPromptConstants
 {
-    export const noSignatureMessage = `The .NET install file could not be validated. It may be insecure or too new to verify. Would you like to continue installing .NET and accept the risks?`;
+    export const noSignatureMessage = `The .NET Installer file could not be validated. It may be insecure or too new to verify. Would you like to continue installing .NET and accept the risks?`;
     export const cancelOption = 'Cancel Install';
     export const allowOption = 'Install Anyways';
 }
@@ -110,7 +111,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         {
             const err = new DotnetConflictingGlobalWindowsInstallError(new EventCancellationError('DotnetConflictingGlobalWindowsInstallError',
             `The integrity of the .NET install file is invalid, or there was no integrity to check and you denied the request to continue with those risks.
-We cannot verify .NET is safe to download at this time. Please try again later.`), getInstallFromContext(this.acquisitionContext));
+We cannot verify our .NET file host at this time. Please try again later or install the SDK manually.`), getInstallFromContext(this.acquisitionContext));
         this.acquisitionContext.eventStream.post(err);
         throw err.error;
         }
@@ -181,34 +182,57 @@ We cannot verify .NET is safe to download at this time. Please try again later.`
         return installerPath;
     }
 
+    private async userChoosesToContinueWithInvalidHash() : Promise<boolean>
+    {
+        const yes = validationPromptConstants.allowOption
+        const no = validationPromptConstants.cancelOption;
+        const message = validationPromptConstants.noSignatureMessage;
+
+        const pick = await this.utilityContext.ui.getModalWarningResponse(message, no, yes);
+        const userConsentsToContinue = pick === yes;
+        this.acquisitionContext.eventStream.post(new DotnetFileIntegrityCheckEvent(`The valid hash could not be found. The user chose to continue? ${userConsentsToContinue}`));
+        return userConsentsToContinue;
+    }
+
     private async installerFileHasValidIntegrity(installerFile : string) : Promise<boolean>
     {
-        const realFileHash = await this.file.getFileHash(installerFile);
-        this.acquisitionContext.eventStream.post(new DotnetFileIntegrityCheckEvent(`The hash of the installer file we downloaded is ${realFileHash}`));
-        const expectedFileHash = this.installerHash;
-        this.acquisitionContext.eventStream.post(new DotnetFileIntegrityCheckEvent(`The valid and expected hash of the installer file is ${expectedFileHash}`));
-
-        if(expectedFileHash === null)
+        try
         {
-            const yes = validationPromptConstants.allowOption
-            const no = validationPromptConstants.cancelOption;
-            const message = validationPromptConstants.noSignatureMessage;
+            const realFileHash = await this.file.getFileHash(installerFile);
 
-            const pick = await this.utilityContext.ui.getModalWarningResponse(message, no, yes);
-            const userConsentsToContinue = pick === yes;
-            this.acquisitionContext.eventStream.post(new DotnetFileIntegrityCheckEvent(`The valid hash could not be found. The user chose to continue? ${userConsentsToContinue}`));
-            return userConsentsToContinue;
+            this.acquisitionContext.eventStream.post(new DotnetFileIntegrityCheckEvent(`The hash of the installer file we downloaded is ${realFileHash}`));
+            const expectedFileHash = this.installerHash;
+            this.acquisitionContext.eventStream.post(new DotnetFileIntegrityCheckEvent(`The valid and expected hash of the installer file is ${expectedFileHash}`));
+
+            if(expectedFileHash === null)
+            {
+                return await this.userChoosesToContinueWithInvalidHash();
+            }
+
+            if(realFileHash !== expectedFileHash)
+            {
+                this.acquisitionContext.eventStream.post(new DotnetFileIntegrityCheckEvent(`The hashes DO NOT match.`));
+                return false;
+            }
+            else
+            {
+                this.acquisitionContext.eventStream.post(new DotnetFileIntegrityCheckEvent(`This file is valid.`));
+                return true;
+            }
         }
-
-        if(realFileHash !== expectedFileHash)
+        catch(error : any)
         {
-            this.acquisitionContext.eventStream.post(new DotnetFileIntegrityCheckEvent(`The hashes DO NOT match.`));
-            return false;
-        }
-        else
-        {
-            this.acquisitionContext.eventStream.post(new DotnetFileIntegrityCheckEvent(`This file is valid.`));
-            return true;
+            if(error?.message?.includes('ENOENT'))
+            {
+                this.acquisitionContext.eventStream.post(new DotnetFileIntegrityFailureEvent(`The file ${installerFile} was not found, so we couldn't verify it.
+Please try again, or download the .NET Installer file yourself. You may also report your issue at https://github.com/dotnet/vscode-dotnet-runtime/issues.`));
+            }
+            else if(error?.message?.includes('EPERM'))
+            {
+                this.acquisitionContext.eventStream.post(new DotnetFileIntegrityFailureEvent(`The file ${installerFile} did not have the correct permissions scope to be assessed.
+Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerFile}"`])))}`));
+            }
+            return this.userChoosesToContinueWithInvalidHash();
         }
     }
 

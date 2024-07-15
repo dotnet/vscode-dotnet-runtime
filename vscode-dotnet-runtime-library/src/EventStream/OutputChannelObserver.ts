@@ -13,6 +13,7 @@ import {
     DotnetExistingPathResolutionCompleted,
     DotnetInstallExpectedAbort,
     DotnetUpgradedEvent,
+    DotnetVisibleWarningEvent,
 } from './EventStreamEvents';
 import { EventType } from './EventType';
 import { IEvent } from './IEvent';
@@ -73,6 +74,11 @@ export class OutputChannelObserver implements IEventStreamObserver {
                 if (event instanceof DotnetExistingPathResolutionCompleted) {
                     this.outputChannel.append(`Using configured .NET path: ${ (event as DotnetExistingPathResolutionCompleted).resolvedPath }\n`);
                 }
+                break;
+            case EventType.DotnetVisibleWarning:
+                this.outputChannel.appendLine('');
+                this.outputChannel.appendLine((event as DotnetVisibleWarningEvent).eventMessage);
+                this.outputChannel.appendLine('');
                 break;
             case EventType.DotnetAcquisitionAlreadyInstalled:
                 if(event instanceof DotnetAcquisitionAlreadyInstalled)
