@@ -103,7 +103,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             case '1603':
                 return `Fatal error during .NET SDK installation. ${reportLogMessage}`;
             case '1618':
-                return `Another installation is in progress. Please wait for the other installation to finish and try again.`;
+                return `Another installation is already in progress. Complete that installation before proceeding with this install.`;
             case '000751':
                 return `An unknown error occurred, which might be an OS page fault. ${reportLogMessage}`;
             case '2147500037':
