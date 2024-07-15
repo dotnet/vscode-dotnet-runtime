@@ -103,7 +103,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             case '1618':
                 return `Another installation is in progress. Please wait for the other installation to finish and try again.`;
             case '000751':
-                return `An unknown error occurred. ${reportLogMessage}`;
+                return `An unknown error occurred, which might be an OS page fault. ${reportLogMessage}`;
             case '2147500037':
                 return `An unspecified error occurred. ${reportLogMessage}`;
             case '2147942405':
