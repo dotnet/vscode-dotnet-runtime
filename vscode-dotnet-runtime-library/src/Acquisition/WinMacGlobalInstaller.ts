@@ -78,6 +78,40 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         this.webWorker = new WebRequestWorker(context, installerUrl);
     }
 
+    public static InterpretExitCode(code : string) : string
+    {
+        const reportLogMessage = `Please provide your .NET Installer log (note our privacy notice), which can be found at %temp%.
+The file has a name like 'Microsoft_.NET_SDK*.log and should appear in recent files.
+This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/issues.`
+
+        switch(code)
+        {
+            case '1':
+                return `The .NET SDK installer has failed with a generic failure. ${reportLogMessage}`;
+            case '5':
+                return `Insufficient permissions are available to install .NET. Please run the installer as an administrator.`;
+            case '67':
+                return `A network name has not resolved. ${reportLogMessage}`;
+            case '112':
+                return `The disk is full. Please free up space and try again.`;
+            case '255':
+                return `The .NET Installer was terminated by another process unexpectedly. Please try again.`;
+            case '1260':
+                return `The .NET SDK is blocked by group policy. Can you please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues`
+            case '1603':
+                return `A peculiar system error prevented the .NET SDK from installing. ${reportLogMessage}`;
+            case '1618':
+                return `Another installation is in progress. Please wait for the other installation to finish and try again.`;
+            case '000751':
+                return `An unknown error occurred. ${reportLogMessage}`;
+            case '2147500037':
+                return `An unspecified error occurred. ${reportLogMessage}`;
+            case '2147942405':
+                return `Insufficient permissions are available to install .NET. Please try again as an administrator.`;
+        }
+        return '';
+    }
+
     public async installSDK(install : DotnetInstall): Promise<string>
     {
         // Check for conflicting windows installs
