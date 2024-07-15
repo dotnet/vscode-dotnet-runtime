@@ -98,6 +98,8 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
                 return `The .NET Installer was terminated by another process unexpectedly. Please try again.`;
             case '1260':
                 return `The .NET SDK is blocked by group policy. Can you please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues`
+            case '1460':
+                return `The .NET SDK had a timeout error. ${reportLogMessage}`;
             case '1603':
                 return `A peculiar system error prevented the .NET SDK from installing. ${reportLogMessage}`;
             case '1618':
