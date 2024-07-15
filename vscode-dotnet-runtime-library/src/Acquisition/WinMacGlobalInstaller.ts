@@ -101,7 +101,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             case '1460':
                 return `The .NET SDK had a timeout error. ${reportLogMessage}`;
             case '1603':
-                return `A peculiar system error prevented the .NET SDK from installing. ${reportLogMessage}`;
+                return `Fatal error during .NET SDK installation. ${reportLogMessage}`;
             case '1618':
                 return `Another installation is in progress. Please wait for the other installation to finish and try again.`;
             case '000751':
