@@ -91,7 +91,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             case '5':
                 return `Insufficient permissions are available to install .NET. Please run the installer as an administrator.`;
             case '67':
-                return `A network name has not resolved. ${reportLogMessage}`;
+                return `The network name cannot be found. ${reportLogMessage}`;
             case '112':
                 return `The disk is full. Please free up space and try again.`;
             case '255':
