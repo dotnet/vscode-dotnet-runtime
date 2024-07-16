@@ -11,6 +11,7 @@ import {
 } from '../EventStream/EventStreamEvents';
 import { IInstallationValidator } from './IInstallationValidator';
 import { DotnetInstall } from './DotnetInstall';
+import { CommandExecutor } from '../Utils/CommandExecutor';
 
 export class InstallationValidator extends IInstallationValidator {
     public validateDotnetInstall(install: DotnetInstall, dotnetPath: string, isDotnetFolder = false): void {
@@ -41,7 +42,8 @@ export class InstallationValidator extends IInstallationValidator {
     }
 
     private assertOrThrowError(check: boolean, message: string, install: DotnetInstall, dotnetPath: string) {
-        if (!check) {
+        if (!check)
+        {
             this.eventStream.post(new DotnetInstallationValidationError(new Error(message), install, dotnetPath));
             throw new EventBasedError('DotnetInstallationValidationError', message);
         }
