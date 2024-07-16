@@ -18,7 +18,7 @@ import {
     DotnetAcquisitionStatusUndefined,
     DotnetNonZeroInstallerExitCodeError,
     DotnetInstallGraveyardEvent,
-    DotnetInstallKeyCreatedEvent,
+    DotnetInstallIdCreatedEvent,
     DotnetLegacyInstallDetectedEvent,
     DotnetLegacyInstallRemovalRequestEvent,
     DotnetUninstallAllCompleted,
@@ -60,7 +60,7 @@ import { InstallTrackerSingleton } from './InstallTrackerSingleton';
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { IEventStream } from '../EventStream/EventStream';
 import { IExtensionState } from '../IExtensionState';
-import { getInstallKeyCustomArchitecture } from '../Utils/InstallKeyUtilities';
+import { getInstallIdCustomArchitecture } from '../Utils/InstallIdUtilities';
 
 /* tslint:disable:no-any */
 
@@ -144,7 +144,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             return existingAcquisitionPromise.then((res) => ({ dotnetPath: res }));
         }
 
-        const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installKey);
+        const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
         const installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(true);
 
@@ -196,7 +196,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         {
             install =
             {
-                installKey: getInstallKeyCustomArchitecture(version, context.acquisitionContext.architecture,
+                installId: getInstallIdCustomArchitecture(version, context.acquisitionContext.architecture,
                     context.acquisitionContext.mode!, globalInstallerResolver !== null ? 'global' : 'local'),
                 version: install.version,
                 isGlobal: install.isGlobal,
@@ -204,7 +204,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             } as DotnetInstall
         }
 
-        context.eventStream.post(new DotnetInstallKeyCreatedEvent(`The requested version ${version} is now marked under the install: ${JSON.stringify(install)}.`));
+        context.eventStream.post(new DotnetInstallIdCreatedEvent(`The requested version ${version} is now marked under the install: ${JSON.stringify(install)}.`));
         const existingAcquisitionPromise = InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getPromise(install);
         if (existingAcquisitionPromise)
         {
@@ -250,7 +250,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      *
      * @param version The version of the object to acquire.
      * @param installRuntime true if the request is to install the runtime, false for the SDK.
-     * @param install The install record / key of the version managed by us.
+     * @param install The install record / id of the version managed by us.
      * @returns the dotnet path of the acquired dotnet.
      *
      * @remarks it is called "core" because it is the meat of the actual acquisition work; this has nothing to do with .NET core vs framework.
@@ -261,7 +261,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         this.checkForPartialInstalls(context, install);
 
         let installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(true);
-        const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installKey);
+        const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
 
         if (fs.existsSync(dotnetPath) && installedVersions.length === 0) {
@@ -311,20 +311,20 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         return dotnetPath;
     }
 
-    private async checkForPartialInstalls(context: IAcquisitionWorkerContext, installKey : DotnetInstall)
+    private async checkForPartialInstalls(context: IAcquisitionWorkerContext, installId : DotnetInstall)
     {
         const installingVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(false);
-        const partialInstall = installingVersions.some(x => x.dotnetInstall.installKey === installKey.installKey);
+        const partialInstall = installingVersions.some(x => x.dotnetInstall.installId === installId.installId);
 
         // Don't count it as partial if the promise is still being resolved.
         // The promises get wiped out upon reload, so we can check this.
-        if (partialInstall && InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getPromise(installKey) === null)
+        if (partialInstall && InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getPromise(installId) === null)
         {
             // Partial install, we never updated our extension to no longer be 'installing'. Maybe someone killed the vscode process or we failed in an unexpected way.
-            context.eventStream.post(new DotnetAcquisitionPartialInstallation(installKey));
+            context.eventStream.post(new DotnetAcquisitionPartialInstallation(installId));
 
             // Delete the existing local files so we can re-install. For global installs, let the installer handle it.
-            await this.uninstallLocalRuntimeOrSDK(context, installKey);
+            await this.uninstallLocalRuntimeOrSDK(context, installId);
         }
     }
 
@@ -399,7 +399,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         if(installerResult !== '0')
         {
             const err = new DotnetNonZeroInstallerExitCodeError(new EventBasedError('DotnetNonZeroInstallerExitCodeError',
-                `An error was raised by the .NET SDK installer. The exit code it gave us: ${installerResult}`), install);
+                `An error was raised by the .NET SDK installer. The exit code it gave us: ${installerResult}.
+${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
             context.eventStream.post(err);
             throw err;
         }
@@ -424,9 +425,9 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      * @param installedVersions - all of the currently installed versions of dotnet managed by the extension
      * @param version - the version that is about to be installed
      *
-     * @remarks Before, installed versions used their version as the 'install key' in the promises and folder structure.
-     * We changed this install key to include architecture so different architectures could be installed side-by-side.
-     * This means any installs that were made before version 1.8.0 will not have the architecture in their install key.
+     * @remarks Before, installed versions used their version as the 'install id' in the promises and folder structure.
+     * We changed this install id to include architecture so different architectures could be installed side-by-side.
+     * This means any installs that were made before version 1.8.0 will not have the architecture in their install id.
      * They should be removed. This is what makes an install 'legacy'.
      *
      * This function only removes the legacy install with the same version as 'version'.
@@ -434,7 +435,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      * Assuming the install succeeds, this will not break as the legacy install of 'version' will be replaced by a non-legacy one upon completion.
      *
      * Many (if not most) legacy installs will actually hold the same content as the newly installed runtime/sdk.
-     * But since we don't want to be in the business of detecting their architecture, we chose this option as opposed to renaming and install key and folder
+     * But since we don't want to be in the business of detecting their architecture, we chose this option as opposed to renaming and install id and folder
      * ... for the legacy install.
      *
      * Note : only local installs were ever 'legacy.'
@@ -444,7 +445,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         const legacyInstalls = this.existingLegacyInstalls(context, installedVersions);
         for(const legacyInstall of legacyInstalls)
         {
-            if(legacyInstall.dotnetInstall.installKey.includes(version))
+            if(legacyInstall.dotnetInstall.installId.includes(version))
             {
                 context.eventStream.post(new DotnetLegacyInstallRemovalRequestEvent(`Trying to remove legacy install: ${legacyInstall} of ${version}.`));
                 await this.uninstallLocalRuntimeOrSDK(context, legacyInstall.dotnetInstall);
@@ -462,8 +463,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         let legacyInstalls : InstallRecord[] = [];
         for(const install of allInstalls)
         {
-            // Assumption: .NET versions so far did not include ~ in them, but we do for our non-legacy keys.
-            if(!install.dotnetInstall.installKey.includes('~'))
+            // Assumption: .NET versions so far did not include ~ in them, but we do for our non-legacy ids.
+            if(!install.dotnetInstall.installId.includes('~'))
             {
                 context.eventStream.post(new DotnetLegacyInstallDetectedEvent(`A legacy install was detected -- ${JSON.stringify(install)}.`));
                 legacyInstalls = legacyInstalls.concat(install);
@@ -482,7 +483,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         try
         {
-            const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installKey);
+            const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
             const graveyard = new InstallationGraveyard(context);
 
             graveyard.add(install, dotnetInstallDir);
@@ -491,7 +492,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             this.removeFolderRecursively(context.eventStream, dotnetInstallDir);
 
             await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install);
-            // this is the only place where installed and installing could deal with pre existing installing key
+            // this is the only place where installed and installing could deal with pre existing installing id
             await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstallingVersion(context, install);
 
             graveyard.remove(install);

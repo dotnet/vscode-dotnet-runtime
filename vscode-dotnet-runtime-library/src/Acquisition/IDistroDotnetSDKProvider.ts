@@ -17,7 +17,7 @@ import { LinuxPackageCollection } from './LinuxPackageCollection';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { getInstallFromContext } from '../Utils/InstallKeyUtilities';
+import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 /* tslint:disable:no-any */
 
 /**

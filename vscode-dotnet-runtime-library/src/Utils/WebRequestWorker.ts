@@ -8,7 +8,7 @@ import { HttpsProxyAgent } from 'https-proxy-agent';
 import { getProxySettings } from 'get-proxy-settings';
 import { AxiosCacheInstance, buildMemoryStorage, setupCache } from 'axios-cache-interceptor';
 import {DiskIsFullError, DotnetDownloadFailure, EventBasedError, SuppressedAcquisitionError, WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
-import { getInstallFromContext } from './InstallKeyUtilities';
+import { getInstallFromContext } from './InstallIdUtilities';
 
 import * as fs from 'fs';
 import { promisify } from 'util';
