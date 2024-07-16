@@ -396,6 +396,14 @@ export class WebRequestError extends DotnetAcquisitionError {
     public readonly eventName = 'WebRequestError';
 }
 
+export class DiskIsFullError extends DotnetAcquisitionError {
+    public readonly eventName = 'DiskIsFullError';
+}
+
+export class DotnetDownloadFailure extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetDownloadFailure';
+}
+
 export class DotnetPreinstallDetectionError extends DotnetAcquisitionError {
     public readonly eventName = 'DotnetPreinstallDetectionError';
 }
@@ -712,6 +720,14 @@ export abstract class DotnetCustomMessageEvent extends DotnetAcquisitionMessage 
     public getProperties() {
         return { Message: this.eventMessage };
     }
+}
+
+export abstract class DotnetVisibleWarningEvent extends DotnetCustomMessageEvent {
+    public readonly type = EventType.DotnetVisibleWarning;
+}
+
+export class DotnetFileIntegrityFailureEvent extends DotnetVisibleWarningEvent {
+    public readonly eventName = 'DotnetFileIntegrityFailureEvent';
 }
 
 export class DotnetVersionCategorizedEvent extends DotnetCustomMessageEvent {
