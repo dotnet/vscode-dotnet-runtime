@@ -31,6 +31,7 @@ import {
     SuppressedAcquisitionError,
     EventBasedError,
     EventCancellationError,
+    DotnetInstallationValidated,
 } from '../EventStream/EventStreamEvents';
 
 import { GlobalInstallerResolver } from './GlobalInstallerResolver';
@@ -61,6 +62,7 @@ import { DotnetInstallMode } from './DotnetInstallMode';
 import { IEventStream } from '../EventStream/EventStream';
 import { IExtensionState } from '../IExtensionState';
 import { getInstallKeyCustomArchitecture } from '../Utils/InstallKeyUtilities';
+import { CommandExecutor } from '../Utils/CommandExecutor';
 
 /* tslint:disable:no-any */
 
@@ -404,12 +406,35 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             throw err;
         }
 
-        const installedSDKPath : string = await installer.getExpectedGlobalSDKPath(installingVersion,
+        let installedSDKPath : string = await installer.getExpectedGlobalSDKPath(installingVersion,
             context.acquisitionContext.architecture ?? this.getDefaultInternalArchitecture(context.acquisitionContext.architecture));
 
         TelemetryUtilities.setDotnetSDKTelemetryToMatch(context.isExtensionTelemetryInitiallyEnabled, this.extensionContext, context, this.utilityContext);
 
-        context.installationValidator.validateDotnetInstall(install, installedSDKPath, os.platform() !== 'win32');
+        try
+        {
+            context.installationValidator.validateDotnetInstall(install, installedSDKPath, os.platform() !== 'win32');
+        }
+        catch(error : any)
+        {
+            if(install.isGlobal && os.platform() === 'darwin')
+            {
+                    const executor = new CommandExecutor(context, this.utilityContext);
+                    const result = await executor.execute(CommandExecutor.makeCommand('which', ['dotnet']));
+                    if(result.status === '0')
+                    {
+                        context.eventStream.post(new DotnetInstallationValidated(install));
+                        installedSDKPath = result.stdout;
+                    }
+                    else
+                    {
+                        error.message += `Which dotnet returned ${result.stdout} and ${result.stderr}.`;
+                        throw error;
+                    }
+            }
+
+            throw error;
+        }
 
         context.eventStream.post(new DotnetAcquisitionCompleted(install, installedSDKPath, installingVersion));
 
