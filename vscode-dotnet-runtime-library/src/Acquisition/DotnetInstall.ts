@@ -51,14 +51,14 @@ export function IsEquivalentInstallation(a: DotnetInstall, b: DotnetInstall): bo
 /**
  * @returns A string set representing the installation of either a .NET runtime or .NET SDK.
  */
-export function InstallToStrings(id: DotnetInstall)
+export function InstallToStrings(install: DotnetInstall)
 {
     return {
-        installId: id.installId,
-        version: id.version,
-        architecture: id.architecture,
-        isGlobal: id.isGlobal.toString(),
-        installMode: id.installMode.toString()
+        installId: install.installId,
+        version: install.version,
+        architecture: install.architecture,
+        isGlobal: install.isGlobal.toString(),
+        installMode: install.installMode.toString()
     };
 }
 
