@@ -25,7 +25,7 @@ import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { IDotnetAcquireContext } from '../IDotnetAcquireContext'
-import { getInstallFromContext } from '../Utils/InstallKeyUtilities';
+import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 import { DotnetInstallMode } from './DotnetInstallMode';
 
 /**

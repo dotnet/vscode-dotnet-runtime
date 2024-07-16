@@ -15,7 +15,7 @@ import {
     EventBasedError
 } from '../EventStream/EventStreamEvents';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
-import { getInstallFromContext } from '../Utils/InstallKeyUtilities';
+import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 import { Debugging } from '../Utils/Debugging';
 
 import { IVersionResolver } from './IVersionResolver';
@@ -26,7 +26,7 @@ import { DotnetVersionSupportPhase,
     IDotnetVersion
 } from '../IDotnetListVersionsContext';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
-import { getAssumedInstallInfo } from '../Utils/InstallKeyUtilities';
+import { getAssumedInstallInfo } from '../Utils/InstallIdUtilities';
 import { DotnetInstallMode } from './DotnetInstallMode';
 /* tslint:disable:no-any */
 
