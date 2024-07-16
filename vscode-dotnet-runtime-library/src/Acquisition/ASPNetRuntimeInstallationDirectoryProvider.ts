@@ -7,9 +7,9 @@ import * as path from 'path';
 import { IInstallationDirectoryProvider } from './IInstallationDirectoryProvider';
 
 export class ASPNetRuntimeInstallationDirectoryProvider extends IInstallationDirectoryProvider {
-    public getInstallDir(installKey: string): string
+    public getInstallDir(installId: string): string
     {
-        const dotnetInstallDir = path.join(this.getStoragePath(), installKey);
+        const dotnetInstallDir = path.join(this.getStoragePath(), installId);
         return dotnetInstallDir;
     }
 }

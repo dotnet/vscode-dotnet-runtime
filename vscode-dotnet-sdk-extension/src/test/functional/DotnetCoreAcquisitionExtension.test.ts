@@ -28,7 +28,7 @@ import {
   NoInstallAcquisitionInvoker,
   SdkInstallationDirectoryProvider,
   MockIndexWebRequestWorker,
-  getInstallKeyCustomArchitecture,
+  getInstallIdCustomArchitecture,
   IExistingPaths,
   getMockAcquisitionContext,
   getMockAcquisitionWorker,
@@ -98,11 +98,11 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     const dotnetDir = installDirectoryProvider.getInstallDir(version);
     const dotnetExePath = path.join(dotnetDir, `dotnet${os.platform() === 'win32' ? '.exe' : ''}`);
 
-    const sdkCurrentInstallKey = getInstallKeyCustomArchitecture(version, os.arch(), 'sdk', 'local');
-    const sdkDirCurrent = path.join(dotnetDir, 'sdk', sdkCurrentInstallKey);
+    const sdkCurrentInstallId = getInstallIdCustomArchitecture(version, os.arch(), 'sdk', 'local');
+    const sdkDirCurrent = path.join(dotnetDir, 'sdk', sdkCurrentInstallId);
 
-    const sdkEarlierInstallKey = getInstallKeyCustomArchitecture(earlierVersion, os.arch(), 'sdk', 'local');
-    const sdkDirEarlier = path.join(dotnetDir, 'sdk', sdkEarlierInstallKey);
+    const sdkEarlierInstallId = getInstallIdCustomArchitecture(earlierVersion, os.arch(), 'sdk', 'local');
+    const sdkDirEarlier = path.join(dotnetDir, 'sdk', sdkEarlierInstallId);
     fs.mkdirSync(sdkDirCurrent, { recursive: true });
     fs.mkdirSync(sdkDirEarlier, { recursive: true });
     fs.writeFileSync(dotnetExePath, '');
@@ -115,12 +115,12 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
       .filter(event => event instanceof DotnetPreinstallDetected)
       .map(event => event as DotnetPreinstallDetected);
     assert.equal(preinstallEvents.length, 2);
-    assert.exists(preinstallEvents.find(event => event.installKey.installKey === sdkCurrentInstallKey), 'The current sdk install key exists');
-    assert.exists(preinstallEvents.find(event => event.installKey.installKey === sdkEarlierInstallKey), 'The earlier sdk install key exists');
+    assert.exists(preinstallEvents.find(event => event.installId.installId === sdkCurrentInstallId), 'The current sdk install key exists');
+    assert.exists(preinstallEvents.find(event => event.installId.installId === sdkEarlierInstallId), 'The earlier sdk install key exists');
     const alreadyInstalledEvent = eventStream.events
       .find(event => event instanceof DotnetAcquisitionAlreadyInstalled) as DotnetAcquisitionAlreadyInstalled;
     assert.exists(alreadyInstalledEvent, 'An already installed event was posted');
-    assert.equal(alreadyInstalledEvent.install.installKey, sdkCurrentInstallKey, 'the current install is what was already installed');
+    assert.equal(alreadyInstalledEvent.install.installId, sdkCurrentInstallId, 'the current install is what was already installed');
 
     // Clean up storage
     rimraf.sync(dotnetDir);
@@ -134,7 +134,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     const mockContext = getMockAcquisitionContext('sdk', version, 10000, undefined, undefined, undefined, installDirectoryProvider);
     const acquisitionWorker = getMockAcquisitionWorker(mockContext);
 
-    const currentVersionInstallKey =  getInstallKeyCustomArchitecture(version, os.arch(), 'sdk', 'local');
+    const currentVersionInstallId =  getInstallIdCustomArchitecture(version, os.arch(), 'sdk', 'local');
     // Ensure nothing is returned when there is no preinstalled SDK
     const noPreinstallResult = await acquisitionWorker.acquireStatus(mockContext, 'sdk');
     assert.isUndefined(noPreinstallResult);
@@ -143,7 +143,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     const dotnetDir = installDirectoryProvider.getInstallDir(version);
     const dotnetExePath = path.join(dotnetDir, `dotnet${os.platform() === 'win32' ? '.exe' : ''}`);
 
-    const sdkDir50 = path.join(dotnetDir, 'sdk', currentVersionInstallKey);
+    const sdkDir50 = path.join(dotnetDir, 'sdk', currentVersionInstallId);
     fs.mkdirSync(sdkDir50, { recursive: true });
     fs.writeFileSync(dotnetExePath, '');
 

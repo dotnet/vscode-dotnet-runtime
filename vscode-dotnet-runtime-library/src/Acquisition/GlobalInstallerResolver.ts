@@ -8,7 +8,7 @@ import * as path from 'path';
 
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { VersionResolver } from './VersionResolver';
-import { getInstallFromContext } from '../Utils/InstallKeyUtilities';
+import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 import { DotnetFeatureBandDoesNotExistError,
         DotnetFileIntegrityCheckEvent,
         DotnetInvalidReleasesJSONError,

@@ -15,7 +15,7 @@ import {
   IExistingPaths,
   IDotnetListVersionsContext,
   IDotnetListVersionsResult,
-  getInstallKeyCustomArchitecture,
+  getInstallIdCustomArchitecture,
   ITelemetryEvent,
   MockExtensionConfiguration,
   MockExtensionContext,
@@ -232,7 +232,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
 
     const rntVersion = '2.2';
     const fullyResolvedVersion = '2.2.8'; // 2.2 is very much out of support, so we don't expect this to change to a newer version
-    const installKey = getInstallKeyCustomArchitecture(fullyResolvedVersion, os.arch(), 'runtime', 'local');
+    const installId = getInstallIdCustomArchitecture(fullyResolvedVersion, os.arch(), 'runtime', 'local');
 
     const context: IDotnetAcquireContext = { version: rntVersion, requestingExtensionId };
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
@@ -249,7 +249,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     const startedEvent = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === 'DotnetAcquisitionStarted');
     assert.exists(startedEvent, 'Acquisition started event gets published');
     assert.include(startedEvent!.properties!.AcquisitionStartVersion, rntVersion, 'Acquisition started event has a starting version');
-    assert.include(startedEvent!.properties!.AcquisitionInstallKey, installKey, 'Acquisition started event has a install key');
+    assert.include(startedEvent!.properties!.AcquisitionInstallId, installId, 'Acquisition started event has a install key');
 
     const completedEvent = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === 'DotnetAcquisitionCompleted');
     assert.exists(completedEvent, 'Acquisition completed events exist');

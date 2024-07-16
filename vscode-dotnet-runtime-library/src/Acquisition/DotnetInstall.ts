@@ -4,11 +4,11 @@
 *--------------------------------------------------------------------------------------------*/
 
 import { DotnetInstallType } from '../IDotnetAcquireContext';
-import { getInstallKeyCustomArchitecture } from '../Utils/InstallKeyUtilities';
+import { getInstallIdCustomArchitecture } from '../Utils/InstallIdUtilities';
 import { DotnetInstallMode } from './DotnetInstallMode';
 
 export interface DotnetInstall {
-    installKey: string;
+    installId: string;
     version: string;
     architecture: string;
     isGlobal: boolean;
@@ -17,16 +17,16 @@ export interface DotnetInstall {
 
 /**
  * @remarks
- * The key can be a type containing all of the information or the 'legacy' key which is a string that contains all of the information.
+ * The id can be a type containing all of the information or the 'legacy' id which is a string that contains all of the information.
  */
 export type DotnetInstallOrStr = DotnetInstall | string;
 
 /**
  *
  * @returns True if the underlying installs are the exact same 'files'.
- * An 'install' is technically marked on disk by its install key.
- * The key could theoretically be temporarily shared between installs that are not the same underlying files.
- * For example, if the install key becomes '8', then '8' could at one point hold 8.0.100, then later 8.0.200.
+ * An 'install' is technically marked on disk by its install id.
+ * The id could theoretically be temporarily shared between installs that are not the same underlying files.
+ * For example, if the install id becomes '8', then '8' could at one point hold 8.0.100, then later 8.0.200.
  * That is not the case at the moment, but it is a possibility.
  * Think carefully between using this and IsEquivalentInstallation
  */
@@ -45,20 +45,20 @@ export function IsEquivalentInstallationFile(a: DotnetInstall, b: DotnetInstall)
  */
 export function IsEquivalentInstallation(a: DotnetInstall, b: DotnetInstall): boolean
 {
-    return a.installKey === b.installKey;
+    return a.installId === b.installId;
 }
 
 /**
  * @returns A string set representing the installation of either a .NET runtime or .NET SDK.
  */
-export function InstallToStrings(key: DotnetInstall)
+export function InstallToStrings(install: DotnetInstall)
 {
     return {
-        installKey: key.installKey,
-        version: key.version,
-        architecture: key.architecture,
-        isGlobal: key.isGlobal.toString(),
-        installMode: key.installMode.toString()
+        installId: install.installId,
+        version: install.version,
+        architecture: install.architecture,
+        isGlobal: install.isGlobal.toString(),
+        installMode: install.installMode.toString()
     };
 }
 
@@ -71,7 +71,7 @@ export function looksLikeRuntimeVersion(version: string): boolean
 export function GetDotnetInstallInfo(installVersion: string, installationMode: DotnetInstallMode, installType: DotnetInstallType, installArchitecture: string): DotnetInstall
 {
     return {
-        installKey: getInstallKeyCustomArchitecture(installVersion, installArchitecture, installationMode, installType),
+        installId: getInstallIdCustomArchitecture(installVersion, installArchitecture, installationMode, installType),
         version: installVersion,
         architecture: installArchitecture,
         isGlobal: installType === 'global',

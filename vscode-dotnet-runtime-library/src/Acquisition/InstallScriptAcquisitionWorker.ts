@@ -14,7 +14,7 @@ import {
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { Debugging } from '../Utils/Debugging';
 import { FileUtilities } from '../Utils/FileUtilities';
-import { getInstallFromContext } from '../Utils/InstallKeyUtilities';
+import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 
 import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
