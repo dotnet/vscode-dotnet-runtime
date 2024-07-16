@@ -43,7 +43,7 @@ import {
 import {exec} from '@vscode/sudo-prompt';
 import * as lockfile from 'proper-lockfile';
 import { CommandExecutorCommand } from './CommandExecutorCommand';
-import { getInstallFromContext } from './InstallKeyUtilities';
+import { getInstallFromContext } from './InstallIdUtilities';
 
 
 import { ICommandExecutor } from './ICommandExecutor';

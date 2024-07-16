@@ -34,7 +34,7 @@ export class OutputChannelObserver implements IEventStreamObserver {
             case EventType.DotnetAcquisitionStart:
                 const acquisitionStarted = event as DotnetAcquisitionStarted;
 
-                this.inProgressDownloads.push(acquisitionStarted.install.installKey);
+                this.inProgressDownloads.push(acquisitionStarted.install.installId);
 
                 this.outputChannel.append(`${acquisitionStarted.requestingExtensionId} requested to download the ${
                 acquisitionStarted.install.installMode === 'sdk' ? '.NET SDK' :
@@ -46,7 +46,7 @@ export class OutputChannelObserver implements IEventStreamObserver {
 
                 if (this.inProgressDownloads.length > 1) {
                     // Already a download in progress
-                    this.outputChannel.appendLine(` -- Concurrent download of '${acquisitionStarted.install.installKey}' started!`);
+                    this.outputChannel.appendLine(` -- Concurrent download of '${acquisitionStarted.install.installId}' started!`);
                     this.outputChannel.appendLine('');
                 } else {
                     this.startDownloadIndicator();
@@ -58,10 +58,10 @@ export class OutputChannelObserver implements IEventStreamObserver {
             case EventType.DotnetAcquisitionCompleted:
                 const acquisitionCompleted = event as DotnetAcquisitionCompleted;
                 this.outputChannel.appendLine(' Done!');
-                this.outputChannel.appendLine(`.NET ${acquisitionCompleted.install.installKey} executable path: ${acquisitionCompleted.dotnetPath}`);
+                this.outputChannel.appendLine(`.NET ${acquisitionCompleted.install.installId} executable path: ${acquisitionCompleted.dotnetPath}`);
                 this.outputChannel.appendLine('');
 
-                this.inProgressVersionDone(acquisitionCompleted.install.installKey);
+                this.inProgressVersionDone(acquisitionCompleted.install.installId);
 
                 if (this.inProgressDownloads.length > 0) {
                     const completedVersionString = `'${this.inProgressDownloads.join('\', \'')}'`;
@@ -86,7 +86,7 @@ export class OutputChannelObserver implements IEventStreamObserver {
                     this.outputChannel.append(`${
                         (event as DotnetAcquisitionAlreadyInstalled).requestingExtensionId
                     }: Trying to install .NET ${
-                        (event as DotnetAcquisitionAlreadyInstalled).install.installKey
+                        (event as DotnetAcquisitionAlreadyInstalled).install.installId
                     } but it already exists. No downloads or changes were made.\n`);
                 }
                 break;
@@ -96,25 +96,25 @@ export class OutputChannelObserver implements IEventStreamObserver {
                     this.outputChannel.append(`${
                         (event as DotnetAcquisitionInProgress).requestingExtensionId
                     } tried to install .NET ${
-                        (event as DotnetAcquisitionInProgress).installKey
+                        (event as DotnetAcquisitionInProgress).installId
                     } but that install had already been requested. No downloads or changes were made.\n`);
                 }
                 break;
             case EventType.DotnetAcquisitionError:
                 const error = event as DotnetAcquisitionError;
                 this.outputChannel.appendLine(`\nError : (${error.eventName ?? ''})`);
-                this.outputChannel.appendLine(`Failed to download .NET ${error.install?.installKey}:`);
+                this.outputChannel.appendLine(`Failed to download .NET ${error.install?.installId}:`);
                 this.outputChannel.appendLine(error.error.message);
                 this.outputChannel.appendLine('');
 
-                this.updateDownloadIndicators(error.install?.installKey);
+                this.updateDownloadIndicators(error.install?.installId);
                 break;
             case EventType.DotnetInstallExpectedAbort:
                 const abortEvent = event as DotnetInstallExpectedAbort;
-                this.outputChannel.appendLine(`Cancelled Installation of .NET ${abortEvent.install?.installKey}.`);
+                this.outputChannel.appendLine(`Cancelled Installation of .NET ${abortEvent.install?.installId}.`);
                 this.outputChannel.appendLine(abortEvent.error.message);
 
-                this.updateDownloadIndicators(abortEvent.install?.installKey);
+                this.updateDownloadIndicators(abortEvent.install?.installId);
                 break;
             case EventType.DotnetUpgradedEvent:
                 const upgradeMessage = event as DotnetUpgradedEvent;
@@ -131,11 +131,11 @@ export class OutputChannelObserver implements IEventStreamObserver {
         // Nothing to dispose
     }
 
-    private updateDownloadIndicators(installKey : string | null | undefined)
+    private updateDownloadIndicators(installId : string | null | undefined)
     {
-        if(installKey && installKey !== 'null')
+        if(installId && installId !== 'null')
         {
-            this.inProgressVersionDone(installKey);
+            this.inProgressVersionDone(installId);
         }
 
         if (this.inProgressDownloads.length > 0)

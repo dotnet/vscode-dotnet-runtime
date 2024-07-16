@@ -17,7 +17,7 @@ const defaultInstall : DotnetInstall = {
     version: defaultVersion,
     isGlobal: false,
     architecture: os.arch(),
-    installKey: `${defaultVersion}~${os.arch()}`,
+    installId: `${defaultVersion}~${os.arch()}`,
     installMode: defaultMode
 }
 
@@ -25,7 +25,7 @@ const secondInstall : DotnetInstall = {
     version: secondVersion,
     isGlobal: false,
     architecture: os.arch(),
-    installKey: `${secondVersion}~${os.arch()}`,
+    installId: `${secondVersion}~${os.arch()}`,
     installMode: defaultMode
 }
 const defaultTimeoutTime = 5000;
@@ -173,7 +173,7 @@ suite('InstallTracker Unit Tests', () => {
         const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
 
         const extensionStateWithLegacyStrings = new MockExtensionContext();
-        extensionStateWithLegacyStrings.update('installed', [defaultInstall.installKey, secondInstall.installKey]);
+        extensionStateWithLegacyStrings.update('installed', [defaultInstall.installId, secondInstall.installId]);
         validator.setExtensionState(extensionStateWithLegacyStrings);
 
         const expected : InstallRecord[] = [
@@ -197,7 +197,7 @@ suite('InstallTracker Unit Tests', () => {
         const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
 
         const extensionStateWithLegacyStrings = new MockExtensionContext();
-        extensionStateWithLegacyStrings.update('installed', [defaultInstall.installKey, secondInstall.installKey]);
+        extensionStateWithLegacyStrings.update('installed', [defaultInstall.installId, secondInstall.installId]);
         validator.setExtensionState(extensionStateWithLegacyStrings);
 
         const expected : InstallRecord[] = [

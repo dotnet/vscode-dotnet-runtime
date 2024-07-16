@@ -6,7 +6,7 @@
 import { IInstallationDirectoryProvider } from './IInstallationDirectoryProvider';
 
 export class SdkInstallationDirectoryProvider extends IInstallationDirectoryProvider {
-    public getInstallDir(installKey: string): string {
+    public getInstallDir(installId: string): string {
         return this.getStoragePath();
     }
 }

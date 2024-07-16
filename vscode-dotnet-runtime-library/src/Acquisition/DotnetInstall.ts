@@ -4,11 +4,11 @@
 *--------------------------------------------------------------------------------------------*/
 
 import { DotnetInstallType } from '../IDotnetAcquireContext';
-import { getInstallKeyCustomArchitecture } from '../Utils/InstallKeyUtilities';
+import { getInstallIdCustomArchitecture } from '../Utils/InstallIdUtilities';
 import { DotnetInstallMode } from './DotnetInstallMode';
 
 export interface DotnetInstall {
-    installKey: string;
+    installId: string;
     version: string;
     architecture: string;
     isGlobal: boolean;
@@ -45,7 +45,7 @@ export function IsEquivalentInstallationFile(a: DotnetInstall, b: DotnetInstall)
  */
 export function IsEquivalentInstallation(a: DotnetInstall, b: DotnetInstall): boolean
 {
-    return a.installKey === b.installKey;
+    return a.installId === b.installId;
 }
 
 /**
@@ -54,7 +54,7 @@ export function IsEquivalentInstallation(a: DotnetInstall, b: DotnetInstall): bo
 export function InstallToStrings(key: DotnetInstall)
 {
     return {
-        installKey: key.installKey,
+        installId: key.installId,
         version: key.version,
         architecture: key.architecture,
         isGlobal: key.isGlobal.toString(),
@@ -71,7 +71,7 @@ export function looksLikeRuntimeVersion(version: string): boolean
 export function GetDotnetInstallInfo(installVersion: string, installationMode: DotnetInstallMode, installType: DotnetInstallType, installArchitecture: string): DotnetInstall
 {
     return {
-        installKey: getInstallKeyCustomArchitecture(installVersion, installArchitecture, installationMode, installType),
+        installId: getInstallIdCustomArchitecture(installVersion, installArchitecture, installationMode, installType),
         version: installVersion,
         architecture: installArchitecture,
         isGlobal: installType === 'global',

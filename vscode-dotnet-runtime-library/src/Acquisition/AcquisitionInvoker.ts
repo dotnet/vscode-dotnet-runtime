@@ -183,7 +183,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
      * @remarks Some users have reported not having powershell.exe or having execution policy that fails property evaluation functions in powershell install scripts.
      * We use this function to throw better errors if powershell is not configured correctly.
      */
-    private async verifyPowershellCanRun(installContext : IDotnetInstallationContext, installKey : DotnetInstall) : Promise<string>
+    private async verifyPowershellCanRun(installContext : IDotnetInstallationContext, installId : DotnetInstall) : Promise<string>
     {
         let knownError = false;
         let error = null;
@@ -230,7 +230,7 @@ If you cannot safely and confidently change the execution policy, try setting a 
 
         if(error != null)
         {
-            this.eventStream.post(new DotnetAcquisitionScriptError(error as Error, installKey));
+            this.eventStream.post(new DotnetAcquisitionScriptError(error as Error, installId));
             throw new EventBasedError('DotnetAcquisitionScriptError', error?.message, error?.stack);
         }
 

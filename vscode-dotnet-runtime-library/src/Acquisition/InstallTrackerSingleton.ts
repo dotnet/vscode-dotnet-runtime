@@ -31,7 +31,7 @@ import {
     IsEquivalentInstallation,
     IsEquivalentInstallationFile
 } from './DotnetInstall';
-import { getVersionFromLegacyInstallKey, getAssumedInstallInfo } from '../Utils/InstallKeyUtilities';
+import { getVersionFromLegacyInstallId, getAssumedInstallInfo } from '../Utils/InstallIdUtilities';
 import { InstallRecord, InstallRecordOrStr } from './InstallRecord';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { IEventStream } from '../EventStream/EventStream';
@@ -140,27 +140,27 @@ export class InstallTrackerSingleton
             return null;
     }
 
-    public async addPromise(installKey : DotnetInstall, installPromise : Promise<string>) : Promise<void>
+    public async addPromise(installId : DotnetInstall, installPromise : Promise<string>) : Promise<void>
     {
         return this.executeWithLock( false, (key : DotnetInstall, workingInstall : Promise<string>) =>
         {
             this.inProgressInstalls.add({ dotnetInstall: key, installingPromise: workingInstall });
-        }, installKey, installPromise);
+        }, installId, installPromise);
     }
 
-    protected async removePromise(installKey : DotnetInstall) : Promise<void>
+    protected async removePromise(installId : DotnetInstall) : Promise<void>
     {
         return this.executeWithLock( false, (key : DotnetInstall) =>
         {
             const resolvedInstall : InProgressInstall | undefined = [...this.inProgressInstalls].find(x => IsEquivalentInstallation(x.dotnetInstall as DotnetInstall, key));
             if(!resolvedInstall)
             {
-                this.eventStream.post(new NoMatchingInstallToStopTracking(`No matching install to stop tracking for ${key.installKey}.
-Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installKey).join(', ')}`));
+                this.eventStream.post(new NoMatchingInstallToStopTracking(`No matching install to stop tracking for ${key.installId}.
+Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installId).join(', ')}`));
                 return;
             }
             this.inProgressInstalls.delete(resolvedInstall);
-        }, installKey);
+        }, installId);
     }
 
     public async uninstallAllRecords() : Promise<void>
@@ -235,7 +235,7 @@ ${convertedInstalls.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.in
         await this.removeVersionFromExtensionState(context, this.installedVersionsKey, install);
     }
 
-    protected async removeVersionFromExtensionState(context : IAcquisitionWorkerContext, keyStr: string, installKeyObj: DotnetInstall)
+    protected async removeVersionFromExtensionState(context : IAcquisitionWorkerContext, keyStr: string, installIdObj: DotnetInstall)
     {
         return this.executeWithLock( false, async (key: string, install: DotnetInstall) =>
         {
@@ -271,7 +271,7 @@ ${convertedInstalls.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.in
                         { dotnetInstall: install, installingExtensions: owners } as InstallRecord : x));
                 }
             }
-        }, keyStr, installKeyObj);
+        }, keyStr, installIdObj);
     }
 
     public async trackInstallingVersion(context : IAcquisitionWorkerContext, install: DotnetInstall)
@@ -321,24 +321,24 @@ ${existingVersions.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.ins
         }, keyStr, installObj);
     }
 
-    public async checkForUnrecordedLocalSDKSuccessfulInstall(context : IAcquisitionWorkerContext, dotnetInstallDirectory: string, installedInstallKeysList: InstallRecord[]): Promise<InstallRecord[]>
+    public async checkForUnrecordedLocalSDKSuccessfulInstall(context : IAcquisitionWorkerContext, dotnetInstallDirectory: string, installedInstallIdsList: InstallRecord[]): Promise<InstallRecord[]>
     {
-        return this.executeWithLock( false, async (dotnetInstallDir: string, installedInstallKeys: InstallRecord[]) =>
+        return this.executeWithLock( false, async (dotnetInstallDir: string, installedInstallIds: InstallRecord[]) =>
         {
             let localSDKDirectoryKeyIter = '';
             try
             {
                 // Determine installed version(s) of local SDKs for the EDU bundle.
-                const installKeys = fs.readdirSync(path.join(dotnetInstallDir, 'sdk'));
+                const installIds = fs.readdirSync(path.join(dotnetInstallDir, 'sdk'));
 
                 // Update extension state
-                for (const installKey of installKeys)
+                for (const installId of installIds)
                 {
-                    localSDKDirectoryKeyIter = installKey;
-                    const installRecord = GetDotnetInstallInfo(getVersionFromLegacyInstallKey(installKey), 'sdk', 'local', DotnetCoreAcquisitionWorker.defaultArchitecture());
+                    localSDKDirectoryKeyIter = installId;
+                    const installRecord = GetDotnetInstallInfo(getVersionFromLegacyInstallId(installId), 'sdk', 'local', DotnetCoreAcquisitionWorker.defaultArchitecture());
                     this.eventStream.post(new DotnetPreinstallDetected(installRecord));
                     await this.addVersionToExtensionState(context, this.installedVersionsKey, installRecord, true);
-                    installedInstallKeys.push({ dotnetInstall: installRecord, installingExtensions: [ null ] } as InstallRecord);
+                    installedInstallIds.push({ dotnetInstall: installRecord, installingExtensions: [ null ] } as InstallRecord);
                 }
             }
             catch (error)
@@ -346,7 +346,7 @@ ${existingVersions.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.ins
                 this.eventStream.post(new DotnetPreinstallDetectionError(error as Error, GetDotnetInstallInfo(localSDKDirectoryKeyIter, 'sdk', 'local',
                     DotnetCoreAcquisitionWorker.defaultArchitecture())));
             }
-            return installedInstallKeys;
-        }, dotnetInstallDirectory, installedInstallKeysList);
+            return installedInstallIds;
+        }, dotnetInstallDirectory, installedInstallIdsList);
     }
 }
