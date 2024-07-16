@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+## [2.1.0] - 2024-07-18
+
+Fixes a bug with permissions when running the .NET Installer.
+
+Adds context for .NET Installer failures.
+
+Adds a user fallback for when the .NET Installer file cannot be validated.
+
+Renames internal tracking mechanism of 'key' to 'id'
+
+
 ## [2.0.9] - 2024-07-12
 
 Fixes a bug where permissions were not granted to run the .NET Installer. (EPERM issue.)
