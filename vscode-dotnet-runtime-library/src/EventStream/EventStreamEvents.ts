@@ -54,7 +54,7 @@ export class DotnetAcquisitionStarted extends GenericModalEvent
         return {
                 ...InstallToStrings(this.install),
                 AcquisitionStartVersion : this.startingVersion,
-                AcquisitionInstallKey : this.install.installKey,
+                AcquisitionInstallId : this.install.installId,
                 extensionId : this.requestingExtensionId
             };
     }
@@ -107,7 +107,7 @@ export class DotnetAcquisitionTotalSuccessEvent extends GenericModalEvent
     public getProperties() {
         return {
                 AcquisitionStartVersion : this.startingVersion,
-                AcquisitionInstallKey : this.install.installKey,
+                AcquisitionInstallId : this.install.installId,
                 ...InstallToStrings(this.install),
                 ExtensionId : TelemetryUtilities.HashData(this.requestingExtensionId),
                 FinalPath : this.finalPath,
@@ -119,13 +119,13 @@ abstract class DotnetAcquisitionTotalSuccessEventBase extends IEvent
 {
     public readonly type = EventType.DotnetModalChildEvent;
 
-    constructor(public readonly installKey: DotnetInstall) {
+    constructor(public readonly installId: DotnetInstall) {
         super();
     }
 
     public getProperties() {
         return {
-                ...InstallToStrings(this.installKey),
+                ...InstallToStrings(this.installId),
             };
     }
 }
@@ -209,17 +209,17 @@ export class DotnetAcquisitionCompleted extends IEvent {
         super();
     }
 
-    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+    public getProperties(telemetry = false): { [id: string]: string } | undefined {
         if (telemetry) {
             return {...InstallToStrings(this.install),
-                    AcquisitionCompletedInstallKey : this.install.installKey,
+                    AcquisitionCompletedInstallId : this.install.installId,
                     AcquisitionCompletedVersion: this.version};
         }
         else
         {
             return {...InstallToStrings(this.install),
                     AcquisitionCompletedVersion: this.version,
-                    AcquisitionCompletedInstallKey : this.install.installKey,
+                    AcquisitionCompletedInstallId : this.install.installId,
                     AcquisitionCompletedDotnetPath : this.dotnetPath};
         }
     }
@@ -232,7 +232,7 @@ export abstract class DotnetAcquisitionError extends IEvent {
     /**
      *
      * @param error The error that triggered, so the call stack, etc. can be analyzed.
-     * @param install For acquisition errors, you MUST include this install key. For commands unrelated to acquiring or managing a specific dotnet version, you
+     * @param install For acquisition errors, you MUST include this install id. For commands unrelated to acquiring or managing a specific dotnet version, you
      * have the option to leave this parameter null. If it is NULL during acquisition the extension CANNOT properly manage what it has finished installing or not.
      */
     constructor(public readonly error: Error, public readonly install: DotnetInstall | null)
@@ -240,11 +240,11 @@ export abstract class DotnetAcquisitionError extends IEvent {
         super();
     }
 
-    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+    public getProperties(telemetry = false): { [id: string]: string } | undefined {
         return {ErrorName : this.error.name,
                 ErrorMessage : this.error.message,
                 StackTrace : this.error.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : '',
-                InstallKey : this.install?.installKey ?? 'null',
+                InstallId : this.install?.installId ?? 'null',
                 ...InstallToStrings(this.install!)};
     }
 }
@@ -263,11 +263,11 @@ export class DotnetAcquisitionFinalError extends GenericModalEvent
         this.installType = install.isGlobal ? 'global' : 'local';
     }
 
-    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+    public getProperties(telemetry = false): { [id: string]: string } | undefined {
         return {ErrorName : this.error.name,
                 ErrorMessage : this.error.message,
                 StackTrace : this.error.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : '',
-                InstallKey : this.install?.installKey ?? 'null',
+                InstallId : this.install?.installId ?? 'null',
                 ...InstallToStrings(this.install!)};
     }
 }
@@ -286,13 +286,13 @@ abstract class DotnetAcquisitionFinalErrorBase extends DotnetAcquisitionError
         this.type = EventType.DotnetAcquisitionFinalError;
     }
 
-    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+    public getProperties(telemetry = false): { [id: string]: string } | undefined {
         return {
                 FailureMode: this.originalEventName,
                 ErrorName : this.error.name,
                 ErrorMessage : this.error.message,
                 StackTrace : this.error.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : '',
-                InstallKey : this.install?.installKey ?? 'null',
+                InstallId : this.install?.installId ?? 'null',
                 ...InstallToStrings(this.install!)
             };
     }
@@ -321,7 +321,7 @@ export abstract class DotnetNonAcquisitionError extends IEvent {
         super();
     }
 
-    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+    public getProperties(telemetry = false): { [id: string]: string } | undefined {
         return {ErrorName : this.error.name,
                 ErrorMessage : this.error.message,
                 StackTrace : this.error.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : ''};
@@ -335,7 +335,7 @@ export abstract class DotnetInstallExpectedAbort extends IEvent {
     /**
      *
      * @param error The error that triggered, so the call stack, etc. can be analyzed.
-     * @param install For acquisition errors, you MUST include this install key. For commands unrelated to acquiring or managing a specific dotnet version, you
+     * @param install For acquisition errors, you MUST include this install id. For commands unrelated to acquiring or managing a specific dotnet version, you
      * have the option to leave this parameter null. If it is NULL during acquisition the extension CANNOT properly manage what it has finished installing or not.
      */
     constructor(public readonly error: Error, public readonly install: DotnetInstall | null)
@@ -343,14 +343,14 @@ export abstract class DotnetInstallExpectedAbort extends IEvent {
         super();
     }
 
-    public getProperties(telemetry = false): { [key: string]: string } | undefined
+    public getProperties(telemetry = false): { [id: string]: string } | undefined
     {
         if(this.install)
         {
         return {ErrorName : this.error.name,
                 ErrorMessage : this.error.message,
                 StackTrace : this.error.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : '',
-                InstallKey : this.install?.installKey ?? 'null',
+                InstallId : this.install?.installId ?? 'null',
                 ...InstallToStrings(this.install)};
         }
         else
@@ -358,7 +358,7 @@ export abstract class DotnetInstallExpectedAbort extends IEvent {
             return {ErrorName : this.error.name,
                     ErrorMessage : this.error.message,
                     StackTrace : this.error.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : '',
-                    InstallKey : 'null'};
+                    InstallId : 'null'};
         }
     }
 }
@@ -371,7 +371,7 @@ export class SuppressedAcquisitionError extends IEvent {
         super();
     }
 
-    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+    public getProperties(telemetry = false): { [id: string]: string } | undefined {
         return {
                 SupplementMessage : this.supplementalMessage,
                 ErrorName : this.error.name,
@@ -427,7 +427,7 @@ export class DotnetNotInstallRelatedCommandFailed extends DotnetNonAcquisitionEr
         super(error);
     }
 
-    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+    public getProperties(telemetry = false): { [id: string]: string } | undefined {
         return {
             ErrorMessage : this.error.message,
             CommandName : this.command,
@@ -443,12 +443,12 @@ export class DotnetCommandFailed extends DotnetAcquisitionError {
         super(error, install);
     }
 
-    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+    public getProperties(telemetry = false): { [id: string]: string } | undefined {
         return {ErrorMessage : this.error.message,
             CommandName : this.command,
             ErrorName : this.error.name,
             StackTrace : this.error.stack ? this.error.stack : '',
-            InstallKey : this.install?.installKey ?? 'null',
+            InstallId : this.install?.installId ?? 'null',
             ...InstallToStrings(this.install!)};
         }
 }
@@ -487,9 +487,9 @@ export abstract class DotnetAcquisitionVersionError extends DotnetAcquisitionErr
         super(error, install);
     }
 
-    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+    public getProperties(telemetry = false): { [id: string]: string } | undefined {
         return {ErrorMessage : this.error.message,
-            AcquisitionErrorInstallKey : this.install?.installKey ?? 'null',
+            AcquisitionErrorInstallId : this.install?.installId ?? 'null',
             ...InstallToStrings(this.install!),
             ErrorName : this.error.name,
             StackTrace : this.error.stack ? this.error.stack : ''};
@@ -541,11 +541,11 @@ export class DotnetOfflineFailure extends DotnetAcquisitionVersionError {
 export class DotnetAcquisitionTimeoutError extends DotnetAcquisitionVersionError {
     public readonly eventName = 'DotnetAcquisitionTimeoutError';
 
-    constructor(error: Error, installKey: DotnetInstall | null, public readonly timeoutValue: number) {
-        super(error, installKey);
+    constructor(error: Error, installId: DotnetInstall | null, public readonly timeoutValue: number) {
+        super(error, installId);
     }
 
-    public getProperties(telemetry = false): { [key: string]: string } | undefined
+    public getProperties(telemetry = false): { [id: string]: string } | undefined
     {
         if(this.install)
         {
@@ -586,12 +586,12 @@ export class DotnetInstallationValidationError extends DotnetAcquisitionVersionE
         this.fileStructure = this.getFileStructure();
     }
 
-    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+    public getProperties(telemetry = false): { [id: string]: string } | undefined {
         if(this.install)
         {
             return {ErrorMessage : this.error.message,
-                AcquisitionErrorInstallKey : this.install?.installKey ?? 'null',
-                InstallKey : this.install?.installKey ?? 'null',
+                AcquisitionErrorInstallId : this.install?.installId ?? 'null',
+                InstallId : this.install?.installId ?? 'null',
                 ...InstallToStrings(this.install),
                 ErrorName : this.error.name,
                 StackTrace : this.error.stack ? this.error.stack : '',
@@ -600,8 +600,8 @@ export class DotnetInstallationValidationError extends DotnetAcquisitionVersionE
         else
         {
             return {ErrorMessage : this.error.message,
-                AcquisitionErrorInstallKey : 'null',
-                InstallKey : 'null',
+                AcquisitionErrorInstallId : 'null',
+                InstallId : 'null',
                 ErrorName : this.error.name,
                 StackTrace : this.error.stack ? this.error.stack : '',
                 FileStructure : this.fileStructure};
@@ -632,11 +632,11 @@ export class DotnetInstallationValidationError extends DotnetAcquisitionVersionE
 export class DotnetAcquisitionDistroUnknownError extends DotnetInstallExpectedAbort {
     public readonly eventName = 'DotnetAcquisitionDistroUnknownError';
 
-    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+    public getProperties(telemetry = false): { [id: string]: string } | undefined {
         return {ErrorMessage : this.error.message,
             ErrorName : this.error.name,
             StackTrace : this.error.stack ? this.error.stack : '',
-            InstallKey : this.install?.installKey ?? 'null',
+            InstallId : this.install?.installId ?? 'null',
             ...InstallToStrings(this.install!)};
     }
 }
@@ -645,7 +645,7 @@ export class DotnetAcquisitionDistroUnknownError extends DotnetInstallExpectedAb
 export abstract class DotnetAcquisitionSuccessEvent extends IEvent {
     public readonly type = EventType.DotnetAcquisitionSuccessEvent;
 
-    public getProperties(): { [key: string]: string } | undefined {
+    public getProperties(): { [id: string]: string } | undefined {
         return undefined;
     }
 }
@@ -696,7 +696,7 @@ export class DotnetExistingPathResolutionCompleted extends DotnetAcquisitionSucc
 export abstract class DotnetAcquisitionMessage extends IEvent {
     public type = EventType.DotnetAcquisitionMessage;
 
-    public getProperties(): { [key: string]: string } | undefined {
+    public getProperties(): { [id: string]: string } | undefined {
         return {};
     }
 }
@@ -864,8 +864,8 @@ export class DotnetCommandFallbackOSEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetCommandFallbackOSEvent';
 }
 
-export class DotnetInstallKeyCreatedEvent extends DotnetCustomMessageEvent {
-    public readonly eventName = 'DotnetInstallKeyCreatedEvent';
+export class DotnetInstallIdCreatedEvent extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetInstallIdCreatedEvent';
 }
 
 export class DotnetLegacyInstallDetectedEvent extends DotnetCustomMessageEvent {
@@ -1018,7 +1018,7 @@ export class DotnetAcquisitionPartialInstallation extends DotnetAcquisitionMessa
     public getProperties() {
         return {
             ...InstallToStrings(this.install!),
-            PartialInstallationInstallKey: this.install.installKey
+            PartialInstallationInstallId: this.install.installId
         };
     }
 }
@@ -1027,12 +1027,12 @@ export class DotnetAcquisitionInProgress extends IEvent {
     public readonly type = EventType.DotnetAcquisitionInProgress;
 
     public readonly eventName = 'DotnetAcquisitionInProgress';
-    constructor(public readonly installKey: DotnetInstall, public readonly requestingExtensionId: string | null) { super(); }
+    constructor(public readonly installId: DotnetInstall, public readonly requestingExtensionId: string | null) { super(); }
 
     public getProperties() {
         return {
-            InProgressInstallationInstallKey : this.installKey.installKey,
-            ...InstallToStrings(this.installKey!),
+            InProgressInstallationInstallId : this.installId.installId,
+            ...InstallToStrings(this.installId!),
             extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
     }
 }
@@ -1059,9 +1059,9 @@ export class DotnetAcquisitionScriptOutput extends DotnetAcquisitionMessage {
     public isError = true;
     constructor(public readonly install: DotnetInstall, public readonly output: string) { super(); }
 
-    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+    public getProperties(telemetry = false): { [id: string]: string } | undefined {
         return {
-            AcquisitionInstallKey : this.install.installKey,
+            AcquisitionInstallId : this.install.installId,
             ...InstallToStrings(this.install!),
                 ScriptOutput: this.output
             };
@@ -1072,9 +1072,9 @@ export class DotnetInstallationValidated extends DotnetAcquisitionMessage {
     public readonly eventName = 'DotnetInstallationValidated';
     constructor(public readonly install: DotnetInstall) { super(); }
 
-    public getProperties(telemetry = false): { [key: string]: string } | undefined {
+    public getProperties(telemetry = false): { [id: string]: string } | undefined {
         return {
-            ValidatedInstallKey : this.install.installKey,
+            ValidatedInstallId : this.install.installId,
             ...InstallToStrings(this.install!)
         };
     }
@@ -1097,14 +1097,14 @@ export class DotnetAcquisitionStatusRequested extends DotnetAcquisitionMessage {
 export class DotnetAcquisitionStatusUndefined extends DotnetAcquisitionMessage {
     public readonly eventName = 'DotnetAcquisitionStatusUndefined';
 
-    constructor(public readonly installKey: DotnetInstall) {
+    constructor(public readonly installId: DotnetInstall) {
         super();
     }
 
     public getProperties() {
         return {
-            AcquisitionStatusInstallKey : this.installKey.installKey,
-            ...InstallToStrings(this.installKey!)
+            AcquisitionStatusInstallId : this.installId.installId,
+            ...InstallToStrings(this.installId!)
         };
     }
 }
@@ -1112,14 +1112,14 @@ export class DotnetAcquisitionStatusUndefined extends DotnetAcquisitionMessage {
 export class DotnetAcquisitionStatusResolved extends DotnetAcquisitionMessage {
     public readonly eventName = 'DotnetAcquisitionStatusResolved';
 
-    constructor(public readonly installKey: DotnetInstall, public readonly version: string) {
+    constructor(public readonly installId: DotnetInstall, public readonly version: string) {
         super();
     }
 
     public getProperties() {
         return {
-            AcquisitionStatusInstallKey : this.installKey.installKey,
-            ...InstallToStrings(this.installKey!),
+            AcquisitionStatusInstallId : this.installId.installId,
+            ...InstallToStrings(this.installId!),
             AcquisitionStatusVersion : this.version
             };
     }
@@ -1139,12 +1139,12 @@ export class WebRequestSent extends DotnetAcquisitionMessage {
 
 export class DotnetPreinstallDetected extends DotnetAcquisitionMessage {
     public readonly eventName = 'DotnetPreinstallDetected';
-    constructor(public readonly installKey: DotnetInstall) { super(); }
+    constructor(public readonly installId: DotnetInstall) { super(); }
 
     public getProperties() {
         return {
-            ...InstallToStrings(this.installKey!),
-            PreinstalledInstallKey : this.installKey.installKey
+            ...InstallToStrings(this.installId!),
+            PreinstalledInstallId : this.installId.installId
             };
     }
 }

@@ -4,7 +4,7 @@
 *--------------------------------------------------------------------------------------------*/
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IsEquivalentInstallationFile } from './DotnetInstall';
-import { getAssumedInstallInfo } from '../Utils/InstallKeyUtilities';
+import { getAssumedInstallInfo } from '../Utils/InstallIdUtilities';
 import { DotnetInstall } from './DotnetInstall';
 
 interface LocalDotnetInstall
@@ -14,7 +14,7 @@ interface LocalDotnetInstall
     path: string;
 }
 
-type LegacyGraveyardOrModernGraveyard = { [installKeys: string]: string } | Set<LocalDotnetInstall>
+type LegacyGraveyardOrModernGraveyard = { [installIds: string]: string } | Set<LocalDotnetInstall>
 
 export class InstallationGraveyard
 {
@@ -47,17 +47,17 @@ export class InstallationGraveyard
         return new Set([...graveyard].map(x => x.dotnetInstall));
     }
 
-    public async add(installKey : DotnetInstall, newPath : string)
+    public async add(installId : DotnetInstall, newPath : string)
     {
         const graveyard = await this.getGraveyard();
-        const newGraveyard = graveyard.add({ dotnetInstall: installKey, path: newPath } as LocalDotnetInstall);
+        const newGraveyard = graveyard.add({ dotnetInstall: installId, path: newPath } as LocalDotnetInstall);
         await this.context.extensionState.update(this.installPathsGraveyardKey, newGraveyard);
     }
 
-    public async remove(installKey : DotnetInstall)
+    public async remove(installId : DotnetInstall)
     {
         const graveyard = await this.getGraveyard();
-        const newGraveyard : Set<LocalDotnetInstall> = new Set([...graveyard].filter(x => !IsEquivalentInstallationFile(x.dotnetInstall, installKey)));
+        const newGraveyard : Set<LocalDotnetInstall> = new Set([...graveyard].filter(x => !IsEquivalentInstallationFile(x.dotnetInstall, installId)));
         await this.context.extensionState.update(this.installPathsGraveyardKey, newGraveyard);
     }
 
