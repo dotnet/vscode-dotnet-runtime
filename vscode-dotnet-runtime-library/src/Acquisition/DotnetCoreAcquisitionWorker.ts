@@ -417,7 +417,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         }
         catch(error : any)
         {
-            if(install.isGlobal && os.platform() === 'darwin')
+            if(os.platform() === 'darwin')
             {
                     const executor = new CommandExecutor(context, this.utilityContext);
                     const result = await executor.execute(CommandExecutor.makeCommand('which', ['dotnet']));
