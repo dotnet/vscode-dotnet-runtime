@@ -54,42 +54,42 @@ export function isGlobalLegacyInstallId(installId: string): boolean {
 }
 
 export function getArchFromLegacyInstallId(installId: string): string | undefined {
-    const splitKey = installId.split('~');
-    if (splitKey.length >= 2) {
-        return splitKey[1];
+    const splitId = installId.split('~');
+    if (splitId.length >= 2) {
+        return splitId[1];
     }
     return undefined;
 }
 
 export function getVersionFromLegacyInstallId(installId: string): string {
     if (isGlobalLegacyInstallId(installId)) {
-        const splitKey = installId.split('-');
-        return splitKey[0];
+        const splitId = installId.split('-');
+        return splitId[0];
     }
     else if (installId.includes('~')) {
-        const splitKey = installId.split('~');
-        return splitKey[0];
+        const splitId = installId.split('~');
+        return splitId[0];
     }
-    else // legacy, legacy install key (before it included the arch)
+    else // legacy, legacy install id (before it included the arch)
     {
         return installId;
     }
 }
 
 /**
- * @deprecated This function is for legacy install keys only. Do not use for new code.
+ * @deprecated This function is for legacy install ids only. Do not use for new code.
  */
-export function getAssumedInstallInfo(key: string, mode : DotnetInstallMode | null): DotnetInstall {
+export function getAssumedInstallInfo(id: string, mode : DotnetInstallMode | null): DotnetInstall {
     return {
-        installId: key,
-        version: getVersionFromLegacyInstallId(key),
-        architecture: getArchFromLegacyInstallId(key) ?? DotnetCoreAcquisitionWorker.defaultArchitecture(),
-        isGlobal: isGlobalLegacyInstallId(key),
+        installId: id,
+        version: getVersionFromLegacyInstallId(id),
+        architecture: getArchFromLegacyInstallId(id) ?? DotnetCoreAcquisitionWorker.defaultArchitecture(),
+        isGlobal: isGlobalLegacyInstallId(id),
 
         // This code is for legacy install strings where the info was not recorded.
         // At the time only runtime or sdk was permitted and there were no outlier edge case versions that would be wrong.
         // So this assumption can hold true below. Do not utilize this going forward for new code.
-        installMode: mode ?? isRuntimeInstallId(key) ? 'runtime' : 'sdk'
+        installMode: mode ?? isRuntimeInstallId(id) ? 'runtime' : 'sdk'
     };
 }
 

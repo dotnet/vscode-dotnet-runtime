@@ -167,7 +167,7 @@ suite('InstallTracker Unit Tests', () => {
 
     }).timeout(defaultTimeoutTime);
 
-    test('It Converts Legacy Install Key String to New Type with Null Owner', async () => {
+    test('It Converts Legacy Install Id String to New Type with Null Owner', async () => {
         resetExtensionState();
 
         const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);

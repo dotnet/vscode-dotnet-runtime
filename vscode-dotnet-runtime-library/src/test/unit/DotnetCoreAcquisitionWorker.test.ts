@@ -121,7 +121,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         const completedEvent = eventStream.events
             .find(event => event instanceof DotnetAcquisitionCompleted && (event as DotnetAcquisitionCompleted).install.installId === installId
                 && (event as DotnetAcquisitionCompleted).dotnetPath === expectedPath);
-        assert.exists(completedEvent, `The acquisition completed event appears for install key ${installId} and path ${expectedPath}`);
+        assert.exists(completedEvent, `The acquisition completed event appears for install id ${installId} and path ${expectedPath}`);
 
         //  Acquire got called with the correct args
         const acquireEvent = eventStream.events.find(event =>

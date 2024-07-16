@@ -250,7 +250,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      *
      * @param version The version of the object to acquire.
      * @param installRuntime true if the request is to install the runtime, false for the SDK.
-     * @param install The install record / key of the version managed by us.
+     * @param install The install record / id of the version managed by us.
      * @returns the dotnet path of the acquired dotnet.
      *
      * @remarks it is called "core" because it is the meat of the actual acquisition work; this has nothing to do with .NET core vs framework.
@@ -424,9 +424,9 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      * @param installedVersions - all of the currently installed versions of dotnet managed by the extension
      * @param version - the version that is about to be installed
      *
-     * @remarks Before, installed versions used their version as the 'install key' in the promises and folder structure.
-     * We changed this install key to include architecture so different architectures could be installed side-by-side.
-     * This means any installs that were made before version 1.8.0 will not have the architecture in their install key.
+     * @remarks Before, installed versions used their version as the 'install id' in the promises and folder structure.
+     * We changed this install id to include architecture so different architectures could be installed side-by-side.
+     * This means any installs that were made before version 1.8.0 will not have the architecture in their install id.
      * They should be removed. This is what makes an install 'legacy'.
      *
      * This function only removes the legacy install with the same version as 'version'.
@@ -434,7 +434,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      * Assuming the install succeeds, this will not break as the legacy install of 'version' will be replaced by a non-legacy one upon completion.
      *
      * Many (if not most) legacy installs will actually hold the same content as the newly installed runtime/sdk.
-     * But since we don't want to be in the business of detecting their architecture, we chose this option as opposed to renaming and install key and folder
+     * But since we don't want to be in the business of detecting their architecture, we chose this option as opposed to renaming and install id and folder
      * ... for the legacy install.
      *
      * Note : only local installs were ever 'legacy.'
@@ -462,7 +462,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         let legacyInstalls : InstallRecord[] = [];
         for(const install of allInstalls)
         {
-            // Assumption: .NET versions so far did not include ~ in them, but we do for our non-legacy keys.
+            // Assumption: .NET versions so far did not include ~ in them, but we do for our non-legacy ids.
             if(!install.dotnetInstall.installId.includes('~'))
             {
                 context.eventStream.post(new DotnetLegacyInstallDetectedEvent(`A legacy install was detected -- ${JSON.stringify(install)}.`));
@@ -491,7 +491,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             this.removeFolderRecursively(context.eventStream, dotnetInstallDir);
 
             await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install);
-            // this is the only place where installed and installing could deal with pre existing installing key
+            // this is the only place where installed and installing could deal with pre existing installing id
             await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstallingVersion(context, install);
 
             graveyard.remove(install);
