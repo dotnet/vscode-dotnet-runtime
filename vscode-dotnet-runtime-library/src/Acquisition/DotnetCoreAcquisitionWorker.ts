@@ -399,7 +399,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         if(installerResult !== '0')
         {
             const err = new DotnetNonZeroInstallerExitCodeError(new EventBasedError('DotnetNonZeroInstallerExitCodeError',
-                `An error was raised by the .NET SDK installer. The exit code it gave us: ${installerResult}`), install);
+                `An error was raised by the .NET SDK installer. The exit code it gave us: ${installerResult}.
+${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
             context.eventStream.post(err);
             throw err;
         }
