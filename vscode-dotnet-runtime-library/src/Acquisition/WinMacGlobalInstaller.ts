@@ -184,7 +184,7 @@ We cannot verify our .NET file host at this time. Please try again later or inst
 
     private async userChoosesToContinueWithInvalidHash() : Promise<boolean>
     {
-        const yes = validationPromptConstants.allowOption
+        const yes = validationPromptConstants.allowOption;
         const no = validationPromptConstants.cancelOption;
         const message = validationPromptConstants.noSignatureMessage;
 
