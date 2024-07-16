@@ -370,13 +370,13 @@ with options ${JSON.stringify(options)}.`));
 
             if(os.platform() === 'win32' && command.runUnderSudo)
             {
-                execElevated(fullCommandString, options, (error?: any, stdout?: any, stderr?: any) =>
+                execElevated(fullCommandString, options, (error?: any, execStdout?: any, execStderr?: any) =>
                 {
                     if(terminalFailure)
                     {
                         this.parseVSCodeSudoExecError(error, fullCommandString);
                     }
-                    return { status: error ? error.code : '0', stderr: stderr, stdout: stdout} as CommandExecutorResult;
+                    return { status: error ? error.code : '0', stderr: execStderr, stdout: execStdout} as CommandExecutorResult;
                 });
             }
 

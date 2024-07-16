@@ -120,7 +120,7 @@ We cannot verify our .NET file host at this time. Please try again later or inst
         return this.handleStatus(installerResult, installerFile);
     }
 
-    private async handleStatus(installerResult : string, installerFile : string, allowRetry : boolean = true) : Promise<string>
+    private async handleStatus(installerResult : string, installerFile : string, allowRetry = true) : Promise<string>
     {
         const validInstallerStatusCodes = ['0', '1641', '3010']; // Ok, Pending Reboot, + Reboot Starting Now
         const noPermissionStatusCodes = ['1', '5', '1260', '2147942405'];
@@ -287,7 +287,7 @@ If you were waiting for the install to succeed, please extend the timeout settin
      * @param installerPath The path to the installer file to run.
      * @returns The exit result from running the global install.
      */
-    public async executeInstall(installerPath : string, elevateVsCode : boolean = false) : Promise<string>
+    public async executeInstall(installerPath : string, elevateVsCode = false) : Promise<string>
     {
         if(os.platform() === 'darwin')
         {
