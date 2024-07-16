@@ -182,8 +182,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             return mode === 'aspnetcore' ? worker.acquireLocalASPNET(runtimeContext, acquisitionInvoker) : worker.acquireLocalRuntime(runtimeContext, acquisitionInvoker);
         }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, 'acquire', commandContext.version), commandContext.requestingExtensionId, runtimeContext);
 
-        const installId = getInstallIdCustomArchitecture(commandContext.version, commandContext.architecture, mode, 'local');
-        const install = {installId : installId, version : commandContext.version, installMode: mode, isGlobal: false,
+        const installationId = getInstallIdCustomArchitecture(commandContext.version, commandContext.architecture, mode, 'local');
+        const install = {installId : installationId, version : commandContext.version, installMode: mode, isGlobal: false,
             architecture: commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture()} as DotnetInstall;
 
         if(dotnetPath !== undefined && dotnetPath?.dotnetPath)
@@ -244,8 +244,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             return dotnetPath;
         }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, commandKeys.acquireGlobalSDK), commandContext.requestingExtensionId, sdkContext);
 
-        const installId = getInstallIdCustomArchitecture(commandContext.version, commandContext.architecture, commandContext.mode, 'global');
-        const install = {installId : installId, version : commandContext.version, installMode: commandContext.mode, isGlobal: true,
+        const installationId = getInstallIdCustomArchitecture(commandContext.version, commandContext.architecture, commandContext.mode, 'global');
+        const install = {installId : installationId, version : commandContext.version, installMode: commandContext.mode, isGlobal: true,
             architecture: commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture()} as DotnetInstall;
 
         if(pathResult !== undefined && pathResult?.dotnetPath)
