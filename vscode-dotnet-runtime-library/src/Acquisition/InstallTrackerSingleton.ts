@@ -78,13 +78,12 @@ export class InstallTrackerSingleton
 
     protected executeWithLock = async <A extends any[], R>(alreadyHoldingLock : boolean, f: (...args: A) => R, ...args: A): Promise<R> =>
     {
-        const trackingLock = 'tracking.lock';
+        const trackingLock = `tracking.lock`;
         const lockPath = path.join(__dirname, trackingLock);
         fs.writeFileSync(lockPath, '', 'utf-8');
 
         let returnResult : any;
 
-        this.eventStream?.post(new DotnetLockAttemptingAcquireEvent(`Lock Acquisition request to begin.`, new Date().toISOString(), lockPath, lockPath));
         try
         {
             if(alreadyHoldingLock)
@@ -93,6 +92,7 @@ export class InstallTrackerSingleton
             }
             else
             {
+                this.eventStream?.post(new DotnetLockAttemptingAcquireEvent(`Lock Acquisition request to begin.`, new Date().toISOString(), lockPath, lockPath));
                 await lockfile.lock(lockPath, { retries: { retries: 10, minTimeout: 5, maxTimeout: 10000 } })
                 .then(async (release) =>
                 {
@@ -119,7 +119,7 @@ export class InstallTrackerSingleton
 
     public async clearPromises() : Promise<void>
     {
-        await this.executeWithLock( false, () => {this.inProgressInstalls.clear();});
+        this.inProgressInstalls.clear();
     }
 
     /**
@@ -142,25 +142,19 @@ export class InstallTrackerSingleton
 
     public async addPromise(installId : DotnetInstall, installPromise : Promise<string>) : Promise<void>
     {
-        return this.executeWithLock( false, (id : DotnetInstall, workingInstall : Promise<string>) =>
-        {
-            this.inProgressInstalls.add({ dotnetInstall: id, installingPromise: workingInstall });
-        }, installId, installPromise);
+        this.inProgressInstalls.add({ dotnetInstall: installId, installingPromise: installPromise });
     }
 
     protected async removePromise(installId : DotnetInstall) : Promise<void>
     {
-        return this.executeWithLock( false, (id : DotnetInstall) =>
+        const resolvedInstall : InProgressInstall | undefined = [...this.inProgressInstalls].find(x => IsEquivalentInstallation(x.dotnetInstall as DotnetInstall, installId));
+        if(!resolvedInstall)
         {
-            const resolvedInstall : InProgressInstall | undefined = [...this.inProgressInstalls].find(x => IsEquivalentInstallation(x.dotnetInstall as DotnetInstall, id));
-            if(!resolvedInstall)
-            {
-                this.eventStream.post(new NoMatchingInstallToStopTracking(`No matching install to stop tracking for ${id.installId}.
-Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installId).join(', ')}`));
-                return;
-            }
-            this.inProgressInstalls.delete(resolvedInstall);
-        }, installId);
+            this.eventStream.post(new NoMatchingInstallToStopTracking(`No matching install to stop tracking for ${id.installId}.
+    Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installId).join(', ')}`));
+            return;
+        }
+        this.inProgressInstalls.delete(resolvedInstall);
     }
 
     public async uninstallAllRecords() : Promise<void>
