@@ -53,7 +53,7 @@ export class InstallTrackerSingleton
     protected static instance: InstallTrackerSingleton;
 
     protected inProgressInstalls: Set<InProgressInstall> = new Set<InProgressInstall>();
-    private readonly installingVersionsid = 'installing';
+    private readonly installingVersionsId = 'installing';
     private readonly installedVersionsId = 'installed';
 
     protected constructor(protected eventStream : IEventStream, protected extensionState : IExtensionState)
@@ -171,7 +171,7 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installId).joi
             // This does not uninstall global things yet, so don't remove their ids.
             const installingVersions = await this.getExistingInstalls(false, true);
             const remainingInstallingVersions = installingVersions.filter(x => x.dotnetInstall.isGlobal);
-            await this.extensionState.update(this.installingVersionsid, remainingInstallingVersions);
+            await this.extensionState.update(this.installingVersionsId, remainingInstallingVersions);
 
             const installedVersions = await this.getExistingInstalls(true, true);
             const remainingInstalledVersions = installedVersions.filter(x => x.dotnetInstall.isGlobal);
@@ -187,7 +187,7 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installId).joi
     {
         return this.executeWithLock( alreadyHoldingLock, (getAlreadyInstalledVersions : boolean) =>
         {
-            const extensionStateAccessor = getAlreadyInstalledVersions ? this.installedVersionsId : this.installingVersionsid;
+            const extensionStateAccessor = getAlreadyInstalledVersions ? this.installedVersionsId : this.installingVersionsId;
             const existingInstalls = this.extensionState.get<InstallRecordOrStr[]>(extensionStateAccessor, []);
             const convertedInstalls : InstallRecord[] = [];
 
@@ -219,6 +219,10 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installId).joi
                         } as InstallRecord
                     )
                 }
+                else if(!install.dotnetInstall.hasOwnProperty('installId') && !install.dotnetInstall.hasOwnProperty('installKey'))
+                {
+                    ; // This is a corrupted install which was cast to the incorrect type. We can install on top of it without causing a problem, lets get rid of this record.
+                }
                 else
                 {
                     convertedInstalls.push(install as InstallRecord);
@@ -227,7 +231,7 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installId).joi
 
             this.extensionState.update(extensionStateAccessor, convertedInstalls);
 
-            this.eventStream.post(new FoundTrackingVersions(`${getAlreadyInstalledVersions ? this.installedVersionsId : this.installingVersionsid} :
+            this.eventStream.post(new FoundTrackingVersions(`${getAlreadyInstalledVersions ? this.installedVersionsId : this.installingVersionsId} :
 ${convertedInstalls.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.installingExtensions.map(owner => owner ?? 'null').join(', ')}\n`)}`));
             return convertedInstalls;
         }, getAlreadyInstalledVersion);
@@ -242,7 +246,7 @@ ${convertedInstalls.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.in
 
     public async untrackInstallingVersion(context : IAcquisitionWorkerContext, install : DotnetInstall)
     {
-        await this.removeVersionFromExtensionState(context, this.installingVersionsid, install);
+        await this.removeVersionFromExtensionState(context, this.installingVersionsId, install);
         this.removePromise(install);
     }
 
@@ -292,7 +296,7 @@ ${convertedInstalls.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.in
 
     public async trackInstallingVersion(context : IAcquisitionWorkerContext, install: DotnetInstall)
     {
-        await this.addVersionToExtensionState(context, this.installingVersionsid, install);
+        await this.addVersionToExtensionState(context, this.installingVersionsId, install);
     }
 
     public async trackInstalledVersion(context : IAcquisitionWorkerContext, install: DotnetInstall)
