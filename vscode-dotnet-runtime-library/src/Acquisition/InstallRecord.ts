@@ -3,7 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-import { DotnetInstall } from './DotnetInstall';
+import { DotnetInstall, DotnetInstallWithKey } from './DotnetInstall';
 
 /**
  * @remarks
@@ -27,9 +27,19 @@ export interface InstallRecord
     installingExtensions: InstallOwner[];
 }
 
+/**
+ * This is for when the installId was called installKey, which was changed to prevent telemetry filtering issues because of the word 'key' being
+ * a bad word for vscode.
+ */
+export interface InstallRecordWithKey
+{
+    dotnetInstall: DotnetInstallWithKey;
+    installingExtensions: InstallOwner[];
+}
+
 
 /**
  * @remarks
  * The record can be the type or it can be a 'legacy' record from old installs which is just a string with the install key.
  */
-export type InstallRecordOrStr = InstallRecord | string;
+export type InstallRecordOrStr = InstallRecord | string | InstallRecordWithKey;

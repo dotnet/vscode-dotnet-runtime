@@ -175,7 +175,7 @@ export class WebRequestWorker
         }
         catch(error : any)
         {
-            if(error?.message.contains('ENOSPC'))
+            if(error?.message?.contains('ENOSPC'))
             {
                 const err = new DiskIsFullError(new EventBasedError('DiskIsFullError',
 `You don't have enough space left on your disk to install the .NET SDK. Please clean up some space.`), getInstallFromContext(this.context));
