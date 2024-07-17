@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+## [2.1.1] - 2024-07-18
+
+Fixes a bug introduced in 2.1.0 where '.includes' would not exist.
+
 ## [2.1.0] - 2024-07-18
 
 Fixes a bug with permissions when running the .NET Installer.

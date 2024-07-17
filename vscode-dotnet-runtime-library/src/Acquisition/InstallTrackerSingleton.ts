@@ -26,6 +26,7 @@ import {
 } from '../EventStream/EventStreamEvents';
 import {
     DotnetInstall,
+    DotnetInstallWithKey,
     GetDotnetInstallInfo,
     InstallToStrings,
     IsEquivalentInstallation,
@@ -203,9 +204,24 @@ Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installId).joi
                         } as InstallRecord
                     );
                 }
+                else if(install.dotnetInstall.hasOwnProperty('installKey'))
+                {
+                    convertedInstalls.push(
+                        {
+                            dotnetInstall: {
+                                installId: (install.dotnetInstall as DotnetInstallWithKey).installKey,
+                                version: install.dotnetInstall.version,
+                                architecture: install.dotnetInstall.architecture,
+                                isGlobal: install.dotnetInstall.isGlobal,
+                                installMode: install.dotnetInstall.installMode
+                            } as DotnetInstall,
+                            installingExtensions: install.installingExtensions,
+                        } as InstallRecord
+                    )
+                }
                 else
                 {
-                    convertedInstalls.push(install);
+                    convertedInstalls.push(install as InstallRecord);
                 }
             });
 
