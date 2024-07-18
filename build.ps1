@@ -82,18 +82,3 @@ popd
 & "$(Split-Path $MyInvocation.MyCommand.Path)/mock-webpack.ps1"
 
 Write-Host "Build Succeeded" -ForegroundColor $successColor
-
-
-#################### Allow Local Signing ####################
-
-$InstallNuGetPkgScriptPath = "$PSScriptRoot\msbuild\Install-NuGetPackage.ps1"
-$nugetVerbosity = 'quiet'
-if ($Verbose) { $nugetVerbosity = 'normal' }
-$MicroBuildPackageSource = 'https://pkgs.dev.azure.com/devdiv/_packaging/MicroBuildToolset%40Local/nuget/v3/index.json'
-if ($Signing) {
-    Write-Host "Installing MicroBuild signing plugin" -ForegroundColor $HeaderColor
-    & $InstallNuGetPkgScriptPath MicroBuild.Plugins.Signing -source $MicroBuildPackageSource -Verbosity $nugetVerbosity
-    $EnvVars['SignType'] = "Test"
-}
-
-& "$PSScriptRoot/msbuild/Set-EnvVars.ps1" -Variables $EnvVars -PrependPath $PrependPath | Out-Null
