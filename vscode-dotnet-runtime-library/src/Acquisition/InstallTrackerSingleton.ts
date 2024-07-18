@@ -26,6 +26,7 @@ import {
 } from '../EventStream/EventStreamEvents';
 import {
     DotnetInstall,
+    DotnetInstallWithKey,
     GetDotnetInstallInfo,
     InstallToStrings,
     IsEquivalentInstallation,
@@ -52,7 +53,7 @@ export class InstallTrackerSingleton
     protected static instance: InstallTrackerSingleton;
 
     protected inProgressInstalls: Set<InProgressInstall> = new Set<InProgressInstall>();
-    private readonly installingVersionsid = 'installing';
+    private readonly installingVersionsId = 'installing';
     private readonly installedVersionsId = 'installed';
 
     protected constructor(protected eventStream : IEventStream, protected extensionState : IExtensionState)
@@ -164,7 +165,7 @@ export class InstallTrackerSingleton
             // This does not uninstall global things yet, so don't remove their ids.
             const installingVersions = await this.getExistingInstalls(false, true);
             const remainingInstallingVersions = installingVersions.filter(x => x.dotnetInstall.isGlobal);
-            await this.extensionState.update(this.installingVersionsid, remainingInstallingVersions);
+            await this.extensionState.update(this.installingVersionsId, remainingInstallingVersions);
 
             const installedVersions = await this.getExistingInstalls(true, true);
             const remainingInstalledVersions = installedVersions.filter(x => x.dotnetInstall.isGlobal);
@@ -180,7 +181,7 @@ export class InstallTrackerSingleton
     {
         return this.executeWithLock( alreadyHoldingLock, (getAlreadyInstalledVersions : boolean) =>
         {
-            const extensionStateAccessor = getAlreadyInstalledVersions ? this.installedVersionsId : this.installingVersionsid;
+            const extensionStateAccessor = getAlreadyInstalledVersions ? this.installedVersionsId : this.installingVersionsId;
             const existingInstalls = this.extensionState.get<InstallRecordOrStr[]>(extensionStateAccessor, []);
             const convertedInstalls : InstallRecord[] = [];
 
@@ -197,15 +198,34 @@ export class InstallTrackerSingleton
                         } as InstallRecord
                     );
                 }
+                else if(install.dotnetInstall.hasOwnProperty('installKey'))
+                {
+                    convertedInstalls.push(
+                        {
+                            dotnetInstall: {
+                                installId: (install.dotnetInstall as DotnetInstallWithKey).installKey,
+                                version: install.dotnetInstall.version,
+                                architecture: install.dotnetInstall.architecture,
+                                isGlobal: install.dotnetInstall.isGlobal,
+                                installMode: install.dotnetInstall.installMode
+                            } as DotnetInstall,
+                            installingExtensions: install.installingExtensions,
+                        } as InstallRecord
+                    )
+                }
+                else if(!install.dotnetInstall.hasOwnProperty('installId') && !install.dotnetInstall.hasOwnProperty('installKey'))
+                {
+                    ; // This is a corrupted install which was cast to the incorrect type. We can install on top of it without causing a problem, lets get rid of this record.
+                }
                 else
                 {
-                    convertedInstalls.push(install);
+                    convertedInstalls.push(install as InstallRecord);
                 }
             });
 
             this.extensionState.update(extensionStateAccessor, convertedInstalls);
 
-            this.eventStream.post(new FoundTrackingVersions(`${getAlreadyInstalledVersions ? this.installedVersionsId : this.installingVersionsid} :
+            this.eventStream.post(new FoundTrackingVersions(`${getAlreadyInstalledVersions ? this.installedVersionsId : this.installingVersionsId} :
 ${convertedInstalls.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.installingExtensions.map(owner => owner ?? 'null').join(', ')}\n`)}`));
             return convertedInstalls;
         }, getAlreadyInstalledVersion);
@@ -220,7 +240,7 @@ ${convertedInstalls.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.in
 
     public async untrackInstallingVersion(context : IAcquisitionWorkerContext, install : DotnetInstall)
     {
-        await this.removeVersionFromExtensionState(context, this.installingVersionsid, install);
+        await this.removeVersionFromExtensionState(context, this.installingVersionsId, install);
         this.removePromise(install);
     }
 
@@ -270,7 +290,7 @@ ${convertedInstalls.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.in
 
     public async trackInstallingVersion(context : IAcquisitionWorkerContext, install: DotnetInstall)
     {
-        await this.addVersionToExtensionState(context, this.installingVersionsid, install);
+        await this.addVersionToExtensionState(context, this.installingVersionsId, install);
     }
 
     public async trackInstalledVersion(context : IAcquisitionWorkerContext, install: DotnetInstall)
