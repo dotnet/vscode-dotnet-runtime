@@ -77,9 +77,9 @@ export class InstallTrackerSingleton
         InstallTrackerSingleton.instance.extensionState = extensionState;
     }
 
-    protected executeWithLock = async <A extends any[], R>(alreadyHoldingLock : boolean, f: (...args: A) => R, ...args: A): Promise<R> =>
+    protected executeWithLock = async <A extends any[], R>(alreadyHoldingLock : boolean, dataKey : string, f: (...args: A) => R, ...args: A): Promise<R> =>
     {
-        const trackingLock = `tracking.lock`;
+        const trackingLock = `${dataKey}.lock`;
         const lockPath = path.join(__dirname, trackingLock);
         fs.writeFileSync(lockPath, '', 'utf-8');
 
@@ -160,13 +160,16 @@ export class InstallTrackerSingleton
 
     public async uninstallAllRecords() : Promise<void>
     {
-        return this.executeWithLock( false, async () =>
+        await this.executeWithLock( false, this.installingVersionsId, async () =>
         {
             // This does not uninstall global things yet, so don't remove their ids.
             const installingVersions = await this.getExistingInstalls(false, true);
             const remainingInstallingVersions = installingVersions.filter(x => x.dotnetInstall.isGlobal);
             await this.extensionState.update(this.installingVersionsId, remainingInstallingVersions);
+        }, );
 
+        return this.executeWithLock( false, this.installedVersionsId, async () =>
+        {
             const installedVersions = await this.getExistingInstalls(true, true);
             const remainingInstalledVersions = installedVersions.filter(x => x.dotnetInstall.isGlobal);
             await this.extensionState.update(this.installedVersionsId, remainingInstalledVersions);
@@ -179,7 +182,8 @@ export class InstallTrackerSingleton
      */
     public async getExistingInstalls(getAlreadyInstalledVersion : boolean, alreadyHoldingLock = false) : Promise<InstallRecord[]>
     {
-        return this.executeWithLock( alreadyHoldingLock, (getAlreadyInstalledVersions : boolean) =>
+        return this.executeWithLock( alreadyHoldingLock, getAlreadyInstalledVersion ? this.installedVersionsId : this.installingVersionsId,
+            (getAlreadyInstalledVersions : boolean) =>
         {
             const extensionStateAccessor = getAlreadyInstalledVersions ? this.installedVersionsId : this.installingVersionsId;
             const existingInstalls = this.extensionState.get<InstallRecordOrStr[]>(extensionStateAccessor, []);
@@ -251,7 +255,7 @@ ${convertedInstalls.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.in
 
     protected async removeVersionFromExtensionState(context : IAcquisitionWorkerContext, idStr: string, installIdObj: DotnetInstall)
     {
-        return this.executeWithLock( false, async (id: string, install: DotnetInstall) =>
+        return this.executeWithLock( false, idStr, async (id: string, install: DotnetInstall) =>
         {
             this.eventStream.post(new RemovingVersionFromExtensionState(`Removing ${JSON.stringify(install)} with id ${id} from the state.`));
             const existingInstalls = await this.getExistingInstalls(id === this.installedVersionsId, true);
@@ -300,7 +304,7 @@ ${convertedInstalls.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.in
 
     protected async addVersionToExtensionState(context : IAcquisitionWorkerContext, idStr: string, installObj: DotnetInstall, alreadyHoldingLock = false)
     {
-        return this.executeWithLock( alreadyHoldingLock, async (id: string, install: DotnetInstall) =>
+        return this.executeWithLock( alreadyHoldingLock, idStr, async (id: string, install: DotnetInstall) =>
         {
             this.eventStream.post(new RemovingVersionFromExtensionState(`Adding ${JSON.stringify(install)} with id ${id} from the state.`));
 
@@ -337,7 +341,7 @@ ${existingVersions.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.ins
 
     public async checkForUnrecordedLocalSDKSuccessfulInstall(context : IAcquisitionWorkerContext, dotnetInstallDirectory: string, installedInstallIdsList: InstallRecord[]): Promise<InstallRecord[]>
     {
-        return this.executeWithLock( false, async (dotnetInstallDir: string, installedInstallIds: InstallRecord[]) =>
+        return this.executeWithLock( false, this.installedVersionsId, async (dotnetInstallDir: string, installedInstallIds: InstallRecord[]) =>
         {
             let localSDKDirectoryIdIter = '';
             try
