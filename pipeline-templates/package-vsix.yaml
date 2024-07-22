@@ -49,9 +49,9 @@ jobs:
     workingDirectory: $(dir-name)
   - task: UseDotNet@2
     displayName: 🔮 Use .NET SDK
-  inputs:
-    packageType: sdk
-    useGlobalJson: true
+    inputs:
+      packageType: sdk
+      useGlobalJson: true
   - task: MicroBuildSigningPlugin@4
     displayName: 🔧 Install MicroBuild Signing Plugin
     inputs:
