@@ -45,6 +45,11 @@ parameters:
   - name: NetCore1ESPool-Internal
     image: 1es-windows-2022
     os: windows
+- name: SignType
+  displayName: Sign type
+  type: string
+  default: Test
+  values: [ 'Test', 'Real' ]
 
 extends:
   template: v1/1ES.Official.PipelineTemplate.yml@1esPipelines
