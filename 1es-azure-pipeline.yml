@@ -96,6 +96,7 @@ extends:
             image: 1es-windows-2022
             os: windows
           useOneEngineeringPool: true
+          SignType: ${{ parameters.SignType }}
       - template: pipeline-templates/sbom.yaml@self
         parameters:
           pool:

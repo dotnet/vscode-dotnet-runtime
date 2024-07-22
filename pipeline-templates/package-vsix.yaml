@@ -1,5 +1,6 @@
 parameters:
   pool: ''
+  SignType: ''
 
 jobs:
 - job: ${{ parameters.pool.os }}_Package
@@ -55,7 +56,7 @@ jobs:
   - task: MicroBuildSigningPlugin@4
     displayName: 🔧 Install MicroBuild Signing Plugin
     inputs:
-      signType: 'Real'
+      signType: ${{ parameters.SignType }}
       zipSources: false
     env:
       TeamName: VS Core
