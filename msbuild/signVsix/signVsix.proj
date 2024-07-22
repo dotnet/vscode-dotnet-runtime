@@ -5,7 +5,7 @@
     <EnableDefaultSignFiles>false</EnableDefaultSignFiles>
     <MicroBuild_DoNotStrongNameSign>true</MicroBuild_DoNotStrongNameSign>
     <IsPackable>false</IsPackable>
-    <OutDir>$(RepoRoot)package\</OutDir>
+    <OutDir>$(RepoRoot)packages\</OutDir>
   </PropertyGroup>
   <ItemGroup>
     <FilesToSign Include="$(OutDir)*.vsix">
