@@ -44,7 +44,7 @@ jobs:
   - bash: |
       npm install rimraf --reg https://registry.npmjs.org/ --verbose
       npm install vsce -g --reg https://registry.npmjs.org/ --verbose
-      vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
+      vsce package -o ../packages/$(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
     displayName: 📦 Package Artifact
     workingDirectory: $(dir-name)
   - task: UseDotNet@2
