@@ -48,7 +48,7 @@ jobs:
     displayName: 📦 Package Artifact
     workingDirectory: $(dir-name)
   - task: UseDotNet@2
-  displayName: 🔮 Use .NET SDK
+    displayName: 🔮 Use .NET SDK
   inputs:
     packageType: sdk
     useGlobalJson: true
