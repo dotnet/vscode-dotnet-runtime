@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+## [2.1.2] - 2024-08-01
+
+Adds the ability to uninstall a particular runtime.
+
+Adds additional signatures to the release.
+
+Fixes other minor bugs.
+
 ## [2.1.1] - 2024-07-18
 
 Fixes a bug introduced in 2.1.0 where '.includes' would not exist.
