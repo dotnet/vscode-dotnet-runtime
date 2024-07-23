@@ -141,17 +141,17 @@ export class InstallTrackerSingleton
             return null;
     }
 
-    public async addPromise(installId : DotnetInstall, installPromise : Promise<string>) : Promise<void>
+    public async addPromise(install : DotnetInstall, installPromise : Promise<string>) : Promise<void>
     {
-        this.inProgressInstalls.add({ dotnetInstall: installId, installingPromise: installPromise });
+        this.inProgressInstalls.add({ dotnetInstall: install, installingPromise: installPromise });
     }
 
-    protected async removePromise(installId : DotnetInstall) : Promise<void>
+    protected async removePromise(install : DotnetInstall) : Promise<void>
     {
-        const resolvedInstall : InProgressInstall | undefined = [...this.inProgressInstalls].find(x => IsEquivalentInstallation(x.dotnetInstall as DotnetInstall, installId));
+        const resolvedInstall : InProgressInstall | undefined = [...this.inProgressInstalls].find(x => IsEquivalentInstallation(x.dotnetInstall as DotnetInstall, install));
         if(!resolvedInstall)
         {
-            this.eventStream.post(new NoMatchingInstallToStopTracking(`No matching install to stop tracking for ${id.installId}.
+            this.eventStream.post(new NoMatchingInstallToStopTracking(`No matching install to stop tracking for ${install.installId}.
     Installs: ${[...this.inProgressInstalls].map(x => x.dotnetInstall.installId).join(', ')}`));
             return;
         }
