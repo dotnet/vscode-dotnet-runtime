@@ -1,5 +1,6 @@
 parameters:
   pool: ''
+  SignType: ''
 
 jobs:
 - job: ${{ parameters.pool.os }}_Package
@@ -34,7 +35,7 @@ jobs:
         VERSION=`node -p "require('./package.json').version"`
       else
         VERSION_NUM=`node -p "require('./package.json').version"`
-        VERSION="$VERSION_NUM-alpha-$(Build.BuildId)"
+        VERSION="$VERSION_NUM"
       fi
       npm version $VERSION --allow-same-version
       echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
@@ -45,8 +46,23 @@ jobs:
       npm install rimraf --reg https://registry.npmjs.org/ --verbose
       npm install vsce -g --reg https://registry.npmjs.org/ --verbose
       vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
+      cp $(package-name)-$(GetVersion.version).vsix ../packages
     displayName: 📦 Package Artifact
     workingDirectory: $(dir-name)
+  - task: UseDotNet@2
+    displayName: 🔮 Use .NET SDK
+    inputs:
+      packageType: sdk
+      useGlobalJson: true
+  - task: MicroBuildSigningPlugin@4
+    displayName: 🔧 Install MicroBuild Signing Plugin
+    inputs:
+      signType: ${{ parameters.SignType }}
+      zipSources: false
+    env:
+      TeamName: VS Core
+  - script: dotnet build msbuild/signVsix -v:normal
+    displayName: 🖊️ Sign VSIXes
   - task: CopyFiles@2
     displayName: '📩 Copy Artifact'
     inputs:

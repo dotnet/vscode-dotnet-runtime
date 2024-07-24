@@ -499,7 +499,7 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
     }
 
 
-    public async uninstallLocalRuntimeOrSDK(context: IAcquisitionWorkerContext, install : DotnetInstall) : Promise<string>
+    public async uninstallLocalRuntimeOrSDK(context: IAcquisitionWorkerContext, install : DotnetInstall, force = false) : Promise<string>
     {
         if(install.isGlobal)
         {
@@ -516,9 +516,9 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
 
             this.removeFolderRecursively(context.eventStream, dotnetInstallDir);
 
-            await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install);
+            await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, force);
             // this is the only place where installed and installing could deal with pre existing installing id
-            await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstallingVersion(context, install);
+            await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstallingVersion(context, install, force);
 
             graveyard.remove(install);
             context.eventStream.post(new DotnetInstallGraveyardEvent(`Success at uninstalling ${JSON.stringify(install)} in path ${dotnetInstallDir}`));
@@ -531,7 +531,7 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
         }
     }
 
-    public async uninstallGlobal(context: IAcquisitionWorkerContext, install : DotnetInstall) : Promise<string>
+    public async uninstallGlobal(context: IAcquisitionWorkerContext, install : DotnetInstall, force = false) : Promise<string>
     {
         // Do nothing right now. Add this in another PR.
         return '1';
