@@ -499,11 +499,11 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
     }
 
 
-    public async uninstallLocalRuntimeOrSDK(context: IAcquisitionWorkerContext, install : DotnetInstall)
+    public async uninstallLocalRuntimeOrSDK(context: IAcquisitionWorkerContext, install : DotnetInstall) : Promise<string>
     {
         if(install.isGlobal)
         {
-            return;
+            return '0';
         }
 
         try
@@ -522,13 +522,20 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
 
             graveyard.remove(install);
             context.eventStream.post(new DotnetInstallGraveyardEvent(`Success at uninstalling ${JSON.stringify(install)} in path ${dotnetInstallDir}`));
+            return '0';
         }
         catch(error : any)
         {
-            context.eventStream.post(new SuppressedAcquisitionError(error, `The attempt to uninstall .NET ${install} failed - was .NET in use?`))
+            context.eventStream.post(new SuppressedAcquisitionError(error, `The attempt to uninstall .NET ${install} failed - was .NET in use?`));
+            return error?.message ?? '1';
         }
     }
 
+    public async uninstallGlobal(context: IAcquisitionWorkerContext, install : DotnetInstall) : Promise<string>
+    {
+        // Do nothing right now. Add this in another PR.
+        return '1';
+    }
 
     private removeFolderRecursively(eventStream: IEventStream, folderPath: string) {
         eventStream.post(new DotnetAcquisitionDeletion(folderPath));
