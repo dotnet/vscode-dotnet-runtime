@@ -60,7 +60,7 @@ jobs:
       signType: ${{ parameters.SignType }}
       zipSources: false
     env:
-      TeamName: VS Core
+      TeamName: DotNetCore
   - script: dotnet build msbuild/signVsix -v:normal
     displayName: 🖊️ Sign VSIXes
   - task: CopyFiles@2
