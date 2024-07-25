@@ -62,6 +62,10 @@ jobs:
       TeamName: VS Core
   - script: dotnet build msbuild/signVsix -v:normal
     displayName: 🖊️ Sign VSIXes
+  - task: CmdLine@2
+    displayName: 🤌 Rename Unsigned VSIX
+    inputs:
+      script: ren ../packages/$(package-name)-$(GetVersion.version).vsix ../packages/$(package-name)-$(GetVersion.version)-unsigned.vsix
   - task: CopyFiles@2
     displayName: '📩 Copy Artifact'
     inputs:
