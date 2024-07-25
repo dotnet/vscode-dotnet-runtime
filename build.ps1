@@ -90,7 +90,7 @@ try
     $InstallNuGetPkgScriptPath = ".\signing\Install-NuGetPackage.ps1"
     $nugetVerbosity = 'quiet'
     if ($Verbose) { $nugetVerbosity = 'normal' }
-    $MicroBuildPackageSource = 'https://pkgs.dev.azure.com/devdiv/_packaging/MicroBuildToolset%40Local/nuget/v3/index.json'
+    $MicroBuildPackageSource = 'https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json'
     if ($Signing)
     {
         Write-Host "Installing MicroBuild signing plugin" -ForegroundColor $successColor
