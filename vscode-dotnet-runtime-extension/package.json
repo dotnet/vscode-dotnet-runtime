@@ -118,7 +118,7 @@
 		"glob": "^7.2.0",
 		"got": "11.8.5",
 		"hmac-drbg": "^1.0.1",
-		"https-proxy-agent": "^7.0.4",
+		"https-proxy-agent": "^7.0.5",
 		"mocha": "^10.6.0",
 		"open": "^10.1.0",
 		"public-ip": "5.0.0",
