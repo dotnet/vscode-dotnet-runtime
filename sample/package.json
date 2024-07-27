@@ -109,7 +109,7 @@
 		"vscode-dotnet-runtime": "file:../vscode-dotnet-runtime-extension",
 		"vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library",
 		"vscode-dotnet-sdk": "file:../vscode-dotnet-sdk-extension",
-		"webpack": "5.92.0"
+		"webpack": "5.92.1"
 	},
 	"devDependencies": {
 		"@types/mocha": "9.0.0",
