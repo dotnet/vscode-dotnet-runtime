@@ -51,7 +51,7 @@
 		"http-cache-semantics": "4.1.1",
 		"https-proxy-agent": "^7.0.2",
 		"mocha": "^10.6.0",
-		"open": "^8.4.0",
+		"open": "^10.1.0",
 		"p-retry": "^4.6.1",
 		"proper-lockfile": "^4.1.2",
 		"public-ip": "^5.0.0",
