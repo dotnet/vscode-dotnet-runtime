@@ -374,9 +374,9 @@ with options ${JSON.stringify(options)}.`));
                 {
                     if(terminalFailure)
                     {
-                        this.parseVSCodeSudoExecError(error, fullCommandString);
+                        return Promise.resolve(this.parseVSCodeSudoExecError(error, fullCommandString));
                     }
-                    return { status: error ? error.code : '0', stderr: execStderr, stdout: execStdout} as CommandExecutorResult;
+                    return Promise.resolve({ status: error ? error.code : '0', stderr: execStderr, stdout: execStdout} as CommandExecutorResult);
                 });
             }
 
