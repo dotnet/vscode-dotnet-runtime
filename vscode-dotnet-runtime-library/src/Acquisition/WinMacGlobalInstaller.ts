@@ -65,6 +65,8 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
     protected versionResolver : VersionResolver;
     public file : IFileUtilities;
     protected webWorker : WebRequestWorker;
+    private invalidIntegrityError = `The integrity of the .NET install file is invalid, or there was no integrity to check and you denied the request to continue with those risks.
+We cannot verify our .NET file host at this time. Please try again later or install the SDK manually.`;
 
     constructor(context : IAcquisitionWorkerContext, utilContext : IUtilityContext, installingVersion : string, installerUrl : string,
         installerHash : string, executor : ICommandExecutor | null = null)
@@ -135,7 +137,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
                     'DotnetConflictingGlobalWindowsInstallError',
                     `An global install is already on the machine: version ${conflictingVersion}, that conflicts with the requested version.
                     Please uninstall this version first if you would like to continue.
-                    If Visual Studio is installed, you may need to use the VS Setup Window to uninstall the SDK component.`), getInstallFromContext(this.acquisitionContext));
+                    If Visual Studio is installed, you may need to use the VS Setup Window to uninstall the SDK component.`), install);
                 this.acquisitionContext.eventStream.post(err);
                 throw err.error;
             }
@@ -146,8 +148,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         if(!canContinue)
         {
             const err = new DotnetConflictingGlobalWindowsInstallError(new EventCancellationError('DotnetConflictingGlobalWindowsInstallError',
-            `The integrity of the .NET install file is invalid, or there was no integrity to check and you denied the request to continue with those risks.
-We cannot verify our .NET file host at this time. Please try again later or install the SDK manually.`), getInstallFromContext(this.acquisitionContext));
+           this.invalidIntegrityError), install);
         this.acquisitionContext.eventStream.post(err);
         throw err.error;
         }
@@ -167,13 +168,46 @@ We cannot verify our .NET file host at this time. Please try again later or inst
         {
             // Special code for when user cancels the install
             const err = new DotnetInstallCancelledByUserError(new EventCancellationError('DotnetInstallCancelledByUserError',
-                `The install of .NET was cancelled by the user. Aborting.`), getInstallFromContext(this.acquisitionContext));
+                `The install of .NET was cancelled by the user. Aborting.`), install);
             this.acquisitionContext.eventStream.post(err);
             throw err.error;
         }
         else
         {
             return installerResult;
+        }
+    }
+
+    public async uninstallSDK(install : DotnetInstall): Promise<string>
+    {
+        if(os.platform() === 'win32')
+        {
+            const installerFile : string = await this.downloadInstaller(this.installerUrl);
+            const canContinue = await this.installerFileHasValidIntegrity(installerFile);
+            if(!canContinue)
+            {
+                const err = new DotnetConflictingGlobalWindowsInstallError(new EventCancellationError('DotnetConflictingGlobalWindowsInstallError',
+                    this.invalidIntegrityError), install);
+                this.acquisitionContext.eventStream.post(err);
+                throw err.error;
+            }
+
+            const command = `${path.resolve(installerFile)}`;
+            const uninstallArgs = ['/uninstall', '/quiet', '/norestart'];
+            const commandResult = await this.commandRunner.execute(CommandExecutor.makeCommand(command, uninstallArgs), {timeout : this.acquisitionContext.timeoutSeconds * 1000});
+            this.handleTimeout(commandResult);
+
+            return commandResult.status;
+        }
+        else
+        {
+            const command = CommandExecutor.makeCommand(`rm`, [`-rf`, `${path.join(path.dirname(this.getMacPath()), 'sdk', install.version)}`, `&&`,
+`rm`, `-rf`, `${path.join(path.dirname(this.getMacPath()), 'sdk-manifests', install.version)}`], true);
+
+            const commandResult = await this.commandRunner.execute(command, {timeout : this.acquisitionContext.timeoutSeconds * 1000});
+            this.handleTimeout(commandResult);
+
+            return commandResult.status;
         }
     }
 
@@ -283,9 +317,7 @@ Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.m
         }
         else if(os.platform() === 'darwin')
         {
-            // On an arm machine we would install to /usr/local/share/dotnet/x64/dotnet/sdk` for a 64 bit sdk
-            // but we don't currently allow customizing the install architecture so that would never happen.
-            return path.resolve(`/usr/local/share/dotnet/dotnet`);
+            return this.getMacPath();
         }
 
         const err = new DotnetUnexpectedInstallerOSError(new EventBasedError('DotnetUnexpectedInstallerOSError',
@@ -305,6 +337,13 @@ If you were waiting for the install to succeed, please extend the timeout settin
             this.acquisitionContext.eventStream.post(noResponseError);
             throw noResponseError.error;
         }
+    }
+
+    private getMacPath() : string
+    {
+        // On an arm machine we would install to /usr/local/share/dotnet/x64/dotnet/sdk` for a 64 bit sdk
+        // but we don't currently allow customizing the install architecture so that would never happen.
+        return path.resolve(`/usr/local/share/dotnet/dotnet`);
     }
 
     /**
