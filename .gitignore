@@ -6,7 +6,6 @@ TestResults/
 .testPublish/
 *.sln.ide/
 _ReSharper.*/
-packages/
 artifacts/
 .build/
 PublishProfiles/
