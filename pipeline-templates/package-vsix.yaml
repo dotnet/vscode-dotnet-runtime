@@ -71,7 +71,7 @@ jobs:
   - task: CmdLine@2
     displayName: 🤌 Rename Unsigned VSIX
     inputs:
-      script: ren ..\packages\$(package-name)-$(GetVersion.version).vsix ..\packages\$(package-name)-$(GetVersion.version)-unsigned.vsix
+      script: dir && dir ..\packages && ren ..\packages\$(package-name)-$(GetVersion.version).vsix ..\packages\$(package-name)-$(GetVersion.version)-unsigned.vsix
   - task: CopyFiles@2
     displayName: '📩 Copy Artifact'
     inputs:
