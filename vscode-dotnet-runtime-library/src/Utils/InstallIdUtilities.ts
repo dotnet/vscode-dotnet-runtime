@@ -11,7 +11,7 @@ import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerCont
 import { DotnetInstallType } from '../IDotnetAcquireContext';
 
 
-export function getInstallKeyCustomArchitecture(version : string, architecture: string | null | undefined, mode: DotnetInstallMode,
+export function getInstallIdCustomArchitecture(version : string, architecture: string | null | undefined, mode: DotnetInstallMode,
     installType : DotnetInstallType = 'local') : string
 {
     if(architecture === null || architecture === 'null')
@@ -33,7 +33,7 @@ export function getInstallFromContext(ctx : IAcquisitionWorkerContext) : DotnetI
     const acquireContext = ctx.acquisitionContext!;
 
     return {
-        installKey : getInstallKeyCustomArchitecture(acquireContext.version, acquireContext.architecture, ctx.acquisitionContext.mode!,
+        installId : getInstallIdCustomArchitecture(acquireContext.version, acquireContext.architecture, ctx.acquisitionContext.mode!,
             acquireContext.installType),
         version: acquireContext.version,
         architecture: acquireContext.architecture,
@@ -43,53 +43,53 @@ export function getInstallFromContext(ctx : IAcquisitionWorkerContext) : DotnetI
 
 
 }
-export function isRuntimeInstallKey(installKey: string): boolean {
-    const installKeyVersion = getVersionFromLegacyInstallKey(installKey);
-    return !(DOTNET_INSTALL_MODE_LIST.filter( (x : string) => x !== 'runtime')).some( (mode) => installKey.includes(mode))
-        && looksLikeRuntimeVersion(installKeyVersion);
+export function isRuntimeInstallId(installId: string): boolean {
+    const installIdVersion = getVersionFromLegacyInstallId(installId);
+    return !(DOTNET_INSTALL_MODE_LIST.filter( (x : string) => x !== 'runtime')).some( (mode) => installId.includes(mode))
+        && looksLikeRuntimeVersion(installIdVersion);
 }
 
-export function isGlobalLegacyInstallKey(installKey: string): boolean {
-    return installKey.toLowerCase().includes('global');
+export function isGlobalLegacyInstallId(installId: string): boolean {
+    return installId.toLowerCase().includes('global');
 }
 
-export function getArchFromLegacyInstallKey(installKey: string): string | undefined {
-    const splitKey = installKey.split('~');
-    if (splitKey.length >= 2) {
-        return splitKey[1];
+export function getArchFromLegacyInstallId(installId: string): string | undefined {
+    const splitId = installId.split('~');
+    if (splitId.length >= 2) {
+        return splitId[1];
     }
     return undefined;
 }
 
-export function getVersionFromLegacyInstallKey(installKey: string): string {
-    if (isGlobalLegacyInstallKey(installKey)) {
-        const splitKey = installKey.split('-');
-        return splitKey[0];
+export function getVersionFromLegacyInstallId(installId: string): string {
+    if (isGlobalLegacyInstallId(installId)) {
+        const splitId = installId.split('-');
+        return splitId[0];
     }
-    else if (installKey.includes('~')) {
-        const splitKey = installKey.split('~');
-        return splitKey[0];
+    else if (installId.includes('~')) {
+        const splitId = installId.split('~');
+        return splitId[0];
     }
-    else // legacy, legacy install key (before it included the arch)
+    else // legacy, legacy install id (before it included the arch)
     {
-        return installKey;
+        return installId;
     }
 }
 
 /**
- * @deprecated This function is for legacy install keys only. Do not use for new code.
+ * @deprecated This function is for legacy install ids only. Do not use for new code.
  */
-export function getAssumedInstallInfo(key: string, mode : DotnetInstallMode | null): DotnetInstall {
+export function getAssumedInstallInfo(id: string, mode : DotnetInstallMode | null): DotnetInstall {
     return {
-        installKey: key,
-        version: getVersionFromLegacyInstallKey(key),
-        architecture: getArchFromLegacyInstallKey(key) ?? DotnetCoreAcquisitionWorker.defaultArchitecture(),
-        isGlobal: isGlobalLegacyInstallKey(key),
+        installId: id,
+        version: getVersionFromLegacyInstallId(id),
+        architecture: getArchFromLegacyInstallId(id) ?? DotnetCoreAcquisitionWorker.defaultArchitecture(),
+        isGlobal: isGlobalLegacyInstallId(id),
 
         // This code is for legacy install strings where the info was not recorded.
         // At the time only runtime or sdk was permitted and there were no outlier edge case versions that would be wrong.
         // So this assumption can hold true below. Do not utilize this going forward for new code.
-        installMode: mode ?? isRuntimeInstallKey(key) ? 'runtime' : 'sdk'
+        installMode: mode ?? isRuntimeInstallId(id) ? 'runtime' : 'sdk'
     };
 }
 

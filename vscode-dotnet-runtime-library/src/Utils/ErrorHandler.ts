@@ -12,7 +12,7 @@ import {
     DotnetNotInstallRelatedCommandFailed,
     EventCancellationError
 } from '../EventStream/EventStreamEvents';
-import { getInstallFromContext } from './InstallKeyUtilities';
+import { getInstallFromContext } from './InstallIdUtilities';
 import { IIssueContext } from './IIssueContext';
 import { formatIssueUrl } from './IssueReporter';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';

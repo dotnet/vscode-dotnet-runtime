@@ -11,7 +11,7 @@ import * as proc from 'child_process';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { VersionResolver } from './VersionResolver';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
-import { getInstallFromContext } from '../Utils/InstallKeyUtilities';
+import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import {
     DotnetAcquisitionAlreadyInstalled,
@@ -77,6 +77,42 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
         this.versionResolver = new VersionResolver(context);
         this.file = new FileUtilities();
         this.webWorker = new WebRequestWorker(context, installerUrl);
+    }
+
+    public static InterpretExitCode(code : string) : string
+    {
+        const reportLogMessage = `Please provide your .NET Installer log (note our privacy notice), which can be found at %temp%.
+The file has a name like 'Microsoft_.NET_SDK*.log and should appear in recent files.
+This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/issues.`
+
+        switch(code)
+        {
+            case '1':
+                return `The .NET SDK installer has failed with a generic failure. ${reportLogMessage}`;
+            case '5':
+                return `Insufficient permissions are available to install .NET. Please run the installer as an administrator.`;
+            case '67':
+                return `The network name cannot be found. ${reportLogMessage}`;
+            case '112':
+                return `The disk is full. Please free up space and try again.`;
+            case '255':
+                return `The .NET Installer was terminated by another process unexpectedly. Please try again.`;
+            case '1260':
+                return `The .NET SDK is blocked by group policy. Can you please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues`
+            case '1460':
+                return `The .NET SDK had a timeout error. ${reportLogMessage}`;
+            case '1603':
+                return `Fatal error during .NET SDK installation. ${reportLogMessage}`;
+            case '1618':
+                return `Another installation is already in progress. Complete that installation before proceeding with this install.`;
+            case '000751':
+                return `Page fault was satisfied by reading from a secondary storage device. ${reportLogMessage}`;
+            case '2147500037':
+                return `An unspecified error occurred. ${reportLogMessage}`;
+            case '2147942405':
+                return `Insufficient permissions are available to install .NET. Please try again as an administrator.`;
+        }
+        return '';
     }
 
     public async installSDK(install : DotnetInstall): Promise<string>
