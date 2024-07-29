@@ -356,6 +356,13 @@ If you would like to contribute to the list of supported distros, please visit: 
         return String(updateOrRejectState);
     }
 
+    public async UninstallSDK(fullySpecifiedDotnetVersion : string) : Promise<string>
+    {
+        await this.Initialize();
+
+        return this.distroSDKProvider!.uninstallDotnet(fullySpecifiedDotnetVersion, 'sdk') ? '0' : '1';
+    }
+
     /**
      * This exposes the class member that may or may not be initialized before execution of this function
      * ... so other's can use it. (It is a terrible pattern but used because the ctor cannot be async.)
