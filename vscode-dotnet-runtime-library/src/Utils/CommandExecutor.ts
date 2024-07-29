@@ -368,7 +368,7 @@ with options ${JSON.stringify(options)}.`));
 
             let commandResult;
 
-            if(os.platform() === 'win32' && command.runUnderSudo)
+            if(command.runUnderSudo)
             {
                 execElevated(fullCommandString, options, (error?: any, execStdout?: any, execStderr?: any) =>
                 {
