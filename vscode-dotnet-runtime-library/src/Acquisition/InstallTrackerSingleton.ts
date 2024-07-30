@@ -118,7 +118,7 @@ export class InstallTrackerSingleton
         return returnResult;
     }
 
-    public async clearPromises() : Promise<void>
+    public clearPromises() : void
     {
         this.inProgressInstalls.clear();
     }
@@ -141,12 +141,12 @@ export class InstallTrackerSingleton
             return null;
     }
 
-    public async addPromise(install : DotnetInstall, installPromise : Promise<string>) : Promise<void>
+    public addPromise(install : DotnetInstall, installPromise : Promise<string>) : void
     {
         this.inProgressInstalls.add({ dotnetInstall: install, installingPromise: installPromise });
     }
 
-    protected async removePromise(install : DotnetInstall) : Promise<void>
+    protected removePromise(install : DotnetInstall) : void
     {
         const resolvedInstall : InProgressInstall | undefined = [...this.inProgressInstalls].find(x => IsEquivalentInstallation(x.dotnetInstall as DotnetInstall, install));
         if(!resolvedInstall)
