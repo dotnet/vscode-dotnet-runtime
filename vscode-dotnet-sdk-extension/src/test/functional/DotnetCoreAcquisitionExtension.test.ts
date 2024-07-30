@@ -299,7 +299,11 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     assert.exists(result, 'basic install works');
     assert.exists(result!.dotnetPath, 'basic install has path');
     let sdkDirs = fs.readdirSync(path.join(path.dirname(result!.dotnetPath), 'sdk'));
-    assert.isNotEmpty(sdkDirs.filter(dir => dir.includes(version)), 'sdk directories include version');
+    assert.isNotEmpty(sdkDirs.filter(dir => dir.includes(version)), `sdk directories include version?
+PATH: ${result!.dotnetPath}
+PATH SUBDIRECTORIES: ${fs.readdirSync(path.dirname(result!.dotnetPath))}
+SDK SUBDIRECTORIES: ${sdkDirs}
+VERSION: ${version}`);
 
     // Install 5.0
     version = '5.0';
