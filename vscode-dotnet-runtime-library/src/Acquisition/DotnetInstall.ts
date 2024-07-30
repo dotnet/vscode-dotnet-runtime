@@ -15,6 +15,15 @@ export interface DotnetInstall {
     installMode: DotnetInstallMode;
 }
 
+export interface DotnetInstallWithKey
+{
+    installKey: string;
+    version: string;
+    architecture: string;
+    isGlobal: boolean;
+    installMode: DotnetInstallMode;
+}
+
 /**
  * @remarks
  * The id can be a type containing all of the information or the 'legacy' id which is a string that contains all of the information.

@@ -316,7 +316,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     private async checkForPartialInstalls(context: IAcquisitionWorkerContext, installId : DotnetInstall)
     {
         const installingVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(false);
-        const partialInstall = installingVersions.some(x => x.dotnetInstall.installId === installId.installId);
+        const partialInstall = installingVersions?.some(x => x.dotnetInstall.installId === installId.installId);
 
         // Don't count it as partial if the promise is still being resolved.
         // The promises get wiped out upon reload, so we can check this.
