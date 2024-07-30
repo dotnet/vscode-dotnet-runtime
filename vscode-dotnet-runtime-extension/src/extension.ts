@@ -53,6 +53,7 @@ import {
     UserManualInstallVersionChosen,
     UserManualInstallRequested,
     UserManualInstallSuccess,
+    InvalidUninstallRequest,
     UserManualInstallFailure,
     DotnetInstall,
     EventCancellationError,
@@ -78,6 +79,7 @@ namespace commandKeys {
     export const acquire = 'acquire';
     export const acquireGlobalSDK = 'acquireGlobalSDK';
     export const acquireStatus = 'acquireStatus';
+    export const uninstall = 'uninstall';
     export const uninstallAll = 'uninstallAll';
     export const listVersions = 'listVersions';
     export const recommendedVersion = 'recommendedVersion'
@@ -336,6 +338,52 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         return pathResult;
     });
 
+    /**
+     * @returns 0 on success. Error string if not.
+     */
+    const dotnetUninstallRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstall}`, async (commandContext: IDotnetAcquireContext | undefined) =>
+    {
+        return uninstall(commandContext);
+    });
+
+    async function uninstall(commandContext: IDotnetAcquireContext | undefined) : Promise<string>
+    {
+        let result = '1';
+        await callWithErrorHandling(async () =>
+        {
+                if(!commandContext?.version || !commandContext?.installType || !commandContext?.mode || !commandContext?.requestingExtensionId)
+                {
+                    const error = new EventCancellationError('InvalidUninstallRequest', `The caller ${commandContext?.requestingExtensionId} did not properly submit an uninstall request.
+    Please include the mode, installType, version, and extensionId.`);
+                    globalEventStream.post(new InvalidUninstallRequest(error as Error));
+                    throw error;
+                }
+                else
+                {
+                    const worker = getAcquisitionWorker();
+                    const workerContext = getAcquisitionWorkerContext(commandContext.mode, commandContext);
+                    const versionResolver = new VersionResolver(workerContext);
+                    const resolvedVersion = await versionResolver.getFullVersion(commandContext.version, commandContext.mode);
+                    commandContext.version = resolvedVersion;
+
+                    const installationId = getInstallIdCustomArchitecture(commandContext.version, commandContext.architecture, commandContext.mode, commandContext.installType);
+                    const install = {installId : installationId, version : commandContext.version, installMode: commandContext.mode, isGlobal: commandContext.installType === 'global',
+                        architecture: commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture()} as DotnetInstall;
+
+                    if(commandContext.installType === 'local')
+                    {
+                        result = await worker.uninstallLocalRuntimeOrSDK(workerContext, install);
+                    }
+                    else
+                    {
+                        result = await worker.uninstallGlobal(workerContext, install);
+                    }
+                }
+        }, getIssueContext(existingPathConfigWorker)(commandContext?.errorConfiguration, 'uninstall'));
+
+        return result;
+    }
+
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallAll}`, async (commandContext: IDotnetUninstallContext | undefined) => {
         await callWithErrorHandling(async () =>
         {
@@ -506,6 +554,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         acquireGlobalSDKPublicRegistration,
         dotnetListVersionsRegistration,
         dotnetRecommendedVersionRegistration,
+        dotnetUninstallRegistration,
         dotnetUninstallAllRegistration,
         showOutputChannelRegistration,
         ensureDependenciesRegistration,

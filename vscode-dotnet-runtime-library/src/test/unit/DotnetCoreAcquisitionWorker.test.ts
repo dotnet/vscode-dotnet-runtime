@@ -197,7 +197,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         assert.equal(events.length, 1);
     }
 
-    async function acquireAndUninstall(version : string, mode : DotnetInstallMode, type : DotnetInstallType)
+    async function acquireAndUninstallAll(version : string, mode : DotnetInstallMode, type : DotnetInstallType)
     {
         const [eventStream, extContext] = setupStates();
         const ctx = getMockAcquisitionContext(mode, version, expectedTimeoutTime, eventStream, extContext);
@@ -281,17 +281,17 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
 
     test('Acquire Runtime and UninstallAll', async () =>
     {
-        await acquireAndUninstall('1.0', 'runtime', 'local');
+        await acquireAndUninstallAll('1.0', 'runtime', 'local');
     }).timeout(expectedTimeoutTime);
 
     test('Acquire ASP.NET and UninstallAll', async () =>
     {
-        await acquireAndUninstall('1.0', 'aspnetcore', 'local');
+        await acquireAndUninstallAll('1.0', 'aspnetcore', 'local');
     }).timeout(expectedTimeoutTime);
 
     test('Acquire SDK and UninstallAll', async () =>
     {
-        await acquireAndUninstall('6.0', 'sdk', 'local');
+        await acquireAndUninstallAll('6.0', 'sdk', 'local');
     }).timeout(expectedTimeoutTime);
 
     test('Graveyard Removes Failed Uninstalls', async () => {
