@@ -436,6 +436,10 @@ export class DotnetNotInstallRelatedCommandFailed extends DotnetNonAcquisitionEr
         }
 }
 
+export class InvalidUninstallRequest extends DotnetNonAcquisitionError {
+    public readonly eventName = 'InvalidUninstallRequest';
+}
+
 export class DotnetCommandFailed extends DotnetAcquisitionError {
     public readonly eventName = 'DotnetCommandFailed';
 

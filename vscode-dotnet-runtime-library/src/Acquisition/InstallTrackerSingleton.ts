@@ -158,6 +158,18 @@ export class InstallTrackerSingleton
         this.inProgressInstalls.delete(resolvedInstall);
     }
 
+    public async canUninstall(isFinishedInstall : boolean, dotnetInstall : DotnetInstall) : Promise<boolean>
+    {
+        return this.executeWithLock( false, async (id: string, install: DotnetInstall) =>
+        {
+            this.eventStream.post(new RemovingVersionFromExtensionState(`Removing ${JSON.stringify(install)} with id ${id} from the state.`));
+            const existingInstalls = await this.getExistingInstalls(id === this.installedVersionsId, true);
+            const installRecord = existingInstalls.filter(x => IsEquivalentInstallation(x.dotnetInstall, install));
+
+            return installRecord.length === 0 || installRecord[0].installingExtensions.length === 0;
+        }, isFinishedInstall ? this.installedVersionsId : this.installingVersionsId, dotnetInstall);
+    }
+
     public async uninstallAllRecords() : Promise<void>
     {
         await this.executeWithLock( false, this.installingVersionsId, async () =>
@@ -242,18 +254,18 @@ ${convertedInstalls.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.in
         await this.trackInstalledVersion(context, install);
     }
 
-    public async untrackInstallingVersion(context : IAcquisitionWorkerContext, install : DotnetInstall)
+    public async untrackInstallingVersion(context : IAcquisitionWorkerContext, install : DotnetInstall, force = false)
     {
-        await this.removeVersionFromExtensionState(context, this.installingVersionsId, install);
+        await this.removeVersionFromExtensionState(context, this.installingVersionsId, install, force);
         this.removePromise(install);
     }
 
-    public async untrackInstalledVersion(context : IAcquisitionWorkerContext, install : DotnetInstall)
+    public async untrackInstalledVersion(context : IAcquisitionWorkerContext, install : DotnetInstall, force = false)
     {
-        await this.removeVersionFromExtensionState(context, this.installedVersionsId, install);
+        await this.removeVersionFromExtensionState(context, this.installedVersionsId, install, force);
     }
 
-    protected async removeVersionFromExtensionState(context : IAcquisitionWorkerContext, idStr: string, installIdObj: DotnetInstall)
+    protected async removeVersionFromExtensionState(context : IAcquisitionWorkerContext, idStr: string, installIdObj: DotnetInstall, forceUninstall = false)
     {
         return this.executeWithLock( false, idStr, async (id: string, install: DotnetInstall) =>
         {
@@ -273,12 +285,13 @@ ${convertedInstalls.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.in
 
                 const preExistingRecord = installRecord.at(0);
                 const owners = preExistingRecord?.installingExtensions.filter(x => x !== context.acquisitionContext?.requestingExtensionId);
-                if((owners?.length ?? 0) < 1)
+                if(forceUninstall || (owners?.length ?? 0) < 1)
                 {
                     // There are no more references/extensions that depend on this install, so remove the install from the list entirely.
                     // For installing versions, there should only ever be 1 owner.
                     // For installed versions, there can be N owners.
-                    this.eventStream.post(new RemovingExtensionFromList(`The last owner ${context.acquisitionContext?.requestingExtensionId} removed ${JSON.stringify(install)} entirely from the state.`));
+                    this.eventStream.post(new RemovingExtensionFromList(forceUninstall ? `At the request of ${context.acquisitionContext?.requestingExtensionId}, we force uninstalled ${JSON.stringify(install)}.` :
+                        `The last owner ${context.acquisitionContext?.requestingExtensionId} removed ${JSON.stringify(install)} entirely from the state.`));
                     await this.extensionState.update(id, existingInstalls.filter(x => !IsEquivalentInstallation(x.dotnetInstall, install)));
                 }
                 else
