@@ -62,7 +62,7 @@ jobs:
       TeamName: DotNetCore
   - bash: |
       npm install rimraf --reg https://registry.npmjs.org/ --verbose
-      npm install vsce -g --reg https://registry.npmjs.org/ --verbose
+      npm install @vscode/vsce@latest -g --reg https://registry.npmjs.org/ --verbose
       vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
       cp $(package-name)-$(GetVersion.version).vsix ../packages/$(package-name)-$(GetVersion.version).vsix
     displayName: 📦 Package Artifact
