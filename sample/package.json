@@ -104,7 +104,7 @@
 		]
 	},
 	"scripts": {
-		"vscode:prepublish": "npm install && npm run compile && dotnet build ../msbuild/signJs --property jsOutputPath=..\\..\\sample\\dist\\ -bl -v:normal",
+		"vscode:prepublish": "npm install && npm run compile && dotnet build ../msbuild/signJs --property jsOutputPath=..\\..\\sample\\dist -bl -v:normal",
 		"compile": "npm run clean && tsc -p ./",
 		"watch": "npm run clean && tsc -watch -p ./",
 		"test": "npm run compile && node ./node_modules/vscode/bin/test",
