@@ -42,15 +42,6 @@ jobs:
     name: GetVersion
     displayName: '❓ Get Version'
     workingDirectory: $(dir-name)
-  - bash: |
-      npm install rimraf --reg https://registry.npmjs.org/ --verbose
-      npm install vsce -g --reg https://registry.npmjs.org/ --verbose
-      vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
-      cp $(package-name)-$(GetVersion.version).vsix ../packages/$(package-name)-$(GetVersion.version).vsix
-    displayName: 📦 Package Artifact
-    workingDirectory: $(dir-name)
-    env:
-      SignType: ${{ parameters.SignType }}
   - task: UseDotNet@2
     displayName: 🔮 Use .NET SDK
     inputs:
@@ -69,6 +60,15 @@ jobs:
     env:
       SignType: ${{ parameters.SignType }}
       TeamName: DotNetCore
+  - bash: |
+      npm install rimraf --reg https://registry.npmjs.org/ --verbose
+      npm install vsce -g --reg https://registry.npmjs.org/ --verbose
+      vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
+      cp $(package-name)-$(GetVersion.version).vsix ../packages/$(package-name)-$(GetVersion.version).vsix
+    displayName: 📦 Package Artifact
+    workingDirectory: $(dir-name)
+    env:
+      SignType: ${{ parameters.SignType }}
   - script: dotnet build msbuild/signVsix -v:normal
     displayName: 🖊️ Sign VSIXes
     env:
