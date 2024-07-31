@@ -3,7 +3,7 @@
 TestResults/
 .nuget/
 .build/
-msbuild/*.log
+mgisbuild/signJs/*.log
 .testPublish/
 *.sln.ide/
 _ReSharper.*/
