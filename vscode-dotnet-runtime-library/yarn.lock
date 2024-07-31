@@ -44,10 +44,12 @@
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/mocha/-/mocha-9.1.1.tgz"
   integrity sha1-58TxAB7vpLivvR7uJ6I3/uO/KcQ=
 
-"@types/node@*", "@types/node@16.11.7":
-  version "16.11.7"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/node/-/node-16.11.7.tgz"
-  integrity sha1-NoIJRQYTJpeMQqAeVrYc0iPf3EI=
+"@types/node@*", "@types/node@^20.0.0":
+  version "20.14.13"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/node/-/node-20.14.13.tgz"
+  integrity sha1-v0/olZrhxDvChN54vWwBcwkzc2s=
+  dependencies:
+    undici-types "~5.26.4"
 
 "@types/proper-lockfile@^4.1.2":
   version "4.1.2"
@@ -74,7 +76,7 @@
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/semver/-/semver-7.3.10.tgz"
   integrity sha1-XxnuQMvv+H2Rbu3Iwr/iMF2Vf3M=
 
-"@types/shelljs@0.8.9":
+"@types/shelljs@^0.8.9":
   version "0.8.9"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/shelljs/-/shelljs-0.8.9.tgz"
   integrity sha1-Rd2FAaqYgpdso2EFF9rDgxwvu/Q=
@@ -1004,7 +1006,7 @@ setimmediate@~1.0.4:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/setimmediate/-/setimmediate-1.0.5.tgz"
   integrity sha1-KQy7Iy4waULX1+qbg3Mqt4VvgoU=
 
-shelljs@0.8.5:
+shelljs@^0.8.5:
   version "0.8.5"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/shelljs/-/shelljs-0.8.5.tgz"
   integrity sha1-3gVUCNg2G+1mxmnS8ABTjO2O4gw=
@@ -1082,10 +1084,15 @@ type-detect@^4.0.0, type-detect@^4.0.5:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/type-detect/-/type-detect-4.0.8.tgz"
   integrity sha1-dkb7XxiHHPu3dJ5pvTmmOI63RQw=
 
-typescript@4.4.4:
-  version "4.4.4"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/typescript/-/typescript-4.4.4.tgz"
-  integrity sha1-LNAaGh8WBwTTEB/VpY/w+fy4Aww=
+typescript@^5.5.4:
+  version "5.5.4"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/typescript/-/typescript-5.5.4.tgz"
+  integrity sha1-2YUtbIK60tLtpP10pXYqj1kJ6bo=
+
+undici-types@~5.26.4:
+  version "5.26.5"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/undici-types/-/undici-types-5.26.5.tgz"
+  integrity sha1-vNU5iT0AtW6WT9JlekhmsiGmVhc=
 
 unzipper@^0.10.11:
   version "0.10.11"
