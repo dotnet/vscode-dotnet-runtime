@@ -49,6 +49,8 @@ jobs:
       cp $(package-name)-$(GetVersion.version).vsix ../packages/$(package-name)-$(GetVersion.version).vsix
     displayName: 📦 Package Artifact
     workingDirectory: $(dir-name)
+    env:
+      SignType: ${{ parameters.SignType }}
   - task: UseDotNet@2
     displayName: 🔮 Use .NET SDK
     inputs:
@@ -65,9 +67,12 @@ jobs:
       zipSources: false
       feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
     env:
+      SignType: ${{ parameters.SignType }}
       TeamName: DotNetCore
   - script: dotnet build msbuild/signVsix -v:normal
     displayName: 🖊️ Sign VSIXes
+    env:
+      SignType: ${{ parameters.SignType }}
   - task: CmdLine@2
     displayName: 🤌 Rename Unsigned VSIX
     inputs:

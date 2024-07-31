@@ -6,7 +6,13 @@
     <MicroBuild_DoNotStrongNameSign>true</MicroBuild_DoNotStrongNameSign>
     <IsPackable>false</IsPackable>
     <OutDir>$(MSBuildProjectDirectory)\$(JSOutputPath)\</OutDir>
+    <MicroBuild_SigningEnabled>true</MicroBuild_SigningEnabled>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(SignType)' == ''">
+      <SignType>test</SignType>
+  </PropertyGroup>
+
   <ItemGroup>
     <FilesToSign Include="$(OutDir)*.js">
       <Authenticode>MicrosoftSHA2</Authenticode>
