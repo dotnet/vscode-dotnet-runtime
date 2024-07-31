@@ -79,3 +79,10 @@ jobs:
       Contents: '**\*.vsix'
       TargetFolder: '$(Build.ArtifactStagingDirectory)'
       flattenFolders: true
+  - task: CopyFiles@2
+    displayName: '🏗️ Copy Binlog'
+    inputs:
+      SourceFolder: '$(Build.SourcesDirectory)'
+      Contents: '**\*.binlog'
+      TargetFolder: '$(Build.ArtifactStagingDirectory)'
+      flattenFolders: false
