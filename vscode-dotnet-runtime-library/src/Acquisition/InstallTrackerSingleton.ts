@@ -160,7 +160,7 @@ export class InstallTrackerSingleton
 
     public async canUninstall(isFinishedInstall : boolean, dotnetInstall : DotnetInstall) : Promise<boolean>
     {
-        return this.executeWithLock( false, async (id: string, install: DotnetInstall) =>
+        return this.executeWithLock( false, this.installedVersionsId, async (id: string, install: DotnetInstall) =>
         {
             this.eventStream.post(new RemovingVersionFromExtensionState(`Removing ${JSON.stringify(install)} with id ${id} from the state.`));
             const existingInstalls = await this.getExistingInstalls(id === this.installedVersionsId, true);
