@@ -72,7 +72,7 @@
 		}
 	},
 	"scripts": {
-		"vscode:prepublish": "npm run compile-all && npm install && dotnet build ../msbuild/signJs  --property jsOutputPath=..\\..\\vscode-dotnet-sdk-extension\\dist\\ -v:normal && webpack --mode production",
+		"vscode:prepublish": "npm run compile-all && npm install && dotnet build ../msbuild/signJs  --property jsOutputPath=..\\..\\vscode-dotnet-sdk-extension\\dist -v:normal && webpack --mode production",
 		"vscode:uninstall": "node ./dist/ExtensionUninstall",
 		"compile": "npm run clean && tsc -p ./ && npm run mockPack",
 		"mockPack": "run-script-os",
