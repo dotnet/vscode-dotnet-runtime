@@ -54,6 +54,11 @@ extends:
         name: NetCore1ESPool-Internal
         image: 1es-windows-2022
         os: windows
+      sbom:
+        enabled: false # SBOM requires a special setup for node.js projects to ensure all dependencies are included.
+      policheck:
+        enabled: true
+        exclusionsFile: $(System.DefaultWorkingDirectory)\PoliCheckExclusions.xml
     stages:
     - stage: Internal
       jobs:
@@ -80,6 +85,13 @@ extends:
             os: windows
           useOneEngineeringPool: true
       - template: pipeline-templates/package-vsix.yaml@self
+        parameters:
+          pool:
+            name: NetCore1ESPool-Internal
+            image: 1es-windows-2022
+            os: windows
+          useOneEngineeringPool: true
+      - template: pipeline-templates/sbom.yaml@self
         parameters:
           pool:
             name: NetCore1ESPool-Internal

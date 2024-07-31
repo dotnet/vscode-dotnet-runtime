@@ -13,5 +13,10 @@
             "path": "vscode-dotnet-runtime-library"
         }
     ],
-    "settings": {}
+    "settings": {
+        "cSpell.words": [
+            "DOTNETINSTALLMODELIST",
+            "Republisher"
+        ]
+    }
 }

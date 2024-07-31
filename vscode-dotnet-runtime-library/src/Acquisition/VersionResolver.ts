@@ -11,10 +11,11 @@ import {
     DotnetVersionResolutionCompleted,
     DotnetVersionResolutionError,
     DotnetVersionParseEvent,
-    EventCancellationError
+    EventCancellationError,
+    EventBasedError
 } from '../EventStream/EventStreamEvents';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
-import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
+import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 import { Debugging } from '../Utils/Debugging';
 
 import { IVersionResolver } from './IVersionResolver';
@@ -25,6 +26,8 @@ import { DotnetVersionSupportPhase,
     IDotnetVersion
 } from '../IDotnetListVersionsContext';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { getAssumedInstallInfo } from '../Utils/InstallIdUtilities';
+import { DotnetInstallMode } from './DotnetInstallMode';
 /* tslint:disable:no-any */
 
 export class VersionResolver implements IVersionResolver {
@@ -56,8 +59,7 @@ export class VersionResolver implements IVersionResolver {
      */
     public async GetAvailableDotnetVersions(commandContext: IDotnetListVersionsContext | undefined) : Promise<IDotnetListVersionsResult>
     {
-        // If shouldObtainSdkVersions === false, get Runtimes. Else, get Sdks.
-        const shouldObtainSdkVersions : boolean = !commandContext?.listRuntimes;
+        const getSdkVersions : boolean = !commandContext?.listRuntimes;
         const availableVersions : IDotnetListVersionsResult = [];
 
         const response : any = await this.webWorker.getCachedData();
@@ -67,22 +69,22 @@ export class VersionResolver implements IVersionResolver {
             if (!response)
             {
                 const offlineError = new Error('Unable to connect to the index server: Cannot find .NET versions.');
-                this.context.eventStream.post(new DotnetOfflineFailure(offlineError, getInstallKeyFromContext(this.context.acquisitionContext)));
+                this.context.eventStream.post(new DotnetOfflineFailure(offlineError, getInstallFromContext(this.context)));
                 reject(offlineError);
             }
             else
             {
-                const sdkDetailsJson = response['releases-index'];
+                const releases = response['releases-index'];
 
-                for(const availableSdk of sdkDetailsJson)
+                for(const release of releases)
                 {
-                    if(availableSdk['release-type'] === 'lts' || availableSdk['release-type'] === 'sts')
+                    if(release['release-type'] === 'lts' || release['release-type'] === 'sts')
                     {
                         availableVersions.push({
-                                supportStatus: (availableSdk['release-type'] as DotnetVersionSupportStatus),
-                                supportPhase: (availableSdk['support-phase'] as DotnetVersionSupportPhase),
-                                version: availableSdk[shouldObtainSdkVersions ? 'latest-sdk' : 'latest-runtime'],
-                                channelVersion: availableSdk['channel-version']
+                                supportStatus: (release['release-type'] as DotnetVersionSupportStatus),
+                                supportPhase: (release['support-phase'] as DotnetVersionSupportPhase),
+                                version: release[getSdkVersions ? 'latest-sdk' : 'latest-runtime'],
+                                channelVersion: release['channel-version']
                             } as IDotnetVersion
                         );
                     }
@@ -93,27 +95,16 @@ export class VersionResolver implements IVersionResolver {
         });
     }
 
-    public async getFullRuntimeVersion(version: string): Promise<string> {
-        return this.getFullVersion(version, true);
-    }
-
-    public async getFullSDKVersion(version: string): Promise<string> {
-        return this.getFullVersion(version, false);
-    }
-
-    /**
-     * @param getRuntimeVersion - True for getting the full runtime version, false for the SDk version.
-     */
-    private async getFullVersion(version: string, getRuntimeVersion: boolean): Promise<string>
+    public async getFullVersion(version: string, mode: DotnetInstallMode): Promise<string>
     {
         let releasesVersions : IDotnetListVersionsResult;
         try
         {
-            releasesVersions = await this.getReleasesInfo(getRuntimeVersion);
+            releasesVersions = await this.getReleasesInfo(mode);
         }
-        catch(error)
+        catch(error : any)
         {
-            throw error;
+            throw new EventBasedError(error, error?.message, error?.stack);
         }
 
         return new Promise<string>((resolve, reject) =>
@@ -124,20 +115,22 @@ export class VersionResolver implements IVersionResolver {
                 this.context.eventStream.post(new DotnetVersionResolutionCompleted(version, versionResult));
                 resolve(versionResult);
             }
-            catch (error)
+            catch (error : any)
             {
-                this.context.eventStream.post(new DotnetVersionResolutionError(error as EventCancellationError, version));
+                this.context.eventStream.post(new DotnetVersionResolutionError(new EventCancellationError('DotnetVersionResolutionError',
+                    error?.message ?? ''), getAssumedInstallInfo(version, mode)));
                 reject(error);
             }
         });
     }
 
-    private resolveVersion(version: string, releases: IDotnetListVersionsResult): string {
-        Debugging.log(`Resolving the version: ${version}`, this.context.eventStream);
+    private resolveVersion(version: string, releases: IDotnetListVersionsResult): string
+    {
         this.validateVersionInput(version);
 
         // Search for the specific version
         let matchingVersion = releases.filter((availableVersions : IDotnetVersion) => availableVersions.version === version);
+
         // If a x.y version is given, just find that instead (which is how almost all requests are given atm)
         if(!matchingVersion || matchingVersion.length < 1)
         {
@@ -145,7 +138,9 @@ export class VersionResolver implements IVersionResolver {
         }
         if (!matchingVersion || matchingVersion.length < 1)
         {
-            const err = new DotnetVersionResolutionError(new EventCancellationError(`The requested and or resolved version is invalid.`), version);
+            const err = new DotnetVersionResolutionError(new EventCancellationError('DotnetVersionResolutionError',
+                `The requested and or resolved version is invalid.`),
+                getAssumedInstallInfo(version, this.context.acquisitionContext.mode!));
             this.context.eventStream.post(err);
             throw err.error;
         }
@@ -169,22 +164,24 @@ export class VersionResolver implements IVersionResolver {
         if (!parsedVer || (version.split('.').length !== 2 && version.split('.').length !== 3))
         {
             Debugging.log(`Resolving the version: ${version} ... it is invalid!`, this.context.eventStream);
-            const err = new DotnetVersionResolutionError(new EventCancellationError(`An invalid version was requested. Version: ${version}`), version);
+            const err = new DotnetVersionResolutionError(new EventCancellationError('DotnetVersionResolutionError',
+                `An invalid version was requested. Version: ${version}`),
+                getAssumedInstallInfo(version, this.context.acquisitionContext.mode!));
             this.context.eventStream.post(err);
             throw err.error;
         }
         Debugging.log(`The version ${version} was determined to be valid.`, this.context.eventStream);
     }
 
-    private async getReleasesInfo(getRuntimeVersion : boolean): Promise<IDotnetListVersionsResult>
+    private async getReleasesInfo(mode : DotnetInstallMode): Promise<IDotnetListVersionsResult>
     {
-        const apiContext: IDotnetListVersionsContext = { listRuntimes: getRuntimeVersion };
+        const apiContext: IDotnetListVersionsContext = { listRuntimes: mode === 'runtime' || mode === 'aspnetcore' };
 
         const response = await this.GetAvailableDotnetVersions(apiContext);
         if (!response)
         {
-            const err = new DotnetInvalidReleasesJSONError(new Error(`We could not reach the releases API ${this.releasesUrl} to download dotnet, is your machine offline or is this website down?`),
-                getInstallKeyFromContext(this.context.acquisitionContext));
+            const err = new DotnetInvalidReleasesJSONError(new EventBasedError('DotnetInvalidReleasesJSONError', `We could not reach the releases API ${this.releasesUrl} to download dotnet, is your machine offline or is this website down?`),
+                getInstallFromContext(this.context));
             this.context.eventStream.post(err);
             throw err.error;
         }
@@ -212,8 +209,9 @@ export class VersionResolver implements IVersionResolver {
     {
         if(fullySpecifiedVersion.split('.').length < 2)
         {
-            const event = new DotnetVersionResolutionError(new EventCancellationError(`The requested version ${fullySpecifiedVersion} is invalid.`),
-                getInstallKeyFromContext(this.context.acquisitionContext));
+            const event = new DotnetVersionResolutionError(new EventCancellationError('DotnetVersionResolutionError',
+                `The requested version ${fullySpecifiedVersion} is invalid.`),
+                getInstallFromContext(this.context));
             this.context.eventStream.post(event);
             throw event.error;
         }
@@ -232,8 +230,8 @@ export class VersionResolver implements IVersionResolver {
         const band : string | undefined = fullySpecifiedVersion.split('.')?.at(2)?.charAt(0);
         if(band === undefined)
         {
-            const event = new DotnetFeatureBandDoesNotExistError(new Error(`${VersionResolver.invalidFeatureBandErrorString}${fullySpecifiedVersion}.`),
-                getInstallKeyFromContext(this.context.acquisitionContext));
+            const event = new DotnetFeatureBandDoesNotExistError(new EventCancellationError('DotnetFeatureBandDoesNotExistError', `${VersionResolver.invalidFeatureBandErrorString}${fullySpecifiedVersion}.`),
+                getInstallFromContext(this.context));
             this.context.eventStream.post(event);
             throw event.error;
         }
@@ -260,8 +258,9 @@ export class VersionResolver implements IVersionResolver {
         const patch : string | undefined = fullySpecifiedVersion.split('.')?.at(2)?.substring(1);
         if(patch === undefined || !this.isNumber(patch))
         {
-            const event = new DotnetFeatureBandDoesNotExistError(new Error(`${VersionResolver.invalidFeatureBandErrorString}${fullySpecifiedVersion}.`),
-                getInstallKeyFromContext(this.context.acquisitionContext));
+            const event = new DotnetFeatureBandDoesNotExistError(new EventCancellationError('DotnetFeatureBandDoesNotExistError',
+                `${VersionResolver.invalidFeatureBandErrorString}${fullySpecifiedVersion}.`),
+                getInstallFromContext(this.context));
             this.context.eventStream.post(event);
             throw event.error;
         }

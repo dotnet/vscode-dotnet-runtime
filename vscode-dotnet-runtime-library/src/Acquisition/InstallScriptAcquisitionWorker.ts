@@ -9,11 +9,12 @@ import {
     DotnetFallbackInstallScriptUsed,
     DotnetInstallScriptAcquisitionCompleted,
     DotnetInstallScriptAcquisitionError,
+    EventBasedError,
 } from '../EventStream/EventStreamEvents';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { Debugging } from '../Utils/Debugging';
 import { FileUtilities } from '../Utils/FileUtilities';
-import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
+import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 
 import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
@@ -40,7 +41,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
             const script = await this.webWorker.getCachedData();
             if (!script) {
                 Debugging.log('The request to acquire the script failed.');
-                throw new Error('Unable to get script path.');
+                throw new EventBasedError('NoInstallScriptPathExists', 'Unable to get script path.');
             }
 
             await this.fileUtilities.writeFileOntoDisk(script, this.scriptFilePath, false, this.context.eventStream);
@@ -50,7 +51,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
         catch (error)
         {
             Debugging.log('An error occurred processing the install script.');
-            this.context.eventStream.post(new DotnetInstallScriptAcquisitionError(error as Error, getInstallKeyFromContext(this.context.acquisitionContext)));
+            this.context.eventStream.post(new DotnetInstallScriptAcquisitionError(error as Error, getInstallFromContext(this.context)));
 
             // Try to use fallback install script
             const fallbackPath = this.getFallbackScriptPath();
@@ -60,7 +61,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
                 return fallbackPath;
             }
 
-            throw new Error(`Failed to Acquire Dotnet Install Script: ${error}`);
+            throw new EventBasedError('UnableToAcquireDotnetInstallScript', `Failed to Acquire Dotnet Install Script: ${error}`);
         }
     }
 

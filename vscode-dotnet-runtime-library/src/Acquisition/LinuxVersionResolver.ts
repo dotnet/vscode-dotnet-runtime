@@ -12,6 +12,7 @@ import
     DotnetCustomLinuxInstallExistsError,
     DotnetInstallLinuxChecks,
     DotnetUpgradedEvent,
+    EventBasedError,
     EventCancellationError
 } from '../EventStream/EventStreamEvents';
 import { GenericDistroSDKProvider } from './GenericDistroSDKProvider'
@@ -24,8 +25,8 @@ import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { IDotnetAcquireContext } from '../IDotnetAcquireContext'
-import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
-import { LinuxInstallType } from './LinuxInstallType';
+import { getInstallFromContext } from '../Utils/InstallIdUtilities';
+import { DotnetInstallMode } from './DotnetInstallMode';
 
 /**
  * An enumeration type representing all distros with their versions that we recognize.
@@ -117,7 +118,7 @@ If you would like to contribute to the list of supported distros, please visit: 
 
         try
         {
-            const stdOut = commandResult.toString().split('\n');
+            const stdOut = commandResult.stdout.toString().split('\n');
             // We need to remove the quotes from the KEY="VALUE"\n pairs returned by the command stdout, and then turn it into a dictionary. We can't use replaceAll for older browsers.
             // Replace only replaces one quote, so we remove the 2nd one later.
             const stdOutWithQuotesRemoved = stdOut.map( x => x.replace('"', ''));
@@ -130,7 +131,8 @@ If you would like to contribute to the list of supported distros, please visit: 
 
             if(distroName === '' || distroVersion === '')
             {
-                const error = new DotnetAcquisitionDistroUnknownError(new EventCancellationError(this.baseUnsupportedDistroErrorMessage), getInstallKeyFromContext(this.acquireCtx));
+                const error = new DotnetAcquisitionDistroUnknownError(new EventCancellationError('DotnetAcquisitionDistroUnknownError',
+                    this.baseUnsupportedDistroErrorMessage), getInstallFromContext(this.acquisitionContext));
                 this.acquisitionContext.eventStream.post(error);
                 throw error.error;
             }
@@ -140,8 +142,9 @@ If you would like to contribute to the list of supported distros, please visit: 
         }
         catch(error)
         {
-            const err = new DotnetAcquisitionDistroUnknownError(new EventCancellationError(`${this.baseUnsupportedDistroErrorMessage} ... does /etc/os-release exist?`),
-                getInstallKeyFromContext(this.acquireCtx));
+            const err = new DotnetAcquisitionDistroUnknownError(new EventCancellationError('DotnetAcquisitionDistroUnknownError',
+                `${this.baseUnsupportedDistroErrorMessage} ... does /etc/os-release exist?`),
+                getInstallFromContext(this.acquisitionContext));
             this.acquisitionContext.eventStream.post(err);
             throw err.error;
         }
@@ -167,8 +170,10 @@ If you would like to contribute to the list of supported distros, please visit: 
 
         if(!this.distro || !this.distroSDKProvider)
         {
-            const error = new DotnetAcquisitionDistroUnknownError(new EventCancellationError(`${this.baseUnsupportedDistroErrorMessage} ... we cannot initialize.`),
-                getInstallKeyFromContext(this.acquireCtx));
+            const error = new DotnetAcquisitionDistroUnknownError(new EventCancellationError(
+                'DotnetAcquisitionDistroUnknownError',
+                `${this.baseUnsupportedDistroErrorMessage} ... we cannot initialize.`),
+                getInstallFromContext(this.acquisitionContext));
             this.acquisitionContext.eventStream.post(error);
             throw error.error;
         }
@@ -188,13 +193,18 @@ If you would like to contribute to the list of supported distros, please visit: 
         {
             // Implement any custom logic for a Distro Class in a new DistroSDKProvider and add it to the factory here.
             case null:
-                const unknownDistroErr = new DotnetAcquisitionDistroUnknownError(new EventCancellationError(this.unsupportedDistroErrorMessage), getInstallKeyFromContext(this.acquireCtx));
+                const unknownDistroErr = new DotnetAcquisitionDistroUnknownError(new EventCancellationError(
+                    'DotnetAcquisitionDistroUnknownError',
+                    this.unsupportedDistroErrorMessage), getInstallFromContext(this.acquisitionContext));
                 this.acquisitionContext.eventStream.post(unknownDistroErr);
                 throw unknownDistroErr.error;
             case 'Red Hat Enterprise Linux':
                 if(this.isRedHatVersion7(distroAndVersion.version))
                 {
-                    const unsupportedRhelErr = new DotnetAcquisitionDistroUnknownError(new EventCancellationError(this.redhatUnsupportedDistroErrorMessage), getInstallKeyFromContext(this.acquireCtx));
+                    const unsupportedRhelErr = new DotnetAcquisitionDistroUnknownError(new EventCancellationError(
+                        'DotnetAcquisitionDistroUnknownError',
+                        this.redhatUnsupportedDistroErrorMessage),
+                        getInstallFromContext(this.acquisitionContext));
                     this.acquisitionContext.eventStream.post(unsupportedRhelErr);
                     throw unsupportedRhelErr.error;
                 }
@@ -221,7 +231,9 @@ If you would like to contribute to the list of supported distros, please visit: 
             const microsoftFeedDir = await this.distroSDKProvider!.getExpectedDotnetMicrosoftFeedInstallationDirectory();
             if(fs.existsSync(microsoftFeedDir))
             {
-                const err = new DotnetConflictingLinuxInstallTypesError(new EventCancellationError(this.conflictingInstallErrorMessage + microsoftFeedDir), getInstallKeyFromContext(this.acquireCtx));
+                const err = new DotnetConflictingLinuxInstallTypesError(new EventCancellationError('DotnetConflictingLinuxInstallTypesError',
+                this.conflictingInstallErrorMessage + microsoftFeedDir),
+                    getInstallFromContext(this.acquisitionContext));
                 this.acquisitionContext.eventStream.post(err);
                 throw err.error;
             }
@@ -231,7 +243,9 @@ If you would like to contribute to the list of supported distros, please visit: 
             const distroFeedDir = await this.distroSDKProvider!.getExpectedDotnetDistroFeedInstallationDirectory();
             if(fs.existsSync(distroFeedDir))
             {
-                const err = new DotnetConflictingLinuxInstallTypesError(new EventCancellationError(this.conflictingInstallErrorMessage + distroFeedDir), getInstallKeyFromContext(this.acquireCtx));
+                const err = new DotnetConflictingLinuxInstallTypesError(new EventCancellationError('DotnetConflictingLinuxInstallTypesError',
+                    this.conflictingInstallErrorMessage + distroFeedDir),
+                    getInstallFromContext(this.acquisitionContext));
                 this.acquisitionContext.eventStream.post(err);
                 throw err.error;
             }
@@ -250,7 +264,9 @@ If you would like to contribute to the list of supported distros, please visit: 
             supportStatus === DotnetDistroSupportStatus.Distro ? await this.distroSDKProvider!.getExpectedDotnetDistroFeedInstallationDirectory()
             : await this.distroSDKProvider!.getExpectedDotnetMicrosoftFeedInstallationDirectory() ))
         {
-            const err = new DotnetCustomLinuxInstallExistsError(new EventCancellationError(this.conflictingCustomInstallErrorMessage + existingInstall), getInstallKeyFromContext(this.acquireCtx));
+            const err = new DotnetCustomLinuxInstallExistsError(new EventCancellationError('DotnetCustomLinuxInstallExistsError',
+                this.conflictingCustomInstallErrorMessage + existingInstall),
+                getInstallFromContext(this.acquisitionContext));
             this.acquisitionContext.eventStream.post(err);
             throw err.error;
         }
@@ -281,8 +297,9 @@ If you would like to contribute to the list of supported distros, please visit: 
                 || Number(this.versionResolver.getFeatureBandFromVersion(existingGlobalInstallSDKVersion)) > Number(this.versionResolver.getFeatureBandFromVersion(fullySpecifiedDotnetVersion)))
                 {
                     // We shouldn't downgrade to a lower patch
-                    const err = new DotnetCustomLinuxInstallExistsError(new EventCancellationError(`An installation of ${fullySpecifiedDotnetVersion} was requested but ${existingGlobalInstallSDKVersion} is already available.`),
-                        getInstallKeyFromContext(this.acquireCtx));
+                    const err = new DotnetCustomLinuxInstallExistsError(new EventCancellationError('DotnetCustomLinuxInstallExistsError',
+                        `An installation of ${fullySpecifiedDotnetVersion} was requested but ${existingGlobalInstallSDKVersion} is already available.`),
+                        getInstallFromContext(this.acquisitionContext));
                     this.acquisitionContext.eventStream.post(err);
                     throw err.error;
                 }
@@ -314,7 +331,7 @@ If you would like to contribute to the list of supported distros, please visit: 
         // Verify the version of dotnet is supported
         if (!( await this.distroSDKProvider!.isDotnetVersionSupported(fullySpecifiedDotnetVersion, 'sdk') ))
         {
-            throw new Error(`The distro ${this.distro?.distro} ${this.distro?.version} does not officially support dotnet version ${fullySpecifiedDotnetVersion}.`);
+            throw new EventBasedError('UnsupportedDistro', `The distro ${this.distro?.distro} ${this.distro?.version} does not officially support dotnet version ${fullySpecifiedDotnetVersion}.`);
         }
 
         // Verify there are no conflicting installs
@@ -350,7 +367,7 @@ If you would like to contribute to the list of supported distros, please visit: 
         return this.distroSDKProvider!;
     }
 
-    public async getRecommendedDotnetVersion(installType : LinuxInstallType) : Promise<string>
+    public async getRecommendedDotnetVersion(installType : DotnetInstallMode) : Promise<string>
     {
         await this.Initialize();
         return this.distroSDKProvider!.getRecommendedDotnetVersion(installType);

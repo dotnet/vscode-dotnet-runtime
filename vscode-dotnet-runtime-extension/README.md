@@ -37,7 +37,16 @@ The rest of the extension functionality is still limited to other extensions tha
 
 ### I already have a .NET Runtime or SDK installed, and I want to use it
 
-Try adding the requesting extension to the `dotnetAcquisitionExtension.existingDotnetPath` setting in your vscode.json settings file. You can read more about [using external installations] in our documentation, but here's an example of how to tell the [C#] extension to use your existing .NET installation:
+If you want to use your own installation(s) of .NET, you can either use one for all extensions in VS Code, or use different installations for specific extensions.
+
+If you want to use the installation for all extensions, set the `dotnetAcquisitionExtension.sharedExistingDotnetPath`.
+
+Example:
+```json
+    "dotnetAcquisitionExtension.sharedExistingDotnetPath": "/usr/share/dotnet/dotnet"
+```
+
+If instead you want more granular control, add the requesting extension to the `dotnetAcquisitionExtension.existingDotnetPath` setting in your vscode.json settings file. You can read more about [using external installations] in our documentation, but here's an example of how to tell the [C#] extension to use your existing .NET installation:
 
 ```json
     "dotnetAcquisitionExtension.existingDotnetPath": [
@@ -111,6 +120,28 @@ See the [.NET home repo](https://github.com/Microsoft/dotnet) to find other .NE
 ## Telemetry Notice
 
 Please note that this extension collects telemetry by default and aims to follow the [VS Code Telemetry Policy](https://code.visualstudio.com/api/extension-guides/telemetry). You may disable this telemetry in the extension settings.
+
+## Third Party Notices
+
+The [notices](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/THIRD-PARTY-NOTICES.txt) file contains third party notices and licenses.
+
+## Contribution
+
+Contributions are always welcome. Please see our [contributing guide](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/contributing.md) for more details.
+
+## Microsoft Open Source Code of Conduct
+
+This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact opencode@microsoft.com with any additional questions or comments.
+
+## Questions and Feedback
+
+**[Provide feedback](https://github.com/dotnet/vscode-dotnet-runtime/issues/new/choose)**
+File questions, issues, or feature requests for the extension.
+
+## Trademarks
+
+This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft trademarks or logos is subject to and must follow Microsoft’s Trademark & Brand Guidelines. Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship. Any use of third-party trademarks or logos are subject to those third-party’s policies.
+
 
 [C#]: https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csharp
 [C# Dev Kit]: https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csdevkit

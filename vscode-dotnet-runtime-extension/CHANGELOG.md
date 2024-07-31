@@ -7,8 +7,83 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-## [2.0.4]
+## [2.1.2] - 2024-08-01
 
+Adds the ability to uninstall a particular runtime.
+
+Adds additional signatures to the release.
+
+Fixes other minor bugs.
+
+## [2.1.1] - 2024-07-18
+
+Fixes a bug introduced in 2.1.0 where '.includes' would not exist.
+
+## [2.1.0] - 2024-07-18
+
+Fixes a bug with permissions when running the .NET Installer.
+
+Adds context for .NET Installer failures.
+
+Adds a user fallback for when the .NET Installer file cannot be validated.
+
+Renames internal tracking mechanism of 'key' to 'id'
+
+
+## [2.0.9] - 2024-07-12
+
+Fixes a bug where permissions were not granted to run the .NET Installer. (EPERM issue.)
+
+Fixes a bug where the installer file would be deleted or not properly downloaded.
+
+Performance improvements.
+
+Fixes a bug with apt-get lock holding (status 100) on Linux with package management.
+
+Adds acquireStatus support for ASP.NET runtime installs.
+
+Other bug fixes.
+
+## [2.0.8] - 2024-07-09
+
+Fixes issues with offline detection and timeouts.
+
+## [2.0.7] - 2024-06-30
+
+Adds support for ASP.NET Core Runtime installation via the `acquire` API.
+
+
+Smaller bug fixes for error handling and reporting.
+Updated dependencies and added additional notices to our main page.
+
+## [2.0.6] - 2024-06-10
+
+Keeps track of which extensions manage which installs to allow for better cleanup of old runtimes and sdks.
+
+Fixes a bug with uninstall management where all .net installs would be removed if one install was corrupted.
+
+Fixes other book keeping code regarding .NET runtime and sdk installs.
+Improves storage mechanism to allow installing other types of runtimes in the future (aspnet, etc).
+
+Adds reportable SBOMs.
+Upgrades Axios Cache Interceptor with a patch for n[r].split errors.
+Improves error reporting.
+Improves Distro Json Schema file.
+Fix bug installing the .NET SDK when the machine has a different display language besides English.
+
+# [2.0.5] - 2024-05-07
+
+Includes some minor bug fixes and error message improvements.
+
+## [2.0.4] - 2024-05-03
+Adds the setting `sharedExistingDotnetPath` to use an existing install for all extensions, instead of having to set the setting for every individual extension.
+
+UX improvements for C# DevKit and the Global SDK API.\
+Bug fixes for the recommended version API when the user is offline or on an unsupported distro.
+
+Improved error logging for diagnosing issues that users report.\
+Improved error messages.\
+Updates to dependencies and a simplified dependency chain.
 
 ## [2.0.3] - 2024-03-21
 

@@ -5,18 +5,20 @@
 import * as fs from 'fs';
 import * as open from 'open';
 import {
+    DotnetAcquisitionFinalError,
     DotnetCommandFailed,
     DotnetCommandSucceeded,
     DotnetInstallExpectedAbort,
-    DotnetNotInstallRelatedCommandFailed
+    DotnetNotInstallRelatedCommandFailed,
+    EventCancellationError
 } from '../EventStream/EventStreamEvents';
-import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
-
-import { ExistingPathKeys, IExistingPath } from '../IExtensionContext';
+import { getInstallFromContext } from './InstallIdUtilities';
 import { IIssueContext } from './IIssueContext';
 import { formatIssueUrl } from './IssueReporter';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
-
+import { GetDotnetInstallInfo } from '../Acquisition/DotnetInstall';
+import { DotnetCoreAcquisitionWorker } from '../Acquisition/DotnetCoreAcquisitionWorker';
+/* tslint:disable:no-any */
 
 export enum AcquireErrorConfiguration {
     DisplayAllErrorPopups = 0,
@@ -60,16 +62,25 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
         context.eventStream.post(new DotnetCommandSucceeded(context.commandName));
         return result;
     }
-    catch (caughtError)
+    catch (caughtError : any)
     {
         const error = caughtError as Error;
         if(!isCancellationStyleError(error))
         {
             context.eventStream.post(isAcquisitionError ?
-                new DotnetCommandFailed(error, context.commandName, getInstallKeyFromContext(acquireContext?.acquisitionContext)) :
+                new DotnetCommandFailed(error, context.commandName, getInstallFromContext(acquireContext!)) :
                 // The output observer will keep track of installs and we don't want a non-install failure to make it think it should -=1 from the no. of installs
                 new DotnetNotInstallRelatedCommandFailed(error, context.commandName)
             );
+        }
+
+        if(acquireContext)
+        {
+            context.eventStream.post(new DotnetAcquisitionFinalError(error, (caughtError?.eventType) ?? 'Unknown',
+            GetDotnetInstallInfo(acquireContext.acquisitionContext.version, acquireContext.acquisitionContext.mode!,
+                acquireContext.acquisitionContext.installType ?? 'local', acquireContext.acquisitionContext.architecture ??
+                DotnetCoreAcquisitionWorker.defaultArchitecture()
+            )));
         }
 
         if (context.errorConfiguration === AcquireErrorConfiguration.DisplayAllErrorPopups)
@@ -126,17 +137,12 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
 
 async function configureManualInstall(context: IIssueContext, requestingExtensionId: string): Promise<void> {
     const manualPath = await context.displayWorker.displayPathConfigPopUp();
+
     if (manualPath && fs.existsSync(manualPath))
     {
         try
         {
-            let configVal: IExistingPath[] = [{ [ExistingPathKeys.extensionIdKey]: requestingExtensionId, [ExistingPathKeys.pathKey] : manualPath}];
-            const existingConfigVal = context.extensionConfigWorker.getPathConfigurationValue();
-            if (existingConfigVal)
-            {
-                configVal = configVal.concat(existingConfigVal);
-            }
-            await context.extensionConfigWorker.setPathConfigurationValue(configVal);
+            await context.extensionConfigWorker.setSharedPathConfigurationValue(manualPath);
             context.displayWorker.showInformationMessage(`Set .NET path to ${manualPath}. Please reload VSCode to apply settings.`, () => { /* No callback needed */});
         }
         catch (e)
@@ -153,5 +159,6 @@ async function configureManualInstall(context: IIssueContext, requestingExtensio
 function isCancellationStyleError(error : Error)
 {
     // Handle both when the event.error or event itself is posted.
-    return error && error.constructor && (error.constructor.name === 'UserCancelledError' || error.constructor.name === 'EventCancellationError') || error instanceof DotnetInstallExpectedAbort;
+    return error && error.constructor && (error.constructor.name === 'UserCancelledError' || error.constructor.name === 'EventCancellationError') ||
+        error instanceof DotnetInstallExpectedAbort || error instanceof EventCancellationError;
 }

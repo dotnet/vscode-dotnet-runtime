@@ -5,6 +5,9 @@
 import * as chai from 'chai';
 import { InstallationValidator } from '../../Acquisition/InstallationValidator';
 import { MockEventStream } from '../mocks/MockObjects';
+import * as os from 'os';
+import { GetDotnetInstallInfo } from '../../Acquisition/DotnetInstall';
+
 const assert = chai.assert;
 
 suite('InstallationValidator Unit Tests', () => {
@@ -12,6 +15,8 @@ suite('InstallationValidator Unit Tests', () => {
     const validator = new InstallationValidator(eventStream);
 
     test('Error With Invalid File Structure', async () => {
-        assert.throws(() => validator.validateDotnetInstall('', ''), `Validation of .dotnet installation for version  failed:`);
+        const install = GetDotnetInstallInfo('7.0', 'runtime', 'local', os.arch());
+        assert.throws(() => validator.validateDotnetInstall(install, ''), `Validation of .dotnet installation for version`);
+        assert.throws(() => validator.validateDotnetInstall(install, ''), `fail`);
     });
 });

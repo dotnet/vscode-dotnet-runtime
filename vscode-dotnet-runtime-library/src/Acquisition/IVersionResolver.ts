@@ -3,7 +3,9 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-export interface IVersionResolver {
-    getFullRuntimeVersion(version: string): Promise<string>;
-    getFullSDKVersion(version: string): Promise<string>;
+import { DotnetInstallMode } from './DotnetInstallMode';
+
+export interface IVersionResolver
+{
+    getFullVersion(version: string, mode : DotnetInstallMode): Promise<string>;
 }

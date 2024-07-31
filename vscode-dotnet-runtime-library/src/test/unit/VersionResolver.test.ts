@@ -25,7 +25,7 @@ suite('VersionResolver Unit Tests', () => {
     const context = new MockExtensionContext();
     // MockVersionResolver is a VersionResolver that uses a fake releases.json
     // (prevents us from making web requests in unit tests)
-    const resolver: MockVersionResolver = new MockVersionResolver(getMockAcquisitionContext(true, ''));
+    const resolver: MockVersionResolver = new MockVersionResolver(getMockAcquisitionContext('runtime', ''));
 
     test('Get Available Versions', async () => {
         const result : IDotnetListVersionsResult = await resolver.GetAvailableDotnetVersions(undefined);
@@ -36,25 +36,25 @@ suite('VersionResolver Unit Tests', () => {
     });
 
     test('Error With Invalid Version', async () => {
-        assert.isRejected(resolver.getFullRuntimeVersion('foo'), Error, 'Invalid version');
+        assert.isRejected(resolver.getFullVersion('foo', 'runtime'), Error, 'Invalid version');
     });
 
     test('Error With Three Part Version', async () => {
-        assert.isRejected(resolver.getFullRuntimeVersion('1.0.16'), Error, 'Invalid version');
+        assert.isRejected(resolver.getFullVersion('1.0.16', 'runtime'), Error, 'Invalid version');
     });
 
     test('Error With Invalid Major.Minor', async () => {
-        assert.isRejected(resolver.getFullRuntimeVersion('0.0'), Error, 'Unable to resolve version');
+        assert.isRejected(resolver.getFullVersion('0.0', 'runtime'), Error, 'Unable to resolve version');
     });
 
     test('Resolve Valid Runtime Versions', async () => {
         for (const version of versionPairs) {
-            assert.equal(await resolver.getFullRuntimeVersion(version[0]), version[1]);
+            assert.equal(await resolver.getFullVersion(version[0], 'runtime'), version[1]);
         }
     });
 
     test('Resolve Latest SDK Version', async () => {
-        assert.equal(await resolver.getFullSDKVersion('2.2'), '2.2.207');
+        assert.equal(await resolver.getFullVersion('2.2', 'sdk'), '2.2.207');
     });
 
     test('Get Major from SDK Version', async () => {

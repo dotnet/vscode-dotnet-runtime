@@ -8,22 +8,21 @@ import * as path from 'path';
 import { InstallScriptAcquisitionWorker } from '../../Acquisition/InstallScriptAcquisitionWorker';
 import { VersionResolver } from '../../Acquisition/VersionResolver';
 import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
-import { DotnetAcquisitionCompleted, TestAcquireCalled } from '../../EventStream/EventStreamEvents';
+import { DotnetAcquisitionCompleted, EventBasedError, TestAcquireCalled } from '../../EventStream/EventStreamEvents';
+import { IExistingPaths, IExtensionConfiguration, ILocalExistingPath } from '../../IExtensionContext';
 import { FileUtilities } from '../../Utils/FileUtilities';
 import { WebRequestWorker } from '../../Utils/WebRequestWorker';
 import { CommandExecutor } from '../../Utils/CommandExecutor';
 import { AcquisitionInvoker } from '../../Acquisition/AcquisitionInvoker';
-import { LinuxInstallType } from '../../Acquisition/LinuxInstallType';
+import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProvider';
 import { getMockUtilityContext } from '../unit/TestUtility';
 import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
 import { CommandExecutorCommand } from '../../Utils/CommandExecutorCommand';
-
 import { IAcquisitionInvoker } from '../../Acquisition/IAcquisitionInvoker';
 import { ICommandExecutor } from '../../Utils/ICommandExecutor';
 import { IEvent } from '../../EventStream/IEvent';
 import { IEventStream } from '../../EventStream/EventStream';
-import { IExistingPath, IExtensionConfiguration } from '../../IExtensionContext';
 import { IExtensionState } from '../../IExtensionState';
 import { IDotnetInstallationContext } from '../../Acquisition/IDotnetInstallationContext';
 import { IInstallationValidator } from '../../Acquisition/IInstallationValidator';
@@ -35,8 +34,11 @@ import { IVSCodeExtensionContext } from '../../IVSCodeExtensionContext';
 import { ITelemetryReporter } from '../../EventStream/TelemetryObserver';
 import { IUtilityContext } from '../../Utils/IUtilityContext';
 import { IVSCodeEnvironment } from '../../Utils/IVSCodeEnvironment';
-import { IDotnetAcquireResult } from '../../IDotnetAcquireResult';
-import { IDotnetCoreAcquisitionWorker } from '../../Acquisition/IDotnetCoreAcquisitionWorker';
+import { GetDotnetInstallInfo } from '../../Acquisition/DotnetInstall';
+import { DotnetInstall } from '../../Acquisition/DotnetInstall';
+import { InstallTrackerSingleton } from '../../Acquisition/InstallTrackerSingleton';
+import { InstallationGraveyard } from '../../Acquisition/InstallationGraveyard';
+import { CommandExecutorResult } from '../../Utils/CommandExecutorResult';
 
 const testDefaultTimeoutTimeMs = 60000;
 /* tslint:disable:no-any */
@@ -75,9 +77,9 @@ export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker {
     public installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             this.eventStream.post(new TestAcquireCalled(installContext));
+            const install = GetDotnetInstallInfo(installContext.version, installContext.installMode, 'local', installContext.architecture)
             this.eventStream.post(new DotnetAcquisitionCompleted(
-                DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(installContext.version, installContext.architecture),
-                installContext.dotnetPath, installContext.version));
+                install, installContext.dotnetPath, installContext.version));
             resolve();
 
         });
@@ -93,35 +95,15 @@ export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker {
 
 export class MockDotnetCoreAcquisitionWorker extends DotnetCoreAcquisitionWorker
 {
-    public AddToGraveyard(installKey : string, installPath : string)
+
+    public constructor(utilityContext : IUtilityContext, extensionContext : IVSCodeExtensionContext)
     {
-        this.updateGraveyard(installKey, installPath);
+        super(utilityContext, extensionContext);
     }
 
-    public acquireSDK(version: string, invoker: IAcquisitionInvoker): Promise<IDotnetAcquireResult>
+    public AddToGraveyard(context: IAcquisitionWorkerContext, install : DotnetInstall, installPath : string)
     {
-        // In extension.ts, when we call set AcquisitionContext, the version is updated.
-        // That may not happen under test and we do not want to create a new worker for each version as we want to test functionality
-        // that shares the same worker, so we can use this hack.
-        this.context.acquisitionContext!.version = version;
-        return super.acquireSDK(version, invoker);
-    }
-
-    public acquireRuntime(version: string, invoker: IAcquisitionInvoker): Promise<IDotnetAcquireResult> {
-        this.context.acquisitionContext!.version = version;
-        return super.acquireRuntime(version, invoker);
-    }
-
-    public updateVersion(newVersion : string)
-    {
-        this.context.acquisitionContext!.version = newVersion;
-    }
-
-    public updateArch(newArch : string)
-    {
-        this.installingArchitecture = newArch;
-        this.context.installingArchitecture = newArch;
-        this.context.acquisitionContext!.architecture = newArch;
+        new InstallationGraveyard(context).add(install, installPath);
     }
 
     public enableNoInstallInvoker()
@@ -140,7 +122,7 @@ export class RejectingAcquisitionInvoker extends IAcquisitionInvoker {
 
 export class ErrorAcquisitionInvoker extends IAcquisitionInvoker {
     public installDotnet(installContext: IDotnetInstallationContext): Promise<void> {
-        throw new Error('Command Failed');
+        throw new EventBasedError('MockErrorAcquisitionInvokerFailure', 'Command Failed');
     }
 }
 
@@ -315,13 +297,13 @@ export class MockAcquisitionInvoker extends AcquisitionInvoker
 export class MockCommandExecutor extends ICommandExecutor
 {
     private trueExecutor : CommandExecutor;
-    public fakeReturnValue = '';
+    public fakeReturnValue = {status: '', stderr: '', stdout: ''};
     public attemptedCommand = '';
 
     // If you expect several commands to be run and want to specify unique outputs for each, describe them in the same order using the below two arrays.
     // We will check for an includes match and not an exact match!
-    public otherCommandsToMock : string[] = [];
-    public otherCommandsReturnValues : string[] = [];
+    public otherCommandPatternsToMock : string[] = [];
+    public otherCommandsReturnValues : CommandExecutorResult[] = [];
 
     constructor(acquisitionContext : IAcquisitionWorkerContext, utilContext : IUtilityContext)
     {
@@ -329,28 +311,29 @@ export class MockCommandExecutor extends ICommandExecutor
         this.trueExecutor = new CommandExecutor(acquisitionContext, utilContext);
     }
 
-    public async execute(command: CommandExecutorCommand, options : object | null = null, terminalFailure? : boolean): Promise<string>
+    public async execute(command: CommandExecutorCommand, options : object | null = null, terminalFailure? : boolean): Promise<CommandExecutorResult>
     {
         this.attemptedCommand = CommandExecutor.prettifyCommandExecutorCommand(command);
 
-        if(!command.runUnderSudo && this.fakeReturnValue === '')
+        if(this.shouldActuallyExecuteCommand(command))
         {
-            this.trueExecutor.returnStatus = this.returnStatus;
             return this.trueExecutor.execute(command, options);
         }
-        else if(this.otherCommandsToMock.some(x => x.includes(command.commandRoot)))
+
+        for(let i = 0; i < this.otherCommandPatternsToMock.length; ++i)
         {
-            const fakeResultIndex = this.otherCommandsToMock.findIndex(x => x.includes(command.commandRoot));
-            // We don't need to verify the index since this is test code!
-            return this.otherCommandsReturnValues[fakeResultIndex];
+            const commandPatternToLookFor = this.otherCommandPatternsToMock[i];
+            if(command.commandRoot.includes(commandPatternToLookFor) ||
+                command.commandParts.some((arg) => arg.includes(commandPatternToLookFor)))
+            {
+                return this.otherCommandsReturnValues[i];
+            }
         }
-        else
-        {
-            return this.fakeReturnValue;
-        }
+
+        return this.fakeReturnValue;
     }
 
-    public async executeMultipleCommands(commands: CommandExecutorCommand[], options?: any, terminalFailure? : boolean): Promise<string[]>
+    public async executeMultipleCommands(commands: CommandExecutorCommand[], options?: any, terminalFailure? : boolean): Promise<CommandExecutorResult[]>
     {
         const result = [];
         for(const command of commands)
@@ -362,6 +345,23 @@ export class MockCommandExecutor extends ICommandExecutor
 
     public async tryFindWorkingCommand(commands: CommandExecutorCommand[]): Promise<CommandExecutorCommand> {
         return commands[0];
+    }
+
+    /**
+     * @remarks For commands which do not edit the global system state or we don't need to mock their data, we can just execute them
+     * with a real command executor to provide better code coverage.
+     */
+    private shouldActuallyExecuteCommand(command : CommandExecutorCommand) : boolean
+    {
+        return !command.runUnderSudo && this.fakeReturnValue.status === '' && this.fakeReturnValue.stderr === '' && this.fakeReturnValue.stdout === '';
+    }
+
+    public resetReturnValues()
+    {
+        this.fakeReturnValue = {status: '', stderr: '', stdout: ''};
+        this.attemptedCommand = '';
+        this.otherCommandPatternsToMock = [];
+        this.otherCommandsReturnValues = [];
     }
 }
 
@@ -462,7 +462,7 @@ export class MockDistroProvider extends IDistroDotnetSDKProvider
         return Promise.resolve(this.supportStatusReturnValue);
     }
 
-    public getRecommendedDotnetVersion(installType : LinuxInstallType): Promise<string> {
+    public getRecommendedDotnetVersion(installType : DotnetInstallMode): Promise<string> {
         this.commandRunner.execute(CommandExecutor.makeCommand(`recommended`, [`version`]));
         return Promise.resolve(this.recommendedVersionReturnValue);
     }
@@ -529,7 +529,7 @@ export class MockTelemetryReporter implements ITelemetryReporter {
 }
 
 export class MockInstallationValidator extends IInstallationValidator {
-    public validateDotnetInstall(version: string, dotnetPath: string): void {
+    public validateDotnetInstall(version: DotnetInstall, dotnetPath: string): void {
         // Always validate
     }
 }
@@ -549,20 +549,51 @@ export class MockLoggingObserver implements ILoggingObserver {
 }
 
 export class MockExtensionConfiguration implements IExtensionConfiguration {
-    constructor(private readonly existingPaths: IExistingPath[], private readonly enableTelemetry: boolean) { }
+    constructor(private readonly existingPaths: ILocalExistingPath[], private readonly enableTelemetry: boolean, private readonly existingSharedPath: string) { }
 
     public update<T>(section: string, value: T): Thenable<void> {
         // Not used, stubbed to implement interface
-        return new Promise((resolve) => resolve());
+        return new Promise<void>((resolve) => resolve());
     }
 
-    public get<T>(name: string): T | undefined {
-        if (name === 'existingDotnetPath') {
+    public get<T>(name: string): T | undefined
+    {
+        if (name === 'existingDotnetPath')
+        {
             return this.existingPaths as unknown as T;
-        } else if (name === 'enableTelemetry') {
+        }
+        else if(name === 'sharedExistingDotnetPath')
+        {
+            return this.existingSharedPath as unknown as T;
+        }
+        else if (name === 'enableTelemetry')
+        {
             return this.enableTelemetry as unknown as T;
-        } else {
+        }
+        else
+        {
             return undefined;
         }
+    }
+}
+
+export class MockInstallTracker extends InstallTrackerSingleton
+{
+    constructor(eventStream : IEventStream, extensionState : IExtensionState)
+    {
+        super(eventStream, extensionState);
+        // Cause an instance to exist so that we can override the members.
+        const _ = InstallTrackerSingleton.getInstance(eventStream, extensionState);
+        this.overrideMembers(eventStream, extensionState);
+    }
+
+    public getExtensionState() : IExtensionState
+    {
+        return this.extensionState;
+    }
+
+    public setExtensionState(extensionState : IExtensionState) : void
+    {
+        this.extensionState = extensionState;
     }
 }

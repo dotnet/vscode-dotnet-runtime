@@ -12,7 +12,8 @@
         "proccom",
         "programfiles",
         "REGHEXVALUE",
-        "REGTYPE"
+        "REGTYPE",
+        "Republisher"
     ],
     "azure-pipelines.1ESPipelineTemplatesSchemaFile": true
 }

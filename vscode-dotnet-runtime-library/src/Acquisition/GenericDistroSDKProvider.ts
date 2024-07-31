@@ -7,73 +7,65 @@ import * as path from 'path';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { CommandExecutorCommand } from '../Utils/CommandExecutorCommand';
 import { DotnetDistroSupportStatus } from './LinuxVersionResolver';
-import { LinuxInstallType } from './LinuxInstallType';
+import { DotnetInstallMode } from './DotnetInstallMode';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
+import { DotnetVersionResolutionError, EventBasedError } from '../EventStream/EventStreamEvents';
 /* tslint:disable:no-any */
 
 export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 {
     protected resolvePathAsSymlink = true;
 
-    public async installDotnet(fullySpecifiedVersion : string, installType : LinuxInstallType): Promise<string>
+    public async installDotnet(fullySpecifiedVersion : string, installType : DotnetInstallMode): Promise<string>
     {
         await this.injectPMCFeed(fullySpecifiedVersion, installType);
 
         let commands = this.myDistroCommands(this.installCommandKey);
         const sdkPackage = await this.myDotnetVersionPackageName(fullySpecifiedVersion, installType);
 
-        const oldReturnStatusSetting = this.commandRunner.returnStatus;
-        this.commandRunner.returnStatus = true;
         commands = CommandExecutor.replaceSubstringsInCommands(commands, this.missingPackageNameKey, sdkPackage);
         const updateCommandsResult = (await this.commandRunner.executeMultipleCommands(commands.slice(0, -1), undefined))[0];
-        const installCommandResult = await this.commandRunner.execute(commands.slice(-1)[0]);
+        const installCommandResult = (await this.commandRunner.execute(commands.slice(-1)[0])).status;
 
-        this.commandRunner.returnStatus = oldReturnStatusSetting;
         return installCommandResult;
     }
 
-    public async getInstalledGlobalDotnetPathIfExists(installType : LinuxInstallType) : Promise<string | null>
+    public async getInstalledGlobalDotnetPathIfExists(installType : DotnetInstallMode) : Promise<string | null>
     {
         const commandResult = await this.commandRunner.executeMultipleCommands(this.myDistroCommands(this.currentInstallPathCommandKey));
 
-        const oldReturnStatusSetting = this.commandRunner.returnStatus;
-        this.commandRunner.returnStatus = true;
-        const commandSignal = await this.commandRunner.executeMultipleCommands(this.myDistroCommands(this.currentInstallPathCommandKey));
-        this.commandRunner.returnStatus = oldReturnStatusSetting;
-
-        if(commandSignal[0] !== '0') // no dotnet error can be returned, dont want to try to parse this as a path
+        if(commandResult[0].status !== '0') // no dotnet error can be returned, dont want to try to parse this as a path
         {
             return null;
         }
 
-        if(commandResult[0])
+        if(commandResult[0].stdout)
         {
-            commandResult[0] = commandResult[0].trim();
+            commandResult[0].stdout = commandResult[0].stdout.trim();
         }
 
         if(commandResult[0] && this.resolvePathAsSymlink)
         {
             let symLinkReadCommand = this.myDistroCommands(this.readSymbolicLinkCommandKey);
-            symLinkReadCommand = CommandExecutor.replaceSubstringsInCommands(symLinkReadCommand, this.missingPathKey, commandResult[0]);
-            const resolvedPath = (await this.commandRunner.executeMultipleCommands(symLinkReadCommand))[0];
+            symLinkReadCommand = CommandExecutor.replaceSubstringsInCommands(symLinkReadCommand, this.missingPathKey, commandResult[0].stdout);
+            const resolvedPath = (await this.commandRunner.executeMultipleCommands(symLinkReadCommand))[0].stdout;
             if(resolvedPath)
             {
                 return path.dirname(resolvedPath.trim());
             }
         }
 
-        return commandResult[0] ?? null;
+        return commandResult[0].stdout ?? null;
     }
 
-    public async dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion : string, installType : LinuxInstallType) : Promise<boolean>
+    public async dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion : string, installType : DotnetInstallMode) : Promise<boolean>
     {
         let command = this.myDistroCommands(this.packageLookupCommandKey);
         const sdkPackage = await this.myDotnetVersionPackageName(this.JsonDotnetVersion(fullySpecifiedDotnetVersion), installType);
         command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, sdkPackage);
         const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
-        const noPackageResult = 'no packages found';
-        return commandResult[0].toLowerCase().includes(noPackageResult);
+        return commandResult.status === '0';
     }
 
     public getExpectedDotnetDistroFeedInstallationDirectory(): string
@@ -86,28 +78,24 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         return this.myDistroStrings(this.expectedMicrosoftFeedInstallDirKey);
     }
 
-    public async upgradeDotnet(versionToUpgrade : string, installType : LinuxInstallType): Promise<string>
+    public async upgradeDotnet(versionToUpgrade : string, installType : DotnetInstallMode): Promise<string>
     {
-        const oldReturnStatusSetting = this.commandRunner.returnStatus;
-        this.commandRunner.returnStatus = true;
-
         let command = this.myDistroCommands(this.updateCommandKey);
         const sdkPackage = await this.myDotnetVersionPackageName(versionToUpgrade, installType);
         command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, sdkPackage);
-        const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
+        const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0].status;
 
-        this.commandRunner.returnStatus = oldReturnStatusSetting;
         return commandResult[0];
     }
 
-    public async uninstallDotnet(versionToUninstall : string, installType : LinuxInstallType): Promise<string>
+    public async uninstallDotnet(versionToUninstall : string, installType : DotnetInstallMode): Promise<string>
     {
         let command = this.myDistroCommands(this.uninstallCommandKey);
         const sdkPackage = await this.myDotnetVersionPackageName(versionToUninstall, installType);
         command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, sdkPackage);
         const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
-        return commandResult[0];
+        return commandResult.stdout;
     }
 
     public async getInstalledDotnetSDKVersions(): Promise<string[]>
@@ -115,14 +103,14 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         const command = this.myDistroCommands(this.installedSDKVersionsCommandKey);
         const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
-        const outputLines : string[] = commandResult.split('\n');
+        const outputLines : string[] = commandResult.stdout.split('\n');
         const versions : string[]  = [];
 
         for(const line of outputLines)
         {
             const splitLine = line.split(/\s+/);
             // list sdk lines shows in the form: version [path], so the version is the 2nd item
-            if(splitLine.length === 2)
+            if(splitLine.length === 2 && splitLine[0] !== '')
             {
                 versions.push(splitLine[0]);
             }
@@ -135,7 +123,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         const command = this.myDistroCommands(this.installedRuntimeVersionsCommandKey);
         const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
 
-        const outputLines : string[] = commandResult.split('\n');
+        const outputLines : string[] = commandResult.stdout.split('\n');
         const versions : string[]  = [];
 
         for(const line of outputLines)
@@ -156,19 +144,19 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 
         // we need to run this command in the root directory otherwise local dotnets on the path may interfere
         const rootDir = path.parse(__dirname).root;
-        let commandResult = (await this.commandRunner.executeMultipleCommands(command, { cwd: path.resolve(rootDir), shell: true }))[0];
+        const commandResult = (await this.commandRunner.executeMultipleCommands(command, { cwd: path.resolve(rootDir), shell: true }))[0];
 
-        commandResult = commandResult.replace('\n', '');
-        if(!this.versionResolver.isValidLongFormVersionFormat(commandResult))
+        commandResult.stdout = commandResult.stdout.replace('\n', '');
+        if(!this.versionResolver.isValidLongFormVersionFormat(commandResult.stdout))
         {
             return null;
         }
         {
-            return commandResult;
+            return commandResult.stdout;
         }
     }
 
-    public async getDotnetVersionSupportStatus(fullySpecifiedVersion: string, installType : LinuxInstallType): Promise<DotnetDistroSupportStatus>
+    public async getDotnetVersionSupportStatus(fullySpecifiedVersion: string, installType : DotnetInstallMode): Promise<DotnetDistroSupportStatus>
     {
         if(this.versionResolver.getFeatureBandFromVersion(fullySpecifiedVersion) !== '1' || Number(this.versionResolver.getMajor(fullySpecifiedVersion)) < 6)
         {
@@ -197,7 +185,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         return Promise.resolve(DotnetDistroSupportStatus.Unknown);
     }
 
-    public async getRecommendedDotnetVersion(installType : LinuxInstallType) : Promise<string>
+    public async getRecommendedDotnetVersion(installType : DotnetInstallMode) : Promise<string>
     {
         let maxVersion = '0';
         const json = await this.myVersionPackages(installType, this.isMidFeedInjection);
@@ -207,6 +195,14 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
             {
                 maxVersion = dotnetPackages.version;
             }
+        }
+
+        if(maxVersion === '0')
+        {
+            const err = new DotnetVersionResolutionError(new EventBasedError('DotnetVersionResolutionError', `No packages for .NET are available.
+Please refer to https://learn.microsoft.com/en-us/dotnet/core/install/linux if you'd link to install .NET.`), null);
+            this.context.eventStream.post(err);
+            throw(err);
         }
 
         // Most distros support only 100 band .NET versions, so we default to that here.

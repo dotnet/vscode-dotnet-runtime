@@ -25,7 +25,7 @@ const timeoutTime = 10000;
 suite('Global Installer Resolver Tests', () =>
 {
     test('It finds the newest patch version given a feature band', async () => {
-        const acquisitionContext = getMockAcquisitionContext(true, featureBandVersion);
+        const acquisitionContext = getMockAcquisitionContext('runtime', featureBandVersion);
         const provider : GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, featureBandVersion);
         const webWorker = new FileWebRequestWorker(acquisitionContext, '', filePath);
         provider.customWebRequestWorker = webWorker;
@@ -34,7 +34,7 @@ suite('Global Installer Resolver Tests', () =>
     });
 
     test('It finds the correct installer download url for the os', async () => {
-        const acquisitionContext = getMockAcquisitionContext(true, mockVersion);
+        const acquisitionContext = getMockAcquisitionContext('runtime', mockVersion);
         const provider : GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, mockVersion);
         const webWorker = new FileWebRequestWorker(acquisitionContext, '', filePath);
         provider.customWebRequestWorker = webWorker;
@@ -54,7 +54,7 @@ suite('Global Installer Resolver Tests', () =>
     });
 
     test('It parses the major format', async () => {
-        const acquisitionContext = getMockAcquisitionContext(true, majorMinorOnly);
+        const acquisitionContext = getMockAcquisitionContext('runtime', majorMinorOnly);
         const provider : GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, majorMinorOnly);
         const webWorker = new FileWebRequestWorker(acquisitionContext, '', filePath);
         provider.customWebRequestWorker = webWorker;
@@ -63,7 +63,7 @@ suite('Global Installer Resolver Tests', () =>
     });
 
     test('It parses the major.minor format', async () => {
-        const acquisitionContext = getMockAcquisitionContext(true, majorOnly);
+        const acquisitionContext = getMockAcquisitionContext('runtime', majorOnly);
         const provider : GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, majorOnly);
         const webWorker = new FileWebRequestWorker(acquisitionContext, '', filePath);
         provider.customWebRequestWorker = webWorker;
@@ -73,7 +73,7 @@ suite('Global Installer Resolver Tests', () =>
 
     test('It rejects correctly with undiscoverable feature band', async () => {
         const version = '7.0.500';
-        const acquisitionContext = getMockAcquisitionContext(true, version);
+        const acquisitionContext = getMockAcquisitionContext('runtime', version);
         const provider : GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, version);
         const webWorker = new FileWebRequestWorker(acquisitionContext, '', filePath);
         provider.customWebRequestWorker = webWorker;

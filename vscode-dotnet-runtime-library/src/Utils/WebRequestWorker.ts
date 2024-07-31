@@ -7,8 +7,8 @@ import axiosRetry from 'axios-retry';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { getProxySettings } from 'get-proxy-settings';
 import { AxiosCacheInstance, buildMemoryStorage, setupCache } from 'axios-cache-interceptor';
-import {SuppressedAcquisitionError, WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
-import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
+import {DiskIsFullError, DotnetDownloadFailure, EventBasedError, SuppressedAcquisitionError, WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
+import { getInstallFromContext } from './InstallIdUtilities';
 
 import * as fs from 'fs';
 import { promisify } from 'util';
@@ -69,11 +69,20 @@ export class WebRequestWorker
     {
         if(url === '' || !url)
         {
-            throw new Error(`Request to the url ${this.url} failed, as the URL is invalid.`);
+            throw new EventBasedError('AxiosGetFailedWithInvalidURL', `Request to the url ${this.url} failed, as the URL is invalid.`);
         }
+        const timeoutCancelTokenHook = new AbortController();
+        const timeout = setTimeout(() =>
+        {
+            timeoutCancelTokenHook.abort();
+            const formattedError = new Error(`TIMEOUT: The request to ${this.url} timed out at ${this.websiteTimeoutMs} ms. This only occurs if your internet
+ or the url are experiencing connection difficulties; not if the server is being slow to respond. Check your connection, the url, and or increase the timeout value here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#install-script-timeouts`);
+            this.context.eventStream.post(new WebRequestError(new EventBasedError('WebRequestError', formattedError.message, formattedError.stack), null));
+            throw formattedError;
+        }, this.websiteTimeoutMs);
 
-        const response = await this.client.get(url, { ...options });
-
+        const response = await this.client.get(url, { signal: timeoutCancelTokenHook.signal, ...options });
+        clearTimeout(timeout);
         return response;
     }
 
@@ -155,12 +164,33 @@ export class WebRequestWorker
         const finished = promisify(stream.finished);
         const file = fs.createWriteStream(dest, { flags: 'wx' });
         const options = await this.getAxiosOptions(3, {responseType: 'stream', transformResponse: (x : any) => x}, false);
-        await this.axiosGet(url, options)
-        .then(response =>
+        try
         {
-            response.data.pipe(file);
-            return finished(file);
-        });
+            await this.axiosGet(url, options)
+            .then(response =>
+            {
+                response.data.pipe(file);
+                return finished(file);
+            });
+        }
+        catch(error : any)
+        {
+            if(error?.message?.contains('ENOSPC'))
+            {
+                const err = new DiskIsFullError(new EventBasedError('DiskIsFullError',
+`You don't have enough space left on your disk to install the .NET SDK. Please clean up some space.`), getInstallFromContext(this.context));
+                this.context.eventStream.post(err);
+                throw err.error;
+            }
+            else
+            {
+                const err = new DotnetDownloadFailure(new EventBasedError('DotnetDownloadFailure',
+`We failed to download the .NET Installer. Please try to install the .NET SDK manually.
+Error: ${error.message}`), getInstallFromContext(this.context));
+                this.context.eventStream.post(err);
+                throw err.error;
+            }
+        }
     }
 
     private async getAxiosOptions(numRetries: number, furtherOptions? : {}, keepAlive = true)
@@ -207,19 +237,20 @@ export class WebRequestWorker
                 if(isAxiosError(error))
                 {
                     const axiosBasedError = error as AxiosError;
-                    const summarizedError = new Error(
+                    const summarizedError = new EventBasedError('WebRequestFailedFromAxios',
 `Request to ${this.url} Failed: ${axiosBasedError.message}. Aborting.
 ${axiosBasedError.cause? `Error Cause: ${axiosBasedError.cause!.message}` : ``}
 Please ensure that you are online.
 
 If you're on a proxy and disable registry access, you must set the proxy in our extension settings. See https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`);
-                    this.context.eventStream.post(new WebRequestError(summarizedError, getInstallKeyFromContext(this.context.acquisitionContext)));
+                    this.context.eventStream.post(new WebRequestError(summarizedError, getInstallFromContext(this.context)));
                     throw summarizedError;
                 }
                 else
                 {
-                    const genericError = new Error(`Web Request to ${this.url} Failed: ${error.message}. Aborting. Stack: ${'stack' in error ? error?.stack : 'unavailable.'}`);
-                    this.context.eventStream.post(new WebRequestError(genericError, getInstallKeyFromContext(this.context.acquisitionContext)));
+                    const genericError = new EventBasedError('WebRequestFailedGenerically',
+                        `Web Request to ${this.url} Failed: ${error.message}. Aborting. Stack: ${'stack' in error ? error?.stack : 'unavailable.'}`);
+                    this.context.eventStream.post(new WebRequestError(genericError, getInstallFromContext(this.context)));
                     throw genericError;
                 }
             }

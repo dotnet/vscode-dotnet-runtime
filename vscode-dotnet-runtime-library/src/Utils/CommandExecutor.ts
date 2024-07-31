@@ -30,8 +30,6 @@ import {
     DotnetCommandNotFoundEvent,
     DotnetLockAcquiredEvent,
     DotnetLockReleasedEvent,
-    DotnetWSLCheckEvent,
-    DotnetWSLOperationOutputEvent,
     DotnetWSLSecurityError,
     SudoProcAliveCheckBegin,
     SudoProcAliveCheckEnd,
@@ -39,12 +37,13 @@ import {
     SudoProcCommandExchangeEnd,
     SudoProcCommandExchangePing,
     TimeoutSudoCommandExecutionError,
-    TimeoutSudoProcessSpawnerError
+    TimeoutSudoProcessSpawnerError,
+    EventBasedError
 } from '../EventStream/EventStreamEvents';
 import {exec} from '@vscode/sudo-prompt';
 import * as lockfile from 'proper-lockfile';
 import { CommandExecutorCommand } from './CommandExecutorCommand';
-import { getInstallKeyFromContext } from '../Utils/InstallKeyGenerator';
+import { getInstallFromContext } from './InstallIdUtilities';
 
 
 import { ICommandExecutor } from './ICommandExecutor';
@@ -54,9 +53,8 @@ import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { FileUtilities } from './FileUtilities';
 import { IFileUtilities } from './IFileUtilities';
-import { CommandProcessorOutput } from './CommandProcessorOutput';
-import { setTimeout } from 'timers';
-import { IEventStream } from '../EventStream/EventStream';
+import { CommandExecutorResult } from './CommandExecutorResult';
+import { isRunningUnderWSL, loopWithTimeoutOnCond } from './TypescriptUtilities';
 
 /* tslint:disable:no-any */
 /* tslint:disable:no-string-literal */
@@ -68,72 +66,38 @@ export class CommandExecutor extends ICommandExecutor
     private fileUtil : IFileUtilities;
     private hasEverLaunchedSudoFork = false;
 
-    constructor(context : IAcquisitionWorkerContext | null, utilContext : IUtilityContext,  protected readonly validSudoCommands? : string[])
+    constructor(context : IAcquisitionWorkerContext, utilContext : IUtilityContext,  protected readonly validSudoCommands? : string[])
     {
         super(context, utilContext);
         this.fileUtil = new FileUtilities();
     }
 
     /**
-     * Returns true if the linux agent is running under WSL, else false.
-     */
-    public static isRunningUnderWSL(eventStream? : IEventStream) : boolean
-    {
-        // See https://github.com/microsoft/WSL/issues/4071 for evidence that we can rely on this behavior.
-
-        eventStream?.post(new DotnetWSLCheckEvent(`Checking if system is WSL. OS: ${os.platform()}`));
-
-        if(os.platform() !== 'linux')
-        {
-            return false;
-        }
-
-        const command = 'grep';
-        const args = ['-i', 'Microsoft', '/proc/version'];
-        const commandResult = proc.spawnSync(command, args);
-
-        eventStream?.post(new DotnetWSLOperationOutputEvent(`The output of the WSL check:
-stdout: ${commandResult.stdout?.toString()}
-stderr: ${commandResult.stderr?.toString()}
-status: ${commandResult.status?.toString()}`
-        ));
-
-        if(!commandResult || !commandResult.stdout)
-        {
-            return false;
-        }
-
-        return commandResult.stdout.toString() !== '';
-    }
-
-    /**
      *
      * @returns The output of the command.
      */
-    private async ExecSudoAsync(command : CommandExecutorCommand, terminalFailure = true) : Promise<string>
+    private async ExecSudoAsync(command : CommandExecutorCommand, terminalFailure = true) : Promise<CommandExecutorResult>
     {
         const fullCommandString = CommandExecutor.prettifyCommandExecutorCommand(command, false);
         this.context?.eventStream.post(new CommandExecutionUnderSudoEvent(`The command ${fullCommandString} is being ran under sudo.`));
         const shellScript = path.join(this.sudoProcessCommunicationDir, 'interprocess-communicator.sh');
 
-        if(CommandExecutor.isRunningUnderWSL(this.context?.eventStream))
+        if(isRunningUnderWSL(this.context?.eventStream))
         {
             // For WSL, vscode/sudo-prompt does not work.
             // This is because it relies on pkexec or a GUI app to popup and request sudo privilege.
             // GUI in WSL is not supported, so it will fail.
             // We had a working implementation that opens a vscode box and gets the user password, but that will require more security analysis.
 
-            const err = new DotnetWSLSecurityError(new EventCancellationError(`Automatic .NET SDK Installation is not yet supported in WSL due to VS Code & WSL limitations.
+            const err = new DotnetWSLSecurityError(new EventCancellationError('DotnetWSLSecurityError',
+            `Automatic .NET SDK Installation is not yet supported in WSL due to VS Code & WSL limitations.
 Please install the .NET SDK manually by following https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu. Then, add it to the path by following https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#manually-installing-net`,
-                ), getInstallKeyFromContext(this.context?.acquisitionContext!));
+                ), getInstallFromContext(this.context));
             this.context?.eventStream.post(err);
             throw err.error;
         }
 
-        const oldReturnStatusSetting = this.returnStatus;
-        this.returnStatus = true;
         const masterSudoProcessSpawnResult = this.startupSudoProc(fullCommandString, shellScript, terminalFailure);
-        this.returnStatus = oldReturnStatusSetting;
 
         await this.sudoProcIsLive(terminalFailure);
         return this.executeSudoViaProcessCommunication(fullCommandString, terminalFailure);
@@ -166,22 +130,14 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
         const options = { name: `${sanitizedCallerName ?? 'NET Install Tool'}` };
 
         fs.chmodSync(shellScriptPath, 0o500);
-        exec((`"${shellScriptPath}" "${this.sudoProcessCommunicationDir}" ${this.validSudoCommands?.join(' ')} &`), options, (error?: any, stdout?: any, stderr?: any) =>
+        const timeoutSeconds = Math.max(100, this.context.timeoutSeconds);
+        exec((`"${shellScriptPath}" "${this.sudoProcessCommunicationDir}" "${timeoutSeconds}" ${this.validSudoCommands?.join(' ')} &`), options, (error?: any, stdout?: any, stderr?: any) =>
         {
-            let commandResultString = '';
-
-            if (stdout)
-            {
                 this.context?.eventStream.post(new CommandExecutionStdOut(`The process spawn: ${fullCommandString} encountered stdout, continuing
 ${stdout}`));
-                commandResultString += stdout;
-            }
-            if (stderr)
-            {
+
                 this.context?.eventStream.post(new CommandExecutionStdError(`The process spawn: ${fullCommandString} encountered stderr, continuing
 ${stderr}`));
-                commandResultString += stderr;
-            }
 
             if (error)
             {
@@ -190,17 +146,19 @@ ${stderr}`));
                 {
                     if(error.code === 126)
                     {
-                        const cancelledErr = new CommandExecutionUserRejectedPasswordRequest(new EventCancellationError(`Cancelling .NET Install, as command ${fullCommandString} failed.
+                        const cancelledErr = new CommandExecutionUserRejectedPasswordRequest(new EventCancellationError('CommandExecutionUserRejectedPasswordRequest',
+                        `Cancelling .NET Install, as command ${fullCommandString} failed.
 The user refused the password prompt.`),
-                            getInstallKeyFromContext(this.context?.acquisitionContext!));
+                            getInstallFromContext(this.context));
                         this.context?.eventStream.post(cancelledErr);
                         return Promise.reject(cancelledErr.error);
                     }
                     else if(error.code === 111777)
                     {
-                        const securityErr = new CommandExecutionUnknownCommandExecutionAttempt(new EventCancellationError(`Cancelling .NET Install, as command ${fullCommandString} is UNKNOWN.
+                        const securityErr = new CommandExecutionUnknownCommandExecutionAttempt(new EventCancellationError('CommandExecutionUnknownCommandExecutionAttempt',
+                        `Cancelling .NET Install, as command ${fullCommandString} is UNKNOWN.
 Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
-                            getInstallKeyFromContext(this.context?.acquisitionContext!));
+                            getInstallFromContext(this.context));
                         this.context?.eventStream.post(securityErr);
                         return Promise.reject(securityErr.error);
                     }
@@ -208,13 +166,13 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
                 }
                 else
                 {
-                    return Promise.resolve(this.returnStatus ? '1' : stderr);
+                    return Promise.resolve('1');
                 }
             }
             else
             {
                 this.context?.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The process spawn: ${fullCommandString} successfully ran under sudo.`));
-                return Promise.resolve(this.returnStatus ? '0' : commandResultString);
+                return Promise.resolve('0');
             }
         });
 
@@ -241,7 +199,7 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
 
         // Lock the directory -- this is not a system wide lock, only a library lock we must respect in the code.
         // This will allow the process to still edit the directory, but not our extension API calls from overlapping with one another.
-        await lockfile.lock(fakeLockFile, { lockfilePath: directoryLockPath, retries: { retries: 10, maxTimeout: 1000 } } )
+        await lockfile.lock(fakeLockFile, { lockfilePath: directoryLockPath, retries: { retries: 10, minTimeout: 5, maxTimeout: 10000 } } )
         .then(async (release: () => void) =>
         {
             this.context?.eventStream.post(new DotnetLockAcquiredEvent(`Lock Acquired.`, new Date().toISOString(), directoryLockPath, fakeLockFile));
@@ -252,9 +210,11 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
             this.context?.eventStream.post(new SudoProcAliveCheckBegin(`Looking for Sudo Process Master, wrote OK file. ${new Date().toISOString()}`));
 
             const waitTime = this.context?.timeoutSeconds ? ((this.context?.timeoutSeconds/3) * 1000) : 180000;
-            await this.loopWithTimeoutOnCond(100, waitTime,
+            await loopWithTimeoutOnCond(100, waitTime,
                 function processRespondedByDeletingOkFile() : boolean { return !fs.existsSync(processAliveOkSentinelFile) },
-                function setProcessIsAlive() : void { isLive = true; }
+                function setProcessIsAlive() : void { isLive = true; },
+                this.context.eventStream,
+                new SudoProcCommandExchangePing(`Ping : Waiting. ${new Date().toISOString()}`)
             )
             .catch(error =>
             {
@@ -270,33 +230,14 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
 
         if(!isLive && errorIfDead)
         {
-            const err = new TimeoutSudoProcessSpawnerError(new Error(`We are unable to spawn the process to run commands under sudo for installing .NET.
+            const err = new TimeoutSudoProcessSpawnerError(new EventCancellationError('TimeoutSudoProcessSpawnerError', `We are unable to spawn the process to run commands under sudo for installing .NET.
 Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: ${errorIfDead}.
-It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFromContext(this.context?.acquisitionContext));
+It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallFromContext(this.context));
             this.context?.eventStream.post(err);
             throw err.error;
         }
 
         return isLive;
-    }
-
-    private async loopWithTimeoutOnCond(sampleRatePerMs : number, durationToWaitBeforeTimeoutMs : number, conditionToStop : () => boolean, doAfterStop : () => void )
-    {
-        return new Promise(async (resolve, reject) =>
-        {
-            for (let i = 0; i < (durationToWaitBeforeTimeoutMs / sampleRatePerMs); i++)
-            {
-                if(conditionToStop())
-                {
-                    doAfterStop();
-                    return resolve('The promise succeeded.');
-                }
-                this.context?.eventStream.post(new SudoProcCommandExchangePing(`Ping : Waiting. ${new Date().toISOString()}`));
-                await new Promise(waitAndResolve => setTimeout(waitAndResolve, sampleRatePerMs));
-            }
-
-            return reject('The promise timed out.');
-        });
     }
 
     /**
@@ -306,11 +247,10 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFrom
      * @param failOnNonZeroExit Whether to fail if we get an exit code from the command besides 0.
      * @returns The output string of the command, or the string status code, depending on the mode of execution.
      */
-    private async executeSudoViaProcessCommunication(commandToExecuteString : string, terminalFailure : boolean, failOnNonZeroExit = true) : Promise<string>
+    private async executeSudoViaProcessCommunication(commandToExecuteString : string, terminalFailure : boolean, failOnNonZeroExit = true) : Promise<CommandExecutorResult>
     {
-        let commandOutputJson : CommandProcessorOutput | null = null;
-        let statusCode = '1220'; // Special failure code for if code is never set error
-        let commandResultString = '';
+        let commandOutputJson : CommandExecutorResult | null = null;
+        const noStatusCodeErrorCode = '1220'; // Special failure code for if code is never set error
 
         const commandFile = path.join(this.sudoProcessCommunicationDir, 'command.txt');
         const stderrFile = path.join(this.sudoProcessCommunicationDir, 'stderr.txt');
@@ -330,7 +270,7 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFrom
         // This will allow the process to still edit the directory, but not our extension API calls from overlapping with one another.
 
 
-        await lockfile.lock(fakeLockFile, { lockfilePath: directoryLockPath, retries: { retries: 10, maxTimeout: 1000 } } )
+        await lockfile.lock(fakeLockFile, { lockfilePath: directoryLockPath, retries: { retries: 10, minTimeout : 5, maxTimeout: 10000 } } )
         .then(async (release: () => any) =>
         {
             this.context?.eventStream.post(new DotnetLockAcquiredEvent(`Lock Acquired.`, new Date().toISOString(), directoryLockPath, fakeLockFile));
@@ -342,9 +282,11 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFrom
 
 
             const waitTime = this.context?.timeoutSeconds ? (this.context?.timeoutSeconds * 1000) : 600000;
-            await this.loopWithTimeoutOnCond(100, waitTime,
+            await loopWithTimeoutOnCond(100, waitTime,
                 function ProcessFinishedExecutingAndWroteOutput() : boolean { return fs.existsSync(outputFile) },
-                function doNothing() : void { ; }
+                function doNothing() : void { ; },
+                this.context.eventStream,
+                new SudoProcCommandExchangePing(`Ping : Waiting. ${new Date().toISOString()}`)
             )
             .catch(error =>
             {
@@ -355,7 +297,7 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFrom
                 stdout : (fs.readFileSync(stdoutFile, 'utf8')).trim(),
                 stderr : (fs.readFileSync(stderrFile, 'utf8')).trim(),
                 status : (fs.readFileSync(statusFile, 'utf8')).trim()
-            } as CommandProcessorOutput;
+            } as CommandExecutorResult;
             this.context?.eventStream.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), directoryLockPath, fakeLockFile));
             await this.fileUtil.wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt']);
 
@@ -366,9 +308,10 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFrom
 
         if(!commandOutputJson && terminalFailure)
         {
-            const err = new TimeoutSudoCommandExecutionError(new Error(`Timeout: The master process with command ${commandToExecuteString} never finished executing.
+            const err = new TimeoutSudoCommandExecutionError(new EventCancellationError('TimeoutSudoCommandExecutionError',
+            `Timeout: The master process with command ${commandToExecuteString} never finished executing.
 Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: ${terminalFailure}.
-It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFromContext(this.context?.acquisitionContext));
+It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallFromContext(this.context));
             this.context?.eventStream.post(err);
             throw err.error;
         }
@@ -379,35 +322,28 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallKeyFrom
         else
         {
             this.context?.eventStream.post(new CommandProcessorExecutionEnd(`The command ${commandToExecuteString} was finished by the master process, as ${outputFile} was found.`));
-            const stdout = commandOutputJson['stdout'];
-            const stderr = commandOutputJson['stderr'];
-            statusCode = commandOutputJson['status'];
-            if (stdout)
-            {
-                this.context?.eventStream.post(new CommandExecutionStdOut(`The command ${commandToExecuteString} encountered stdout, continuing
-${stdout}`));
-                commandResultString += stdout;
-            }
-            if (stderr)
-            {
-                this.context?.eventStream.post(new CommandExecutionStdError(`The command ${commandToExecuteString} encountered stderr, continuing
-${stderr}`));
-                commandResultString += stderr;
-            }
 
-            if(statusCode !== '0' && failOnNonZeroExit)
+            this.context?.eventStream.post(new CommandExecutionStdOut(`The command ${commandToExecuteString} encountered stdout, continuing
+${(commandOutputJson as CommandExecutorResult).stdout}`));
+
+            this.context?.eventStream.post(new CommandExecutionStdError(`The command ${commandToExecuteString} encountered stderr, continuing
+${(commandOutputJson as CommandExecutorResult).stderr}`));
+
+            if((commandOutputJson as CommandExecutorResult).status !== '0' && failOnNonZeroExit)
             {
-                const err = new CommandExecutionNonZeroExitFailure(new Error(`Cancelling .NET Install, as command ${commandToExecuteString} returned with status ${statusCode}.`),
-                    getInstallKeyFromContext(this.context?.acquisitionContext!));
+                const err = new CommandExecutionNonZeroExitFailure(new EventBasedError('CommandExecutionNonZeroExitFailure',
+                    `Cancelling .NET Install, as command ${commandToExecuteString} returned with status ${(commandOutputJson as CommandExecutorResult).status}.
+${(commandOutputJson as CommandExecutorResult).stderr}.`),
+                     getInstallFromContext(this.context));
                 this.context?.eventStream.post(err);
                 throw err.error;
             }
         }
 
-        return (this.returnStatus ? statusCode : commandResultString);
+        return commandOutputJson ?? { stdout: '', stderr : '', status: noStatusCodeErrorCode};
     }
 
-    public async executeMultipleCommands(commands: CommandExecutorCommand[], options?: any, terminalFailure = true): Promise<string[]>
+    public async executeMultipleCommands(commands: CommandExecutorCommand[], options?: any, terminalFailure = true): Promise<CommandExecutorResult[]>
     {
         const results = [];
         for(const command of commands)
@@ -424,9 +360,17 @@ ${stderr}`));
      * @param terminalFailure Whether to throw up an error when executing under sudo or suppress it and return stderr
      * @returns the result(s) of each command. Can throw generically if the command fails.
      */
-    public async execute(command : CommandExecutorCommand, options : any | null = null, terminalFailure = true) : Promise<string>
+    public async execute(command : CommandExecutorCommand, options : any | null = null, terminalFailure = true) : Promise<CommandExecutorResult>
     {
         const fullCommandStringForTelemetryOnly = `${command.commandRoot} ${command.commandParts.join(' ')}`;
+        if(options && !options?.cwd)
+        {
+            options.cwd = path.resolve(__dirname);
+        }
+        if(options && !options?.shell)
+        {
+            options.shell = true;
+        }
         if(!options)
         {
             options = {cwd : path.resolve(__dirname), shell: true};
@@ -434,19 +378,26 @@ ${stderr}`));
 
         if(command.runUnderSudo)
         {
-            return this.ExecSudoAsync(command, terminalFailure) ?? '';
+            return this.ExecSudoAsync(command, terminalFailure);
         }
         else
         {
             this.context?.eventStream.post(new CommandExecutionEvent(`Executing command ${fullCommandStringForTelemetryOnly}
-with options ${options}.`));
+with options ${JSON.stringify(options)}.`));
             const commandResult = proc.spawnSync(command.commandRoot, command.commandParts, options);
-            if(this.returnStatus)
+
+            if(os.platform() === 'win32')
+            {
+                proc.spawn('taskkill', ['/pid', commandResult.pid.toString(), '/f', '/t']);
+            }
+
+
+            this.logCommandResult(commandResult, fullCommandStringForTelemetryOnly);
+
+            const statusCode : string = (() =>
             {
                 if(commandResult.status !== null)
                 {
-                    this.context?.eventStream.post(new CommandExecutionStatusEvent(`The command ${fullCommandStringForTelemetryOnly} exited
-with status: ${commandResult.status.toString()}.`));
                     return commandResult.status.toString() ?? '';
                 }
                 else
@@ -454,8 +405,7 @@ with status: ${commandResult.status.toString()}.`));
                     // A signal is generally given if a status is not given, and they are 'equivalent' enough
                     if(commandResult.signal !== null)
                     {
-                        this.context?.eventStream.post(new CommandExecutionSignalSentEvent(`The command ${fullCommandStringForTelemetryOnly} exited
-with signal: ${commandResult.signal.toString()}.`));
+
                         return commandResult.signal.toString() ?? '';
                     }
                     else
@@ -465,29 +415,25 @@ result: ${commandResult.toString()} had no status or signal.`));
                         return '000751'; // Error code 000751 : The command did not report an exit code upon completion. This is never expected
                     }
                 }
-            }
-            else
-            {
-                if(!commandResult.stdout && !commandResult.stderr)
-                {
-                    return '';
-                }
-                else
-                {
-                    if(commandResult.stdout)
-                    {
-                    this.context?.eventStream.post(new CommandExecutionStdOut(`The command ${fullCommandStringForTelemetryOnly} encountered stdout:
-${commandResult.stdout}`));
-                    }
-                    if(commandResult.stderr)
-                    {
-                        this.context?.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandStringForTelemetryOnly} encountered stderr:
-${commandResult.stderr}`));
-                    }
-                    return commandResult.stdout?.toString() + commandResult.stderr?.toString() ?? '';
-                }
-            }
+            })();
+
+            return { status: statusCode, stderr: commandResult.stderr?.toString() ?? '', stdout: commandResult.stdout?.toString() ?? ''}
         }
+    }
+
+    private logCommandResult(commandResult : any, fullCommandStringForTelemetryOnly : string)
+    {
+        this.context?.eventStream.post(new CommandExecutionStatusEvent(`The command ${fullCommandStringForTelemetryOnly} exited
+        with status: ${commandResult.status?.toString()}.`));
+
+        this.context?.eventStream.post(new CommandExecutionSignalSentEvent(`The command ${fullCommandStringForTelemetryOnly} exited
+with signal: ${commandResult.signal?.toString()}.`));
+
+        this.context?.eventStream.post(new CommandExecutionStdOut(`The command ${fullCommandStringForTelemetryOnly} encountered stdout:
+${commandResult.stdout}`));
+
+        this.context?.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandStringForTelemetryOnly} encountered stderr:
+${commandResult.stderr}`));
     }
 
     /**
@@ -498,16 +444,13 @@ ${commandResult.stderr}`));
      */
     public async tryFindWorkingCommand(commands : CommandExecutorCommand[]) : Promise<CommandExecutorCommand | null>
     {
-        const oldReturnStatusSetting = this.returnStatus;
-        this.returnStatus = true;
-
         let workingCommand : CommandExecutorCommand | null = null;
 
         for(const command of commands)
         {
             try
             {
-                const cmdFoundOutput = await this.execute(command);
+                const cmdFoundOutput = (await this.execute(command)).status;
                 if(cmdFoundOutput === '0')
                 {
                     workingCommand = command;
@@ -524,16 +467,13 @@ ${commandResult.stderr}`));
                 // Do nothing. The error should be raised higher up.
                 this.context?.eventStream.post(new DotnetCommandNotFoundEvent(`The command ${command.commandRoot} was NOT found, and we caught any errors.`));
             }
-        };
+        }
 
-        this.returnStatus = oldReturnStatusSetting;
         return workingCommand;
     }
 
     public async setEnvironmentVariable(variable : string, value : string, vscodeContext : IVSCodeExtensionContext, failureWarningMessage? : string, nonWinFailureMessage? : string)
     {
-        const oldReturnStatusSetting = this.returnStatus;
-        this.returnStatus = true;
         let environmentEditExitCode = 0;
 
         process.env[variable] = value;
@@ -545,9 +485,9 @@ ${commandResult.stderr}`));
             const setSystemVariable = CommandExecutor.makeCommand(`setx`, [`${variable}`, `"${value}"`]);
             try
             {
-                const shellEditResponse = await this.execute(setShellVariable);
+                const shellEditResponse = (await this.execute(setShellVariable)).status;
                 environmentEditExitCode += Number(shellEditResponse[0]);
-                const systemEditResponse = await this.execute(setSystemVariable)
+                const systemEditResponse = (await this.execute(setSystemVariable)).status
                 environmentEditExitCode += Number(systemEditResponse[0]);
             }
             catch(error)
@@ -567,7 +507,6 @@ ${commandResult.stderr}`));
         {
             this.utilityContext.ui.showWarningMessage(failureWarningMessage, () => {/* No Callback */}, );
         }
-        this.returnStatus = oldReturnStatusSetting;
     }
 
     public setPathEnvVar(pathAddition: string, troubleshootingUrl : string, displayWorker: IWindowDisplayWorker, vscodeContext : IVSCodeExtensionContext, isGlobal : boolean)

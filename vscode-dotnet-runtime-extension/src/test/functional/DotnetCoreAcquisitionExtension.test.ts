@@ -9,30 +9,34 @@ import * as path from 'path';
 import * as rimraf from 'rimraf';
 import * as vscode from 'vscode';
 import {
-  DotnetCoreAcquisitionWorker,
   FileUtilities,
   IDotnetAcquireContext,
   IDotnetAcquireResult,
+  IExistingPaths,
   IDotnetListVersionsContext,
   IDotnetListVersionsResult,
-  IDotnetVersion,
+  getInstallIdCustomArchitecture,
   ITelemetryEvent,
   MockExtensionConfiguration,
   MockExtensionContext,
   MockTelemetryReporter,
   MockWebRequestWorker,
   MockWindowDisplayWorker,
-  getMockAcquisitionContext
+  getMockAcquisitionContext,
+  DotnetInstallMode,
+  DotnetInstallType
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { warn } from 'console';
+import { json } from 'stream/consumers';
 /* tslint:disable:no-any */
 /* tslint:disable:no-unsafe-finally */
 
 const assert : any = chai.assert;
 const standardTimeoutTime = 40000;
 
-suite('DotnetCoreAcquisitionExtension End to End', function() {
+suite('DotnetCoreAcquisitionExtension End to End', function()
+{
   this.retries(3);
   const storagePath = path.join(__dirname, 'tmp');
   const mockState = new MockExtensionContext();
@@ -41,6 +45,11 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   const requestingExtensionId = 'fake.extension';
   const mockDisplayWorker = new MockWindowDisplayWorker();
   let extensionContext: vscode.ExtensionContext;
+
+  const mockExistingPathsWithGlobalConfig: IExistingPaths = {
+    individualizedExtensionPaths: [{extensionId: 'alternative.extension', path: 'foo'}],
+    sharedExistingPath: undefined
+  }
 
   const mockReleasesData = `{
     "releases-index": [
@@ -64,7 +73,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       ]
   }`;
 
-
   this.beforeAll(async () => {
     extensionContext = {
       subscriptions: [],
@@ -74,10 +82,11 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
       logPath,
     } as any;
 
-    extension.allowManualTestActivation();
+    process.env.DOTNET_INSTALL_TOOL_UNDER_TEST = 'true';
+    extension.ReEnableActivationForManualActivation();
     extension.activate(extensionContext, {
       telemetryReporter: new MockTelemetryReporter(),
-      extensionConfiguration: new MockExtensionConfiguration([{extensionId: 'alternative.extension', path: 'foo'}], true),
+      extensionConfiguration: new MockExtensionConfiguration(mockExistingPathsWithGlobalConfig.individualizedExtensionPaths!, true, mockExistingPathsWithGlobalConfig.sharedExistingPath!),
       displayWorker: mockDisplayWorker,
     });
   });
@@ -96,36 +105,106 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.isAbove(extensionContext.subscriptions.length, 0);
   }).timeout(standardTimeoutTime);
 
-  test('Install Local Runtime Command', async () => {
-    const context: IDotnetAcquireContext = { version: '2.2', requestingExtensionId };
+  async function installRuntime(dotnetVersion : string, installMode : DotnetInstallMode)
+  {
+    const context: IDotnetAcquireContext = { version: dotnetVersion, requestingExtensionId, mode: installMode };
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
-    assert.exists(result);
-    assert.exists(result!.dotnetPath);
-    assert.isTrue(fs.existsSync(result!.dotnetPath));
-    assert.include(result!.dotnetPath, '.dotnet');
-    assert.include(result!.dotnetPath, context.version);
+    assert.exists(result, 'Command results a result');
+    assert.exists(result!.dotnetPath, 'The return type of the local runtime install command has a .dotnetPath property');
+    assert.isTrue(fs.existsSync(result!.dotnetPath), 'The returned path of .net does exist');
+    assert.include(result!.dotnetPath, '.dotnet', '.dotnet is in the path of the local runtime install');
+    assert.include(result!.dotnetPath, context.version, 'the path of the local runtime install includes the version of the runtime requested');
+  }
+
+  test('Install Local Runtime Command', async () =>
+  {
+    await installRuntime('2.2', 'runtime');
   }).timeout(standardTimeoutTime);
 
-  test('Uninstall Local Runtime Command', async () => {
-    const context: IDotnetAcquireContext = { version: '2.1', requestingExtensionId };
+  test('Install Local ASP.NET Runtime Command', async () =>
+  {
+    await installRuntime('2.2', 'aspnetcore');
+  }).timeout(standardTimeoutTime);
+
+  async function installUninstallOne(dotnetVersion : string, versionToKeep : string, installMode : DotnetInstallMode, type : DotnetInstallType)
+  {
+    const context: IDotnetAcquireContext = { version: dotnetVersion, requestingExtensionId, mode: installMode, installType: type };
+    const contextToKeep: IDotnetAcquireContext = { version: versionToKeep, requestingExtensionId, mode: installMode, installType: type };
+
+    const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
+    const resultToKeep = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', contextToKeep);
+    assert.exists(result?.dotnetPath, 'The install succeeds and returns a path');
+    assert.exists(resultToKeep?.dotnetPath, 'The 2nd install succeeds and returns a path');
+
+    const uninstallResult = await vscode.commands.executeCommand<string>('dotnet.uninstall', context);
+    assert.equal(uninstallResult, '0', 'Uninstall returns 0');
+    assert.isFalse(fs.existsSync(result!.dotnetPath), 'the dotnet path result does not exist after uninstall');
+    assert.isTrue(fs.existsSync(resultToKeep!.dotnetPath), 'Only one thing is uninstalled.');
+  }
+
+  async function installUninstallAll(dotnetVersion : string, installMode : DotnetInstallMode)
+  {
+    const context: IDotnetAcquireContext = { version: dotnetVersion, requestingExtensionId, mode: installMode };
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
     assert.exists(result);
     assert.exists(result!.dotnetPath);
     assert.isTrue(fs.existsSync(result!.dotnetPath!));
     assert.include(result!.dotnetPath, context.version);
     await vscode.commands.executeCommand<string>('dotnet.uninstallAll', context.version);
-    assert.isFalse(fs.existsSync(result!.dotnetPath));
+    assert.isFalse(fs.existsSync(result!.dotnetPath), 'the dotnet path result does not exist after uninstall');
+  }
+
+  async function uninstallWithMultipleOwners(dotnetVersion : string, installMode : DotnetInstallMode, type : DotnetInstallType)
+  {
+    const context: IDotnetAcquireContext = { version: dotnetVersion, requestingExtensionId, mode: installMode, installType: type };
+    const contextFromOtherId: IDotnetAcquireContext = { version: dotnetVersion, requestingExtensionId: 'fake.extension.two', mode: installMode, installType: type };
+
+    const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
+    const resultToKeep = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', contextFromOtherId);
+    assert.exists(result?.dotnetPath, 'The install succeeds and returns a path');
+    assert.equal(result?.dotnetPath, resultToKeep?.dotnetPath, 'The two dupe installs use the same path');
+
+    const uninstallResult = await vscode.commands.executeCommand<string>('dotnet.uninstall', context);
+    assert.equal(uninstallResult, '0', '1st owner Uninstall returns 0');
+    assert.isTrue(fs.existsSync(resultToKeep!.dotnetPath), 'Nothing is uninstalled without FORCE if theres multiple owners.');
+
+    const finalUninstallResult = await vscode.commands.executeCommand<string>('dotnet.uninstall', contextFromOtherId);
+    assert.equal(finalUninstallResult, '0', '2nd owner Uninstall returns 0');
+    assert.isFalse(fs.existsSync(result!.dotnetPath), 'the dotnet path result does not exist after uninstalling from all owners');
+  }
+
+  test('Uninstall One Local Runtime Command', async () => {
+    await installUninstallOne('2.2', '8.0', 'runtime', 'local');
   }).timeout(standardTimeoutTime);
 
+  test('Uninstall One Local ASP.NET Runtime Command', async () => {
+    await installUninstallOne('2.2', '8.0', 'aspnetcore', 'local');
+  }).timeout(standardTimeoutTime);
 
-  test('Install and Uninstall Multiple Local Runtime Versions', async () => {
-    const versions = ['2.2', '3.0', '3.1'];
+  test('Uninstall All Local Runtime Command', async () => {
+    await installUninstallAll('2.2', 'runtime')
+  }).timeout(standardTimeoutTime);
+
+  test('Uninstall All Local ASP.NET Runtime Command', async () => {
+    await installUninstallAll('2.2', 'aspnetcore')
+  }).timeout(standardTimeoutTime);
+
+  test('Uninstall Runtime Only Once No Owners Exist', async () => {
+    await uninstallWithMultipleOwners('8.0', 'runtime', 'local');
+  }).timeout(standardTimeoutTime);
+
+  test('Uninstall ASP.NET Runtime Only Once No Owners Exist', async () => {
+    await uninstallWithMultipleOwners('8.0', 'aspnetcore', 'local');
+  }).timeout(standardTimeoutTime);
+
+  async function installMultipleVersions(versions : string[], installMode : DotnetInstallMode)
+  {
     let dotnetPaths: string[] = [];
     for (const version of versions) {
-      const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', { version, requestingExtensionId });
-      assert.exists(result);
-      assert.exists(result!.dotnetPath);
-      assert.include(result!.dotnetPath, version);
+      const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', { version, requestingExtensionId, mode: installMode });
+      assert.exists(result, 'acquire command returned a result/success');
+      assert.exists(result!.dotnetPath, 'the result has a path');
+      assert.include(result!.dotnetPath, version, 'the path includes the version');
       if (result!.dotnetPath) {
         dotnetPaths = dotnetPaths.concat(result!.dotnetPath);
       }
@@ -134,7 +213,16 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     for (const dotnetPath of dotnetPaths) {
       assert.isTrue(fs.existsSync(dotnetPath));
     }
+  }
+
+  test('Install and Uninstall Multiple Local Runtime Versions', async () => {
+    await installMultipleVersions(['2.2', '3.0', '3.1'], 'runtime');
   }).timeout(standardTimeoutTime * 2);
+
+  test('Install and Uninstall Multiple Local ASP.NET Runtime Versions', async () => {
+    await installMultipleVersions(['2.2', '3.0', '3.1'], 'aspnetcore');
+  }).timeout(standardTimeoutTime * 2);
+
 
   test('Install SDK Globally E2E (Requires Admin)', async () => {
     // We only test if the process is running under ADMIN because non-admin requires user-intervention.
@@ -196,7 +284,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
 
     const rntVersion = '2.2';
     const fullyResolvedVersion = '2.2.8'; // 2.2 is very much out of support, so we don't expect this to change to a newer version
-    const installKey = DotnetCoreAcquisitionWorker.getInstallKeyCustomArchitecture(fullyResolvedVersion, os.arch());
+    const installId = getInstallIdCustomArchitecture(fullyResolvedVersion, os.arch(), 'runtime', 'local');
 
     const context: IDotnetAcquireContext = { version: rntVersion, requestingExtensionId };
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
@@ -213,7 +301,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     const startedEvent = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === 'DotnetAcquisitionStarted');
     assert.exists(startedEvent, 'Acquisition started event gets published');
     assert.include(startedEvent!.properties!.AcquisitionStartVersion, rntVersion, 'Acquisition started event has a starting version');
-    assert.include(startedEvent!.properties!.AcquisitionInstallKey, installKey, 'Acquisition started event has a install key');
+    assert.include(startedEvent!.properties!.AcquisitionInstallId, installId, 'Acquisition started event has a install key');
 
     const completedEvent = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === 'DotnetAcquisitionCompleted');
     assert.exists(completedEvent, 'Acquisition completed events exist');
@@ -227,8 +315,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     const uninstallCompletedEvent = MockTelemetryReporter.telemetryEvents.find((event: ITelemetryEvent) => event.eventName === 'DotnetUninstallAllCompleted');
     assert.exists(uninstallCompletedEvent, 'Uninstall All success is reported in telemetry');
     // Check that no errors were reported
-    const errors = MockTelemetryReporter.telemetryEvents.filter((event: ITelemetryEvent) => event.eventName.includes('Error'));
-    assert.isEmpty(errors, 'No error events were reported in telemetry reporting');
+    const errors = MockTelemetryReporter.telemetryEvents.filter((event: ITelemetryEvent) => event.eventName.includes('Error') && event.eventName !== 'CommandExecutionStdError');
+    assert.isEmpty(errors, `No error events were reported in telemetry reporting. ${JSON.stringify(errors)}`);
   }).timeout(standardTimeoutTime);
 
   test('Telemetry Sent on Error', async () => {
@@ -251,9 +339,9 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   test('Install Local Runtime Command Passes With Warning With No RequestingExtensionId', async () => {
     const context: IDotnetAcquireContext = { version: '3.1' };
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
-    assert.exists(result);
-    assert.exists(result!.dotnetPath);
-    assert.include(result!.dotnetPath, context.version);
+    assert.exists(result, 'A result from the API exists');
+    assert.exists(result!.dotnetPath, 'The result has a dotnet path');
+    assert.include(result!.dotnetPath, context.version, 'The version is included in the path');
     assert.include(mockDisplayWorker.warningMessage, 'Ignoring existing .NET paths');
   }).timeout(standardTimeoutTime);
 
@@ -266,7 +354,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   }).timeout(standardTimeoutTime);
 
   test('List Sdks & Runtimes', async () => {
-    const mockAcquisitionContext = getMockAcquisitionContext(false, '');
+    const mockAcquisitionContext = getMockAcquisitionContext('sdk', '');
     const webWorker = new MockWebRequestWorker(mockAcquisitionContext, '');
     webWorker.response = JSON.parse(mockReleasesData);
 
@@ -288,7 +376,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
   }).timeout(standardTimeoutTime);
 
   test('Get Recommended SDK Version', async () => {
-    const mockAcquisitionContext = getMockAcquisitionContext(false, '');
+    const mockAcquisitionContext = getMockAcquisitionContext('sdk', '');
     const webWorker = new MockWebRequestWorker(mockAcquisitionContext, '');
     webWorker.response = JSON.parse(mockReleasesData);
 
@@ -305,10 +393,10 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     }
   }).timeout(standardTimeoutTime);
 
-
-  test('Install Runtime Status Command', async () => {
+  async function testAcquire(installMode : DotnetInstallMode)
+  {
     // Runtime is not yet installed
-    const context: IDotnetAcquireContext = { version: '3.1', requestingExtensionId };
+    const context: IDotnetAcquireContext = { version: '3.1', requestingExtensionId, mode: installMode };
     let result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquireStatus', context);
     assert.notExists(result);
 
@@ -324,5 +412,33 @@ suite('DotnetCoreAcquisitionExtension End to End', function() {
     assert.exists(result!.dotnetPath);
     assert.isTrue(fs.existsSync(result!.dotnetPath!));
     rimraf.sync(result!.dotnetPath!);
+  }
+
+  test('Install Runtime Status Command', async () =>
+  {
+    await testAcquire('runtime');
   }).timeout(standardTimeoutTime);
+
+  test('Install Aspnet runtime Status Command', async () =>
+  {
+    await testAcquire('aspnetcore');
+  }).timeout(standardTimeoutTime);
+
+  test('acquireStatus does respect Mode', async () =>
+  {
+    const runtimeContext : IDotnetAcquireContext = { version: '5.0', requestingExtensionId, mode: 'runtime' };
+    const aspNetContext : IDotnetAcquireContext =  { version: '5.0', requestingExtensionId, mode: 'aspnetcore' };
+
+    let result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquireStatus', runtimeContext);
+    assert.notExists(result);
+    result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquireStatus', aspNetContext);
+    assert.notExists(result);
+
+    result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', runtimeContext);
+    assert.exists(result);
+
+    result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquireStatus', aspNetContext);
+    assert.equal(undefined, result, 'Acquire Status for no ASP.NET installed when Runtime is installed should not mistake Runtime Install as ASP.NET Install');
+  }).timeout(standardTimeoutTime);
+
 });

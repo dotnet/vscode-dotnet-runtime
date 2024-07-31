@@ -50,7 +50,7 @@ export class FileUtilities extends IFileUtilities
        if(!alreadyHoldingLock)
        {
            eventStream?.post(new DotnetLockAttemptingAcquireEvent(`Lock Acquisition request to begin.`, new Date().toISOString(), directoryLockPath, filePath));
-           await lockfile.lock(filePath, { lockfilePath: directoryLockPath, retries: { retries: 10, maxTimeout: 1000 } } )
+           await lockfile.lock(filePath, { lockfilePath: directoryLockPath, retries: { retries: 10, minTimeout: 5, maxTimeout: 10000 } } )
            .then(async (release) =>
            {
                eventStream?.post(new DotnetLockAcquiredEvent(`Lock Acquired.`, new Date().toISOString(), directoryLockPath, filePath));
@@ -115,7 +115,7 @@ export class FileUtilities extends IFileUtilities
            try
            {
                if(!fileExtensionsToDelete || path.extname(f).toLocaleLowerCase() in fileExtensionsToDelete)
-               fs.rmSync(`${directoryToWipe}/${f}`);
+               fs.rmSync(path.join(directoryToWipe, f));
            }
            catch(error : any)
            {

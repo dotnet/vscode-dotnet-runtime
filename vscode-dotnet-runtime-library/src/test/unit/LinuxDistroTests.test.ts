@@ -9,17 +9,17 @@ import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProv
 import { MockCommandExecutor, MockEventStream } from '../mocks/MockObjects';
 import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
 import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
-import { LinuxInstallType } from '../../Acquisition/LinuxInstallType';
+import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 const assert = chai.assert;
 const standardTimeoutTime = 100000;
 
 const mockVersion = '7.0.103';
-const acquisitionContext = getMockAcquisitionContext(false, mockVersion);
+const acquisitionContext = getMockAcquisitionContext('sdk', mockVersion);
 const mockExecutor = new MockCommandExecutor(acquisitionContext, getMockUtilityContext());
 const pair : DistroVersionPair = { distro : 'Ubuntu', version : '22.04' };
 const provider : GenericDistroSDKProvider = new GenericDistroSDKProvider(pair, acquisitionContext, getMockUtilityContext(), mockExecutor);
 const shouldRun = os.platform() === 'linux';
-const installType : LinuxInstallType = 'sdk';
+const installType : DotnetInstallMode = 'sdk';
 const noDotnetString = `
 Command 'dotnet' not found, but can be installed with:
 
@@ -32,6 +32,17 @@ Command 'dotnet' not found, but can be installed with:
 
 suite('Linux Distro Logic Unit Tests', () =>
 {
+    test('Recommends Correct Version', async () => {
+        if(shouldRun)
+        {
+            const recVersion = await provider.getRecommendedDotnetVersion(installType);
+            assert.equal(mockExecutor.attemptedCommand,
+'apt-cache -o DPkg::Lock::Timeout=120 search --names-only ^dotnet-sdk-9.0$', 'Searched for the newest package last with regex'); // this may fail if test not exec'd first
+            // the data is cached so --version may not be executed.
+            assert.equal(recVersion, '8.0.1xx', 'Resolved the most recent available version : will eventually break if the mock data is not updated');
+        }
+    }).timeout(standardTimeoutTime);
+
     test('Package Check Succeeds', async () => {
         if(shouldRun)
         {
@@ -69,16 +80,16 @@ suite('Linux Distro Logic Unit Tests', () =>
     {
         if(shouldRun)
         {
-            mockExecutor.fakeReturnValue = `
+            mockExecutor.fakeReturnValue = { stdout: `
 7.0.105 [/usr/lib/dotnet/sdk]
-7.0.104 [/usr/custom/dotnet/sdk]`;
+7.0.104 [/usr/custom/dotnet/sdk]`, stderr: '', status: '0'};
             let versions = await provider.getInstalledDotnetSDKVersions();
-            mockExecutor.fakeReturnValue = '';
+            mockExecutor.resetReturnValues();
             assert.deepStrictEqual(versions, ['7.0.105', '7.0.104']);
 
-            mockExecutor.fakeReturnValue = noDotnetString;
+            mockExecutor.fakeReturnValue = {stdout: noDotnetString, stderr: '', status: '0'};
             versions = await provider.getInstalledDotnetSDKVersions();
-            mockExecutor.fakeReturnValue = '';
+            mockExecutor.resetReturnValues();
             assert.deepStrictEqual(versions, []);
         }
     }).timeout(standardTimeoutTime);
@@ -86,16 +97,16 @@ suite('Linux Distro Logic Unit Tests', () =>
     test('Gets Installed Runtimes', async () => {
         if(shouldRun)
         {
-            mockExecutor.fakeReturnValue = `
+            mockExecutor.fakeReturnValue = {stdout: `
 Microsoft.NETCore.App 6.0.16 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]
-Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
+Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`, stderr: '', status: '0'};
             let versions = await provider.getInstalledDotnetRuntimeVersions();
-            mockExecutor.fakeReturnValue = '';
+            mockExecutor.resetReturnValues();
             assert.deepStrictEqual(versions, ['6.0.16', '7.0.5']);
 
-            mockExecutor.fakeReturnValue = noDotnetString;
+            mockExecutor.fakeReturnValue = {stdout: noDotnetString, stderr: '', status: '0'};
             versions = await provider.getInstalledDotnetRuntimeVersions();
-            mockExecutor.fakeReturnValue = '';
+            mockExecutor.resetReturnValues();
             assert.deepStrictEqual(versions, []);
         }
     }).timeout(standardTimeoutTime);
@@ -111,24 +122,15 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
     test('Finds Existing Global Dotnet Version', async () => {
         if(shouldRun)
         {
-            mockExecutor.fakeReturnValue = `7.0.105`;
+            mockExecutor.fakeReturnValue = {stdout: `7.0.105`, stderr: '', status: '0'};
             let currentInfo = await provider.getInstalledGlobalDotnetVersionIfExists();
-            mockExecutor.fakeReturnValue = '';
+            mockExecutor.resetReturnValues();
             assert.equal(currentInfo, '7.0.105');
 
-            mockExecutor.fakeReturnValue = noDotnetString;
+            mockExecutor.fakeReturnValue = {stdout: noDotnetString, stderr: noDotnetString, status: '0'};
             currentInfo = await provider.getInstalledGlobalDotnetVersionIfExists();
-            mockExecutor.fakeReturnValue = '';
+            mockExecutor.resetReturnValues();
             assert.equal(currentInfo, null);
-        }
-    }).timeout(standardTimeoutTime);
-
-    test('Recommends Correct Version', async () => {
-        if(shouldRun)
-        {
-            const recVersion = await provider.getRecommendedDotnetVersion(installType);
-            assert.equal(mockExecutor.attemptedCommand, 'dotnet --version', 'Searched for the newest package last with regex');
-            assert.equal(recVersion, '8.0.1xx', 'Resolved the most recent available version : will eventually break if the mock data is not updated');
         }
     }).timeout(standardTimeoutTime);
 
@@ -150,7 +152,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
         if(shouldRun)
         {
             await provider.installDotnet(mockVersion, installType);
-            assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get install -y dotnet-sdk-7.0');
+            assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get -o DPkg::Lock::Timeout=120 install -y dotnet-sdk-7.0');
         }
     }).timeout(standardTimeoutTime);
 
@@ -158,7 +160,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
         if(shouldRun)
         {
             await provider.uninstallDotnet(mockVersion, installType);
-            assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get remove dotnet-sdk-7.0');
+            assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get -o DPkg::Lock::Timeout=120 remove dotnet-sdk-7.0');
         }
     }).timeout(standardTimeoutTime);
 
@@ -166,7 +168,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`;
         if(shouldRun)
         {
             await provider.upgradeDotnet(mockVersion, installType);
-            assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get upgrade -y dotnet-sdk-7.0');
+            assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get -o DPkg::Lock::Timeout=120 upgrade -y dotnet-sdk-7.0');
         }
     }).timeout(standardTimeoutTime*1000);
 });

@@ -16,8 +16,7 @@ export interface IAcquisitionWorkerContext
     installationValidator: IInstallationValidator;
     timeoutSeconds: number;
     installDirectoryProvider: IInstallationDirectoryProvider;
-    acquisitionContext? : IDotnetAcquireContext | null;
-    installingArchitecture? : string | undefined | null;
+    acquisitionContext : IDotnetAcquireContext;
     proxyUrl? : string | undefined;
     isExtensionTelemetryInitiallyEnabled : boolean;
 }
