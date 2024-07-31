@@ -360,7 +360,7 @@ If you would like to contribute to the list of supported distros, please visit: 
     {
         await this.Initialize();
 
-        return this.distroSDKProvider!.uninstallDotnet(fullySpecifiedDotnetVersion, 'sdk') ? '0' : '1';
+        return await this.distroSDKProvider!.uninstallDotnet(fullySpecifiedDotnetVersion, 'sdk');
     }
 
     /**
