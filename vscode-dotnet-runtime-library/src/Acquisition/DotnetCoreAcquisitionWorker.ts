@@ -323,6 +323,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             {
                 if(!(await this.sdkIsFound(context, context.acquisitionContext.version)))
                 {
+                    InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install);
                     return null;
                 }
             }
@@ -418,7 +419,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         context.eventStream.post(new DotnetGlobalVersionResolutionCompletionEvent(`The version we resolved that was requested is: ${installingVersion}.`));
         this.checkForPartialInstalls(context, install);
 
-        let installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(true);
+        const installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(true);
 
         const installer : IGlobalInstaller = os.platform() === 'linux' ?
             new LinuxGlobalInstaller(context, this.utilityContext, installingVersion) :
