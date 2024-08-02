@@ -97,7 +97,7 @@
 		}
 	},
 	"scripts": {
-		"vscode:prepublish": "npm run compile-all && npm install && dotnet build ../msbuild/signJs --property jsOutputPath=..\\..\\vscode-dotnet-runtime-extension\\dist -bl -v:normal && webpack --mode production",
+		"vscode:prepublish": "npm run compile-all && npm install && webpack --mode production && dotnet build ../msbuild/signJs --property jsOutputPath=..\\..\\vscode-dotnet-runtime-extension\\dist -bl -v:normal",
 		"compile": "npm run clean && tsc -p ./",
 		"watch": "npm run compile && tsc -watch -p ./",
 		"test": "npm run compile --silent && node ./dist/test/functional/runTest.js",
