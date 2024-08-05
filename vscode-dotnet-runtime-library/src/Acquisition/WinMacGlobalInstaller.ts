@@ -133,7 +133,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
                 }
                 const err = new DotnetConflictingGlobalWindowsInstallError(new EventCancellationError(
                     'DotnetConflictingGlobalWindowsInstallError',
-                    `An global install is already on the machine: version ${conflictingVersion}, that conflicts with the requested version.
+                    `A global install is already on the machine: version ${conflictingVersion}, that conflicts with the requested version.
                     Please uninstall this version first if you would like to continue.
                     If Visual Studio is installed, you may need to use the VS Setup Window to uninstall the SDK component.`), getInstallFromContext(this.acquisitionContext));
                 this.acquisitionContext.eventStream.post(err);
