@@ -107,12 +107,12 @@ export class WebRequestWorker
 
     public static async isOnline(timeoutSec : number, eventStream : IEventStream) : Promise<boolean>
     {
-        const googleDNS = 'www.microsoft.com';
+        const microsoftServer = 'www.microsoft.com';
         const expectedDNSResolutionTimeMs = Math.max(timeoutSec * 100, 100); // Assumption: DNS resolution should take less than 1/10 of the time it'd take to download .NET.
         // ... 100 ms is there as a default to prevent the dns resolver from throwing a runtime error if the user sets timeoutSeconds to 0.
 
         const dnsResolver = new dns.promises.Resolver({ timeout: expectedDNSResolutionTimeMs });
-        const couldConnect = await dnsResolver.resolve(googleDNS).then(() =>
+        const couldConnect = await dnsResolver.resolve(microsoftServer).then(() =>
         {
             return true;
         }).catch((error : any) =>
