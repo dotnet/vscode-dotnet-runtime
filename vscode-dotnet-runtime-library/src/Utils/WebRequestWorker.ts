@@ -15,7 +15,17 @@ import stream = require('stream');
 
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { IEventStream } from '../EventStream/EventStream';
-import {DiskIsFullError, DotnetDownloadFailure, DotnetOfflineFailure, EventBasedError, EventCancellationError, OffilneDetectionLogicTriggered, SuppressedAcquisitionError, WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
+import {
+    DiskIsFullError,
+    DotnetDownloadFailure,
+    DotnetOfflineFailure,
+    EventBasedError,
+    EventCancellationError,
+    OffilneDetectionLogicTriggered,
+    SuppressedAcquisitionError,
+    WebRequestError,
+    WebRequestSent
+} from '../EventStream/EventStreamEvents';
 import { getInstallFromContext } from './InstallIdUtilities';
 /* tslint:disable:no-any */
 
