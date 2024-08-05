@@ -452,9 +452,10 @@ Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.m
         {
             const sdkInstallRecords64Bit = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\dotnet\\Setup\\InstalledVersions\\x64\\sdk';
             const sdkInstallRecords32Bit = sdkInstallRecords64Bit.replace('x64', 'x86');
+            const sdkInstallRecordsArm64 = sdkInstallRecords64Bit.replace('x64', 'arm64');
 
-            const queries = [sdkInstallRecords32Bit, sdkInstallRecords64Bit];
-            for ( const query of queries)
+            const queries = [sdkInstallRecords32Bit, sdkInstallRecords64Bit, sdkInstallRecordsArm64];
+            for ( const query of queries )
             {
                 try
                 {
