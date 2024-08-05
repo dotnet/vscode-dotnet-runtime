@@ -74,7 +74,8 @@ jobs:
     env:
       SignType: ${{ parameters.SignType }}
   - task: CmdLine@2
-    displayName: 🤌 Rename Unsigned VSIX
+    displayName: 🤌 Rename Signed VSIX
+
     inputs:
       script: rename ".\packages\$(package-name)-$(GetVersion.version).vsix" $(package-name)-$(GetVersion.version)-signed.vsix
   - task: CopyFiles@2
