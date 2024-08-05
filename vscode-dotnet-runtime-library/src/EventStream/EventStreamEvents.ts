@@ -388,6 +388,10 @@ export class UserManualInstallFailure extends SuppressedAcquisitionError {
     eventName = 'UserManualInstallFailure';
 }
 
+export class DotnetInstallationValidationMissed extends SuppressedAcquisitionError {
+    eventName = 'DotnetInstallationValidationMissed';
+}
+
 export class OSXOpenNotAvailableError extends DotnetAcquisitionError {
     public readonly eventName = 'OSXOpenNotAvailableError';
 }
