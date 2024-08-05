@@ -388,6 +388,10 @@ export class UserManualInstallFailure extends SuppressedAcquisitionError {
     eventName = 'UserManualInstallFailure';
 }
 
+export class DotnetInstallationValidationMissed extends SuppressedAcquisitionError {
+    eventName = 'DotnetInstallationValidationMissed';
+}
+
 export class OSXOpenNotAvailableError extends DotnetAcquisitionError {
     public readonly eventName = 'OSXOpenNotAvailableError';
 }
@@ -434,6 +438,10 @@ export class DotnetNotInstallRelatedCommandFailed extends DotnetNonAcquisitionEr
             ErrorName : this.error.name,
             StackTrace : this.error.stack ? this.error.stack : ''};
         }
+}
+
+export class InvalidUninstallRequest extends DotnetNonAcquisitionError {
+    public readonly eventName = 'InvalidUninstallRequest';
 }
 
 export class DotnetCommandFailed extends DotnetAcquisitionError {
