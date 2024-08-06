@@ -364,7 +364,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             let canContinue = true;
             const uninstallWillBreakSomething = !(await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).canUninstall(true, install, true));
 
-            const yes = `Let's break it!`;
+            const yes = `Continue`;
             if(uninstallWillBreakSomething)
             {
                 const pick = await vscode.window.showWarningMessage(

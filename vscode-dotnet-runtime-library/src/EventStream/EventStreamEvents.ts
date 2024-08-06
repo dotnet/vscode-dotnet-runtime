@@ -752,6 +752,16 @@ export class DotnetUninstallStarted extends DotnetCustomMessageEvent {
     public type = EventType.DotnetUninstallMessage;
 }
 
+export class DotnetUninstallCompleted extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetUninstallStarted';
+    public type = EventType.DotnetUninstallMessage;
+}
+
+export class DotnetUninstallFailed extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetUninstallStarted';
+    public type = EventType.DotnetUninstallMessage;
+}
+
 export class NoExtensionIdProvided extends DotnetCustomMessageEvent {
     public readonly eventName = 'NoExtensionIdProvided';
 }
