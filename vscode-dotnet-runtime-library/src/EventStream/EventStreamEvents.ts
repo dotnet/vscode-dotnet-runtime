@@ -722,6 +722,7 @@ export class DotnetAcquisitionDeletion extends DotnetAcquisitionMessage {
 export class DotnetFallbackInstallScriptUsed extends DotnetAcquisitionMessage {
     public readonly eventName = 'DotnetFallbackInstallScriptUsed';
 }
+
 export abstract class DotnetCustomMessageEvent extends DotnetAcquisitionMessage {
     constructor(public readonly eventMessage: string) { super(); }
 
@@ -746,10 +747,14 @@ export class DuplicateInstallDetected extends DotnetCustomMessageEvent {
     public readonly eventName = 'DuplicateInstallDetected';
 }
 
+export class DotnetUninstallStarted extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetUninstallStarted';
+    public type = EventType.DotnetUninstallMessage;
+}
+
 export class NoExtensionIdProvided extends DotnetCustomMessageEvent {
     public readonly eventName = 'NoExtensionIdProvided';
 }
-
 
 export class ConvertingLegacyInstallRecord extends DotnetCustomMessageEvent {
     public readonly eventName = 'ConvertingLegacyInstallRecord';

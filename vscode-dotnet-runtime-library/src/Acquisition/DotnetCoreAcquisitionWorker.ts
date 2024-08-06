@@ -566,7 +566,9 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
 
             if(force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).canUninstall(true, install))
             {
+                context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install}.}`));
                 this.removeFolderRecursively(context.eventStream, dotnetInstallDir);
+                context.eventStream.post(new DotnetUninstallCompleted(`Succeeded to uninstall .NET ${install}.}`));
                 graveyard.remove(install);
                 context.eventStream.post(new DotnetInstallGraveyardEvent(`Success at uninstalling ${JSON.stringify(install)} in path ${dotnetInstallDir}`));
             }
@@ -589,7 +591,7 @@ Other dependents remain.`));
     {
         try
         {
-            context.eventStream.post(new DotnetInstallGraveyardEvent(`Attempting to remove .NET ${install}.}`));
+            context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install}.}`));
 
             await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, force);
             // this is the only place where installed and installing could deal with pre existing installing id
@@ -602,17 +604,15 @@ Other dependents remain.`));
                 new LinuxGlobalInstaller(context, this.utilityContext, installingVersion) :
                 new WinMacGlobalInstaller(context, this.utilityContext, installingVersion, await globalInstallerResolver.getInstallerUrl(), await globalInstallerResolver.getInstallerHash());
 
-                installer.uninstallSDK(install);
-
-                context.eventStream.post(new DotnetInstallGraveyardEvent(`Success at uninstalling ${JSON.stringify(install)} in path ${dotnetInstallDir}`));
+                const ok = await installer.uninstallSDK(install);
+                if(ok === '0')
+                {
+                    context.eventStream.post(new DotnetUninstallCompleted(`Succeeded to uninstall .NET ${install}.}`));
+                    return '0';
+                }
             }
-            else
-            {
-                context.eventStream.post(new DotnetInstallGraveyardEvent(`Removed reference of ${JSON.stringify(install)} in path ${dotnetInstallDir}, but did not uninstall.
-Other dependents remain.`));
-            }
-
-            return '0';
+            context.eventStream.post(new DotnetUninstallFailed(`Failed to uninstall .NET ${install}. Uninstall manually or delete the folder.`));
+            return '117778'; // arbitrary error code to indicate uninstall failed without error.
         }
         catch(error : any)
         {
