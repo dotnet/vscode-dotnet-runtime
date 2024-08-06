@@ -135,7 +135,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
                 }
                 const err = new DotnetConflictingGlobalWindowsInstallError(new EventCancellationError(
                     'DotnetConflictingGlobalWindowsInstallError',
-                    `An global install is already on the machine: version ${conflictingVersion}, that conflicts with the requested version.
+                    `A global install is already on the machine: version ${conflictingVersion}, that conflicts with the requested version.
                     Please uninstall this version first if you would like to continue.
                     If Visual Studio is installed, you may need to use the VS Setup Window to uninstall the SDK component.`), install);
                 this.acquisitionContext.eventStream.post(err);
@@ -491,9 +491,10 @@ Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.m
         {
             const sdkInstallRecords64Bit = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\dotnet\\Setup\\InstalledVersions\\x64\\sdk';
             const sdkInstallRecords32Bit = sdkInstallRecords64Bit.replace('x64', 'x86');
+            const sdkInstallRecordsArm64 = sdkInstallRecords64Bit.replace('x64', 'arm64');
 
-            const queries = [sdkInstallRecords32Bit, sdkInstallRecords64Bit];
-            for ( const query of queries)
+            const queries = [sdkInstallRecords32Bit, sdkInstallRecords64Bit, sdkInstallRecordsArm64];
+            for ( const query of queries )
             {
                 try
                 {
