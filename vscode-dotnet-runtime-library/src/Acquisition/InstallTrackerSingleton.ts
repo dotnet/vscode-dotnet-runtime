@@ -170,18 +170,6 @@ export class InstallTrackerSingleton
         }, isFinishedInstall ? this.installedVersionsId : this.installingVersionsId, dotnetInstall);
     }
 
-    public async canUninstall(isFinishedInstall : boolean, dotnetInstall : DotnetInstall) : Promise<boolean>
-    {
-        return this.executeWithLock( false, async (id: string, install: DotnetInstall) =>
-        {
-            this.eventStream.post(new RemovingVersionFromExtensionState(`Removing ${JSON.stringify(install)} with id ${id} from the state.`));
-            const existingInstalls = await this.getExistingInstalls(id === this.installedVersionsId, true);
-            const installRecord = existingInstalls.filter(x => IsEquivalentInstallation(x.dotnetInstall, install));
-
-            return installRecord.length === 0 || installRecord[0].installingExtensions.length === 0;
-        }, isFinishedInstall ? this.installedVersionsId : this.installingVersionsId, dotnetInstall);
-    }
-
     public async uninstallAllRecords() : Promise<void>
     {
         await this.executeWithLock( false, this.installingVersionsId, async () =>
