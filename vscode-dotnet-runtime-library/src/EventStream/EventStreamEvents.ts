@@ -509,7 +509,7 @@ export abstract class DotnetAcquisitionVersionError extends DotnetAcquisitionErr
             {ErrorMessage : this.error.message,
                 AcquisitionErrorInstallId : 'null',
                 ErrorName : this.error.name,
-                StackTrace : this.error.stack ? this.error.stack : ''};
+                StackTrace : this.error.stack ?? ''};
         }
     }
 
