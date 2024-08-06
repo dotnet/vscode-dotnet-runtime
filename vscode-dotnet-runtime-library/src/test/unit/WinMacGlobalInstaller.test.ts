@@ -212,7 +212,7 @@ ${fs.readdirSync(installerDownloadFolder).join(', ')}`);
                 assert.isTrue(fs.existsSync(mockExecutor.attemptedCommand.split(' ')[0]), 'It ran a command to an executable that exists');
                 if(new FileUtilities().isElevated())
                 {
-                    assert.include(mockExecutor.attemptedCommand, ' /uninstall /quiet /norestart', 'It ran under the hood if it had privileges already');
+                    assert.include(mockExecutor.attemptedCommand, ' /uninstall /passive /norestart', 'It ran under the hood if it had privileges already');
                 }
                 else
                 {

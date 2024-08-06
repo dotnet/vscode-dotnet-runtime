@@ -359,7 +359,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             return {
                 label : `.NET ${(install.dotnetInstall.installMode).toUpperCase()} ${install.dotnetInstall.version}`,
                 description : `${install.dotnetInstall.architecture ?? ''} | ${install.dotnetInstall.isGlobal ? 'machine-wide' : 'vscode-local' }`,
-                detail : `Used by ${install.installingExtensions.join(", ")}`,
+                detail : `Used by ${install.installingExtensions.join(', ')}`,
                 internalId : install.dotnetInstall.installId
             }
         });
