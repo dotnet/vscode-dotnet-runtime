@@ -501,10 +501,10 @@ export abstract class DotnetAcquisitionVersionError extends DotnetAcquisitionErr
 
     public getProperties(telemetry = false): { [id: string]: string } | undefined {
         return this.install ? {ErrorMessage : this.error.message,
-            AcquisitionErrorInstallId : this.install?.installId ?? 'null',
-             ...InstallToStrings(this.install),
+            AcquisitionErrorInstallId : this.install.installId ?? 'null',
+            ...InstallToStrings(this.install),
             ErrorName : this.error.name,
-            StackTrace : this.error.stack ? this.error.stack : ''}
+            StackTrace : this.error.stack ?? ''}
             :
             {ErrorMessage : this.error.message,
                 AcquisitionErrorInstallId : 'null',

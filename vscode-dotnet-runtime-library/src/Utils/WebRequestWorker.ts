@@ -12,7 +12,6 @@ import * as fs from 'fs';
 import { promisify } from 'util';
 import stream = require('stream');
 
-
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { IEventStream } from '../EventStream/EventStream';
 import {
