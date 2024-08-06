@@ -60,9 +60,11 @@ import {
     getInstallIdCustomArchitecture,
     DotnetInstallType,
     DotnetAcquisitionTotalSuccessEvent,
-    isRunningUnderWSL
+    isRunningUnderWSL,
+    InstallRecord
 } from 'vscode-dotnet-runtime-library';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
+import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
 
 // tslint:disable no-var-requires
 const packageJson = require('../package.json');
@@ -75,11 +77,13 @@ namespace configKeys {
     export const existingSharedPath = 'sharedExistingDotnetPath'
     export const proxyUrl = 'proxyUrl';
 }
+
 namespace commandKeys {
     export const acquire = 'acquire';
     export const acquireGlobalSDK = 'acquireGlobalSDK';
     export const acquireStatus = 'acquireStatus';
     export const uninstall = 'uninstall';
+    export const uninstallPublic = 'uninstallPublic'
     export const uninstallAll = 'uninstallAll';
     export const listVersions = 'listVersions';
     export const recommendedVersion = 'recommendedVersion'
@@ -338,6 +342,54 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         return pathResult;
     });
 
+    const dotnetUninstallPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallPublic}`, async () =>
+    {
+        const existingInstalls = await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).getExistingInstalls(true);
+
+        const menuItems = existingInstalls.map(install =>
+        {
+            return {
+                label : install.dotnetInstall.installId,
+                description :
+`${install.dotnetInstall.version} | ${install.dotnetInstall.architecture ?? ''} ${install.dotnetInstall.isGlobal ? 'machine-wide' : 'vscode-local' }`,
+                detail : `.NET ${(install.dotnetInstall.installMode).toUpperCase()} owned by ${install.installingExtensions}`
+            }
+        });
+        const chosenVersion = await vscode.window.showQuickPick(menuItems, { placeHolder: 'Select a version to uninstall.' });
+
+        if(chosenVersion)
+        {
+            const installRecord : InstallRecord = existingInstalls.find(install => install.dotnetInstall.installId === chosenVersion.label)!;
+            const install : DotnetInstall = installRecord.dotnetInstall;
+            let canContinue = true;
+            const uninstallWillBreakSomething = !(await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).canUninstall(true, install, true));
+
+            const yes = `Let's break it!`;
+            if(uninstallWillBreakSomething)
+            {
+                const pick = await vscode.window.showWarningMessage(
+`Uninstalling .NET ${install.installId} will likely cause ${installRecord.installingExtensions} to stop functioning properly. Do you still wish to continue?`, { modal: true }, yes);
+                canContinue = pick === yes;
+            }
+
+            if(!canContinue)
+            {
+                return;
+            }
+
+            const commandContext : IDotnetAcquireContext =
+            {
+                version: install.version,
+                mode: install.installMode,
+                installType: install.isGlobal ? 'global' : 'local',
+                architecture: install.architecture,
+                requestingExtensionId : 'user'
+            }
+
+            return uninstall(commandContext, true);
+        }
+    });
+
     /**
      * @returns 0 on success. Error string if not.
      */
@@ -346,7 +398,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         return uninstall(commandContext);
     });
 
-    async function uninstall(commandContext: IDotnetAcquireContext | undefined) : Promise<string>
+    async function uninstall(commandContext: IDotnetAcquireContext | undefined, force = false) : Promise<string>
     {
         let result = '1';
         await callWithErrorHandling(async () =>
@@ -372,11 +424,12 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
                     if(commandContext.installType === 'local')
                     {
-                        result = await worker.uninstallLocalRuntimeOrSDK(workerContext, install);
+                        result = await worker.uninstallLocal(workerContext, install, force);
                     }
                     else
                     {
-                        result = await worker.uninstallGlobal(workerContext, install);
+                        const globalInstallerResolver = new GlobalInstallerResolver(workerContext, commandContext.version);
+                        result = await worker.uninstallGlobal(workerContext, install, globalInstallerResolver, force);
                     }
                 }
         }, getIssueContext(existingPathConfigWorker)(commandContext?.errorConfiguration, 'uninstall'));
@@ -555,6 +608,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         dotnetListVersionsRegistration,
         dotnetRecommendedVersionRegistration,
         dotnetUninstallRegistration,
+        dotnetUninstallPublicRegistration,
         dotnetUninstallAllRegistration,
         showOutputChannelRegistration,
         ensureDependenciesRegistration,

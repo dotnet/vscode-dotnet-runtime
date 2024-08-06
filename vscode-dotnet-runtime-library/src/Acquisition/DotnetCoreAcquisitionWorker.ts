@@ -365,7 +365,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             context.eventStream.post(new DotnetAcquisitionPartialInstallation(installId));
 
             // Delete the existing local files so we can re-install. For global installs, let the installer handle it.
-            await this.uninstallLocalRuntimeOrSDK(context, installId);
+            await this.uninstallLocal(context, installId);
         }
     }
 
@@ -377,7 +377,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         {
             context.eventStream.post(new DotnetInstallGraveyardEvent(
                 `Attempting to remove .NET at ${JSON.stringify(install)} again, as it was left in the graveyard.`));
-            await this.uninstallLocalRuntimeOrSDK(context, install);
+            await this.uninstallLocal(context, install);
         }
     }
 
@@ -519,7 +519,7 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
             if(legacyInstall.dotnetInstall.installId.includes(version))
             {
                 context.eventStream.post(new DotnetLegacyInstallRemovalRequestEvent(`Trying to remove legacy install: ${legacyInstall} of ${version}.`));
-                await this.uninstallLocalRuntimeOrSDK(context, legacyInstall.dotnetInstall);
+                await this.uninstallLocal(context, legacyInstall.dotnetInstall);
             }
         }
     }
@@ -545,7 +545,7 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
     }
 
 
-    public async uninstallLocalRuntimeOrSDK(context: IAcquisitionWorkerContext, install : DotnetInstall, force = false) : Promise<string>
+    public async uninstallLocal(context: IAcquisitionWorkerContext, install : DotnetInstall, force = false) : Promise<string>
     {
         if(install.isGlobal)
         {
@@ -585,10 +585,40 @@ Other dependents remain.`));
         }
     }
 
-    public async uninstallGlobal(context: IAcquisitionWorkerContext, install : DotnetInstall, force = false) : Promise<string>
+    public async uninstallGlobal(context: IAcquisitionWorkerContext, install : DotnetInstall, globalInstallerResolver : GlobalInstallerResolver, force = false) : Promise<string>
     {
-        // Do nothing right now. Add this in another PR.
-        return '1';
+        try
+        {
+            context.eventStream.post(new DotnetInstallGraveyardEvent(`Attempting to remove .NET ${install}.}`));
+
+            await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, force);
+            // this is the only place where installed and installing could deal with pre existing installing id
+            await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstallingVersion(context, install, force);
+
+            if(force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).canUninstall(true, install))
+            {
+                const installingVersion = await globalInstallerResolver.getFullySpecifiedVersion();
+                const installer : IGlobalInstaller = os.platform() === 'linux' ?
+                new LinuxGlobalInstaller(context, this.utilityContext, installingVersion) :
+                new WinMacGlobalInstaller(context, this.utilityContext, installingVersion, await globalInstallerResolver.getInstallerUrl(), await globalInstallerResolver.getInstallerHash());
+
+                installer.uninstallSDK(install);
+
+                context.eventStream.post(new DotnetInstallGraveyardEvent(`Success at uninstalling ${JSON.stringify(install)} in path ${dotnetInstallDir}`));
+            }
+            else
+            {
+                context.eventStream.post(new DotnetInstallGraveyardEvent(`Removed reference of ${JSON.stringify(install)} in path ${dotnetInstallDir}, but did not uninstall.
+Other dependents remain.`));
+            }
+
+            return '0';
+        }
+        catch(error : any)
+        {
+            context.eventStream.post(new SuppressedAcquisitionError(error, `The attempt to uninstall .NET ${install} failed - was .NET in use?`));
+            return error?.message ?? '1';
+        }
     }
 
     private removeFolderRecursively(eventStream: IEventStream, folderPath: string) {
