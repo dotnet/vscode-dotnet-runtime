@@ -7,13 +7,25 @@ import axiosRetry from 'axios-retry';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { getProxySettings } from 'get-proxy-settings';
 import { AxiosCacheInstance, buildMemoryStorage, setupCache } from 'axios-cache-interceptor';
-import {DiskIsFullError, DotnetDownloadFailure, EventBasedError, SuppressedAcquisitionError, WebRequestError, WebRequestSent } from '../EventStream/EventStreamEvents';
-import { getInstallFromContext } from './InstallIdUtilities';
-
+import * as dns from 'dns';
 import * as fs from 'fs';
 import { promisify } from 'util';
 import stream = require('stream');
+
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
+import { IEventStream } from '../EventStream/EventStream';
+import {
+    DiskIsFullError,
+    DotnetDownloadFailure,
+    DotnetOfflineFailure,
+    EventBasedError,
+    EventCancellationError,
+    OffilneDetectionLogicTriggered,
+    SuppressedAcquisitionError,
+    WebRequestError,
+    WebRequestSent
+} from '../EventStream/EventStreamEvents';
+import { getInstallFromContext } from './InstallIdUtilities';
 /* tslint:disable:no-any */
 
 export class WebRequestWorker
@@ -72,9 +84,15 @@ export class WebRequestWorker
             throw new EventBasedError('AxiosGetFailedWithInvalidURL', `Request to the url ${this.url} failed, as the URL is invalid.`);
         }
         const timeoutCancelTokenHook = new AbortController();
-        const timeout = setTimeout(() =>
+        const timeout = setTimeout(async () =>
         {
             timeoutCancelTokenHook.abort();
+            if(!(await WebRequestWorker.isOnline(this.websiteTimeoutMs / 1000, this.context.eventStream)))
+            {
+                const offlineError = new EventBasedError('DotnetOfflineFailure', 'No internet connection detected: Cannot install .NET');
+                this.context.eventStream.post(new DotnetOfflineFailure(offlineError, null));
+                throw offlineError;
+            }
             const formattedError = new Error(`TIMEOUT: The request to ${this.url} timed out at ${this.websiteTimeoutMs} ms. This only occurs if your internet
  or the url are experiencing connection difficulties; not if the server is being slow to respond. Check your connection, the url, and or increase the timeout value here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#install-script-timeouts`);
             this.context.eventStream.post(new WebRequestError(new EventBasedError('WebRequestError', formattedError.message, formattedError.stack), null));
@@ -95,6 +113,24 @@ export class WebRequestWorker
         return this.makeWebRequest(true, retriesCount);
     }
 
+
+    public static async isOnline(timeoutSec : number, eventStream : IEventStream) : Promise<boolean>
+    {
+        const microsoftServer = 'www.microsoft.com';
+        const expectedDNSResolutionTimeMs = Math.max(timeoutSec * 100, 100); // Assumption: DNS resolution should take less than 1/10 of the time it'd take to download .NET.
+        // ... 100 ms is there as a default to prevent the dns resolver from throwing a runtime error if the user sets timeoutSeconds to 0.
+
+        const dnsResolver = new dns.promises.Resolver({ timeout: expectedDNSResolutionTimeMs });
+        const couldConnect = await dnsResolver.resolve(microsoftServer).then(() =>
+        {
+            return true;
+        }).catch((error : any) =>
+        {
+            eventStream.post(new OffilneDetectionLogicTriggered((error as EventCancellationError), `DNS resolution failed at microsoft.com, ${JSON.stringify(error)}.`));
+            return false;
+        });
+        return couldConnect;
+    }
     /**
      *
      * @param urlInQuestion
