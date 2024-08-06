@@ -571,7 +571,7 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
             {
                 context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install.installId}.`));
                 this.removeFolderRecursively(context.eventStream, dotnetInstallDir);
-                context.eventStream.post(new DotnetUninstallCompleted(`Succeeded to uninstall .NET ${install.installId}.`));
+                context.eventStream.post(new DotnetUninstallCompleted(`Uninstalled .NET ${install.installId}.`));
                 graveyard.remove(install);
                 context.eventStream.post(new DotnetInstallGraveyardEvent(`Success at uninstalling ${JSON.stringify(install)} in path ${dotnetInstallDir}`));
             }
@@ -610,7 +610,7 @@ Other dependents remain.`));
                 const ok = await installer.uninstallSDK(install);
                 if(ok === '0')
                 {
-                    context.eventStream.post(new DotnetUninstallCompleted(`Succeeded to uninstall .NET ${install.installId}.`));
+                    context.eventStream.post(new DotnetUninstallCompleted(`Uninstalled .NET ${install.installId}.`));
                     return '0';
                 }
             }

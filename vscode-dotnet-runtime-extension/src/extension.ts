@@ -346,20 +346,28 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     {
         const existingInstalls = await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).getExistingInstalls(true);
 
-        const menuItems = existingInstalls.map(install =>
+        const menuItems = existingInstalls.sort(
+        function(x : InstallRecord, y : InstallRecord) : number
+        {
+            if(x.dotnetInstall.installMode === y.dotnetInstall.installMode)
+            {
+                return x.dotnetInstall.version.localeCompare(y.dotnetInstall.version);
+            }
+            return x.dotnetInstall.installMode.localeCompare(y.dotnetInstall.installMode);
+        }).map(install =>
         {
             return {
-                label : install.dotnetInstall.installId,
-                description :
-`${install.dotnetInstall.version} | ${install.dotnetInstall.architecture ?? ''} ${install.dotnetInstall.isGlobal ? 'machine-wide' : 'vscode-local' }`,
-                detail : `.NET ${(install.dotnetInstall.installMode).toUpperCase()} owned by ${install.installingExtensions}`
+                label : `.NET ${(install.dotnetInstall.installMode).toUpperCase()} ${install.dotnetInstall.version}`,
+                description : `${install.dotnetInstall.architecture ?? ''} | ${install.dotnetInstall.isGlobal ? 'machine-wide' : 'vscode-local' }`,
+                detail : `Used by ${install.installingExtensions.join(", ")}`,
+                internalId : install.dotnetInstall.installId
             }
         });
         const chosenVersion = await vscode.window.showQuickPick(menuItems, { placeHolder: 'Select a version to uninstall.' });
 
         if(chosenVersion)
         {
-            const installRecord : InstallRecord = existingInstalls.find(install => install.dotnetInstall.installId === chosenVersion.label)!;
+            const installRecord : InstallRecord = existingInstalls.find(install => install.dotnetInstall.installId === chosenVersion.internalId)!;
             const install : DotnetInstall = installRecord.dotnetInstall;
             let canContinue = true;
             const uninstallWillBreakSomething = !(await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).canUninstall(true, install, true));
@@ -368,7 +376,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             if(uninstallWillBreakSomething)
             {
                 const pick = await vscode.window.showWarningMessage(
-`Uninstalling .NET ${install.installId} will likely cause ${installRecord.installingExtensions} to stop functioning properly. Do you still wish to continue?`, { modal: true }, yes);
+`Uninstalling .NET ${install.version} will likely cause ${installRecord.installingExtensions.join(', ')} to stop functioning properly. Do you still wish to continue?`, { modal: true }, yes);
                 canContinue = pick === yes;
             }
 
