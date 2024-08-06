@@ -386,6 +386,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 requestingExtensionId : 'user'
             }
 
+            outputChannel.show(true);
             return uninstall(commandContext, true);
         }
     });
@@ -414,9 +415,13 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 {
                     const worker = getAcquisitionWorker();
                     const workerContext = getAcquisitionWorkerContext(commandContext.mode, commandContext);
-                    const versionResolver = new VersionResolver(workerContext);
-                    const resolvedVersion = await versionResolver.getFullVersion(commandContext.version, commandContext.mode);
-                    commandContext.version = resolvedVersion;
+
+                    if(commandContext.installType === 'local' && !force) // if using force mode, we are also using the UI, which passes the fully specified version to uninstall only
+                    {
+                        const versionResolver = new VersionResolver(workerContext);
+                        const resolvedVersion = await versionResolver.getFullVersion(commandContext.version, commandContext.mode);
+                        commandContext.version = resolvedVersion;
+                    }
 
                     const installationId = getInstallIdCustomArchitecture(commandContext.version, commandContext.architecture, commandContext.mode, commandContext.installType);
                     const install = {installId : installationId, version : commandContext.version, installMode: commandContext.mode, isGlobal: commandContext.installType === 'global',

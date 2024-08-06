@@ -193,7 +193,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             }
 
             const command = `${path.resolve(installerFile)}`;
-            const uninstallArgs = ['/uninstall', '/quiet', '/norestart'];
+            const uninstallArgs = ['/uninstall', '/passive', '/norestart'];
             const commandResult = await this.commandRunner.execute(CommandExecutor.makeCommand(command, uninstallArgs), {timeout : this.acquisitionContext.timeoutSeconds * 1000});
             this.handleTimeout(commandResult);
 

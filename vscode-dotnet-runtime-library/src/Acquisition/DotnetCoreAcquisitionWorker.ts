@@ -569,9 +569,9 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
 
             if(force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).canUninstall(true, install))
             {
-                context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install}.}`));
+                context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install.installId}.`));
                 this.removeFolderRecursively(context.eventStream, dotnetInstallDir);
-                context.eventStream.post(new DotnetUninstallCompleted(`Succeeded to uninstall .NET ${install}.}`));
+                context.eventStream.post(new DotnetUninstallCompleted(`Succeeded to uninstall .NET ${install.installId}.`));
                 graveyard.remove(install);
                 context.eventStream.post(new DotnetInstallGraveyardEvent(`Success at uninstalling ${JSON.stringify(install)} in path ${dotnetInstallDir}`));
             }
@@ -585,7 +585,7 @@ Other dependents remain.`));
         }
         catch(error : any)
         {
-            context.eventStream.post(new SuppressedAcquisitionError(error, `The attempt to uninstall .NET ${install} failed - was .NET in use?`));
+            context.eventStream.post(new SuppressedAcquisitionError(error, `The attempt to uninstall .NET ${install.installId} failed - was .NET in use?`));
             return error?.message ?? '1';
         }
     }
@@ -594,7 +594,7 @@ Other dependents remain.`));
     {
         try
         {
-            context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install}.}`));
+            context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install.installId}.`));
 
             await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, force);
             // this is the only place where installed and installing could deal with pre existing installing id
@@ -610,16 +610,16 @@ Other dependents remain.`));
                 const ok = await installer.uninstallSDK(install);
                 if(ok === '0')
                 {
-                    context.eventStream.post(new DotnetUninstallCompleted(`Succeeded to uninstall .NET ${install}.}`));
+                    context.eventStream.post(new DotnetUninstallCompleted(`Succeeded to uninstall .NET ${install.installId}.`));
                     return '0';
                 }
             }
-            context.eventStream.post(new DotnetUninstallFailed(`Failed to uninstall .NET ${install}. Uninstall manually or delete the folder.`));
+            context.eventStream.post(new DotnetUninstallFailed(`Failed to uninstall .NET ${install.installId}. Uninstall manually or delete the folder.`));
             return '117778'; // arbitrary error code to indicate uninstall failed without error.
         }
         catch(error : any)
         {
-            context.eventStream.post(new SuppressedAcquisitionError(error, `The attempt to uninstall .NET ${install} failed - was .NET in use?`));
+            context.eventStream.post(new SuppressedAcquisitionError(error, `The attempt to uninstall .NET ${install.installId} failed - was .NET in use?`));
             return error?.message ?? '1';
         }
     }
