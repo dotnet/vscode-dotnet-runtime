@@ -192,4 +192,37 @@ ${fs.readdirSync(installerDownloadFolder).join(', ')}`);
             console.warn('The check for installer file deletion cannot run without elevation.');
         }
     }).timeout(15000 * 3);
+
+    test('It runs the correct uninstall command', async () =>
+        {
+            mockExecutor.fakeReturnValue = {stdout: `0`, status: '0', stderr: ''};
+            installer.cleanupInstallFiles = false;
+            const install = GetDotnetInstallInfo(mockVersion, 'sdk', 'global', os.arch());
+            const result = await installer.uninstallSDK(install);
+            assert.exists(result);
+            assert.equal(result, '0');
+
+            if(os.platform() === 'darwin')
+            {
+                assert.isTrue(mockExecutor.attemptedCommand.startsWith('rm'), `It ran the right mac command, rm. Command found: ${mockExecutor.attemptedCommand}`)
+                assert.isTrue(mockExecutor.attemptedCommand.includes('rf'), 'It used the -rf flag')
+            }
+            else if(os.platform() === 'win32')
+            {
+                assert.isTrue(fs.existsSync(mockExecutor.attemptedCommand.split(' ')[0]), 'It ran a command to an executable that exists');
+                if(new FileUtilities().isElevated())
+                {
+                    assert.include(mockExecutor.attemptedCommand, ' /uninstall /quiet /norestart', 'It ran under the hood if it had privileges already');
+                }
+                else
+                {
+                    assert.include(mockExecutor.attemptedCommand, `/uninstall`, 'it tried to uninstall');
+                }
+            }
+
+            // Rerun install to clean it up.
+            installer.cleanupInstallFiles = true;
+            await installer.installSDK(install);
+            mockExecutor.resetReturnValues();
+        }).timeout(150000);
 });
