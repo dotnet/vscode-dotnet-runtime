@@ -32,6 +32,9 @@ import {
     EventBasedError,
     EventCancellationError,
     DotnetInstallationValidated,
+    DotnetUninstallStarted,
+    DotnetUninstallCompleted,
+    DotnetUninstallFailed,
 } from '../EventStream/EventStreamEvents';
 
 import { GlobalInstallerResolver } from './GlobalInstallerResolver';
