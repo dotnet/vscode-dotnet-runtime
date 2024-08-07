@@ -154,10 +154,10 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         }
         const installerResult : string = await this.executeInstall(installerFile);
 
-        return this.handleStatus(installerResult, installerFile);
+        return this.handleStatus(installerResult, installerFile, install);
     }
 
-    private async handleStatus(installerResult : string, installerFile : string, allowRetry = true) : Promise<string>
+    private async handleStatus(installerResult : string, installerFile : string, install : DotnetInstall, allowRetry = true) : Promise<string>
     {
         const validInstallerStatusCodes = ['0', '1641', '3010']; // Ok, Pending Reboot, + Reboot Starting Now
         const noPermissionStatusCodes = ['1', '5', '1260', '2147942405'];
@@ -181,7 +181,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         else if(noPermissionStatusCodes.includes(installerResult) && allowRetry)
         {
             const retryWithElevationResult = await this.executeInstall(installerFile, true);
-            return this.handleStatus(retryWithElevationResult, installerFile, false);
+            return this.handleStatus(retryWithElevationResult, installerFile, install, false);
         }
         else
         {
