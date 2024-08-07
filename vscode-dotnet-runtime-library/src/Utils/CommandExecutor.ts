@@ -370,13 +370,21 @@ with options ${JSON.stringify(options)}.`));
             if(command.runUnderSudo)
             {
                 options.name = this.getSanitizedCallerName();
-                execElevated(fullCommandString, options, (error?: any, execStdout?: any, execStderr?: any) =>
+                await new Promise(async (resolve, reject) =>
                 {
-                    if(terminalFailure)
+                    execElevated(fullCommandString, options, (error?: any, execStdout?: any, execStderr?: any) =>
                     {
-                        return Promise.resolve(this.parseVSCodeSudoExecError(error, fullCommandString));
-                    }
-                    return Promise.resolve({ status: error ? error.code : '0', stderr: execStderr, stdout: execStdout} as CommandExecutorResult);
+                        if(terminalFailure)
+                        {
+                            return reject(this.parseVSCodeSudoExecError(error, fullCommandString));
+                        }
+
+                        if(error)
+                        {
+                            this.context?.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandString} encountered ERROR: ${JSON.stringify(error)}`));
+                        }
+                        return resolve({ status: error ? error.code : '0', stderr: execStderr, stdout: execStdout} as CommandExecutorResult);
+                    });
                 });
             }
 
