@@ -126,6 +126,29 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     }
 
     /**
+     * A function that allows installations to work in offline mode by preventing us from pinging the server,
+     * to check if the .NET is the newest installed version.
+     *
+     * @param context
+     * @returns null if no existing install matches with the same major.minor.
+     * Else, returns the newest existing install that matches the major.minor.
+     */
+    public async getSimilarExistingInstall(context : IAcquisitionWorkerContext) : Promise<IDotnetAcquireResult | null>
+    {
+        // check events
+        const installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(true);
+
+        if (installedVersions.some(x => IsEquivalentInstallationFile(x.dotnetInstall, install)) && (fs.existsSync(dotnetPath) || this.usingNoInstallInvoker ))
+        {
+            // Requested version has already been installed.
+            context.eventStream.post(new DotnetAcquisitionStatusResolved(install, version));
+            return { dotnetPath: dotnetPath };
+        }
+
+        return null;
+    }
+
+    /**
      *
      * @param version The version of the runtime or sdk to check
      * @param installRuntime Whether this is a local runtime status check or a local SDK status check.
