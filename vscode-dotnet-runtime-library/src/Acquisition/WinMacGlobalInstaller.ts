@@ -154,14 +154,20 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         }
         const installerResult : string = await this.executeInstall(installerFile);
 
-        if(this.cleanupInstallFiles)
-        {
-            this.file.wipeDirectory(path.dirname(installerFile), this.acquisitionContext.eventStream);
-        }
+        return this.handleStatus(installerResult, installerFile);
+    }
 
+    private async handleStatus(installerResult : string, installerFile : string, allowRetry = true) : Promise<string>
+    {
         const validInstallerStatusCodes = ['0', '1641', '3010']; // Ok, Pending Reboot, + Reboot Starting Now
+        const noPermissionStatusCodes = ['1', '5', '1260', '2147942405'];
+
         if(validInstallerStatusCodes.includes(installerResult))
         {
+            if(this.cleanupInstallFiles)
+            {
+                this.file.wipeDirectory(path.dirname(installerFile), this.acquisitionContext.eventStream);
+            }
             return '0'; // These statuses are a success, we don't want to throw.
         }
         else if(installerResult === '1602')
@@ -171,6 +177,11 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
                 `The install of .NET was cancelled by the user. Aborting.`), install);
             this.acquisitionContext.eventStream.post(err);
             throw err.error;
+        }
+        else if(noPermissionStatusCodes.includes(installerResult) && allowRetry)
+        {
+            const retryWithElevationResult = await this.executeInstall(installerFile, true);
+            return this.handleStatus(retryWithElevationResult, installerFile, false);
         }
         else
         {
@@ -351,7 +362,7 @@ If you were waiting for the install to succeed, please extend the timeout settin
      * @param installerPath The path to the installer file to run.
      * @returns The exit result from running the global install.
      */
-    public async executeInstall(installerPath : string) : Promise<string>
+    public async executeInstall(installerPath : string, elevateVsCode = false) : Promise<string>
     {
         if(os.platform() === 'darwin')
         {
@@ -403,7 +414,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
             this.acquisitionContext.eventStream.post(new NetInstallerBeginExecutionEvent(`The Windows .NET Installer has been launched.`));
             try
             {
-                const commandResult = await this.commandRunner.execute(CommandExecutor.makeCommand(command, commandOptions), {timeout : this.acquisitionContext.timeoutSeconds * 1000});
+                const commandResult = await this.commandRunner.execute(CommandExecutor.makeCommand(command, commandOptions, elevateVsCode), {timeout : this.acquisitionContext.timeoutSeconds * 1000});
                 this.handleTimeout(commandResult);
                 this.acquisitionContext.eventStream.post(new NetInstallerEndExecutionEvent(`The Windows .NET Installer has closed.`));
                 return commandResult.status;
