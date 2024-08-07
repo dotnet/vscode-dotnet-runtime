@@ -40,7 +40,7 @@ import {
     TimeoutSudoProcessSpawnerError,
     EventBasedError
 } from '../EventStream/EventStreamEvents';
-import {exec} from '@vscode/sudo-prompt';
+import {exec as execElevated} from '@vscode/sudo-prompt';
 import * as lockfile from 'proper-lockfile';
 import { CommandExecutorCommand } from './CommandExecutorCommand';
 import { getInstallFromContext } from './InstallIdUtilities';
@@ -125,13 +125,11 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
         this.context?.eventStream.post(new CommandExecutionUserAskDialogueEvent(`Prompting user for command ${fullCommandString} under sudo.`));
 
         // The '.' character is not allowed for sudo-prompt so we use 'NET'
-        let sanitizedCallerName = this.context?.acquisitionContext?.requestingExtensionId?.replace(/[^0-9a-z]/gi, ''); // Remove non-alphanumerics per OS requirements
-        sanitizedCallerName = sanitizedCallerName?.substring(0, 69); // 70 Characters is the maximum limit we can use for the prompt.
-        const options = { name: `${sanitizedCallerName ?? 'NET Install Tool'}` };
+        const options = { name: `${this.getSanitizedCallerName()}` };
 
         fs.chmodSync(shellScriptPath, 0o500);
         const timeoutSeconds = Math.max(100, this.context.timeoutSeconds);
-        exec((`"${shellScriptPath}" "${this.sudoProcessCommunicationDir}" "${timeoutSeconds}" ${this.validSudoCommands?.join(' ')} &`), options, (error?: any, stdout?: any, stderr?: any) =>
+        execElevated((`"${shellScriptPath}" "${this.sudoProcessCommunicationDir}" "${timeoutSeconds}" ${this.validSudoCommands?.join(' ')} &`), options, (error?: any, stdout?: any, stderr?: any) =>
         {
                 this.context?.eventStream.post(new CommandExecutionStdOut(`The process spawn: ${fullCommandString} encountered stdout, continuing
 ${stdout}`));
@@ -144,24 +142,7 @@ ${stderr}`));
                 this.context?.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The process spawn: ${fullCommandString} failed to run under sudo.`));
                 if(terminalFailure)
                 {
-                    if(error.code === 126)
-                    {
-                        const cancelledErr = new CommandExecutionUserRejectedPasswordRequest(new EventCancellationError('CommandExecutionUserRejectedPasswordRequest',
-                        `Cancelling .NET Install, as command ${fullCommandString} failed.
-The user refused the password prompt.`),
-                            getInstallFromContext(this.context));
-                        this.context?.eventStream.post(cancelledErr);
-                        return Promise.reject(cancelledErr.error);
-                    }
-                    else if(error.code === 111777)
-                    {
-                        const securityErr = new CommandExecutionUnknownCommandExecutionAttempt(new EventCancellationError('CommandExecutionUnknownCommandExecutionAttempt',
-                        `Cancelling .NET Install, as command ${fullCommandString} is UNKNOWN.
-Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
-                            getInstallFromContext(this.context));
-                        this.context?.eventStream.post(securityErr);
-                        return Promise.reject(securityErr.error);
-                    }
+                    this.parseVSCodeSudoExecError(error, fullCommandString);
                     return Promise.reject(error);
                 }
                 else
@@ -362,7 +343,7 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
      */
     public async execute(command : CommandExecutorCommand, options : any | null = null, terminalFailure = true) : Promise<CommandExecutorResult>
     {
-        const fullCommandStringForTelemetryOnly = `${command.commandRoot} ${command.commandParts.join(' ')}`;
+        const fullCommandString = `${command.commandRoot} ${command.commandParts.join(' ')}`;
         if(options && !options?.cwd)
         {
             options.cwd = path.resolve(__dirname);
@@ -376,23 +357,37 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
             options = {cwd : path.resolve(__dirname), shell: true};
         }
 
-        if(command.runUnderSudo)
+        if(command.runUnderSudo && os.platform() === 'linux')
         {
             return this.ExecSudoAsync(command, terminalFailure);
         }
         else
         {
-            this.context?.eventStream.post(new CommandExecutionEvent(`Executing command ${fullCommandStringForTelemetryOnly}
+            this.context?.eventStream.post(new CommandExecutionEvent(`Executing command ${fullCommandString}
 with options ${JSON.stringify(options)}.`));
-            const commandResult = proc.spawnSync(command.commandRoot, command.commandParts, options);
+
+            let commandResult;
+
+            if(command.runUnderSudo)
+            {
+                execElevated(fullCommandString, options, (error?: any, execStdout?: any, execStderr?: any) =>
+                {
+                    if(terminalFailure)
+                    {
+                        return Promise.resolve(this.parseVSCodeSudoExecError(error, fullCommandString));
+                    }
+                    return Promise.resolve({ status: error ? error.code : '0', stderr: execStderr, stdout: execStdout} as CommandExecutorResult);
+                });
+            }
+
+            commandResult = proc.spawnSync(command.commandRoot, command.commandParts, options);
 
             if(os.platform() === 'win32')
             {
                 proc.spawn('taskkill', ['/pid', commandResult.pid.toString(), '/f', '/t']);
             }
 
-
-            this.logCommandResult(commandResult, fullCommandStringForTelemetryOnly);
+            this.logCommandResult(commandResult, fullCommandString);
 
             const statusCode : string = (() =>
             {
@@ -410,7 +405,7 @@ with options ${JSON.stringify(options)}.`));
                     }
                     else
                     {
-                        this.context?.eventStream.post(new CommandExecutionNoStatusCodeWarning(`The command ${fullCommandStringForTelemetryOnly} with
+                        this.context?.eventStream.post(new CommandExecutionNoStatusCodeWarning(`The command ${fullCommandString} with
 result: ${commandResult.toString()} had no status or signal.`));
                         return '000751'; // Error code 000751 : The command did not report an exit code upon completion. This is never expected
                     }
@@ -434,6 +429,28 @@ ${commandResult.stdout}`));
 
         this.context?.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandStringForTelemetryOnly} encountered stderr:
 ${commandResult.stderr}`));
+    }
+
+    private parseVSCodeSudoExecError(error : any, fullCommandString : string)
+    {
+        if(error.code === 126)
+        {
+            const cancelledErr = new CommandExecutionUserRejectedPasswordRequest(new EventCancellationError('CommandExecutionUserRejectedPasswordRequest',
+            `Cancelling .NET Install, as command ${fullCommandString} failed.
+The user refused the password prompt.`),
+                getInstallFromContext(this.context));
+            this.context?.eventStream.post(cancelledErr);
+            return Promise.reject(cancelledErr.error);
+        }
+        else if(error.code === 111777)
+        {
+            const securityErr = new CommandExecutionUnknownCommandExecutionAttempt(new EventCancellationError('CommandExecutionUnknownCommandExecutionAttempt',
+            `Cancelling .NET Install, as command ${fullCommandString} is UNKNOWN.
+Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
+                getInstallFromContext(this.context));
+            this.context?.eventStream.post(securityErr);
+            return Promise.reject(securityErr.error);
+        }
     }
 
     /**
@@ -531,6 +548,13 @@ ${commandResult.stderr}`));
             vscodeContext.appendToEnvironmentVariable('PATH', path.delimiter + pathAddition);
             process.env.PATH += path.delimiter + pathAddition;
         }
+    }
+
+    private getSanitizedCallerName() : string
+    {
+        let sanitizedCallerName = this.context?.acquisitionContext?.requestingExtensionId?.replace(/[^0-9a-z]/gi, ''); // Remove non-alphanumerics per OS requirements
+        sanitizedCallerName = sanitizedCallerName?.substring(0, 69); // 70 Characters is the maximum limit we can use for the prompt.
+        return sanitizedCallerName ?? 'NET Install Tool';
     }
 
     protected getLinuxPathCommand(pathAddition: string): string | undefined
