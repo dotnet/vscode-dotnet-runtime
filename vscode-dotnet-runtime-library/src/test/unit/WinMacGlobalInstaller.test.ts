@@ -204,7 +204,7 @@ ${fs.readdirSync(installerDownloadFolder).join(', ')}`);
 
             if(os.platform() === 'darwin')
             {
-                assert.isTrue(mockExecutor.attemptedCommand.startsWith('rm'), `It ran the right mac command, rm. Command found: ${mockExecutor.attemptedCommand}`)
+                assert.isTrue(mockExecutor.attemptedCommand.startsWith('sudo rm'), `It ran the right mac command, rm. Command found: ${mockExecutor.attemptedCommand}`)
                 assert.isTrue(mockExecutor.attemptedCommand.includes('rf'), 'It used the -rf flag')
             }
             else if(os.platform() === 'win32')
