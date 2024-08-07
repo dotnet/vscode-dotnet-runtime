@@ -9,6 +9,7 @@ import {
     DotnetAcquisitionError,
     DotnetAcquisitionInProgress,
     DotnetAcquisitionStarted,
+    DotnetCustomMessageEvent,
     DotnetDebuggingMessage,
     DotnetExistingPathResolutionCompleted,
     DotnetInstallExpectedAbort,
@@ -123,6 +124,10 @@ export class OutputChannelObserver implements IEventStreamObserver {
             case EventType.DotnetDebuggingMessage:
                 const loggedMessage = event as DotnetDebuggingMessage;
                 this.outputChannel.appendLine(loggedMessage.message);
+                break;
+            case EventType.DotnetUninstallMessage:
+                const uninstallMsg = event as DotnetCustomMessageEvent;
+                this.outputChannel.appendLine(uninstallMsg.eventMessage);
                 break;
         }
     }

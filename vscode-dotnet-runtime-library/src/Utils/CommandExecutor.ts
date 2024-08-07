@@ -124,8 +124,7 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
         // Launch the process under sudo
         this.context?.eventStream.post(new CommandExecutionUserAskDialogueEvent(`Prompting user for command ${fullCommandString} under sudo.`));
 
-        // The '.' character is not allowed for sudo-prompt so we use 'NET'
-        const options = { name: `${this.getSanitizedCallerName()}` };
+        const options = { name: this.getSanitizedCallerName() };
 
         fs.chmodSync(shellScriptPath, 0o500);
         const timeoutSeconds = Math.max(100, this.context.timeoutSeconds);
@@ -370,13 +369,22 @@ with options ${JSON.stringify(options)}.`));
 
             if(command.runUnderSudo)
             {
-                execElevated(fullCommandString, options, (error?: any, execStdout?: any, execStderr?: any) =>
+                options.name = this.getSanitizedCallerName();
+                return await new Promise<CommandExecutorResult>(async (resolve, reject) =>
                 {
-                    if(terminalFailure)
+                    execElevated(fullCommandString, options, (error?: any, execStdout?: any, execStderr?: any) =>
                     {
-                        return Promise.resolve(this.parseVSCodeSudoExecError(error, fullCommandString));
-                    }
-                    return Promise.resolve({ status: error ? error.code : '0', stderr: execStderr, stdout: execStdout} as CommandExecutorResult);
+                        if(error && terminalFailure)
+                        {
+                            return reject(this.parseVSCodeSudoExecError(error, fullCommandString));
+                        }
+                        else if(error)
+                        {
+                            this.context?.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandString} encountered ERROR: ${JSON.stringify(error)}`));
+                        }
+
+                        return resolve({ status: error ? error.code : '0', stderr: execStderr, stdout: execStdout} as CommandExecutorResult);
+                    });
                 });
             }
 
@@ -552,6 +560,7 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
 
     private getSanitizedCallerName() : string
     {
+        // The '.' character is not allowed for sudo-prompt so we use 'NET'
         let sanitizedCallerName = this.context?.acquisitionContext?.requestingExtensionId?.replace(/[^0-9a-z]/gi, ''); // Remove non-alphanumerics per OS requirements
         sanitizedCallerName = sanitizedCallerName?.substring(0, 69); // 70 Characters is the maximum limit we can use for the prompt.
         return sanitizedCallerName ?? 'NET Install Tool';
