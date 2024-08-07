@@ -12,10 +12,15 @@ jobs:
   templateContext:
     outputs:
     - output: pipelineArtifact
-      displayName: '🌐 Publish Logs'
+      displayName: '🌐 Publish Install Tool Logs'
       condition: always()
       targetPath: '$(Build.SourcesDirectory)/vscode-dotnet-runtime-extension/dist/test/functional/logs'
-      artifactName: '${{ parameters.pool.os }} logs'
+      artifactName: '${{ parameters.pool.os }} Install Tool logs'
+    - output: pipelineArtifact
+      displayName: '👜 Publish SDK Logs'
+      condition: always()
+      targetPath: '$(Build.SourcesDirectory)/vscode-dotnet-sdk-extension/dist/test/functional/logs'
+      artifactName: '${{ parameters.pool.os }} SDK logs'
   steps:
   - template: install-node.yaml
   - ${{ if eq(parameters.pool.os, 'windows') }}:
