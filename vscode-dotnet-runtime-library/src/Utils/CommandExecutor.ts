@@ -370,19 +370,19 @@ with options ${JSON.stringify(options)}.`));
             if(command.runUnderSudo)
             {
                 options.name = this.getSanitizedCallerName();
-                await new Promise(async (resolve, reject) =>
+                return await new Promise<CommandExecutorResult>(async (resolve, reject) =>
                 {
                     execElevated(fullCommandString, options, (error?: any, execStdout?: any, execStderr?: any) =>
                     {
-                        if(terminalFailure)
+                        if(error && terminalFailure)
                         {
                             return reject(this.parseVSCodeSudoExecError(error, fullCommandString));
                         }
-
-                        if(error)
+                        else if(error)
                         {
                             this.context?.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandString} encountered ERROR: ${JSON.stringify(error)}`));
                         }
+
                         return resolve({ status: error ? error.code : '0', stderr: execStderr, stdout: execStdout} as CommandExecutorResult);
                     });
                 });
