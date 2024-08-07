@@ -124,8 +124,7 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
         // Launch the process under sudo
         this.context?.eventStream.post(new CommandExecutionUserAskDialogueEvent(`Prompting user for command ${fullCommandString} under sudo.`));
 
-        // The '.' character is not allowed for sudo-prompt so we use 'NET'
-        const options = { name: `${this.getSanitizedCallerName()}` };
+        const options = { name: this.getSanitizedCallerName() };
 
         fs.chmodSync(shellScriptPath, 0o500);
         const timeoutSeconds = Math.max(100, this.context.timeoutSeconds);
@@ -370,6 +369,7 @@ with options ${JSON.stringify(options)}.`));
 
             if(command.runUnderSudo)
             {
+                options.name = this.getSanitizedCallerName();
                 execElevated(fullCommandString, options, (error?: any, execStdout?: any, execStderr?: any) =>
                 {
                     if(terminalFailure)
@@ -552,6 +552,7 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
 
     private getSanitizedCallerName() : string
     {
+        // The '.' character is not allowed for sudo-prompt so we use 'NET'
         let sanitizedCallerName = this.context?.acquisitionContext?.requestingExtensionId?.replace(/[^0-9a-z]/gi, ''); // Remove non-alphanumerics per OS requirements
         sanitizedCallerName = sanitizedCallerName?.substring(0, 69); // 70 Characters is the maximum limit we can use for the prompt.
         return sanitizedCallerName ?? 'NET Install Tool';
