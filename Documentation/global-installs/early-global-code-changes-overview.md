@@ -1,7 +1,7 @@
 
 # .NET Global Acquisition Engineering Spec
 
-Resolves: https://github.com/dotnet/vscode-dotnet-runtime/issues/763.
+Resolves: <https://github.com/dotnet/vscode-dotnet-runtime/issues/763>.
 
 Described below is an overview of the changes made to enable supporting global .NET SDK installs via our VS Code Extensions. This document's original function was to help during PR Review, as this functionality was added in 1-go. (This is terrible and I am sorry: but we had initially struggled to get reviewers during development and were trying to move swiftly.)
 
