@@ -173,7 +173,7 @@ ${stderr}`));
         const processAliveOkSentinelFile = path.join(this.sudoProcessCommunicationDir, 'ok.txt');
         const fakeLockFile = path.join(this.sudoProcessCommunicationDir, 'fakeLockFile'); // We need a file to lock the directory in the API besides the dir lock file
 
-        await this.fileUtil.writeFileOntoDisk('', fakeLockFile, false, this.context?.eventStream!);
+        await (this.fileUtil as FileUtilities).writeFileOntoDisk('', fakeLockFile, false, this.context?.eventStream!);
 
         // Prepare to lock directory
         const directoryLock = 'dir.lock';
@@ -242,7 +242,7 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallFromCon
         const outputFile = path.join(this.sudoProcessCommunicationDir, 'output.txt');
         const fakeLockFile = path.join(this.sudoProcessCommunicationDir, 'fakeLockFile'); // We need a file to lock the directory in the API besides the dir lock file
 
-        await this.fileUtil.writeFileOntoDisk('', fakeLockFile, false, this.context?.eventStream!);
+        await (this.fileUtil as FileUtilities).writeFileOntoDisk('', fakeLockFile, false, this.context?.eventStream!);
 
         // Prepare to lock directory
         const directoryLock = 'dir.lock';
@@ -256,9 +256,9 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallFromCon
         .then(async (release: () => any) =>
         {
             this.context?.eventStream.post(new DotnetLockAcquiredEvent(`Lock Acquired.`, new Date().toISOString(), directoryLockPath, fakeLockFile));
-            await this.fileUtil.wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt', '.json']);
+            (this.fileUtil as FileUtilities).wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt', '.json']);
 
-            await this.fileUtil.writeFileOntoDisk(`${commandToExecuteString}`, commandFile, true, this.context?.eventStream!);
+            await (this.fileUtil as FileUtilities).writeFileOntoDisk(`${commandToExecuteString}`, commandFile, true, this.context?.eventStream!);
             this.context?.eventStream.post(new SudoProcCommandExchangeBegin(`Handing command off to master process. ${new Date().toISOString()}`));
             this.context?.eventStream.post(new CommandProcessorExecutionBegin(`The command ${commandToExecuteString} was forwarded to the master process to run.`));
 
@@ -332,13 +332,23 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
     {
         let didDelete = 1;
         const processExitFile = path.join(this.sudoProcessCommunicationDir, 'exit.txt');
-        await this.fileUtil.writeFileOntoDisk('', processExitFile, true, this.context?.eventStream);
-        await loopWithTimeoutOnCond(100, 1000,
-            function processRespondedByDeletingOkFile() : boolean { return !fs.existsSync(processExitFile) },
-            function setProcessIsAlive() : void { didDelete = 0; },
-            this.context.eventStream,
-            new SudoProcCommandExchangePing(`Ping : Waiting to exit sudo process master. ${new Date().toISOString()}`)
-        );
+        await (this.fileUtil as FileUtilities).writeFileOntoDisk('', processExitFile, true, this.context?.eventStream);
+
+        const waitTime = this.context?.timeoutSeconds ? (this.context?.timeoutSeconds * 1000) : 600000;
+
+        try
+        {
+            await loopWithTimeoutOnCond(100, waitTime,
+                function processRespondedByDeletingExitFile() : boolean { return !fs.existsSync(processExitFile) },
+                function returnZeroOnExit() : void { didDelete = 0; },
+                this.context.eventStream,
+                new SudoProcCommandExchangePing(`Ping : Waiting to exit sudo process master. ${new Date().toISOString()}`)
+            );
+        }
+        catch(error : any)
+        {
+            eventStream.post(new TriedToExitMasterSudoProcess(`Tried to exit sudo master process: FAILED. ${error ? JSON.stringify(error) : ''}`));
+        }
 
         eventStream.post(new TriedToExitMasterSudoProcess(`Tried to exit sudo master process: exit code ${didDelete}`));
 
