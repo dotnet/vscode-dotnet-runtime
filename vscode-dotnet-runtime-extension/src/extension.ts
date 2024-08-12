@@ -346,7 +346,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     {
         const existingInstalls = await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).getExistingInstalls(true);
 
-        const menuItems = existingInstalls.sort(
+        const menuItems = existingInstalls?.sort(
         function(x : InstallRecord, y : InstallRecord) : number
         {
             if(x.dotnetInstall.installMode === y.dotnetInstall.installMode)
@@ -354,7 +354,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 return x.dotnetInstall.version.localeCompare(y.dotnetInstall.version);
             }
             return x.dotnetInstall.installMode.localeCompare(y.dotnetInstall.installMode);
-        }).map(install =>
+        })?.map(install =>
         {
             return {
                 label : `.NET ${(install.dotnetInstall.installMode).toUpperCase()} ${install.dotnetInstall.version}`,
