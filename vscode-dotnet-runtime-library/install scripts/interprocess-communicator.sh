@@ -12,6 +12,8 @@ function finish {
 }
 trap finish EXIT
 
+export DEBIAN_FRONTEND=noninteractive
+
 while true
 do
         stop=false
