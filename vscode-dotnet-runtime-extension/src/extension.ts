@@ -360,6 +360,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 label : `.NET ${(install.dotnetInstall.installMode).toUpperCase()} ${install.dotnetInstall.version}`,
                 description : `${install.dotnetInstall.architecture ?? ''} | ${install.dotnetInstall.isGlobal ? 'machine-wide' : 'vscode-local' }`,
                 detail : `Used by ${install.installingExtensions.join(', ')}`,
+                iconPath : install.dotnetInstall.isGlobal ? new vscode.ThemeIcon('shield') : new vscode.ThemeIcon('trash'),
                 internalId : install.dotnetInstall.installId
             }
         });
