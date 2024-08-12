@@ -490,7 +490,7 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
 
         await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).reclassifyInstallingVersionToInstalled(context, install);
 
-        await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster();
+        await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream);
         context.eventStream.post(new DotnetGlobalAcquisitionCompletionEvent(`The version ${JSON.stringify(install)} completed successfully.`));
         return dotnetPath;
     }
