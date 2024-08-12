@@ -756,6 +756,10 @@ export class DuplicateInstallDetected extends DotnetCustomMessageEvent {
     public readonly eventName = 'DuplicateInstallDetected';
 }
 
+export class TriedToExitMasterSudoProcess extends DotnetCustomMessageEvent {
+    public readonly eventName = 'TriedToExitMasterSudoProcess';
+}
+
 export class DotnetUninstallStarted extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetUninstallStarted';
     public type = EventType.DotnetUninstallMessage;

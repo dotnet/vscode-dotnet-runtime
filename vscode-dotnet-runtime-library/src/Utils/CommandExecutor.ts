@@ -38,7 +38,8 @@ import {
     SudoProcCommandExchangePing,
     TimeoutSudoCommandExecutionError,
     TimeoutSudoProcessSpawnerError,
-    EventBasedError
+    EventBasedError,
+    TriedToExitMasterSudoProcess
 } from '../EventStream/EventStreamEvents';
 import {exec as execElevated} from '@vscode/sudo-prompt';
 import * as lockfile from 'proper-lockfile';
@@ -55,6 +56,7 @@ import { FileUtilities } from './FileUtilities';
 import { IFileUtilities } from './IFileUtilities';
 import { CommandExecutorResult } from './CommandExecutorResult';
 import { isRunningUnderWSL, loopWithTimeoutOnCond } from './TypescriptUtilities';
+import { IEventStream } from '../EventStream/EventStream';
 
 /* tslint:disable:no-any */
 /* tslint:disable:no-string-literal */
@@ -321,6 +323,26 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
         }
 
         return commandOutputJson ?? { stdout: '', stderr : '', status: noStatusCodeErrorCode};
+    }
+
+    /**
+     * @returns 0 if the sudo master process was ended, 1 if it was not.
+     */
+    public async endSudoProcessMaster(eventStream : IEventStream) : Promise<number>
+    {
+        let didDelete = 1;
+        const processExitFile = path.join(this.sudoProcessCommunicationDir, 'exit.txt');
+        await this.fileUtil.writeFileOntoDisk('', processExitFile, true, this.context?.eventStream);
+        await loopWithTimeoutOnCond(100, 1000,
+            function processRespondedByDeletingOkFile() : boolean { return !fs.existsSync(processExitFile) },
+            function setProcessIsAlive() : void { didDelete = 0; },
+            this.context.eventStream,
+            new SudoProcCommandExchangePing(`Ping : Waiting to exit sudo process master. ${new Date().toISOString()}`)
+        );
+
+        eventStream.post(new TriedToExitMasterSudoProcess(`Tried to exit sudo master process: exit code ${didDelete}`));
+
+        return didDelete;
     }
 
     public async executeMultipleCommands(commands: CommandExecutorCommand[], options?: any, terminalFailure = true): Promise<CommandExecutorResult[]>
