@@ -13,7 +13,7 @@ jobs:
   dependsOn:
   - ${{ parameters.pool.os }}_Build
   - TSLint
-  condition: {succeeded() && eq(parameters.useOneEngineeringPool, 'true')}
+  condition: and(succeeded(), eq(parameters.useOneEngineeringPool, 'true'))
   strategy:
     matrix:
       Runtime:
