@@ -369,6 +369,12 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         if(chosenVersion)
         {
             const installRecord : InstallRecord = existingInstalls.find(install => install.dotnetInstall.installId === chosenVersion.internalId)!;
+
+            if(!installRecord || !installRecord?.dotnetInstall?.version || !installRecord?.dotnetInstall?.installMode)
+            {
+                return;
+            }
+
             const install : DotnetInstall = installRecord.dotnetInstall;
             let canContinue = true;
             const uninstallWillBreakSomething = !(await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).canUninstall(true, install, true));
