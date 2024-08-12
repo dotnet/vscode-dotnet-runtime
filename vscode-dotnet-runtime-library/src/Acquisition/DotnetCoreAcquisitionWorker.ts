@@ -406,7 +406,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     {
         if(error instanceof EventBasedError || error instanceof EventCancellationError)
         {
-            error.message = `.NET Acquisition Failed: ${error.message}`;
+            error.message = `.NET Acquisition Failed: ${error.message}, ${error?.stack}`;
             return error;
         }
         else
