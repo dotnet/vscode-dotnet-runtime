@@ -359,13 +359,20 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         })?.map(install =>
         {
             return {
-                label : `.NET ${(install.dotnetInstall.installMode).toUpperCase()} ${install.dotnetInstall.version}`,
+                label : `.NET ${(install.dotnetInstall.installMode === 'sdk' ? 'SDK' : install.dotnetInstall.installMode === 'runtime' ? 'Runtime' : 'ASP.NET Core Runtime')} ${install.dotnetInstall.version}`,
                 description : `${install.dotnetInstall.architecture ?? ''} | ${install.dotnetInstall.isGlobal ? 'machine-wide' : 'vscode-local' }`,
                 detail : `Used by ${install.installingExtensions.join(', ')}`,
                 iconPath : install.dotnetInstall.isGlobal ? new vscode.ThemeIcon('shield') : new vscode.ThemeIcon('trash'),
                 internalId : install.dotnetInstall.installId
             }
         });
+
+        if(menuItems.length < 1)
+        {
+            vscode.window.showInformationMessage('No .NET installations were found to uninstall.');
+            return;
+        }
+
         const chosenVersion = await vscode.window.showQuickPick(menuItems, { placeHolder: 'Select a version to uninstall.' });
 
         if(chosenVersion)
