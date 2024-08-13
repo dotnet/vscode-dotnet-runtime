@@ -67,6 +67,8 @@ import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
 
 // tslint:disable no-var-requires
+/* tslint:disable:only-arrow-functions */
+
 const packageJson = require('../package.json');
 
 // Extension constants
@@ -375,15 +377,15 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 return;
             }
 
-            const install : DotnetInstall = installRecord.dotnetInstall;
+            const selectedInstall : DotnetInstall = installRecord.dotnetInstall;
             let canContinue = true;
-            const uninstallWillBreakSomething = !(await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).canUninstall(true, install, true));
+            const uninstallWillBreakSomething = !(await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).canUninstall(true, selectedInstall, true));
 
             const yes = `Continue`;
             if(uninstallWillBreakSomething)
             {
                 const pick = await vscode.window.showWarningMessage(
-`Uninstalling .NET ${install.version} will likely cause ${installRecord.installingExtensions.join(', ')} to stop functioning properly. Do you still wish to continue?`, { modal: true }, yes);
+`Uninstalling .NET ${selectedInstall.version} will likely cause ${installRecord.installingExtensions.join(', ')} to stop functioning properly. Do you still wish to continue?`, { modal: true }, yes);
                 canContinue = pick === yes;
             }
 
@@ -394,10 +396,10 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             const commandContext : IDotnetAcquireContext =
             {
-                version: install.version,
-                mode: install.installMode,
-                installType: install.isGlobal ? 'global' : 'local',
-                architecture: install.architecture,
+                version: selectedInstall.version,
+                mode: selectedInstall.installMode,
+                installType: selectedInstall.isGlobal ? 'global' : 'local',
+                architecture: selectedInstall.architecture,
                 requestingExtensionId : 'user'
             }
 
