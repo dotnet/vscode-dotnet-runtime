@@ -112,7 +112,6 @@
 	},
 	"dependencies": {
 		"@vscode/vsce": "^2.19.0",
-		"axios": "^1.7.4",
 		"open": "^8.4.2",
 		"vscode-dotnet-runtime": "file:../vscode-dotnet-runtime-extension",
 		"vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library",
