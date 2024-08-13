@@ -85,6 +85,10 @@ suite('VersionResolver Unit Tests', () => {
         assert.equal(resolver.getFeatureBandPatchVersion(twoDigitPatchVersion), '21');
     });
 
+    test('Get Patch from SDK Preview Version', async () => {
+        assert.equal(resolver.getFeatureBandPatchVersion('8.0.400-preview.0.24324.5'), '0');
+    });
+
     test('Detects Unspecified Patch Version', async () => {
         assert.equal(resolver.isNonSpecificFeatureBandedVersion(fullySpecifiedVersion), false, 'It detects versions with patches');
         assert.equal(resolver.isNonSpecificFeatureBandedVersion(featureBandVersion), true, 'It detects versions with xx');
