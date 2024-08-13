@@ -43,7 +43,8 @@
                 "commandParts": [
                     "-o",
                     "DPkg::Lock::Timeout=180",
-                    "update"
+                    "update",
+                    "-y"
                 ]
             },
             {
