@@ -1,0 +1,19 @@
+steps:
+  - task: UseDotNet@2
+    displayName: 🔮 Use .NET SDK
+    inputs:
+      packageType: sdk
+      useGlobalJson: true
+  # This is necessary whenever we want to publish/restore to an AzDO private feed
+  # otherwise it'll complain about accessing a private feed.
+  - task: NuGetAuthenticate@1
+    displayName: '🔏 Authenticate to AzDO Feeds'
+  - task: MicroBuildSigningPlugin@4
+    displayName: 🔧 Install MicroBuild Signing Plugin
+    inputs:
+      signType: ${{ parameters.SignType }}
+      zipSources: false
+      feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
+    env:
+      SignType: ${{ parameters.SignType }}
+      TeamName: DotNetCore

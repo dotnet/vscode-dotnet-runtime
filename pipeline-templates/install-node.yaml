@@ -3,3 +3,5 @@ steps:
   inputs:
     version: '20.x'
   displayName: '⚛️ Install Node.js'
+  templateContext:
+  outputs:
