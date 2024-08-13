@@ -8,8 +8,8 @@ EXITFILE="$EXECFOLDER/exit.txt"
 end=$((SECONDS+3600))
 
 function finish {
-  rm "$COMMANDTORUNFILE"
-  rm "$OKSIGNALFILE"
+  rm -f "$COMMANDTORUNFILE"
+  rm -f "$OKSIGNALFILE"
 }
 trap finish EXIT
 
