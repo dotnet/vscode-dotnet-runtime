@@ -255,7 +255,7 @@ export class VersionResolver implements IVersionResolver {
      */
     private getPatchVersionString(fullySpecifiedVersion : string) : string
     {
-        const patch : string | undefined = fullySpecifiedVersion.split('.')?.at(2)?.substring(1).split('-')?.at(0);
+        const patch : string | undefined = fullySpecifiedVersion.split('.')?.at(2)?.substring(1)?.split('-')?.at(0);
         if(patch === undefined || !this.isNumber(patch))
         {
             const event = new DotnetFeatureBandDoesNotExistError(new EventCancellationError('DotnetFeatureBandDoesNotExistError',
