@@ -45,6 +45,7 @@ jobs:
   - template: prepare-signing.yaml
     parameters:
       SignType: ${{ parameters.SignType }}
+    condition: and(succeeded(), eq('${{ parameters.useOneEngineeringPool }}', 'true'))
   - bash: |
       npm install rimraf --reg https://registry.npmjs.org/ --verbose
       npm install @vscode/vsce@latest -g --reg https://registry.npmjs.org/ --verbose
