@@ -609,6 +609,7 @@ Other dependents remain.`));
                 new WinMacGlobalInstaller(context, this.utilityContext, installingVersion, await globalInstallerResolver.getInstallerUrl(), await globalInstallerResolver.getInstallerHash());
 
                 const ok = await installer.uninstallSDK(install);
+                await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream);
                 if(ok === '0')
                 {
                     context.eventStream.post(new DotnetUninstallCompleted(`Uninstalled .NET ${install.installId}.`));
@@ -620,6 +621,7 @@ Other dependents remain.`));
         }
         catch(error : any)
         {
+            await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream);
             context.eventStream.post(new SuppressedAcquisitionError(error, `The attempt to uninstall .NET ${install.installId} failed - was .NET in use?`));
             return error?.message ?? '1';
         }
