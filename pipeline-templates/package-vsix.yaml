@@ -42,7 +42,7 @@ jobs:
     name: GetVersion
     displayName: '❓ Get Version'
     workingDirectory: $(dir-name)
-  - ${{ if and(succeeded(), eq('${{ parameters.useOneEngineeringPool }}', 'true')) }}:
+  - ${{ if eq('${{ parameters.useOneEngineeringPool }}', 'true') }}:
     - template: prepare-signing.yaml
       parameters:
         SignType: ${{ parameters.SignType }}
