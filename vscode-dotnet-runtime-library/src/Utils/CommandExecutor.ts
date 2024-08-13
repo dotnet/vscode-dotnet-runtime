@@ -402,6 +402,7 @@ with options ${JSON.stringify(options)}.`));
             if(command.runUnderSudo)
             {
                 options.name = this.getSanitizedCallerName();
+                // tslint:disable no-return-await
                 return await new Promise<CommandExecutorResult>(async (resolve, reject) =>
                 {
                     execElevated(fullCommandString, options, (error?: any, execStdout?: any, execStderr?: any) =>
