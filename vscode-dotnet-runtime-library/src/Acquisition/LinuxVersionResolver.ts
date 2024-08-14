@@ -91,17 +91,17 @@ If you would like to contribute to the list of supported distros, please visit: 
     public redhatUnsupportedDistroErrorMessage = 'Red Hat Enterprise Linux 7.0 is currently not supported. Follow the instructions here to download the .NET SDK: https://learn.microsoft.com/en-us/dotnet/core/install/linux-rhel#rhel-7--net-6. Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from https://access.redhat.com/downloads/';
     protected acquireCtx: IDotnetAcquireContext | null | undefined;
 
-    constructor(private readonly acquisitionContext : IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext,
+    constructor(private readonly workerContext : IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext,
         executor : ICommandExecutor | null = null, distroProvider : IDistroDotnetSDKProvider | null = null)
     {
-        this.commandRunner = executor ?? new CommandExecutor(this.acquisitionContext, this.utilityContext);
-        this.versionResolver = new VersionResolver(acquisitionContext);
+        this.commandRunner = executor ?? new CommandExecutor(this.workerContext, this.utilityContext);
+        this.versionResolver = new VersionResolver(workerContext);
         if(distroProvider)
         {
             this.distroSDKProvider = distroProvider;
         }
 
-        this.acquireCtx = this.acquisitionContext.acquisitionContext;
+        this.acquireCtx = this.workerContext.acquisitionContext;
     }
 
     /**
@@ -135,8 +135,8 @@ If you would like to contribute to the list of supported distros, please visit: 
             if(distroName === '' || distroVersion === '')
             {
                 const error = new DotnetAcquisitionDistroUnknownError(new EventCancellationError('DotnetAcquisitionDistroUnknownError',
-                    this.baseUnsupportedDistroErrorMessage), getInstallFromContext(this.acquisitionContext));
-                this.acquisitionContext.eventStream.post(error);
+                    this.baseUnsupportedDistroErrorMessage), getInstallFromContext(this.workerContext));
+                this.workerContext.eventStream.post(error);
                 throw error.error;
             }
 
@@ -147,8 +147,8 @@ If you would like to contribute to the list of supported distros, please visit: 
         {
             const err = new DotnetAcquisitionDistroUnknownError(new EventCancellationError('DotnetAcquisitionDistroUnknownError',
                 `${this.baseUnsupportedDistroErrorMessage} ... does /etc/os-release exist?`),
-                getInstallFromContext(this.acquisitionContext));
-            this.acquisitionContext.eventStream.post(err);
+                getInstallFromContext(this.workerContext));
+            this.workerContext.eventStream.post(err);
             throw err.error;
         }
     }
@@ -176,8 +176,8 @@ If you would like to contribute to the list of supported distros, please visit: 
             const error = new DotnetAcquisitionDistroUnknownError(new EventCancellationError(
                 'DotnetAcquisitionDistroUnknownError',
                 `${this.baseUnsupportedDistroErrorMessage} ... we cannot initialize.`),
-                getInstallFromContext(this.acquisitionContext));
-            this.acquisitionContext.eventStream.post(error);
+                getInstallFromContext(this.workerContext));
+            this.workerContext.eventStream.post(error);
             throw error.error;
         }
     }
@@ -198,8 +198,8 @@ If you would like to contribute to the list of supported distros, please visit: 
             case null:
                 const unknownDistroErr = new DotnetAcquisitionDistroUnknownError(new EventCancellationError(
                     'DotnetAcquisitionDistroUnknownError',
-                    this.unsupportedDistroErrorMessage), getInstallFromContext(this.acquisitionContext));
-                this.acquisitionContext.eventStream.post(unknownDistroErr);
+                    this.unsupportedDistroErrorMessage), getInstallFromContext(this.workerContext));
+                this.workerContext.eventStream.post(unknownDistroErr);
                 throw unknownDistroErr.error;
             case 'Red Hat Enterprise Linux':
                 if(this.isRedHatVersion7(distroAndVersion.version))
@@ -207,13 +207,13 @@ If you would like to contribute to the list of supported distros, please visit: 
                     const unsupportedRhelErr = new DotnetAcquisitionDistroUnknownError(new EventCancellationError(
                         'DotnetAcquisitionDistroUnknownError',
                         this.redhatUnsupportedDistroErrorMessage),
-                        getInstallFromContext(this.acquisitionContext));
-                    this.acquisitionContext.eventStream.post(unsupportedRhelErr);
+                        getInstallFromContext(this.workerContext));
+                    this.workerContext.eventStream.post(unsupportedRhelErr);
                     throw unsupportedRhelErr.error;
                 }
-                return new RedHatDistroSDKProvider(distroAndVersion, this.acquisitionContext, this.utilityContext);
+                return new RedHatDistroSDKProvider(distroAndVersion, this.workerContext, this.utilityContext);
             default:
-                return new GenericDistroSDKProvider(distroAndVersion, this.acquisitionContext, this.utilityContext);
+                return new GenericDistroSDKProvider(distroAndVersion, this.workerContext, this.utilityContext);
         }
     }
 
@@ -236,8 +236,8 @@ If you would like to contribute to the list of supported distros, please visit: 
             {
                 const err = new DotnetConflictingLinuxInstallTypesError(new EventCancellationError('DotnetConflictingLinuxInstallTypesError',
                 this.conflictingInstallErrorMessage + microsoftFeedDir),
-                    getInstallFromContext(this.acquisitionContext));
-                this.acquisitionContext.eventStream.post(err);
+                    getInstallFromContext(this.workerContext));
+                this.workerContext.eventStream.post(err);
                 throw err.error;
             }
         }
@@ -248,8 +248,8 @@ If you would like to contribute to the list of supported distros, please visit: 
             {
                 const err = new DotnetConflictingLinuxInstallTypesError(new EventCancellationError('DotnetConflictingLinuxInstallTypesError',
                     this.conflictingInstallErrorMessage + distroFeedDir),
-                    getInstallFromContext(this.acquisitionContext));
-                this.acquisitionContext.eventStream.post(err);
+                    getInstallFromContext(this.workerContext));
+                this.workerContext.eventStream.post(err);
                 throw err.error;
             }
         }
@@ -269,8 +269,8 @@ If you would like to contribute to the list of supported distros, please visit: 
         {
             const err = new DotnetCustomLinuxInstallExistsError(new EventCancellationError('DotnetCustomLinuxInstallExistsError',
                 this.conflictingCustomInstallErrorMessage + existingInstall),
-                getInstallFromContext(this.acquisitionContext));
-            this.acquisitionContext.eventStream.post(err);
+                getInstallFromContext(this.workerContext));
+            this.workerContext.eventStream.post(err);
             throw err.error;
         }
     }
@@ -286,30 +286,32 @@ If you would like to contribute to the list of supported distros, please visit: 
     {
         await this.Initialize();
 
-        this.acquisitionContext.eventStream.post(new DotnetInstallLinuxChecks(`Checking to see if we should install, update, or cancel...`));
+        this.workerContext.eventStream.post(new DotnetInstallLinuxChecks(`Checking to see if we should install, update, or cancel...`));
         if(existingInstall)
         {
             const existingGlobalInstallSDKVersion = await this.distroSDKProvider!.getInstalledGlobalDotnetVersionIfExists();
-            if(existingGlobalInstallSDKVersion && Number(versionUtils.getMajorMinor(existingGlobalInstallSDKVersion, this.acquisitionContext.eventStream, this.acquisitionContext)) ===
-                Number(versionUtils.getMajorMinor(fullySpecifiedDotnetVersion, this.acquisitionContext.eventStream, this.acquisitionContext)))
+            if(existingGlobalInstallSDKVersion && Number(versionUtils.getMajorMinor(existingGlobalInstallSDKVersion, this.workerContext.eventStream, this.workerContext)) ===
+                Number(versionUtils.getMajorMinor(fullySpecifiedDotnetVersion, this.workerContext.eventStream, this.workerContext)))
             {
-                const isPatchUpgrade = Number(versionUtils.getFeatureBandPatchVersion(existingGlobalInstallSDKVersion, this.acquisitionContext.eventStream, this.acquisitionContext)) <
-                    Number(versionUtils.getFeatureBandPatchVersion(fullySpecifiedDotnetVersion, this.acquisitionContext.eventStream, this.acquisitionContext));
+                const isPatchUpgrade = Number(versionUtils.getFeatureBandPatchVersion(existingGlobalInstallSDKVersion, this.workerContext.eventStream, this.workerContext)) <
+                    Number(versionUtils.getFeatureBandPatchVersion(fullySpecifiedDotnetVersion, this.workerContext.eventStream, this.workerContext));
 
-                if(Number(versionUtils.getMajorMinor(existingGlobalInstallSDKVersion, this.acquisitionContext.eventStream, this.acquisitionContext)) > Number(versionUtils.getMajorMinor(fullySpecifiedDotnetVersion, this.acquisitionContext.eventStream, this.acquisitionContext))
-                || Number(versionUtils.getFeatureBandFromVersion(existingGlobalInstallSDKVersion, this.acquisitionContext.eventStream, this.acquisitionContext)) > Number(versionUtils.getFeatureBandFromVersion(fullySpecifiedDotnetVersion, this.acquisitionContext.eventStream, this.acquisitionContext)))
+                if(Number(versionUtils.getMajorMinor(existingGlobalInstallSDKVersion, this.workerContext.eventStream, this.workerContext)) >
+                    Number(versionUtils.getMajorMinor(fullySpecifiedDotnetVersion, this.workerContext.eventStream, this.workerContext))
+                || Number(versionUtils.getFeatureBandFromVersion(existingGlobalInstallSDKVersion, this.workerContext.eventStream, this.workerContext)) >
+                    Number(versionUtils.getFeatureBandFromVersion(fullySpecifiedDotnetVersion, this.workerContext.eventStream, this.workerContext)))
                 {
                     // We shouldn't downgrade to a lower patch
                     const err = new DotnetCustomLinuxInstallExistsError(new EventCancellationError('DotnetCustomLinuxInstallExistsError',
                         `An installation of ${fullySpecifiedDotnetVersion} was requested but ${existingGlobalInstallSDKVersion} is already available.`),
-                        getInstallFromContext(this.acquisitionContext));
-                    this.acquisitionContext.eventStream.post(err);
+                        getInstallFromContext(this.workerContext));
+                    this.workerContext.eventStream.post(err);
                     throw err.error;
                 }
                 else if(await this.distroSDKProvider!.dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion, 'sdk') || isPatchUpgrade)
                 {
                     // We can update instead of doing an install
-                    this.acquisitionContext.eventStream.post(new DotnetUpgradedEvent(
+                    this.workerContext.eventStream.post(new DotnetUpgradedEvent(
                         isPatchUpgrade ?
                         `Updating .NET: Current Version: ${existingGlobalInstallSDKVersion} to ${fullySpecifiedDotnetVersion}.`
                         :

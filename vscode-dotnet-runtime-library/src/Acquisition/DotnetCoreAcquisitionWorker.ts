@@ -144,19 +144,23 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
             if( install.dotnetInstall.installMode === possibleInstallWithSameMajorMinor.installMode &&
                 install.dotnetInstall.architecture === possibleInstallWithSameMajorMinor.architecture &&
                 install.dotnetInstall.isGlobal === possibleInstallWithSameMajorMinor.isGlobal &&
-                versionUtils.getMajorMinor(install.dotnetInstall.version, context.eventStream, context) === versionUtils.getMajorMinor(possibleInstallWithSameMajorMinor.version, context.eventStream, context))
+                versionUtils.getMajorMinor(install.dotnetInstall.version, context.eventStream, context) ===
+                    versionUtils.getMajorMinor(possibleInstallWithSameMajorMinor.version, context.eventStream, context))
             {
                 // Requested version has already been installed.
-                const dotnetPath = install.dotnetInstall.isGlobal ?
+                const dotnetExePath = install.dotnetInstall.isGlobal ?
                     os.platform() === 'linux' ?
-                        await new LinuxGlobalInstaller(context, this.utilityContext, install.dotnetInstall.version).getExpectedGlobalSDKPath(install.dotnetInstall.version, install.dotnetInstall.architecture) :
-                        await new WinMacGlobalInstaller(context, this.utilityContext, install.dotnetInstall.version, '', '').getExpectedGlobalSDKPath(install.dotnetInstall.version, install.dotnetInstall.architecture) :
+                        await new LinuxGlobalInstaller(context, this.utilityContext, install.dotnetInstall.version).getExpectedGlobalSDKPath(
+                            install.dotnetInstall.version, install.dotnetInstall.architecture) :
+                        await new WinMacGlobalInstaller(context, this.utilityContext, install.dotnetInstall.version, '', '').getExpectedGlobalSDKPath(
+                            install.dotnetInstall.version, install.dotnetInstall.architecture) :
                     path.join(context.installDirectoryProvider.getInstallDir(possibleInstallWithSameMajorMinor.installId), this.dotnetExecutable);
 
-                if(( fs.existsSync(dotnetPath) || this.usingNoInstallInvoker ))
+                if(( fs.existsSync(dotnetExePath) || this.usingNoInstallInvoker ))
                 {
-                    context.eventStream.post(new DotnetAcquisitionStatusResolved(possibleInstallWithSameMajorMinor, possibleInstallWithSameMajorMinor.version));
-                    return { dotnetPath: dotnetPath };
+                    context.eventStream.post(new DotnetAcquisitionStatusResolved(possibleInstallWithSameMajorMinor,
+                        possibleInstallWithSameMajorMinor.version));
+                    return { dotnetPath: dotnetExePath };
                 }
             }
         }

@@ -150,7 +150,8 @@ export class GlobalInstallerResolver {
         {
             this.context.eventStream.post(new DotnetVersionCategorizedEvent(`The VersionResolver resolved the version ${version} to be a N.Y.XXX version.`));
             const fullySpecifiedVersion = await this.getNewestSpecificVersionFromFeatureBand(version);
-            const installerUrlAndHash = await this.findCorrectInstallerUrlAndHash(fullySpecifiedVersion, this.getIndexUrl(versionUtils.getMajorMinor(fullySpecifiedVersion, this.context.eventStream, this.context)));
+            const installerUrlAndHash = await this.findCorrectInstallerUrlAndHash(fullySpecifiedVersion,
+                this.getIndexUrl(versionUtils.getMajorMinor(fullySpecifiedVersion, this.context.eventStream, this.context)));
             return [installerUrlAndHash[0], fullySpecifiedVersion, installerUrlAndHash[1]];
         }
         else if(versionUtils.isFullySpecifiedVersion(version, this.context.eventStream, this.context))

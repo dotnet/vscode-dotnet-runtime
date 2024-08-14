@@ -3,10 +3,10 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-import { IAcquisitionWorkerContext } from "./IAcquisitionWorkerContext";
-import { IEventStream } from "../EventStream/EventStream";
-import { DotnetFeatureBandDoesNotExistError, DotnetVersionParseEvent, DotnetVersionResolutionError, EventCancellationError } from "../EventStream/EventStreamEvents";
-import { getInstallFromContext } from "../Utils/InstallIdUtilities";
+import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { IEventStream } from '../EventStream/EventStream';
+import { DotnetFeatureBandDoesNotExistError, DotnetVersionParseEvent, DotnetVersionResolutionError, EventCancellationError } from '../EventStream/EventStreamEvents';
+import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 
 const invalidFeatureBandErrorString = `A feature band couldn't be determined for the requested version: `;
 

@@ -437,9 +437,12 @@ Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.m
             ( // Side by side installs of the same major.minor and band can cause issues in some cases. So we decided to just not allow it unless upgrading to a newer patch version.
               // The installer can catch this but we can avoid unnecessary work this way,
               // and for windows the installer may never appear to the user. With this approach, we don't need to handle installer error codes.
-                Number(versionUtils.getMajorMinor(requestedVersion, this.acquisitionContext.eventStream, this.acquisitionContext)) === Number(versionUtils.getMajorMinor(sdk, this.acquisitionContext.eventStream, this.acquisitionContext)) &&
-                Number(versionUtils.getFeatureBandFromVersion(requestedVersion, this.acquisitionContext.eventStream, this.acquisitionContext)) === Number(versionUtils.getFeatureBandFromVersion(sdk, this.acquisitionContext.eventStream, this.acquisitionContext)) &&
-                Number(versionUtils.getFeatureBandPatchVersion(requestedVersion, this.acquisitionContext.eventStream, this.acquisitionContext)) <= Number(versionUtils.getFeatureBandPatchVersion(sdk, this.acquisitionContext.eventStream, this.acquisitionContext))
+                Number(versionUtils.getMajorMinor(requestedVersion, this.acquisitionContext.eventStream, this.acquisitionContext)) ===
+                    Number(versionUtils.getMajorMinor(sdk, this.acquisitionContext.eventStream, this.acquisitionContext)) &&
+                Number(versionUtils.getFeatureBandFromVersion(requestedVersion, this.acquisitionContext.eventStream, this.acquisitionContext)) ===
+                    Number(versionUtils.getFeatureBandFromVersion(sdk, this.acquisitionContext.eventStream, this.acquisitionContext)) &&
+                Number(versionUtils.getFeatureBandPatchVersion(requestedVersion, this.acquisitionContext.eventStream, this.acquisitionContext)) <=
+                    Number(versionUtils.getFeatureBandPatchVersion(sdk, this.acquisitionContext.eventStream, this.acquisitionContext))
             )
             {
                 return sdk;
