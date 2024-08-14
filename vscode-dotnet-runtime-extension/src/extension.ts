@@ -361,7 +361,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             return {
                 label : `.NET ${(install.dotnetInstall.installMode === 'sdk' ? 'SDK' : install.dotnetInstall.installMode === 'runtime' ? 'Runtime' : 'ASP.NET Core Runtime')} ${install.dotnetInstall.version}`,
                 description : `${install.dotnetInstall.architecture ?? ''} | ${install.dotnetInstall.isGlobal ? 'machine-wide' : 'vscode-local' }`,
-                detail : `Used by ${install.installingExtensions.join(', ')}`,
+                detail : install.installingExtensions.some(x => x !== null) ? `Used by ${install.installingExtensions.join(', ')}` : ``,
                 iconPath : install.dotnetInstall.isGlobal ? new vscode.ThemeIcon('shield') : new vscode.ThemeIcon('trash'),
                 internalId : install.dotnetInstall.installId
             }
@@ -392,7 +392,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             if(uninstallWillBreakSomething)
             {
                 const pick = await vscode.window.showWarningMessage(
-`Uninstalling .NET ${selectedInstall.version} will likely cause ${installRecord.installingExtensions.join(', ')} to stop functioning properly. Do you still wish to continue?`, { modal: true }, yes);
+`Uninstalling .NET ${selectedInstall.version} will likely cause ${installRecord.installingExtensions.some(x => x !== null) ? installRecord.installingExtensions.join(', ') : 'extensions such as C# or C# DevKit'} to stop functioning properly. Do you still wish to continue?`, { modal: true }, yes);
                 canContinue = pick === yes;
             }
 
