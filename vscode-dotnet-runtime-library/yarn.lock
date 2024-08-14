@@ -170,10 +170,10 @@ axios-retry@^3.4.0:
     "@babel/runtime" "^7.15.4"
     is-retry-allowed "^2.2.0"
 
-axios@^1, axios@^1.7.2:
-  version "1.7.2"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/axios/-/axios-1.7.2.tgz"
-  integrity sha1-tiXbinBR++phw1o8uzodqnucdiE=
+axios@^1, axios@^1.7.4:
+  version "1.7.4"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/axios/-/axios-1.7.4.tgz"
+  integrity sha1-TI3tG0NoPI3TYpc8OT8+3iQFKqI=
   dependencies:
     follow-redirects "^1.15.6"
     form-data "^4.0.0"
