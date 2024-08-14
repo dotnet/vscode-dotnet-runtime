@@ -3,10 +3,10 @@
 TestResults/
 .nuget/
 .build/
+msbuild/signJs/*.log
 .testPublish/
 *.sln.ide/
 _ReSharper.*/
-packages/
 artifacts/
 .build/
 PublishProfiles/
@@ -34,7 +34,6 @@ project.lock.json
 .build/
 .vs/
 launchSettings.json
-global.json
 BenchmarkDotNet.Artifacts/
 msbuild.binlog
 msbuild.log

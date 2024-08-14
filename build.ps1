@@ -82,3 +82,24 @@ popd
 & "$(Split-Path $MyInvocation.MyCommand.Path)/mock-webpack.ps1"
 
 Write-Host "Build Succeeded" -ForegroundColor $successColor
+
+#################### Install Signing Tool ####################
+
+try
+{
+    $InstallNuGetPkgScriptPath = ".\signing\Install-NuGetPackage.ps1"
+    $nugetVerbosity = 'quiet'
+    if ($Verbose) { $nugetVerbosity = 'normal' }
+    $MicroBuildPackageSource = 'https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json'
+    if ($Signing)
+    {
+        Write-Host "Installing MicroBuild signing plugin" -ForegroundColor $successColor
+        Invoke-Expression "& `"$InstallNuGetPkgScriptPath`" MicroBuild.Plugins.Signing -source $MicroBuildPackageSource -Verbosity $nugetVerbosity"
+        $EnvVars['SignType'] = "Test"
+    }
+
+    & ".\signing\Set-EnvVars.ps1" -Variables $EnvVars -PrependPath $PrependPath | Out-Null
+} catch {
+    Write-Host "Failed to install signing tool" -ForegroundColor $errorColor
+    Write-Host $_.Exception.Message
+}

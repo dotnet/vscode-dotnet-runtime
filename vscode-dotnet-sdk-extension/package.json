@@ -72,7 +72,7 @@
 		}
 	},
 	"scripts": {
-		"vscode:prepublish": "npm run compile-all && npm install && webpack --mode production",
+		"vscode:prepublish": "npm run compile-all && npm install && dotnet build ../msbuild/signJs  --property jsOutputPath=..\\..\\vscode-dotnet-sdk-extension\\dist -v:normal && webpack --mode production  && dotnet build ../msbuild/signJs  --property jsOutputPath=..\\..\\vscode-dotnet-sdk-extension\\dist -v:normal ",
 		"vscode:uninstall": "node ./dist/ExtensionUninstall",
 		"compile": "npm run clean && tsc -p ./ && npm run mockPack",
 		"mockPack": "run-script-os",
@@ -89,7 +89,7 @@
 		"@types/chai": "4.2.22",
 		"@types/chai-as-promised": "^7.1.4",
 		"@types/mocha": "^9.0.0",
-		"@types/node": "16.11.7",
+		"@types/node": "^20.0.0",
 		"@types/rimraf": "3.0.2",
 		"@types/vscode": "1.74.0",
 		"@vscode/test-electron": "^2.3.9",
@@ -107,14 +107,14 @@
 		"shelljs": "^0.8.5",
 		"source-map-support": "^0.5.21",
 		"ts-loader": "^9.5.1",
-		"typescript": "4.4.4",
+		"typescript": "^4.4.4",
 		"vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library"
 	},
 	"devDependencies": {
 		"@types/source-map-support": "^0.5.10",
 		"copy-webpack-plugin": "^9.0.1",
-		"webpack": "5.76.0",
-		"webpack-cli": "4.9.1"
+		"webpack": "^5.76.0",
+		"webpack-cli": "^4.9.1"
 	},
 	"__metadata": {
 		"id": "bdf86aba-ad9d-4593-b780-5829a4423823",

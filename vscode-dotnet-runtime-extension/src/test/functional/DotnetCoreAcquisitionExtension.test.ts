@@ -23,7 +23,8 @@ import {
   MockWebRequestWorker,
   MockWindowDisplayWorker,
   getMockAcquisitionContext,
-  DotnetInstallMode
+  DotnetInstallMode,
+  DotnetInstallType
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { warn } from 'console';
@@ -125,6 +126,22 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     await installRuntime('2.2', 'aspnetcore');
   }).timeout(standardTimeoutTime);
 
+  async function installUninstallOne(dotnetVersion : string, versionToKeep : string, installMode : DotnetInstallMode, type : DotnetInstallType)
+  {
+    const context: IDotnetAcquireContext = { version: dotnetVersion, requestingExtensionId, mode: installMode, installType: type };
+    const contextToKeep: IDotnetAcquireContext = { version: versionToKeep, requestingExtensionId, mode: installMode, installType: type };
+
+    const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
+    const resultToKeep = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', contextToKeep);
+    assert.exists(result?.dotnetPath, 'The install succeeds and returns a path');
+    assert.exists(resultToKeep?.dotnetPath, 'The 2nd install succeeds and returns a path');
+
+    const uninstallResult = await vscode.commands.executeCommand<string>('dotnet.uninstall', context);
+    assert.equal(uninstallResult, '0', 'Uninstall returns 0');
+    assert.isFalse(fs.existsSync(result!.dotnetPath), 'the dotnet path result does not exist after uninstall');
+    assert.isTrue(fs.existsSync(resultToKeep!.dotnetPath), 'Only one thing is uninstalled.');
+  }
+
   async function installUninstallAll(dotnetVersion : string, installMode : DotnetInstallMode)
   {
     const context: IDotnetAcquireContext = { version: dotnetVersion, requestingExtensionId, mode: installMode };
@@ -137,12 +154,47 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     assert.isFalse(fs.existsSync(result!.dotnetPath), 'the dotnet path result does not exist after uninstall');
   }
 
-  test('Uninstall Local Runtime Command', async () => {
+  async function uninstallWithMultipleOwners(dotnetVersion : string, installMode : DotnetInstallMode, type : DotnetInstallType)
+  {
+    const context: IDotnetAcquireContext = { version: dotnetVersion, requestingExtensionId, mode: installMode, installType: type };
+    const contextFromOtherId: IDotnetAcquireContext = { version: dotnetVersion, requestingExtensionId: 'fake.extension.two', mode: installMode, installType: type };
+
+    const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
+    const resultToKeep = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', contextFromOtherId);
+    assert.exists(result?.dotnetPath, 'The install succeeds and returns a path');
+    assert.equal(result?.dotnetPath, resultToKeep?.dotnetPath, 'The two dupe installs use the same path');
+
+    const uninstallResult = await vscode.commands.executeCommand<string>('dotnet.uninstall', context);
+    assert.equal(uninstallResult, '0', '1st owner Uninstall returns 0');
+    assert.isTrue(fs.existsSync(resultToKeep!.dotnetPath), 'Nothing is uninstalled without FORCE if theres multiple owners.');
+
+    const finalUninstallResult = await vscode.commands.executeCommand<string>('dotnet.uninstall', contextFromOtherId);
+    assert.equal(finalUninstallResult, '0', '2nd owner Uninstall returns 0');
+    assert.isFalse(fs.existsSync(result!.dotnetPath), 'the dotnet path result does not exist after uninstalling from all owners');
+  }
+
+  test('Uninstall One Local Runtime Command', async () => {
+    await installUninstallOne('2.2', '8.0', 'runtime', 'local');
+  }).timeout(standardTimeoutTime);
+
+  test('Uninstall One Local ASP.NET Runtime Command', async () => {
+    await installUninstallOne('2.2', '8.0', 'aspnetcore', 'local');
+  }).timeout(standardTimeoutTime);
+
+  test('Uninstall All Local Runtime Command', async () => {
     await installUninstallAll('2.2', 'runtime')
   }).timeout(standardTimeoutTime);
 
-  test('Uninstall Local ASP.NET Runtime Command', async () => {
+  test('Uninstall All Local ASP.NET Runtime Command', async () => {
     await installUninstallAll('2.2', 'aspnetcore')
+  }).timeout(standardTimeoutTime);
+
+  test('Uninstall Runtime Only Once No Owners Exist', async () => {
+    await uninstallWithMultipleOwners('8.0', 'runtime', 'local');
+  }).timeout(standardTimeoutTime);
+
+  test('Uninstall ASP.NET Runtime Only Once No Owners Exist', async () => {
+    await uninstallWithMultipleOwners('8.0', 'aspnetcore', 'local');
   }).timeout(standardTimeoutTime);
 
   async function installMultipleVersions(versions : string[], installMode : DotnetInstallMode)

@@ -388,6 +388,14 @@ export class UserManualInstallFailure extends SuppressedAcquisitionError {
     eventName = 'UserManualInstallFailure';
 }
 
+export class OffilneDetectionLogicTriggered extends SuppressedAcquisitionError {
+    eventName = 'OffilneDetectionLogicTriggered';
+}
+
+export class DotnetInstallationValidationMissed extends SuppressedAcquisitionError {
+    eventName = 'DotnetInstallationValidationMissed';
+}
+
 export class OSXOpenNotAvailableError extends DotnetAcquisitionError {
     public readonly eventName = 'OSXOpenNotAvailableError';
 }
@@ -434,6 +442,10 @@ export class DotnetNotInstallRelatedCommandFailed extends DotnetNonAcquisitionEr
             ErrorName : this.error.name,
             StackTrace : this.error.stack ? this.error.stack : ''};
         }
+}
+
+export class InvalidUninstallRequest extends DotnetNonAcquisitionError {
+    public readonly eventName = 'InvalidUninstallRequest';
 }
 
 export class DotnetCommandFailed extends DotnetAcquisitionError {
@@ -488,11 +500,16 @@ export abstract class DotnetAcquisitionVersionError extends DotnetAcquisitionErr
     }
 
     public getProperties(telemetry = false): { [id: string]: string } | undefined {
-        return {ErrorMessage : this.error.message,
-            AcquisitionErrorInstallId : this.install?.installId ?? 'null',
-            ...InstallToStrings(this.install!),
+        return this.install ? {ErrorMessage : this.error.message,
+            AcquisitionErrorInstallId : this.install.installId ?? 'null',
+            ...InstallToStrings(this.install),
             ErrorName : this.error.name,
-            StackTrace : this.error.stack ? this.error.stack : ''};
+            StackTrace : this.error.stack ?? ''}
+            :
+            {ErrorMessage : this.error.message,
+                AcquisitionErrorInstallId : 'null',
+                ErrorName : this.error.name,
+                StackTrace : this.error.stack ?? ''};
         }
     }
 

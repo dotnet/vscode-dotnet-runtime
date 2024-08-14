@@ -192,10 +192,12 @@
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/mocha/-/mocha-9.1.1.tgz"
   integrity sha1-58TxAB7vpLivvR7uJ6I3/uO/KcQ=
 
-"@types/node@*", "@types/node@16.11.7":
-  version "16.11.7"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/node/-/node-16.11.7.tgz"
-  integrity sha1-NoIJRQYTJpeMQqAeVrYc0iPf3EI=
+"@types/node@*", "@types/node@^20.0.0":
+  version "20.14.13"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/node/-/node-20.14.13.tgz"
+  integrity sha1-v0/olZrhxDvChN54vWwBcwkzc2s=
+  dependencies:
+    undici-types "~5.26.4"
 
 "@types/responselike@*", "@types/responselike@^1.0.0":
   version "1.0.0"
@@ -2136,10 +2138,15 @@ type-detect@^4.0.0, type-detect@^4.0.5:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/type-detect/-/type-detect-4.0.8.tgz"
   integrity sha1-dkb7XxiHHPu3dJ5pvTmmOI63RQw=
 
-typescript@*, typescript@4.4.4:
-  version "4.4.4"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/typescript/-/typescript-4.4.4.tgz"
-  integrity sha1-LNAaGh8WBwTTEB/VpY/w+fy4Aww=
+typescript@*, typescript@^4.4.4:
+  version "4.9.5"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/typescript/-/typescript-4.9.5.tgz"
+  integrity sha1-CVl5+bzA0J2jJNWNA86Pg3TL5lo=
+
+undici-types@~5.26.4:
+  version "5.26.5"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/undici-types/-/undici-types-5.26.5.tgz"
+  integrity sha1-vNU5iT0AtW6WT9JlekhmsiGmVhc=
 
 update-browserslist-db@^1.0.4:
   version "1.0.4"
@@ -2174,10 +2181,10 @@ util-deprecate@~1.0.1:
   dependencies:
     "@types/chai-as-promised" "^7.1.4"
     "@types/mocha" "^9.0.0"
-    "@types/node" "16.11.7"
+    "@types/node" "^20.0.0"
     "@types/rimraf" "3.0.2"
     "@types/semver" "^7.3.9"
-    "@types/shelljs" "0.8.9"
+    "@types/shelljs" "^0.8.9"
     "@types/vscode" "1.74.0"
     "@vscode/sudo-prompt" "^9.3.1"
     axios "^1.7.2"
@@ -2194,7 +2201,7 @@ util-deprecate@~1.0.1:
     rimraf "3.0.2"
     run-script-os "^1.1.6"
     semver "^7.6.2"
-    shelljs "0.8.5"
+    shelljs "^0.8.5"
     typescript "4.4.4"
     vscode-extension-telemetry "^0.4.3"
     vscode-test "^1.6.1"
@@ -2209,7 +2216,7 @@ watchpack@^2.4.0:
     glob-to-regexp "^0.4.1"
     graceful-fs "^4.1.2"
 
-webpack-cli@4.9.1, webpack-cli@4.x.x:
+webpack-cli@^4.9.1, webpack-cli@4.x.x:
   version "4.9.1"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/webpack-cli/-/webpack-cli-4.9.1.tgz"
   integrity sha1-tkvoJeLRsTDyhcMUyqOxuppGMrM=
@@ -2240,7 +2247,7 @@ webpack-sources@^3.2.3:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/webpack-sources/-/webpack-sources-3.2.3.tgz"
   integrity sha1-LU2quEUf1LJAzCcFX/agwszqDN4=
 
-webpack@^5.0.0, webpack@^5.1.0, "webpack@4.x.x || 5.x.x", webpack@5.76.0:
+webpack@^5.0.0, webpack@^5.1.0, webpack@^5.76.0, "webpack@4.x.x || 5.x.x":
   version "5.76.0"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/webpack/-/webpack-5.76.0.tgz"
   integrity sha1-+fufuMSn29zQ1WqY5WuKlC7iaSw=

@@ -6,3 +6,7 @@ dist/test/**
 src/**
 tslint.json
 *.vsix
+packages/
+msbuild/**
+global.json
+nuget.config

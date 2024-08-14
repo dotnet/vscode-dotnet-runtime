@@ -1,5 +1,6 @@
 parameters:
   pool: ''
+  SignType: ''
 
 jobs:
 - job: ${{ parameters.pool.os }}_Package
@@ -12,7 +13,7 @@ jobs:
   dependsOn:
   - ${{ parameters.pool.os }}_Build
   - TSLint
-  condition: succeeded()
+  condition: and(succeeded(), eq('${{ parameters.useOneEngineeringPool }}', 'true'))
   strategy:
     matrix:
       Runtime:
@@ -34,19 +35,49 @@ jobs:
         VERSION=`node -p "require('./package.json').version"`
       else
         VERSION_NUM=`node -p "require('./package.json').version"`
-        VERSION="$VERSION_NUM-alpha-$(Build.BuildId)"
+        VERSION="$VERSION_NUM"
       fi
       npm version $VERSION --allow-same-version
       echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
     name: GetVersion
     displayName: '❓ Get Version'
     workingDirectory: $(dir-name)
+  - task: UseDotNet@2
+    displayName: 🔮 Use .NET SDK
+    inputs:
+      packageType: sdk
+      useGlobalJson: true
+  # This is necessary whenever we want to publish/restore to an AzDO private feed
+  # otherwise it'll complain about accessing a private feed.
+  - task: NuGetAuthenticate@1
+    displayName: '🔏 Authenticate to AzDO Feeds'
+  - task: MicroBuildSigningPlugin@4
+    displayName: 🔧 Install MicroBuild Signing Plugin
+    inputs:
+      signType: ${{ parameters.SignType }}
+      zipSources: false
+      feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
+    env:
+      SignType: ${{ parameters.SignType }}
+      TeamName: DotNetCore
   - bash: |
       npm install rimraf --reg https://registry.npmjs.org/ --verbose
-      npm install vsce -g --reg https://registry.npmjs.org/ --verbose
+      npm install @vscode/vsce@latest -g --reg https://registry.npmjs.org/ --verbose
       vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
+      cp $(package-name)-$(GetVersion.version).vsix ../packages/$(package-name)-$(GetVersion.version).vsix
     displayName: 📦 Package Artifact
     workingDirectory: $(dir-name)
+    env:
+      SignType: ${{ parameters.SignType }}
+  - script: dotnet build msbuild/signVsix -v:normal
+    displayName: 🖊️ Sign VSIXes
+    env:
+      SignType: ${{ parameters.SignType }}
+  - task: CmdLine@2
+    displayName: 🤌 Rename Signed VSIX
+
+    inputs:
+      script: rename ".\packages\$(package-name)-$(GetVersion.version).vsix" $(package-name)-$(GetVersion.version)-signed.vsix
   - task: CopyFiles@2
     displayName: '📩 Copy Artifact'
     inputs:
@@ -54,3 +85,10 @@ jobs:
       Contents: '**\*.vsix'
       TargetFolder: '$(Build.ArtifactStagingDirectory)'
       flattenFolders: true
+  - task: CopyFiles@2
+    displayName: '🏗️ Copy Binlog'
+    inputs:
+      SourceFolder: '$(Build.SourcesDirectory)'
+      Contents: '**\*.binlog'
+      TargetFolder: '$(Build.ArtifactStagingDirectory)'
+      flattenFolders: false
