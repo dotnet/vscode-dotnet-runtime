@@ -20,7 +20,7 @@ const badSDKVersionPeriods = '10.10';
 const badSDKVersionPatch = '7.1.10';
 const badSDKVersionLongPatch = '7.0.1999';
 
-suite('VersionResolver Unit Tests', () => {
+suite('Version Utilities Unit Tests', () => {
 
     const mockEventStream = new MockEventStream();
     const mockCtx = getMockAcquisitionContext('runtime', '7.0');
