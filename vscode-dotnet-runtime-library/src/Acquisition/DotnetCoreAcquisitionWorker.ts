@@ -7,6 +7,7 @@ import * as os from 'os';
 import * as path from 'path';
 import rimraf = require('rimraf');
 
+import * as versionUtils from './VersionUtilities'
 import {
     DotnetAcquisitionAlreadyInstalled,
     DotnetAcquisitionCompleted,
@@ -135,16 +136,29 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      */
     public async getSimilarExistingInstall(context : IAcquisitionWorkerContext) : Promise<IDotnetAcquireResult | null>
     {
-
-        const install = getInstallFromContext(context);
-        // check events
+        const possibleInstallWithSameMajorMinor = getInstallFromContext(context);
         const installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(true);
 
-        if (installedVersions.some(x => IsEquivalentInstallationFile(x.dotnetInstall, install)) && (fs.existsSync(dotnetPath) || this.usingNoInstallInvoker ))
+        for(const install of installedVersions)
         {
-            // Requested version has already been installed.
-            context.eventStream.post(new DotnetAcquisitionStatusResolved(install, version));
-            return { dotnetPath: dotnetPath };
+            if( install.dotnetInstall.installMode === possibleInstallWithSameMajorMinor.installMode &&
+                install.dotnetInstall.architecture === possibleInstallWithSameMajorMinor.architecture &&
+                install.dotnetInstall.isGlobal === possibleInstallWithSameMajorMinor.isGlobal &&
+                versionUtils.getMajorMinor(install.dotnetInstall.version, context.eventStream, context) === versionUtils.getMajorMinor(possibleInstallWithSameMajorMinor.version, context.eventStream, context))
+            {
+                // Requested version has already been installed.
+                const dotnetPath = install.dotnetInstall.isGlobal ?
+                    os.platform() === 'linux' ?
+                        await new LinuxGlobalInstaller(context, this.utilityContext, install.dotnetInstall.version).getExpectedGlobalSDKPath(install.dotnetInstall.version, install.dotnetInstall.architecture) :
+                        await new WinMacGlobalInstaller(context, this.utilityContext, install.dotnetInstall.version, '', '').getExpectedGlobalSDKPath(install.dotnetInstall.version, install.dotnetInstall.architecture) :
+                    path.join(context.installDirectoryProvider.getInstallDir(possibleInstallWithSameMajorMinor.installId), this.dotnetExecutable);
+
+                if(( fs.existsSync(dotnetPath) || this.usingNoInstallInvoker ))
+                {
+                    context.eventStream.post(new DotnetAcquisitionStatusResolved(possibleInstallWithSameMajorMinor, possibleInstallWithSameMajorMinor.version));
+                    return { dotnetPath: dotnetPath };
+                }
+            }
         }
 
         return null;

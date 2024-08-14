@@ -6,7 +6,6 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import * as proc from 'child_process';
 
 import * as versionUtils from './VersionUtilities'
 import { FileUtilities } from '../Utils/FileUtilities';
