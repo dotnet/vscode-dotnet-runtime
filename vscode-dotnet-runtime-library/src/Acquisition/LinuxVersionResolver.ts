@@ -5,6 +5,8 @@
  * ------------------------------------------------------------------------------------------ */
 import * as fs from 'fs';
 import path = require('path');
+
+import * as versionUtils from './VersionUtilities';
 import
 {
     DotnetAcquisitionDistroUnknownError,
@@ -27,6 +29,7 @@ import { IUtilityContext } from '../Utils/IUtilityContext';
 import { IDotnetAcquireContext } from '../IDotnetAcquireContext'
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 import { DotnetInstallMode } from './DotnetInstallMode';
+import { version } from 'os';
 
 /**
  * An enumeration type representing all distros with their versions that we recognize.
@@ -287,14 +290,14 @@ If you would like to contribute to the list of supported distros, please visit: 
         if(existingInstall)
         {
             const existingGlobalInstallSDKVersion = await this.distroSDKProvider!.getInstalledGlobalDotnetVersionIfExists();
-            if(existingGlobalInstallSDKVersion && Number(this.versionResolver.getMajorMinor(existingGlobalInstallSDKVersion)) ===
-                Number(this.versionResolver.getMajorMinor(fullySpecifiedDotnetVersion)))
+            if(existingGlobalInstallSDKVersion && Number(versionUtils.getMajorMinor(existingGlobalInstallSDKVersion, this.acquisitionContext.eventStream, this.acquisitionContext)) ===
+                Number(versionUtils.getMajorMinor(fullySpecifiedDotnetVersion, this.acquisitionContext.eventStream, this.acquisitionContext)))
             {
-                const isPatchUpgrade = Number(this.versionResolver.getFeatureBandPatchVersion(existingGlobalInstallSDKVersion)) <
-                    Number(this.versionResolver.getFeatureBandPatchVersion(fullySpecifiedDotnetVersion));
+                const isPatchUpgrade = Number(versionUtils.getFeatureBandPatchVersion(existingGlobalInstallSDKVersion, this.acquisitionContext.eventStream, this.acquisitionContext)) <
+                    Number(versionUtils.getFeatureBandPatchVersion(fullySpecifiedDotnetVersion, this.acquisitionContext.eventStream, this.acquisitionContext));
 
-                if(Number(this.versionResolver.getMajorMinor(existingGlobalInstallSDKVersion)) > Number(this.versionResolver.getMajorMinor(fullySpecifiedDotnetVersion))
-                || Number(this.versionResolver.getFeatureBandFromVersion(existingGlobalInstallSDKVersion)) > Number(this.versionResolver.getFeatureBandFromVersion(fullySpecifiedDotnetVersion)))
+                if(Number(versionUtils.getMajorMinor(existingGlobalInstallSDKVersion, this.acquisitionContext.eventStream, this.acquisitionContext)) > Number(versionUtils.getMajorMinor(fullySpecifiedDotnetVersion, this.acquisitionContext.eventStream, this.acquisitionContext))
+                || Number(versionUtils.getFeatureBandFromVersion(existingGlobalInstallSDKVersion, this.acquisitionContext.eventStream, this.acquisitionContext)) > Number(versionUtils.getFeatureBandFromVersion(fullySpecifiedDotnetVersion, this.acquisitionContext.eventStream, this.acquisitionContext)))
                 {
                     // We shouldn't downgrade to a lower patch
                     const err = new DotnetCustomLinuxInstallExistsError(new EventCancellationError('DotnetCustomLinuxInstallExistsError',

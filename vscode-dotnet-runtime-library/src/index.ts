@@ -48,6 +48,7 @@ export * from './Acquisition/InstallationValidator';
 export * from './Acquisition/IVersionResolver';
 export * from './Acquisition/LinuxGlobalInstaller';
 export * from './Acquisition/VersionResolver';
+export * from './Acquisition/VersionUtilities';
 export * from './Acquisition/WinMacGlobalInstaller';
 export * from './Acquisition/ExistingPathResolver';
 export * from './Acquisition/IInstallationDirectoryProvider';

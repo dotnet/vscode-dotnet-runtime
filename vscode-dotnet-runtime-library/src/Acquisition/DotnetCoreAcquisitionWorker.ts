@@ -62,7 +62,7 @@ import { DotnetInstallMode } from './DotnetInstallMode';
 import { IEventStream } from '../EventStream/EventStream';
 import { IExtensionState } from '../IExtensionState';
 import { CommandExecutor } from '../Utils/CommandExecutor';
-import { getInstallIdCustomArchitecture } from '../Utils/InstallIdUtilities';
+import { getInstallFromContext, getInstallIdCustomArchitecture } from '../Utils/InstallIdUtilities';
 
 /* tslint:disable:no-any */
 
@@ -135,6 +135,8 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      */
     public async getSimilarExistingInstall(context : IAcquisitionWorkerContext) : Promise<IDotnetAcquireResult | null>
     {
+
+        const install = getInstallFromContext(context);
         // check events
         const installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(true);
 

@@ -60,7 +60,9 @@ import {
     getInstallIdCustomArchitecture,
     DotnetInstallType,
     DotnetAcquisitionTotalSuccessEvent,
-    isRunningUnderWSL
+    isRunningUnderWSL,
+    getMajor,
+    getMajorMinor
 } from 'vscode-dotnet-runtime-library';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 
@@ -451,8 +453,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         customWebWorker: WebRequestWorker | undefined, onRecommendationMode : boolean) : Promise<IDotnetListVersionsResult | undefined> =>
     {
         const mode = 'sdk' as DotnetInstallMode;
-        const workercontext = getVersionResolverContext(mode, 'global', commandContext?.errorConfiguration);
-        const customVersionResolver = new VersionResolver(workercontext, customWebWorker);
+        const workerContext = getVersionResolverContext(mode, 'global', commandContext?.errorConfiguration);
+        const customVersionResolver = new VersionResolver(workerContext, customWebWorker);
 
         if(os.platform() !== 'linux' || !onRecommendationMode)
         {
@@ -465,20 +467,20 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         }
         else
         {
-            const linuxResolver = new LinuxVersionResolver(workercontext, utilContext);
+            const linuxResolver = new LinuxVersionResolver(workerContext, utilContext);
             try
             {
                 const suggestedVersion = await linuxResolver.getRecommendedDotnetVersion('sdk' as DotnetInstallMode);
                 const osAgnosticVersionData = await getAvailableVersions(commandContext, customWebWorker, !onRecommendationMode);
                 const resolvedSupportPhase = osAgnosticVersionData?.find((version : IDotnetVersion) =>
-                    customVersionResolver.getMajorMinor(version.version) === customVersionResolver.getMajorMinor(suggestedVersion))?.supportPhase ?? 'active';
+                    getMajorMinor(version.version, globalEventStream, workerContext) === getMajorMinor(suggestedVersion, globalEventStream, workerContext))?.supportPhase ?? 'active';
                     // Assumption : The newest version is 'active' support, but we can't guarantee that.
                     // If the linux version is too old it will eventually support no active versions of .NET, which would cause a failure.
                     // The best we can give it is the newest working version, which is the most likely to be supported, and mark it as active so we can use it.
 
                 return [
-                    { version: suggestedVersion, channelVersion: `${customVersionResolver.getMajorMinor(suggestedVersion)}`,
-                    supportStatus: Number(customVersionResolver.getMajor(suggestedVersion)) % 2 === 0 ? 'lts' : 'sts',
+                    { version: suggestedVersion, channelVersion: `${getMajorMinor(suggestedVersion, globalEventStream, workerContext)}`,
+                    supportStatus: Number(getMajor(suggestedVersion, globalEventStream, workerContext)) % 2 === 0 ? 'lts' : 'sts',
                     supportPhase: resolvedSupportPhase }
                 ];
             }

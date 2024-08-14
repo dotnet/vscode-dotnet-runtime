@@ -4,8 +4,9 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import * as path from 'path';
+
+import * as versionUtils from './VersionUtilities'
 import { CommandExecutor } from '../Utils/CommandExecutor';
-import { CommandExecutorCommand } from '../Utils/CommandExecutorCommand';
 import { DotnetDistroSupportStatus } from './LinuxVersionResolver';
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
@@ -147,7 +148,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         const commandResult = (await this.commandRunner.executeMultipleCommands(command, { cwd: path.resolve(rootDir), shell: true }))[0];
 
         commandResult.stdout = commandResult.stdout.replace('\n', '');
-        if(!this.versionResolver.isValidLongFormVersionFormat(commandResult.stdout))
+        if(!versionUtils.isValidLongFormVersionFormat(commandResult.stdout, this.context.eventStream, this.context))
         {
             return null;
         }
@@ -158,7 +159,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 
     public async getDotnetVersionSupportStatus(fullySpecifiedVersion: string, installType : DotnetInstallMode): Promise<DotnetDistroSupportStatus>
     {
-        if(this.versionResolver.getFeatureBandFromVersion(fullySpecifiedVersion) !== '1' || Number(this.versionResolver.getMajor(fullySpecifiedVersion)) < 6)
+        if(versionUtils.getFeatureBandFromVersion(fullySpecifiedVersion, this.context.eventStream, this.context) !== '1' || Number(versionUtils.getMajor(fullySpecifiedVersion, this.context.eventStream, this.context)) < 6)
         {
             return Promise.resolve(DotnetDistroSupportStatus.Unsupported);
         }
@@ -211,7 +212,7 @@ Please refer to https://learn.microsoft.com/en-us/dotnet/core/install/linux if y
 
     public JsonDotnetVersion(fullySpecifiedDotnetVersion : string) : string
     {
-        return this.versionResolver.getMajorMinor(fullySpecifiedDotnetVersion);
+        return versionUtils.getMajorMinor(fullySpecifiedDotnetVersion, this.context.eventStream, this.context);
     }
 
     protected isPackageFoundInSearch(resultOfSearchCommand: any, searchCommandExitCode : string): boolean {

@@ -6,6 +6,7 @@
 import * as os from 'os';
 import * as path from 'path';
 
+import * as versionUtils from './VersionUtilities';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { VersionResolver } from './VersionResolver';
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
@@ -135,7 +136,7 @@ export class GlobalInstallerResolver {
      */
     private async routeRequestToProperVersionRequestType(version : string) : Promise<[string, string, string]>
     {
-        if(this.versionResolver.isNonSpecificMajorOrMajorMinorVersion(version))
+        if(versionUtils.isNonSpecificMajorOrMajorMinorVersion(version))
         {
             this.context.eventStream.post(new DotnetVersionCategorizedEvent(`The VersionResolver resolved the version ${version} to be major, or major.minor.`));
             const numberOfPeriods = version.split('.').length - 1;
@@ -145,18 +146,18 @@ export class GlobalInstallerResolver {
             const installerUrlAndHash = await this.findCorrectInstallerUrlAndHash(fullySpecifiedVersionRequested, indexUrl);
             return [installerUrlAndHash[0], fullySpecifiedVersionRequested, installerUrlAndHash[1]];
         }
-        else if(this.versionResolver.isNonSpecificFeatureBandedVersion(version))
+        else if(versionUtils.isNonSpecificFeatureBandedVersion(version))
         {
             this.context.eventStream.post(new DotnetVersionCategorizedEvent(`The VersionResolver resolved the version ${version} to be a N.Y.XXX version.`));
             const fullySpecifiedVersion = await this.getNewestSpecificVersionFromFeatureBand(version);
-            const installerUrlAndHash = await this.findCorrectInstallerUrlAndHash(fullySpecifiedVersion, this.getIndexUrl(this.versionResolver.getMajorMinor(fullySpecifiedVersion)));
+            const installerUrlAndHash = await this.findCorrectInstallerUrlAndHash(fullySpecifiedVersion, this.getIndexUrl(versionUtils.getMajorMinor(fullySpecifiedVersion, this.context.eventStream, this.context)));
             return [installerUrlAndHash[0], fullySpecifiedVersion, installerUrlAndHash[1]];
         }
-        else if(this.versionResolver.isFullySpecifiedVersion(version))
+        else if(versionUtils.isFullySpecifiedVersion(version, this.context.eventStream, this.context))
         {
             this.context.eventStream.post(new DotnetVersionCategorizedEvent(`The VersionResolver resolved the version ${version} to be a fully specified version.`));
             const fullySpecifiedVersionRequested = version;
-            const indexUrl = this.getIndexUrl(this.versionResolver.getMajorMinor(fullySpecifiedVersionRequested));
+            const indexUrl = this.getIndexUrl(versionUtils.getMajorMinor(fullySpecifiedVersionRequested, this.context.eventStream, this.context));
             const installerUrlAndHash = await this.findCorrectInstallerUrlAndHash(fullySpecifiedVersionRequested, indexUrl);
             return [installerUrlAndHash[0], fullySpecifiedVersionRequested, installerUrlAndHash[1]];
         }
@@ -306,7 +307,7 @@ Visit https://dotnet.microsoft.com/platform/support/policy/dotnet-core for suppo
         {
             const err = new DotnetInvalidReleasesJSONError(new EventBasedError('DotnetInvalidReleasesJSONError',
             `${this.releasesJsonErrorString}
-                ${this.getIndexUrl(this.versionResolver.getMajorMinor(version))}.
+                ${this.getIndexUrl(versionUtils.getMajorMinor(version, this.context.eventStream, this.context))}.
 The json does not have the parameter ${this.releasesSdkNameKey} which means the API publisher has published invalid dotnet release data.
 Please file an issue at https://github.com/dotnet/vscode-dotnet-runtime.`), getInstallFromContext(this.context));
             this.context.eventStream.post(err);
@@ -349,8 +350,8 @@ Your architecture: ${os.arch()}. Your OS: ${os.platform()}.`), getInstallFromCon
      */
     private async getNewestSpecificVersionFromFeatureBand(version : string) : Promise<string>
     {
-        const band : string = this.versionResolver.getFeatureBandFromVersion(version);
-        const indexUrl : string = this.getIndexUrl(this.versionResolver.getMajorMinor(version));
+        const band : string = versionUtils.getFeatureBandFromVersion(version, this.context.eventStream, this.context);
+        const indexUrl : string = this.getIndexUrl(versionUtils.getMajorMinor(version, this.context.eventStream, this.context));
 
         // Get the sdks
         const indexJson : any = await this.fetchJsonObjectFromUrl(indexUrl);
@@ -371,13 +372,13 @@ Your architecture: ${os.arch()}. Your OS: ${os.platform()}.`), getInstallFromCon
             // The SDKs in the index should be in-order, so we can rely on that property.
             // The first one we find with the given feature band will also be the 'newest.'
             const thisSDKVersion : string = sdk[this.releasesSdkVersionKey];
-            if(this.versionResolver.getFeatureBandFromVersion(thisSDKVersion) === band)
+            if(versionUtils.getFeatureBandFromVersion(thisSDKVersion, this.context.eventStream, this.context) === band)
             {
                 return thisSDKVersion;
             }
         }
 
-        const availableBands = Array.from(new Set(sdks.map((x : any) => this.versionResolver.getFeatureBandFromVersion(x[this.releasesSdkVersionKey]))));
+        const availableBands = Array.from(new Set(sdks.map((x : any) => versionUtils.getFeatureBandFromVersion(x[this.releasesSdkVersionKey], this.context.eventStream, this.context))));
         const err = new DotnetFeatureBandDoesNotExistError(new EventBasedError('DotnetFeatureBandDoesNotExistError',
             `The feature band '${band}' doesn't exist for the SDK major version '${version}'.
 Available feature bands for this SDK version are ${availableBands}.`), getInstallFromContext(this.context));
