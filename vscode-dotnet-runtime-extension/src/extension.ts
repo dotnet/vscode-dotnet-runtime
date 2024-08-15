@@ -180,10 +180,10 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             if(!(await WebRequestWorker.isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream)))
             {
-                const existingPath = await worker.getSimilarExistingInstall(workerContext);
-                if(existingPath?.dotnetPath)
+                const existingOfflinePath = await worker.getSimilarExistingInstall(workerContext);
+                if(existingOfflinePath?.dotnetPath)
                 {
-                    return Promise.resolve(existingPath);
+                    return Promise.resolve(existingOfflinePath);
                 }
             }
 
@@ -244,10 +244,10 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             if(!(await WebRequestWorker.isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream)))
             {
-                const existingPath = await worker.getSimilarExistingInstall(workerContext);
-                if(existingPath?.dotnetPath)
+                const existingPathOffline = await worker.getSimilarExistingInstall(workerContext);
+                if(existingPathOffline?.dotnetPath)
                 {
-                    return Promise.resolve(existingPath);
+                    return Promise.resolve(existingPathOffline);
                 }
             }
 

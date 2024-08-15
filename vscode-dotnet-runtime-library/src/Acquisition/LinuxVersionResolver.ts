@@ -182,8 +182,8 @@ If you would like to contribute to the list of supported distros, please visit: 
         }
     }
 
-    private isRedHatVersion7(version: string){
-        if(Math.floor(parseFloat(version)) === 7)
+    private isRedHatVersion7(rhelVersion: string){
+        if(Math.floor(parseFloat(rhelVersion)) === 7)
         {
             return true;
         }
