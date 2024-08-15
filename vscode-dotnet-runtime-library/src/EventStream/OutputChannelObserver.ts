@@ -9,6 +9,7 @@ import {
     DotnetAcquisitionError,
     DotnetAcquisitionInProgress,
     DotnetAcquisitionStarted,
+    DotnetCustomMessageEvent,
     DotnetDebuggingMessage,
     DotnetExistingPathResolutionCompleted,
     DotnetInstallExpectedAbort,

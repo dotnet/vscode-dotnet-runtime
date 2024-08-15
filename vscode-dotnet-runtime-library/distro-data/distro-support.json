@@ -7,7 +7,7 @@
                 "commandRoot": "apt-get",
                 "commandParts": [
                     "-o",
-                    "DPkg::Lock::Timeout=120",
+                    "DPkg::Lock::Timeout=180",
                     "update"
                 ]
             },
@@ -16,7 +16,7 @@
                 "commandRoot": "apt-get",
                 "commandParts": [
                     "-o",
-                    "DPkg::Lock::Timeout=120",
+                    "DPkg::Lock::Timeout=180",
                     "install",
                     "-y",
                     "{packageName}"
@@ -29,8 +29,9 @@
                 "commandRoot": "apt-get",
                 "commandParts": [
                     "-o",
-                    "DPkg::Lock::Timeout=120",
+                    "DPkg::Lock::Timeout=180",
                     "remove",
+                    "-y",
                     "{packageName}"
                 ]
             }
@@ -41,8 +42,9 @@
                 "commandRoot": "apt-get",
                 "commandParts": [
                     "-o",
-                    "DPkg::Lock::Timeout=120",
-                    "update"
+                    "DPkg::Lock::Timeout=180",
+                    "update",
+                    "-y"
                 ]
             },
             {
@@ -50,7 +52,7 @@
                 "commandRoot": "apt-get",
                 "commandParts": [
                     "-o",
-                    "DPkg::Lock::Timeout=120",
+                    "DPkg::Lock::Timeout=180",
                     "upgrade",
                     "-y",
                     "{packageName}"
@@ -63,7 +65,7 @@
                 "commandRoot": "apt-cache",
                 "commandParts": [
                     "-o",
-                    "DPkg::Lock::Timeout=120",
+                    "DPkg::Lock::Timeout=180",
                     "search",
                     "--names-only",
                     "^{packageName}$"
@@ -198,7 +200,7 @@
                         "commandRoot": "apt-get",
                         "commandParts": [
                             "-o",
-                            "DPkg::Lock::Timeout=120",
+                            "DPkg::Lock::Timeout=180",
                             "install",
                             "-y",
                             "wget"
@@ -226,7 +228,7 @@
                         "commandRoot": "apt-get",
                         "commandParts": [
                             "-o",
-                            "DPkg::Lock::Timeout=120",
+                            "DPkg::Lock::Timeout=180",
                             "update"
                         ]
                     }
@@ -240,7 +242,7 @@
                         "commandRoot": "apt-get",
                         "commandParts": [
                             "-o",
-                            "DPkg::Lock::Timeout=120",
+                            "DPkg::Lock::Timeout=180",
                             "update"
                         ]
                     },

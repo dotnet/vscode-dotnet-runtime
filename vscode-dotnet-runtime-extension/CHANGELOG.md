@@ -9,9 +9,33 @@ and this project adheres to [Semantic Versioning].
 
 ## [2.1.2] - 2024-08-01
 
-Adds the ability to uninstall a particular runtime.
+Adds the ability for users to uninstall things themselves.
+
+Adds the ability to uninstall a global installation that is already managed by the extension.
+
+Adds API for extensions to uninstall a singular runtime rather than all runtimes.
+
+Adds offline support so existing installations can be found when offline.
 
 Adds additional signatures to the release.
+
+Fixes 'Lock' acquisition issues.
+
+Fixes a bug with DEBIAN_FRONTEND when installing an SDK on Ubuntu.
+
+Fixes a bug with offline detection.
+
+Fixed a bug with arm64 windows installation detection logic.
+
+Fixed a bug when preview versions are installed by Visual Studio.
+
+Fixes a bug where apt-get lock can be busy. Fixes a bug where stdin can be busy.
+
+Fixes a bug with installation detection of SDKS.
+
+Updates Axios per CVE release.
+
+Migrates to a newer version of typescript and node under the hood. Requires a newer version of VS Code.
 
 Fixes other minor bugs.
 

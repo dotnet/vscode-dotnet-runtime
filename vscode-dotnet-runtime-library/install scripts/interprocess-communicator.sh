@@ -3,14 +3,17 @@ EXECFOLDER=$1 # First argument is the working folder as this is launched with cw
 TIMEOUT_SEC=$2
 OKSIGNALFILE="$EXECFOLDER/ok.txt"
 COMMANDTORUNFILE="$EXECFOLDER/command.txt"
+EXITFILE="$EXECFOLDER/exit.txt"
 #OUTPUTFILE="/home/test_output_.txt"
 end=$((SECONDS+3600))
 
 function finish {
-  rm "$COMMANDTORUNFILE"
-  rm "$OKSIGNALFILE"
+  rm -f "$COMMANDTORUNFILE"
+  rm -f "$OKSIGNALFILE"
 }
 trap finish EXIT
+
+export DEBIAN_FRONTEND=noninteractive
 
 while true
 do
@@ -40,6 +43,10 @@ do
             fi
             if test -f "$OKSIGNALFILE"; then
                 rm "$OKSIGNALFILE"
+            fi
+            if test -f "$EXITFILE"; then
+                rm "$EXITFILE"
+                exit 0
             fi
             sleep 5
         done

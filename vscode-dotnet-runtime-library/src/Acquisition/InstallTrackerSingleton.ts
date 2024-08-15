@@ -158,7 +158,7 @@ export class InstallTrackerSingleton
         this.inProgressInstalls.delete(resolvedInstall);
     }
 
-    public async canUninstall(isFinishedInstall : boolean, dotnetInstall : DotnetInstall) : Promise<boolean>
+    public async canUninstall(isFinishedInstall : boolean, dotnetInstall : DotnetInstall, allowUninstallUserOnlyInstall = false) : Promise<boolean>
     {
         return this.executeWithLock( false, this.installedVersionsId, async (id: string, install: DotnetInstall) =>
         {
@@ -166,7 +166,8 @@ export class InstallTrackerSingleton
             const existingInstalls = await this.getExistingInstalls(id === this.installedVersionsId, true);
             const installRecord = existingInstalls.filter(x => IsEquivalentInstallation(x.dotnetInstall, install));
 
-            return installRecord.length === 0 || installRecord[0].installingExtensions.length === 0;
+            return installRecord.length === 0 || installRecord[0]?.installingExtensions?.length === 0 ||
+                (allowUninstallUserOnlyInstall && installRecord[0]?.installingExtensions?.length === 1 && installRecord[0]?.installingExtensions?.includes('user'));
         }, isFinishedInstall ? this.installedVersionsId : this.installingVersionsId, dotnetInstall);
     }
 
