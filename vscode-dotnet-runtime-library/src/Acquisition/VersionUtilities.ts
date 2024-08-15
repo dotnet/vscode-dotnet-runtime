@@ -10,7 +10,6 @@ import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 
 const invalidFeatureBandErrorString = `A feature band couldn't be determined for the requested version: `;
 
-
 /**
  *
  * @param fullySpecifiedVersion the fully specified version of the sdk, e.g. 7.0.301 to get the major from.
@@ -88,7 +87,6 @@ export function getPatchVersionString(fullySpecifiedVersion : string, eventStrea
     }
     return patch
 }
-
 
 /**
  *

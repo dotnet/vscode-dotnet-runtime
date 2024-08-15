@@ -66,6 +66,7 @@ import {
     DotnetOfflineWarning
 } from 'vscode-dotnet-runtime-library';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
+import { IDotnetCoreAcquisitionWorker } from 'vscode-dotnet-runtime-library/dist/Acquisition/IDotnetCoreAcquisitionWorker';
 
 // tslint:disable no-var-requires
 const packageJson = require('../package.json');
@@ -179,19 +180,10 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 return existingPath;
             }
 
-            if(!(await WebRequestWorker.isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream)))
+            const existingOfflinePath = await getExistingInstallIfOffline(worker, workerContext);
+            if(existingOfflinePath)
             {
-                workerContext.acquisitionContext.architecture = workerContext.acquisitionContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture();
-                const existingOfflinePath = await worker.getSimilarExistingInstall(workerContext);
-                if(existingOfflinePath?.dotnetPath)
-                {
-                    return Promise.resolve(existingOfflinePath);
-                }
-                else
-                {
-                    globalEventStream.post(new DotnetOfflineWarning(`It looks like you may be offline (can you connect to www.microsoft.com?) and have no installations of .NET for VS Code.
-We will try to install .NET, but are unlikely to be able to connect to the server. Installation will timeout in ${timeoutValue} seconds.`))
-                }
+                return Promise.resolve(existingOfflinePath);
             }
 
             // Note: This will impact the context object given to the worker and error handler since objects own a copy of a reference in JS.
@@ -249,13 +241,10 @@ We will try to install .NET, but are unlikely to be able to connect to the serve
                 return Promise.resolve(existingPath);
             }
 
-            if(!(await WebRequestWorker.isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream)))
+            const existingOfflinePath = await getExistingInstallIfOffline(worker, workerContext);
+            if(existingOfflinePath)
             {
-                const existingPathOffline = await worker.getSimilarExistingInstall(workerContext);
-                if(existingPathOffline?.dotnetPath)
-                {
-                    return Promise.resolve(existingPathOffline);
-                }
+                return Promise.resolve(existingOfflinePath);
             }
 
             const globalInstallerResolver = new GlobalInstallerResolver(workerContext, commandContext.version);
@@ -571,6 +560,26 @@ We will try to install .NET, but are unlikely to be able to connect to the serve
                 timeoutInfoUrl: `${moreInfoUrl}#install-script-timeouts`
             } as IIssueContext;
         };
+    }
+
+    async function getExistingInstallIfOffline(worker : DotnetCoreAcquisitionWorker, workerContext : IAcquisitionWorkerContext) : Promise<IDotnetAcquireResult | null>
+    {
+        if(!(await WebRequestWorker.isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream)))
+            {
+                workerContext.acquisitionContext.architecture ??= DotnetCoreAcquisitionWorker.defaultArchitecture();
+                const existingOfflinePath = await worker.getSimilarExistingInstall(workerContext);
+                if(existingOfflinePath?.dotnetPath)
+                {
+                    return Promise.resolve(existingOfflinePath);
+                }
+                else
+                {
+                    globalEventStream.post(new DotnetOfflineWarning(`It looks like you may be offline (can you connect to www.microsoft.com?) and have no installations of .NET for VS Code.
+We will try to install .NET, but are unlikely to be able to connect to the server. Installation will timeout in ${timeoutValue} seconds.`))
+                }
+            }
+
+            return null;
     }
 
     // Exposing API Endpoints
