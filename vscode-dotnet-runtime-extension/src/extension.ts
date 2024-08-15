@@ -62,7 +62,8 @@ import {
     DotnetAcquisitionTotalSuccessEvent,
     isRunningUnderWSL,
     getMajor,
-    getMajorMinor
+    getMajorMinor,
+    DotnetOfflineWarning
 } from 'vscode-dotnet-runtime-library';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 
@@ -180,10 +181,16 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             if(!(await WebRequestWorker.isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream)))
             {
+                workerContext.acquisitionContext.architecture = workerContext.acquisitionContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture();
                 const existingOfflinePath = await worker.getSimilarExistingInstall(workerContext);
                 if(existingOfflinePath?.dotnetPath)
                 {
                     return Promise.resolve(existingOfflinePath);
+                }
+                else
+                {
+                    globalEventStream.post(new DotnetOfflineWarning(`It looks like you may be offline (can you connect to www.microsoft.com?) and have no installations of .NET for VS Code.
+We will try to install .NET, but are unlikely to be able to connect to the server. Installation will timeout in ${timeoutValue} seconds.`))
                 }
             }
 

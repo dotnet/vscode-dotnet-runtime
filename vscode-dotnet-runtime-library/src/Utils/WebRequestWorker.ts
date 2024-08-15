@@ -117,7 +117,7 @@ export class WebRequestWorker
     public static async isOnline(timeoutSec : number, eventStream : IEventStream) : Promise<boolean>
     {
         const microsoftServer = 'www.microsoft.com';
-        const expectedDNSResolutionTimeMs = Math.max(timeoutSec * 100, 100); // Assumption: DNS resolution should take less than 1/10 of the time it'd take to download .NET.
+        const expectedDNSResolutionTimeMs = Math.max(timeoutSec * 10, 100); // Assumption: DNS resolution should take less than 1/100 of the time it'd take to download .NET.
         // ... 100 ms is there as a default to prevent the dns resolver from throwing a runtime error if the user sets timeoutSeconds to 0.
 
         const dnsResolver = new dns.promises.Resolver({ timeout: expectedDNSResolutionTimeMs });

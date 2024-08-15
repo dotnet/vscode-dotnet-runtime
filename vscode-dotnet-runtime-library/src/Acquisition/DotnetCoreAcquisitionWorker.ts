@@ -33,6 +33,7 @@ import {
     EventBasedError,
     EventCancellationError,
     DotnetInstallationValidated,
+    DotnetOfflineInstallUsed,
 } from '../EventStream/EventStreamEvents';
 
 import { GlobalInstallerResolver } from './GlobalInstallerResolver';
@@ -154,12 +155,14 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
                             install.dotnetInstall.version, install.dotnetInstall.architecture) :
                         await new WinMacGlobalInstaller(context, this.utilityContext, install.dotnetInstall.version, '', '').getExpectedGlobalSDKPath(
                             install.dotnetInstall.version, install.dotnetInstall.architecture) :
-                    path.join(context.installDirectoryProvider.getInstallDir(possibleInstallWithSameMajorMinor.installId), this.dotnetExecutable);
+                    path.join(context.installDirectoryProvider.getInstallDir(install.dotnetInstall.installId), this.dotnetExecutable);
 
                 if(( fs.existsSync(dotnetExePath) || this.usingNoInstallInvoker ))
                 {
                     context.eventStream.post(new DotnetAcquisitionStatusResolved(possibleInstallWithSameMajorMinor,
                         possibleInstallWithSameMajorMinor.version));
+                    context.eventStream.post(new DotnetOfflineInstallUsed(`We detected you are offline and are using the pre-existing .NET installation ${install.dotnetInstall.installId}.
+To keep your .NET version up to date, please reconnect to the internet at your soonest convenience.`))
                     return { dotnetPath: dotnetExePath };
                 }
             }
