@@ -60,9 +60,13 @@ import {
     getInstallIdCustomArchitecture,
     DotnetInstallType,
     DotnetAcquisitionTotalSuccessEvent,
-    isRunningUnderWSL
+    isRunningUnderWSL,
+    getMajor,
+    getMajorMinor,
+    DotnetOfflineWarning
 } from 'vscode-dotnet-runtime-library';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
+import { IDotnetCoreAcquisitionWorker } from 'vscode-dotnet-runtime-library/dist/Acquisition/IDotnetCoreAcquisitionWorker';
 
 // tslint:disable no-var-requires
 const packageJson = require('../package.json');
@@ -150,13 +154,13 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         commandContext.mode = commandContext.mode ?? 'runtime' as DotnetInstallMode;
         const mode = commandContext.mode;
 
-        const runtimeContext = getAcquisitionWorkerContext(mode, commandContext);
+        const workerContext = getAcquisitionWorkerContext(mode, commandContext);
 
         const dotnetPath = await callWithErrorHandling<Promise<IDotnetAcquireResult>>(async () =>
         {
             globalEventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId ?? 'notProvided', mode, commandContext.installType ?? 'local'));
 
-            telemetryObserver?.setAcquisitionContext(runtimeContext, commandContext);
+            telemetryObserver?.setAcquisitionContext(workerContext, commandContext);
 
             if(!commandContext.requestingExtensionId)
             {
@@ -176,13 +180,19 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 return existingPath;
             }
 
+            const existingOfflinePath = await getExistingInstallIfOffline(worker, workerContext);
+            if(existingOfflinePath)
+            {
+                return Promise.resolve(existingOfflinePath);
+            }
+
             // Note: This will impact the context object given to the worker and error handler since objects own a copy of a reference in JS.
-            const runtimeVersionResolver = new VersionResolver(runtimeContext);
+            const runtimeVersionResolver = new VersionResolver(workerContext);
             commandContext.version = await runtimeVersionResolver.getFullVersion(commandContext.version, mode);
 
-            const acquisitionInvoker = new AcquisitionInvoker(runtimeContext, utilContext);
-            return mode === 'aspnetcore' ? worker.acquireLocalASPNET(runtimeContext, acquisitionInvoker) : worker.acquireLocalRuntime(runtimeContext, acquisitionInvoker);
-        }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, 'acquire', commandContext.version), commandContext.requestingExtensionId, runtimeContext);
+            const acquisitionInvoker = new AcquisitionInvoker(workerContext, utilContext);
+            return mode === 'aspnetcore' ? worker.acquireLocalASPNET(workerContext, acquisitionInvoker) : worker.acquireLocalRuntime(workerContext, acquisitionInvoker);
+        }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, 'acquire', commandContext.version), commandContext.requestingExtensionId, workerContext);
 
         const installationId = getInstallIdCustomArchitecture(commandContext.version, commandContext.architecture, mode, 'local');
         const install = {installId : installationId, version : commandContext.version, installMode: mode, isGlobal: false,
@@ -207,7 +217,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         }
 
         let fullyResolvedVersion = '';
-        const sdkContext = getAcquisitionWorkerContext(commandContext.mode, commandContext);
+        const workerContext = getAcquisitionWorkerContext(commandContext.mode, commandContext);
         const worker = getAcquisitionWorker();
 
         const pathResult = await callWithErrorHandling(async () =>
@@ -215,7 +225,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             // Warning: Between now and later in this call-stack, the context 'version' is incomplete as it has not been resolved.
             // Errors between here and the place where it is resolved cannot be routed to one another.
 
-            telemetryObserver?.setAcquisitionContext(sdkContext, commandContext);
+            telemetryObserver?.setAcquisitionContext(workerContext, commandContext);
 
             if(commandContext.version === '' || !commandContext.version)
             {
@@ -231,20 +241,26 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 return Promise.resolve(existingPath);
             }
 
-            const globalInstallerResolver = new GlobalInstallerResolver(sdkContext, commandContext.version);
+            const existingOfflinePath = await getExistingInstallIfOffline(worker, workerContext);
+            if(existingOfflinePath)
+            {
+                return Promise.resolve(existingOfflinePath);
+            }
+
+            const globalInstallerResolver = new GlobalInstallerResolver(workerContext, commandContext.version);
             fullyResolvedVersion = await globalInstallerResolver.getFullySpecifiedVersion();
 
             // Reset context to point to the fully specified version so it is not possible for someone to access incorrect data during the install process.
             // Note: This will impact the context object given to the worker and error handler since objects own a copy of a reference in JS.
             commandContext.version = fullyResolvedVersion;
-            telemetryObserver?.setAcquisitionContext(sdkContext, commandContext);
+            telemetryObserver?.setAcquisitionContext(workerContext, commandContext);
 
             outputChannel.show(true);
-            const dotnetPath = await worker.acquireGlobalSDK(sdkContext, globalInstallerResolver);
+            const dotnetPath = await worker.acquireGlobalSDK(workerContext, globalInstallerResolver);
 
-            new CommandExecutor(sdkContext, utilContext).setPathEnvVar(dotnetPath.dotnetPath, moreInfoUrl, displayWorker, vsCodeExtensionContext, true);
+            new CommandExecutor(workerContext, utilContext).setPathEnvVar(dotnetPath.dotnetPath, moreInfoUrl, displayWorker, vsCodeExtensionContext, true);
             return dotnetPath;
-        }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, commandKeys.acquireGlobalSDK), commandContext.requestingExtensionId, sdkContext);
+        }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, commandKeys.acquireGlobalSDK), commandContext.requestingExtensionId, workerContext);
 
         const installationId = getInstallIdCustomArchitecture(commandContext.version, commandContext.architecture, commandContext.mode, 'global');
         const install = {installId : installationId, version : commandContext.version, installMode: commandContext.mode, isGlobal: true,
@@ -451,8 +467,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         customWebWorker: WebRequestWorker | undefined, onRecommendationMode : boolean) : Promise<IDotnetListVersionsResult | undefined> =>
     {
         const mode = 'sdk' as DotnetInstallMode;
-        const workercontext = getVersionResolverContext(mode, 'global', commandContext?.errorConfiguration);
-        const customVersionResolver = new VersionResolver(workercontext, customWebWorker);
+        const workerContext = getVersionResolverContext(mode, 'global', commandContext?.errorConfiguration);
+        const customVersionResolver = new VersionResolver(workerContext, customWebWorker);
 
         if(os.platform() !== 'linux' || !onRecommendationMode)
         {
@@ -465,20 +481,20 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         }
         else
         {
-            const linuxResolver = new LinuxVersionResolver(workercontext, utilContext);
+            const linuxResolver = new LinuxVersionResolver(workerContext, utilContext);
             try
             {
                 const suggestedVersion = await linuxResolver.getRecommendedDotnetVersion('sdk' as DotnetInstallMode);
                 const osAgnosticVersionData = await getAvailableVersions(commandContext, customWebWorker, !onRecommendationMode);
                 const resolvedSupportPhase = osAgnosticVersionData?.find((version : IDotnetVersion) =>
-                    customVersionResolver.getMajorMinor(version.version) === customVersionResolver.getMajorMinor(suggestedVersion))?.supportPhase ?? 'active';
+                    getMajorMinor(version.version, globalEventStream, workerContext) === getMajorMinor(suggestedVersion, globalEventStream, workerContext))?.supportPhase ?? 'active';
                     // Assumption : The newest version is 'active' support, but we can't guarantee that.
                     // If the linux version is too old it will eventually support no active versions of .NET, which would cause a failure.
                     // The best we can give it is the newest working version, which is the most likely to be supported, and mark it as active so we can use it.
 
                 return [
-                    { version: suggestedVersion, channelVersion: `${customVersionResolver.getMajorMinor(suggestedVersion)}`,
-                    supportStatus: Number(customVersionResolver.getMajor(suggestedVersion)) % 2 === 0 ? 'lts' : 'sts',
+                    { version: suggestedVersion, channelVersion: `${getMajorMinor(suggestedVersion, globalEventStream, workerContext)}`,
+                    supportStatus: Number(getMajor(suggestedVersion, globalEventStream, workerContext)) % 2 === 0 ? 'lts' : 'sts',
                     supportPhase: resolvedSupportPhase }
                 ];
             }
@@ -544,6 +560,26 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 timeoutInfoUrl: `${moreInfoUrl}#install-script-timeouts`
             } as IIssueContext;
         };
+    }
+
+    async function getExistingInstallIfOffline(worker : DotnetCoreAcquisitionWorker, workerContext : IAcquisitionWorkerContext) : Promise<IDotnetAcquireResult | null>
+    {
+        if(!(await WebRequestWorker.isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream)))
+            {
+                workerContext.acquisitionContext.architecture ??= DotnetCoreAcquisitionWorker.defaultArchitecture();
+                const existingOfflinePath = await worker.getSimilarExistingInstall(workerContext);
+                if(existingOfflinePath?.dotnetPath)
+                {
+                    return Promise.resolve(existingOfflinePath);
+                }
+                else
+                {
+                    globalEventStream.post(new DotnetOfflineWarning(`It looks like you may be offline (can you connect to www.microsoft.com?) and have no installations of .NET for VS Code.
+We will try to install .NET, but are unlikely to be able to connect to the server. Installation will timeout in ${timeoutValue} seconds.`))
+                }
+            }
+
+            return null;
     }
 
     // Exposing API Endpoints

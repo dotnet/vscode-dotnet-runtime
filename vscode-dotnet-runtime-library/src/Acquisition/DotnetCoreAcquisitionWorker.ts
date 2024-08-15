@@ -7,6 +7,7 @@ import * as os from 'os';
 import * as path from 'path';
 import rimraf = require('rimraf');
 
+import * as versionUtils from './VersionUtilities'
 import {
     DotnetAcquisitionAlreadyInstalled,
     DotnetAcquisitionCompleted,
@@ -32,6 +33,7 @@ import {
     EventBasedError,
     EventCancellationError,
     DotnetInstallationValidated,
+    DotnetOfflineInstallUsed,
 } from '../EventStream/EventStreamEvents';
 
 import { GlobalInstallerResolver } from './GlobalInstallerResolver';
@@ -62,7 +64,7 @@ import { DotnetInstallMode } from './DotnetInstallMode';
 import { IEventStream } from '../EventStream/EventStream';
 import { IExtensionState } from '../IExtensionState';
 import { CommandExecutor } from '../Utils/CommandExecutor';
-import { getInstallIdCustomArchitecture } from '../Utils/InstallIdUtilities';
+import { getInstallFromContext, getInstallIdCustomArchitecture } from '../Utils/InstallIdUtilities';
 
 /* tslint:disable:no-any */
 
@@ -123,6 +125,50 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     public async acquireLocalRuntime(context: IAcquisitionWorkerContext, invoker : IAcquisitionInvoker): Promise<IDotnetAcquireResult>
     {
         return this.acquire(context, 'runtime', undefined, invoker);
+    }
+
+    /**
+     * A function that allows installations to work in offline mode by preventing us from pinging the server,
+     * to check if the .NET is the newest installed version.
+     *
+     * @param context
+     * @returns null if no existing install matches with the same major.minor.
+     * Else, returns the newest existing install that matches the major.minor.
+     */
+    public async getSimilarExistingInstall(context : IAcquisitionWorkerContext) : Promise<IDotnetAcquireResult | null>
+    {
+        const possibleInstallWithSameMajorMinor = getInstallFromContext(context);
+        const installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(true);
+
+        for(const install of installedVersions)
+        {
+            if( install.dotnetInstall.installMode === possibleInstallWithSameMajorMinor.installMode &&
+                install.dotnetInstall.architecture === possibleInstallWithSameMajorMinor.architecture &&
+                install.dotnetInstall.isGlobal === possibleInstallWithSameMajorMinor.isGlobal &&
+                versionUtils.getMajorMinor(install.dotnetInstall.version, context.eventStream, context) ===
+                    versionUtils.getMajorMinor(possibleInstallWithSameMajorMinor.version, context.eventStream, context))
+            {
+                // Requested version has already been installed.
+                const dotnetExePath = install.dotnetInstall.isGlobal ?
+                    os.platform() === 'linux' ?
+                        await new LinuxGlobalInstaller(context, this.utilityContext, install.dotnetInstall.version).getExpectedGlobalSDKPath(
+                            install.dotnetInstall.version, install.dotnetInstall.architecture) :
+                        await new WinMacGlobalInstaller(context, this.utilityContext, install.dotnetInstall.version, '', '').getExpectedGlobalSDKPath(
+                            install.dotnetInstall.version, install.dotnetInstall.architecture) :
+                    path.join(context.installDirectoryProvider.getInstallDir(install.dotnetInstall.installId), this.dotnetExecutable);
+
+                if(( fs.existsSync(dotnetExePath) || this.usingNoInstallInvoker ))
+                {
+                    context.eventStream.post(new DotnetAcquisitionStatusResolved(possibleInstallWithSameMajorMinor,
+                        possibleInstallWithSameMajorMinor.version));
+                    context.eventStream.post(new DotnetOfflineInstallUsed(`We detected you are offline and are using the pre-existing .NET installation ${install.dotnetInstall.installId}.
+To keep your .NET version up to date, please reconnect to the internet at your soonest convenience.`))
+                    return { dotnetPath: dotnetExePath };
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
