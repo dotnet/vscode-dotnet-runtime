@@ -989,6 +989,24 @@ export class DotnetUpgradedEvent extends DotnetCustomMessageEvent {
     }
 }
 
+export class DotnetOfflineInstallUsed extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetOfflineInstallUsed';
+    constructor(eventMsg : string)
+    {
+        super(eventMsg);
+        this.type = EventType.OfflineInstallUsed;
+    }
+}
+
+export class DotnetOfflineWarning extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetOfflineWarning';
+    constructor(eventMsg : string)
+    {
+        super(eventMsg);
+        this.type = EventType.OfflineWarning;
+    }
+}
+
 export class NetInstallerBeginExecutionEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'NetInstallerBeginExecutionEvent';
 }

@@ -19,6 +19,8 @@ export enum EventType {
     DotnetUninstallMessage,
     DotnetDebuggingMessage,
     DotnetTotalSuccessEvent,
+    OfflineInstallUsed,
+    OfflineWarning,
     DotnetUpgradedEvent,
     SuppressedAcquisitionError,
     DotnetVisibleWarning,

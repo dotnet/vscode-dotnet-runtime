@@ -6,8 +6,8 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import * as proc from 'child_process';
 
+import * as versionUtils from './VersionUtilities'
 import { FileUtilities } from '../Utils/FileUtilities';
 import { VersionResolver } from './VersionResolver';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
@@ -27,7 +27,6 @@ import {
     NetInstallerEndExecutionEvent,
     OSXOpenNotAvailableError,
     SuppressedAcquisitionError,
-    WaitingForDotnetInstallerResponse
 } from '../EventStream/EventStreamEvents';
 
 import { IGlobalInstaller } from './IGlobalInstaller';
@@ -477,9 +476,12 @@ Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.m
             ( // Side by side installs of the same major.minor and band can cause issues in some cases. So we decided to just not allow it unless upgrading to a newer patch version.
               // The installer can catch this but we can avoid unnecessary work this way,
               // and for windows the installer may never appear to the user. With this approach, we don't need to handle installer error codes.
-                Number(this.versionResolver.getMajorMinor(requestedVersion)) === Number(this.versionResolver.getMajorMinor(sdk)) &&
-                Number(this.versionResolver.getFeatureBandFromVersion(requestedVersion)) === Number(this.versionResolver.getFeatureBandFromVersion(sdk)) &&
-                Number(this.versionResolver.getFeatureBandPatchVersion(requestedVersion)) <= Number(this.versionResolver.getFeatureBandPatchVersion(sdk))
+                Number(versionUtils.getMajorMinor(requestedVersion, this.acquisitionContext.eventStream, this.acquisitionContext)) ===
+                    Number(versionUtils.getMajorMinor(sdk, this.acquisitionContext.eventStream, this.acquisitionContext)) &&
+                Number(versionUtils.getFeatureBandFromVersion(requestedVersion, this.acquisitionContext.eventStream, this.acquisitionContext)) ===
+                    Number(versionUtils.getFeatureBandFromVersion(sdk, this.acquisitionContext.eventStream, this.acquisitionContext)) &&
+                Number(versionUtils.getFeatureBandPatchVersion(requestedVersion, this.acquisitionContext.eventStream, this.acquisitionContext)) <=
+                    Number(versionUtils.getFeatureBandPatchVersion(sdk, this.acquisitionContext.eventStream, this.acquisitionContext))
             )
             {
                 return sdk;

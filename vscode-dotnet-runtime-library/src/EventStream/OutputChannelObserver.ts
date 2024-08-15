@@ -13,6 +13,8 @@ import {
     DotnetDebuggingMessage,
     DotnetExistingPathResolutionCompleted,
     DotnetInstallExpectedAbort,
+    DotnetOfflineInstallUsed,
+    DotnetOfflineWarning,
     DotnetUpgradedEvent,
     DotnetVisibleWarningEvent,
 } from './EventStreamEvents';
@@ -105,7 +107,7 @@ export class OutputChannelObserver implements IEventStreamObserver {
                 const error = event as DotnetAcquisitionError;
                 this.outputChannel.appendLine(`\nError : (${error.eventName ?? ''})`);
                 this.outputChannel.appendLine(`Failed to download .NET ${error.install?.installId}:`);
-                this.outputChannel.appendLine(error.error.message);
+                this.outputChannel.appendLine(error?.error?.message);
                 this.outputChannel.appendLine('');
 
                 this.updateDownloadIndicators(error.install?.installId);
@@ -125,10 +127,12 @@ export class OutputChannelObserver implements IEventStreamObserver {
                 const loggedMessage = event as DotnetDebuggingMessage;
                 this.outputChannel.appendLine(loggedMessage.message);
                 break;
-            case EventType.DotnetUninstallMessage:
-                const uninstallMsg = event as DotnetCustomMessageEvent;
-                this.outputChannel.appendLine(uninstallMsg.eventMessage);
-                break;
+            case EventType.OfflineInstallUsed:
+                const offlineUsedMsg = event as DotnetOfflineInstallUsed;
+                this.outputChannel.appendLine(offlineUsedMsg.eventMessage);
+            case EventType.OfflineWarning:
+                const offlineWarning = event as DotnetOfflineWarning;
+                this.outputChannel.appendLine(offlineWarning.eventMessage);
         }
     }
 
