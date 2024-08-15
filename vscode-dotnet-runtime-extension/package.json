@@ -109,7 +109,7 @@
 	"dependencies": {
 		"@types/chai-as-promised": "^7.1.8",
 		"@vscode/test-electron": "^2.4.1",
-		"axios": "^1.7.2",
+		"axios": "^1.7.4",
 		"axios-cache-interceptor": "^1.5.3",
 		"axios-retry": "^3.4.0",
 		"chai": "5.1.1",
