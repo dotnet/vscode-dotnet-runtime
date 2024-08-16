@@ -17,6 +17,8 @@ Adds API for extensions to uninstall a singular runtime rather than all runtimes
 
 Adds offline support so existing installations can be found when offline.
 
+Prevents a dependency from setting HOME environment variable causing git and git related extensions to no longer work.
+
 Adds additional signatures to the release.
 
 Fixes 'Lock' acquisition issues.
