@@ -92,7 +92,7 @@
 		"@types/node": "20.14.10",
 		"@types/rimraf": "3.0.2",
 		"@types/vscode": "1.89.0",
-		"@vscode/test-electron": "^2.3.9",
+		"@vscode/test-electron": "^2.4.1",
 		"array-buffer-byte-length": "^1.0.0",
 		"aws4": "^1.12.0",
 		"axios": "^1.7.4",
