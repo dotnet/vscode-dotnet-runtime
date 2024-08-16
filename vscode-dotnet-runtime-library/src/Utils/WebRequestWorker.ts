@@ -5,7 +5,18 @@
 import Axios, { AxiosError, isAxiosError } from 'axios';
 import axiosRetry from 'axios-retry';
 import { HttpsProxyAgent } from 'https-proxy-agent';
+
+process.env.VSCODE_DOTNET_INSTALL_TOOL_ORIGINAL_HOME = process.env.HOME
+// IMPORTING THIS LIBRARY SETS 'HOME' VARIABLE
+// Causing Git to BREAK!
 import { getProxySettings } from 'get-proxy-settings';
+// NODE JS CASTS UNDEFINED ENV VAR TO STRING 'undefined'
+process.env.HOME = process.env.VSCODE_DOTNET_INSTALL_TOOL_ORIGINAL_HOME === 'undefined' ? '' : process.env.VSCODE_DOTNET_INSTALL_TOOL_ORIGINAL_HOME
+if(process.env.HOME === '')
+{
+    delete process.env.HOME
+}
+
 import { AxiosCacheInstance, buildMemoryStorage, setupCache } from 'axios-cache-interceptor';
 import * as dns from 'dns';
 import * as fs from 'fs';
