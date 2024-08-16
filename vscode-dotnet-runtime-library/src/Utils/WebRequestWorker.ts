@@ -11,10 +11,13 @@ process.env.VSCODE_DOTNET_INSTALL_TOOL_ORIGINAL_HOME = process.env.HOME
 // Causing Git to BREAK!
 import { getProxySettings } from 'get-proxy-settings';
 // NODE JS CASTS UNDEFINED ENV VAR TO STRING 'undefined'
-process.env.HOME = process.env.VSCODE_DOTNET_INSTALL_TOOL_ORIGINAL_HOME === 'undefined' ? '' : process.env.VSCODE_DOTNET_INSTALL_TOOL_ORIGINAL_HOME
-if(process.env.HOME === '')
+if (process.env.VSCODE_DOTNET_INSTALL_TOOL_ORIGINAL_HOME === 'undefined')
 {
     delete process.env.HOME
+}
+else
+{
+    process.env.HOME = process.env.VSCODE_DOTNET_INSTALL_TOOL_ORIGINAL_HOME
 }
 
 import { AxiosCacheInstance, buildMemoryStorage, setupCache } from 'axios-cache-interceptor';
