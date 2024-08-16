@@ -59,7 +59,7 @@
 		"run-script-os": "^1.1.6",
 		"shelljs": "0.8.5",
 		"tslint": "5.20.1",
-		"typescript": "5.5.2",
+		"typescript": "5.5.4",
 		"vscode-extension-telemetry": "^0.4.3",
 		"vscode-test": "^1.6.1"
 	},
