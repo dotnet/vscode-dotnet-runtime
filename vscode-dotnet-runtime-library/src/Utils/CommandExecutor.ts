@@ -330,6 +330,11 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
      */
     public async endSudoProcessMaster(eventStream : IEventStream) : Promise<number>
     {
+        if(os.platform() !== 'linux')
+        {
+            return 0;
+        }
+
         let didDelete = 1;
         const processExitFile = path.join(this.sudoProcessCommunicationDir, 'exit.txt');
         await (this.fileUtil as FileUtilities).writeFileOntoDisk('', processExitFile, true, this.context?.eventStream);

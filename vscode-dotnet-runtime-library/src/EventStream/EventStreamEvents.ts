@@ -1081,12 +1081,12 @@ export class DotnetAcquisitionInProgress extends IEvent {
     public readonly type = EventType.DotnetAcquisitionInProgress;
 
     public readonly eventName = 'DotnetAcquisitionInProgress';
-    constructor(public readonly installId: DotnetInstall, public readonly requestingExtensionId: string | null) { super(); }
+    constructor(public readonly install: DotnetInstall, public readonly requestingExtensionId: string | null) { super(); }
 
     public getProperties() {
         return {
-            InProgressInstallationInstallId : this.installId.installId,
-            ...InstallToStrings(this.installId!),
+            InProgressInstallationInstallId : this.install.installId,
+            ...InstallToStrings(this.install!),
             extensionId : TelemetryUtilities.HashData(this.requestingExtensionId)};
     }
 }

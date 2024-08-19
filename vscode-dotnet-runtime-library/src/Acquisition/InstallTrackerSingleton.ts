@@ -9,6 +9,7 @@ import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import {
     AddTrackingVersions,
     ConvertingLegacyInstallRecord,
+    DotnetAcquisitionInProgress,
     DotnetAcquisitionStatusResolved,
     DotnetLockAttemptingAcquireEvent,
     DotnetLockErrorEvent,
@@ -37,6 +38,7 @@ import { InstallRecord, InstallRecordOrStr } from './InstallRecord';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { IEventStream } from '../EventStream/EventStream';
 import { IExtensionState } from '../IExtensionState';
+import { IDotnetAcquireContext } from '..';
 /* tslint:disable:no-any */
 
 
@@ -127,18 +129,26 @@ export class InstallTrackerSingleton
      *
      * @param install the install id to get a working install promise for.
      */
-    public getPromise(install : DotnetInstall) : Promise<string> | null
+    public async getPromise(install : DotnetInstall, acquisitionContext : IDotnetAcquireContext, disableOutput = false) : Promise<string | null>
     {
-            this.inProgressInstalls.forEach(x =>
+        for(const x of this.inProgressInstalls)
+        {
+            const xAsId = x.dotnetInstall as DotnetInstall;
+            if(IsEquivalentInstallationFile(xAsId, install))
             {
-                const xAsId = x.dotnetInstall as DotnetInstall;
-                if(IsEquivalentInstallationFile(xAsId, install))
+                this.eventStream.post(new DotnetAcquisitionStatusResolved(install, install.version));
+
+                if(!disableOutput)
                 {
-                    this.eventStream.post(new DotnetAcquisitionStatusResolved(install, install.version));
-                    return x.installingPromise;
+                    this.eventStream.post(new DotnetAcquisitionInProgress(install,
+                        (acquisitionContext && acquisitionContext.requestingExtensionId)
+                        ? acquisitionContext.requestingExtensionId : 'unknown'));
                 }
-            })
-            return null;
+                const result = await x.installingPromise;
+                return result;
+            }
+        }
+        return null;
     }
 
     public addPromise(install : DotnetInstall, installPromise : Promise<string>) : void
