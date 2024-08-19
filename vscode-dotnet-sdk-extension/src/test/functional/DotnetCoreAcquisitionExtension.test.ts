@@ -32,6 +32,7 @@ import {
   IExistingPaths,
   getMockAcquisitionContext,
   getMockAcquisitionWorker,
+  MockInstallTracker,
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { uninstallSDKExtension } from '../../ExtensionUninstall';
@@ -116,6 +117,9 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     fs.mkdirSync(sdkDirCurrent, { recursive: true });
     fs.mkdirSync(sdkDirEarlier, { recursive: true });
     fs.writeFileSync(dotnetExePath, '');
+
+    // set the event stream of the singleton since this is normally not needed per run
+    const _ = new MockInstallTracker(eventStream, mockContext.extensionState);
 
     // Assert preinstalled SDKs are detected
     const acquisitionInvoker = new NoInstallAcquisitionInvoker(eventStream, acquisitionWorker);
