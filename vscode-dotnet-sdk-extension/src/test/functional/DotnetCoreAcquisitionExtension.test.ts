@@ -80,7 +80,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
 
   this.afterEach(async () => {
     // Tear down tmp storage for fresh run
-    await vscode.commands.executeCommand<string>('dotnet.uninstallAll');
     mockState.clear();
     MockTelemetryReporter.telemetryEvents = [];
     rimraf.sync(storagePath);
