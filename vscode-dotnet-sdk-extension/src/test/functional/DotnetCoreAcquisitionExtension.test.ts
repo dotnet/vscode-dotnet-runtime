@@ -36,6 +36,8 @@ import {
 import * as extension from '../../extension';
 import { uninstallSDKExtension } from '../../ExtensionUninstall';
 import { warn } from 'console';
+import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
+import { mock } from 'node:test';
 
 const standardTimeoutTime = 100000;
 const assert = chai.assert;
@@ -74,6 +76,15 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
       extensionConfiguration: new MockExtensionConfiguration(mockExistingPaths.individualizedExtensionPaths!, true, ''),
       displayWorker: mockDisplayWorker,
     });
+  });
+
+  this.afterEach(async () => {
+    // Tear down tmp storage for fresh run
+    await vscode.commands.executeCommand<string>('dotnet.uninstallAll');
+    mockState.clear();
+    MockTelemetryReporter.telemetryEvents = [];
+    rimraf.sync(storagePath);
+    InstallTrackerSingleton.getInstance(new MockEventStream(), new MockExtensionContext()).clearPromises();
   });
 
 
@@ -135,6 +146,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     const acquisitionWorker = getMockAcquisitionWorker(mockContext);
 
     const currentVersionInstallId =  getInstallIdCustomArchitecture(version, os.arch(), 'sdk', 'local');
+    InstallTrackerSingleton.getInstance(mockContext.eventStream, mockContext.extensionState).clearPromises();
     // Ensure nothing is returned when there is no preinstalled SDK
     const noPreinstallResult = await acquisitionWorker.acquireStatus(mockContext, 'sdk');
     assert.isUndefined(noPreinstallResult);
