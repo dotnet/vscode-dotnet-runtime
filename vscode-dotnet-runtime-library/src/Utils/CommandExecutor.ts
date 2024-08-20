@@ -421,7 +421,7 @@ with options ${JSON.stringify(options)}.`));
                             this.context?.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandString} encountered ERROR: ${JSON.stringify(error)}`));
                         }
 
-                        return resolve({ status: error ? error.code : '0', stderr: execStderr, stdout: execStdout} as CommandExecutorResult);
+                        return resolve({ status: error?.code ? error.code : '0', stderr: execStderr, stdout: execStdout} as CommandExecutorResult);
                     });
                 });
             }
@@ -477,25 +477,31 @@ ${commandResult.stdout}`));
 ${commandResult.stderr}`));
     }
 
-    private parseVSCodeSudoExecError(error : any, fullCommandString : string)
+    private parseVSCodeSudoExecError(error : any, fullCommandString : string) : Error
     {
-        if(error.code === 126)
+        // 'permission' comes from an unlocalized string: https://github.com/bpasero/sudo-prompt/blob/21d9308edcf970f0a9ee0580c539b1457b3dc45b/index.js#L678
+        // if you reject on the password prompt on windows before SDK window pops up, no code will be set, so we need to check for this string.
+        if(error?.code === 126 || (error?.message as string)?.includes('permission'))
         {
             const cancelledErr = new CommandExecutionUserRejectedPasswordRequest(new EventCancellationError('CommandExecutionUserRejectedPasswordRequest',
             `Cancelling .NET Install, as command ${fullCommandString} failed.
 The user refused the password prompt.`),
                 getInstallFromContext(this.context));
             this.context?.eventStream.post(cancelledErr);
-            return Promise.reject(cancelledErr.error);
+            return cancelledErr.error;
         }
-        else if(error.code === 111777)
+        else if(error?.code === 111777)
         {
             const securityErr = new CommandExecutionUnknownCommandExecutionAttempt(new EventCancellationError('CommandExecutionUnknownCommandExecutionAttempt',
             `Cancelling .NET Install, as command ${fullCommandString} is UNKNOWN.
 Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
                 getInstallFromContext(this.context));
             this.context?.eventStream.post(securityErr);
-            return Promise.reject(securityErr.error);
+            return securityErr.error;
+        }
+        else
+        {
+            return error;
         }
     }
 
