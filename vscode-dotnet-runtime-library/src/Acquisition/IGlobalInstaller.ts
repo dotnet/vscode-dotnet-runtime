@@ -24,7 +24,7 @@ export abstract class IGlobalInstaller {
 
     public abstract uninstallSDK(install : DotnetInstall) : Promise<string>
 
-    public abstract getExpectedGlobalSDKPath(specificSDKVersionInstalled : string, installedArch : string) : Promise<string>
+    public abstract getExpectedGlobalSDKPath(specificSDKVersionInstalled : string, installedArch : string, macPathShouldExist : boolean) : Promise<string>
 
     public abstract getGlobalSdkVersionsInstalledOnMachine() : Promise<Array<string>>;
 
