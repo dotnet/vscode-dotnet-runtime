@@ -24,11 +24,13 @@ import {
   MockWindowDisplayWorker,
   getMockAcquisitionContext,
   DotnetInstallMode,
-  DotnetInstallType
+  DotnetInstallType,
+  MockEventStream
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { warn } from 'console';
 import { json } from 'stream/consumers';
+import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
 /* tslint:disable:no-any */
 /* tslint:disable:no-unsafe-finally */
 
@@ -97,6 +99,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     mockState.clear();
     MockTelemetryReporter.telemetryEvents = [];
     rimraf.sync(storagePath);
+    InstallTrackerSingleton.getInstance(new MockEventStream(), new MockExtensionContext()).clearPromises();
   });
 
   test('Activate', async () => {

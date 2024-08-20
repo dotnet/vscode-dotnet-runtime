@@ -187,12 +187,10 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         const install = GetDotnetInstallInfo(version, installMode, 'local',
             architecture ? architecture : context.acquisitionContext.architecture ?? this.getDefaultInternalArchitecture(context.acquisitionContext.architecture))
 
-        const existingAcquisitionPromise = InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getPromise(install);
+        const existingAcquisitionPromise = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getPromise(install, context.acquisitionContext, true);
         if (existingAcquisitionPromise)
         {
-            // Requested version is being acquired
-            context.eventStream.post(new DotnetAcquisitionStatusResolved(install, version));
-            return existingAcquisitionPromise.then((res) => ({ dotnetPath: res }));
+            return { dotnetPath: existingAcquisitionPromise } as IDotnetAcquireResult;
         }
 
         const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
@@ -256,14 +254,10 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         }
 
         context.eventStream.post(new DotnetInstallIdCreatedEvent(`The requested version ${version} is now marked under the install: ${JSON.stringify(install)}.`));
-        const existingAcquisitionPromise = InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getPromise(install);
+        const existingAcquisitionPromise = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getPromise(install, context.acquisitionContext);
         if (existingAcquisitionPromise)
         {
-            // This version of dotnet is already being acquired. Memoize the promise.
-            context.eventStream.post(new DotnetAcquisitionInProgress(install,
-                    (context.acquisitionContext && context.acquisitionContext.requestingExtensionId)
-                    ? context.acquisitionContext.requestingExtensionId : null));
-            return existingAcquisitionPromise.then((res) => ({ dotnetPath: res }));
+            return { dotnetPath: existingAcquisitionPromise } as IDotnetAcquireResult;
         }
         else
         {
@@ -408,7 +402,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
 
         // Don't count it as partial if the promise is still being resolved.
         // The promises get wiped out upon reload, so we can check this.
-        if (partialInstall && InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getPromise(installId) === null)
+        if (partialInstall && await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getPromise(installId, context.acquisitionContext, true) === null)
         {
             // Partial install, we never updated our extension to no longer be 'installing'. Maybe someone killed the vscode process or we failed in an unexpected way.
             context.eventStream.post(new DotnetAcquisitionPartialInstallation(installId));

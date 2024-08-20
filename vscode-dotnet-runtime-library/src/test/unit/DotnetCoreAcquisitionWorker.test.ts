@@ -40,6 +40,7 @@ import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerC
 import { IEventStream } from '../../EventStream/EventStream';
 import { DotnetInstallType} from '../../IDotnetAcquireContext';
 import { getInstallIdCustomArchitecture } from '../../Utils/InstallIdUtilities';
+import { InstallTrackerSingleton } from '../../Acquisition/InstallTrackerSingleton';
 
 const assert = chai.assert;
 chai.use(chaiAsPromised);
@@ -49,6 +50,11 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
     const installingVersionsKey = 'installing';
     const installedVersionsKey = 'installed';
     const dotnetFolderName = `.dotnet O'Hare O'Donald`;
+
+    this.afterEach(async () => {
+        // Tear down tmp storage for fresh run
+        InstallTrackerSingleton.getInstance(new MockEventStream(), new MockExtensionContext()).clearPromises();
+    });
 
     function setupStates(): [MockEventStream, MockExtensionContext]
     {

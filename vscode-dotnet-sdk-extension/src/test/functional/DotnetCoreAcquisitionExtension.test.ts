@@ -32,10 +32,13 @@ import {
   IExistingPaths,
   getMockAcquisitionContext,
   getMockAcquisitionWorker,
+  MockInstallTracker,
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { uninstallSDKExtension } from '../../ExtensionUninstall';
 import { warn } from 'console';
+import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
+import { mock } from 'node:test';
 
 const standardTimeoutTime = 100000;
 const assert = chai.assert;
@@ -76,6 +79,14 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     });
   });
 
+  this.afterEach(async () => {
+    // Tear down tmp storage for fresh run
+    mockState.clear();
+    MockTelemetryReporter.telemetryEvents = [];
+    rimraf.sync(storagePath);
+    InstallTrackerSingleton.getInstance(new MockEventStream(), new MockExtensionContext()).clearPromises();
+  });
+
 
   test('Activate', async () => {
     // Commands should now be registered
@@ -107,6 +118,9 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     fs.mkdirSync(sdkDirEarlier, { recursive: true });
     fs.writeFileSync(dotnetExePath, '');
 
+    // set the event stream of the singleton since this is normally not needed per run
+    const _ = new MockInstallTracker(eventStream, mockContext.extensionState);
+
     // Assert preinstalled SDKs are detected
     const acquisitionInvoker = new NoInstallAcquisitionInvoker(eventStream, acquisitionWorker);
     const result = await acquisitionWorker.acquireLocalSDK(mockContext, acquisitionInvoker);
@@ -135,6 +149,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     const acquisitionWorker = getMockAcquisitionWorker(mockContext);
 
     const currentVersionInstallId =  getInstallIdCustomArchitecture(version, os.arch(), 'sdk', 'local');
+    InstallTrackerSingleton.getInstance(mockContext.eventStream, mockContext.extensionState).clearPromises();
     // Ensure nothing is returned when there is no preinstalled SDK
     const noPreinstallResult = await acquisitionWorker.acquireStatus(mockContext, 'sdk');
     assert.isUndefined(noPreinstallResult);

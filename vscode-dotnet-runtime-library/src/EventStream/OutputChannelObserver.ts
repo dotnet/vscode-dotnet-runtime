@@ -99,7 +99,7 @@ export class OutputChannelObserver implements IEventStreamObserver {
                     this.outputChannel.append(`${
                         (event as DotnetAcquisitionInProgress).requestingExtensionId
                     } tried to install .NET ${
-                        (event as DotnetAcquisitionInProgress).installId
+                        (event as DotnetAcquisitionInProgress).install.installId
                     } but that install had already been requested. No downloads or changes were made.\n`);
                 }
                 break;
