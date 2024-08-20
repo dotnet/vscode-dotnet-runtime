@@ -1830,7 +1830,7 @@ util-deprecate@^1.0.1:
     fsevents "^2.3.3"
 
 "vscode-dotnet-runtime@file:../vscode-dotnet-runtime-extension":
-  version "2.1.4"
+  version "2.1.5"
   resolved "file:../vscode-dotnet-runtime-extension"
   dependencies:
     "@types/chai-as-promised" "^7.1.8"

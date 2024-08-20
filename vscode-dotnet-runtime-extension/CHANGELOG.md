@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+## [2.1.5] - 2024-09-05
+
+Minor bug fixes.
+
 ## [2.1.4] - 2024-08-19
 
 Publish a new version due to VS Marketplace Outage issue.
