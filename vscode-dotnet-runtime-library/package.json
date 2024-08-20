@@ -42,7 +42,7 @@
 		"axios-retry": "^3.4.0",
 		"chai": "5.1.1",
 		"chai-as-promised": "^8.0.0",
-		"debug": "^4.3.4",
+		"debug": "^4.3.6",
 		"diff": ">=5.0.0",
 		"eol": "^0.9.1",
 		"es-abstract": "^1.23.3",
