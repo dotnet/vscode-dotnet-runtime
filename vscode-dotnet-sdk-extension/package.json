@@ -86,7 +86,7 @@
 		"webpack": "webpack --mode development"
 	},
 	"dependencies": {
-		"@types/chai": "4.3.16",
+		"@types/chai": "4.3.17",
 		"@types/chai-as-promised": "^7.1.8",
 		"@types/mocha": "^10.0.7",
 		"@types/node": "22.1.0",
