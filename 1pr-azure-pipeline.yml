@@ -65,3 +65,4 @@ stages:
         vmImage: windows-latest
         os: windows
       useOneEngineeringPool: false
+      SignType: Test
