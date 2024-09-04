@@ -149,8 +149,8 @@ suite('Windows & Mac Global Installer Tests', () =>
         }
         else if(os.platform() === 'win32')
         {
-            const path = mockExecutor.attemptedCommand.split(' ')[0].slice(1, -1);
-            assert.isTrue(fs.existsSync(path), `It ran a command to an executable that exists: ${path}`);
+            const returnedPath = mockExecutor.attemptedCommand.split(' ')[0].slice(1, -1);
+            assert.isTrue(fs.existsSync(returnedPath), `It ran a command to an executable that exists: ${returnedPath}`);
             assert.isTrue(mockExecutor.attemptedCommand.includes('"'), 'It put the installer in quotes for username with space in it');
             if(new FileUtilities().isElevated())
             {
