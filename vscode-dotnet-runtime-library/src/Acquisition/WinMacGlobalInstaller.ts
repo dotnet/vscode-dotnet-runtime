@@ -385,7 +385,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
             }
             else if(workingCommand.commandRoot === 'command')
             {
-                workingCommand = CommandExecutor.makeCommand(`open`, [`-W`, `${path.resolve(installerPath)}`]);
+                workingCommand = CommandExecutor.makeCommand(`open`, [`-W`, `"${path.resolve(installerPath)}"`]);
             }
 
             this.acquisitionContext.eventStream.post(new NetInstallerBeginExecutionEvent(`The OS X .NET Installer has been launched.`));
@@ -399,7 +399,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
         }
         else
         {
-            const command = `${path.resolve(installerPath)}`;
+            const command = `"${path.resolve(installerPath)}"`;
             let commandOptions : string[] = [];
             if(this.file.isElevated(this.acquisitionContext.eventStream))
             {
