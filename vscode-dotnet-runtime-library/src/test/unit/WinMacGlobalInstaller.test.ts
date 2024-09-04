@@ -225,4 +225,34 @@ ${fs.readdirSync(installerDownloadFolder).join(', ')}`);
             await installer.installSDK(install);
             mockExecutor.resetReturnValues();
         }).timeout(150000);
+
+        test('It will use arm64 emulation path IFF path does not exist and option to use it is set', async () =>
+        {
+            if(os.platform() === 'darwin')
+            {
+                const sdkVersionThatShouldNotExist = '3.0.500';
+                const standardHostPath = path.resolve(`/usr/local/share/dotnet/dotnet`);
+                const arm64EmulationHostPath = path.resolve(`/usr/local/share/dotnet/x64/dotnet`);
+
+                let cleanUpPath = false;
+                const defaultPath = await installer.getExpectedGlobalSDKPath(sdkVersionThatShouldNotExist, os.arch(), false);
+                if(!fs.existsSync(arm64EmulationHostPath))
+                {
+                    fs.mkdirSync(arm64EmulationHostPath, {recursive: true});
+                    cleanUpPath = true;
+                }
+                let shouldNotExistOptionPath = await installer.getExpectedGlobalSDKPath(sdkVersionThatShouldNotExist, os.arch());
+
+                assert.equal(defaultPath, standardHostPath, 'It uses the standard path if false is set and path dne');
+                assert.equal(shouldNotExistOptionPath, arm64EmulationHostPath, 'It uses the emu path if the std path does not exist and option is set');
+
+                if(cleanUpPath)
+                {
+                    fs.rmdirSync(arm64EmulationHostPath, {recursive: true});
+
+                    shouldNotExistOptionPath = await installer.getExpectedGlobalSDKPath(sdkVersionThatShouldNotExist, os.arch());
+                    assert.equal(shouldNotExistOptionPath, standardHostPath, 'It wont use the emu path if it does not exist');
+                }
+            }
+        }).timeout(standardTimeoutTime);
 });

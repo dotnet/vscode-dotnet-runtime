@@ -349,23 +349,23 @@ If you were waiting for the install to succeed, please extend the timeout settin
         }
     }
 
-    private getMacPath( macPathShouldExist = true) : string
+    private getMacPath(macPathShouldExist = true) : string
     {
-        const standardHostPath = `/usr/local/share/dotnet/dotnet`;
-        const arm64EmulationHostPath = `/usr/local/share/dotnet/x64/dotnet`;
+        const standardHostPath = path.resolve(`/usr/local/share/dotnet/dotnet`);
+        const arm64EmulationHostPath = path.resolve(`/usr/local/share/dotnet/x64/dotnet`);
         if(!macPathShouldExist)
         {
-        return path.resolve(standardHostPath);
+            return standardHostPath;
         }
         else
         {
-            if(fs.existsSync(standardHostPath))
+            if(fs.existsSync(standardHostPath) || !fs.existsSync(arm64EmulationHostPath))
             {
-                return path.resolve(standardHostPath);
+                return standardHostPath;
             }
             else
             {
-                return path.resolve(arm64EmulationHostPath);
+                return arm64EmulationHostPath;
             }
         }
     }
