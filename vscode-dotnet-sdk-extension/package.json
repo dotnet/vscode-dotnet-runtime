@@ -107,7 +107,7 @@
 		"hmac-drbg": "^1.0.1",
 		"http-cache-semantics": "4.1.1",
 		"is-online": "^11.0.0",
-		"mocha": "^10.7.0",
+		"mocha": "^10.7.3",
 		"open": "^10.1.0",
 		"rimraf": "3.0.2",
 		"run-script-os": "^1.1.6",
