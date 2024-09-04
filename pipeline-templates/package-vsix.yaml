@@ -78,3 +78,8 @@ jobs:
       Contents: '**\*.binlog'
       TargetFolder: '$(Build.ArtifactStagingDirectory)'
       flattenFolders: false
+  - template: publish.yaml
+    parameters:
+      pool: ${{ parameters.pool }}
+      SignType: ${{ parameters.SignType }}
+      version: $(GetVersion.version)
