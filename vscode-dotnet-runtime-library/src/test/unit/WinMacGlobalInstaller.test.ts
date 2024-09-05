@@ -143,12 +143,15 @@ suite('Windows & Mac Global Installer Tests', () =>
 
         if(os.platform() === 'darwin')
         {
-            assert.isTrue(mockExecutor.attemptedCommand.startsWith('open'), `It ran the right mac command, open. Command found: ${mockExecutor.attemptedCommand}`)
-            assert.isTrue(mockExecutor.attemptedCommand.includes('-W'), 'It used the -W flag')
+            assert.isTrue(mockExecutor.attemptedCommand.startsWith('open'), `It ran the right mac command, open. Command found: ${mockExecutor.attemptedCommand}`);
+            assert.isTrue(mockExecutor.attemptedCommand.includes('-W'), 'It used the -W flag');
+            assert.isTrue(mockExecutor.attemptedCommand.includes('"'), 'It put the installer in quotes for username with space in it');
         }
         else if(os.platform() === 'win32')
         {
-            assert.isTrue(fs.existsSync(mockExecutor.attemptedCommand.split(' ')[0]), 'It ran a command to an executable that exists');
+            const returnedPath = mockExecutor.attemptedCommand.split(' ')[0].slice(1, -1);
+            assert.isTrue(fs.existsSync(returnedPath), `It ran a command to an executable that exists: ${returnedPath}`);
+            assert.isTrue(mockExecutor.attemptedCommand.includes('"'), 'It put the installer in quotes for username with space in it');
             if(new FileUtilities().isElevated())
             {
                 assert.include(mockExecutor.attemptedCommand, ' /quiet /install /norestart', 'It ran under the hood if it had privileges already');
