@@ -353,21 +353,11 @@ If you were waiting for the install to succeed, please extend the timeout settin
     {
         const standardHostPath = path.resolve(`/usr/local/share/dotnet/dotnet`);
         const arm64EmulationHostPath = path.resolve(`/usr/local/share/dotnet/x64/dotnet`);
-        if(!macPathShouldExist)
-        {
-            return standardHostPath;
-        }
-        else
-        {
-            if(fs.existsSync(standardHostPath) || !fs.existsSync(arm64EmulationHostPath))
-            {
-                return standardHostPath;
-            }
-            else
-            {
-                return arm64EmulationHostPath;
-            }
-        }
+        return !macPathShouldExist ||
+        fs.existsSync(standardHostPath) ||
+        !fs.existsSync(arm64EmulationHostPath)) ?
+            standardHostPath : 
+            arm64EmulationHostPath;
     }
 
     /**
