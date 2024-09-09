@@ -238,22 +238,21 @@ export class WebRequestWorker
             }
             else
             {
-                // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 const err = new DotnetDownloadFailure(new EventBasedError('DotnetDownloadFailure',
-`We failed to download the .NET Installer. Please try to install the .NET SDK manually.
-Error: ${error?.message}`), getInstallFromContext(this.context));
+// Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+`We failed to download the .NET Installer. Please try to install the .NET SDK manually. Error: ${error?.message}`), getInstallFromContext(this.context));
                 this.context.eventStream.post(err);
                 throw err.error;
             }
         }
     }
 
-    private async getAxiosOptions(numRetries: number, furtherOptions? : {}, keepAlive = true) : Promise<any>
+    private async getAxiosOptions(numRetries: number, furtherOptions? : object, keepAlive = true) : Promise<object>
     {
         await this.ActivateProxyAgentIfFound();
 
-        const options = {
+        const options : object = {
             timeout: this.websiteTimeoutMs,
             'axios-retry': { retries: numRetries },
             ...(keepAlive && {headers: { 'Connection': 'keep-alive' }}),
@@ -308,8 +307,7 @@ If you're on a proxy and disable registry access, you must set the proxy in our 
                 {
                     // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                    const genericError = new EventBasedError('WebRequestFailedGenerically',
-                        `Web Request to ${this.url} Failed: ${error?.message}. Aborting. Stack: ${'stack' in error ? error?.stack : 'unavailable.'}`);
+                    const genericError = new EventBasedError('WebRequestFailedGenerically', `Web Request to ${this.url} Failed: ${error?.message}. Aborting. Stack: ${'stack' in error ? error?.stack : 'unavailable.'}`);
                     this.context.eventStream.post(new WebRequestError(genericError, getInstallFromContext(this.context)));
                     throw genericError;
                 }

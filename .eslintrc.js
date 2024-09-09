@@ -81,6 +81,8 @@ module.exports = {
             }
         ],
         "@typescript-eslint/no-empty-interface": "error",
+        "@typescript-eslint/no-unsafe-return": "warn",
+        "@typescript-eslint/no-unsafe-call": "warn",
         "@typescript-eslint/no-explicit-any": "error",
         "@typescript-eslint/prefer-promise-reject-errors": "warn",
         "@typescript-eslint/no-inferrable-types": "error",

@@ -569,7 +569,7 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
         {
             if(legacyInstall.dotnetInstall.installId.includes(version))
             {
-                context.eventStream.post(new DotnetLegacyInstallRemovalRequestEvent(`Trying to remove legacy install: ${legacyInstall} of ${version}.`));
+                context.eventStream.post(new DotnetLegacyInstallRemovalRequestEvent(`Trying to remove legacy install: ${JSON.stringify(legacyInstall)} of ${version}.`));
                 await this.uninstallLocal(context, legacyInstall.dotnetInstall);
             }
         }

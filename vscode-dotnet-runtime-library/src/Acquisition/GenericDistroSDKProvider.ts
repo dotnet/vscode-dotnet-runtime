@@ -165,6 +165,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
             return Promise.resolve(DotnetDistroSupportStatus.Unsupported);
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if(this.myVersionDetails().hasOwnProperty(this.preinstallCommandKey))
         {
             // If preinstall commands exist ( to add the msft feed ) then it's a microsoft feed.
@@ -217,6 +218,6 @@ Please refer to https://learn.microsoft.com/en-us/dotnet/core/install/linux if y
     }
 
     protected isPackageFoundInSearch(resultOfSearchCommand: any, searchCommandExitCode : string): boolean {
-        return resultOfSearchCommand.trim() !== '' && searchCommandExitCode === '0';
+        return (resultOfSearchCommand as string).trim() !== '' && searchCommandExitCode === '0';
     }
 }
