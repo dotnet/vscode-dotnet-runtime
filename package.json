@@ -11,7 +11,7 @@
 	"author": "Microsoft Corporation",
 	"scripts": {
 		"compile-all": "build.cmd",
-		"lint": "eslint -c .eslintrc.js --ext=.ts vscode-dotnet-runtime-library/src/**/*.ts vscode-dotnet-runtime-extension/src/**/*.ts vscode-dotnet-sdk-extension/src/**/*.ts"
+		"lint": "eslint -c .eslintrc.js --ext=.ts vscode-dotnet-runtime-library/src/**/*.ts vscode-dotnet-runtime-extension/src/**/*.ts --ignore-pattern \"**/test/\" --fix"
 	},
 	"dependencies": {
 		"@typescript-eslint/eslint-plugin-tslint": "^7.0.2",

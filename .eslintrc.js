@@ -23,7 +23,7 @@ module.exports = {
     ],
     "parser": "@typescript-eslint/parser",
     "parserOptions": {
-        "project": "vscode-dotnet-runtime-library/tsconfig.json",
+        "project": "tsconfig.eslint.json",
         "sourceType": "module"
     },
     "plugins": [
@@ -94,12 +94,15 @@ module.exports = {
         "@typescript-eslint/no-use-before-define": "off",
         "@typescript-eslint/no-var-requires": "error",
         "@typescript-eslint/prefer-for-of": "error",
+        "@typescript-eslint/no-unused-vars": "off",
         "@typescript-eslint/prefer-function-type": "error",
         "@typescript-eslint/prefer-namespace-keyword": "error",
-        "@typescript-eslint/quotes": [
-            "error",
-            "single"
-        ],
+        "@typescript-eslint/ban-types": "off",
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-require-imports": "off",
+        "@typescript-eslint/no-unsafe-argument": "off",
+        "@typescript-eslint/no-unnecessary-type-assertion": "off",
+        "@typescript-eslint/quotes": "off",
         "@typescript-eslint/triple-slash-reference": [
             "error",
             {
@@ -126,12 +129,12 @@ module.exports = {
         "id-match": "error",
         "jsdoc/check-alignment": "error",
         "jsdoc/check-indentation": "error",
-        "jsdoc/newline-after-description": "error",
+        "jsdoc/newline-after-description": "off",
         "max-classes-per-file": "off",
         "max-len": [
             "error",
             {
-                "code": 200
+                "code": 300
             }
         ],
         "new-parens": "error",
@@ -162,25 +165,12 @@ module.exports = {
             "error",
             "never"
         ],
-        "prefer-arrow/prefer-arrow-functions": [
-            "error",
-            {
-                "allowStandaloneDeclarations": true
-            }
-        ],
+        "prefer-arrow/prefer-arrow-functions": "off",
         "prefer-const": "error",
         "prefer-template": "error",
         "quotes": "off",
+        "no-underscore-dangle": "off",
         "radix": "error",
-        "spaced-comment": [
-            "error",
-            "always",
-            {
-                "markers": [
-                    "/"
-                ]
-            }
-        ],
         "use-isnan": "error",
         "valid-typeof": "off",
         "@typescript-eslint/tslint/config": [

@@ -291,7 +291,7 @@ ${convertedInstalls.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.in
                     /* tslint:disable:prefer-template */
                     this.eventStream.post(new DuplicateInstallDetected(`The install
                         ${(install)} has a duplicated record ${installRecord.length} times in the extension state.
-                        ${installRecord.map(x => x.installingExtensions.join(' ') + InstallToStrings(x.dotnetInstall)).join(' ') + '\n'}`));
+                        ${`${installRecord.map(x => x.installingExtensions.join(' ') + InstallToStrings(x.dotnetInstall)).join(' ')  }\n`}`));
                 }
 
                 const preExistingRecord = installRecord.at(0);
