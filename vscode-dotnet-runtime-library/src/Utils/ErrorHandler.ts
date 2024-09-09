@@ -88,12 +88,13 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
             if ((error.message as string).includes(timeoutConstants.timeoutMessage))
             {
                 context.displayWorker.showErrorMessage(`${errorConstants.errorMessage}${ context.version ? ` (${context.version})` : '' }: ${ error.message }`,
-                                                        async (response: string | undefined) => {
-                    if (response === timeoutConstants.moreInfoOption)
+                    (response: string | undefined) =>
                     {
-                        open(context.timeoutInfoUrl);
-                    }
-                }, timeoutConstants.moreInfoOption);
+                        if (response === timeoutConstants.moreInfoOption)
+                        {
+                            open(context.timeoutInfoUrl).catch(() => {});
+                        }
+                    }, timeoutConstants.moreInfoOption);
             }
             else if (!isCancellationStyleError(error) && showMessage)
             {
@@ -108,7 +109,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
                     {
                     if (response === errorConstants.moreInfoOption)
                     {
-                        open(context.moreInfoUrl);
+                        open(context.moreInfoUrl).catch(() => {});
                     }
                     else if (response === errorConstants.hideOption)
                     {
@@ -117,8 +118,8 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
                     else if (response === errorConstants.reportOption)
                     {
                         const [url, issueBody] = formatIssueUrl(error, context);
-                        context.displayWorker.copyToUserClipboard(issueBody);
-                        open(url);
+                        context.displayWorker.copyToUserClipboard(issueBody).catch(() => {});
+                        open(url).catch(() => {});
                     }
                     else if (response === errorConstants.configureManuallyOption && requestingExtensionId)
                     {

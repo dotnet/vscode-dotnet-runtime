@@ -71,16 +71,23 @@ export class VersionResolver implements IVersionResolver {
             }
             else
             {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 const releases = response['releases-index'];
 
                 for(const release of releases)
                 {
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                     if(release['release-type'] === 'lts' || release['release-type'] === 'sts')
                     {
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                         availableVersions.push({
+                                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                                 supportStatus: (release['release-type'] as DotnetVersionSupportStatus),
+                                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                                 supportPhase: (release['support-phase'] as DotnetVersionSupportPhase),
+                                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                                 version: release[getSdkVersions ? 'latest-sdk' : 'latest-runtime'],
+                                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                                 channelVersion: release['channel-version']
                             } as IDotnetVersion
                         );
@@ -101,6 +108,8 @@ export class VersionResolver implements IVersionResolver {
         }
         catch(error : any)
         {
+            // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             throw new EventBasedError(error, error?.message, error?.stack);
         }
 

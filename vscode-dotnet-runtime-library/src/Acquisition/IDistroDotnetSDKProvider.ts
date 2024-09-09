@@ -300,11 +300,13 @@ If you would like to contribute to the list of supported distros, please visit: 
 
     protected myDistroStrings(stringKey : string) : string
     {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         return this.distroJson[this.distroVersion.distro][stringKey];
     }
 
     protected myDistroCommands(commandKey : string) : CommandExecutorCommand[]
     {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         return this.distroJson[this.distroVersion.distro][commandKey] as CommandExecutorCommand[];
     }
 
@@ -312,8 +314,11 @@ If you would like to contribute to the list of supported distros, please visit: 
     {
         const validCommands : string[] = [];
 
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         const baseCommands = (Object.values(this.distroJson[this.distroVersion.distro])
             .filter((x : any) => x && Array.isArray(x) && ((x[0] as CommandExecutorCommand).commandParts))).flat();
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         let preInstallCommands = this.myVersionDetails()[this.preinstallCommandKey] as CommandExecutorCommand[];
         if(!preInstallCommands)
         {
@@ -345,8 +350,11 @@ If you would like to contribute to the list of supported distros, please visit: 
         const distroPackages = this.distroJson[this.distroVersion.distro][this.distroPackagesKey];
         for(const packageSet of distroPackages)
         {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             allPackages = allPackages.concat(packageSet[this.sdkKey]);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             allPackages = allPackages.concat(packageSet[this.runtimeKey])
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             allPackages = allPackages.concat(packageSet[this.aspNetKey])
         }
         return allPackages;

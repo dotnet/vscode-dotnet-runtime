@@ -516,7 +516,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     const reportIssueRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.reportIssue}`, async () => {
         const [url, issueBody] = formatIssueUrl(undefined, getIssueContext(existingPathConfigWorker)(AcquireErrorConfiguration.DisableErrorPopups, 'reportIssue'));
         await vscode.env.clipboard.writeText(issueBody);
-        open(url);
+        open(url).catch(() => {});
     });
 
     // Helper Functions

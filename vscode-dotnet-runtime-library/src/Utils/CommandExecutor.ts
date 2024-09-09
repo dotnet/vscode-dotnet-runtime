@@ -281,7 +281,7 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallFromCon
                 status : (fs.readFileSync(statusFile, 'utf8')).trim()
             } as CommandExecutorResult;
             this.context?.eventStream.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), directoryLockPath, fakeLockFile));
-            await this.fileUtil.wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt']);
+            (this.fileUtil as FileUtilities).wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt']);
 
             return release();
         });
@@ -377,7 +377,7 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
      * @param terminalFailure Whether to throw up an error when executing under sudo or suppress it and return stderr
      * @returns the result(s) of each command. Can throw generically if the command fails.
      */
-    public async execute(command : CommandExecutorCommand, options : any | null = null, terminalFailure = true) : Promise<CommandExecutorResult>
+    public async execute(command : CommandExecutorCommand, options : any = null, terminalFailure = true) : Promise<CommandExecutorResult>
     {
         const fullCommandString = `${command.commandRoot} ${command.commandParts.join(' ')}`;
         if(options && !options?.cwd)
@@ -402,13 +402,11 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
             this.context?.eventStream.post(new CommandExecutionEvent(`Executing command ${fullCommandString}
 with options ${JSON.stringify(options)}.`));
 
-            let commandResult;
-
             if(command.runUnderSudo)
             {
                 options.name = this.getSanitizedCallerName();
                 // tslint:disable no-return-await
-                return await new Promise<CommandExecutorResult>(async (resolve, reject) =>
+                return new Promise<CommandExecutorResult>(async (resolve, reject) =>
                 {
                     execElevated(fullCommandString, options, (error?: any, execStdout?: any, execStderr?: any) =>
                     {
@@ -426,7 +424,7 @@ with options ${JSON.stringify(options)}.`));
                 });
             }
 
-            commandResult = proc.spawnSync(command.commandRoot, command.commandParts, options);
+            const commandResult = proc.spawnSync(command.commandRoot, command.commandParts, options);
 
             if(os.platform() === 'win32')
             {
@@ -452,7 +450,7 @@ with options ${JSON.stringify(options)}.`));
                     else
                     {
                         this.context?.eventStream.post(new CommandExecutionNoStatusCodeWarning(`The command ${fullCommandString} with
-result: ${commandResult.toString()} had no status or signal.`));
+result: ${JSON.stringify(commandResult)} had no status or signal.`));
                         return '000751'; // Error code 000751 : The command did not report an exit code upon completion. This is never expected
                     }
                 }
@@ -638,7 +636,7 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
             displayWorker.showWarningMessage(`Unable to add SDK to the PATH: ${error}`,
                 async (response: string | undefined) => {
                     if (response === this.pathTroubleshootingOption) {
-                        open(`${troubleshootingUrl}#unable-to-add-to-path`);
+                        open(`${troubleshootingUrl}#unable-to-add-to-path`).catch(() => {});
                     }
                 }, this.pathTroubleshootingOption);
         }

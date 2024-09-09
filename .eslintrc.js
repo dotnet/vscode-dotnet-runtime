@@ -65,6 +65,9 @@ module.exports = {
         "@typescript-eslint/dot-notation": "error",
         "@typescript-eslint/explicit-function-return-type": "off",
         "@typescript-eslint/explicit-module-boundary-types": "off",
+        "@typescript-eslint/no-var-requires": "off",
+        "@typescript-eslint/only-throw-error": "off",
+        "@typescript-eslint/no-empty-function": "off",
         "@typescript-eslint/naming-convention": [
             "off",
             {
@@ -77,11 +80,12 @@ module.exports = {
                 "trailingUnderscore": "forbid"
             }
         ],
-        "@typescript-eslint/no-empty-function": "error",
         "@typescript-eslint/no-empty-interface": "error",
         "@typescript-eslint/no-explicit-any": "error",
+        "@typescript-eslint/prefer-promise-reject-errors": "warn",
         "@typescript-eslint/no-inferrable-types": "error",
         "@typescript-eslint/no-misused-new": "error",
+        "@typescript-eslint/no-misused-promises": "warn",
         "@typescript-eslint/no-namespace": "off",
         "@typescript-eslint/no-parameter-properties": "off",
         "@typescript-eslint/no-shadow": [
@@ -91,8 +95,16 @@ module.exports = {
             }
         ],
         "@typescript-eslint/no-unused-expressions": "error",
+        "@typescript-eslint/restrict-template-expressions": [
+            "error",
+            {
+                "allowNumber": true,
+                "allowBoolean": true,
+                "allowAny": true,
+                "allowArray": true
+            }
+        ],
         "@typescript-eslint/no-use-before-define": "off",
-        "@typescript-eslint/no-var-requires": "error",
         "@typescript-eslint/prefer-for-of": "error",
         "@typescript-eslint/no-unused-vars": "off",
         "@typescript-eslint/prefer-function-type": "error",
@@ -101,6 +113,7 @@ module.exports = {
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/no-require-imports": "off",
         "@typescript-eslint/no-unsafe-argument": "off",
+        "@typescript-eslint/no-unsafe-assignment": "off",
         "@typescript-eslint/no-unnecessary-type-assertion": "off",
         "@typescript-eslint/quotes": "off",
         "@typescript-eslint/triple-slash-reference": [
@@ -143,7 +156,7 @@ module.exports = {
         "no-cond-assign": "error",
         "no-console": "off",
         "no-debugger": "error",
-        "no-empty": "error",
+        "no-empty": "off",
         "no-empty-function": "off",
         "no-eval": "error",
         "no-fallthrough": "off",
