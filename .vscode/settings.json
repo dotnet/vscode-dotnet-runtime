@@ -17,7 +17,7 @@
     ],
     "azure-pipelines.1ESPipelineTemplatesSchemaFile": true,
     "eslint.options": {
-        "configFile": ".eslintrc.json"
+        "configFile": ".eslintrc.js"
     },
     "eslint.workingDirectories": [
         "./vscode-dotnet-runtime-library",
