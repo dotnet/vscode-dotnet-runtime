@@ -16,9 +16,5 @@
 		"**/node_modules",
 		"**/.vscode-test",
 		"**/dist",
-        "**/vscode-dotnet-sdk-extension/src/test/",
-        "**/vscode-dotnet-runtime-extension/src/test/",
-        "**/vscode-dotnet-runtime-library/src/test/",
-        "**/sample"
 	]
 }
