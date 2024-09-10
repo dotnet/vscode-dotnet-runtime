@@ -54,11 +54,11 @@ Our CDN may be blocked in China or experience significant slowdown, in which cas
 
 let showMessage = true;
 
-export async function callWithErrorHandling<T>(callback: () => T, context: IIssueContext, requestingExtensionId?: string, acquireContext? : IAcquisitionWorkerContext): Promise<T | undefined> {
+export function callWithErrorHandling<T>(callback: () => T, context: IIssueContext, requestingExtensionId?: string, acquireContext? : IAcquisitionWorkerContext): T | undefined {
     const isAcquisitionError = acquireContext ? true : false;
     try
     {
-        const result = await callback();
+        const result = callback();
         context.eventStream.post(new DotnetCommandSucceeded(context.commandName));
         return result;
     }
@@ -76,6 +76,8 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
 
         if(acquireContext)
         {
+            // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             context.eventStream.post(new DotnetAcquisitionFinalError(error, (caughtError?.eventType) ?? 'Unknown',
             GetDotnetInstallInfo(acquireContext.acquisitionContext.version, acquireContext.acquisitionContext.mode!,
                 acquireContext.acquisitionContext.installType ?? 'local', acquireContext.acquisitionContext.architecture ??

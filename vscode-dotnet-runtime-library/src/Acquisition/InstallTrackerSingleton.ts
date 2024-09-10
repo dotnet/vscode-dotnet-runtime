@@ -91,6 +91,7 @@ export class InstallTrackerSingleton
         {
             if(alreadyHoldingLock)
             {
+                // eslint-disable-next-line @typescript-eslint/await-thenable
                 return await f(...(args));
             }
             else
@@ -99,6 +100,7 @@ export class InstallTrackerSingleton
                 await lockfile.lock(lockPath, { retries: { retries: 10, minTimeout: 5, maxTimeout: 10000 } })
                 .then(async (release) =>
                 {
+                    // eslint-disable-next-line @typescript-eslint/await-thenable
                     returnResult = await f(...(args));
                     this.eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), lockPath, lockPath));
                     return release();
@@ -294,10 +296,8 @@ ${convertedInstalls.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.in
             {
                 if(installRecord.length > 1)
                 {
-                    /* tslint:disable:prefer-template */
-                    this.eventStream.post(new DuplicateInstallDetected(`The install
-                        ${(JSON.stringify(install))} has a duplicated record ${installRecord.length} times in the extension state.
-                        ${`${installRecord.map(x => x.installingExtensions.join(' ') + InstallToStrings(x.dotnetInstall)).join(' ')  }\n`}`));
+                    this.eventStream.post(new DuplicateInstallDetected(`The install ${(JSON.stringify(install))} has a duplicated record ${installRecord.length} times in the extension state.
+${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(InstallToStrings(x.dotnetInstall))}`)}\n`));
                 }
 
                 const preExistingRecord = installRecord.at(0);

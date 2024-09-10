@@ -608,7 +608,7 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
             const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
             const graveyard = new InstallationGraveyard(context);
 
-            graveyard.add(install, dotnetInstallDir);
+            await graveyard.add(install, dotnetInstallDir);
             context.eventStream.post(new DotnetInstallGraveyardEvent(`Attempting to remove .NET at ${JSON.stringify(install)} in path ${dotnetInstallDir}`));
 
             await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, force);
@@ -634,6 +634,7 @@ Other dependents remain.`));
         catch(error : any)
         {
             context.eventStream.post(new SuppressedAcquisitionError(error, `The attempt to uninstall .NET ${install.installId} failed - was .NET in use?`));
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             return error?.message ?? '1';
         }
     }
@@ -670,6 +671,7 @@ Other dependents remain.`));
         {
             await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream);
             context.eventStream.post(new SuppressedAcquisitionError(error, `The attempt to uninstall .NET ${install.installId} failed - was .NET in use?`));
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             return error?.message ?? '1';
         }
     }
