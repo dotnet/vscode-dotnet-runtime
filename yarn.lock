@@ -179,6 +179,26 @@
     minimatch "^3.1.2"
     strip-json-comments "^3.1.1"
 
+"@eslint/eslintrc@^3.1.0":
+  version "3.1.0"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@eslint/eslintrc/-/eslintrc-3.1.0.tgz"
+  integrity sha1-29NIK/2R76Zjy+eqH1BoOYaCB7Y=
+  dependencies:
+    ajv "^6.12.4"
+    debug "^4.3.2"
+    espree "^10.0.1"
+    globals "^14.0.0"
+    ignore "^5.2.0"
+    import-fresh "^3.2.1"
+    js-yaml "^4.1.0"
+    minimatch "^3.1.2"
+    strip-json-comments "^3.1.1"
+
+"@eslint/js@^9.10.0":
+  version "9.10.0"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@eslint/js/-/js-9.10.0.tgz"
+  integrity sha1-6qPLC67El5cLsp5DoVPQ1WUBQ8Y=
+
 "@eslint/js@8.57.0":
   version "8.57.0"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@eslint/js/-/js-8.57.0.tgz"
@@ -1241,7 +1261,7 @@ eslint@*, "eslint@^2 || ^3 || ^4 || ^5 || ^6 || ^7.2.0 || ^8", "eslint@^6.0.0 ||
     strip-ansi "^6.0.1"
     text-table "^0.2.0"
 
-espree@^10.1.0:
+espree@^10.0.1, espree@^10.1.0:
   version "10.1.0"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/espree/-/espree-10.1.0.tgz"
   integrity sha1-h4ja5hFXTA8HBpH1IuQRbFoR/FY=
@@ -1250,16 +1270,7 @@ espree@^10.1.0:
     acorn-jsx "^5.3.2"
     eslint-visitor-keys "^4.0.0"
 
-espree@^9.6.0:
-  version "9.6.1"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/espree/-/espree-9.6.1.tgz"
-  integrity sha1-oqF7jkNGkKVDLy+AGM5x0zGkjG8=
-  dependencies:
-    acorn "^8.9.0"
-    acorn-jsx "^5.3.2"
-    eslint-visitor-keys "^3.4.1"
-
-espree@^9.6.1:
+espree@^9.6.0, espree@^9.6.1:
   version "9.6.1"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/espree/-/espree-9.6.1.tgz"
   integrity sha1-oqF7jkNGkKVDLy+AGM5x0zGkjG8=
@@ -1498,6 +1509,16 @@ globals@^13.19.0:
   integrity sha1-hDKhnXjODB6DOUnDats0VAC7EXE=
   dependencies:
     type-fest "^0.20.2"
+
+globals@^14.0.0:
+  version "14.0.0"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/globals/-/globals-14.0.0.tgz"
+  integrity sha1-iY10E8Kbq89rr+Vvyt3thYrack4=
+
+globals@^15.9.0:
+  version "15.9.0"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/globals/-/globals-15.9.0.tgz"
+  integrity sha1-6d4BdxCR/7w321cU2rSE+faf85k=
 
 globalthis@^1.0.3:
   version "1.0.4"
