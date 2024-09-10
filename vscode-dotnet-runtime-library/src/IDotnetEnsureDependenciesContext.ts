@@ -7,6 +7,6 @@ import { EnsureDependenciesErrorConfiguration } from './Utils/ErrorHandler';
 
 export interface IDotnetEnsureDependenciesContext {
     command: string;
-    arguments: cp.SpawnSyncOptionsWithStringEncoding | undefined;
+    arguments: cp.SpawnSyncOptionsWithStringEncoding;
     errorConfiguration?: EnsureDependenciesErrorConfiguration;
 }

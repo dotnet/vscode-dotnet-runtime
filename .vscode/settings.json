@@ -15,5 +15,8 @@
         "REGTYPE",
         "Republisher"
     ],
-    "azure-pipelines.1ESPipelineTemplatesSchemaFile": true
+    "azure-pipelines.1ESPipelineTemplatesSchemaFile": true,
+    "eslint.options": {
+        "configFile": ".eslintrc.json"
+    }
 }

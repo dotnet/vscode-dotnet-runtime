@@ -12,7 +12,7 @@ jobs:
     steps:
     - template: install-node.yaml
     - bash: |
-        npm install --cache /temp/empty-cache
+        npm install
         npm install eslint@^8.57.0 @typescript-eslint/parser@^8.0.0 @typescript-eslint/eslint-plugin@^8.0.0 --reg https://registry.npmjs.org/ --verbose
         npm run lint
       displayName: 🧶 Run Lint
