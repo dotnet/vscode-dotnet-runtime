@@ -12,5 +12,7 @@ jobs:
     steps:
     - template: install-node.yaml
     - bash: |
+        npm install --cache /temp/empty-cache
+        npm install eslint@8.0.0 --reg https://registry.npmjs.org/ --verbose
         npm run lint
       displayName: 🧶 Run Lint
