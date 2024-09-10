@@ -11,7 +11,7 @@
 	"author": "Microsoft Corporation",
 	"scripts": {
 		"compile-all": "build.cmd",
-		"lint": "eslint -c .eslintrc.js  vscode-dotnet-runtime-library/src/**/*.ts vscode-dotnet-runtime-extension/src/**/*.ts --ignore-pattern \"test/\" --fix"
+		"lint": "eslint -c .eslintrc.js --ext=.ts vscode-dotnet-runtime-library/src/**/*.ts vscode-dotnet-runtime-extension/src/**/*.ts --ignore-pattern \"**/test/\" --fix"
 	},
 	"dependencies": {
 		"@typescript-eslint/eslint-plugin-tslint": "^7.0.2",
@@ -25,15 +25,12 @@
 		"typescript": "^5.5.4"
 	},
 	"devDependencies": {
-		"@eslint/eslintrc": "^3.1.0",
-		"@eslint/js": "^9.10.0",
 		"@types/source-map-support": "^0.5.6",
 		"@typescript-eslint/eslint-plugin": "^8.0.0",
 		"@typescript-eslint/parser": "^8.0.0",
 		"eslint-config-prettier": "^9.1.0",
 		"eslint-import-resolver-node": "^0.3.9",
 		"eslint-plugin-prettier": "^5.2.1",
-		"globals": "^15.9.0",
 		"rimraf": "3.0.2"
 	}
 }
