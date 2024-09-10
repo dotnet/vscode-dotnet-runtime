@@ -39,8 +39,6 @@ import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { IEventStream } from '../EventStream/EventStream';
 import { IExtensionState } from '../IExtensionState';
 import { IDotnetAcquireContext } from '..';
-/* tslint:disable:no-any */
-
 
 interface InProgressInstall
 {

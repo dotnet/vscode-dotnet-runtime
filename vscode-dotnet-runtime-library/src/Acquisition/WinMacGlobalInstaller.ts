@@ -36,9 +36,6 @@ import { IUtilityContext } from '../Utils/IUtilityContext';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { DotnetInstall } from './DotnetInstall';
 import { CommandExecutorResult } from '../Utils/CommandExecutorResult';
-/* tslint:disable:only-arrow-functions */
-/* tslint:disable:no-empty */
-/* tslint:disable:no-any */
 
 namespace validationPromptConstants
 {

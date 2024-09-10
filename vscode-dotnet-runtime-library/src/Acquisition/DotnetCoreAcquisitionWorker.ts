@@ -69,7 +69,6 @@ import { IExtensionState } from '../IExtensionState';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { getInstallFromContext, getInstallIdCustomArchitecture } from '../Utils/InstallIdUtilities';
 
-/* tslint:disable:no-any */
 
 export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 {

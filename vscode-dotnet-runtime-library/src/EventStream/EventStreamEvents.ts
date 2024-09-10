@@ -13,8 +13,6 @@ import { DotnetInstall } from '../Acquisition/DotnetInstall';
 import { DotnetInstallMode } from '../Acquisition/DotnetInstallMode';
 import { DotnetInstallType } from '../IDotnetAcquireContext';
 
-// tslint:disable max-classes-per-file
-
 export class EventCancellationError extends Error
 {
     constructor(public readonly eventType : string, msg : string, stack ? : string)
@@ -388,8 +386,8 @@ export class UserManualInstallFailure extends SuppressedAcquisitionError {
     eventName = 'UserManualInstallFailure';
 }
 
-export class OffilneDetectionLogicTriggered extends SuppressedAcquisitionError {
-    eventName = 'OffilneDetectionLogicTriggered';
+export class OfflineDetectionLogicTriggered extends SuppressedAcquisitionError {
+    eventName = 'OfflineDetectionLogicTriggered';
 }
 
 export class DotnetInstallationValidationMissed extends SuppressedAcquisitionError {

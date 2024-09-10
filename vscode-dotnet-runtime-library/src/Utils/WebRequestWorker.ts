@@ -34,13 +34,12 @@ import {
     DotnetOfflineFailure,
     EventBasedError,
     EventCancellationError,
-    OffilneDetectionLogicTriggered,
+    OfflineDetectionLogicTriggered,
     SuppressedAcquisitionError,
     WebRequestError,
     WebRequestSent
 } from '../EventStream/EventStreamEvents';
 import { getInstallFromContext } from './InstallIdUtilities';
-/* tslint:disable:no-any */
 
 export class WebRequestWorker
 {
@@ -140,7 +139,7 @@ export class WebRequestWorker
             return true;
         }).catch((error : any) =>
         {
-            eventStream.post(new OffilneDetectionLogicTriggered((error as EventCancellationError), `DNS resolution failed at microsoft.com, ${JSON.stringify(error)}.`));
+            eventStream.post(new OfflineDetectionLogicTriggered((error as EventCancellationError), `DNS resolution failed at microsoft.com, ${JSON.stringify(error)}.`));
             return false;
         });
         return couldConnect;

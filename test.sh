@@ -3,18 +3,18 @@ RED=`tput setaf 1`
 GREEN=`tput setaf 2`
 NC=`tput sgr0`
 
-if [ "$1" = "--tslint" ];
+if [ "$1" = "--eslint" ];
 then
     npm run lint
     if [ $? -ne 0 ];
     then
         echo ""
-        echo "${RED}TSLint Failed.${NC}"
+        echo "${RED}ESLint Failed.${NC}"
         echo ""
         RESULT=1
     else
         echo ""
-        echo "${GREEN}TSLint Succeeded.${NC}"
+        echo "${GREEN}ESLint Succeeded.${NC}"
         echo ""
     fi
 fi

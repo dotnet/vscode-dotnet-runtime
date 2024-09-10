@@ -58,9 +58,6 @@ import { CommandExecutorResult } from './CommandExecutorResult';
 import { isRunningUnderWSL, loopWithTimeoutOnCond } from './TypescriptUtilities';
 import { IEventStream } from '../EventStream/EventStream';
 
-/* tslint:disable:no-any */
-/* tslint:disable:no-string-literal */
-
 export class CommandExecutor extends ICommandExecutor
 {
     private pathTroubleshootingOption = 'Troubleshoot';

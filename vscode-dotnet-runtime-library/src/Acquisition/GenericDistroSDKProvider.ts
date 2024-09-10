@@ -11,7 +11,6 @@ import { DotnetDistroSupportStatus } from './LinuxVersionResolver';
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 import { DotnetVersionResolutionError, EventBasedError } from '../EventStream/EventStreamEvents';
-/* tslint:disable:no-any */
 
 export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 {

@@ -26,7 +26,6 @@ import { DotnetVersionSupportPhase,
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { getAssumedInstallInfo } from '../Utils/InstallIdUtilities';
 import { DotnetInstallMode } from './DotnetInstallMode';
-/* tslint:disable:no-any */
 
 export class VersionResolver implements IVersionResolver {
     protected webWorker: WebRequestWorker;
