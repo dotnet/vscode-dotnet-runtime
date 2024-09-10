@@ -12,6 +12,6 @@ jobs:
     steps:
     - template: install-node.yaml
     - bash: |
-        npm install -g eslint@^8.57.0 @typescript-eslint/parser@^8.0.0 @typescript-eslint/eslint-plugin@^8.0.0 --reg https://registry.npmjs.org/ --verbose
+        npm install eslint@^8.57.0 @typescript-eslint/parser@^8.0.0 @typescript-eslint/eslint-plugin@^8.0.0 --reg https://registry.npmjs.org/ --save-dev --verbose
         npm run lint
       displayName: 🧶 Run Lint

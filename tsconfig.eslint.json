@@ -13,8 +13,8 @@
 		"strict": true   /* enable all strict type-checking options */
 	},
 	"exclude": [
-		"**/node_modules",
-		"**/.vscode-test",
-		"**/dist",
+		"**/node_modules/**",
+		"**/.vscode-test/**",
+		"**/dist/**",
 	]
 }
