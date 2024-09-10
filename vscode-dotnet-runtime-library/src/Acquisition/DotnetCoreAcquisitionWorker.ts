@@ -59,8 +59,7 @@ import {
     GetDotnetInstallInfo,
     IsEquivalentInstallationFile,
     IsEquivalentInstallation
-} from './DotnetInstall';
-import { DotnetInstall } from './DotnetInstall';
+, DotnetInstall } from './DotnetInstall';
 import { InstallationGraveyard } from './InstallationGraveyard';
 import { InstallTrackerSingleton } from './InstallTrackerSingleton';
 import { DotnetInstallMode } from './DotnetInstallMode';

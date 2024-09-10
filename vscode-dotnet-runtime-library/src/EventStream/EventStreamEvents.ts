@@ -8,8 +8,7 @@ import { IDotnetInstallationContext } from '../Acquisition/IDotnetInstallationCo
 import { EventType } from './EventType';
 import { IEvent } from './IEvent';
 import { TelemetryUtilities } from './TelemetryUtilities';
-import { InstallToStrings } from '../Acquisition/DotnetInstall';
-import { DotnetInstall } from '../Acquisition/DotnetInstall';
+import { InstallToStrings , DotnetInstall } from '../Acquisition/DotnetInstall';
 import { DotnetInstallMode } from '../Acquisition/DotnetInstallMode';
 import { DotnetInstallType } from '../IDotnetAcquireContext';
 
