@@ -6,10 +6,7 @@ module.exports = {
     "extends": [
         "plugin:@typescript-eslint/recommended",
         "plugin:@typescript-eslint/recommended-requiring-type-checking",
-        "prettier",
-        "plugin:import/errors",
-        "plugin:import/warnings",
-        "plugin:import/typescript",
+        "prettier"
     ],
     "parser": "@typescript-eslint/parser",
     "parserOptions": {
@@ -21,7 +18,6 @@ module.exports = {
         "eslint-plugin-prefer-arrow",
         "@typescript-eslint",
         "@typescript-eslint/tslint",
-        "import",
     ],
     "root": true,
     "rules": {
@@ -192,12 +188,6 @@ module.exports = {
         ]
     },
     "settings": {
-        "import/resolver": {
-          "node": {
-            "extensions": [".js", ".jsx", ".ts", ".tsx"],
-            "moduleDirectory": ['**/node_modules', '**/src/'],
-          },
           "typescript": {}
-        }
-      },
+    }
 };
