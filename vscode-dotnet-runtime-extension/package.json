@@ -78,7 +78,7 @@
 				},
 				"dotnetAcquisitionExtension.existingDotnetPath": {
 					"type": "array",
-					"description": "File Path to an existing installation of .NET to be used by one extension. Used for both the .NET SDK and .NET Runtime. Restart VS Code to apply changes.",
+					"description": "The path to an existing .NET runtime for an extension's code to run under, not for your project to run under.\nRestart VS Code to apply changes.\n\n⚠️ This is NOT the .NET Runtime that your project will use to run. Extensions such as `C#`, `C# DevKit`, and more have components written in .NET. This .NET PATH is the `dotnet.exe` that these extensions will use to run their code, not your code.\n\nUsing a path value in which .NET does not meet the requirements of a specific extension will cause that extension to fail.\n\n🚀 The version of .NET that is used for your project is determined by the .NET host, or dotnet.exe. The .NET host picks a runtime based on your project. To use a specific version of .NET for your project, install the .NET SDK using the `.NET Install Tool - Install SDK System-Wide` command, or edit your PATH environment variable to point to a `dotnet.exe` that has an `/sdk/` folder with only one SDK.",
 					"examples": [
 						"C:\\Program Files\\dotnet\\dotnet.exe",
 						"/usr/local/share/dotnet/dotnet",
@@ -87,7 +87,7 @@
 				},
 				"dotnetAcquisitionExtension.sharedExistingDotnetPath": {
 					"type": "string",
-					"description": "The path of the preexisting .NET SDK and .NET Runtime you'd like to use for ALL extensions. Restart VS Code to apply changes.",
+					"description": "The path of the preexisting .NET Runtime you'd like to use for ALL extensions. Restart VS Code to apply changes.",
 					"examples": [
 						"C:\\Program Files\\dotnet\\dotnet.exe",
 						"/usr/local/share/dotnet/dotnet",
