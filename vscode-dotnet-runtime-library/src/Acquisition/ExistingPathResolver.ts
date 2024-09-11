@@ -179,7 +179,7 @@ export class ExistingPathResolver
                 return {
                     mode: parts[0] === aspnetCoreString ? 'aspnetcore' : parts[0] === runtimeString ? 'runtime' : 'sdk', // sdk is a placeholder for windows desktop, will never match since this is for runtime search only
                     version: parts[1],
-                    directory: parts[2] // need to remove the brackets from the path [path]
+                    directory: parts[2].slice(1, -1) // need to remove the brackets from the path [path]
                 } as IDotnetListInfo;
             }).filter(x => x !== null) as IDotnetListInfo[];
 

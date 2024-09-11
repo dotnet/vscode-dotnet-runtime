@@ -44,7 +44,7 @@ const listSDKsResultWithEightOnly = `
 `;
 const executionResultWithListSDKsResultWithEightOnly = { status : '', stdout: listSDKsResultWithEightOnly, stderr: '' };
 
-function getExistingPathResolverWithVersionAndCommandResult(version: string, requestingExtensionId : string | undefined, commandResult: CommandExecutorResult, allowInvalidPaths = false, mode : DotnetInstallMode | udnefined = undefined) : ExistingPathResolver
+function getExistingPathResolverWithVersionAndCommandResult(version: string, requestingExtensionId : string | undefined, commandResult: CommandExecutorResult, allowInvalidPaths = false, mode : DotnetInstallMode | undefined = undefined) : ExistingPathResolver
 {
     const context: IDotnetAcquireContext = { version: version, requestingExtensionId: requestingExtensionId, mode: mode };
     const mockWorkerContext = getMockAcquisitionWorkerContext(context);
