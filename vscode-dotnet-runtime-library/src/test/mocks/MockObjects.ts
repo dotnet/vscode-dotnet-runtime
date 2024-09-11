@@ -549,7 +549,9 @@ export class MockLoggingObserver implements ILoggingObserver {
 }
 
 export class MockExtensionConfiguration implements IExtensionConfiguration {
-    constructor(private readonly existingPaths: ILocalExistingPath[], private readonly enableTelemetry: boolean, private readonly existingSharedPath: string) { }
+    constructor(private readonly existingPaths: ILocalExistingPath[], private readonly enableTelemetry: boolean, private readonly existingSharedPath: string,
+        public allowInvalidPaths = false
+    ) { }
 
     public update<T>(section: string, value: T): Thenable<void> {
         // Not used, stubbed to implement interface
@@ -569,6 +571,10 @@ export class MockExtensionConfiguration implements IExtensionConfiguration {
         else if (name === 'enableTelemetry')
         {
             return this.enableTelemetry as unknown as T;
+        }
+        else if(name === 'allowInvalidPaths')
+        {
+            return this.allowInvalidPaths as unknown as T;
         }
         else
         {

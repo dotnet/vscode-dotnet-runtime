@@ -37,6 +37,25 @@ export function getMockAcquisitionContext(mode: DotnetInstallMode, version : str
     return workerContext;
 }
 
+export function getMockAcquisitionWorkerContext(acquireContext : IDotnetAcquireContext)
+{
+    const extensionContext = new MockExtensionContext();
+    const myEventStream = new MockEventStream();
+    const workerContext : IAcquisitionWorkerContext =
+    {
+        storagePath: '',
+        extensionState: extensionContext,
+        eventStream: myEventStream,
+        acquisitionContext: acquireContext,
+        installationValidator: new MockInstallationValidator(myEventStream),
+        timeoutSeconds: standardTimeoutTime,
+        proxyUrl: undefined,
+        installDirectoryProvider: directoryProviderFactory(acquireContext.mode!, ''),
+        isExtensionTelemetryInitiallyEnabled: true
+    };
+    return workerContext;
+}
+
 export function getMockAcquisitionWorker(mockContext : IAcquisitionWorkerContext) : MockDotnetCoreAcquisitionWorker
 {
     const acquisitionWorker = new MockDotnetCoreAcquisitionWorker(getMockUtilityContext(), new MockVSCodeExtensionContext());
