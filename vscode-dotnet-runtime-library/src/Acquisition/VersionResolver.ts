@@ -13,7 +13,7 @@ import {
     EventBasedError
 } from '../EventStream/EventStreamEvents';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
-import { getInstallFromContext } from '../Utils/InstallIdUtilities';
+import { getInstallFromContext , getAssumedInstallInfo } from '../Utils/InstallIdUtilities';
 import { Debugging } from '../Utils/Debugging';
 
 import { IVersionResolver } from './IVersionResolver';
@@ -24,9 +24,7 @@ import { DotnetVersionSupportPhase,
     IDotnetVersion
 } from '../IDotnetListVersionsContext';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
-import { getAssumedInstallInfo } from '../Utils/InstallIdUtilities';
 import { DotnetInstallMode } from './DotnetInstallMode';
-/* tslint:disable:no-any */
 
 export class VersionResolver implements IVersionResolver {
     protected webWorker: WebRequestWorker;
@@ -56,7 +54,7 @@ export class VersionResolver implements IVersionResolver {
      */
     public async GetAvailableDotnetVersions(commandContext: IDotnetListVersionsContext | undefined) : Promise<IDotnetListVersionsResult>
     {
-        const getSdkVersions : boolean = !commandContext?.listRuntimes;
+        const getSdkVersions  = !commandContext?.listRuntimes;
         const availableVersions : IDotnetListVersionsResult = [];
 
         const response : any = await this.webWorker.getCachedData();
@@ -71,16 +69,23 @@ export class VersionResolver implements IVersionResolver {
             }
             else
             {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 const releases = response['releases-index'];
 
                 for(const release of releases)
                 {
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                     if(release['release-type'] === 'lts' || release['release-type'] === 'sts')
                     {
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                         availableVersions.push({
+                                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                                 supportStatus: (release['release-type'] as DotnetVersionSupportStatus),
+                                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                                 supportPhase: (release['support-phase'] as DotnetVersionSupportPhase),
+                                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                                 version: release[getSdkVersions ? 'latest-sdk' : 'latest-runtime'],
+                                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                                 channelVersion: release['channel-version']
                             } as IDotnetVersion
                         );
@@ -101,6 +106,8 @@ export class VersionResolver implements IVersionResolver {
         }
         catch(error : any)
         {
+            // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             throw new EventBasedError(error, error?.message, error?.stack);
         }
 
@@ -114,8 +121,9 @@ export class VersionResolver implements IVersionResolver {
             }
             catch (error : any)
             {
-                this.context.eventStream.post(new DotnetVersionResolutionError(new EventCancellationError('DotnetVersionResolutionError',
-                    error?.message ?? ''), getAssumedInstallInfo(version, mode)));
+                // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                this.context.eventStream.post(new DotnetVersionResolutionError(new EventCancellationError('DotnetVersionResolutionError', error?.message ?? ''), getAssumedInstallInfo(version, mode)));
                 reject(error);
             }
         });

@@ -46,7 +46,7 @@ export class TelemetryObserver implements IEventStreamObserver {
         vscode.env.onDidChangeTelemetryEnabled((newIsTelemetryEnabledSetting: boolean) =>
         {
             this.isExtensionTelemetryEnabled = newIsTelemetryEnabledSetting;
-            TelemetryUtilities.setDotnetSDKTelemetryToMatch(this.isExtensionTelemetryEnabled, this.extensionContext, this.acquisitionContext, this.utilityContext);
+            TelemetryUtilities.setDotnetSDKTelemetryToMatch(this.isExtensionTelemetryEnabled, this.extensionContext, this.acquisitionContext, this.utilityContext).catch(() => {});
         });
     }
 
@@ -82,6 +82,6 @@ export class TelemetryObserver implements IEventStreamObserver {
 
     public dispose(): void
     {
-        this.telemetryReporter.dispose();
+        this.telemetryReporter.dispose().catch(() => {});
     }
 }

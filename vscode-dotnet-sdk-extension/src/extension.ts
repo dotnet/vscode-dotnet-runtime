@@ -42,7 +42,6 @@ import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 import { GlobalInstallerResolver } from 'vscode-dotnet-runtime-library/dist/Acquisition/GlobalInstallerResolver';
 import { IAcquisitionWorkerContext } from 'vscode-dotnet-runtime-library/dist/Acquisition/IAcquisitionWorkerContext';
 
-// tslint:disable no-var-requires
 const packageJson = require('../package.json');
 
 // Extension constants

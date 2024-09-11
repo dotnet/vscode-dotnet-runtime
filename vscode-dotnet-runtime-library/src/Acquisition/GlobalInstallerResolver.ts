@@ -24,8 +24,8 @@ import { DotnetFeatureBandDoesNotExistError,
 import { FileUtilities } from '../Utils/FileUtilities';
 
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
-/* tslint:disable:no-any */
-/* tslint:disable:only-arrow-functions */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
 
 /**
  * @remarks
@@ -221,7 +221,9 @@ export class GlobalInstallerResolver {
         const sdks: any[] = [];
         const releasesKeyAlias = this.releasesSdksKey; // the forEach creates a separate 'this', so we introduce this copy to reduce ambiguity to the compiler
 
-        releases.forEach(function (release : any) {
+        releases.forEach(function (release : any)
+        {
+            // eslint-disable-next-line prefer-spread
             sdks.push.apply(sdks, release[releasesKeyAlias]);
         });
 
@@ -379,7 +381,7 @@ Your architecture: ${os.arch()}. Your OS: ${os.platform()}.`), getInstallFromCon
             }
         }
 
-        const availableBands = Array.from(new Set(sdks.map((x : any) => versionUtils.getFeatureBandFromVersion(x[this.releasesSdkVersionKey], this.context.eventStream, this.context))));
+        const availableBands : string[] = Array.from(new Set(sdks.map((x : any) => versionUtils.getFeatureBandFromVersion(x[this.releasesSdkVersionKey], this.context.eventStream, this.context))));
         const err = new DotnetFeatureBandDoesNotExistError(new EventBasedError('DotnetFeatureBandDoesNotExistError',
             `The feature band '${band}' doesn't exist for the SDK major version '${version}'.
 Available feature bands for this SDK version are ${availableBands}.`), getInstallFromContext(this.context));

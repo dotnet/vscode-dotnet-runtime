@@ -3,7 +3,6 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import { IWindowDisplayWorker } from '../../EventStream/IWindowDisplayWorker';
-/* tslint:disable:no-any */
 
 export class MockWindowDisplayWorker implements IWindowDisplayWorker {
 

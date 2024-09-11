@@ -59,8 +59,7 @@ import {
     GetDotnetInstallInfo,
     IsEquivalentInstallationFile,
     IsEquivalentInstallation
-} from './DotnetInstall';
-import { DotnetInstall } from './DotnetInstall';
+, DotnetInstall } from './DotnetInstall';
 import { InstallationGraveyard } from './InstallationGraveyard';
 import { InstallTrackerSingleton } from './InstallTrackerSingleton';
 import { DotnetInstallMode } from './DotnetInstallMode';
@@ -69,7 +68,6 @@ import { IExtensionState } from '../IExtensionState';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { getInstallFromContext, getInstallIdCustomArchitecture } from '../Utils/InstallIdUtilities';
 
-/* tslint:disable:no-any */
 
 export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 {
@@ -91,7 +89,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     public async uninstallAll(eventStream : IEventStream, storagePath : string, extensionState : IExtensionState): Promise<void>
     {
         eventStream.post(new DotnetUninstallAllStarted());
-        await InstallTrackerSingleton.getInstance(eventStream, extensionState).clearPromises();
+        InstallTrackerSingleton.getInstance(eventStream, extensionState).clearPromises();
 
         this.removeFolderRecursively(eventStream, storagePath);
 
@@ -286,7 +284,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
 
             // Put this promise into the list so we can let other requests run at the same time
             // Allows us to return the end result of this current request for any following duplicates while we are still running.
-            await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).addPromise(install, acquisitionPromise);
+            InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).addPromise(install, acquisitionPromise);
             return acquisitionPromise.then((res) => ({ dotnetPath: res }));
         }
     }
@@ -303,7 +301,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
     private async acquireLocalCore(context: IAcquisitionWorkerContext, mode: DotnetInstallMode, install : DotnetInstall, acquisitionInvoker : IAcquisitionInvoker): Promise<string>
     {
         const version = context.acquisitionContext.version!;
-        this.checkForPartialInstalls(context, install);
+        this.checkForPartialInstalls(context, install).catch(() => {});
 
         let installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(true);
         const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
@@ -366,7 +364,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
             {
                 if(!(await this.sdkIsFound(context, context.acquisitionContext.version)))
                 {
-                    InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install);
+                    await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install);
                     return null;
                 }
             }
@@ -451,6 +449,8 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         }
         else
         {
+            // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             const newError = new EventBasedError('DotnetAcquisitionError', `.NET Acquisition Failed: ${error?.message ?? JSON.stringify(error)}`);
             return newError;
         }
@@ -460,7 +460,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
     {
         const installingVersion = await globalInstallerResolver.getFullySpecifiedVersion();
         context.eventStream.post(new DotnetGlobalVersionResolutionCompletionEvent(`The version we resolved that was requested is: ${installingVersion}.`));
-        this.checkForPartialInstalls(context, install);
+        this.checkForPartialInstalls(context, install).catch(() => {});
 
         const installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(true);
 
@@ -499,7 +499,7 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
             throw err;
         }
 
-        TelemetryUtilities.setDotnetSDKTelemetryToMatch(context.isExtensionTelemetryInitiallyEnabled, this.extensionContext, context, this.utilityContext);
+        TelemetryUtilities.setDotnetSDKTelemetryToMatch(context.isExtensionTelemetryInitiallyEnabled, this.extensionContext, context, this.utilityContext).catch(() => {});
 
         // in case the path does not exist, try resetting the path using an automatic path search setting
         dotnetPath = await installer.getExpectedGlobalSDKPath(installingVersion,
@@ -515,14 +515,19 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
             {
                     const executor = new CommandExecutor(context, this.utilityContext);
                     const result = await executor.execute(CommandExecutor.makeCommand('which', ['dotnet']));
-                    if(result.status === '0')
+                    if(result?.status === '0')
                     {
                         context.eventStream.post(new DotnetInstallationValidated(install));
                         dotnetPath = result.stdout;
                     }
                     else
                     {
-                        error.message += `Which dotnet returned ${result.stdout} and ${result.stderr}.`;
+                        // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                        error.message ??= 'The .NET SDK installer did not install the SDK correctly.';
+                        // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                        error.message += `Which dotnet returned ${result?.stdout} and ${result?.stderr}.`;
                         throw error;
                     }
             }
@@ -566,7 +571,7 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
         {
             if(legacyInstall.dotnetInstall.installId.includes(version))
             {
-                context.eventStream.post(new DotnetLegacyInstallRemovalRequestEvent(`Trying to remove legacy install: ${legacyInstall} of ${version}.`));
+                context.eventStream.post(new DotnetLegacyInstallRemovalRequestEvent(`Trying to remove legacy install: ${JSON.stringify(legacyInstall)} of ${version}.`));
                 await this.uninstallLocal(context, legacyInstall.dotnetInstall);
             }
         }
@@ -605,8 +610,8 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
             const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
             const graveyard = new InstallationGraveyard(context);
 
-            graveyard.add(install, dotnetInstallDir);
-            context.eventStream.post(new DotnetInstallGraveyardEvent(`Attempting to remove .NET at ${install} in path ${dotnetInstallDir}`));
+            await graveyard.add(install, dotnetInstallDir);
+            context.eventStream.post(new DotnetInstallGraveyardEvent(`Attempting to remove .NET at ${JSON.stringify(install)} in path ${dotnetInstallDir}`));
 
             await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, force);
             // this is the only place where installed and installing could deal with pre existing installing id
@@ -617,7 +622,7 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
                 context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install.installId}.`));
                 this.removeFolderRecursively(context.eventStream, dotnetInstallDir);
                 context.eventStream.post(new DotnetUninstallCompleted(`Uninstalled .NET ${install.installId}.`));
-                graveyard.remove(install);
+                await graveyard.remove(install);
                 context.eventStream.post(new DotnetInstallGraveyardEvent(`Success at uninstalling ${JSON.stringify(install)} in path ${dotnetInstallDir}`));
             }
             else
@@ -631,6 +636,7 @@ Other dependents remain.`));
         catch(error : any)
         {
             context.eventStream.post(new SuppressedAcquisitionError(error, `The attempt to uninstall .NET ${install.installId} failed - was .NET in use?`));
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             return error?.message ?? '1';
         }
     }
@@ -667,6 +673,7 @@ Other dependents remain.`));
         {
             await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream);
             context.eventStream.post(new SuppressedAcquisitionError(error, `The attempt to uninstall .NET ${install.installId} failed - was .NET in use?`));
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             return error?.message ?? '1';
         }
     }
