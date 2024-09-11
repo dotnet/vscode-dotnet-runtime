@@ -208,8 +208,9 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         }
         else
         {
-            const command = CommandExecutor.makeCommand(`rm`, [`-rf`, `${path.join(path.dirname(this.getMacPath()), 'sdk', install.version)}`, `&&`,
-`rm`, `-rf`, `${path.join(path.dirname(this.getMacPath()), 'sdk-manifests', install.version)}`], true);
+            const macPath = await this.getMacPath();
+            const command = CommandExecutor.makeCommand(`rm`, [`-rf`, `${path.join(path.dirname(macPath), 'sdk', install.version)}`, `&&`,
+`rm`, `-rf`, `${path.join(path.dirname(macPath), 'sdk-manifests', install.version)}`], true);
 
             const commandResult = await this.commandRunner.execute(command, {timeout : this.acquisitionContext.timeoutSeconds * 1000});
             this.handleTimeout(commandResult);
@@ -330,7 +331,8 @@ Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.m
         }
         else if(os.platform() === 'darwin')
         {
-            return this.getMacPath(macPathShouldExist);
+            const sdkPath = await this.getMacPath(macPathShouldExist);
+            return sdkPath;
         }
 
         const err = new DotnetUnexpectedInstallerOSError(new EventBasedError('DotnetUnexpectedInstallerOSError',
@@ -352,10 +354,18 @@ If you were waiting for the install to succeed, please extend the timeout settin
         }
     }
 
-    private getMacPath(macPathShouldExist = true) : string
+    private async getMacPath(macPathShouldExist = true) : Promise<string>
     {
         const standardHostPath = path.resolve(`/usr/local/share/dotnet/dotnet`);
         const arm64EmulationHostPath = path.resolve(`/usr/local/share/dotnet/x64/dotnet`);
+
+        if((os.arch() === 'x64' || os.arch() === 'ia32') && (await this.commandRunner.execute(CommandExecutor.makeCommand(`uname`, [`-p`]), null, false)).stdout.includes('arm'))
+        {
+            // VS Code runs on an emulated version of node which will return x64 or use x86 emulation for ARM devices.
+            // os.arch() returns the architecture of the node binary, not the system architecture, so it will not report arm on an arm device.
+            return arm64EmulationHostPath;
+        }
+
         if(!macPathShouldExist || fs.existsSync(standardHostPath) || !fs.existsSync(arm64EmulationHostPath))
         {
             return standardHostPath;
