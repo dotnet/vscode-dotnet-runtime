@@ -48,7 +48,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
             this.context.eventStream.post(new DotnetInstallScriptAcquisitionCompleted());
             return this.scriptFilePath;
         }
-        catch (error)
+        catch (error : any)
         {
             Debugging.log('An error occurred processing the install script.');
             this.context.eventStream.post(new DotnetInstallScriptAcquisitionError(error as Error, getInstallFromContext(this.context)));

@@ -39,8 +39,6 @@ import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { IEventStream } from '../EventStream/EventStream';
 import { IExtensionState } from '../IExtensionState';
 import { IDotnetAcquireContext } from '..';
-/* tslint:disable:no-any */
-
 
 interface InProgressInstall
 {
@@ -91,6 +89,7 @@ export class InstallTrackerSingleton
         {
             if(alreadyHoldingLock)
             {
+                // eslint-disable-next-line @typescript-eslint/await-thenable
                 return await f(...(args));
             }
             else
@@ -99,6 +98,7 @@ export class InstallTrackerSingleton
                 await lockfile.lock(lockPath, { retries: { retries: 10, minTimeout: 5, maxTimeout: 10000 } })
                 .then(async (release) =>
                 {
+                    // eslint-disable-next-line @typescript-eslint/await-thenable
                     returnResult = await f(...(args));
                     this.eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), lockPath, lockPath));
                     return release();
@@ -113,7 +113,13 @@ export class InstallTrackerSingleton
         catch(e : any)
         {
             // Either the lock could not be acquired or releasing it failed
+
+            // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             this.eventStream.post(new DotnetLockErrorEvent(e, e?.message ?? 'Unable to acquire lock to update installation state', new Date().toISOString(), lockPath, lockPath));
+
+            // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             throw new EventBasedError('DotnetLockErrorEvent', e?.message, e?.stack);
         }
 
@@ -288,10 +294,8 @@ ${convertedInstalls.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.in
             {
                 if(installRecord.length > 1)
                 {
-                    /* tslint:disable:prefer-template */
-                    this.eventStream.post(new DuplicateInstallDetected(`The install
-                        ${(install)} has a duplicated record ${installRecord.length} times in the extension state.
-                        ${installRecord.map(x => x.installingExtensions.join(' ') + InstallToStrings(x.dotnetInstall)).join(' ') + '\n'}`));
+                    this.eventStream.post(new DuplicateInstallDetected(`The install ${(JSON.stringify(install))} has a duplicated record ${installRecord.length} times in the extension state.
+${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(InstallToStrings(x.dotnetInstall))}`)}\n`));
                 }
 
                 const preExistingRecord = installRecord.at(0);
@@ -342,7 +346,7 @@ ${convertedInstalls.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.in
                 // Did this extension already mark itself as having ownership of this install? If so, we can skip re-adding it.
                 if(!(existingInstall?.installingExtensions.includes(context.acquisitionContext?.requestingExtensionId ?? null)))
                 {
-                    this.eventStream.post(new SkipAddingInstallEvent(`Skipped adding ${install} to the state because it was already there with the same owner.`));
+                    this.eventStream.post(new SkipAddingInstallEvent(`Skipped adding ${JSON.stringify(install)} to the state because it was already there with the same owner.`));
                     existingInstall!.installingExtensions.push(context.acquisitionContext?.requestingExtensionId ?? null);
                     existingVersions[preExistingInstallIndex] = existingInstall!;
                 }

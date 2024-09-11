@@ -21,7 +21,6 @@ import { DotnetCommandFallbackArchitectureEvent,
    DotnetLockReleasedEvent,
    SuppressedAcquisitionError
 } from '../EventStream/EventStreamEvents';
-/* tslint:disable:no-any */
 
 export class FileUtilities extends IFileUtilities
 {

@@ -2,6 +2,9 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
+
+/* eslint-disable */ // When editing this file, please remove this and fix the linting concerns.
+
 import * as cp from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';

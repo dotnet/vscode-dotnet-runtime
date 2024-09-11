@@ -36,9 +36,6 @@ import { IUtilityContext } from '../Utils/IUtilityContext';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { DotnetInstall } from './DotnetInstall';
 import { CommandExecutorResult } from '../Utils/CommandExecutorResult';
-/* tslint:disable:only-arrow-functions */
-/* tslint:disable:no-empty */
-/* tslint:disable:no-any */
 
 namespace validationPromptConstants
 {
@@ -302,11 +299,15 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         }
         catch(error : any)
         {
+            // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             if(error?.message?.includes('ENOENT'))
             {
                 this.acquisitionContext.eventStream.post(new DotnetFileIntegrityFailureEvent(`The file ${installerFile} was not found, so we couldn't verify it.
 Please try again, or download the .NET Installer file yourself. You may also report your issue at https://github.com/dotnet/vscode-dotnet-runtime/issues.`));
             }
+            // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             else if(error?.message?.includes('EPERM'))
             {
                 this.acquisitionContext.eventStream.post(new DotnetFileIntegrityFailureEvent(`The file ${installerFile} did not have the correct permissions scope to be assessed.
@@ -316,7 +317,9 @@ Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.m
         }
     }
 
-    public async getExpectedGlobalSDKPath(specificSDKVersionInstalled : string, installedArch : string) : Promise<string>
+    // async is needed to match the interface even if we don't use await.
+    // eslint-disable-next-line @typescript-eslint/require-await
+    public async getExpectedGlobalSDKPath(specificSDKVersionInstalled : string, installedArch : string, macPathShouldExist = true) : Promise<string>
     {
         if(os.platform() === 'win32')
         {
@@ -327,7 +330,7 @@ Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.m
         }
         else if(os.platform() === 'darwin')
         {
-            return this.getMacPath();
+            return this.getMacPath(macPathShouldExist);
         }
 
         const err = new DotnetUnexpectedInstallerOSError(new EventBasedError('DotnetUnexpectedInstallerOSError',
@@ -349,11 +352,15 @@ If you were waiting for the install to succeed, please extend the timeout settin
         }
     }
 
-    private getMacPath() : string
+    private getMacPath(macPathShouldExist = true) : string
     {
-        // On an arm machine we would install to /usr/local/share/dotnet/x64/dotnet/sdk` for a 64 bit sdk
-        // but we don't currently allow customizing the install architecture so that would never happen.
-        return path.resolve(`/usr/local/share/dotnet/dotnet`);
+        const standardHostPath = path.resolve(`/usr/local/share/dotnet/dotnet`);
+        const arm64EmulationHostPath = path.resolve(`/usr/local/share/dotnet/x64/dotnet`);
+        if(!macPathShouldExist || fs.existsSync(standardHostPath) || !fs.existsSync(arm64EmulationHostPath))
+        {
+            return standardHostPath;
+        }
+        return arm64EmulationHostPath;
     }
 
     /**
@@ -420,14 +427,22 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
             }
             catch(error : any)
             {
-                if(error?.message?.includes('EPERM'))
+                // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                if((error?.message as string)?.includes('EPERM'))
                 {
-                    error.message = `The installer does not have permission to execute. Please try running as an administrator. ${error.message}.
+                    // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    error.message = `The installer does not have permission to execute. Please try running as an administrator. ${error?.message}.
 Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerPath}"`])))}`;
                 }
-                else if(error?.message?.includes('ENOENT'))
+                // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                else if((error?.message as string)?.includes('ENOENT'))
                 {
-                    error.message = `The .NET Installation files were not found. Please try again. ${error.message}`;
+                    // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    error.message = `The .NET Installation files were not found. Please try again. ${error?.message}`;
                 }
                 throw error;
             }

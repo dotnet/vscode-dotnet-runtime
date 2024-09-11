@@ -2,16 +2,16 @@ $result = 0
 $errorColor = "Red"
 $successColor = "Green"
 
-if ($args[1] -eq '--tslint') {
+if ($args[1] -eq '--eslint') {
     npm run lint
     if ($LASTEXITCODE -ne 0)
     {
-        Write-Host "`nTSLint Failed.`n" -ForegroundColor $errorColor
+        Write-Host "`nESLint Failed.`n" -ForegroundColor $errorColor
         $result = 1
     }
     else
     {
-        Write-Host "`nTSLint Succeeded.`n" -ForegroundColor $successColor
+        Write-Host "`nESLint Succeeded.`n" -ForegroundColor $successColor
     }
 }
 

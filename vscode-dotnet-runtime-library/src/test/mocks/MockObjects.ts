@@ -41,7 +41,6 @@ import { InstallationGraveyard } from '../../Acquisition/InstallationGraveyard';
 import { CommandExecutorResult } from '../../Utils/CommandExecutorResult';
 
 const testDefaultTimeoutTimeMs = 60000;
-/* tslint:disable:no-any */
 
 export class MockExtensionContext implements IExtensionState {
     private values: { [n: string]: any; } = {};

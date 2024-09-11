@@ -25,7 +25,6 @@ import
 import { IEventStream } from './EventStream';
 import { IEvent } from './IEvent';
 import { IModalEventRepublisher } from './IModalEventPublisher';
-/* tslint:disable:no-empty */
 
 export class ModalEventRepublisher implements IModalEventRepublisher
 {
@@ -113,5 +112,5 @@ export class ModalEventRepublisher implements IModalEventRepublisher
     }
 
     public dispose(): void {
-     }
+    }
 }
