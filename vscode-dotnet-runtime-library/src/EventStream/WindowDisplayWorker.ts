@@ -5,7 +5,8 @@
 import * as os from 'os';
 import { env, window } from 'vscode';
 import { IWindowDisplayWorker } from './IWindowDisplayWorker';
-/* tslint:disable:no-any */
+/* eslint-disable */ // When editing this file, please remove this and fix the linting concerns.
+
 
 export class WindowDisplayWorker implements IWindowDisplayWorker {
     private readonly pathPlaceholder = os.platform() === 'win32' ? 'C:\\Program Files\\dotnet\\dotnet.exe' : '/usr/local/share/dotnet/dotnet';

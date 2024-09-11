@@ -40,8 +40,8 @@ export class LinuxGlobalInstaller extends IGlobalInstaller {
         await this.linuxSDKResolver.Initialize();
 
         const dotnetFolder = await (await this.linuxSDKResolver.distroCall()).getDotnetVersionSupportStatus(specificSDKVersionInstalled, 'sdk') === DotnetDistroSupportStatus.Distro ?
-            await (await this.linuxSDKResolver.distroCall()).getExpectedDotnetDistroFeedInstallationDirectory() :
-            await (await this.linuxSDKResolver.distroCall()).getExpectedDotnetMicrosoftFeedInstallationDirectory();
+            (await this.linuxSDKResolver.distroCall()).getExpectedDotnetDistroFeedInstallationDirectory() :
+            (await this.linuxSDKResolver.distroCall()).getExpectedDotnetMicrosoftFeedInstallationDirectory();
         return dotnetFolder;
     }
 

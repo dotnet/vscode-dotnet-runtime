@@ -12,8 +12,8 @@ jobs:
   displayName: '📦 Package and Publish'
   dependsOn:
   - ${{ parameters.pool.os }}_Build
-  - TSLint
-  condition: and(succeeded(), eq('${{ parameters.useOneEngineeringPool }}', 'true'))
+  - ESLint
+  condition: succeeded()
   strategy:
     matrix:
       Runtime:

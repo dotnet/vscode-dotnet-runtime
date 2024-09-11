@@ -4,8 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 
 import { DotnetCoreAcquisitionWorker } from '../Acquisition/DotnetCoreAcquisitionWorker';
-import { looksLikeRuntimeVersion } from '../Acquisition/DotnetInstall';
-import { DotnetInstall } from '../Acquisition/DotnetInstall';
+import { looksLikeRuntimeVersion , DotnetInstall } from '../Acquisition/DotnetInstall';
 import { DOTNET_INSTALL_MODE_LIST, DotnetInstallMode } from '../Acquisition/DotnetInstallMode';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { DotnetInstallType } from '../IDotnetAcquireContext';

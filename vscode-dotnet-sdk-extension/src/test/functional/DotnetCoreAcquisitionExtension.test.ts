@@ -2,8 +2,7 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
-/* tslint:disable:no-any */
-/* tslint:disable:only-arrow-functions */
+
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as cp from 'child_process';
@@ -38,13 +37,10 @@ import * as extension from '../../extension';
 import { uninstallSDKExtension } from '../../ExtensionUninstall';
 import { warn } from 'console';
 import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
-import { mock } from 'node:test';
 
 const standardTimeoutTime = 100000;
 const assert = chai.assert;
 chai.use(chaiAsPromised);
-/* tslint:disable:no-any */
-/* tslint:disable:no-unsafe-finally */
 
 const currentSDKVersion = '7.0';
 suite('DotnetCoreAcquisitionExtension End to End', function ()

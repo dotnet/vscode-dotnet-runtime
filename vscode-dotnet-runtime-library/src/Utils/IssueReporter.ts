@@ -4,9 +4,11 @@
 *--------------------------------------------------------------------------------------------*/
 import { sanitize } from './ContentSantizer';
 import { IIssueContext } from './IIssueContext';
-// tslint:disable no-var-requires
-const packageJson = require('../../package.json');
 
+// Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
+const packageJson = require('../../package.json');
 const issuesUrl = `https://github.com/dotnet/vscode-dotnet-runtime/issues/new/choose`;
 
 export function formatIssueUrl(error: Error | undefined, context: IIssueContext): [ string, string ] {
@@ -14,11 +16,12 @@ export function formatIssueUrl(error: Error | undefined, context: IIssueContext)
 
     const errorMessage = !error ? '' : `**Error Message:** ${ sanitize(error!.message) }
 **Error Stack:** ${ error.stack === undefined ? '' : sanitize(error!.stack!) }`;
+
     const issueBody = `<!-- IMPORTANT: Please be sure to remove any private information before submitting. -->
 
 Please attach the log file located at ${ context.logger.getFileLocation() }. Note that this file may contain personal data.
 
-**Extension Version:** ${ packageJson.version }
+**Extension Version:** ${ packageJson?.version }
 ${ errorMessage }`;
 
     return [issuesUrl, issueBody];
