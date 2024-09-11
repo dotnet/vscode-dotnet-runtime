@@ -319,7 +319,7 @@ Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.m
 
     // async is needed to match the interface even if we don't use await.
     // eslint-disable-next-line @typescript-eslint/require-await
-    public async getExpectedGlobalSDKPath(specificSDKVersionInstalled : string, installedArch : string) : Promise<string>
+    public async getExpectedGlobalSDKPath(specificSDKVersionInstalled : string, installedArch : string, macPathShouldExist = true) : Promise<string>
     {
         if(os.platform() === 'win32')
         {
@@ -330,7 +330,7 @@ Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.m
         }
         else if(os.platform() === 'darwin')
         {
-            return this.getMacPath();
+            return this.getMacPath(macPathShouldExist);
         }
 
         const err = new DotnetUnexpectedInstallerOSError(new EventBasedError('DotnetUnexpectedInstallerOSError',
@@ -352,11 +352,15 @@ If you were waiting for the install to succeed, please extend the timeout settin
         }
     }
 
-    private getMacPath() : string
+    private getMacPath(macPathShouldExist = true) : string
     {
-        // On an arm machine we would install to /usr/local/share/dotnet/x64/dotnet/sdk` for a 64 bit sdk
-        // but we don't currently allow customizing the install architecture so that would never happen.
-        return path.resolve(`/usr/local/share/dotnet/dotnet`);
+        const standardHostPath = path.resolve(`/usr/local/share/dotnet/dotnet`);
+        const arm64EmulationHostPath = path.resolve(`/usr/local/share/dotnet/x64/dotnet`);
+        if(!macPathShouldExist || fs.existsSync(standardHostPath) || !fs.existsSync(arm64EmulationHostPath))
+        {
+            return standardHostPath;
+        }
+        return arm64EmulationHostPath;
     }
 
     /**

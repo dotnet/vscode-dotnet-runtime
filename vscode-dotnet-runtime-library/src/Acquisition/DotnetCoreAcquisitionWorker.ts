@@ -476,7 +476,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         }
 
         let dotnetPath : string = await installer.getExpectedGlobalSDKPath(installingVersion,
-            context.acquisitionContext.architecture ?? this.getDefaultInternalArchitecture(context.acquisitionContext.architecture));
+            context.acquisitionContext.architecture ?? this.getDefaultInternalArchitecture(context.acquisitionContext.architecture), false);
         const existingInstall = await this.getExistingInstall(context, installedVersions, install, dotnetPath);
         if(existingInstall)
         {
@@ -500,6 +500,10 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
         }
 
         TelemetryUtilities.setDotnetSDKTelemetryToMatch(context.isExtensionTelemetryInitiallyEnabled, this.extensionContext, context, this.utilityContext).catch(() => {});
+
+        // in case the path does not exist, try resetting the path using an automatic path search setting
+        dotnetPath = await installer.getExpectedGlobalSDKPath(installingVersion,
+            context.acquisitionContext.architecture ?? this.getDefaultInternalArchitecture(context.acquisitionContext.architecture));
 
         try
         {

@@ -35,7 +35,7 @@ export class LinuxGlobalInstaller extends IGlobalInstaller {
         return this.linuxSDKResolver.UninstallSDK(this.version);
     }
 
-    public async getExpectedGlobalSDKPath(specificSDKVersionInstalled : string, installedArch : string) : Promise<string>
+    public async getExpectedGlobalSDKPath(specificSDKVersionInstalled : string, installedArch : string, macPathShouldExist = true) : Promise<string>
     {
         await this.linuxSDKResolver.Initialize();
 
