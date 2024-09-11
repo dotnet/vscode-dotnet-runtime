@@ -6,6 +6,8 @@ import * as cp from 'child_process';
 import * as os from 'os';
 import path = require('path');
 
+/* eslint-disable */ // When editing this file, please remove this and fix the linting concerns.
+
 import {
     DotnetAcquisitionCompleted,
     DotnetAcquisitionInstallError,
@@ -13,10 +15,8 @@ import {
     DotnetAcquisitionScriptOutput,
     DotnetAcquisitionTimeoutError,
     DotnetAcquisitionUnexpectedError,
-    OffilneDetectionLogicTriggered,
     DotnetOfflineFailure,
     EventBasedError,
-    EventCancellationError,
 } from '../EventStream/EventStreamEvents';
 
 import { timeoutConstants } from '../Utils/ErrorHandler'
@@ -33,8 +33,6 @@ import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWork
 import { DotnetInstall } from './DotnetInstall';
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
-/* tslint:disable:no-any */
-/* tslint:disable:only-arrow-functions */
 
 export class AcquisitionInvoker extends IAcquisitionInvoker {
     protected readonly scriptWorker: IInstallScriptAcquisitionWorker;
@@ -113,6 +111,8 @@ You will need to restart VS Code after these changes. If PowerShell is still not
             }
             catch (error : any)
             {
+                // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 const newError = new EventBasedError('DotnetAcquisitionUnexpectedError', error?.message, error?.stack)
                 this.eventStream.post(new DotnetAcquisitionUnexpectedError(newError, install));
                 reject(newError);

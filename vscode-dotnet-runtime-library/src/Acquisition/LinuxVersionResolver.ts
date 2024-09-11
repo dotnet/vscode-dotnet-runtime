@@ -88,7 +88,9 @@ export class LinuxVersionResolver
     public baseUnsupportedDistroErrorMessage = 'We are unable to detect the distro or version of your machine';
     public unsupportedDistroErrorMessage = `Your current distro is not yet supported. We are expanding this list based on community feed back and contributions.
 If you would like to contribute to the list of supported distros, please visit: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/adding-distros.md`;
-    public redhatUnsupportedDistroErrorMessage = 'Red Hat Enterprise Linux 7.0 is currently not supported. Follow the instructions here to download the .NET SDK: https://learn.microsoft.com/en-us/dotnet/core/install/linux-rhel#rhel-7--net-6. Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from https://access.redhat.com/downloads/';
+    public redhatUnsupportedDistroErrorMessage = `Red Hat Enterprise Linux 7.0 is currently not supported.
+Follow the instructions here to download the .NET SDK: https://learn.microsoft.com/en-us/dotnet/core/install/linux-rhel#rhel-7--net-6.
+Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from https://access.redhat.com/downloads/;`
     protected acquireCtx: IDotnetAcquireContext | null | undefined;
 
     constructor(private readonly workerContext : IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext,
@@ -231,7 +233,7 @@ If you would like to contribute to the list of supported distros, please visit: 
 
         if(supportStatus === DotnetDistroSupportStatus.Distro)
         {
-            const microsoftFeedDir = await this.distroSDKProvider!.getExpectedDotnetMicrosoftFeedInstallationDirectory();
+            const microsoftFeedDir = this.distroSDKProvider!.getExpectedDotnetMicrosoftFeedInstallationDirectory();
             if(fs.existsSync(microsoftFeedDir))
             {
                 const err = new DotnetConflictingLinuxInstallTypesError(new EventCancellationError('DotnetConflictingLinuxInstallTypesError',
@@ -243,7 +245,7 @@ If you would like to contribute to the list of supported distros, please visit: 
         }
         else if(supportStatus === DotnetDistroSupportStatus.Microsoft)
         {
-            const distroFeedDir = await this.distroSDKProvider!.getExpectedDotnetDistroFeedInstallationDirectory();
+            const distroFeedDir = this.distroSDKProvider!.getExpectedDotnetDistroFeedInstallationDirectory();
             if(fs.existsSync(distroFeedDir))
             {
                 const err = new DotnetConflictingLinuxInstallTypesError(new EventCancellationError('DotnetConflictingLinuxInstallTypesError',
@@ -264,8 +266,8 @@ If you would like to contribute to the list of supported distros, please visit: 
         await this.Initialize();
 
         if(existingInstall && path.resolve(existingInstall) !== path.resolve(
-            supportStatus === DotnetDistroSupportStatus.Distro ? await this.distroSDKProvider!.getExpectedDotnetDistroFeedInstallationDirectory()
-            : await this.distroSDKProvider!.getExpectedDotnetMicrosoftFeedInstallationDirectory() ))
+            supportStatus === DotnetDistroSupportStatus.Distro ? this.distroSDKProvider!.getExpectedDotnetDistroFeedInstallationDirectory()
+            : this.distroSDKProvider!.getExpectedDotnetMicrosoftFeedInstallationDirectory() ))
         {
             const err = new DotnetCustomLinuxInstallExistsError(new EventCancellationError('DotnetCustomLinuxInstallExistsError',
                 this.conflictingCustomInstallErrorMessage + existingInstall),

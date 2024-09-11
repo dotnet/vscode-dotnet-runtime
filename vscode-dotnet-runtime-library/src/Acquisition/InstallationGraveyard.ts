@@ -3,9 +3,9 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
-import { IsEquivalentInstallationFile } from './DotnetInstall';
+import { IsEquivalentInstallationFile , DotnetInstall } from './DotnetInstall';
 import { getAssumedInstallInfo } from '../Utils/InstallIdUtilities';
-import { DotnetInstall } from './DotnetInstall';
+
 
 interface LocalDotnetInstall
 {

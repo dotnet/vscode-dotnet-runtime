@@ -7,9 +7,7 @@ import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { GenericDistroSDKProvider } from './GenericDistroSDKProvider';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
-import { DotnetInstallMode } from './DotnetInstallMode';
 import { DistroVersionPair } from './LinuxVersionResolver';
-/* tslint:disable:no-any */
 
 export class RedHatDistroSDKProvider extends GenericDistroSDKProvider
 {
@@ -20,8 +18,10 @@ export class RedHatDistroSDKProvider extends GenericDistroSDKProvider
 
     protected myVersionDetails() : any
     {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         const distroVersions = this.distroJson[this.distroVersion.distro][this.distroVersionsKey];
         const targetVersion = Math.floor(parseFloat(this.distroVersion.version[0])).toFixed(1);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         const versionData = distroVersions.filter((x: { [x: string]: string; }) => x[this.versionKey] === String(targetVersion));
         return versionData;
     }

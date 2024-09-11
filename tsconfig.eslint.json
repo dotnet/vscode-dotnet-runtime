@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+		"module": "commonjs",
+		"target": "es6",
+		"outDir": "dist",
+		"lib": [
+			"es6"
+		],
+		"skipLibCheck": true,
+        "sourceMap": true,
+        "declaration": true,
+		"rootDir": "src",
+		"strict": true   /* enable all strict type-checking options */
+	},
+	"exclude": [
+		"**/node_modules/**",
+		"**/.vscode-test/**",
+		"**/dist/**",
+	]
+}

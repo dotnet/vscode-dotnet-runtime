@@ -3,8 +3,6 @@
  *  The .NET Foundation licenses this file to you under the MIT license.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
-/*
-tslint:disable:no-any */
 
 import { CommandExecutorCommand } from './CommandExecutorCommand';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';

@@ -5,5 +5,4 @@
 
 import { Memento } from 'vscode';
 
-/* tslint:disable:no-empty-interface */
-export interface IExtensionState extends Memento {}
+export type IExtensionState = Memento

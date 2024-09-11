@@ -70,9 +70,6 @@ import {
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
 
-// tslint:disable no-var-requires
-/* tslint:disable:only-arrow-functions */
-
 const packageJson = require('../package.json');
 
 // Extension constants
@@ -517,7 +514,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     const reportIssueRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.reportIssue}`, async () => {
         const [url, issueBody] = formatIssueUrl(undefined, getIssueContext(existingPathConfigWorker)(AcquireErrorConfiguration.DisableErrorPopups, 'reportIssue'));
         await vscode.env.clipboard.writeText(issueBody);
-        open(url);
+        open(url).catch(() => {});
     });
 
     // Helper Functions
@@ -581,12 +578,10 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                     supportPhase: resolvedSupportPhase }
                 ];
             }
-            // tslint:disable no-any
             catch(error : any)
             {
                 return [];
             }
-            // tslint:enable no-any
         }
     }
 

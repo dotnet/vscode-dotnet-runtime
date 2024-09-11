@@ -29,10 +29,7 @@ import {
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { warn } from 'console';
-import { json } from 'stream/consumers';
 import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
-/* tslint:disable:no-any */
-/* tslint:disable:no-unsafe-finally */
 
 const assert : any = chai.assert;
 const standardTimeoutTime = 40000;

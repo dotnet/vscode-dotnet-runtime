@@ -58,9 +58,6 @@ import { CommandExecutorResult } from './CommandExecutorResult';
 import { isRunningUnderWSL, loopWithTimeoutOnCond } from './TypescriptUtilities';
 import { IEventStream } from '../EventStream/EventStream';
 
-/* tslint:disable:no-any */
-/* tslint:disable:no-string-literal */
-
 export class CommandExecutor extends ICommandExecutor
 {
     private pathTroubleshootingOption = 'Troubleshoot';
@@ -173,7 +170,7 @@ ${stderr}`));
         const processAliveOkSentinelFile = path.join(this.sudoProcessCommunicationDir, 'ok.txt');
         const fakeLockFile = path.join(this.sudoProcessCommunicationDir, 'fakeLockFile'); // We need a file to lock the directory in the API besides the dir lock file
 
-        await (this.fileUtil as FileUtilities).writeFileOntoDisk('', fakeLockFile, false, this.context?.eventStream!);
+        await (this.fileUtil as FileUtilities).writeFileOntoDisk('', fakeLockFile, false, this.context?.eventStream);
 
         // Prepare to lock directory
         const directoryLock = 'dir.lock';
@@ -186,9 +183,9 @@ ${stderr}`));
         {
             this.context?.eventStream.post(new DotnetLockAcquiredEvent(`Lock Acquired.`, new Date().toISOString(), directoryLockPath, fakeLockFile));
 
-            await this.fileUtil.wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt']);
+            (this.fileUtil as FileUtilities).wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt']);
 
-            await this.fileUtil.writeFileOntoDisk('', processAliveOkSentinelFile, true, this.context?.eventStream);
+            await (this.fileUtil as FileUtilities).writeFileOntoDisk('', processAliveOkSentinelFile, true, this.context?.eventStream);
             this.context?.eventStream.post(new SudoProcAliveCheckBegin(`Looking for Sudo Process Master, wrote OK file. ${new Date().toISOString()}`));
 
             const waitTime = this.context?.timeoutSeconds ? ((this.context?.timeoutSeconds/3) * 1000) : 180000;
@@ -242,7 +239,7 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallFromCon
         const outputFile = path.join(this.sudoProcessCommunicationDir, 'output.txt');
         const fakeLockFile = path.join(this.sudoProcessCommunicationDir, 'fakeLockFile'); // We need a file to lock the directory in the API besides the dir lock file
 
-        await (this.fileUtil as FileUtilities).writeFileOntoDisk('', fakeLockFile, false, this.context?.eventStream!);
+        await (this.fileUtil as FileUtilities).writeFileOntoDisk('', fakeLockFile, false, this.context?.eventStream);
 
         // Prepare to lock directory
         const directoryLock = 'dir.lock';
@@ -258,7 +255,7 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallFromCon
             this.context?.eventStream.post(new DotnetLockAcquiredEvent(`Lock Acquired.`, new Date().toISOString(), directoryLockPath, fakeLockFile));
             (this.fileUtil as FileUtilities).wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt', '.json']);
 
-            await (this.fileUtil as FileUtilities).writeFileOntoDisk(`${commandToExecuteString}`, commandFile, true, this.context?.eventStream!);
+            await (this.fileUtil as FileUtilities).writeFileOntoDisk(`${commandToExecuteString}`, commandFile, true, this.context?.eventStream);
             this.context?.eventStream.post(new SudoProcCommandExchangeBegin(`Handing command off to master process. ${new Date().toISOString()}`));
             this.context?.eventStream.post(new CommandProcessorExecutionBegin(`The command ${commandToExecuteString} was forwarded to the master process to run.`));
 
@@ -281,7 +278,7 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallFromCon
                 status : (fs.readFileSync(statusFile, 'utf8')).trim()
             } as CommandExecutorResult;
             this.context?.eventStream.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), directoryLockPath, fakeLockFile));
-            await this.fileUtil.wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt']);
+            (this.fileUtil as FileUtilities).wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt']);
 
             return release();
         });
@@ -377,15 +374,23 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
      * @param terminalFailure Whether to throw up an error when executing under sudo or suppress it and return stderr
      * @returns the result(s) of each command. Can throw generically if the command fails.
      */
-    public async execute(command : CommandExecutorCommand, options : any | null = null, terminalFailure = true) : Promise<CommandExecutorResult>
+    public async execute(command : CommandExecutorCommand, options : any = null, terminalFailure = true) : Promise<CommandExecutorResult>
     {
         const fullCommandString = `${command.commandRoot} ${command.commandParts.join(' ')}`;
+        // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if(options && !options?.cwd)
         {
+            // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             options.cwd = path.resolve(__dirname);
         }
+        // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if(options && !options?.shell)
         {
+            // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             options.shell = true;
         }
         if(!options)
@@ -402,15 +407,14 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
             this.context?.eventStream.post(new CommandExecutionEvent(`Executing command ${fullCommandString}
 with options ${JSON.stringify(options)}.`));
 
-            let commandResult;
-
             if(command.runUnderSudo)
             {
+                // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 options.name = this.getSanitizedCallerName();
-                // tslint:disable no-return-await
-                return await new Promise<CommandExecutorResult>(async (resolve, reject) =>
+                return new Promise<CommandExecutorResult>((resolve, reject) =>
                 {
-                    execElevated(fullCommandString, options, (error?: any, execStdout?: any, execStderr?: any) =>
+                    execElevated(fullCommandString, options, (error?: Error, execStdout?: string | Buffer, execStderr?: string | Buffer) =>
                     {
                         if(error && terminalFailure)
                         {
@@ -421,12 +425,12 @@ with options ${JSON.stringify(options)}.`));
                             this.context?.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandString} encountered ERROR: ${JSON.stringify(error)}`));
                         }
 
-                        return resolve({ status: error?.code ? error.code : '0', stderr: execStderr, stdout: execStdout} as CommandExecutorResult);
+                        return resolve({ status: error ? error.message : '0', stderr: execStderr, stdout: execStdout} as CommandExecutorResult);
                     });
                 });
             }
 
-            commandResult = proc.spawnSync(command.commandRoot, command.commandParts, options);
+            const commandResult : proc.SpawnSyncReturns<string> = proc.spawnSync(command.commandRoot, command.commandParts, options);
 
             if(os.platform() === 'win32')
             {
@@ -452,7 +456,7 @@ with options ${JSON.stringify(options)}.`));
                     else
                     {
                         this.context?.eventStream.post(new CommandExecutionNoStatusCodeWarning(`The command ${fullCommandString} with
-result: ${commandResult.toString()} had no status or signal.`));
+result: ${JSON.stringify(commandResult)} had no status or signal.`));
                         return '000751'; // Error code 000751 : The command did not report an exit code upon completion. This is never expected
                     }
                 }
@@ -462,7 +466,7 @@ result: ${commandResult.toString()} had no status or signal.`));
         }
     }
 
-    private logCommandResult(commandResult : any, fullCommandStringForTelemetryOnly : string)
+    private logCommandResult(commandResult : proc.SpawnSyncReturns<string>, fullCommandStringForTelemetryOnly : string)
     {
         this.context?.eventStream.post(new CommandExecutionStatusEvent(`The command ${fullCommandStringForTelemetryOnly} exited
         with status: ${commandResult.status?.toString()}.`));
@@ -481,6 +485,9 @@ ${commandResult.stderr}`));
     {
         // 'permission' comes from an unlocalized string: https://github.com/bpasero/sudo-prompt/blob/21d9308edcf970f0a9ee0580c539b1457b3dc45b/index.js#L678
         // if you reject on the password prompt on windows before SDK window pops up, no code will be set, so we need to check for this string.
+
+        // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if(error?.code === 126 || (error?.message as string)?.includes('permission'))
         {
             const cancelledErr = new CommandExecutionUserRejectedPasswordRequest(new EventCancellationError('CommandExecutionUserRejectedPasswordRequest',
@@ -490,6 +497,8 @@ The user refused the password prompt.`),
             this.context?.eventStream.post(cancelledErr);
             return cancelledErr.error;
         }
+        // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         else if(error?.code === 111777)
         {
             const securityErr = new CommandExecutionUnknownCommandExecutionAttempt(new EventCancellationError('CommandExecutionUnknownCommandExecutionAttempt',
@@ -632,15 +641,19 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
 
     protected runPathCommand(pathCommand: string, troubleshootingUrl : string, displayWorker: IWindowDisplayWorker)
     {
-        try {
+        try
+        {
             proc.execSync(pathCommand);
-        } catch (error) {
-            displayWorker.showWarningMessage(`Unable to add SDK to the PATH: ${error}`,
-                async (response: string | undefined) => {
-                    if (response === this.pathTroubleshootingOption) {
-                        open(`${troubleshootingUrl}#unable-to-add-to-path`);
-                    }
-                }, this.pathTroubleshootingOption);
+        }
+        catch (error : any)
+        {
+            displayWorker.showWarningMessage(`Unable to add SDK to the PATH: ${JSON.stringify(error)}`, (response: string | undefined) =>
+            {
+                if (response === this.pathTroubleshootingOption)
+                {
+                    open(`${troubleshootingUrl}#unable-to-add-to-path`).catch(() => {});
+                }
+            }, this.pathTroubleshootingOption);
         }
     }
 }
