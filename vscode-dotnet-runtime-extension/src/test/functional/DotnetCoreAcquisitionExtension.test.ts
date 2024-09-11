@@ -348,8 +348,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     assert.include(mockDisplayWorker.warningMessage, 'Ignoring existing .NET paths');
   }).timeout(standardTimeoutTime);
 
-  test('Install Local Runtime Command With Path Config Defined', async () => {
-    const context: IDotnetAcquireContext = { version: '0.1', requestingExtensionId: 'alternative.extension' };
+  test('Install Local Runtime Command With Alternative Extension Defined', async () => {
+    const context: IDotnetAcquireContext = { version: '7.0', requestingExtensionId: 'alternative.extension' };
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
     assert.exists(result);
     assert.exists(result!.dotnetPath);

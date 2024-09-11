@@ -11,7 +11,6 @@ import { MockExtensionConfigurationWorker } from '../mocks/MockExtensionConfigur
 import { IDotnetAcquireContext } from '../../IDotnetAcquireContext';
 import { getMockAcquisitionWorkerContext, getMockUtilityContext } from './TestUtility';
 import { CommandExecutorResult } from '../../Utils/CommandExecutorResult';
-import { mock } from 'node:test';
 const assert = chai.assert;
 
 const individualPath = 'foo';
@@ -37,7 +36,6 @@ function getExistingPathResolverWithVersionAndCommandResult(version: string, req
 {
     const context: IDotnetAcquireContext = { version: version, requestingExtensionId: requestingExtensionId };
     const mockWorkerContext = getMockAcquisitionWorkerContext(context);
-    mockWorkerContext.extensionState = new MockExtensionContext();
     if(allowInvalidPaths)
     {
       mockWorkerContext.extensionState.update('dotnetAcquisitionExtension.allowInvalidPaths', true);

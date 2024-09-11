@@ -3,11 +3,16 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-import { CommandExecutor, DotnetInstallMode, IAcquisitionWorkerContext, IDotnetAcquireContext, IUtilityContext } from '..';
+import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
+import { IUtilityContext } from '../Utils/IUtilityContext';
+import { CommandExecutor } from '../Utils/CommandExecutor';
+import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
 import { IExistingPaths } from '../IExtensionContext';
+import { DotnetInstallMode } from './DotnetInstallMode';
 import * as versionUtils from './VersionUtilities';
+import { ICommandExecutor } from '../Utils/ICommandExecutor';
 
 const badExistingPathWarningMessage = `The 'existingDotnetPath' setting was set, but it did not meet the requirements for this extension to run properly.
 This setting has been ignored.
@@ -19,8 +24,9 @@ interface IRuntimeInfo { mode: DotnetInstallMode, version: string, directory : s
 export class ExistingPathResolver
 {
 
-    public constructor(private readonly workerContext : IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext)
+    public constructor(private readonly workerContext : IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext, private executor? : ICommandExecutor)
     {
+        this.executor ??= new CommandExecutor(this.workerContext, this.utilityContext);
     }
 
     public async resolveExistingPath(existingPaths: IExistingPaths | undefined, extensionId: string | undefined, windowDisplayWorker: IWindowDisplayWorker): Promise<IDotnetAcquireResult | undefined>
@@ -124,19 +130,22 @@ export class ExistingPathResolver
         const aspnetCoreString = 'Microsoft.AspNetCore.App';
         const runtimeString = 'Microsoft.NETCore.App';
 
-        const executor = new CommandExecutor(this.workerContext, this.utilityContext);
-        const runtimeInfo = await executor.execute(findRuntimesCommand).then((result) =>
+        const runtimeInfo = await (this.executor!).execute(findRuntimesCommand).then((result) =>
         {
             const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
             const runtimeInfos : IRuntimeInfo[] = runtimes.map((runtime) =>
             {
-                const parts = runtime.split(' ');
+                if(runtime === '') // new line in output that got trimmed
+                {
+                    return null;
+                }
+                const parts = runtime.split(' ', 3); // account for spaces in PATH, no space should appear before then and luckily path is last
                 return {
-                    mode: parts[0] === aspnetCoreString ? 'aspnetcore' : parts[0] === runtimeString ? 'runtime' : 'sdk', // sdk is a placeholder for windows desktop
+                    mode: parts[0] === aspnetCoreString ? 'aspnetcore' : parts[0] === runtimeString ? 'runtime' : 'sdk', // sdk is a placeholder for windows desktop, will never match since this is for runtime search only
                     version: parts[1],
                     directory: parts[2]
                 } as IRuntimeInfo;
-            });
+            }).filter(x => x !== null) as IRuntimeInfo[];
 
             return runtimeInfos;
         });
