@@ -19,7 +19,7 @@ This setting has been ignored.
 If you would like to continue to use the setting anyways, set dotnetAcquisitionExtension.allowInvalidPaths to true in the .NET Install Tool Extension Settings.
 If you would like to disable this warning and use the setting only when it works, set dotnetAcquisitionExtension.disableExistingPathWarning to true in the .NET Install Tool Extension Settings.`;
 
-interface IRuntimeInfo { mode: DotnetInstallMode, version: string, directory : string };
+interface IDotnetListInfo { mode: DotnetInstallMode, version: string, directory : string };
 
 export class ExistingPathResolver
 {
@@ -32,7 +32,7 @@ export class ExistingPathResolver
     public async resolveExistingPath(existingPaths: IExistingPaths | undefined, extensionId: string | undefined, windowDisplayWorker: IWindowDisplayWorker): Promise<IDotnetAcquireResult | undefined>
     {
         const existingPath = this.getExistingPath(existingPaths, extensionId, windowDisplayWorker);
-        if (existingPath && await this.existingPathMatchesAPIRequestCondition(existingPath, this.workerContext.acquisitionContext) || this.allowInvalidPath())
+        if (existingPath && (await this.existingPathMatchesAPIRequestCondition(existingPath, this.workerContext.acquisitionContext) || this.allowInvalidPath()))
         {
             return { dotnetPath: existingPath } as IDotnetAcquireResult;
         }
@@ -93,7 +93,7 @@ export class ExistingPathResolver
         return this.workerContext.extensionState.get<boolean>('dotnetAcquisitionExtension.allowInvalidPaths') ?? false;
     }
 
-    private showWarning() : boolean
+    private disableWarning() : boolean
     {
         return this.workerContext.extensionState.get<boolean>('dotnetAcquisitionExtension.disableExistingPathWarning') ?? false;
     }
@@ -113,7 +113,17 @@ export class ExistingPathResolver
         }
         else
         {
-            if(this.showWarning())
+            const availableSDKs = await this.getSDKs(existingPath);
+            if(availableSDKs.some((sdk) =>
+            {
+                // The SDK includes the Runtime, ASP.NET Core Runtime, and Windows Desktop Runtime. So, we don't need to check the mode.
+                return versionUtils.getMajorMinor(sdk.version, this.workerContext.eventStream, this.workerContext) === requestedMajorMinor;
+            }))
+            {
+                return true;
+            }
+
+            if(!this.disableWarning())
             {
                 this.utilityContext.ui.showWarningMessage(badExistingPathWarningMessage, () => {/* No Callback */}, );
             }
@@ -121,8 +131,34 @@ export class ExistingPathResolver
         }
     }
 
+    private async getSDKs(existingPath : string) : Promise<IDotnetListInfo[]>
+    {
+        const findSDKsCommand = CommandExecutor.makeCommand(existingPath, ['--list-sdks']);
 
-    private async getRuntimes(existingPath : string) : Promise<IRuntimeInfo[]>
+        const sdkInfo = await (this.executor!).execute(findSDKsCommand).then((result) =>
+            {
+                const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
+                const runtimeInfos : IDotnetListInfo[] = runtimes.map((sdk) =>
+                {
+                    if(sdk === '') // new line in output that got trimmed
+                    {
+                        return null;
+                    }
+                    const parts = sdk.split(' ', 2); // account for spaces in PATH, no space should appear before then and luckily path is last
+                    return {
+                        mode: 'sdk',
+                        version: parts[0],
+                        directory: parts[1].slice(1, -1) // need to remove the brackets from the path [path]
+                    } as IDotnetListInfo;
+                }).filter(x => x !== null) as IDotnetListInfo[];
+
+                return runtimeInfos;
+            });
+
+            return sdkInfo;
+    }
+
+    private async getRuntimes(existingPath : string) : Promise<IDotnetListInfo[]>
     {
         const findRuntimesCommand = CommandExecutor.makeCommand(existingPath, ['--list-runtimes']);
 
@@ -133,7 +169,7 @@ export class ExistingPathResolver
         const runtimeInfo = await (this.executor!).execute(findRuntimesCommand).then((result) =>
         {
             const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
-            const runtimeInfos : IRuntimeInfo[] = runtimes.map((runtime) =>
+            const runtimeInfos : IDotnetListInfo[] = runtimes.map((runtime) =>
             {
                 if(runtime === '') // new line in output that got trimmed
                 {
@@ -143,9 +179,9 @@ export class ExistingPathResolver
                 return {
                     mode: parts[0] === aspnetCoreString ? 'aspnetcore' : parts[0] === runtimeString ? 'runtime' : 'sdk', // sdk is a placeholder for windows desktop, will never match since this is for runtime search only
                     version: parts[1],
-                    directory: parts[2]
-                } as IRuntimeInfo;
-            }).filter(x => x !== null) as IRuntimeInfo[];
+                    directory: parts[2] // need to remove the brackets from the path [path]
+                } as IDotnetListInfo;
+            }).filter(x => x !== null) as IDotnetListInfo[];
 
             return runtimeInfos;
         });

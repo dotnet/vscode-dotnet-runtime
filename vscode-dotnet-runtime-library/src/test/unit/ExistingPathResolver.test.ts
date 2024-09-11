@@ -11,6 +11,7 @@ import { MockExtensionConfigurationWorker } from '../mocks/MockExtensionConfigur
 import { IDotnetAcquireContext } from '../../IDotnetAcquireContext';
 import { getMockAcquisitionWorkerContext, getMockUtilityContext } from './TestUtility';
 import { CommandExecutorResult } from '../../Utils/CommandExecutorResult';
+import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 const assert = chai.assert;
 
 const individualPath = 'foo';
@@ -27,22 +28,33 @@ const standardTimeoutTime = 5000;
 const mockUtility = getMockUtilityContext();
 
 const listRuntimesResultWithEightOnly = `
-Microsoft.AspNetCore.App 8.0.7 [C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App]
+Microsoft.NETCore.App 8.0.7 [C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App]
 
 `;
 const executionResultWithEightOnly = { status : '', stdout: listRuntimesResultWithEightOnly, stderr: '' };
 
-function getExistingPathResolverWithVersionAndCommandResult(version: string, requestingExtensionId : string | undefined, commandResult: CommandExecutorResult, allowInvalidPaths = false) : ExistingPathResolver
+const listRuntimesResultWithEightASPOnly = `
+Microsoft.AspNetCore.App 8.0.7 [C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App]
+
+`;
+const executionResultWithEightAspOnly = { status : '', stdout: listRuntimesResultWithEightASPOnly, stderr: '' };
+
+const listSDKsResultWithEightOnly = `
+8.0.101 [C:\Program Files\dotnet\sdk]
+`;
+const executionResultWithListSDKsResultWithEightOnly = { status : '', stdout: listSDKsResultWithEightOnly, stderr: '' };
+
+function getExistingPathResolverWithVersionAndCommandResult(version: string, requestingExtensionId : string | undefined, commandResult: CommandExecutorResult, allowInvalidPaths = false, mode : DotnetInstallMode | udnefined = undefined) : ExistingPathResolver
 {
-    const context: IDotnetAcquireContext = { version: version, requestingExtensionId: requestingExtensionId };
+    const context: IDotnetAcquireContext = { version: version, requestingExtensionId: requestingExtensionId, mode: mode };
     const mockWorkerContext = getMockAcquisitionWorkerContext(context);
     if(allowInvalidPaths)
     {
       mockWorkerContext.extensionState.update('dotnetAcquisitionExtension.allowInvalidPaths', true);
     }
-    const existingPathResolver = new ExistingPathResolver(mockWorkerContext, mockUtility);
     const mockExecutor = new MockCommandExecutor(mockWorkerContext, mockUtility);
     mockExecutor.fakeReturnValue = commandResult;
+    const existingPathResolver = new ExistingPathResolver(mockWorkerContext, mockUtility, mockExecutor);
     return existingPathResolver;
 }
 
@@ -81,5 +93,27 @@ suite('ExistingPathResolver Unit Tests', () => {
     const existingPathResolver = getExistingPathResolverWithVersionAndCommandResult('7.0', undefined, executionResultWithEightOnly);
     const existingPath = await existingPathResolver.resolveExistingPath(extensionConfigWorker.getAllPathConfigurationValues(), undefined, new MockWindowDisplayWorker());
     assert.equal(existingPath, undefined, 'It returns undefined when the setting does not match the API request');
+  }).timeout(standardTimeoutTime);
+
+  test('It will not return the path setting if the path does includes a runtime that matches the api request but not an aspnet runtime', async () =>
+    {
+      const existingPathResolver = getExistingPathResolverWithVersionAndCommandResult('8.0', undefined, executionResultWithEightOnly, false, 'aspnetcore');
+      const existingPath = await existingPathResolver.resolveExistingPath(extensionConfigWorker.getAllPathConfigurationValues(), undefined, new MockWindowDisplayWorker());
+      assert.equal(existingPath, undefined, 'It returns undefined when the setting does not match the API request');
+    }).timeout(standardTimeoutTime);
+
+  test('It will still use the PATH if it has an SDK which satisfies the condition even if there is no runtime that does', async () =>
+  {
+    const context: IDotnetAcquireContext = { version: '7.0' };
+    const mockWorkerContext = getMockAcquisitionWorkerContext(context);
+    const mockExecutor = new MockCommandExecutor(mockWorkerContext, mockUtility);
+    mockExecutor.otherCommandPatternsToMock = ['--list-runtimes', '--list-sdks'];
+    mockExecutor.otherCommandsReturnValues = [executionResultWithEightAspOnly, executionResultWithListSDKsResultWithEightOnly];
+    const existingPathResolver = new ExistingPathResolver(mockWorkerContext, mockUtility, mockExecutor);
+
+    const existingPath = await existingPathResolver.resolveExistingPath(extensionConfigWorker.getAllPathConfigurationValues(), undefined, new MockWindowDisplayWorker());
+    assert(existingPath, 'The existing path is returned when an SDK matches the path but no runtime is installed');
+    assert(existingPath?.dotnetPath, 'The existing path is using a dotnet path object');
+    assert.equal(existingPath?.dotnetPath, individualPath);
   }).timeout(standardTimeoutTime);
 });
