@@ -111,7 +111,6 @@
 		"clean": "rimraf out"
 	},
 	"dependencies": {
-		"@vscode/extension-telemetry": "^0.9.7",
 		"@vscode/vsce": "^2.19.0",
 		"open": "^8.4.2",
 		"vscode-dotnet-runtime": "file:../vscode-dotnet-runtime-extension",

@@ -92,7 +92,6 @@
 		"@types/node": "^20.0.0",
 		"@types/rimraf": "3.0.2",
 		"@types/vscode": "1.74.0",
-		"@vscode/extension-telemetry": "^0.9.7",
 		"@vscode/test-electron": "^2.3.9",
 		"axios": "^1.7.4",
 		"axios-cache-interceptor": "^1.0.1",

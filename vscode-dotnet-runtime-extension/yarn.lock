@@ -54,99 +54,6 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
-"@microsoft/1ds-core-js@^4.3.0", "@microsoft/1ds-core-js@4.3.2":
-  version "4.3.2"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@microsoft/1ds-core-js/-/1ds-core-js-4.3.2.tgz"
-  integrity sha1-4Qsocf796Wja2r8tk1vh+cxiI2M=
-  dependencies:
-    "@microsoft/applicationinsights-core-js" "3.3.2"
-    "@microsoft/applicationinsights-shims" "3.0.1"
-    "@microsoft/dynamicproto-js" "^2.0.3"
-    "@nevware21/ts-async" ">= 0.5.2 < 2.x"
-    "@nevware21/ts-utils" ">= 0.11.3 < 2.x"
-
-"@microsoft/1ds-post-js@^4.3.0":
-  version "4.3.2"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@microsoft/1ds-post-js/-/1ds-post-js-4.3.2.tgz"
-  integrity sha1-MLASqzayr5GuetbwKxEq67pJp94=
-  dependencies:
-    "@microsoft/1ds-core-js" "4.3.2"
-    "@microsoft/applicationinsights-shims" "3.0.1"
-    "@microsoft/dynamicproto-js" "^2.0.3"
-    "@nevware21/ts-async" ">= 0.5.2 < 2.x"
-    "@nevware21/ts-utils" ">= 0.11.3 < 2.x"
-
-"@microsoft/applicationinsights-channel-js@3.3.2":
-  version "3.3.2"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@microsoft/applicationinsights-channel-js/-/applicationinsights-channel-js-3.3.2.tgz"
-  integrity sha1-vXJ6rCH5zMIchVMCjBHrji40PMc=
-  dependencies:
-    "@microsoft/applicationinsights-common" "3.3.2"
-    "@microsoft/applicationinsights-core-js" "3.3.2"
-    "@microsoft/applicationinsights-shims" "3.0.1"
-    "@microsoft/dynamicproto-js" "^2.0.3"
-    "@nevware21/ts-async" ">= 0.5.2 < 2.x"
-    "@nevware21/ts-utils" ">= 0.11.3 < 2.x"
-
-"@microsoft/applicationinsights-common@3.3.2":
-  version "3.3.2"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@microsoft/applicationinsights-common/-/applicationinsights-common-3.3.2.tgz"
-  integrity sha1-Y7i63rWsqwixugBRXeud3wTksBA=
-  dependencies:
-    "@microsoft/applicationinsights-core-js" "3.3.2"
-    "@microsoft/applicationinsights-shims" "3.0.1"
-    "@microsoft/dynamicproto-js" "^2.0.3"
-    "@nevware21/ts-utils" ">= 0.11.3 < 2.x"
-
-"@microsoft/applicationinsights-core-js@3.3.2":
-  version "3.3.2"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@microsoft/applicationinsights-core-js/-/applicationinsights-core-js-3.3.2.tgz"
-  integrity sha1-dK3oOUYWTLAAa47dy7IwHEzgadQ=
-  dependencies:
-    "@microsoft/applicationinsights-shims" "3.0.1"
-    "@microsoft/dynamicproto-js" "^2.0.3"
-    "@nevware21/ts-async" ">= 0.5.2 < 2.x"
-    "@nevware21/ts-utils" ">= 0.11.3 < 2.x"
-
-"@microsoft/applicationinsights-shims@3.0.1":
-  version "3.0.1"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@microsoft/applicationinsights-shims/-/applicationinsights-shims-3.0.1.tgz"
-  integrity sha1-OGW3Os6EBbnEYYzFxXHy/jh28G8=
-  dependencies:
-    "@nevware21/ts-utils" ">= 0.9.4 < 2.x"
-
-"@microsoft/applicationinsights-web-basic@^3.3.0":
-  version "3.3.2"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@microsoft/applicationinsights-web-basic/-/applicationinsights-web-basic-3.3.2.tgz"
-  integrity sha1-7tRwrWxPJXwryO+V2/R/dQirNh0=
-  dependencies:
-    "@microsoft/applicationinsights-channel-js" "3.3.2"
-    "@microsoft/applicationinsights-common" "3.3.2"
-    "@microsoft/applicationinsights-core-js" "3.3.2"
-    "@microsoft/applicationinsights-shims" "3.0.1"
-    "@microsoft/dynamicproto-js" "^2.0.3"
-    "@nevware21/ts-async" ">= 0.5.2 < 2.x"
-    "@nevware21/ts-utils" ">= 0.11.3 < 2.x"
-
-"@microsoft/dynamicproto-js@^2.0.3":
-  version "2.0.3"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@microsoft/dynamicproto-js/-/dynamicproto-js-2.0.3.tgz"
-  integrity sha1-ritAgGHj/wGpcHhCn8doMx4jklY=
-  dependencies:
-    "@nevware21/ts-utils" ">= 0.10.4 < 2.x"
-
-"@nevware21/ts-async@>= 0.5.2 < 2.x":
-  version "0.5.2"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@nevware21/ts-async/-/ts-async-0.5.2.tgz"
-  integrity sha1-pBiD3GzMRma98VbpLzXzAD/T9vA=
-  dependencies:
-    "@nevware21/ts-utils" ">= 0.11.3 < 2.x"
-
-"@nevware21/ts-utils@>= 0.10.4 < 2.x", "@nevware21/ts-utils@>= 0.11.3 < 2.x", "@nevware21/ts-utils@>= 0.9.4 < 2.x":
-  version "0.11.3"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@nevware21/ts-utils/-/ts-utils-0.11.3.tgz"
-  integrity sha1-0PAyrelUBYWjCmRT2WLeYTVm2FY=
-
 "@nodelib/fs.scandir@2.1.5":
   version "2.1.5"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@nodelib/fs.scandir/-/fs.scandir-2.1.5.tgz"
@@ -255,15 +162,6 @@
   version "1.1.2"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@ungap/promise-all-settled/-/promise-all-settled-1.1.2.tgz"
   integrity sha1-qlgEJxHW4ydd033Fl+XTHowpCkQ=
-
-"@vscode/extension-telemetry@^0.9.7":
-  version "0.9.7"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/extension-telemetry/-/extension-telemetry-0.9.7.tgz"
-  integrity sha1-OG4IwfmDUL1aNozPJ5pQGgzW3Wc=
-  dependencies:
-    "@microsoft/1ds-core-js" "^4.3.0"
-    "@microsoft/1ds-post-js" "^4.3.0"
-    "@microsoft/applicationinsights-web-basic" "^3.3.0"
 
 "@vscode/test-electron@^2.3.9":
   version "2.4.1"
@@ -1980,11 +1878,6 @@ ts-loader@^9.5.1:
     semver "^7.3.4"
     source-map "^0.7.4"
 
-"tslib@>= 1.0.0":
-  version "2.7.0"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/tslib/-/tslib-2.7.0.tgz"
-  integrity sha1-2bQMXECrWehzjyl98wh78aJpDAE=
-
 type-detect@^4.0.0, type-detect@^4.0.5:
   version "4.1.0"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/type-detect/-/type-detect-4.1.0.tgz"
@@ -2038,6 +1931,7 @@ util-deprecate@^1.0.1, util-deprecate@~1.0.1:
     "@types/semver" "^7.3.9"
     "@types/shelljs" "^0.8.9"
     "@types/vscode" "1.74.0"
+    "@vscode/extension-telemetry" "^0.9.7"
     "@vscode/sudo-prompt" "^9.3.1"
     axios "^1.7.4"
     axios-cache-interceptor "^1.5.3"
@@ -2055,7 +1949,6 @@ util-deprecate@^1.0.1, util-deprecate@~1.0.1:
     semver "^7.6.2"
     shelljs "^0.8.5"
     typescript "^5.5.4"
-    vscode-extension-telemetry "^0.4.3"
     vscode-test "^1.6.1"
   optionalDependencies:
     fsevents "^2.3.3"
