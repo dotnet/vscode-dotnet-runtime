@@ -45,8 +45,11 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
   const mockDisplayWorker = new MockWindowDisplayWorker();
   let extensionContext: vscode.ExtensionContext;
 
+  const existingPathVersionToFake = '7.0.2~x64'
+  const sevenRenamedPath = path.join(__dirname, path.resolve(`/.dotnet/${existingPathVersionToFake}/dotnet.exe`));
+
   const mockExistingPathsWithGlobalConfig: IExistingPaths = {
-    individualizedExtensionPaths: [{extensionId: 'alternative.extension', path: 'foo'}],
+    individualizedExtensionPaths: [{extensionId: 'alternative.extension', path: sevenRenamedPath}],
     sharedExistingPath: undefined
   }
 
@@ -345,12 +348,21 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     assert.include(mockDisplayWorker.warningMessage, 'Ignoring existing .NET paths');
   }).timeout(standardTimeoutTime);
 
-  test('Install Local Runtime Command With Alternative Extension Defined', async () => {
+  test('Install Local Runtime Command With Path Setting', async () => {
     const context: IDotnetAcquireContext = { version: '7.0', requestingExtensionId: 'alternative.extension' };
+    const resultForAcquiringPathSettingRuntime = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
+    assert.exists(resultForAcquiringPathSettingRuntime!.dotnetPath, 'Basic acquire works')
+    // The runtime setting on the path needs to be a match for a 7.0 runtime but also a different folder name
+    // so that we can tell the setting was used. We cant tell it to install an older 7.0 besides latest,
+    // but we can rename the folder then re-acquire 7.0 for latest and see that it uses the existing 'older' runtime path
+    fs.renameSync(resultForAcquiringPathSettingRuntime.dotnetPath, sevenRenamedPath);
+
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
+
+
     assert.exists(result);
     assert.exists(result!.dotnetPath);
-    assert.equal(result!.dotnetPath, 'foo');
+    assert.equal(result!.dotnetPath, sevenRenamedPath); // this is set for the alternative.extension in the settings
   }).timeout(standardTimeoutTime);
 
   test('List Sdks & Runtimes', async () => {

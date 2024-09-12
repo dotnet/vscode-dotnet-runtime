@@ -148,7 +148,7 @@ export class ExistingPathResolver
                     return {
                         mode: 'sdk',
                         version: parts[0],
-                        directory: parts[1].slice(1, -1) // need to remove the brackets from the path [path]
+                        directory: sdk.split(' ').slice(1).join(' ').slice(1, -1) // need to remove the brackets from the path [path]
                     } as IDotnetListInfo;
                 }).filter(x => x !== null) as IDotnetListInfo[];
 
@@ -179,7 +179,8 @@ export class ExistingPathResolver
                 return {
                     mode: parts[0] === aspnetCoreString ? 'aspnetcore' : parts[0] === runtimeString ? 'runtime' : 'sdk', // sdk is a placeholder for windows desktop, will never match since this is for runtime search only
                     version: parts[1],
-                    directory: parts[2].slice(1, -1) // need to remove the brackets from the path [path]
+                    directory: runtime.split(' ').slice(2).join(' ').slice(1, -1) // account for spaces in PATH, no space should appear before then and luckily path is last.
+                    // the 2nd slice needs to remove the brackets from the path [path]
                 } as IDotnetListInfo;
             }).filter(x => x !== null) as IDotnetListInfo[];
 
