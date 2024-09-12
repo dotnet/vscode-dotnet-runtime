@@ -360,7 +360,7 @@ If you were waiting for the install to succeed, please extend the timeout settin
         const arm64EmulationHostPath = path.resolve(`/usr/local/share/dotnet/x64/dotnet`);
 
         const findTrueArchCommand = CommandExecutor.makeCommand(`uname`, [`-p`]);
-        if((os.arch() === 'x64' || os.arch() === 'ia32') && (await this.commandRunner.execute(findTrueArchCommand, null, false)).stdout.toLowerCase().includes('arm'))
+        if((os.arch() === 'x64' || os.arch() === 'ia32') && (await this.commandRunner.execute(findTrueArchCommand, null, false)).stdout.toLowerCase().includes('arm') && (fs.existsSync(arm64EmulationHostPath) || !macPathShouldExist))
         {
             // VS Code runs on an emulated version of node which will return x64 or use x86 emulation for ARM devices.
             // os.arch() returns the architecture of the node binary, not the system architecture, so it will not report arm on an arm device.
