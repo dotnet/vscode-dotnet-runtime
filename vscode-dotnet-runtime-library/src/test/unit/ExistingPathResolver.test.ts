@@ -85,7 +85,7 @@ suite('ExistingPathResolver Unit Tests', () => {
   {
     const existingPathResolver = getExistingPathResolverWithVersionAndCommandResult('7.0', undefined, executionResultWithEightOnly, true);
     const existingPath = await existingPathResolver.resolveExistingPath(extensionConfigWorker.getAllPathConfigurationValues(), undefined, new MockWindowDisplayWorker());
-    assert.equal(existingPath?.dotnetPath, individualPath, 'The setting is used even if it does not match the API request if invalid paths option is set');
+    assert.equal(existingPath?.dotnetPath, sharedPath, 'The setting is used even if it does not match the API request if invalid paths option is set');
   }).timeout(standardTimeoutTime);
 
   test('It will not return the path setting if the path does not include a runtime that matches the api request', async () =>
@@ -104,7 +104,7 @@ suite('ExistingPathResolver Unit Tests', () => {
 
   test('It will still use the PATH if it has an SDK which satisfies the condition even if there is no runtime that does', async () =>
   {
-    const context: IDotnetAcquireContext = { version: '7.0' };
+    const context: IDotnetAcquireContext = { version: '7.0', mode : 'runtime' };
     const mockWorkerContext = getMockAcquisitionWorkerContext(context);
     const mockExecutor = new MockCommandExecutor(mockWorkerContext, mockUtility);
     mockExecutor.otherCommandPatternsToMock = ['--list-runtimes', '--list-sdks'];
@@ -114,6 +114,6 @@ suite('ExistingPathResolver Unit Tests', () => {
     const existingPath = await existingPathResolver.resolveExistingPath(extensionConfigWorker.getAllPathConfigurationValues(), undefined, new MockWindowDisplayWorker());
     assert(existingPath, 'The existing path is returned when an SDK matches the path but no runtime is installed');
     assert(existingPath?.dotnetPath, 'The existing path is using a dotnet path object');
-    assert.equal(existingPath?.dotnetPath, individualPath);
+    assert.equal(existingPath?.dotnetPath, sharedPath);
   }).timeout(standardTimeoutTime);
 });

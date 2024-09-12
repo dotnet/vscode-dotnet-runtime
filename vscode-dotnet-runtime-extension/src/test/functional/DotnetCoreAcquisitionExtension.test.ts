@@ -351,11 +351,13 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
   test('Install Local Runtime Command With Path Setting', async () => {
     const context: IDotnetAcquireContext = { version: '7.0', requestingExtensionId: 'alternative.extension' };
     const resultForAcquiringPathSettingRuntime = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
-    assert.exists(resultForAcquiringPathSettingRuntime!.dotnetPath, 'Basic acquire works')
+    assert.exists(resultForAcquiringPathSettingRuntime!.dotnetPath, 'Basic acquire works');
+
     // The runtime setting on the path needs to be a match for a 7.0 runtime but also a different folder name
     // so that we can tell the setting was used. We cant tell it to install an older 7.0 besides latest,
     // but we can rename the folder then re-acquire 7.0 for latest and see that it uses the existing 'older' runtime path
-    fs.renameSync(resultForAcquiringPathSettingRuntime.dotnetPath, sevenRenamedPath);
+    fs.cpSync(resultForAcquiringPathSettingRuntime.dotnetPath, sevenRenamedPath);
+    fs.rmSync(resultForAcquiringPathSettingRuntime.dotnetPath);
 
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
 

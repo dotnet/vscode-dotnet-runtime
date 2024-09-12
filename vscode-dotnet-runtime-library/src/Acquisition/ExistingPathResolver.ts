@@ -32,7 +32,7 @@ export class ExistingPathResolver
     public async resolveExistingPath(existingPaths: IExistingPaths | undefined, extensionId: string | undefined, windowDisplayWorker: IWindowDisplayWorker): Promise<IDotnetAcquireResult | undefined>
     {
         const existingPath = this.getExistingPath(existingPaths, extensionId, windowDisplayWorker);
-        if (existingPath && (await this.existingPathMatchesAPIRequestCondition(existingPath, this.workerContext.acquisitionContext) || this.allowInvalidPath()))
+        if (existingPath && (await this.providedPathMeetsAPIRequirement(existingPath, this.workerContext.acquisitionContext) || this.allowInvalidPath()))
         {
             return { dotnetPath: existingPath } as IDotnetAcquireResult;
         }
@@ -98,7 +98,7 @@ export class ExistingPathResolver
         return this.workerContext.extensionState.get<boolean>('dotnetAcquisitionExtension.disableExistingPathWarning') ?? false;
     }
 
-    private async existingPathMatchesAPIRequestCondition(existingPath : string, apiRequest : IDotnetAcquireContext) : Promise<boolean>
+    private async providedPathMeetsAPIRequirement(existingPath : string, apiRequest : IDotnetAcquireContext) : Promise<boolean>
     {
 
         const availableRuntimes = await this.getRuntimes(existingPath);
