@@ -107,6 +107,7 @@ suite('ExistingPathResolver Unit Tests', () => {
     const context: IDotnetAcquireContext = { version: '7.0', mode : 'runtime' };
     const mockWorkerContext = getMockAcquisitionWorkerContext(context);
     const mockExecutor = new MockCommandExecutor(mockWorkerContext, mockUtility);
+    mockExecutor.fakeReturnValue = executionResultWithEightAspOnly;
     mockExecutor.otherCommandPatternsToMock = ['--list-runtimes', '--list-sdks'];
     mockExecutor.otherCommandsReturnValues = [executionResultWithEightAspOnly, executionResultWithListSDKsResultWithEightOnly];
     const existingPathResolver = new ExistingPathResolver(mockWorkerContext, mockUtility, mockExecutor);
