@@ -46,7 +46,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
   let extensionContext: vscode.ExtensionContext;
 
   const existingPathVersionToFake = '5.0.2~x64'
-  const pathWithIncorrectVersionForTest = path.join(__dirname, `/.dotnet/${existingPathVersionToFake}/dotnet.exe`);
+  const pathWithIncorrectVersionForTest = path.join(__dirname, `/.dotnet/${existingPathVersionToFake}/dotnet`);
 
   const mockExistingPathsWithGlobalConfig: IExistingPaths = {
     individualizedExtensionPaths: [{extensionId: 'alternative.extension', path: pathWithIncorrectVersionForTest}],
@@ -359,7 +359,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     // but we can rename the folder then re-acquire for latest and see that it uses the existing 'older' runtime path
     assert.notEqual(path.dirname(resultForAcquiringPathSettingRuntime.dotnetPath), path.dirname(pathWithIncorrectVersionForTest));
     fs.cpSync(path.dirname(resultForAcquiringPathSettingRuntime.dotnetPath), path.dirname(pathWithIncorrectVersionForTest), {recursive: true});
-    assert.isTrue(fs.existsSync(pathWithIncorrectVersionForTest), 'The copy of the real dotnet to the new wrong-versioned path succeeded');
+    assert.isTrue(fs.existsSync(path.dirname(pathWithIncorrectVersionForTest)), 'The copy of the real dotnet to the new wrong-versioned path succeeded');
 
     fs.rmSync(resultForAcquiringPathSettingRuntime.dotnetPath);
     assert.isTrue(!fs.existsSync(resultForAcquiringPathSettingRuntime.dotnetPath), 'The deletion of the real path succeeded');
