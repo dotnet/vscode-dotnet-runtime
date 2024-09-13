@@ -46,7 +46,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
   let extensionContext: vscode.ExtensionContext;
 
   const existingPathVersionToFake = '7.0.2~x64'
-  const sevenRenamedPath = path.join(__dirname, path.resolve(`/.dotnet/${existingPathVersionToFake}/dotnet.exe`));
+  const sevenRenamedPath = path.join(__dirname, `/.dotnet/${existingPathVersionToFake}/dotnet.exe`);
 
   const mockExistingPathsWithGlobalConfig: IExistingPaths = {
     individualizedExtensionPaths: [{extensionId: 'alternative.extension', path: sevenRenamedPath}],
@@ -126,7 +126,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
 
   test('Install Local ASP.NET Runtime Command', async () =>
   {
-    await installRuntime('2.2', 'aspnetcore');
+    await installRuntime('7.0', 'aspnetcore');
   }).timeout(standardTimeoutTime);
 
   async function installUninstallOne(dotnetVersion : string, versionToKeep : string, installMode : DotnetInstallMode, type : DotnetInstallType)
@@ -177,11 +177,11 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
   }
 
   test('Uninstall One Local Runtime Command', async () => {
-    await installUninstallOne('2.2', '8.0', 'runtime', 'local');
+    await installUninstallOne('2.2', '7.0', 'runtime', 'local');
   }).timeout(standardTimeoutTime);
 
   test('Uninstall One Local ASP.NET Runtime Command', async () => {
-    await installUninstallOne('2.2', '8.0', 'aspnetcore', 'local');
+    await installUninstallOne('2.2', '6.0', 'aspnetcore', 'local');
   }).timeout(standardTimeoutTime);
 
   test('Uninstall All Local Runtime Command', async () => {
@@ -356,8 +356,11 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     // The runtime setting on the path needs to be a match for a 7.0 runtime but also a different folder name
     // so that we can tell the setting was used. We cant tell it to install an older 7.0 besides latest,
     // but we can rename the folder then re-acquire 7.0 for latest and see that it uses the existing 'older' runtime path
-    fs.cpSync(resultForAcquiringPathSettingRuntime.dotnetPath, sevenRenamedPath);
+    fs.cpSync(path.dirname(resultForAcquiringPathSettingRuntime.dotnetPath), path.dirname(sevenRenamedPath), {recursive: true});
+    assert.isTrue(fs.existsSync(sevenRenamedPath), 'The copy of the real dotnet to the new wrong-versioned path succeeded');
+
     fs.rmSync(resultForAcquiringPathSettingRuntime.dotnetPath);
+    assert.isTrue(!fs.existsSync(sevenRenamedPath), 'The deletion of the real path succeeded');
 
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
 

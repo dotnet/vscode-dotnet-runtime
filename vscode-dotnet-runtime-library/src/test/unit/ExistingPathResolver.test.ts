@@ -104,7 +104,7 @@ suite('ExistingPathResolver Unit Tests', () => {
 
   test('It will still use the PATH if it has an SDK which satisfies the condition even if there is no runtime that does', async () =>
   {
-    const context: IDotnetAcquireContext = { version: '7.0', mode : 'runtime' };
+    const context: IDotnetAcquireContext = { version: '8.0', mode : 'runtime' };
     const mockWorkerContext = getMockAcquisitionWorkerContext(context);
     const mockExecutor = new MockCommandExecutor(mockWorkerContext, mockUtility);
     mockExecutor.fakeReturnValue = executionResultWithEightAspOnly;
