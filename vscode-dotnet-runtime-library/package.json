@@ -36,7 +36,9 @@
 		"@types/semver": "^7.3.9",
 		"@types/shelljs": "^0.8.9",
 		"@types/vscode": "1.74.0",
+		"@vscode/extension-telemetry": "^0.9.7",
 		"@vscode/sudo-prompt": "^9.3.1",
+		"@vscode/test-electron": "^2.4.1",
 		"axios": "^1.7.4",
 		"axios-cache-interceptor": "^1.5.3",
 		"axios-retry": "^3.4.0",
@@ -52,9 +54,7 @@
 		"run-script-os": "^1.1.6",
 		"semver": "^7.6.2",
 		"shelljs": "^0.8.5",
-		"typescript": "^5.5.4",
-		"vscode-extension-telemetry": "^0.4.3",
-		"vscode-test": "^1.6.1"
+		"typescript": "^5.5.4"
 	},
 	"optionalDependencies": {
 		"fsevents": "^2.3.3"
