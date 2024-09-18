@@ -9,9 +9,10 @@ import { ExistingPathResolver } from '../../Acquisition/ExistingPathResolver';
 import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
 import { MockExtensionConfigurationWorker } from '../mocks/MockExtensionConfigurationWorker';
 import { IDotnetAcquireContext } from '../../IDotnetAcquireContext';
-import { getMockAcquisitionWorkerContext, getMockUtilityContext } from './TestUtility';
+import { getMockAcquisitionContext, getMockAcquisitionWorkerContext, getMockUtilityContext } from './TestUtility';
 import { CommandExecutorResult } from '../../Utils/CommandExecutorResult';
 import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
+import { mock } from 'node:test';
 const assert = chai.assert;
 
 const individualPath = 'foo';
@@ -47,11 +48,14 @@ const executionResultWithListSDKsResultWithEightOnly = { status : '', stdout: li
 function getExistingPathResolverWithVersionAndCommandResult(version: string, requestingExtensionId : string | undefined, commandResult: CommandExecutorResult, allowInvalidPaths = false, mode : DotnetInstallMode | undefined = undefined) : ExistingPathResolver
 {
     const context: IDotnetAcquireContext = { version: version, requestingExtensionId: requestingExtensionId, mode: mode ?? 'runtime'};
-    const mockWorkerContext = getMockAcquisitionWorkerContext(context);
+    const newConfig = new MockExtensionContext();
     if(allowInvalidPaths)
     {
-      mockWorkerContext.extensionState.update('dotnetAcquisitionExtension.allowInvalidPaths', true);
+        newConfig.update('dotnetAcquisitionExtension.allowInvalidPaths', true);
     }
+    const mockWorkerContext = getMockAcquisitionContext(mode ?? 'runtime', version, undefined, undefined, newConfig);
+    mockWorkerContext.acquisitionContext = context;
+
     const mockExecutor = new MockCommandExecutor(mockWorkerContext, mockUtility);
     mockExecutor.fakeReturnValue = commandResult;
     const existingPathResolver = new ExistingPathResolver(mockWorkerContext, mockUtility, mockExecutor);
@@ -81,7 +85,7 @@ suite('ExistingPathResolver Unit Tests', () => {
       assert.equal(existingPath?.dotnetPath, individualPath);
   }).timeout(standardTimeoutTime);
 
-  test('It will use the legacy mode and return the path even if it does not meet an api request if invalidPathsAllowed is set', async () =>
+  test('It will use the legacy mode and return the path even if it does not meet an api request if allowInvalidPaths is set', async () =>
   {
     const existingPathResolver = getExistingPathResolverWithVersionAndCommandResult('7.0', undefined, executionResultWithEightOnly, true);
     const existingPath = await existingPathResolver.resolveExistingPath(extensionConfigWorker.getAllPathConfigurationValues(), undefined, new MockWindowDisplayWorker());

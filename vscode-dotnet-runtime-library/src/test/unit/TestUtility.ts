@@ -32,7 +32,8 @@ export function getMockAcquisitionContext(mode: DotnetInstallMode, version : str
         timeoutSeconds: timeoutTime,
         proxyUrl: undefined,
         installDirectoryProvider: directory ? directory : directoryProviderFactory(mode, ''),
-        isExtensionTelemetryInitiallyEnabled: true
+        isExtensionTelemetryInitiallyEnabled: true,
+        allowInvalidPathSetting: customContext?.get('dotnetAcquisitionExtension.allowInvalidPaths') ?? false
     };
     return workerContext;
 }
@@ -51,7 +52,8 @@ export function getMockAcquisitionWorkerContext(acquireContext : IDotnetAcquireC
         timeoutSeconds: standardTimeoutTime,
         proxyUrl: undefined,
         installDirectoryProvider: directoryProviderFactory(acquireContext.mode!, ''),
-        isExtensionTelemetryInitiallyEnabled: true
+        isExtensionTelemetryInitiallyEnabled: true,
+        allowInvalidPathSetting: false
     };
     return workerContext;
 }

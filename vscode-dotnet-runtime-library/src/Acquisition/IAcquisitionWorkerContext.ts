@@ -19,4 +19,5 @@ export interface IAcquisitionWorkerContext
     acquisitionContext : IDotnetAcquireContext;
     proxyUrl? : string | undefined;
     isExtensionTelemetryInitiallyEnabled : boolean;
+    allowInvalidPathSetting : boolean;
 }
