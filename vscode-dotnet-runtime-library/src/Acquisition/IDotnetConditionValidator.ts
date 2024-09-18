@@ -3,11 +3,9 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-import { DotnetVersionSpecRequirement } from './DotnetVersionSpecRequirement';
-import { IDotnetAcquireContext } from './IDotnetAcquireContext';
+import { IDotnetFindPathContext } from '../IDotnetFindPathContext';
 
-export interface IDotnetFindPathContext
+export interface IDotnetConditionValidator
 {
-    acquireContext: IDotnetAcquireContext;
-    versionSpecRequirement: DotnetVersionSpecRequirement;
+    versionMeetsRequirement(dotnetExecutablePath: string, requirement : IDotnetFindPathContext): Promise<boolean>;
 }

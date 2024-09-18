@@ -10,15 +10,14 @@ import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerCont
 import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
 import { IExistingPaths } from '../IExtensionContext';
-import { DotnetInstallMode } from './DotnetInstallMode';
-import * as versionUtils from './VersionUtilities';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
+import { DotnetConditionValidator } from './DotnetConditionValidator';
+import { IDotnetFindPathContext } from '../IDotnetFindPathContext';
 
 const badExistingPathWarningMessage = `The 'existingDotnetPath' setting was set, but it did not meet the requirements for this extension to run properly.
 This setting has been ignored.
 If you would like to continue to use the setting anyways, set dotnetAcquisitionExtension.allowInvalidPaths to true in the .NET Install Tool Extension Settings.`;
 
-interface IDotnetListInfo { mode: DotnetInstallMode, version: string, directory : string };
 
 export class ExistingPathResolver
 {
@@ -94,93 +93,14 @@ export class ExistingPathResolver
 
     private async providedPathMeetsAPIRequirement(workerContext : IAcquisitionWorkerContext, existingPath : string, apiRequest : IDotnetAcquireContext) : Promise<boolean>
     {
+        const validator = new DotnetConditionValidator(this.workerContext, this.utilityContext, this.executor);
+        const validated = await validator.versionMeetsRequirement(existingPath, {acquireContext : apiRequest, versionSpecRequirement : 'equal'} as IDotnetFindPathContext);
 
-        const availableRuntimes = await this.getRuntimes(existingPath);
-        const requestedMajorMinor = versionUtils.getMajorMinor(apiRequest.version, this.workerContext.eventStream, this.workerContext);
-
-        if(availableRuntimes.some((runtime) =>
+        if(!validated && !this.allowInvalidPath(workerContext))
         {
-            return runtime.mode === apiRequest.mode && versionUtils.getMajorMinor(runtime.version, this.workerContext.eventStream, this.workerContext) === requestedMajorMinor;
-        }))
-        {
-            return true;
+            this.utilityContext.ui.showWarningMessage(`${badExistingPathWarningMessage}\nExtension: ${workerContext.acquisitionContext.requestingExtensionId ?? 'Unspecified'}`, () => {/* No Callback */}, );
         }
-        else
-        {
-            const availableSDKs = await this.getSDKs(existingPath);
-            if(availableSDKs.some((sdk) =>
-            {
-                // The SDK includes the Runtime, ASP.NET Core Runtime, and Windows Desktop Runtime. So, we don't need to check the mode.
-                return versionUtils.getMajorMinor(sdk.version, this.workerContext.eventStream, this.workerContext) === requestedMajorMinor;
-            }))
-            {
-                return true;
-            }
 
-            if(!this.allowInvalidPath(workerContext))
-            {
-                this.utilityContext.ui.showWarningMessage(`${badExistingPathWarningMessage}\nExtension: ${workerContext.acquisitionContext.requestingExtensionId ?? 'Unspecified'}`, () => {/* No Callback */}, );
-            }
-            return false;
-        }
-    }
-
-    private async getSDKs(existingPath : string) : Promise<IDotnetListInfo[]>
-    {
-        const findSDKsCommand = CommandExecutor.makeCommand(existingPath, ['--list-sdks']);
-
-        const sdkInfo = await (this.executor!).execute(findSDKsCommand).then((result) =>
-            {
-                const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
-                const runtimeInfos : IDotnetListInfo[] = runtimes.map((sdk) =>
-                {
-                    if(sdk === '') // new line in output that got trimmed
-                    {
-                        return null;
-                    }
-                    const parts = sdk.split(' ', 2); // account for spaces in PATH, no space should appear before then and luckily path is last
-                    return {
-                        mode: 'sdk',
-                        version: parts[0],
-                        directory: sdk.split(' ').slice(1).join(' ').slice(1, -1) // need to remove the brackets from the path [path]
-                    } as IDotnetListInfo;
-                }).filter(x => x !== null) as IDotnetListInfo[];
-
-                return runtimeInfos;
-            });
-
-            return sdkInfo;
-    }
-
-    private async getRuntimes(existingPath : string) : Promise<IDotnetListInfo[]>
-    {
-        const findRuntimesCommand = CommandExecutor.makeCommand(existingPath, ['--list-runtimes']);
-
-        const windowsDesktopString = 'Microsoft.WindowsDesktop.App';
-        const aspnetCoreString = 'Microsoft.AspNetCore.App';
-        const runtimeString = 'Microsoft.NETCore.App';
-
-        const runtimeInfo = await (this.executor!).execute(findRuntimesCommand).then((result) =>
-        {
-            const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
-            const runtimeInfos : IDotnetListInfo[] = runtimes.map((runtime) =>
-            {
-                if(runtime === '') // new line in output that got trimmed
-                {
-                    return null;
-                }
-                const parts = runtime.split(' ', 3); // account for spaces in PATH, no space should appear before then and luckily path is last
-                return {
-                    mode: parts[0] === aspnetCoreString ? 'aspnetcore' : parts[0] === runtimeString ? 'runtime' : 'sdk', // sdk is a placeholder for windows desktop, will never match since this is for runtime search only
-                    version: parts[1],
-                    directory: runtime.split(' ').slice(2).join(' ').slice(1, -1) // account for spaces in PATH, no space should appear before then and luckily path is last.
-                    // the 2nd slice needs to remove the brackets from the path [path]
-                } as IDotnetListInfo;
-            }).filter(x => x !== null) as IDotnetListInfo[];
-
-            return runtimeInfos;
-        });
-
-        return runtimeInfo;
+        return validated;
     }
 }

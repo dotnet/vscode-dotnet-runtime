@@ -66,6 +66,7 @@ import {
     getMajorMinor,
     DotnetOfflineWarning,
     IUtilityContext,
+    IDotnetFindPathContext,
 } from 'vscode-dotnet-runtime-library';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';

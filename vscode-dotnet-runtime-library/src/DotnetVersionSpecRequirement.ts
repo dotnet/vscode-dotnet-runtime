@@ -3,11 +3,5 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-import { DotnetVersionSpecRequirement } from './DotnetVersionSpecRequirement';
-import { IDotnetAcquireContext } from './IDotnetAcquireContext';
+export type DotnetVersionSpecRequirement = 'equal' | 'greater_than_or_equal' | 'less_than_or_equal';
 
-export interface IDotnetFindPathContext
-{
-    acquireContext: IDotnetAcquireContext;
-    versionSpecRequirement: DotnetVersionSpecRequirement;
-}
