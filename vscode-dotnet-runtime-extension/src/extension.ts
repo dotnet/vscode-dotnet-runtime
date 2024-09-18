@@ -65,6 +65,7 @@ import {
     getMajor,
     getMajorMinor,
     DotnetOfflineWarning,
+    IUtilityContext,
 } from 'vscode-dotnet-runtime-library';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
@@ -78,6 +79,7 @@ namespace configKeys {
     export const existingPath = 'existingDotnetPath';
     export const existingSharedPath = 'sharedExistingDotnetPath'
     export const proxyUrl = 'proxyUrl';
+    export const allowInvalidPaths = 'allowInvalidPaths';
 }
 
 namespace commandKeys {
@@ -122,6 +124,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     }
     const resolvedTimeoutSeconds = timeoutValue === undefined ? defaultTimeoutValue : timeoutValue;
     const proxyLink = extensionConfiguration.get<string>(configKeys.proxyUrl);
+    const allowInvalidPathSetting = extensionConfiguration.get<boolean>(configKeys.allowInvalidPaths);
     const isExtensionTelemetryEnabled = enableExtensionTelemetry(extensionConfiguration, configKeys.enableTelemetry);
     const displayWorker = extensionContext ? extensionContext.displayWorker : new WindowDisplayWorker();
 
@@ -176,7 +179,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                     `Cannot acquire .NET version "${commandContext.version}". Please provide a valid version.`);
             }
 
-            const existingPath = await resolveExistingPathIfExists(existingPathConfigWorker, commandContext);
+            const existingPath = await resolveExistingPathIfExists(existingPathConfigWorker, commandContext, workerContext, utilContext);
             if(existingPath)
             {
                 return existingPath;
@@ -236,12 +239,6 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             }
 
             globalEventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId ?? 'notProvided', commandContext.mode!, commandContext.installType ?? 'global'));
-
-            const existingPath = await resolveExistingPathIfExists(existingPathConfigWorker, commandContext);
-            if(existingPath)
-            {
-                return Promise.resolve(existingPath);
-            }
 
             const existingOfflinePath = await getExistingInstallIfOffline(worker, workerContext);
             if(existingOfflinePath)
@@ -517,11 +514,12 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     });
 
     // Helper Functions
-    function resolveExistingPathIfExists(configResolver : ExtensionConfigurationWorker, commandContext : IDotnetAcquireContext) : Promise<IDotnetAcquireResult | null>
+    async function resolveExistingPathIfExists(configResolver : ExtensionConfigurationWorker, commandContext : IDotnetAcquireContext,
+        workerContext : IAcquisitionWorkerContext, utilityContext : IUtilityContext) : Promise<IDotnetAcquireResult | null>
     {
-        const existingPathResolver = new ExistingPathResolver();
+        const existingPathResolver = new ExistingPathResolver(workerContext, utilityContext);
 
-        const existingPath = existingPathResolver.resolveExistingPath(configResolver.getAllPathConfigurationValues(), commandContext.requestingExtensionId, displayWorker);
+        const existingPath = await existingPathResolver.resolveExistingPath(configResolver.getAllPathConfigurationValues(), commandContext.requestingExtensionId, displayWorker);
         if (existingPath) {
             globalEventStream.post(new DotnetExistingPathResolutionCompleted(existingPath.dotnetPath));
             return new Promise((resolve) => {
@@ -612,7 +610,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             acquisitionContext: acquiringContext,
             installDirectoryProvider: directoryProviderFactory(mode, vsCodeContext.globalStoragePath),
             proxyUrl: proxyLink,
-            isExtensionTelemetryInitiallyEnabled: isExtensionTelemetryEnabled
+            isExtensionTelemetryInitiallyEnabled: isExtensionTelemetryEnabled,
+            allowInvalidPathSetting: allowInvalidPathSetting ?? false
         }
     }
 

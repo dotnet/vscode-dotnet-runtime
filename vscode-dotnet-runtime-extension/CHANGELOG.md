@@ -9,7 +9,12 @@ and this project adheres to [Semantic Versioning].
 
 ## [2.1.6] - 2024-09-05
 
-Minor bug fixes.
+Fixes an issue with SDK installs on Mac M1 or Arm Mac where the non-emulation path was used.
+Fixes an issue where spaces in the username will cause failure for SDK resolution.
+Fixes an issue with telemetry.
+
+Updates the dotnet.existingDotnetPath and dotnet.sharedExistingDotnetPath to only take affect if it would work.
+Please see the new warning message and information about this setting.
 
 ## [2.1.5] - 2024-09-05
 

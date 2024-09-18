@@ -39,6 +39,11 @@ The rest of the extension functionality is still limited to other extensions tha
 
 If you want to use your own installation(s) of .NET, you can either use one for all extensions in VS Code, or use different installations for specific extensions.
 
+This is the path to an existing .NET host executable that will select a runtime based on what's installed beside it for an extension's code to run under.
+⚠️ This is NOT the .NET Runtime that your project will use to run. Extensions such as `C#`, `C# DevKit`, and more have components written in .NET. This .NET PATH is the `dotnet.exe` or `dotnet` that these extensions will use to run their code, not your code.
+
+Using a path value in which .NET does not meet the requirements of a specific extension will cause that extension to fail. The version of .NET that is used for your project is determined by the .NET host, or dotnet.exe. The .NET host picks a runtime based on your project. To use a specific version of .NET for your project, install the .NET SDK using the `.NET Install Tool - Install SDK System-Wide` command, install .NET manually using [our instructions](https://dotnet.microsoft.com/download), or edit your PATH environment variable to point to a `dotnet.exe` that has an `/sdk/` folder with only one SDK.
+
 If you want to use the installation for all extensions, set the `dotnetAcquisitionExtension.sharedExistingDotnetPath`.
 
 Example:

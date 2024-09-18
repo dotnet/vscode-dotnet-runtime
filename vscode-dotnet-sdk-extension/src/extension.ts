@@ -49,6 +49,7 @@ namespace configKeys {
     export const installTimeoutValue = 'installTimeoutValue';
     export const enableTelemetry = 'enableTelemetry';
     export const proxyUrl = 'proxyUrl';
+    export const allowInvalidPaths = 'allowInvalidPaths';
 }
 namespace commandKeys {
     export const acquire = 'acquire';
@@ -79,6 +80,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     const vsCodeExtensionContext = new VSCodeExtensionContext(context);
 
     const isExtensionTelemetryEnabled = enableExtensionTelemetry(extensionConfiguration, configKeys.enableTelemetry);
+    const allowInvalidPathSetting = extensionConfiguration.get<boolean>(configKeys.allowInvalidPaths);
     const eventStreamContext = {
         displayChannelName,
         logPath: context.logPath,
@@ -225,6 +227,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
                 mode: 'sdk'
             },
             isExtensionTelemetryInitiallyEnabled : isExtensionTelemetryEnabled,
+            allowInvalidPathSetting: allowInvalidPathSetting ?? false
         };
 
         return acquisitionContext;
