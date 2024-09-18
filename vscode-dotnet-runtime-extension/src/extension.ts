@@ -86,6 +86,7 @@ namespace commandKeys {
     export const acquireGlobalSDK = 'acquireGlobalSDK';
     export const acquireStatus = 'acquireStatus';
     export const uninstall = 'uninstall';
+    export const findPath = 'findPath';
     export const uninstallPublic = 'uninstallPublic'
     export const uninstallAll = 'uninstallAll';
     export const listVersions = 'listVersions';
@@ -436,6 +437,11 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         return uninstall(commandContext);
     });
 
+    const dotnetFindPathRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.findPath}`, async (commandContext : IDotnetFindPathContext) =>
+    {
+
+    });
+
     async function uninstall(commandContext: IDotnetAcquireContext | undefined, force = false) : Promise<string>
     {
         let result = '1';
@@ -666,6 +672,7 @@ We will try to install .NET, but are unlikely to be able to connect to the serve
         dotnetAcquireStatusRegistration,
         dotnetAcquireGlobalSDKRegistration,
         acquireGlobalSDKPublicRegistration,
+        dotnetFindPathRegistration,
         dotnetListVersionsRegistration,
         dotnetRecommendedVersionRegistration,
         dotnetUninstallRegistration,
