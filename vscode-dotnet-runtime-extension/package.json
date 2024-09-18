@@ -52,7 +52,7 @@
 				"category": ".NET Install Tool",
 				"enablement": "!dotnetAcquisitionExtension.isGlobalSDKUnsupported"
 			},
-            {
+			{
 				"command": "dotnet.uninstallPublic",
 				"title": "Uninstall .NET.",
 				"category": ".NET Install Tool"

@@ -2,13 +2,12 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
-import TelemetryReporter from 'vscode-extension-telemetry';
+import TelemetryReporter from '@vscode/extension-telemetry';
 import * as vscode from 'vscode';
 
 import { IPackageJson } from './EventStreamRegistration';
 import { IEvent } from './IEvent';
 import { IEventStreamObserver } from './IEventStreamObserver';
-import { IEventStream } from './EventStream';
 import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { TelemetryUtilities } from './TelemetryUtilities';
@@ -34,7 +33,7 @@ export class TelemetryObserver implements IEventStreamObserver {
             const extensionVersion = packageJson.version;
             const appInsightsKey = packageJson.appInsightsKey;
             const extensionId = packageJson.name;
-            this.telemetryReporter = new TelemetryReporter(extensionId, extensionVersion, appInsightsKey);
+            this.telemetryReporter = new TelemetryReporter(appInsightsKey);
         }
         else
         {
