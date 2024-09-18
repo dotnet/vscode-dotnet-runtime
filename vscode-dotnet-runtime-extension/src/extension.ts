@@ -238,12 +238,6 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             globalEventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId ?? 'notProvided', commandContext.mode!, commandContext.installType ?? 'global'));
 
-            const existingPath = await resolveExistingPathIfExists(existingPathConfigWorker, commandContext, workerContext, utilContext);
-            if(existingPath)
-            {
-                return Promise.resolve(existingPath);
-            }
-
             const existingOfflinePath = await getExistingInstallIfOffline(worker, workerContext);
             if(existingOfflinePath)
             {
