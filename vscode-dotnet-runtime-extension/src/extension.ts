@@ -79,6 +79,7 @@ namespace configKeys {
     export const existingPath = 'existingDotnetPath';
     export const existingSharedPath = 'sharedExistingDotnetPath'
     export const proxyUrl = 'proxyUrl';
+    export const allowInvalidPaths = 'allowInvalidPaths';
 }
 
 namespace commandKeys {
@@ -123,6 +124,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     }
     const resolvedTimeoutSeconds = timeoutValue === undefined ? defaultTimeoutValue : timeoutValue;
     const proxyLink = extensionConfiguration.get<string>(configKeys.proxyUrl);
+    const allowInvalidPathSetting = extensionConfiguration.get<boolean>(configKeys.allowInvalidPaths);
     const isExtensionTelemetryEnabled = enableExtensionTelemetry(extensionConfiguration, configKeys.enableTelemetry);
     const displayWorker = extensionContext ? extensionContext.displayWorker : new WindowDisplayWorker();
 
@@ -608,7 +610,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             acquisitionContext: acquiringContext,
             installDirectoryProvider: directoryProviderFactory(mode, vsCodeContext.globalStoragePath),
             proxyUrl: proxyLink,
-            isExtensionTelemetryInitiallyEnabled: isExtensionTelemetryEnabled
+            isExtensionTelemetryInitiallyEnabled: isExtensionTelemetryEnabled,
+            allowInvalidPathSetting: allowInvalidPathSetting ?? false
         }
     }
 

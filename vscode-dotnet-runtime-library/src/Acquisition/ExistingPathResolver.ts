@@ -16,8 +16,7 @@ import { ICommandExecutor } from '../Utils/ICommandExecutor';
 
 const badExistingPathWarningMessage = `The 'existingDotnetPath' setting was set, but it did not meet the requirements for this extension to run properly.
 This setting has been ignored.
-If you would like to continue to use the setting anyways, set dotnetAcquisitionExtension.allowInvalidPaths to true in the .NET Install Tool Extension Settings.
-If you would like to disable this warning and use the setting only when it works, set dotnetAcquisitionExtension.disableExistingPathWarning to true in the .NET Install Tool Extension Settings.`;
+If you would like to continue to use the setting anyways, set dotnetAcquisitionExtension.allowInvalidPaths to true in the .NET Install Tool Extension Settings.`;
 
 interface IDotnetListInfo { mode: DotnetInstallMode, version: string, directory : string };
 
@@ -32,7 +31,7 @@ export class ExistingPathResolver
     public async resolveExistingPath(existingPaths: IExistingPaths | undefined, extensionId: string | undefined, windowDisplayWorker: IWindowDisplayWorker): Promise<IDotnetAcquireResult | undefined>
     {
         const existingPath = this.getExistingPath(existingPaths, extensionId, windowDisplayWorker);
-        if (existingPath && (await this.providedPathMeetsAPIRequirement(existingPath, this.workerContext.acquisitionContext) || this.allowInvalidPath()))
+        if (existingPath && (await this.providedPathMeetsAPIRequirement(this.workerContext, existingPath, this.workerContext.acquisitionContext) || this.allowInvalidPath(this.workerContext)))
         {
             return { dotnetPath: existingPath } as IDotnetAcquireResult;
         }
@@ -88,17 +87,12 @@ export class ExistingPathResolver
         return null;
     }
 
-    private allowInvalidPath() : boolean
+    private allowInvalidPath(workerContext : IAcquisitionWorkerContext) : boolean
     {
-        return this.workerContext.extensionState.get<boolean>('dotnetAcquisitionExtension.allowInvalidPaths') ?? false;
+        return workerContext.allowInvalidPathSetting ?? false;
     }
 
-    private disableWarning() : boolean
-    {
-        return this.workerContext.extensionState.get<boolean>('dotnetAcquisitionExtension.disableExistingPathWarning') ?? false;
-    }
-
-    private async providedPathMeetsAPIRequirement(existingPath : string, apiRequest : IDotnetAcquireContext) : Promise<boolean>
+    private async providedPathMeetsAPIRequirement(workerContext : IAcquisitionWorkerContext, existingPath : string, apiRequest : IDotnetAcquireContext) : Promise<boolean>
     {
 
         const availableRuntimes = await this.getRuntimes(existingPath);
@@ -123,9 +117,9 @@ export class ExistingPathResolver
                 return true;
             }
 
-            if(!this.disableWarning())
+            if(!this.allowInvalidPath(workerContext))
             {
-                this.utilityContext.ui.showWarningMessage(badExistingPathWarningMessage, () => {/* No Callback */}, );
+                this.utilityContext.ui.showWarningMessage(`${badExistingPathWarningMessage}\nExtension: ${workerContext.acquisitionContext.requestingExtensionId ?? 'Unspecified'}`, () => {/* No Callback */}, );
             }
             return false;
         }
