@@ -28,10 +28,10 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
         const requestedMajorMinor = versionUtils.getMajorMinor(requirement.acquireContext.version, this.workerContext.eventStream, this.workerContext);
 
         if(availableRuntimes.some((runtime) =>
-        {
-            const foundVersion = versionUtils.getMajorMinor(runtime.version, this.workerContext.eventStream, this.workerContext);
-            return runtime.mode === requirement.acquireContext.mode && this.stringVersionMeetsRequirement(foundVersion, requestedMajorMinor, requirement.versionSpecRequirement);
-        }))
+            {
+                const foundVersion = versionUtils.getMajorMinor(runtime.version, this.workerContext.eventStream, this.workerContext);
+                return runtime.mode === requirement.acquireContext.mode && this.stringVersionMeetsRequirement(foundVersion, requestedMajorMinor, requirement.versionSpecRequirement);
+            }))
         {
             return true;
         }
@@ -39,11 +39,11 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
         {
             const availableSDKs = await this.getSDKs(dotnetExecutablePath);
             if(availableSDKs.some((sdk) =>
-            {
-                // The SDK includes the Runtime, ASP.NET Core Runtime, and Windows Desktop Runtime. So, we don't need to check the mode.
-                const foundVersion = versionUtils.getMajorMinor(sdk.version, this.workerContext.eventStream, this.workerContext);
-                return this.stringVersionMeetsRequirement(foundVersion, requestedMajorMinor, requirement.versionSpecRequirement);
-            }))
+                {
+                    // The SDK includes the Runtime, ASP.NET Core Runtime, and Windows Desktop Runtime. So, we don't need to check the mode.
+                    const foundVersion = versionUtils.getMajorMinor(sdk.version, this.workerContext.eventStream, this.workerContext);
+                    return this.stringVersionMeetsRequirement(foundVersion, requestedMajorMinor, requirement.versionSpecRequirement);
+                }))
             {
                 return true;
             }
@@ -57,26 +57,26 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
         const findSDKsCommand = CommandExecutor.makeCommand(existingPath, ['--list-sdks']);
 
         const sdkInfo = await (this.executor!).execute(findSDKsCommand).then((result) =>
+        {
+            const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
+            const runtimeInfos : IDotnetListInfo[] = runtimes.map((sdk) =>
             {
-                const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
-                const runtimeInfos : IDotnetListInfo[] = runtimes.map((sdk) =>
+                if(sdk === '') // new line in output that got trimmed
                 {
-                    if(sdk === '') // new line in output that got trimmed
-                    {
-                        return null;
-                    }
-                    const parts = sdk.split(' ', 2);
-                    return {
-                        mode: 'sdk',
-                        version: parts[0],
-                        directory: sdk.split(' ').slice(1).join(' ').slice(1, -1) // need to remove the brackets from the path [path]
-                    } as IDotnetListInfo;
-                }).filter(x => x !== null) as IDotnetListInfo[];
+                    return null;
+                }
+                const parts = sdk.split(' ', 2);
+                return {
+                    mode: 'sdk',
+                    version: parts[0],
+                    directory: sdk.split(' ').slice(1).join(' ').slice(1, -1) // need to remove the brackets from the path [path]
+                } as IDotnetListInfo;
+            }).filter(x => x !== null) as IDotnetListInfo[];
 
-                return runtimeInfos;
-            });
+            return runtimeInfos;
+        });
 
-            return sdkInfo;
+        return sdkInfo;
     }
 
     private stringVersionMeetsRequirement(foundVersion : string, requiredVersion : string, requirement : DotnetVersionSpecRequirement) : boolean

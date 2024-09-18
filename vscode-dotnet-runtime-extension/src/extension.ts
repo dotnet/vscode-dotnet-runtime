@@ -67,6 +67,9 @@ import {
     DotnetOfflineWarning,
     IUtilityContext,
     IDotnetFindPathContext,
+    DotnetVersionSpecRequirement,
+    DotnetConditionValidator,
+    DotnetPathFinder
 } from 'vscode-dotnet-runtime-library';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
@@ -436,7 +439,38 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
     const dotnetFindPathRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.findPath}`, async (commandContext : IDotnetFindPathContext) =>
     {
+        if(!commandContext.acquireContext.mode || !commandContext.acquireContext.requestingExtensionId || !commandContext.acquireContext.version)
+        {
+            throw new EventCancellationError('BadContextualFindPathError', `The find path request was missing required information: a mode, version, and requestingExtensionId.`);
+        }
 
+        const workerContext = getAcquisitionWorkerContext(commandContext.acquireContext.mode, commandContext.acquireContext);
+        const existingPath = await resolveExistingPathIfExists(existingPathConfigWorker, commandContext.acquireContext, workerContext, utilContext, commandContext.versionSpecRequirement);
+
+        if(existingPath)
+        {
+            return existingPath;
+        }
+
+        const validator = new DotnetConditionValidator(workerContext, utilContext);
+        const finder = new DotnetPathFinder();
+        const dotnetOnPATH = await finder.findDotnetOnPath();
+
+        let validated = await validator.versionMeetsRequirement(dotnetOnPATH, commandContext);
+        if(validated)
+        {
+            return dotnetOnPATH;
+        }
+
+        const dotnetOnROOT = await finder.findDotnetOnRoot();
+
+        validated = await validator.versionMeetsRequirement(dotnetOnROOT, commandContext);
+        if(validated)
+        {
+            return dotnetOnROOT;
+        }
+
+        return undefined;
     });
 
     async function uninstall(commandContext: IDotnetAcquireContext | undefined, force = false) : Promise<string>
@@ -522,11 +556,11 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
     // Helper Functions
     async function resolveExistingPathIfExists(configResolver : ExtensionConfigurationWorker, commandContext : IDotnetAcquireContext,
-        workerContext : IAcquisitionWorkerContext, utilityContext : IUtilityContext) : Promise<IDotnetAcquireResult | null>
+        workerContext : IAcquisitionWorkerContext, utilityContext : IUtilityContext, requirement? : DotnetVersionSpecRequirement) : Promise<IDotnetAcquireResult | null>
     {
         const existingPathResolver = new ExistingPathResolver(workerContext, utilityContext);
 
-        const existingPath = await existingPathResolver.resolveExistingPath(configResolver.getAllPathConfigurationValues(), commandContext.requestingExtensionId, displayWorker);
+        const existingPath = await existingPathResolver.resolveExistingPath(configResolver.getAllPathConfigurationValues(), commandContext.requestingExtensionId, displayWorker, requirement);
         if (existingPath) {
             globalEventStream.post(new DotnetExistingPathResolutionCompleted(existingPath.dotnetPath));
             return new Promise((resolve) => {

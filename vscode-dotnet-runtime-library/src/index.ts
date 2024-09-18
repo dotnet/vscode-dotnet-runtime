@@ -37,6 +37,8 @@ export * from './Utils/IUtilityContext';
 export * from './Utils/WebRequestWorker';
 export * from './Acquisition/DotnetCoreAcquisitionWorker';
 export * from './Acquisition/DotnetConditionValidator';
+export * from './Acquisition/IDotnetPathFinder';
+export * from './Acquisition/DotnetPathFinder';
 export * from './Acquisition/IDotnetConditionValidator';
 export * from './Acquisition/DotnetInstall';
 export * from './Acquisition/IAcquisitionWorkerContext';

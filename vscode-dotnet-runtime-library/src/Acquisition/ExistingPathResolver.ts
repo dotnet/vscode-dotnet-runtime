@@ -13,6 +13,7 @@ import { IExistingPaths } from '../IExtensionContext';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
 import { IDotnetFindPathContext } from '../IDotnetFindPathContext';
+import { DotnetVersionSpecRequirement } from '../DotnetVersionSpecRequirement';
 
 const badExistingPathWarningMessage = `The 'existingDotnetPath' setting was set, but it did not meet the requirements for this extension to run properly.
 This setting has been ignored.
@@ -27,10 +28,10 @@ export class ExistingPathResolver
         this.executor ??= new CommandExecutor(this.workerContext, this.utilityContext);
     }
 
-    public async resolveExistingPath(existingPaths: IExistingPaths | undefined, extensionId: string | undefined, windowDisplayWorker: IWindowDisplayWorker): Promise<IDotnetAcquireResult | undefined>
+    public async resolveExistingPath(existingPaths: IExistingPaths | undefined, extensionId: string | undefined, windowDisplayWorker: IWindowDisplayWorker, requirement? : DotnetVersionSpecRequirement): Promise<IDotnetAcquireResult | undefined>
     {
         const existingPath = this.getExistingPath(existingPaths, extensionId, windowDisplayWorker);
-        if (existingPath && (await this.providedPathMeetsAPIRequirement(this.workerContext, existingPath, this.workerContext.acquisitionContext) || this.allowInvalidPath(this.workerContext)))
+        if (existingPath && (await this.providedPathMeetsAPIRequirement(this.workerContext, existingPath, this.workerContext.acquisitionContext, requirement) || this.allowInvalidPath(this.workerContext)))
         {
             return { dotnetPath: existingPath } as IDotnetAcquireResult;
         }
@@ -91,10 +92,10 @@ export class ExistingPathResolver
         return workerContext.allowInvalidPathSetting ?? false;
     }
 
-    private async providedPathMeetsAPIRequirement(workerContext : IAcquisitionWorkerContext, existingPath : string, apiRequest : IDotnetAcquireContext) : Promise<boolean>
+    private async providedPathMeetsAPIRequirement(workerContext : IAcquisitionWorkerContext, existingPath : string, apiRequest : IDotnetAcquireContext, requirement? : DotnetVersionSpecRequirement) : Promise<boolean>
     {
         const validator = new DotnetConditionValidator(this.workerContext, this.utilityContext, this.executor);
-        const validated = await validator.versionMeetsRequirement(existingPath, {acquireContext : apiRequest, versionSpecRequirement : 'equal'} as IDotnetFindPathContext);
+        const validated = await validator.versionMeetsRequirement(existingPath, {acquireContext : apiRequest, versionSpecRequirement : requirement ?? 'equal'} as IDotnetFindPathContext);
 
         if(!validated && !this.allowInvalidPath(workerContext))
         {
