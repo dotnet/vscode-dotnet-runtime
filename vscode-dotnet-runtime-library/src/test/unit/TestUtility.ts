@@ -33,7 +33,7 @@ export function getMockAcquisitionContext(mode: DotnetInstallMode, version : str
         proxyUrl: undefined,
         installDirectoryProvider: directory ? directory : directoryProviderFactory(mode, ''),
         isExtensionTelemetryInitiallyEnabled: true,
-        allowInvalidPathSetting: customContext?.get('allowInvalidPaths') ?? false
+        allowInvalidPathSetting: customContext?.get('dotnetAcquisitionExtension.allowInvalidPaths') ?? false
     };
     return workerContext;
 }

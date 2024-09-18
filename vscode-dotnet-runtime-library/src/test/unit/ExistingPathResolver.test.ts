@@ -85,7 +85,7 @@ suite('ExistingPathResolver Unit Tests', () => {
       assert.equal(existingPath?.dotnetPath, individualPath);
   }).timeout(standardTimeoutTime);
 
-  test('It will use the legacy mode and return the path even if it does not meet an api request if invalidPathsAllowed is set', async () =>
+  test('It will use the legacy mode and return the path even if it does not meet an api request if allowInvalidPaths is set', async () =>
   {
     const existingPathResolver = getExistingPathResolverWithVersionAndCommandResult('7.0', undefined, executionResultWithEightOnly, true);
     const existingPath = await existingPathResolver.resolveExistingPath(extensionConfigWorker.getAllPathConfigurationValues(), undefined, new MockWindowDisplayWorker());
