@@ -61,6 +61,12 @@ import { IEventStream } from '../EventStream/EventStream';
 export class CommandExecutor extends ICommandExecutor
 {
     private pathTroubleshootingOption = 'Troubleshoot';
+    private englishOutputEnvironmentVariables = {
+        LC_ALL: 'en_US.UTF-8',
+        LANG: 'en_US.UTF-8',
+        LANGUAGE: 'en',
+        DOTNET_CLI_UI_LANGUAGE: 'en-US',
+    }; // Not all systems have english installed -- not sure if it's safe to use this.
     private sudoProcessCommunicationDir = path.join(__dirname, 'install scripts');
     private fileUtil : IFileUtilities;
     private hasEverLaunchedSudoFork = false;
@@ -416,7 +422,7 @@ with options ${JSON.stringify(options)}.`));
                 {
                     execElevated(fullCommandString, options, (error?: Error, execStdout?: string | Buffer, execStderr?: string | Buffer) =>
                     {
-                        if(error && terminalFailure)
+                        if(error && terminalFailure && !error.message.includes('screen size is bogus'))
                         {
                             return reject(this.parseVSCodeSudoExecError(error, fullCommandString));
                         }

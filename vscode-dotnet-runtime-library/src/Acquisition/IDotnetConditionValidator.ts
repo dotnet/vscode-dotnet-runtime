@@ -7,5 +7,5 @@ import { IDotnetFindPathContext } from '../IDotnetFindPathContext';
 
 export interface IDotnetConditionValidator
 {
-    versionMeetsRequirement(dotnetExecutablePath: string, requirement : IDotnetFindPathContext): Promise<boolean>;
+    dotnetMeetsRequirement(dotnetExecutablePath: string, requirement : IDotnetFindPathContext): Promise<boolean>;
 }

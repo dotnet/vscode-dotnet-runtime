@@ -6,5 +6,6 @@
 export interface IDotnetPathFinder
 {
     findDotnetRootPath(): Promise<string | undefined>;
-    findPathEnvironmentSetting(): Promise<string | undefined>;
+    findRawPathEnvironmentSetting(): Promise<string | undefined>;
+    findRealPathEnvironmentSetting(): Promise<string | undefined>;
 }

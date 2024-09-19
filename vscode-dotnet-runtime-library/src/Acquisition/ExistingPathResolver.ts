@@ -95,7 +95,7 @@ export class ExistingPathResolver
     private async providedPathMeetsAPIRequirement(workerContext : IAcquisitionWorkerContext, existingPath : string, apiRequest : IDotnetAcquireContext, requirement? : DotnetVersionSpecRequirement) : Promise<boolean>
     {
         const validator = new DotnetConditionValidator(this.workerContext, this.utilityContext, this.executor);
-        const validated = await validator.versionMeetsRequirement(existingPath, {acquireContext : apiRequest, versionSpecRequirement : requirement ?? 'equal'} as IDotnetFindPathContext);
+        const validated = await validator.dotnetMeetsRequirement(existingPath, {acquireContext : apiRequest, versionSpecRequirement : requirement ?? 'equal'} as IDotnetFindPathContext);
 
         if(!validated && !this.allowInvalidPath(workerContext))
         {

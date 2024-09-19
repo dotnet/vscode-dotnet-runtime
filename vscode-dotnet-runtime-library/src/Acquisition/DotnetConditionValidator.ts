@@ -22,7 +22,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
         this.executor ??= new CommandExecutor(this.workerContext, this.utilityContext);
     }
 
-    public async versionMeetsRequirement(dotnetExecutablePath: string, requirement : IDotnetFindPathContext) : Promise<boolean>
+    public async dotnetMeetsRequirement(dotnetExecutablePath: string, requirement : IDotnetFindPathContext) : Promise<boolean>
     {
         const availableRuntimes = await this.getRuntimes(dotnetExecutablePath);
         const requestedMajorMinor = versionUtils.getMajorMinor(requirement.acquireContext.version, this.workerContext.eventStream, this.workerContext);
@@ -30,7 +30,9 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
         if(availableRuntimes.some((runtime) =>
             {
                 const foundVersion = versionUtils.getMajorMinor(runtime.version, this.workerContext.eventStream, this.workerContext);
-                return runtime.mode === requirement.acquireContext.mode && this.stringVersionMeetsRequirement(foundVersion, requestedMajorMinor, requirement.versionSpecRequirement);
+                const runtimeArchitecture = ''; // TODO use en-US env var for this
+                return runtime.mode === requirement.acquireContext.mode && this.stringArchitectureMeetsRequirement(runtimeArchitecture, requirement.acquireContext.architecture!) &&
+                    this.stringVersionMeetsRequirement(foundVersion, requestedMajorMinor, requirement.versionSpecRequirement);
             }))
         {
             return true;
@@ -42,7 +44,8 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
                 {
                     // The SDK includes the Runtime, ASP.NET Core Runtime, and Windows Desktop Runtime. So, we don't need to check the mode.
                     const foundVersion = versionUtils.getMajorMinor(sdk.version, this.workerContext.eventStream, this.workerContext);
-                    return this.stringVersionMeetsRequirement(foundVersion, requestedMajorMinor, requirement.versionSpecRequirement);
+                    const sdkArchitecture = ''; // TODO use en-US env var for this
+                    return this.stringArchitectureMeetsRequirement(sdkArchitecture, requirement.acquireContext.architecture!), this.stringVersionMeetsRequirement(foundVersion, requestedMajorMinor, requirement.versionSpecRequirement);
                 }))
             {
                 return true;
@@ -56,7 +59,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
     {
         const findSDKsCommand = CommandExecutor.makeCommand(existingPath, ['--list-sdks']);
 
-        const sdkInfo = await (this.executor!).execute(findSDKsCommand).then((result) =>
+        const sdkInfo = await (this.executor!).execute(findSDKsCommand, undefined, false).then((result) =>
         {
             const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
             const runtimeInfos : IDotnetListInfo[] = runtimes.map((sdk) =>
@@ -99,6 +102,11 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
             }
     }
 
+    private stringArchitectureMeetsRequirement(outputArchitecture : string, requiredArchitecture : string) : boolean
+    {
+
+    }
+
     private async getRuntimes(existingPath : string) : Promise<IDotnetListInfo[]>
     {
         const findRuntimesCommand = CommandExecutor.makeCommand(existingPath, ['--list-runtimes']);
@@ -107,7 +115,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
         const aspnetCoreString = 'Microsoft.AspNetCore.App';
         const runtimeString = 'Microsoft.NETCore.App';
 
-        const runtimeInfo = await (this.executor!).execute(findRuntimesCommand).then((result) =>
+        const runtimeInfo = await (this.executor!).execute(findRuntimesCommand, undefined, false).then((result) =>
         {
             const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
             const runtimeInfos : IDotnetListInfo[] = runtimes.map((runtime) =>

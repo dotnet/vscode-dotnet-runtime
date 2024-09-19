@@ -439,9 +439,9 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
     const dotnetFindPathRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.findPath}`, async (commandContext : IDotnetFindPathContext) =>
     {
-        if(!commandContext.acquireContext.mode || !commandContext.acquireContext.requestingExtensionId || !commandContext.acquireContext.version)
+        if(!commandContext.acquireContext.mode || !commandContext.acquireContext.requestingExtensionId || !commandContext.acquireContext.version || !commandContext.acquireContext.architecture)
         {
-            throw new EventCancellationError('BadContextualFindPathError', `The find path request was missing required information: a mode, version, and requestingExtensionId.`);
+            throw new EventCancellationError('BadContextualFindPathError', `The find path request was missing required information: a mode, version, architecture, and requestingExtensionId.`);
         }
 
         const workerContext = getAcquisitionWorkerContext(commandContext.acquireContext.mode, commandContext.acquireContext);
@@ -455,6 +455,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         const validator = new DotnetConditionValidator(workerContext, utilContext);
         const finder = new DotnetPathFinder();
         const dotnetOnPATH = await finder.findDotnetOnPath();
+        // may need to go up 2 directories from --list-runtimes output for true executable. check raw first
 
         let validated = await validator.versionMeetsRequirement(dotnetOnPATH, commandContext);
         if(validated)
