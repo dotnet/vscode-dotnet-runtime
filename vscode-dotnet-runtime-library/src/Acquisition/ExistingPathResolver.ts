@@ -127,18 +127,18 @@ export class ExistingPathResolver
 
     private async getSDKs(existingPath : string) : Promise<IDotnetListInfo[]>
     {
-        const findSDKsCommand = CommandExecutor.makeCommand(existingPath, ['--list-sdks']);
+        const findSDKsCommand = CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-sdks']);
 
         const sdkInfo = await (this.executor!).execute(findSDKsCommand).then((result) =>
             {
-                const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
-                const runtimeInfos : IDotnetListInfo[] = runtimes.map((sdk) =>
+                const sdks = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
+                const sdkInfos : IDotnetListInfo[] = sdks.map((sdk) =>
                 {
                     if(sdk === '') // new line in output that got trimmed
                     {
                         return null;
                     }
-                    const parts = sdk.split(' ', 2); // account for spaces in PATH, no space should appear before then and luckily path is last
+                    const parts = sdk.split(' ', 2); // account for spaces in PATH, no space should appear before then
                     return {
                         mode: 'sdk',
                         version: parts[0],
@@ -146,7 +146,7 @@ export class ExistingPathResolver
                     } as IDotnetListInfo;
                 }).filter(x => x !== null) as IDotnetListInfo[];
 
-                return runtimeInfos;
+                return sdkInfos;
             });
 
             return sdkInfo;
@@ -154,7 +154,7 @@ export class ExistingPathResolver
 
     private async getRuntimes(existingPath : string) : Promise<IDotnetListInfo[]>
     {
-        const findRuntimesCommand = CommandExecutor.makeCommand(existingPath, ['--list-runtimes']);
+        const findRuntimesCommand = CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-runtimes']);
 
         const windowsDesktopString = 'Microsoft.WindowsDesktop.App';
         const aspnetCoreString = 'Microsoft.AspNetCore.App';
@@ -169,7 +169,7 @@ export class ExistingPathResolver
                 {
                     return null;
                 }
-                const parts = runtime.split(' ', 3); // account for spaces in PATH, no space should appear before then and luckily path is last
+                const parts = runtime.split(' ', 3); // account for spaces in PATH, no space should appear before then
                 return {
                     mode: parts[0] === aspnetCoreString ? 'aspnetcore' : parts[0] === runtimeString ? 'runtime' : 'sdk', // sdk is a placeholder for windows desktop, will never match since this is for runtime search only
                     version: parts[1],
