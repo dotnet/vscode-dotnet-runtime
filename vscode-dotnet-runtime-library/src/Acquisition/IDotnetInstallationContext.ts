@@ -15,4 +15,3 @@ export interface IDotnetInstallationContext {
     installType : DotnetInstallType;
     architecture: string;
 }
-7
