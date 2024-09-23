@@ -26,12 +26,12 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
     {
         const availableRuntimes = await this.getRuntimes(dotnetExecutablePath);
         const requestedMajorMinor = versionUtils.getMajorMinor(requirement.acquireContext.version, this.workerContext.eventStream, this.workerContext);
+        const hostArch = await this.getHostArchitecture(dotnetExecutablePath);
 
         if(availableRuntimes.some((runtime) =>
             {
                 const foundVersion = versionUtils.getMajorMinor(runtime.version, this.workerContext.eventStream, this.workerContext);
-                const runtimeArchitecture = ''; // TODO use en-US env var for this
-                return runtime.mode === requirement.acquireContext.mode && this.stringArchitectureMeetsRequirement(runtimeArchitecture, requirement.acquireContext.architecture!) &&
+                return runtime.mode === requirement.acquireContext.mode && this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture!) &&
                     this.stringVersionMeetsRequirement(foundVersion, requestedMajorMinor, requirement.versionSpecRequirement);
             }))
         {
@@ -44,8 +44,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
                 {
                     // The SDK includes the Runtime, ASP.NET Core Runtime, and Windows Desktop Runtime. So, we don't need to check the mode.
                     const foundVersion = versionUtils.getMajorMinor(sdk.version, this.workerContext.eventStream, this.workerContext);
-                    const sdkArchitecture = ''; // TODO use en-US env var for this
-                    return this.stringArchitectureMeetsRequirement(sdkArchitecture, requirement.acquireContext.architecture!), this.stringVersionMeetsRequirement(foundVersion, requestedMajorMinor, requirement.versionSpecRequirement);
+                    return this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture!), this.stringVersionMeetsRequirement(foundVersion, requestedMajorMinor, requirement.versionSpecRequirement);
                 }))
             {
                 return true;
@@ -53,6 +52,38 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
 
             return false;
         }
+    }
+
+    /**
+     *
+     * @param hostPath The path to the dotnet executable
+     * @returns The architecture of the dotnet host from the PATH.
+     * The .NET Host will only list versions of the runtime and sdk that match its architecture.
+     * Thus, any runtime or sdk that it prints out will be the same architecture as the host.
+     *
+     * @remarks Will return '' if the architecture cannot be determined for some peculiar reason (e.g. dotnet --info is broken or changed). )
+     */
+    private async getHostArchitecture(hostPath : string) : Promise<string>
+    {
+        const infoCommand = CommandExecutor.makeCommand(`"${hostPath}"`, ['--info']);
+        const envWithForceEnglish = process.env;
+        envWithForceEnglish.DOTNET_CLI_UI_LANGUAGE = 'en-US';
+
+        // System may not have english installed, but CDK already calls this without issue -- the .NET SDK language invocation is also wrapped by a runtime library and natively includes english assets
+        const hostArch = await (this.executor!).execute(infoCommand, { env: envWithForceEnglish }, false).then((result) =>
+        {
+            const lines = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
+            // This is subject to change but there is no good alternative to do this
+            const archLine = lines.find((line) => line.startsWith('Architecture:'));
+            if(archLine === undefined)
+            {
+                return '';
+            }
+            const arch = archLine.split(' ')[1];
+            return arch;
+        });
+
+        return hostArch;
     }
 
     private async getSDKs(existingPath : string) : Promise<IDotnetListInfo[]>
