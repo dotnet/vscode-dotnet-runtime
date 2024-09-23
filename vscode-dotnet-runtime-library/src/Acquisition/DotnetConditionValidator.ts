@@ -57,12 +57,12 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
 
     private async getSDKs(existingPath : string) : Promise<IDotnetListInfo[]>
     {
-        const findSDKsCommand = CommandExecutor.makeCommand(existingPath, ['--list-sdks']);
+        const findSDKsCommand = CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-sdks']);
 
         const sdkInfo = await (this.executor!).execute(findSDKsCommand, undefined, false).then((result) =>
         {
-            const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
-            const runtimeInfos : IDotnetListInfo[] = runtimes.map((sdk) =>
+            const sdks = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
+            const sdkInfos : IDotnetListInfo[] = sdks.map((sdk) =>
             {
                 if(sdk === '') // new line in output that got trimmed
                 {
@@ -76,7 +76,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
                 } as IDotnetListInfo;
             }).filter(x => x !== null) as IDotnetListInfo[];
 
-            return runtimeInfos;
+            return sdkInfos;
         });
 
         return sdkInfo;
@@ -109,7 +109,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
 
     private async getRuntimes(existingPath : string) : Promise<IDotnetListInfo[]>
     {
-        const findRuntimesCommand = CommandExecutor.makeCommand(existingPath, ['--list-runtimes']);
+        const findRuntimesCommand = CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-sdks']);
 
         const windowsDesktopString = 'Microsoft.WindowsDesktop.App';
         const aspnetCoreString = 'Microsoft.AspNetCore.App';
@@ -117,9 +117,10 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
 
         const runtimeInfo = await (this.executor!).execute(findRuntimesCommand, undefined, false).then((result) =>
         {
-            const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
-            const runtimeInfos : IDotnetListInfo[] = runtimes.map((runtime) =>
+            const sdks = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
+            const runtimeInfos : IDotnetListInfo[] = sdks.map((runtime) =>
             {
+                // todo add some better logging here.
                 if(runtime === '') // new line in output that got trimmed
                 {
                     return null;
