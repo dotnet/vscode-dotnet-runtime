@@ -455,6 +455,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         const validator = new DotnetConditionValidator(workerContext, utilContext);
         const finder = new DotnetPathFinder();
         const dotnetOnPATH = await finder.findDotnetOnPath();
+        // should this try bin/bash shell option as well?
         // may need to go up 2 directories from --list-runtimes output for true executable. check raw first
 
         let validated = await validator.versionMeetsRequirement(dotnetOnPATH, commandContext);
