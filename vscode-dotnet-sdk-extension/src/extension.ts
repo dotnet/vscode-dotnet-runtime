@@ -141,7 +141,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         const acquisitionContext = getContext(commandContext);
         const versionResolver = new VersionResolver(acquisitionContext);
 
-        const pathResult = callWithErrorHandling(async () => {
+        const pathResult = await callWithErrorHandling(async () => {
             eventStream.post(new DotnetSDKAcquisitionStarted(commandContext.requestingExtensionId));
 
             eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId ?? 'notProvided', 'sdk', 'local'));
@@ -185,7 +185,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     });
 
     const dotnetAcquireStatusRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquireStatus}`, async (commandContext: IDotnetAcquireContext) => {
-        const pathResult = callWithErrorHandling(async () => {
+        const pathResult = await callWithErrorHandling(async () => {
             eventStream.post(new DotnetAcquisitionStatusRequested(commandContext.version, commandContext.requestingExtensionId));
             const fakeContext = getContext(null);
             const versionResolver = new VersionResolver(fakeContext);
