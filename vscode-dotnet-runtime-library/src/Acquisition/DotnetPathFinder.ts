@@ -27,7 +27,6 @@ import {
 
 export class DotnetPathFinder implements IDotnetPathFinder
 {
-    private finderCommand = os.platform() === 'win32' ? 'where' : 'which';
 
     public constructor(private readonly workerContext : IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext, private executor? : ICommandExecutor)
     {
@@ -99,7 +98,15 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
 `
         ));
 
-        const findCommand = CommandExecutor.makeCommand(this.finderCommand, ['dotnet']);
+        const windowsWhereCommand = await this.executor?.tryFindWorkingCommand([
+            CommandExecutor.makeCommand('where', []),
+            CommandExecutor.makeCommand('where.exe', []),
+            CommandExecutor.makeCommand('%SystemRoot%\\System32\\where.exe', []),
+            CommandExecutor.makeCommand('C:\\Windows\\System32\\where.exe', []) // in case SystemRoot is corrupted
+        ]);
+        const finderCommand = os.platform() === 'win32' ? (windowsWhereCommand?.commandRoot ?? 'where') : 'which';
+
+        const findCommand = CommandExecutor.makeCommand(finderCommand, ['dotnet']);
         const dotnetOnPATH = (await this.executor?.execute(findCommand, options))?.stdout.trim();
         if(dotnetOnPATH)
         {

@@ -14,8 +14,8 @@ import {
     IDotnetFindPathContext,
     IDotnetListVersionsResult,
 } from 'vscode-dotnet-runtime-library';
-import * as runtimeExtension from 'vscode-dotnet-runtime';
-import * as sdkExtension from 'vscode-dotnet-sdk';
+import * as runtimeExtension from 'vscode-dotnet-runtime'; // comment this out when packing the extension
+import * as sdkExtension from 'vscode-dotnet-sdk'; // comment this out when packing the extension
 import { install } from 'source-map-support';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -35,8 +35,8 @@ export function activate(context: vscode.ExtensionContext) {
     */
 
     const requestingExtensionId = 'ms-dotnettools.sample-extension';
-    runtimeExtension.activate(context);
-    sdkExtension.activate(context);
+    runtimeExtension.activate(context); // comment this out when packing the extension
+    sdkExtension.activate(context); // comment this out when packing the extension
 
 
     // --------------------------------------------------------------------------
@@ -215,8 +215,8 @@ ${stderr}`);
 
         const result = await vscode.commands.executeCommand('dotnet.findPath', commandContext);
 
-        vscode.window.showInformationMessage(`.NET Path Discovered:
-${result ?? 'undefined'}`);
+        vscode.window.showInformationMessage(`.NET Path Discovered\n
+${JSON.stringify(result) ?? 'undefined'}`);
     });
 
     context.subscriptions.push(

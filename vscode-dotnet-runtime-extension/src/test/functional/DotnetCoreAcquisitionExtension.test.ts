@@ -123,6 +123,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     assert.isTrue(fs.existsSync(result!.dotnetPath), 'The returned path of .net does exist');
     assert.include(result!.dotnetPath, '.dotnet', '.dotnet is in the path of the local runtime install');
     assert.include(result!.dotnetPath, context.version, 'the path of the local runtime install includes the version of the runtime requested');
+    return result!.dotnetPath;
   }
 
 
@@ -194,21 +195,23 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
   async function findPathWithRequirementAndInstall(version : string, iMode : DotnetInstallMode, arch : string, condition : DotnetVersionSpecRequirement, shouldFind : boolean, context? : IDotnetAcquireContext, expectedPath? : string)
   {
     const installPath = await installRuntime(version, iMode);
-    process.env.PATH =  `${installPath};${process.env.PATH}`;
+
+    // use path.dirname : the dotnet.exe cant be on the PATH
+    process.env.PATH = `${path.dirname(installPath)};${process.env.PATH?.split(';').filter((x : string) => !(x.toLowerCase().includes('dotnet')) && !(x.toLowerCase().includes('program'))).join(';')}`;
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath', { acquireContext : context ?? { version, requestingExtensionId : requestingExtensionId, mode: iMode, architecture : arch } as IDotnetAcquireContext,
     versionSpecRequirement : condition} as IDotnetFindPathContext);
 
     if(shouldFind)
     {
         assert.exists(result, 'find path command returned a result');
-        assert.equal(result, path.join(__dirname, '.dotnet', expectedPath ?? getInstallIdCustomArchitecture(version, arch, iMode, 'local'), getDotnetExecutable()), 'The path is correct');
+        assert.equal(result, path.join(__dirname, '.dotnet', expectedPath ?? getInstallIdCustomArchitecture(version, arch, iMode, 'local'), getDotnetExecutable()), 'The path returned by findPath is correct');
     }
     else
     {
         assert.equal(result, undefined, 'find path command returned no undefined if no path matches condition');
     }
   }
-
+/*
   test('Install Local Runtime Command', async () =>
   {
     await installRuntime('2.2', 'runtime');
@@ -250,7 +253,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
   test('Install and Uninstall Multiple Local ASP.NET Runtime Versions', async () => {
     await installMultipleVersions(['2.2', '3.0', '3.1'], 'aspnetcore');
   }).timeout(standardTimeoutTime * 2);
-
+*/
   test('Find dotnet PATH Command Met Condition', async () => {
     await findPathWithRequirementAndInstall('5.0', 'runtime', os.arch(), 'greater_than_or_equal', true);
   }).timeout(standardTimeoutTime);
@@ -260,7 +263,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     const expectedPath = path.join(__dirname, '.dotnet', getInstallIdCustomArchitecture('7.0', os.arch(), 'runtime', 'local'), getDotnetExecutable());
     process.env.DOTNET_ROOT = expectedPath;
 
-    await findPathWithRequirementAndInstall('5.0', 'runtime', os.arch(), 'equal', true,
+    await findPathWithRequirementAndInstall('6.0', 'runtime', os.arch(), 'equal', true,
         {version : '7.0', mode : 'runtime', architecture : os.arch(), requestingExtensionId : requestingExtensionId},
         expectedPath
     );

@@ -471,6 +471,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         if(existingPath)
         {
             globalEventStream.post(new DotnetFindPathSettingFound(`Found vscode setting.`));
+            outputChannel.show(true);
             return existingPath;
         }
 
@@ -481,6 +482,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         const validatedPATH = await getPathIfValid(dotnetOnPATH, validator, commandContext);
         if(validatedPATH)
         {
+            outputChannel.show(true);
             return validatedPATH;
         }
 
@@ -488,6 +490,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         const validatedRealPATH = await getPathIfValid(dotnetOnRealPATH, validator, commandContext);
         if(validatedRealPATH)
         {
+            outputChannel.show(true);
             return validatedRealPATH;
         }
 
@@ -495,9 +498,12 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         const validatedRoot = await getPathIfValid(dotnetOnROOT, validator, commandContext);
         if(validatedRoot)
         {
+            outputChannel.show(true);
+
             return validatedRoot;
         }
 
+        outputChannel.show(true);
         return undefined;
     });
 
