@@ -25,7 +25,11 @@ import {
   getMockAcquisitionContext,
   DotnetInstallMode,
   DotnetInstallType,
-  MockEventStream
+  MockEventStream,
+  IDotnetFindPathContext,
+  getDotnetExecutable,
+  DotnetVersionSpecRequirement,
+  EnvironmentVariableIsDefined
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { warn } from 'console';
@@ -33,6 +37,7 @@ import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acqu
 
 const assert : any = chai.assert;
 const standardTimeoutTime = 40000;
+const originalPATH = process.env.PATH;
 
 suite('DotnetCoreAcquisitionExtension End to End', function()
 {
@@ -100,6 +105,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     MockTelemetryReporter.telemetryEvents = [];
     rimraf.sync(storagePath);
     InstallTrackerSingleton.getInstance(new MockEventStream(), new MockExtensionContext()).clearPromises();
+    process.env.PATH = originalPATH;
   });
 
   test('Activate', async () => {
@@ -185,6 +191,24 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     assert.isFalse(fs.existsSync(result!.dotnetPath), 'the dotnet path result does not exist after uninstalling from all owners');
   }
 
+  async function findPathWithRequirementAndInstall(version : string, iMode : DotnetInstallMode, arch : string, condition : DotnetVersionSpecRequirement, shouldFind : boolean, context? : IDotnetAcquireContext, expectedPath? : string)
+  {
+    const installPath = await installRuntime(version, iMode);
+    process.env.PATH =  `${installPath};${process.env.PATH}`;
+    const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath', { acquireContext : context ?? { version, requestingExtensionId : requestingExtensionId, mode: iMode, architecture : arch } as IDotnetAcquireContext,
+    versionSpecRequirement : condition} as IDotnetFindPathContext);
+
+    if(shouldFind)
+    {
+        assert.exists(result, 'find path command returned a result');
+        assert.equal(result, path.join(__dirname, '.dotnet', expectedPath ?? getInstallIdCustomArchitecture(version, arch, iMode, 'local'), getDotnetExecutable()), 'The path is correct');
+    }
+    else
+    {
+        assert.equal(result, undefined, 'find path command returned no undefined if no path matches condition');
+    }
+  }
+
   test('Install Local Runtime Command', async () =>
   {
     await installRuntime('2.2', 'runtime');
@@ -227,6 +251,47 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     await installMultipleVersions(['2.2', '3.0', '3.1'], 'aspnetcore');
   }).timeout(standardTimeoutTime * 2);
 
+  test('Find dotnet PATH Command Met Condition', async () => {
+    await findPathWithRequirementAndInstall('5.0', 'runtime', os.arch(), 'greater_than_or_equal', true);
+  }).timeout(standardTimeoutTime);
+
+  test('Find dotnet PATH Command Met ROOT Condition', async () => {
+    const oldROOT = process.env.DOTNET_ROOT;
+    const expectedPath = path.join(__dirname, '.dotnet', getInstallIdCustomArchitecture('7.0', os.arch(), 'runtime', 'local'), getDotnetExecutable());
+    process.env.DOTNET_ROOT = expectedPath;
+
+    await findPathWithRequirementAndInstall('5.0', 'runtime', os.arch(), 'equal', true,
+        {version : '7.0', mode : 'runtime', architecture : os.arch(), requestingExtensionId : requestingExtensionId},
+        expectedPath
+    );
+
+    if(EnvironmentVariableIsDefined(oldROOT))
+    {
+    process.env.DOTNET_ROOT = oldROOT;
+    }
+    else
+    {
+        delete process.env.DOTNET_ROOT;
+    }
+  }).timeout(standardTimeoutTime);
+
+  test('Find dotnet PATH Command Unmet Version Condition', async () => {
+    await findPathWithRequirementAndInstall('3.1', 'runtime', os.arch(), 'less_than_or_equal', false,
+        {version : '8.0', mode : 'runtime', architecture : os.arch(), requestingExtensionId : requestingExtensionId}
+    );
+  }).timeout(standardTimeoutTime);
+
+  test('Find dotnet PATH Command Unmet Mode Condition', async () => {
+    await findPathWithRequirementAndInstall('7.0', 'runtime', os.arch(), 'equal', false,
+        {version : '7.0', mode : 'aspnetcore', architecture : os.arch(), requestingExtensionId : requestingExtensionId}
+    );
+  }).timeout(standardTimeoutTime);
+
+  test('Find dotnet PATH Command Unmet Arch Condition', async () => {
+    await findPathWithRequirementAndInstall('7.0', 'runtime', os.arch() == 'arm64' ? 'x64' : os.arch(), 'greater_than_or_equal', false,
+        {version : '8.0', mode : 'runtime', architecture : 'arm64', requestingExtensionId : requestingExtensionId}
+    );
+  }).timeout(standardTimeoutTime);
 
   test('Install SDK Globally E2E (Requires Admin)', async () => {
     // We only test if the process is running under ADMIN because non-admin requires user-intervention.

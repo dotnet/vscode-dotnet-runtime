@@ -14,7 +14,16 @@ import * as path from 'path';
 import { realpathSync } from 'fs';
 import { EnvironmentVariableIsDefined, getDotnetExecutable, getOSArch } from '../Utils/TypescriptUtilities';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
-import { DotnetFindPathLookupPATH, DotnetFindPathLookupRealPATH, DotnetFindPathLookupRootPATH, DotnetFindPathPATHFound, DotnetFindPathRealPATHFound, DotnetFindPathRootEmulationPATHFound, DotnetFindPathRootPATHFound, DotnetFindPathRootUnderEmulationButNoneSet } from '../EventStream/EventStreamEvents';
+import {
+    DotnetFindPathLookupPATH,
+    DotnetFindPathLookupRealPATH,
+    DotnetFindPathLookupRootPATH,
+    DotnetFindPathPATHFound,
+    DotnetFindPathRealPATHFound,
+    DotnetFindPathRootEmulationPATHFound,
+    DotnetFindPathRootPATHFound,
+    DotnetFindPathRootUnderEmulationButNoneSet
+} from '../EventStream/EventStreamEvents';
 
 export class DotnetPathFinder implements IDotnetPathFinder
 {

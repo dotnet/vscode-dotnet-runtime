@@ -7,7 +7,7 @@
 		"url": "https://github.com/dotnet/vscode-dotnet-runtime.git"
 	},
 	"license": "MIT",
-	"version": "0.0.1",
+	"version": "0.0.9",
 	"publisher": "ms-dotnettools",
 	"engines": {
 		"vscode": "^1.75.0"
@@ -64,6 +64,11 @@
 			{
 				"command": "sample.dotnet.acquireGlobalSDK",
 				"title": "Install .NET SDK Globally via .NET Install Tool (Former Runtime Extension)",
+				"category": "Sample"
+			},
+			{
+				"command": "sample.dotnet.findPath",
+				"title": "Find the .NET on the PATH",
 				"category": "Sample"
 			},
 			{
