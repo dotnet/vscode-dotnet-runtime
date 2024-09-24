@@ -165,6 +165,38 @@ export class FileUtilities extends IFileUtilities
        }
    }
 
+    /**
+    *
+    * @param nodeArchitecture the architecture output of dotnet --info from the runtime
+    * @returns the architecture in the style that node expects
+    *
+    * @remarks Falls back to string 'auto' if a mapping does not exist which is not a valid architecture.
+    * So far, the outputs are actually all identical so this is not really 'needed' but good to have in the future :)
+    */
+    public static dotnetInfoArchToNodeArch(dotnetInfoArch : string, eventStream : IEventStream)
+    {
+        switch(dotnetInfoArch)
+        {
+            case 'x64': {
+                return dotnetInfoArch;
+            }
+            case 'x86': {
+                // In case the function is called twice
+                return dotnetInfoArch;
+            }
+            case 'arm': { // This shouldn't be an output yet, but its possible in the future
+                return dotnetInfoArch;
+            }
+            case 'arm64': {
+                return dotnetInfoArch;
+            }
+            default: {
+                eventStream.post(new DotnetCommandFallbackArchitectureEvent(`The architecture ${dotnetInfoArch} of the platform is unexpected, falling back to auto-arch.`));
+                return 'auto';
+            }
+        }
+    }
+
    /**
     *
     * @param nodeOS the OS in node style string of what to install

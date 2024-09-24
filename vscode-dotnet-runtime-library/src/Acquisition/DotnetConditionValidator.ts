@@ -11,6 +11,7 @@ import { IDotnetListInfo } from './IDotnetListInfo';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetConditionValidator } from './IDotnetConditionValidator';
 import * as versionUtils from './VersionUtilities';
+import { FileUtilities } from '../Utils/FileUtilities';
 
 
 export class DotnetConditionValidator implements IDotnetConditionValidator
@@ -133,7 +134,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
 
     private stringArchitectureMeetsRequirement(outputArchitecture : string, requiredArchitecture : string) : boolean
     {
-
+        return FileUtilities.dotnetInfoArchToNodeArch(outputArchitecture, this.workerContext.eventStream) === requiredArchitecture;
     }
 
     public async getRuntimes(existingPath : string) : Promise<IDotnetListInfo[]>
@@ -149,7 +150,6 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
             const sdks = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
             const runtimeInfos : IDotnetListInfo[] = sdks.map((runtime) =>
             {
-                // todo add some better logging here.
                 if(runtime === '') // new line in output that got trimmed
                 {
                     return null;

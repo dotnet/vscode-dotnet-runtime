@@ -437,6 +437,17 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         return uninstall(commandContext);
     });
 
+    /**
+     * @param commandContext The context of the request to find the dotnet path.
+     * We wrap an AcquisitionContext which must include the version, requestingExtensionId, architecture of .NET desired, and mode.
+     *
+     * @returns the path to the dotnet executable, if one can be found. This should be the true path to the executable. undefined if none can be found.
+     *
+     * @remarks Priority Order for path lookup:
+     * VSCode Setting -> PATH -> Realpath of PATH -> DOTNET_ROOT (Emulation DOTNET_ROOT if set first)
+     *
+     * This accounts for pmc installs, snap installs, bash configurations, and other non-standard installations such as homebrew.
+     */
     const dotnetFindPathRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.findPath}`, async (commandContext : IDotnetFindPathContext) =>
     {
         if(!commandContext.acquireContext.mode || !commandContext.acquireContext.requestingExtensionId || !commandContext.acquireContext.version || !commandContext.acquireContext.architecture)
@@ -453,23 +464,36 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         }
 
         const validator = new DotnetConditionValidator(workerContext, utilContext);
-        const finder = new DotnetPathFinder();
-        const dotnetOnPATH = await finder.findDotnetOnPath();
-        // should this try bin/bash shell option as well?
-        // may need to go up 2 directories from --list-runtimes output for true executable. check raw first
+        const finder = new DotnetPathFinder(workerContext, utilContext);
 
-        let validated = await validator.versionMeetsRequirement(dotnetOnPATH, commandContext);
-        if(validated)
+        const dotnetOnPATH = await finder.findRawPathEnvironmentSetting();
+        if(dotnetOnPATH)
         {
-            return dotnetOnPATH;
+            let validated = await validator.dotnetMeetsRequirement(dotnetOnPATH, commandContext);
+            if(validated)
+            {
+                return dotnetOnPATH;
+            }
         }
 
-        const dotnetOnROOT = await finder.findDotnetOnRoot();
-
-        validated = await validator.versionMeetsRequirement(dotnetOnROOT, commandContext);
-        if(validated)
+        const dotnetOnRealPATH = await finder.findRealPathEnvironmentSetting();
+        if(dotnetOnRealPATH)
         {
-            return dotnetOnROOT;
+            let validated = await validator.dotnetMeetsRequirement(dotnetOnRealPATH, commandContext);
+            if(validated)
+            {
+                return dotnetOnRealPATH;
+            }
+        }
+
+        const dotnetOnROOT = await finder.findDotnetRootPath(commandContext.acquireContext.architecture);
+        if(dotnetOnROOT)
+        {
+            let validated = await validator.dotnetMeetsRequirement(dotnetOnROOT, commandContext);
+            if(validated)
+            {
+                return dotnetOnROOT;
+            }
         }
 
         return undefined;
