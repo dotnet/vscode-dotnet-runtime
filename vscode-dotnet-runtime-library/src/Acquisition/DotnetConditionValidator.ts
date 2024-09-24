@@ -30,7 +30,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
         if(availableRuntimes.some((runtime) =>
             {
                 const foundVersion = versionUtils.getMajorMinor(runtime.version, this.workerContext.eventStream, this.workerContext);
-                return runtime.mode === requirement.acquireContext.mode && this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture!) &&
+                return runtime.mode === requirement.acquireContext.mode && this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) &&
                     this.stringVersionMeetsRequirement(foundVersion, requestedMajorMinor, requirement.versionSpecRequirement);
             }))
         {
@@ -43,24 +43,24 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
                 {
                     // The SDK includes the Runtime, ASP.NET Core Runtime, and Windows Desktop Runtime. So, we don't need to check the mode.
                     const foundVersion = versionUtils.getMajorMinor(sdk.version, this.workerContext.eventStream, this.workerContext);
-                    return this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture!), this.stringVersionMeetsRequirement(foundVersion, requestedMajorMinor, requirement.versionSpecRequirement);
+                    return this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture), this.stringVersionMeetsRequirement(foundVersion, requestedMajorMinor, requirement.versionSpecRequirement);
                 }))
             {
                 return true;
             }
-
-            return false;
         }
+
+        return false;
     }
 
     /**
      *
      * @param hostPath The path to the dotnet executable
-     * @returns The architecture of the dotnet host from the PATH.
+     * @returns The architecture of the dotnet host from the PATH, in dotnet info string format
      * The .NET Host will only list versions of the runtime and sdk that match its architecture.
      * Thus, any runtime or sdk that it prints out will be the same architecture as the host.
      *
-     * @remarks Will return '' if the architecture cannot be determined for some peculiar reason (e.g. dotnet --info is broken or changed). )
+     * @remarks Will return '' if the architecture cannot be determined for some peculiar reason (e.g. dotnet --info is broken or changed).
      */
     private async getHostArchitecture(hostPath : string) : Promise<string>
     {
@@ -94,10 +94,6 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
             const sdks = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
             const sdkInfos : IDotnetListInfo[] = sdks.map((sdk) =>
             {
-                if(sdk === '') // new line in output that got trimmed
-                {
-                    return null;
-                }
                 const parts = sdk.split(' ', 2);
                 return {
                     mode: 'sdk',
@@ -115,31 +111,29 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
     private stringVersionMeetsRequirement(foundVersion : string, requiredVersion : string, requirement : DotnetVersionSpecRequirement) : boolean
     {
         if(requirement === 'equal')
-            {
-                return foundVersion == requiredVersion;
-            }
-            else if(requirement === 'greater_than_or_equal')
-            {
-                return foundVersion >= requiredVersion;
-            }
-            else if(requirement === 'less_than_or_equal')
-            {
-                return foundVersion <= requiredVersion;
-            }
-            else
-            {
-                return false;
-            }
+        {
+            return foundVersion === requiredVersion;
+        }
+        else if(requirement === 'greater_than_or_equal')
+        {
+            return foundVersion >= requiredVersion;
+        }
+        else if(requirement === 'less_than_or_equal')
+        {
+            return foundVersion <= requiredVersion;
+        }
+
+        return false;
     }
 
-    private stringArchitectureMeetsRequirement(outputArchitecture : string, requiredArchitecture : string) : boolean
+    private stringArchitectureMeetsRequirement(outputArchitecture : string, requiredArchitecture : string | null | undefined) : boolean
     {
-        return FileUtilities.dotnetInfoArchToNodeArch(outputArchitecture, this.workerContext.eventStream) === requiredArchitecture;
+        return !requiredArchitecture || outputArchitecture === '' || FileUtilities.dotnetInfoArchToNodeArch(outputArchitecture, this.workerContext.eventStream) === requiredArchitecture;
     }
 
     public async getRuntimes(existingPath : string) : Promise<IDotnetListInfo[]>
     {
-        const findRuntimesCommand = CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-sdks']);
+        const findRuntimesCommand = CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-runtimes']);
 
         const windowsDesktopString = 'Microsoft.WindowsDesktop.App';
         const aspnetCoreString = 'Microsoft.AspNetCore.App';
@@ -147,13 +141,9 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
 
         const runtimeInfo = await (this.executor!).execute(findRuntimesCommand, undefined, false).then((result) =>
         {
-            const sdks = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
-            const runtimeInfos : IDotnetListInfo[] = sdks.map((runtime) =>
+            const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
+            const runtimeInfos : IDotnetListInfo[] = runtimes.map((runtime) =>
             {
-                if(runtime === '') // new line in output that got trimmed
-                {
-                    return null;
-                }
                 const parts = runtime.split(' ', 3); // account for spaces in PATH, no space should appear before then and luckily path is last
                 return {
                     mode: parts[0] === aspnetCoreString ? 'aspnetcore' : parts[0] === runtimeString ? 'runtime' : 'sdk', // sdk is a placeholder for windows desktop, will never match since this is for runtime search only

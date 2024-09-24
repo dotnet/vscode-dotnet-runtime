@@ -11,6 +11,7 @@ import { TelemetryUtilities } from './TelemetryUtilities';
 import { InstallToStrings , DotnetInstall } from '../Acquisition/DotnetInstall';
 import { DotnetInstallMode } from '../Acquisition/DotnetInstallMode';
 import { DotnetInstallType } from '../IDotnetAcquireContext';
+import { IDotnetFindPathContext } from '../IDotnetFindPathContext';
 
 export class EventCancellationError extends Error
 {
@@ -808,6 +809,63 @@ export class DotnetWSLCheckEvent extends DotnetCustomMessageEvent {
 
 export class DotnetWSLOperationOutputEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetWSLOperationOutputEvent';
+}
+
+export class DotnetFindPathCommandInvoked extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathCommandInvoked';
+    constructor(public readonly eventMessage: string, public readonly request : IDotnetFindPathContext) { super(eventMessage); }
+
+    public getProperties() {
+        return { Message: this.eventMessage, Context : JSON.stringify(this.request)};
+    };
+}
+
+export class DotnetFindPathLookupSetting extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathLookupSetting';
+}
+
+export class DotnetFindPathSettingFound extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathSettingFound';
+}
+
+export class DotnetFindPathLookupPATH extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathLookupPATH';
+}
+
+export class DotnetFindPathPATHFound extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathPATHFound';
+}
+
+export class DotnetFindPathLookupRealPATH extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathLookupRealPATH';
+}
+
+export class DotnetFindPathRealPATHFound extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathRealPATHFound';
+}
+
+export class DotnetFindPathLookupRootPATH extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathLookupRealPATH';
+}
+
+export class DotnetFindPathRootEmulationPATHFound extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathRealPATHFound';
+}
+
+export class DotnetFindPathRootUnderEmulationButNoneSet extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathRealPATHFound';
+}
+
+export class DotnetFindPathRootPATHFound extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathRealPATHFound';
+}
+
+export class DotnetFindPathMetCondition extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathMetCondition';
+}
+
+export class DotnetFindPathDidNotMeetCondition extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathDidNotMeetCondition';
 }
 
 export class DotnetTelemetrySettingEvent extends DotnetCustomMessageEvent {

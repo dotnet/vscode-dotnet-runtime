@@ -166,13 +166,13 @@ export class FileUtilities extends IFileUtilities
    }
 
     /**
-    *
-    * @param nodeArchitecture the architecture output of dotnet --info from the runtime
-    * @returns the architecture in the style that node expects
-    *
-    * @remarks Falls back to string 'auto' if a mapping does not exist which is not a valid architecture.
-    * So far, the outputs are actually all identical so this is not really 'needed' but good to have in the future :)
-    */
+     *
+     * @param nodeArchitecture the architecture output of dotnet --info from the runtime
+     * @returns the architecture in the style that node expects
+     *
+     * @remarks Falls back to string 'auto' if a mapping does not exist which is not a valid architecture.
+     * So far, the outputs are actually all identical so this is not really 'needed' but good to have in the future :)
+     */
     public static dotnetInfoArchToNodeArch(dotnetInfoArch : string, eventStream : IEventStream)
     {
         switch(dotnetInfoArch)

@@ -14,6 +14,7 @@ import * as path from 'path';
 import { realpathSync } from 'fs';
 import { EnvironmentVariableIsDefined, getDotnetExecutable, getOSArch } from '../Utils/TypescriptUtilities';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
+import { DotnetFindPathLookupPATH, DotnetFindPathLookupRealPATH, DotnetFindPathLookupRootPATH, DotnetFindPathPATHFound, DotnetFindPathRealPATHFound, DotnetFindPathRootEmulationPATHFound, DotnetFindPathRootPATHFound, DotnetFindPathRootUnderEmulationButNoneSet } from '../EventStream/EventStreamEvents';
 
 export class DotnetPathFinder implements IDotnetPathFinder
 {
@@ -40,19 +41,27 @@ export class DotnetPathFinder implements IDotnetPathFinder
      */
     public async findDotnetRootPath(requestedArchitecture : string) : Promise<string | undefined>
     {
-        const path = process.env.DOTNET_ROOT;
-        if(requestedArchitecture == 'x64' && (this.executor !== undefined ? (await getOSArch(this.executor)).includes('arm') : false))
+        this.workerContext.eventStream.post(new DotnetFindPathLookupRootPATH(`Looking up .NET on the root.`));
+
+        if(requestedArchitecture === 'x64' && (this.executor !== undefined ? (await getOSArch(this.executor)).includes('arm') : false))
         {
-            const emulationPath = process.env.DOTNET_ROOT_X64;
-            if(EnvironmentVariableIsDefined(emulationPath))
+            const dotnetOnRootEmulationPath = process.env.DOTNET_ROOT_X64;
+            if(EnvironmentVariableIsDefined(dotnetOnRootEmulationPath))
             {
-                return emulationPath;
+                this.workerContext.eventStream.post(new DotnetFindPathRootEmulationPATHFound(`Under emulation and emulation root is set.`));
+                return dotnetOnRootEmulationPath;
+            }
+            else
+            {
+                this.workerContext.eventStream.post(new DotnetFindPathRootUnderEmulationButNoneSet(`Under emulation but DOTNET_ROOT_X64 is not set.`));
             }
         }
 
-        if(EnvironmentVariableIsDefined(path))
+        const dotnetOnRootPath = process.env.DOTNET_ROOT;
+        if(EnvironmentVariableIsDefined(dotnetOnRootPath))
         {
-            return path;
+            this.workerContext.eventStream.post(new DotnetFindPathRootPATHFound(`Found .NET on the root: ${dotnetOnRootPath}`));
+            return dotnetOnRootPath;
         }
         return undefined;
     }
@@ -70,11 +79,23 @@ export class DotnetPathFinder implements IDotnetPathFinder
     public async findRawPathEnvironmentSetting(tryUseTrueShell = true) : Promise<string | undefined>
     {
         const options = tryUseTrueShell && os.platform() !== 'win32' ? { shell: process.env.SHELL === '/bin/bash' ? '/bin/bash' : '/bin/sh'} : undefined;
+
+        this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Looking up .NET on the path. Process.env.path: ${process.env.PATH}.
+Executor Path: ${(await this.executor?.execute(
+    os.platform() === 'win32' ? CommandExecutor.makeCommand('echo', ['%PATH']) : CommandExecutor.makeCommand('env', []),
+    undefined,
+    false))?.stdout}
+
+Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(CommandExecutor.makeCommand('env', ['bash']), '/bin/bash', false))?.stdout : 'N/A'}
+`
+        ));
+
         const findCommand = CommandExecutor.makeCommand(this.finderCommand, ['dotnet']);
-        const path = (await this.executor?.execute(findCommand, options))?.stdout.trim();
-        if(path)
+        const dotnetOnPATH = (await this.executor?.execute(findCommand, options))?.stdout.trim();
+        if(dotnetOnPATH)
         {
-            return this.getTruePath(path);
+            this.workerContext.eventStream.post(new DotnetFindPathPATHFound(`Found .NET on the path: ${dotnetOnPATH}`));
+            return this.getTruePath(dotnetOnPATH);
         }
         return undefined;
     }
@@ -88,10 +109,12 @@ export class DotnetPathFinder implements IDotnetPathFinder
      */
     public async findRealPathEnvironmentSetting(tryUseTrueShell = true) : Promise<string | undefined>
     {
-        const path = await this.findRawPathEnvironmentSetting(tryUseTrueShell);
-        if(path)
+        this.workerContext.eventStream.post(new DotnetFindPathLookupRealPATH(`Looking up .NET on the real path.`));
+        const dotnetOnPATH = await this.findRawPathEnvironmentSetting(tryUseTrueShell);
+        if(dotnetOnPATH)
         {
-            return this.getTruePath(realpathSync(path));
+            this.workerContext.eventStream.post(new DotnetFindPathRealPATHFound(`Found .NET on the path: ${dotnetOnPATH}, realpath: ${realpathSync(dotnetOnPATH)}`));
+            return this.getTruePath(realpathSync(dotnetOnPATH));
         }
         return undefined;
     }
