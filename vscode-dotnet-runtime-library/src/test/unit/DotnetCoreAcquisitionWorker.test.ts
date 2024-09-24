@@ -16,10 +16,7 @@ import {
     DotnetInstallGraveyardEvent,
     DotnetUninstallAllCompleted,
     DotnetUninstallAllStarted,
-    TestAcquireCalled,
-    DotnetASPNetRuntimeAcquisitionTotalSuccessEvent,
-    DotnetGlobalSDKAcquisitionTotalSuccessEvent,
-    DotnetRuntimeAcquisitionTotalSuccessEvent
+    TestAcquireCalled
 } from '../../EventStream/EventStreamEvents';
 import { EventType } from '../../EventStream/EventType';
 import {
@@ -41,6 +38,7 @@ import { IEventStream } from '../../EventStream/EventStream';
 import { DotnetInstallType} from '../../IDotnetAcquireContext';
 import { getInstallIdCustomArchitecture } from '../../Utils/InstallIdUtilities';
 import { InstallTrackerSingleton } from '../../Acquisition/InstallTrackerSingleton';
+import { getDotnetExecutable } from '../../Utils/TypescriptUtilities';
 
 const assert = chai.assert;
 chai.use(chaiAsPromised);
@@ -93,11 +91,11 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
     {
         if(mode === 'runtime' || mode === 'aspnetcore')
         {
-            return path.join(dotnetFolderName, installId, os.platform() === 'win32' ? 'dotnet.exe' : 'dotnet')
+            return path.join(dotnetFolderName, installId, getDotnetExecutable())
         }
         else if(mode === 'sdk')
         {
-            return path.join(dotnetFolderName, os.platform() === 'win32' ? 'dotnet.exe' : 'dotnet');
+            return path.join(dotnetFolderName, getDotnetExecutable());
         }
 
         return 'There is a mode without a designated return path';

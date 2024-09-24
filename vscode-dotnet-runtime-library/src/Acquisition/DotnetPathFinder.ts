@@ -3,7 +3,6 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-import { find } from 'tslint/lib/utils';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
@@ -11,8 +10,10 @@ import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetPathFinder } from './IDotnetPathFinder';
 
 import * as os from 'os';
+import * as path from 'path';
 import { realpathSync } from 'fs';
-import { getOSArch } from '../Utils/TypescriptUtilities';
+import { EnvironmentVariableIsDefined, getDotnetExecutable, getOSArch } from '../Utils/TypescriptUtilities';
+import { DotnetConditionValidator } from './DotnetConditionValidator';
 
 export class DotnetPathFinder implements IDotnetPathFinder
 {
@@ -28,7 +29,7 @@ export class DotnetPathFinder implements IDotnetPathFinder
      * @returns The DOTNET_ROOT environment variable, which is the root path for the dotnet installation.
      * Some applications, such as `dotnet test`, prefer DOTNET_ROOT over the PATH setting.
      * DOTNET_ROOT is also not the only setting.
-     * DOTNET_ROOT(x86) - Deprecated. Only used when running 32-bit executables. VS Code 32 bit is deprecated, so dont support this.
+     * DOTNET_ROOT(x86) - Deprecated. Only used when running 32-bit executables. VS Code 32 bit is deprecated, so don't support this.
      * DOTNET_ROOT_X86 - The non deprecated version of the above variable, still ignore.
      * DOTNET_ROOT_X64 - Used when running 64-bit executables on an ARM64 OS.
      * Node only runs on x64 and not ARM, but that doesn't mean the .NET Application won't run on ARM.
@@ -37,19 +38,19 @@ export class DotnetPathFinder implements IDotnetPathFinder
      *
      * The VS Code Workspace environment may also be different from the System environment.
      */
-    public async findDotnetRootPath() : Promise<string | undefined>
+    public async findDotnetRootPath(requestedArchitecture : string) : Promise<string | undefined>
     {
         const path = process.env.DOTNET_ROOT;
-        if(os.arch() == 'x64' && (this.executor !== undefined ? (await getOSArch(this.executor)).includes('arm') : false))
+        if(requestedArchitecture == 'x64' && (this.executor !== undefined ? (await getOSArch(this.executor)).includes('arm') : false))
         {
             const emulationPath = process.env.DOTNET_ROOT_X64;
-            if(emulationPath !== null && emulationPath !== undefined && emulationPath !== 'undefined')
+            if(EnvironmentVariableIsDefined(emulationPath))
             {
                 return emulationPath;
             }
         }
 
-        if(path !== null && path !== undefined && path !== 'undefined')
+        if(EnvironmentVariableIsDefined(path))
         {
             return path;
         }
@@ -68,12 +69,12 @@ export class DotnetPathFinder implements IDotnetPathFinder
      */
     public async findRawPathEnvironmentSetting(tryUseTrueShell = true) : Promise<string | undefined>
     {
-        const options = tryUseTrueShell ? { shell: process.env.SHELL === '/bin/bash' ? '/bin/bash' : '/bin/sh'} : undefined;
+        const options = tryUseTrueShell && os.platform() !== 'win32' ? { shell: process.env.SHELL === '/bin/bash' ? '/bin/bash' : '/bin/sh'} : undefined;
         const findCommand = CommandExecutor.makeCommand(this.finderCommand, ['dotnet']);
         const path = (await this.executor?.execute(findCommand, options))?.stdout.trim();
         if(path)
         {
-            return path;
+            return this.getTruePath(path);
         }
         return undefined;
     }
@@ -90,9 +91,27 @@ export class DotnetPathFinder implements IDotnetPathFinder
         const path = await this.findRawPathEnvironmentSetting(tryUseTrueShell);
         if(path)
         {
-            return realpathSync(path);
+            return this.getTruePath(realpathSync(path));
         }
         return undefined;
     }
 
+    private async getTruePath(tentativePath : string) : Promise<string>
+    {
+        const runtimeInfo = await new DotnetConditionValidator(this.workerContext, this.utilityContext, this.executor).getRuntimes(tentativePath);
+        if(runtimeInfo.length > 0)
+        {
+            // The .NET install layout is a well known structure on all platforms.
+            // See https://github.com/dotnet/designs/blob/main/accepted/2020/install-locations.md#net-core-install-layout
+            //
+            // Therefore we know that the runtime path is always in <install root>/shared/<runtime name>
+            // and the dotnet executable is always at <install root>/dotnet(.exe).
+            //
+            // Since dotnet --list-runtimes will always use the real assembly path to output the runtime folder (no symlinks!)
+            // we know the dotnet executable will be two folders up in the install root.
+            return path.join(path.dirname(path.dirname(runtimeInfo[0].directory)), getDotnetExecutable());
+        }
+
+        return tentativePath;
+    }
 }

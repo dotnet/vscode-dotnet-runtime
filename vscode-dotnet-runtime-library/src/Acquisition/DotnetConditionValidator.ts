@@ -7,12 +7,10 @@ import { IDotnetFindPathContext } from '../IDotnetFindPathContext';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { DotnetInstallMode } from './DotnetInstallMode';
+import { IDotnetListInfo } from './IDotnetListInfo';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetConditionValidator } from './IDotnetConditionValidator';
 import * as versionUtils from './VersionUtilities';
-
-interface IDotnetListInfo { mode: DotnetInstallMode, version: string, directory : string };
 
 
 export class DotnetConditionValidator implements IDotnetConditionValidator
@@ -86,7 +84,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
         return hostArch;
     }
 
-    private async getSDKs(existingPath : string) : Promise<IDotnetListInfo[]>
+    public async getSDKs(existingPath : string) : Promise<IDotnetListInfo[]>
     {
         const findSDKsCommand = CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-sdks']);
 
@@ -138,7 +136,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
 
     }
 
-    private async getRuntimes(existingPath : string) : Promise<IDotnetListInfo[]>
+    public async getRuntimes(existingPath : string) : Promise<IDotnetListInfo[]>
     {
         const findRuntimesCommand = CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-sdks']);
 

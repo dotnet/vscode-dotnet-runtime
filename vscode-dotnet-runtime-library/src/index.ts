@@ -40,6 +40,7 @@ export * from './Acquisition/DotnetConditionValidator';
 export * from './Acquisition/IDotnetPathFinder';
 export * from './Acquisition/DotnetPathFinder';
 export * from './Acquisition/IDotnetConditionValidator';
+export * from './Acquisition/IDotnetListInfo';
 export * from './Acquisition/DotnetInstall';
 export * from './Acquisition/IAcquisitionWorkerContext';
 export * from './Acquisition/DirectoryProviderFactory';

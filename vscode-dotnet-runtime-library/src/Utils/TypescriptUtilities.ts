@@ -70,6 +70,17 @@ export async function getOSArch(executor : ICommandExecutor) : Promise<string>
         const findTrueArchCommand = CommandExecutor.makeCommand(`uname`, [`-p`]);
         return (await executor.execute(findTrueArchCommand, null, false)).stdout.toLowerCase().trim();
     }
-    
+
     return os.arch();
+}
+
+export function getDotnetExecutable() : string
+{
+    return os.platform() === 'win32' ? 'dotnet.exe' : 'dotnet';
+}
+
+export function EnvironmentVariableIsDefined(variable : any) : boolean
+{
+    // Most of the time this will be 'undefined', so this is the fastest check.
+    return variable !== 'undefined' && variable !== null && variable !== '' && variable !== undefined;
 }
