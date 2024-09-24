@@ -12,6 +12,7 @@ import { IDotnetPathFinder } from './IDotnetPathFinder';
 
 import * as os from 'os';
 import { realpathSync } from 'fs';
+import { getOSArch } from '../Utils/TypescriptUtilities';
 
 export class DotnetPathFinder implements IDotnetPathFinder
 {
@@ -39,8 +40,7 @@ export class DotnetPathFinder implements IDotnetPathFinder
     public async findDotnetRootPath() : Promise<string | undefined>
     {
         const path = process.env.DOTNET_ROOT;
-        this.executor?.execute(CommandExecutor.makeCommand(`uname`, [`-p`]); // make get true arc function in utilities helper
-        if(os.arch() == 'x64' && trueArchitecture().includes('arm'))
+        if(os.arch() == 'x64' && (this.executor !== undefined ? (await getOSArch(this.executor)).includes('arm') : false))
         {
             const emulationPath = process.env.DOTNET_ROOT_X64;
             if(emulationPath !== null && emulationPath !== undefined && emulationPath !== 'undefined')
@@ -66,10 +66,11 @@ export class DotnetPathFinder implements IDotnetPathFinder
      * In an install such as homebrew, the PATH is not indicative of all of the PATHs. So dotnet may be missing in the PATH even though it is found in an alternative shell.
      * The PATH can be discovered using path_helper on mac.
      */
-    public async findRawPathEnvironmentSetting() : Promise<string | undefined>
+    public async findRawPathEnvironmentSetting(tryUseTrueShell = true) : Promise<string | undefined>
     {
+        const options = tryUseTrueShell ? { shell: process.env.SHELL === '/bin/bash' ? '/bin/bash' : '/bin/sh'} : undefined;
         const findCommand = CommandExecutor.makeCommand(this.finderCommand, ['dotnet']);
-        const path = (await this.executor?.execute(findCommand))?.stdout.trim();
+        const path = (await this.executor?.execute(findCommand, options))?.stdout.trim();
         if(path)
         {
             return path;
@@ -84,9 +85,9 @@ export class DotnetPathFinder implements IDotnetPathFinder
      *
      * We can't use realpath on all paths, because some paths are polymorphic executables and the realpath is invalid.
      */
-    public async findRealPathEnvironmentSetting() : Promise<string | undefined>
+    public async findRealPathEnvironmentSetting(tryUseTrueShell = true) : Promise<string | undefined>
     {
-        const path = await this.findRawPathEnvironmentSetting();
+        const path = await this.findRawPathEnvironmentSetting(tryUseTrueShell);
         if(path)
         {
             return realpathSync(path);

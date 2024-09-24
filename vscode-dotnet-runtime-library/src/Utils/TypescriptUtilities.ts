@@ -8,6 +8,8 @@ import * as os from 'os';
 import { IEventStream } from '../EventStream/EventStream';
 import { DotnetWSLCheckEvent, DotnetWSLOperationOutputEvent } from '../EventStream/EventStreamEvents';
 import { IEvent } from '../EventStream/IEvent';
+import { ICommandExecutor } from './ICommandExecutor';
+import { CommandExecutor } from './CommandExecutor';
 
 export async function loopWithTimeoutOnCond(sampleRatePerMs : number, durationToWaitBeforeTimeoutMs : number, conditionToStop : () => boolean, doAfterStop : () => void,
     eventStream : IEventStream, waitEvent : IEvent)
@@ -59,4 +61,15 @@ status: ${commandResult.status?.toString()}`
     }
 
     return commandResult.stdout.toString() !== '';
+}
+
+export async function getOSArch(executor : ICommandExecutor) : Promise<string>
+{
+    if(os.platform() === 'darwin')
+    {
+        const findTrueArchCommand = CommandExecutor.makeCommand(`uname`, [`-p`]);
+        return (await executor.execute(findTrueArchCommand, null, false)).stdout.toLowerCase().trim();
+    }
+    
+    return os.arch();
 }

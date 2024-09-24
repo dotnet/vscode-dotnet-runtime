@@ -422,7 +422,7 @@ with options ${JSON.stringify(options)}.`));
                 {
                     execElevated(fullCommandString, options, (error?: Error, execStdout?: string | Buffer, execStderr?: string | Buffer) =>
                     {
-                        if(error && terminalFailure && !error.message.includes('screen size is bogus'))
+                        if(error && terminalFailure && !error?.message?.includes('screen size is bogus'))
                         {
                             return reject(this.parseVSCodeSudoExecError(error, fullCommandString));
                         }
