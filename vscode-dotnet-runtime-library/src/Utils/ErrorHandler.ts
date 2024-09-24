@@ -53,11 +53,12 @@ Our CDN may be blocked in China or experience significant slowdown, in which cas
 
 let showMessage = true;
 
-export function callWithErrorHandling<T>(callback: () => T, context: IIssueContext, requestingExtensionId?: string, acquireContext? : IAcquisitionWorkerContext): T | undefined {
+export async function callWithErrorHandling<T>(callback: () => T, context: IIssueContext, requestingExtensionId?: string, acquireContext? : IAcquisitionWorkerContext): Promise<T | undefined> {
     const isAcquisitionError = acquireContext ? true : false;
     try
     {
-        const result = callback();
+        /* eslint-disable @typescript-eslint/await-thenable */
+        const result = await callback();
         context.eventStream.post(new DotnetCommandSucceeded(context.commandName));
         return result;
     }

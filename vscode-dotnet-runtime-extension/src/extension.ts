@@ -342,7 +342,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     });
 
     const dotnetAcquireStatusRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquireStatus}`, async (commandContext: IDotnetAcquireContext) => {
-        const pathResult = callWithErrorHandling(async () =>
+        const pathResult = await callWithErrorHandling(async () =>
         {
             const mode = commandContext.mode ?? 'runtime' as DotnetInstallMode;
             const worker = getAcquisitionWorker();
