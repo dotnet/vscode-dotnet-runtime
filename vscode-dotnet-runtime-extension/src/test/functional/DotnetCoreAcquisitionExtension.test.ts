@@ -212,6 +212,11 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
         const mockExecutor = new MockCommandExecutor(getMockAcquisitionContext(iMode, version), getMockUtilityContext());
         //mockExecutor.setEnvironmentVariable('PATH', process.env.PATH, new VSCodeExtensionContext(extensionContext));
     }
+    else
+    {
+        // remove dotnet so the test will work on machines with dotnet installed
+        process.env.PATH = `${process.env.PATH?.split(';').filter((x : string) => !(x.toLowerCase().includes('dotnet')) && !(x.toLowerCase().includes('program'))).join(';')}`;
+    }
 
     extensionContext.environmentVariableCollection.replace('PATH', process.env.PATH ?? '');
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath',
@@ -222,7 +227,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     if(shouldFind)
     {
         assert.exists(result, 'find path command returned a result');
-        assert.equal(result, path.join(__dirname, 'tmp', '.dotnet', expectedPath ?? installPath.split('\\').filter(x => x.includes('~'))[0], getDotnetExecutable()), 'The path returned by findPath is correct');
+        assert.equal(result, expectedPath ?? path.join(__dirname, 'tmp', '.dotnet', installPath.split('\\').filter(x => x.includes('~'))[0], getDotnetExecutable()), 'The path returned by findPath is correct');
     }
     else
     {
@@ -300,8 +305,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
 
   test('Find dotnet PATH Command Unmet Version Condition', async () => {
     // Install 3.1, look for 8.0 which is not less than or equal to 3.1
-    await findPathWithRequirementAndInstall('3.1', 'runtime', os.arch(), 'less_than_or_equal', false,
-        {version : '8.0', mode : 'runtime', architecture : os.arch(), requestingExtensionId : requestingExtensionId}
+    await findPathWithRequirementAndInstall('8.0', 'runtime', os.arch(), 'less_than_or_equal', false,
+        {version : '3.1', mode : 'runtime', architecture : os.arch(), requestingExtensionId : requestingExtensionId}
     );
   }).timeout(standardTimeoutTime);
 
