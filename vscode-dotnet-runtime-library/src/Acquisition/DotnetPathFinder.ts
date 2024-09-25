@@ -58,6 +58,7 @@ export class DotnetPathFinder implements IDotnetPathFinder
             if(EnvironmentVariableIsDefined(dotnetOnRootEmulationPath))
             {
                 // DOTNET_ROOT should be set to the directory containing the dotnet executable, not the executable itself.
+                // https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-environment-variables
                 dotnetOnRootEmulationPath = path.join(dotnetOnRootEmulationPath!, getDotnetExecutable());
                 this.workerContext.eventStream.post(new DotnetFindPathRootEmulationPATHFound(`Under emulation and emulation root is set to ${dotnetOnRootEmulationPath}.`));
                 return dotnetOnRootEmulationPath;

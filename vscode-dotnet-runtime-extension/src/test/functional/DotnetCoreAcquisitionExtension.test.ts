@@ -104,7 +104,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     });
   });
 
-  this.afterEach(async () => {
+  this.afterEach(async (done) => {
     // Tear down tmp storage for fresh run
     process.env.PATH = originalPATH;
 
@@ -113,7 +113,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     MockTelemetryReporter.telemetryEvents = [];
     rimraf.sync(storagePath);
     InstallTrackerSingleton.getInstance(new MockEventStream(), new MockExtensionContext()).clearPromises();
-
+    done();
   }).timeout(standardTimeoutTime);
 
   test('Activate', async () => {
@@ -232,7 +232,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
         assert.equal(result, undefined, 'find path command returned no undefined if no path matches condition');
     }
   }
-/*
+
   test('Install Local Runtime Command', async () =>
   {
     await installRuntime('2.2', 'runtime');
@@ -274,7 +274,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
   test('Install and Uninstall Multiple Local ASP.NET Runtime Versions', async () => {
     await installMultipleVersions(['2.2', '3.0', '3.1'], 'aspnetcore');
   }).timeout(standardTimeoutTime * 2);
-*/
+
   test('Find dotnet PATH Command Met Condition', async () => {
     // install 5.0 then look for 5.0 path
     await findPathWithRequirementAndInstall('5.0', 'runtime', os.arch(), 'greater_than_or_equal', true);
