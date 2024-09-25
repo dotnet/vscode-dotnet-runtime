@@ -107,8 +107,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
   this.afterEach(async () => {
     // Tear down tmp storage for fresh run
     process.env.PATH = originalPATH;
-    extensionContext.environmentVariableCollection.replace('PATH', process.env.PATH ?? '');
-    //vscode.commands.executeCommand('dotnet.setEnv', 'PATH', process.env.PATH);
 
     await vscode.commands.executeCommand<string>('dotnet.uninstallAll');
     mockState.clear();
@@ -202,7 +200,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     assert.isFalse(fs.existsSync(result!.dotnetPath), 'the dotnet path result does not exist after uninstalling from all owners');
   }
 
-  async function findPathWithRequirementAndInstall(version : string, iMode : DotnetInstallMode, arch : string, condition : DotnetVersionSpecRequirement, shouldFind : boolean, contextToLookFor? : IDotnetAcquireContext, expectedPath? : string, setPath = true)
+  async function findPathWithRequirementAndInstall(version : string, iMode : DotnetInstallMode, arch : string, condition : DotnetVersionSpecRequirement, shouldFind : boolean, contextToLookFor? : IDotnetAcquireContext, setPath = true)
   {
     const installPath = await installRuntime(version, iMode);
 
@@ -210,12 +208,12 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     if(setPath)
     {
         process.env.PATH = `${path.dirname(installPath)};${process.env.PATH?.split(';').filter((x : string) => !(x.toLowerCase().includes('dotnet')) && !(x.toLowerCase().includes('program'))).join(';')}`;
-        //vscode.commands.executeCommand('dotnet.setEnv', 'PATH', process.env.PATH);
     }
     else
     {
         // remove dotnet so the test will work on machines with dotnet installed
         process.env.PATH = `${process.env.PATH?.split(';').filter((x : string) => !(x.toLowerCase().includes('dotnet')) && !(x.toLowerCase().includes('program'))).join(';')}`;
+        process.env.DOTNET_ROOT = path.dirname(installPath);
     }
 
     extensionContext.environmentVariableCollection.replace('PATH', process.env.PATH ?? '');
@@ -227,7 +225,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     if(shouldFind)
     {
         assert.exists(result, 'find path command returned a result');
-        assert.equal(result, expectedPath ?? path.join(__dirname, 'tmp', '.dotnet', installPath.split('\\').filter(x => x.includes('~'))[0], getDotnetExecutable()), 'The path returned by findPath is correct');
+        assert.equal(result, setPath ? installPath : path.join(__dirname, 'tmp', '.dotnet', installPath.split('\\').filter(x => x.includes('~'))[0], getDotnetExecutable()), 'The path returned by findPath is correct');
     }
     else
     {
@@ -285,24 +283,18 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
   test('Find dotnet PATH Command Met ROOT Condition', async () => {
     // install 7.0, set dotnet_root and not path, then look for root
     const oldROOT = process.env.DOTNET_ROOT;
-    const expectedPath = path.join(__dirname, 'tmp', '.dotnet', getInstallIdCustomArchitecture('7.0.17', os.arch(), 'runtime', 'local'), getDotnetExecutable());
-    process.env.DOTNET_ROOT = expectedPath;
-    //vscode.commands.executeCommand('dotnet.setEnv', 'DOTNET_ROOT', process.env.DOTNET_ROOT);
 
     await findPathWithRequirementAndInstall('7.0', 'runtime', os.arch(), 'equal', true,
-        {version : '7.0', mode : 'runtime', architecture : os.arch(), requestingExtensionId : requestingExtensionId},
-        expectedPath, false
+        {version : '7.0', mode : 'runtime', architecture : os.arch(), requestingExtensionId : requestingExtensionId}, false
     );
 
     if(EnvironmentVariableIsDefined(oldROOT))
     {
         process.env.DOTNET_ROOT = oldROOT;
-        //vscode.commands.executeCommand('dotnet.setEnv', 'DOTNET_ROOT', oldROOT);
     }
     else
     {
         delete process.env.DOTNET_ROOT;
-        //vscode.commands.executeCommand('dotnet.setEnv', 'DOTNET_ROOT', '');
     }
   }).timeout(standardTimeoutTime);
 
