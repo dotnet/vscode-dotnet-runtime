@@ -104,7 +104,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     });
   });
 
-  this.afterEach(async (done) => {
+  this.afterEach(async () => {
     // Tear down tmp storage for fresh run
     process.env.PATH = originalPATH;
 
@@ -113,7 +113,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     MockTelemetryReporter.telemetryEvents = [];
     rimraf.sync(storagePath);
     InstallTrackerSingleton.getInstance(new MockEventStream(), new MockExtensionContext()).clearPromises();
-    done();
   }).timeout(standardTimeoutTime);
 
   test('Activate', async () => {
