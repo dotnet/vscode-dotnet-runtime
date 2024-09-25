@@ -18,6 +18,7 @@ import {
     DotnetFindPathLookupPATH,
     DotnetFindPathLookupRealPATH,
     DotnetFindPathLookupRootPATH,
+    DotnetFindPathNoRuntimesOnHost,
     DotnetFindPathPATHFound,
     DotnetFindPathRealPATHFound,
     DotnetFindPathRootEmulationPATHFound,
@@ -76,7 +77,7 @@ export class DotnetPathFinder implements IDotnetPathFinder
 
     /**
      *
-     * @returns The path environment variable for which or where dotnet, which may need to be converted to the actual path if it points to a polymorphic executable.
+     * @returns A set of the path environment variable(s) for which or where dotnet, which may need to be converted to the actual path if it points to a polymorphic executable.
      * For example, `snap` installs dotnet to snap/bin/dotnet, which you can call --list-runtimes on.
      * The 'realpath' of that is 'usr/bin/snap', which you cannot invoke --list-runtimes on, because it is snap.
      * In this case, we need to use this polymorphic path to find the actual path later.
@@ -84,7 +85,7 @@ export class DotnetPathFinder implements IDotnetPathFinder
      * In an install such as homebrew, the PATH is not indicative of all of the PATHs. So dotnet may be missing in the PATH even though it is found in an alternative shell.
      * The PATH can be discovered using path_helper on mac.
      */
-    public async findRawPathEnvironmentSetting(tryUseTrueShell = true) : Promise<string | undefined>
+    public async findRawPathEnvironmentSetting(tryUseTrueShell = true) : Promise<string[] | undefined>
     {
         const options = tryUseTrueShell && os.platform() !== 'win32' ? { shell: process.env.SHELL === '/bin/bash' ? '/bin/bash' : '/bin/sh'} : undefined;
 
@@ -94,24 +95,24 @@ Executor Path: ${(await this.executor?.execute(
     undefined,
     false))?.stdout}
 
-Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(CommandExecutor.makeCommand('env', ['bash']), '/bin/bash', false))?.stdout : 'N/A'}
+Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(CommandExecutor.makeCommand('env', ['bash']), {shell : '/bin/bash'}, false))?.stdout : 'N/A'}
 `
         ));
 
         const windowsWhereCommand = await this.executor?.tryFindWorkingCommand([
             CommandExecutor.makeCommand('where', []),
             CommandExecutor.makeCommand('where.exe', []),
-            CommandExecutor.makeCommand('%SystemRoot%\\System32\\where.exe', []),
-            CommandExecutor.makeCommand('C:\\Windows\\System32\\where.exe', []) // in case SystemRoot is corrupted
+            CommandExecutor.makeCommand('%SystemRoot%\\System32\\where.exe', []), // if PATH is corrupted
+            CommandExecutor.makeCommand('C:\\Windows\\System32\\where.exe', []) // in case SystemRoot is corrupted, best effort guess
         ]);
         const finderCommand = os.platform() === 'win32' ? (windowsWhereCommand?.commandRoot ?? 'where') : 'which';
 
         const findCommand = CommandExecutor.makeCommand(finderCommand, ['dotnet']);
-        const dotnetOnPATH = (await this.executor?.execute(findCommand, options))?.stdout.trim();
-        if(dotnetOnPATH)
+        const dotnetsOnPATH = (await this.executor?.execute(findCommand, options))?.stdout.split('\n').map(x => x.trim());
+        if(dotnetsOnPATH)
         {
-            this.workerContext.eventStream.post(new DotnetFindPathPATHFound(`Found .NET on the path: ${dotnetOnPATH}`));
-            return this.getTruePath(dotnetOnPATH);
+            this.workerContext.eventStream.post(new DotnetFindPathPATHFound(`Found .NET on the path: ${JSON.stringify(dotnetsOnPATH)}`));
+            return this.getTruePath(dotnetsOnPATH);
         }
         return undefined;
     }
@@ -123,34 +124,51 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
      *
      * We can't use realpath on all paths, because some paths are polymorphic executables and the realpath is invalid.
      */
-    public async findRealPathEnvironmentSetting(tryUseTrueShell = true) : Promise<string | undefined>
+    public async findRealPathEnvironmentSetting(tryUseTrueShell = true) : Promise<string[] | undefined>
     {
         this.workerContext.eventStream.post(new DotnetFindPathLookupRealPATH(`Looking up .NET on the real path.`));
-        const dotnetOnPATH = await this.findRawPathEnvironmentSetting(tryUseTrueShell);
-        if(dotnetOnPATH)
+        const dotnetsOnPATH = await this.findRawPathEnvironmentSetting(tryUseTrueShell);
+        if(dotnetsOnPATH)
         {
-            this.workerContext.eventStream.post(new DotnetFindPathRealPATHFound(`Found .NET on the path: ${dotnetOnPATH}, realpath: ${realpathSync(dotnetOnPATH)}`));
-            return this.getTruePath(realpathSync(dotnetOnPATH));
+            const realPaths = dotnetsOnPATH.map(x => realpathSync(x));
+            this.workerContext.eventStream.post(new DotnetFindPathRealPATHFound(`Found .NET on the path: ${JSON.stringify(dotnetsOnPATH)}, realpath: ${realPaths}`));
+            return this.getTruePath(realPaths);
         }
         return undefined;
     }
 
-    private async getTruePath(tentativePath : string) : Promise<string>
+    /**
+     *
+     * @param tentativePaths Paths that may hold a dotnet executable.
+     * @returns The actual physical location/path on disk where the executables lie for each of the paths.
+     * Some of the symlinks etc resolve to a path which works but is still not the actual path.
+     */
+    private async getTruePath(tentativePaths : string[]) : Promise<string[]>
     {
-        const runtimeInfo = await new DotnetConditionValidator(this.workerContext, this.utilityContext, this.executor).getRuntimes(tentativePath);
-        if(runtimeInfo.length > 0)
+        const truePaths = [];
+
+        for(const tentativePath of tentativePaths)
         {
-            // The .NET install layout is a well known structure on all platforms.
-            // See https://github.com/dotnet/designs/blob/main/accepted/2020/install-locations.md#net-core-install-layout
-            //
-            // Therefore we know that the runtime path is always in <install root>/shared/<runtime name>
-            // and the dotnet executable is always at <install root>/dotnet(.exe).
-            //
-            // Since dotnet --list-runtimes will always use the real assembly path to output the runtime folder (no symlinks!)
-            // we know the dotnet executable will be two folders up in the install root.
-            return path.join(path.dirname(path.dirname(runtimeInfo[0].directory)), getDotnetExecutable());
+            const runtimeInfo = await new DotnetConditionValidator(this.workerContext, this.utilityContext, this.executor).getRuntimes(tentativePath);
+            if(runtimeInfo.length > 0)
+            {
+                // q.t. from @dibarbet on the C# Extension:
+                // The .NET install layout is a well known structure on all platforms.
+                // See https://github.com/dotnet/designs/blob/main/accepted/2020/install-locations.md#net-core-install-layout
+                //
+                // Therefore we know that the runtime path is always in <install root>/shared/<runtime name>
+                // and the dotnet executable is always at <install root>/dotnet(.exe).
+                //
+                // Since dotnet --list-runtimes will always use the real assembly path to output the runtime folder (no symlinks!)
+                // we know the dotnet executable will be two folders up in the install root.
+                truePaths.push(path.join(path.dirname(path.dirname(runtimeInfo[0].directory)), getDotnetExecutable()));
+            }
+            else
+            {
+                this.workerContext.eventStream.post(new DotnetFindPathNoRuntimesOnHost(`The host: ${tentativePath} does not contain a .NET runtime installation.`));
+            }
         }
 
-        return tentativePath;
+        return truePaths.length > 0 ? truePaths : tentativePaths;
     }
 }

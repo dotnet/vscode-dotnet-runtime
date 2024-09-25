@@ -478,20 +478,26 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         const validator = new DotnetConditionValidator(workerContext, utilContext);
         const finder = new DotnetPathFinder(workerContext, utilContext);
 
-        const dotnetOnPATH = await finder.findRawPathEnvironmentSetting();
-        const validatedPATH = await getPathIfValid(dotnetOnPATH, validator, commandContext);
-        if(validatedPATH)
+        const dotnetsOnPATH = await finder.findRawPathEnvironmentSetting();
+        for(const dotnetPath of dotnetsOnPATH ?? [])
         {
-            outputChannel.show(true);
-            return validatedPATH;
+            const validatedPATH = await getPathIfValid(dotnetPath, validator, commandContext);
+            if(validatedPATH)
+            {
+                outputChannel.show(true);
+                return validatedPATH;
+            }
         }
 
         const dotnetOnRealPATH = await finder.findRealPathEnvironmentSetting();
-        const validatedRealPATH = await getPathIfValid(dotnetOnRealPATH, validator, commandContext);
-        if(validatedRealPATH)
+        for(const dotnetPath of dotnetsOnPATH ?? [])
         {
-            outputChannel.show(true);
-            return validatedRealPATH;
+            const validatedRealPATH = await getPathIfValid(dotnetPath, validator, commandContext);
+            if(validatedRealPATH)
+            {
+                outputChannel.show(true);
+                return validatedRealPATH;
+            }
         }
 
         const dotnetOnROOT = await finder.findDotnetRootPath(commandContext.acquireContext.architecture);

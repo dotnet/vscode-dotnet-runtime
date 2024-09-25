@@ -362,6 +362,11 @@ export class MockCommandExecutor extends ICommandExecutor
         this.otherCommandPatternsToMock = [];
         this.otherCommandsReturnValues = [];
     }
+
+    public async setEnvironmentVariable(variable : string, value : string, vscodeContext : IVSCodeExtensionContext, failureWarningMessage? : string, nonWinFailureMessage? : string)
+    {
+        return this.trueExecutor.setEnvironmentVariable(variable, value, vscodeContext, failureWarningMessage, nonWinFailureMessage);
+    }
 }
 
 export class MockFileUtilities extends IFileUtilities

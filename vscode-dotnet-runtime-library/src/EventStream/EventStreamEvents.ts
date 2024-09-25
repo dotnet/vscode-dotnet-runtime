@@ -844,6 +844,10 @@ export class DotnetFindPathRealPATHFound extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetFindPathRealPATHFound';
 }
 
+export class DotnetFindPathNoRuntimesOnHost extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathNoRuntimesOnHost';
+}
+
 export class DotnetFindPathLookupRootPATH extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetFindPathLookupRealPATH';
 }
