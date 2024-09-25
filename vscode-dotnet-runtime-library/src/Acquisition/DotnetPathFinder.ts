@@ -54,10 +54,12 @@ export class DotnetPathFinder implements IDotnetPathFinder
 
         if(requestedArchitecture === 'x64' && (this.executor !== undefined ? (await getOSArch(this.executor)).includes('arm') : false))
         {
-            const dotnetOnRootEmulationPath = process.env.DOTNET_ROOT_X64;
+            let dotnetOnRootEmulationPath = process.env.DOTNET_ROOT_X64;
             if(EnvironmentVariableIsDefined(dotnetOnRootEmulationPath))
             {
-                this.workerContext.eventStream.post(new DotnetFindPathRootEmulationPATHFound(`Under emulation and emulation root is set.`));
+                // DOTNET_ROOT should be set to the directory containing the dotnet executable, not the executable itself.
+                dotnetOnRootEmulationPath = path.join(dotnetOnRootEmulationPath!, getDotnetExecutable());
+                this.workerContext.eventStream.post(new DotnetFindPathRootEmulationPATHFound(`Under emulation and emulation root is set to ${dotnetOnRootEmulationPath}.`));
                 return dotnetOnRootEmulationPath;
             }
             else
@@ -66,9 +68,11 @@ export class DotnetPathFinder implements IDotnetPathFinder
             }
         }
 
-        const dotnetOnRootPath = process.env.DOTNET_ROOT;
+        let dotnetOnRootPath = process.env.DOTNET_ROOT;
         if(EnvironmentVariableIsDefined(dotnetOnRootPath))
         {
+            // DOTNET_ROOT should be set to the directory containing the dotnet executable, not the executable itself.
+            dotnetOnRootPath = path.join(dotnetOnRootPath!, getDotnetExecutable());
             this.workerContext.eventStream.post(new DotnetFindPathRootPATHFound(`Found .NET on the root: ${dotnetOnRootPath}`));
             return dotnetOnRootPath;
         }
@@ -87,7 +91,9 @@ export class DotnetPathFinder implements IDotnetPathFinder
      */
     public async findRawPathEnvironmentSetting(tryUseTrueShell = true) : Promise<string[] | undefined>
     {
+        const oldLookup = process.env.DOTNET_MULTILEVEL_LOOKUP;
         process.env.DOTNET_MULTILEVEL_LOOKUP = '0'; // make it so --list-runtimes only finds the runtimes on that path: https://learn.microsoft.com/en-us/dotnet/core/compatibility/deployment/7.0/multilevel-lookup#reason-for-change
+
         const env = process.env; // this is the default, but sometimes it does not get picked up
         const options = tryUseTrueShell && os.platform() !== 'win32' ? { env: env, shell: process.env.SHELL === '/bin/bash' ? '/bin/bash' : '/bin/sh'} : {env : env};
 
@@ -110,13 +116,27 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
         const finderCommand = os.platform() === 'win32' ? (windowsWhereCommand?.commandRoot ?? 'where') : 'which';
 
         const findCommand = CommandExecutor.makeCommand(finderCommand, ['dotnet']);
-        const dotnetsOnPATH = (await this.executor?.execute(findCommand, options))?.stdout.split('\n').map(x => x.trim());
+        const dotnetsOnPATH = (await this.executor?.execute(findCommand, options))?.stdout.split('\n').map(x => x.trim()).filter(x => x !== '');
         if(dotnetsOnPATH)
         {
             this.workerContext.eventStream.post(new DotnetFindPathPATHFound(`Found .NET on the path: ${JSON.stringify(dotnetsOnPATH)}`));
-            return this.getTruePath(dotnetsOnPATH);
+            return this.returnWithRestoringEnvironment(await this.getTruePath(dotnetsOnPATH), 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
+
         }
-        return undefined;
+        return this.returnWithRestoringEnvironment(undefined, 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
+    }
+
+    private async returnWithRestoringEnvironment(returnValue : string[] | undefined, envVarToRestore : string, envResToRestore : string | undefined) : Promise<string[] | undefined>
+    {
+        if(EnvironmentVariableIsDefined(envVarToRestore))
+        {
+            process.env[envVarToRestore] = envResToRestore;
+        }
+        else
+        {
+            delete process.env[envVarToRestore];
+        }
+        return returnValue;
     }
 
     /**
