@@ -131,7 +131,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     assert.isTrue(fs.existsSync(result!.dotnetPath), 'The returned path of .net does exist');
     assert.include(result!.dotnetPath, '.dotnet', '.dotnet is in the path of the local runtime install');
     assert.include(result!.dotnetPath, context.version, 'the path of the local runtime install includes the version of the runtime requested');
-    return result!.dotnetPath;
+    return result.dotnetPath ?? 'runtimePathNotFound';
   }
 
 

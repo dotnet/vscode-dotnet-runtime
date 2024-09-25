@@ -96,7 +96,7 @@ export class DotnetPathFinder implements IDotnetPathFinder
         process.env.DOTNET_MULTILEVEL_LOOKUP = '0'; // make it so --list-runtimes only finds the runtimes on that path: https://learn.microsoft.com/en-us/dotnet/core/compatibility/deployment/7.0/multilevel-lookup#reason-for-change
 
         const env = process.env; // this is the default, but sometimes it does not get picked up
-        const options = tryUseTrueShell && os.platform() !== 'win32' ? { env: env, shell: process.env.SHELL === '/bin/bash' ? '/bin/bash' : '/bin/sh'} : {env : env};
+        const options = tryUseTrueShell && os.platform() !== 'win32' ? { env, shell: process.env.SHELL === '/bin/bash' ? '/bin/bash' : '/bin/sh'} : {env};
 
         this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Looking up .NET on the path. Process.env.path: ${process.env.PATH}.
 Executor Path: ${(await this.executor?.execute(
@@ -127,6 +127,7 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
         return this.returnWithRestoringEnvironment(undefined, 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
     }
 
+    // eslint-disable-next-line @typescript-eslint/require-await
     private async returnWithRestoringEnvironment(returnValue : string[] | undefined, envVarToRestore : string, envResToRestore : string | undefined) : Promise<string[] | undefined>
     {
         if(EnvironmentVariableIsDefined(envVarToRestore))
