@@ -45,7 +45,7 @@ const originalPATH = process.env.PATH;
 
 suite('DotnetCoreAcquisitionExtension End to End', function()
 {
-  this.retries(3);
+  this.retries(1);
   const storagePath = path.join(__dirname, 'tmp');
   const mockState = new MockExtensionContext();
   const extensionPath = path.join(__dirname, '/../../..');
@@ -108,6 +108,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     // Tear down tmp storage for fresh run
     process.env.PATH = originalPATH;
     extensionContext.environmentVariableCollection.replace('PATH', process.env.PATH ?? '');
+    //vscode.commands.executeCommand('dotnet.setEnv', 'PATH', process.env.PATH);
 
     await vscode.commands.executeCommand<string>('dotnet.uninstallAll');
     mockState.clear();
@@ -115,7 +116,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     rimraf.sync(storagePath);
     InstallTrackerSingleton.getInstance(new MockEventStream(), new MockExtensionContext()).clearPromises();
 
-  });
+  }).timeout(standardTimeoutTime);
 
   test('Activate', async () => {
     // Commands should now be registered
@@ -209,8 +210,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     if(setPath)
     {
         process.env.PATH = `${path.dirname(installPath)};${process.env.PATH?.split(';').filter((x : string) => !(x.toLowerCase().includes('dotnet')) && !(x.toLowerCase().includes('program'))).join(';')}`;
-        const mockExecutor = new MockCommandExecutor(getMockAcquisitionContext(iMode, version), getMockUtilityContext());
-        //mockExecutor.setEnvironmentVariable('PATH', process.env.PATH, new VSCodeExtensionContext(extensionContext));
+        //vscode.commands.executeCommand('dotnet.setEnv', 'PATH', process.env.PATH);
     }
     else
     {
@@ -287,6 +287,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     const oldROOT = process.env.DOTNET_ROOT;
     const expectedPath = path.join(__dirname, 'tmp', '.dotnet', getInstallIdCustomArchitecture('7.0.17', os.arch(), 'runtime', 'local'), getDotnetExecutable());
     process.env.DOTNET_ROOT = expectedPath;
+    //vscode.commands.executeCommand('dotnet.setEnv', 'DOTNET_ROOT', process.env.DOTNET_ROOT);
 
     await findPathWithRequirementAndInstall('7.0', 'runtime', os.arch(), 'equal', true,
         {version : '7.0', mode : 'runtime', architecture : os.arch(), requestingExtensionId : requestingExtensionId},
@@ -295,11 +296,13 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
 
     if(EnvironmentVariableIsDefined(oldROOT))
     {
-    process.env.DOTNET_ROOT = oldROOT;
+        process.env.DOTNET_ROOT = oldROOT;
+        //vscode.commands.executeCommand('dotnet.setEnv', 'DOTNET_ROOT', oldROOT);
     }
     else
     {
         delete process.env.DOTNET_ROOT;
+        //vscode.commands.executeCommand('dotnet.setEnv', 'DOTNET_ROOT', '');
     }
   }).timeout(standardTimeoutTime);
 

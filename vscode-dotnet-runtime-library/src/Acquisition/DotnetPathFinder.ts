@@ -87,7 +87,9 @@ export class DotnetPathFinder implements IDotnetPathFinder
      */
     public async findRawPathEnvironmentSetting(tryUseTrueShell = true) : Promise<string[] | undefined>
     {
-        const options = tryUseTrueShell && os.platform() !== 'win32' ? { shell: process.env.SHELL === '/bin/bash' ? '/bin/bash' : '/bin/sh'} : undefined;
+        process.env.DOTNET_MULTILEVEL_LOOKUP = '0'; // make it so --list-runtimes only finds the runtimes on that path: https://learn.microsoft.com/en-us/dotnet/core/compatibility/deployment/7.0/multilevel-lookup#reason-for-change
+        const env = process.env; // this is the default, but sometimes it does not get picked up
+        const options = tryUseTrueShell && os.platform() !== 'win32' ? { env: env, shell: process.env.SHELL === '/bin/bash' ? '/bin/bash' : '/bin/sh'} : {env : env};
 
         this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Looking up .NET on the path. Process.env.path: ${process.env.PATH}.
 Executor Path: ${(await this.executor?.execute(

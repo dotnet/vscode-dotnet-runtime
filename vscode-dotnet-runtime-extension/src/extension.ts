@@ -106,6 +106,7 @@ namespace commandKeys {
     export const showAcquisitionLog = 'showAcquisitionLog';
     export const ensureDotnetDependencies = 'ensureDotnetDependencies';
     export const reportIssue = 'reportIssue';
+    export const setEnv = 'setEnv';
 }
 
 const commandPrefix = 'dotnet';
@@ -588,6 +589,13 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         );
     });
 
+    const dotnetInternalSetEnvironmentVariableRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.setEnv}`, async (variable : string, data : string) => {
+        if(process.env.DOTNET_INSTALL_TOOL_UNDER_TEST === 'true')
+        {
+            process.env[variable] = data;
+        }
+    });
+
     const showOutputChannelRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.showAcquisitionLog}`, () => outputChannel.show(/* preserveFocus */ false));
 
     const ensureDependenciesRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.ensureDotnetDependencies}`, async (commandContext: IDotnetEnsureDependenciesContext) => {
@@ -771,6 +779,7 @@ We will try to install .NET, but are unlikely to be able to connect to the serve
         dotnetUninstallAllRegistration,
         showOutputChannelRegistration,
         ensureDependenciesRegistration,
+        dotnetInternalSetEnvironmentVariableRegistration,
         reportIssueRegistration,
         ...eventStreamObservers);
 }
