@@ -95,8 +95,8 @@ export class DotnetPathFinder implements IDotnetPathFinder
         const oldLookup = process.env.DOTNET_MULTILEVEL_LOOKUP;
         process.env.DOTNET_MULTILEVEL_LOOKUP = '0'; // make it so --list-runtimes only finds the runtimes on that path: https://learn.microsoft.com/en-us/dotnet/core/compatibility/deployment/7.0/multilevel-lookup#reason-for-change
 
-        const env = process.env; // this is the default, but sometimes it does not get picked up
-        const options = tryUseTrueShell && os.platform() !== 'win32' ? { env, shell: process.env.SHELL === '/bin/bash' ? '/bin/bash' : '/bin/sh'} : {env};
+        const searchEnvironment = process.env; // this is the default, but sometimes it does not get picked up
+        const options = tryUseTrueShell && os.platform() !== 'win32' ? { env : searchEnvironment, shell: process.env.SHELL === '/bin/bash' ? '/bin/bash' : '/bin/sh'} : {env : searchEnvironment};
 
         this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Looking up .NET on the path. Process.env.path: ${process.env.PATH}.
 Executor Path: ${(await this.executor?.execute(

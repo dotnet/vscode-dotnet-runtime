@@ -30,10 +30,8 @@ import {
   getDotnetExecutable,
   DotnetVersionSpecRequirement,
   EnvironmentVariableIsDefined,
-  getMockUtilityContext,
-  MockCommandExecutor,
-  VSCodeExtensionContext,
-  MockEnvironmentVariableCollection
+  MockEnvironmentVariableCollection,
+  getPathSeparator,
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { warn } from 'console';
@@ -206,12 +204,12 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     // use path.dirname : the dotnet.exe cant be on the PATH
     if(setPath)
     {
-        process.env.PATH = `${path.dirname(installPath)};${process.env.PATH?.split(';').filter((x : string) => !(x.toLowerCase().includes('dotnet')) && !(x.toLowerCase().includes('program'))).join(';')}`;
+        process.env.PATH = `${path.dirname(installPath)}${getPathSeparator()}${process.env.PATH?.split(getPathSeparator()).filter((x : string) => !(x.toLowerCase().includes('dotnet')) && !(x.toLowerCase().includes('program'))).join(getPathSeparator())}`;
     }
     else
     {
         // remove dotnet so the test will work on machines with dotnet installed
-        process.env.PATH = `${process.env.PATH?.split(';').filter((x : string) => !(x.toLowerCase().includes('dotnet')) && !(x.toLowerCase().includes('program'))).join(';')}`;
+        process.env.PATH = `${process.env.PATH?.split(getPathSeparator()).filter((x : string) => !(x.toLowerCase().includes('dotnet')) && !(x.toLowerCase().includes('program'))).join(getPathSeparator())}`;
         process.env.DOTNET_ROOT = path.dirname(installPath);
     }
 

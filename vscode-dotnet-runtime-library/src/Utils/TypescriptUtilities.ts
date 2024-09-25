@@ -84,3 +84,8 @@ export function EnvironmentVariableIsDefined(variable : any) : boolean
     // Most of the time this will be 'undefined', so this is the fastest check.
     return variable !== 'undefined' && variable !== null && variable !== '' && variable !== undefined;
 }
+
+export function getPathSeparator() : string
+{
+    return os.platform() === 'win32' ? ';' : ':';
+}
