@@ -117,14 +117,14 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
                 CommandExecutor.makeCommand('where.exe', []),
                 CommandExecutor.makeCommand('%SystemRoot%\\System32\\where.exe', []), // if PATH is corrupted
                 CommandExecutor.makeCommand('C:\\Windows\\System32\\where.exe', []) // in case SystemRoot is corrupted, best effort guess
-            ]))?.commandRoot ?? 'where';
+            ], options))?.commandRoot ?? 'where';
         }
         else
         {
             unixWhichCommand = (await this.executor?.tryFindWorkingCommand([
                 CommandExecutor.makeCommand('which', []),
                 CommandExecutor.makeCommand('/usr/bin/which', []), // if PATH is corrupted
-            ]))?.commandRoot ?? 'which';
+            ], options))?.commandRoot ?? 'which';
         }
         const finderCommand = os.platform() === 'win32' ? windowsWhereCommand : unixWhichCommand;
 

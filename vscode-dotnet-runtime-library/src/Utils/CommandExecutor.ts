@@ -526,7 +526,7 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
      * @param matchingCommandParts Any follow up words in that command to execute, matching in the same order as commandRoots
      * @returns the index of the working command you provided, if no command works, -1.
      */
-    public async tryFindWorkingCommand(commands : CommandExecutorCommand[]) : Promise<CommandExecutorCommand | null>
+    public async tryFindWorkingCommand(commands : CommandExecutorCommand[], options? : any) : Promise<CommandExecutorCommand | null>
     {
         let workingCommand : CommandExecutorCommand | null = null;
 
@@ -534,7 +534,7 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
         {
             try
             {
-                const cmdFoundOutput = (await this.execute(command)).status;
+                const cmdFoundOutput = (await this.execute(command, options)).status;
                 if(cmdFoundOutput === '0')
                 {
                     workingCommand = command;
