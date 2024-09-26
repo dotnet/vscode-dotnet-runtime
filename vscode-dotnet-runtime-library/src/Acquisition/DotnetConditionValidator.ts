@@ -12,6 +12,7 @@ import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetConditionValidator } from './IDotnetConditionValidator';
 import * as versionUtils from './VersionUtilities';
 import { FileUtilities } from '../Utils/FileUtilities';
+import { EnvironmentVariableIsDefined } from '../Utils/TypescriptUtilities';
 
 
 export class DotnetConditionValidator implements IDotnetConditionValidator
@@ -64,25 +65,12 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
      */
     private async getHostArchitecture(hostPath : string) : Promise<string>
     {
-        const infoCommand = CommandExecutor.makeCommand(`"${hostPath}"`, ['--info']);
-        const envWithForceEnglish = process.env;
-        envWithForceEnglish.DOTNET_CLI_UI_LANGUAGE = 'en-US';
+        return '';
+        /* The host architecture can be inaccurate. Imagine a local runtime install with no host. There is no way to tell the architecture of that runtime,
+        The Host will not print its architecture in dotnet info.
+        Return '' for now to pass all arch checks.
 
-        // System may not have english installed, but CDK already calls this without issue -- the .NET SDK language invocation is also wrapped by a runtime library and natively includes english assets
-        const hostArch = await (this.executor!).execute(infoCommand, { env: envWithForceEnglish }, false).then((result) =>
-        {
-            const lines = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
-            // This is subject to change but there is no good alternative to do this
-            const archLine = lines.find((line) => line.startsWith('Architecture:'));
-            if(archLine === undefined)
-            {
-                return '';
-            }
-            const arch = archLine.split(' ')[1];
-            return arch;
-        });
-
-        return hostArch;
+        Need to get an issue from the runtime team. */
     }
 
     public async getSDKs(existingPath : string) : Promise<IDotnetListInfo[]>
