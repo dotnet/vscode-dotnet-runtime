@@ -197,6 +197,12 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     assert.isFalse(fs.existsSync(result!.dotnetPath), 'the dotnet path result does not exist after uninstalling from all owners');
   }
 
+  function includesPathWithLikelyDotnet(pathToCheck : string) : boolean
+  {
+    const lowerPath = pathToCheck.toLowerCase();
+    return lowerPath.includes('dotnet') || lowerPath.includes('program') || lowerPath.includes('share') || lowerPath.includes('bin') || lowerPath.includes('snap') || lowerPath.includes('homebrew');
+  }
+
   async function findPathWithRequirementAndInstall(version : string, iMode : DotnetInstallMode, arch : string, condition : DotnetVersionSpecRequirement, shouldFind : boolean, contextToLookFor? : IDotnetAcquireContext, setPath = true)
   {
     const installPath = await installRuntime(version, iMode);
@@ -204,12 +210,12 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     // use path.dirname : the dotnet.exe cant be on the PATH
     if(setPath)
     {
-        process.env.PATH = `${path.dirname(installPath)}${getPathSeparator()}${process.env.PATH?.split(getPathSeparator()).filter((x : string) => !(x.toLowerCase().includes('dotnet')) && !(x.toLowerCase().includes('program'))).join(getPathSeparator())}`;
+        process.env.PATH = `${path.dirname(installPath)}${getPathSeparator()}${process.env.PATH?.split(getPathSeparator()).filter((x : string) => !(includesPathWithLikelyDotnet(x))).join(getPathSeparator())}`;
     }
     else
     {
         // remove dotnet so the test will work on machines with dotnet installed
-        process.env.PATH = `${process.env.PATH?.split(getPathSeparator()).filter((x : string) => !(x.toLowerCase().includes('dotnet')) && !(x.toLowerCase().includes('program'))).join(getPathSeparator())}`;
+        process.env.PATH = `${process.env.PATH?.split(getPathSeparator()).filter((x : string) => !(includesPathWithLikelyDotnet(x))).join(getPathSeparator())}`;
         process.env.DOTNET_ROOT = path.dirname(installPath);
     }
 
@@ -222,7 +228,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     if(shouldFind)
     {
         assert.exists(result, 'find path command returned a result');
-        assert.equal(result, setPath ? installPath : path.join(__dirname, 'tmp', '.dotnet', installPath.split('\\').filter(x => x.includes('~'))[0], getDotnetExecutable()), 'The path returned by findPath is correct');
+        assert.equal(result,  installPath, 'The path returned by findPath is correct');
     }
     else
     {
