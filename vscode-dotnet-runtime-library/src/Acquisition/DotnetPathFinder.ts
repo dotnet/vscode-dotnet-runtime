@@ -113,17 +113,18 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
         if(os.platform() === 'win32')
         {
             windowsWhereCommand = (await this.executor?.tryFindWorkingCommand([
-                CommandExecutor.makeCommand('where', []),
-                CommandExecutor.makeCommand('where.exe', []),
-                CommandExecutor.makeCommand('%SystemRoot%\\System32\\where.exe', []), // if PATH is corrupted
-                CommandExecutor.makeCommand('C:\\Windows\\System32\\where.exe', []) // in case SystemRoot is corrupted, best effort guess
+                // We have to give the command an argument to return status 0, and the only thing its guaranteed to find is itself :)
+                CommandExecutor.makeCommand('where', ['where']),
+                CommandExecutor.makeCommand('where.exe', ['where.exe']),
+                CommandExecutor.makeCommand('%SystemRoot%\\System32\\where.exe', ['%SystemRoot%\\System32\\where.exe']), // if PATH is corrupted
+                CommandExecutor.makeCommand('C:\\Windows\\System32\\where.exe', ['C:\\Windows\\System32\\where.exe']) // in case SystemRoot is corrupted, best effort guess
             ], options))?.commandRoot ?? 'where';
         }
         else
         {
             unixWhichCommand = (await this.executor?.tryFindWorkingCommand([
-                CommandExecutor.makeCommand('which', []),
-                CommandExecutor.makeCommand('/usr/bin/which', []), // if PATH is corrupted
+                CommandExecutor.makeCommand('which', ['which']),
+                CommandExecutor.makeCommand('/usr/bin/which', ['/usr/bin/which']), // if PATH is corrupted
             ], options))?.commandRoot ?? 'which';
         }
         const finderCommand = os.platform() === 'win32' ? windowsWhereCommand : unixWhichCommand;
