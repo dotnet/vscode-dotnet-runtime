@@ -119,9 +119,13 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     assert.isAbove(extensionContext.subscriptions.length, 0);
   }).timeout(standardTimeoutTime);
 
-  async function installRuntime(dotnetVersion : string, installMode : DotnetInstallMode)
+  async function installRuntime(dotnetVersion : string, installMode : DotnetInstallMode, arch? : string)
   {
-    const context: IDotnetAcquireContext = { version: dotnetVersion, requestingExtensionId, mode: installMode };
+    let context: IDotnetAcquireContext = { version: dotnetVersion, requestingExtensionId, mode: installMode };
+    if(arch)
+    {
+        context.architecture = arch;
+    }
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
     assert.exists(result, 'Command results a result');
     assert.exists(result!.dotnetPath, 'The return type of the local runtime install command has a .dotnetPath property');
@@ -205,7 +209,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
 
   async function findPathWithRequirementAndInstall(version : string, iMode : DotnetInstallMode, arch : string, condition : DotnetVersionSpecRequirement, shouldFind : boolean, contextToLookFor? : IDotnetAcquireContext, setPath = true)
   {
-    const installPath = await installRuntime(version, iMode);
+    const installPath = await installRuntime(version, iMode, arch);
 
     // use path.dirname : the dotnet.exe cant be on the PATH
     if(setPath)
@@ -309,16 +313,16 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
   }).timeout(standardTimeoutTime);
 
   test('Find dotnet PATH Command Unmet Mode Condition', async () => {
-    // look for 7.0 runtime but install 7.0 aspnetcore
-    await findPathWithRequirementAndInstall('7.0', 'runtime', os.arch(), 'equal', false,
-        {version : '7.0', mode : 'aspnetcore', architecture : os.arch(), requestingExtensionId : requestingExtensionId}
+    // look for 3.1 runtime but install 3.1 aspnetcore
+    await findPathWithRequirementAndInstall('3.1', 'runtime', os.arch(), 'equal', false,
+        {version : '3.1', mode : 'aspnetcore', architecture : os.arch(), requestingExtensionId : requestingExtensionId}
     );
   }).timeout(standardTimeoutTime);
 
   test('Find dotnet PATH Command Unmet Arch Condition', async () => {
-    // look for a different architecture of 7.0
-    await findPathWithRequirementAndInstall('7.0', 'runtime', os.arch() == 'arm64' ? 'x64' : os.arch(), 'greater_than_or_equal', false,
-        {version : '8.0', mode : 'runtime', architecture : 'arm64', requestingExtensionId : requestingExtensionId}
+    // look for a different architecture of 3.1
+    await findPathWithRequirementAndInstall('3.1', 'runtime', os.arch() == 'arm64' ? 'x64' : os.arch(), 'greater_than_or_equal', false,
+        {version : '3.1', mode : 'runtime', architecture : 'arm64', requestingExtensionId : requestingExtensionId}
     );
   }).timeout(standardTimeoutTime);
 
