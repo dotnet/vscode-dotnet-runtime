@@ -108,11 +108,10 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
 `
         ));
 
-        let windowsWhereCommand = '';
-        let unixWhichCommand = '';
+        let pathLocatorCommand = '';
         if(os.platform() === 'win32')
         {
-            windowsWhereCommand = (await this.executor?.tryFindWorkingCommand([
+            pathLocatorCommand = (await this.executor?.tryFindWorkingCommand([
                 // We have to give the command an argument to return status 0, and the only thing its guaranteed to find is itself :)
                 CommandExecutor.makeCommand('where', ['where']),
                 CommandExecutor.makeCommand('where.exe', ['where.exe']),
@@ -122,14 +121,13 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
         }
         else
         {
-            unixWhichCommand = (await this.executor?.tryFindWorkingCommand([
+            pathLocatorCommand = (await this.executor?.tryFindWorkingCommand([
                 CommandExecutor.makeCommand('which', ['which']),
                 CommandExecutor.makeCommand('/usr/bin/which', ['/usr/bin/which']), // if PATH is corrupted
             ], options))?.commandRoot ?? 'which';
         }
-        const finderCommand = os.platform() === 'win32' ? windowsWhereCommand : unixWhichCommand;
 
-        const findCommand = CommandExecutor.makeCommand(finderCommand, ['dotnet']);
+        const findCommand = CommandExecutor.makeCommand(pathLocatorCommand, ['dotnet']);
         const dotnetsOnPATH = (await this.executor?.execute(findCommand, options))?.stdout.split('\n').map(x => x.trim()).filter(x => x !== '');
         if(dotnetsOnPATH)
         {

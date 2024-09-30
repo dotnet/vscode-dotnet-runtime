@@ -67,8 +67,8 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
     private async getHostArchitecture(hostPath : string) : Promise<string>
     {
         return '';
-        /* The host architecture can be inaccurate. Imagine a local runtime install with no host. There is no way to tell the architecture of that runtime,
-        The Host will not print its architecture in dotnet info.
+        /* The host architecture can be inaccurate. Imagine a local runtime install. There is no way to tell the architecture of that runtime,
+        ... as the Host will not print its architecture in dotnet info.
         Return '' for now to pass all arch checks.
 
         Need to get an issue from the runtime team. See https://github.com/dotnet/sdk/issues/33697 and https://github.com/dotnet/runtime/issues/98735*/
