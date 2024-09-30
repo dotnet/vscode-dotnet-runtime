@@ -13,7 +13,7 @@
 	"description": "This extension installs and manages different versions of the .NET SDK and Runtime.",
 	"connectionString": "InstrumentationKey=02dc18e0-7494-43b2-b2a3-18ada5fcb522;IngestionEndpoint=https://westus2-0.in.applicationinsights.azure.com/;LiveEndpoint=https://westus2.livediagnostics.monitor.azure.com/;ApplicationId=e8e56970-a18a-4101-b7d1-1c5dd7c29eeb",
 	"icon": "images/dotnetIcon.png",
-	"version": "2.1.6",
+	"version": "2.1.7",
 	"publisher": "ms-dotnettools",
 	"engines": {
 		"vscode": "^1.81.1"
@@ -79,7 +79,7 @@
 				"dotnetAcquisitionExtension.existingDotnetPath": {
 					"type": "array",
 					"markdownDescription": "The path to an existing .NET host executable for an extension's code to run under, not for your project to run under.\nRestart VS Code to apply changes.\n\n⚠️ This is NOT the .NET Runtime that your project will use to run. Extensions such as `C#`, `C# DevKit`, and more have components written in .NET. This .NET PATH is the `dotnet.exe` that these extensions will use to run their code, not your code.\n\nUsing a path value in which .NET does not meet the requirements of a specific extension will cause that extension to fail.\n\n🚀 The version of .NET that is used for your project is determined by the .NET host, or dotnet.exe. The .NET host picks a runtime based on your project. To use a specific version of .NET for your project, install the .NET SDK using the `.NET Install Tool - Install SDK System-Wide` command, install .NET manually using [our instructions](https://dotnet.microsoft.com/download), or edit your PATH environment variable to point to a `dotnet.exe` that has an `/sdk/` folder with only one SDK.",
-                    "description": "The path to an existing .NET host executable for an extension's code to run under, not for your project to run under.\nRestart VS Code to apply changes.\n\n⚠️ This is NOT the .NET Runtime that your project will use to run. Extensions such as 'C#', 'C# DevKit', and more have components written in .NET. This .NET PATH is the 'dotnet.exe' that these extensions will use to run their code, not your code.\n\nUsing a path value in which .NET does not meet the requirements of a specific extension will cause that extension to fail.\n\n🚀 The version of .NET that is used for your project is determined by the .NET host, or dotnet.exe. The .NET host picks a runtime based on your project. To use a specific version of .NET for your project, install the .NET SDK using the '.NET Install Tool - Install SDK System-Wide' command, use the instructions at https://dotnet.microsoft.com/download to manually install the .NET SDK, or edit your PATH environment variable to point to a 'dotnet.exe' that has an '/sdk/' folder with only one SDK.",
+					"description": "The path to an existing .NET host executable for an extension's code to run under, not for your project to run under.\nRestart VS Code to apply changes.\n\n⚠️ This is NOT the .NET Runtime that your project will use to run. Extensions such as 'C#', 'C# DevKit', and more have components written in .NET. This .NET PATH is the 'dotnet.exe' that these extensions will use to run their code, not your code.\n\nUsing a path value in which .NET does not meet the requirements of a specific extension will cause that extension to fail.\n\n🚀 The version of .NET that is used for your project is determined by the .NET host, or dotnet.exe. The .NET host picks a runtime based on your project. To use a specific version of .NET for your project, install the .NET SDK using the '.NET Install Tool - Install SDK System-Wide' command, use the instructions at https://dotnet.microsoft.com/download to manually install the .NET SDK, or edit your PATH environment variable to point to a 'dotnet.exe' that has an '/sdk/' folder with only one SDK.",
 					"examples": [
 						"C:\\Program Files\\dotnet\\dotnet.exe",
 						"/usr/local/share/dotnet/dotnet",
@@ -99,7 +99,7 @@
 					"type": "string",
 					"description": "URL to a proxy if you use one, such as: https://proxy:port"
 				},
-                "dotnetAcquisitionExtension.allowInvalidPaths": {
+				"dotnetAcquisitionExtension.allowInvalidPaths": {
 					"type": "boolean",
 					"description": "If you'd like to continue using a .NET path that is not meant to be used for an extension and may cause instability (please read above about the existingDotnetPath setting) then set this to true and restart."
 				}

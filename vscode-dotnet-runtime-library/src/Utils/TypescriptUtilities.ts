@@ -8,6 +8,8 @@ import * as os from 'os';
 import { IEventStream } from '../EventStream/EventStream';
 import { DotnetWSLCheckEvent, DotnetWSLOperationOutputEvent } from '../EventStream/EventStreamEvents';
 import { IEvent } from '../EventStream/IEvent';
+import { ICommandExecutor } from './ICommandExecutor';
+import { CommandExecutor } from './CommandExecutor';
 
 export async function loopWithTimeoutOnCond(sampleRatePerMs : number, durationToWaitBeforeTimeoutMs : number, conditionToStop : () => boolean, doAfterStop : () => void,
     eventStream : IEventStream, waitEvent : IEvent)
@@ -59,4 +61,31 @@ status: ${commandResult.status?.toString()}`
     }
 
     return commandResult.stdout.toString() !== '';
+}
+
+export async function getOSArch(executor : ICommandExecutor) : Promise<string>
+{
+    if(os.platform() === 'darwin')
+    {
+        const findTrueArchCommand = CommandExecutor.makeCommand(`uname`, [`-p`]);
+        return (await executor.execute(findTrueArchCommand, null, false)).stdout.toLowerCase().trim();
+    }
+
+    return os.arch();
+}
+
+export function getDotnetExecutable() : string
+{
+    return os.platform() === 'win32' ? 'dotnet.exe' : 'dotnet';
+}
+
+export function EnvironmentVariableIsDefined(variable : any) : boolean
+{
+    // Most of the time this will be 'undefined', so this is the fastest check.
+    return variable !== 'undefined' && variable !== null && variable !== '' && variable !== undefined;
+}
+
+export function getPathSeparator() : string
+{
+    return os.platform() === 'win32' ? ';' : ':';
 }

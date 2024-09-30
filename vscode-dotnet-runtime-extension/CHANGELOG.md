@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-## [2.1.6] - 2024-09-05
+## [2.1.7] - 2024-09-31
+
+Adds the API dotnet.findPath() to see if there's an existing .NET installation on the PATH.
+
+## [2.1.6] - 2024-09-20
 
 Fixes an issue with SDK installs on Mac M1 or Arm Mac where the non-emulation path was used.
 Fixes an issue where spaces in the username will cause failure for SDK resolution.

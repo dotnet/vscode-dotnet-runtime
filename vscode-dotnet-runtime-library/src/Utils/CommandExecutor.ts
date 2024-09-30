@@ -61,6 +61,12 @@ import { IEventStream } from '../EventStream/EventStream';
 export class CommandExecutor extends ICommandExecutor
 {
     private pathTroubleshootingOption = 'Troubleshoot';
+    private englishOutputEnvironmentVariables = {
+        LC_ALL: 'en_US.UTF-8',
+        LANG: 'en_US.UTF-8',
+        LANGUAGE: 'en',
+        DOTNET_CLI_UI_LANGUAGE: 'en-US',
+    }; // Not all systems have english installed -- not sure if it's safe to use this.
     private sudoProcessCommunicationDir = path.join(__dirname, 'install scripts');
     private fileUtil : IFileUtilities;
     private hasEverLaunchedSudoFork = false;
@@ -416,7 +422,7 @@ with options ${JSON.stringify(options)}.`));
                 {
                     execElevated(fullCommandString, options, (error?: Error, execStdout?: string | Buffer, execStderr?: string | Buffer) =>
                     {
-                        if(error && terminalFailure)
+                        if(error && terminalFailure && !error?.message?.includes('screen size is bogus'))
                         {
                             return reject(this.parseVSCodeSudoExecError(error, fullCommandString));
                         }
@@ -520,7 +526,7 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
      * @param matchingCommandParts Any follow up words in that command to execute, matching in the same order as commandRoots
      * @returns the index of the working command you provided, if no command works, -1.
      */
-    public async tryFindWorkingCommand(commands : CommandExecutorCommand[]) : Promise<CommandExecutorCommand | null>
+    public async tryFindWorkingCommand(commands : CommandExecutorCommand[], options? : any) : Promise<CommandExecutorCommand | null>
     {
         let workingCommand : CommandExecutorCommand | null = null;
 
@@ -528,7 +534,7 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
         {
             try
             {
-                const cmdFoundOutput = (await this.execute(command)).status;
+                const cmdFoundOutput = (await this.execute(command, options)).status;
                 if(cmdFoundOutput === '0')
                 {
                     workingCommand = command;
