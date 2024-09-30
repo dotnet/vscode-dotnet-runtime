@@ -192,10 +192,11 @@ ${stderr}`);
 
     const sampleFindPathRegistration = vscode.commands.registerCommand('sample.dotnet.findPath', async () =>
     {
-        const version = await vscode.window.showInputBox({
-                placeHolder: '8.0',
-                value: '8.0',
-                prompt: 'The .NET runtime version.',
+        const version = await vscode.window.showInputBox(
+        {
+            placeHolder: '8.0',
+            value: '8.0',
+            prompt: 'The .NET runtime version.',
         });
 
         const arch = await vscode.window.showInputBox({

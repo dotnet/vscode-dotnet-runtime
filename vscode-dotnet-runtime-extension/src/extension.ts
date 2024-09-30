@@ -489,8 +489,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             }
         }
 
-        const dotnetOnRealPATH = await finder.findRealPathEnvironmentSetting();
-        for(const dotnetPath of dotnetsOnPATH ?? [])
+        const dotnetsOnRealPATH = await finder.findRealPathEnvironmentSetting();
+        for(const dotnetPath of dotnetsOnRealPATH ?? [])
         {
             const validatedRealPATH = await getPathIfValid(dotnetPath, validator, commandContext);
             if(validatedRealPATH)

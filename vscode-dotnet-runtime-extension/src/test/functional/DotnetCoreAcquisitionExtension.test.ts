@@ -232,7 +232,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     if(shouldFind)
     {
         assert.exists(result, 'find path command returned a result');
-        assert.equal(result,  installPath, 'The path returned by findPath is correct');
+        assert.equal(result, installPath, 'The path returned by findPath is correct');
     }
     else
     {
