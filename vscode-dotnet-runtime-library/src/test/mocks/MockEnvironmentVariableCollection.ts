@@ -23,8 +23,9 @@ export class MockEnvironmentVariableCollection implements vscode.EnvironmentVari
     }
 
     public replace(variable: string, value: string): void {
-        throw new Error('Method not implemented.');
+        this.variables[variable] = value;
     }
+
 
     public prepend(variable: string, value: string): void {
         throw new Error('Method not implemented.');

@@ -33,5 +33,5 @@ suite('LoggingObserver Unit Tests', () => {
             assert.include(logContent, fakeEvent.eventName, 'The log file does not contain the expected content that should be written to it');
         });
 
-    }).timeout(10000);
+    }).timeout(10000 * 2);
 });

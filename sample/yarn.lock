@@ -1809,6 +1809,7 @@ util-deprecate@^1.0.1:
     "@types/vscode" "1.74.0"
     "@vscode/extension-telemetry" "^0.9.7"
     "@vscode/sudo-prompt" "^9.3.1"
+    "@vscode/test-electron" "^2.4.1"
     axios "^1.7.4"
     axios-cache-interceptor "^1.5.3"
     axios-retry "^3.4.0"
@@ -1825,12 +1826,11 @@ util-deprecate@^1.0.1:
     semver "^7.6.2"
     shelljs "^0.8.5"
     typescript "^5.5.4"
-    vscode-test "^1.6.1"
   optionalDependencies:
     fsevents "^2.3.3"
 
 "vscode-dotnet-runtime@file:../vscode-dotnet-runtime-extension":
-  version "2.1.6"
+  version "2.1.7"
   resolved "file:../vscode-dotnet-runtime-extension"
   dependencies:
     "@types/chai-as-promised" "^7.1.8"
