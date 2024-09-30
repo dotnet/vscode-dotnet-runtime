@@ -11,9 +11,8 @@ import { IDotnetListInfo } from './IDotnetListInfo';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetConditionValidator } from './IDotnetConditionValidator';
 import * as versionUtils from './VersionUtilities';
+import * as os from 'os';
 import { FileUtilities } from '../Utils/FileUtilities';
-import { EnvironmentVariableIsDefined } from '../Utils/TypescriptUtilities';
-
 
 export class DotnetConditionValidator implements IDotnetConditionValidator
 {
@@ -76,7 +75,8 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
 
     public async getSDKs(existingPath : string) : Promise<IDotnetListInfo[]>
     {
-        const findSDKsCommand = CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-sdks']);
+        const findSDKsCommand = os.platform() === 'win32' ? CommandExecutor.makeCommand(`chcp`, [`65001`, `|`,`"${existingPath}"`, '--list-sdks']) :
+            CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-sdks']);
 
         const sdkInfo = await (this.executor!).execute(findSDKsCommand, undefined, false).then((result) =>
         {
@@ -122,7 +122,9 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
 
     public async getRuntimes(existingPath : string) : Promise<IDotnetListInfo[]>
     {
-        const findRuntimesCommand = CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-runtimes']);
+        // For Windows, we need to change the code page to UTF-8 to handle the output of the command. https://github.com/nodejs/node-v0.x-archive/issues/2190
+        const findRuntimesCommand = os.platform() === 'win32' ? CommandExecutor.makeCommand(`chcp`, [`65001`, `|`,`"${existingPath}"`, '--list-runtimes']) :
+            CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-runtimes']);
 
         const windowsDesktopString = 'Microsoft.WindowsDesktop.App';
         const aspnetCoreString = 'Microsoft.AspNetCore.App';
