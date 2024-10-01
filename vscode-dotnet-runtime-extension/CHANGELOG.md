@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-## [2.1.7] - 2024-09-31
+## [2.2.0] - 2024-10-15
+
+Fixes an issue parsing other regional characters with the dotnet.findPath() API.
+
+## [2.1.7] - 2024-09-30
 
 Adds the API dotnet.findPath() to see if there's an existing .NET installation on the PATH.
 
