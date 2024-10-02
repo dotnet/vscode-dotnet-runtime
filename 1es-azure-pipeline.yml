@@ -64,6 +64,8 @@ extends:
       policheck:
         enabled: true
         exclusionsFile: $(System.DefaultWorkingDirectory)\PoliCheckExclusions.xml
+      tsa:
+        enabled: true
     stages:
     - stage: Internal
       jobs:
