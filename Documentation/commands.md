@@ -26,7 +26,7 @@ This returns undefined if no matches are found.
 
 ## dotnet.uninstall
 
-You can execute this command to deference / uninstall .NET, either the SDK or runtime, as long as its managed by this extension. Pass it a [IDotnetFindPathContext](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/vscode-dotnet-runtime-library/src/IDotnetFindPathContext.ts) object suggesting which install you want to remove.
+You can execute this command to dereference / uninstall .NET, either the SDK or runtime, as long as it's managed by this extension. Pass it a [IDotnetFindPathContext](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/vscode-dotnet-runtime-library/src/IDotnetFindPathContext.ts) object suggesting which install you want to remove.
 
 .NET will only be completely uninstalled if all extensions that relied on that version of .NET asked for it to be uninstalled.
 Note that users can manually uninstall any version of .NET if they so chose and accept the risk.
