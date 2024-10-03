@@ -76,6 +76,7 @@ import {
     DotnetFindPathDidNotMeetCondition,
     DotnetFindPathMetCondition,
     DotnetFindPathCommandInvoked,
+    JsonInstaller,
 } from 'vscode-dotnet-runtime-library';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
@@ -756,6 +757,9 @@ We will try to install .NET, but are unlikely to be able to connect to the serve
 
             return null;
     }
+
+    // Preemptively install .NET for extensions who tell us to in their package.json
+    const jsonInstaller = new JsonInstaller(globalEventStream, vsCodeExtensionContext);
 
     // Exposing API Endpoints
     vsCodeContext.subscriptions.push(
