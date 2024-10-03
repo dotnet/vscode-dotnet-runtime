@@ -9,6 +9,8 @@ import { IDotnetAcquireContext } from "../IDotnetAcquireContext";
 import { IVSCodeExtensionContext } from "../IVSCodeExtensionContext";
 import { IJsonInstaller } from "./IJsonInstaller";
 
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
 export class JsonInstaller extends IJsonInstaller
 {
     constructor(protected readonly eventStream: IEventStream, protected readonly vscodeAccessor : IVSCodeExtensionContext)
@@ -18,21 +20,22 @@ export class JsonInstaller extends IJsonInstaller
         vscodeAccessor.registerOnExtensionChange(() =>
         {
             this.eventStream.post(new DotnetVSCodeExtensionChange(`A change was detected in the extensions. Installing .NET for new extensions.`));
-            this.executeJSONRequests();
-        });
+            this.executeJSONRequests().catch( () => {});
+        })
 
         // On startup, (our extension gets activated onStartupFinished() via 'activationEvents' in package.json) we want to install .NET preemptively
         // So other extensions can have a faster startup time if they so desire
-        this.executeJSONRequests();
+        this.executeJSONRequests().catch( () => {});
     }
 
+    // eslint-disable-next-line @typescript-eslint/require-await
     public async executeJSONRequests(): Promise<void>
     {
         const extensions = this.vscodeAccessor.getExtensions();
         for(const extension of extensions)
         {
-            const extensionPackage = extension.packageJSON;
-            this.eventStream.post(new DotnetVSCodeExtensionFound(`Checking extension ${extension.id} for .NET installation requests`));
+            const extensionPackage = extension?.packageJSON;
+            this.eventStream.post(new DotnetVSCodeExtensionFound(`Checking extension ${extension?.id} for .NET installation requests`));
 
             if(extensionPackage['x-dotnet-acquire'])
             {

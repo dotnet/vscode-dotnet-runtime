@@ -6,6 +6,10 @@ This article outlines the commands exposed by the .NET Install Tool. To see thes
 
 This command will install a .NET runtime. It accepts a [IDotnetAcquireContext](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/vscode-dotnet-runtime-library/src/IDotnetAcquireContext.ts) object and returns a [IDotnetAcquireResult](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/vscode-dotnet-runtime-library/src/IDotnetAcquireResult.ts), which contains the path to the .NET runtime executable. Note that the version value in IDotnetAcquireContext must be a valid major.minor runtime version, for example 3.1. The extension will automatically identify and install the latest patch of the provided version. It is generally recommended that extension authors call this command immediately on every extension start up to ensure that the .NET runtime has been installed and is ready to use.
 
+## dotnet.acquireGlobalSDK
+
+This command will install a .NET SDK globally. It accepts a [IDotnetAcquireContext](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/vscode-dotnet-runtime-library/src/IDotnetAcquireContext.ts) object and returns a [IDotnetAcquireResult](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/vscode-dotnet-runtime-library/src/IDotnetAcquireResult.ts).
+
 ## dotnet.showAcquisitionLog
 
 This command surfaces an output channel to the user which provides status messages during extension commands. It does not accept parameters and has a void return type.
@@ -16,7 +20,16 @@ This command is only applicable to linux machines. It attempts to ensure that .N
 
 ## dotnet.findPath
 
-You can execute this command to return a string to a dotnet runtime path. Pass it a [IDotnetFindPathContext](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/vscode-dotnet-runtime-library/src/IDotnetFindPathContext.ts)
+You can execute this command to return a string to a dotnet runtime path. Pass it a [IDotnetFindPathContext](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/vscode-dotnet-runtime-library/src/IDotnetFindPathContext.ts) object. The major.minor will be respected based on the requirement you give (greater_than_or_equal will return a dotnet on the PATH that is >= the version requested.)
+
+This returns undefined if no matches are found.
+
+## dotnet.uninstall
+
+You can execute this command to deference / uninstall .NET, either the SDK or runtime, as long as its managed by this extension. Pass it a [IDotnetFindPathContext](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/vscode-dotnet-runtime-library/src/IDotnetFindPathContext.ts) object suggesting which install you want to remove.
+
+.NET will only be completely uninstalled if all extensions that relied on that version of .NET asked for it to be uninstalled.
+Note that users can manually uninstall any version of .NET if they so chose and accept the risk.
 
 # JSON Installation
 
@@ -30,10 +43,8 @@ The disadvantage to this approach is you cannot respond to a failure to install,
 lookup the PATH first to see if there's a matching install, etc.
 
 ```json
-{
-    "x-dotnet-acquire": {
-        "version": "8.0",
-        "mode": "aspnetcore"
-    }
+"x-dotnet-acquire": {
+    "version": "8.0",
+    "mode": "aspnetcore"
 }
 ```
