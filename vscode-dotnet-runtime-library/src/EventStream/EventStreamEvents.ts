@@ -876,6 +876,18 @@ export class DotnetTelemetrySettingEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetTelemetrySettingEvent';
 }
 
+export class DotnetVSCodeExtensionFound extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetVSCodeExtensionFound';
+}
+
+export class DotnetVSCodeExtensionHasInstallRequest extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetVSCodeExtensionHasInstallRequest';
+}
+
+export class DotnetVSCodeExtensionChange extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetVSCodeExtensionChange';
+}
+
 export class DotnetCommandNotFoundEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetCommandNotFoundEvent';
 }
