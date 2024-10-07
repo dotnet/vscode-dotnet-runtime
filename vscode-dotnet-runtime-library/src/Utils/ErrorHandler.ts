@@ -18,7 +18,6 @@ import { formatIssueUrl } from './IssueReporter';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { GetDotnetInstallInfo } from '../Acquisition/DotnetInstall';
 import { DotnetCoreAcquisitionWorker } from '../Acquisition/DotnetCoreAcquisitionWorker';
-/* tslint:disable:no-any */
 
 export enum AcquireErrorConfiguration {
     DisplayAllErrorPopups = 0,
@@ -58,6 +57,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
     const isAcquisitionError = acquireContext ? true : false;
     try
     {
+        /* eslint-disable @typescript-eslint/await-thenable */
         const result = await callback();
         context.eventStream.post(new DotnetCommandSucceeded(context.commandName));
         return result;
@@ -76,6 +76,8 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
 
         if(acquireContext)
         {
+            // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             context.eventStream.post(new DotnetAcquisitionFinalError(error, (caughtError?.eventType) ?? 'Unknown',
             GetDotnetInstallInfo(acquireContext.acquisitionContext.version, acquireContext.acquisitionContext.mode!,
                 acquireContext.acquisitionContext.installType ?? 'local', acquireContext.acquisitionContext.architecture ??
@@ -88,12 +90,13 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
             if ((error.message as string).includes(timeoutConstants.timeoutMessage))
             {
                 context.displayWorker.showErrorMessage(`${errorConstants.errorMessage}${ context.version ? ` (${context.version})` : '' }: ${ error.message }`,
-                                                        async (response: string | undefined) => {
-                    if (response === timeoutConstants.moreInfoOption)
+                    (response: string | undefined) =>
                     {
-                        open(context.timeoutInfoUrl);
-                    }
-                }, timeoutConstants.moreInfoOption);
+                        if (response === timeoutConstants.moreInfoOption)
+                        {
+                            open(context.timeoutInfoUrl).catch(() => {});
+                        }
+                    }, timeoutConstants.moreInfoOption);
             }
             else if (!isCancellationStyleError(error) && showMessage)
             {
@@ -108,7 +111,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
                     {
                     if (response === errorConstants.moreInfoOption)
                     {
-                        open(context.moreInfoUrl);
+                        open(context.moreInfoUrl).catch(() => {});
                     }
                     else if (response === errorConstants.hideOption)
                     {
@@ -117,8 +120,8 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
                     else if (response === errorConstants.reportOption)
                     {
                         const [url, issueBody] = formatIssueUrl(error, context);
-                        context.displayWorker.copyToUserClipboard(issueBody);
-                        open(url);
+                        context.displayWorker.copyToUserClipboard(issueBody).catch(() => {});
+                        open(url).catch(() => {});
                     }
                     else if (response === errorConstants.configureManuallyOption && requestingExtensionId)
                     {

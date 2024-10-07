@@ -36,9 +36,7 @@ import { IUtilityContext } from '../Utils/IUtilityContext';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { DotnetInstall } from './DotnetInstall';
 import { CommandExecutorResult } from '../Utils/CommandExecutorResult';
-/* tslint:disable:only-arrow-functions */
-/* tslint:disable:no-empty */
-/* tslint:disable:no-any */
+import { getOSArch } from '../Utils/TypescriptUtilities';
 
 namespace validationPromptConstants
 {
@@ -211,8 +209,9 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         }
         else
         {
-            const command = CommandExecutor.makeCommand(`rm`, [`-rf`, `${path.join(path.dirname(this.getMacPath()), 'sdk', install.version)}`, `&&`,
-`rm`, `-rf`, `${path.join(path.dirname(this.getMacPath()), 'sdk-manifests', install.version)}`], true);
+            const macPath = await this.getMacPath();
+            const command = CommandExecutor.makeCommand(`rm`, [`-rf`, `${path.join(path.dirname(macPath), 'sdk', install.version)}`, `&&`,
+`rm`, `-rf`, `${path.join(path.dirname(macPath), 'sdk-manifests', install.version)}`], true);
 
             const commandResult = await this.commandRunner.execute(command, {timeout : this.acquisitionContext.timeoutSeconds * 1000});
             this.handleTimeout(commandResult);
@@ -302,11 +301,15 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         }
         catch(error : any)
         {
+            // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             if(error?.message?.includes('ENOENT'))
             {
                 this.acquisitionContext.eventStream.post(new DotnetFileIntegrityFailureEvent(`The file ${installerFile} was not found, so we couldn't verify it.
 Please try again, or download the .NET Installer file yourself. You may also report your issue at https://github.com/dotnet/vscode-dotnet-runtime/issues.`));
             }
+            // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             else if(error?.message?.includes('EPERM'))
             {
                 this.acquisitionContext.eventStream.post(new DotnetFileIntegrityFailureEvent(`The file ${installerFile} did not have the correct permissions scope to be assessed.
@@ -316,7 +319,9 @@ Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.m
         }
     }
 
-    public async getExpectedGlobalSDKPath(specificSDKVersionInstalled : string, installedArch : string) : Promise<string>
+    // async is needed to match the interface even if we don't use await.
+    // eslint-disable-next-line @typescript-eslint/require-await
+    public async getExpectedGlobalSDKPath(specificSDKVersionInstalled : string, installedArch : string, macPathShouldExist = true) : Promise<string>
     {
         if(os.platform() === 'win32')
         {
@@ -327,7 +332,8 @@ Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.m
         }
         else if(os.platform() === 'darwin')
         {
-            return this.getMacPath();
+            const sdkPath = await this.getMacPath(macPathShouldExist);
+            return sdkPath;
         }
 
         const err = new DotnetUnexpectedInstallerOSError(new EventBasedError('DotnetUnexpectedInstallerOSError',
@@ -349,11 +355,23 @@ If you were waiting for the install to succeed, please extend the timeout settin
         }
     }
 
-    private getMacPath() : string
+    private async getMacPath(macPathShouldExist = true) : Promise<string>
     {
-        // On an arm machine we would install to /usr/local/share/dotnet/x64/dotnet/sdk` for a 64 bit sdk
-        // but we don't currently allow customizing the install architecture so that would never happen.
-        return path.resolve(`/usr/local/share/dotnet/dotnet`);
+        const standardHostPath = path.resolve(`/usr/local/share/dotnet/dotnet`);
+        const arm64EmulationHostPath = path.resolve(`/usr/local/share/dotnet/x64/dotnet`);
+
+        if((os.arch() === 'x64' || os.arch() === 'ia32') && (await getOSArch(this.commandRunner)).includes('arm') && (fs.existsSync(arm64EmulationHostPath) || !macPathShouldExist))
+        {
+            // VS Code runs on an emulated version of node which will return x64 or use x86 emulation for ARM devices.
+            // os.arch() returns the architecture of the node binary, not the system architecture, so it will not report arm on an arm device.
+            return arm64EmulationHostPath;
+        }
+
+        if(!macPathShouldExist || fs.existsSync(standardHostPath) || !fs.existsSync(arm64EmulationHostPath))
+        {
+            return standardHostPath;
+        }
+        return arm64EmulationHostPath;
     }
 
     /**
@@ -385,7 +403,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
             }
             else if(workingCommand.commandRoot === 'command')
             {
-                workingCommand = CommandExecutor.makeCommand(`open`, [`-W`, `${path.resolve(installerPath)}`]);
+                workingCommand = CommandExecutor.makeCommand(`open`, [`-W`, `"${path.resolve(installerPath)}"`]);
             }
 
             this.acquisitionContext.eventStream.post(new NetInstallerBeginExecutionEvent(`The OS X .NET Installer has been launched.`));
@@ -399,7 +417,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
         }
         else
         {
-            const command = `${path.resolve(installerPath)}`;
+            const command = `"${path.resolve(installerPath)}"`;
             let commandOptions : string[] = [];
             if(this.file.isElevated(this.acquisitionContext.eventStream))
             {
@@ -420,14 +438,22 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
             }
             catch(error : any)
             {
-                if(error?.message?.includes('EPERM'))
+                // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                if((error?.message as string)?.includes('EPERM'))
                 {
-                    error.message = `The installer does not have permission to execute. Please try running as an administrator. ${error.message}.
+                    // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    error.message = `The installer does not have permission to execute. Please try running as an administrator. ${error?.message}.
 Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerPath}"`])))}`;
                 }
-                else if(error?.message?.includes('ENOENT'))
+                // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                else if((error?.message as string)?.includes('ENOENT'))
                 {
-                    error.message = `The .NET Installation files were not found. Please try again. ${error.message}`;
+                    // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    error.message = `The .NET Installation files were not found. Please try again. ${error?.message}`;
                 }
                 throw error;
             }

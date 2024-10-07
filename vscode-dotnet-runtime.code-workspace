@@ -15,7 +15,9 @@
     ],
     "settings": {
         "cSpell.words": [
+            "aspnetcore",
             "DOTNETINSTALLMODELIST",
+            "dotnets",
             "Republisher",
             "unlocalized"
         ]

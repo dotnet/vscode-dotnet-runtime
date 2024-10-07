@@ -19,7 +19,7 @@ import { ModalEventRepublisher } from './ModalEventPublisher';
 
 export interface IPackageJson {
     version: string;
-    appInsightsKey: string;
+    connectionString: string;
     name: string;
 }
 

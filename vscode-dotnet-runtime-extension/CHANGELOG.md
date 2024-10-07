@@ -7,9 +7,24 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-## [2.1.6] - 2024-09-05
+## [2.2.0] - 2024-10-15
 
-Minor bug fixes.
+Adds ability to install the runtime via the `package.json` file of an extension. See the documentation/commands.md section.
+Fixes an issue parsing other regional characters with the dotnet.findPath() API.
+
+
+## [2.1.7] - 2024-09-30
+
+Adds the API dotnet.findPath() to see if there's an existing .NET installation on the PATH.
+
+## [2.1.6] - 2024-09-20
+
+Fixes an issue with SDK installs on Mac M1 or Arm Mac where the non-emulation path was used.
+Fixes an issue where spaces in the username will cause failure for SDK resolution.
+Fixes an issue with telemetry.
+
+Updates the dotnet.existingDotnetPath and dotnet.sharedExistingDotnetPath to only take affect if it would work.
+Please see the new warning message and information about this setting.
 
 ## [2.1.5] - 2024-09-05
 

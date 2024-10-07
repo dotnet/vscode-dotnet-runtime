@@ -18,7 +18,7 @@ import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
-/* tslint:disable:no-any */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
 /**
  * This interface describes the functionality needed to manage the .NET SDK on a specific distro and version of Linux.
@@ -33,7 +33,7 @@ export abstract class IDistroDotnetSDKProvider {
     protected distroVersion : DistroVersionPair;
     protected versionResolver : VersionResolver;
     protected context : IAcquisitionWorkerContext;
-    protected distroJson : any | null = null;
+    protected distroJson : any = null;
 
     protected preinstallCommandKey = 'preInstallCommands';
     protected installCommandKey = 'installCommand';
@@ -300,11 +300,13 @@ If you would like to contribute to the list of supported distros, please visit: 
 
     protected myDistroStrings(stringKey : string) : string
     {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         return this.distroJson[this.distroVersion.distro][stringKey];
     }
 
     protected myDistroCommands(commandKey : string) : CommandExecutorCommand[]
     {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         return this.distroJson[this.distroVersion.distro][commandKey] as CommandExecutorCommand[];
     }
 
@@ -312,8 +314,11 @@ If you would like to contribute to the list of supported distros, please visit: 
     {
         const validCommands : string[] = [];
 
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         const baseCommands = (Object.values(this.distroJson[this.distroVersion.distro])
             .filter((x : any) => x && Array.isArray(x) && ((x[0] as CommandExecutorCommand).commandParts))).flat();
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         let preInstallCommands = this.myVersionDetails()[this.preinstallCommandKey] as CommandExecutorCommand[];
         if(!preInstallCommands)
         {
@@ -342,11 +347,16 @@ If you would like to contribute to the list of supported distros, please visit: 
     protected allPackages() : string[]
     {
         let allPackages : string[] = [];
+        // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         const distroPackages = this.distroJson[this.distroVersion.distro][this.distroPackagesKey];
         for(const packageSet of distroPackages)
         {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             allPackages = allPackages.concat(packageSet[this.sdkKey]);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             allPackages = allPackages.concat(packageSet[this.runtimeKey])
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             allPackages = allPackages.concat(packageSet[this.aspNetKey])
         }
         return allPackages;

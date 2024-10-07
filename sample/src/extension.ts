@@ -8,12 +8,14 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import {
     DotnetInstallMode,
+    DotnetVersionSpecRequirement,
     IDotnetAcquireContext,
     IDotnetAcquireResult,
+    IDotnetFindPathContext,
     IDotnetListVersionsResult,
 } from 'vscode-dotnet-runtime-library';
-import * as runtimeExtension from 'vscode-dotnet-runtime';
-import * as sdkExtension from 'vscode-dotnet-sdk';
+import * as runtimeExtension from 'vscode-dotnet-runtime'; // comment this out when packing the extension
+import * as sdkExtension from 'vscode-dotnet-sdk'; // comment this out when packing the extension
 import { install } from 'source-map-support';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -33,8 +35,8 @@ export function activate(context: vscode.ExtensionContext) {
     */
 
     const requestingExtensionId = 'ms-dotnettools.sample-extension';
-    runtimeExtension.activate(context);
-    sdkExtension.activate(context);
+    runtimeExtension.activate(context); // comment this out when packing the extension
+    sdkExtension.activate(context); // comment this out when packing the extension
 
 
     // --------------------------------------------------------------------------
@@ -167,17 +169,6 @@ ${stderr}`);
         }
     });
 
-    context.subscriptions.push(
-        sampleHelloWorldRegistration,
-        sampleAcquireRegistration,
-        sampleAcquireASPNETRegistration,
-        sampleAcquireStatusRegistration,
-        sampleDotnetUninstallAllRegistration,
-        sampleConcurrentTest,
-        sampleConcurrentASPNETTest,
-        sampleShowAcquisitionLogRegistration,
-    );
-
     const sampleGlobalSDKFromRuntimeRegistration = vscode.commands.registerCommand('sample.dotnet.acquireGlobalSDK', async (version) => {
         if (!version) {
             version = await vscode.window.showInputBox({
@@ -198,6 +189,48 @@ ${stderr}`);
             vscode.window.showErrorMessage((error as Error).toString());
         }
     });
+
+    const sampleFindPathRegistration = vscode.commands.registerCommand('sample.dotnet.findPath', async () =>
+    {
+        const version = await vscode.window.showInputBox(
+        {
+            placeHolder: '8.0',
+            value: '8.0',
+            prompt: 'The .NET runtime version.',
+        });
+
+        const arch = await vscode.window.showInputBox({
+            placeHolder: 'x64',
+            value: 'x64',
+            prompt: 'The .NET runtime architecture.',
+        });
+
+        const requirement = await vscode.window.showInputBox({
+            placeHolder: 'greater_than_or_equal',
+            value: 'greater_than_or_equal',
+            prompt: 'The condition to search for a requirement.',
+        });
+
+        let commandContext : IDotnetFindPathContext = { acquireContext: {version: version, requestingExtensionId: requestingExtensionId, architecture : arch, mode : 'runtime'} as IDotnetAcquireContext,
+        versionSpecRequirement: requirement as DotnetVersionSpecRequirement};
+
+        const result = await vscode.commands.executeCommand('dotnet.findPath', commandContext);
+
+        vscode.window.showInformationMessage(`.NET Path Discovered\n
+${JSON.stringify(result) ?? 'undefined'}`);
+    });
+
+    context.subscriptions.push(
+        sampleHelloWorldRegistration,
+        sampleAcquireRegistration,
+        sampleAcquireASPNETRegistration,
+        sampleAcquireStatusRegistration,
+        sampleDotnetUninstallAllRegistration,
+        sampleConcurrentTest,
+        sampleConcurrentASPNETTest,
+        sampleShowAcquisitionLogRegistration,
+        sampleFindPathRegistration,
+    );
 
     // --------------------------------------------------------------------------
 

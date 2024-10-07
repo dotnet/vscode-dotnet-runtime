@@ -41,7 +41,6 @@ import { InstallationGraveyard } from '../../Acquisition/InstallationGraveyard';
 import { CommandExecutorResult } from '../../Utils/CommandExecutorResult';
 
 const testDefaultTimeoutTimeMs = 60000;
-/* tslint:disable:no-any */
 
 export class MockExtensionContext implements IExtensionState {
     private values: { [n: string]: any; } = {};
@@ -227,6 +226,19 @@ export class MockIndexWebRequestWorker extends WebRequestWorker {
 
 export class MockVSCodeExtensionContext extends IVSCodeExtensionContext
 {
+    registerOnExtensionChange<A extends any[], R>(f: (...args: A) => R, ...args: A): void {
+        f(...args);
+    }
+
+    getExtensions(): readonly any[]
+    {
+        return [{ extensionId : 'test'}];
+    }
+
+    executeCommand(command: string, ...args: any[]): Thenable<any> {
+       return Promise.resolve({});
+    }
+
     appendToEnvironmentVariable(variable: string, pathAdditionWithDelimiter: string): void {
         // Do nothing.
     }
@@ -362,6 +374,11 @@ export class MockCommandExecutor extends ICommandExecutor
         this.attemptedCommand = '';
         this.otherCommandPatternsToMock = [];
         this.otherCommandsReturnValues = [];
+    }
+
+    public async setEnvironmentVariable(variable : string, value : string, vscodeContext : IVSCodeExtensionContext, failureWarningMessage? : string, nonWinFailureMessage? : string)
+    {
+        return this.trueExecutor.setEnvironmentVariable(variable, value, vscodeContext, failureWarningMessage, nonWinFailureMessage);
     }
 }
 
@@ -549,7 +566,9 @@ export class MockLoggingObserver implements ILoggingObserver {
 }
 
 export class MockExtensionConfiguration implements IExtensionConfiguration {
-    constructor(private readonly existingPaths: ILocalExistingPath[], private readonly enableTelemetry: boolean, private readonly existingSharedPath: string) { }
+    constructor(private readonly existingPaths: ILocalExistingPath[], private readonly enableTelemetry: boolean, private readonly existingSharedPath: string,
+        public allowInvalidPaths = false
+    ) { }
 
     public update<T>(section: string, value: T): Thenable<void> {
         // Not used, stubbed to implement interface
@@ -569,6 +588,10 @@ export class MockExtensionConfiguration implements IExtensionConfiguration {
         else if (name === 'enableTelemetry')
         {
             return this.enableTelemetry as unknown as T;
+        }
+        else if(name === 'allowInvalidPaths')
+        {
+            return this.allowInvalidPaths as unknown as T;
         }
         else
         {

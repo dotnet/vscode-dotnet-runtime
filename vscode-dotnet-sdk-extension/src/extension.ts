@@ -42,7 +42,6 @@ import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 import { GlobalInstallerResolver } from 'vscode-dotnet-runtime-library/dist/Acquisition/GlobalInstallerResolver';
 import { IAcquisitionWorkerContext } from 'vscode-dotnet-runtime-library/dist/Acquisition/IAcquisitionWorkerContext';
 
-// tslint:disable no-var-requires
 const packageJson = require('../package.json');
 
 // Extension constants
@@ -50,6 +49,7 @@ namespace configKeys {
     export const installTimeoutValue = 'installTimeoutValue';
     export const enableTelemetry = 'enableTelemetry';
     export const proxyUrl = 'proxyUrl';
+    export const allowInvalidPaths = 'allowInvalidPaths';
 }
 namespace commandKeys {
     export const acquire = 'acquire';
@@ -80,6 +80,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     const vsCodeExtensionContext = new VSCodeExtensionContext(context);
 
     const isExtensionTelemetryEnabled = enableExtensionTelemetry(extensionConfiguration, configKeys.enableTelemetry);
+    const allowInvalidPathSetting = extensionConfiguration.get<boolean>(configKeys.allowInvalidPaths);
     const eventStreamContext = {
         displayChannelName,
         logPath: context.logPath,
@@ -140,7 +141,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         const acquisitionContext = getContext(commandContext);
         const versionResolver = new VersionResolver(acquisitionContext);
 
-        const pathResult = callWithErrorHandling(async () => {
+        const pathResult = await callWithErrorHandling(async () => {
             eventStream.post(new DotnetSDKAcquisitionStarted(commandContext.requestingExtensionId));
 
             eventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId ?? 'notProvided', 'sdk', 'local'));
@@ -184,7 +185,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     });
 
     const dotnetAcquireStatusRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquireStatus}`, async (commandContext: IDotnetAcquireContext) => {
-        const pathResult = callWithErrorHandling(async () => {
+        const pathResult = await callWithErrorHandling(async () => {
             eventStream.post(new DotnetAcquisitionStatusRequested(commandContext.version, commandContext.requestingExtensionId));
             const fakeContext = getContext(null);
             const versionResolver = new VersionResolver(fakeContext);
@@ -226,6 +227,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
                 mode: 'sdk'
             },
             isExtensionTelemetryInitiallyEnabled : isExtensionTelemetryEnabled,
+            allowInvalidPathSetting: allowInvalidPathSetting ?? false
         };
 
         return acquisitionContext;

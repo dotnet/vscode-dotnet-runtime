@@ -3,7 +3,6 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
-/* tslint:disable:no-any */
 
 export class MockEnvironmentVariableCollection implements vscode.EnvironmentVariableCollection {
 
@@ -24,8 +23,9 @@ export class MockEnvironmentVariableCollection implements vscode.EnvironmentVari
     }
 
     public replace(variable: string, value: string): void {
-        throw new Error('Method not implemented.');
+        this.variables[variable] = value;
     }
+
 
     public prepend(variable: string, value: string): void {
         throw new Error('Method not implemented.');

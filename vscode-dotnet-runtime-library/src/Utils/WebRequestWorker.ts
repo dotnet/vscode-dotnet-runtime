@@ -34,13 +34,12 @@ import {
     DotnetOfflineFailure,
     EventBasedError,
     EventCancellationError,
-    OffilneDetectionLogicTriggered,
+    OfflineDetectionLogicTriggered,
     SuppressedAcquisitionError,
     WebRequestError,
     WebRequestSent
 } from '../EventStream/EventStreamEvents';
 import { getInstallFromContext } from './InstallIdUtilities';
-/* tslint:disable:no-any */
 
 export class WebRequestWorker
 {
@@ -140,7 +139,7 @@ export class WebRequestWorker
             return true;
         }).catch((error : any) =>
         {
-            eventStream.post(new OffilneDetectionLogicTriggered((error as EventCancellationError), `DNS resolution failed at microsoft.com, ${JSON.stringify(error)}.`));
+            eventStream.post(new OfflineDetectionLogicTriggered((error as EventCancellationError), `DNS resolution failed at microsoft.com, ${JSON.stringify(error)}.`));
             return false;
         });
         return couldConnect;
@@ -219,12 +218,16 @@ export class WebRequestWorker
             await this.axiosGet(url, options)
             .then(response =>
             {
-                response.data.pipe(file);
+                // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                response?.data?.pipe(file);
                 return finished(file);
             });
         }
         catch(error : any)
         {
+            // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             if(error?.message && (error?.message as string)?.includes('ENOSPC'))
             {
                 const err = new DiskIsFullError(new EventBasedError('DiskIsFullError',
@@ -235,19 +238,20 @@ export class WebRequestWorker
             else
             {
                 const err = new DotnetDownloadFailure(new EventBasedError('DotnetDownloadFailure',
-`We failed to download the .NET Installer. Please try to install the .NET SDK manually.
-Error: ${error.message}`), getInstallFromContext(this.context));
+// Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+`We failed to download the .NET Installer. Please try to install the .NET SDK manually. Error: ${error?.message}`), getInstallFromContext(this.context));
                 this.context.eventStream.post(err);
                 throw err.error;
             }
         }
     }
 
-    private async getAxiosOptions(numRetries: number, furtherOptions? : {}, keepAlive = true)
+    private async getAxiosOptions(numRetries: number, furtherOptions? : object, keepAlive = true) : Promise<object>
     {
         await this.ActivateProxyAgentIfFound();
 
-        const options = {
+        const options : object = {
             timeout: this.websiteTimeoutMs,
             'axios-retry': { retries: numRetries },
             ...(keepAlive && {headers: { 'Connection': 'keep-alive' }}),
@@ -287,8 +291,10 @@ Error: ${error.message}`), getInstallFromContext(this.context));
                 if(isAxiosError(error))
                 {
                     const axiosBasedError = error as AxiosError;
+                    // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                     const summarizedError = new EventBasedError('WebRequestFailedFromAxios',
-`Request to ${this.url} Failed: ${axiosBasedError.message}. Aborting.
+`Request to ${this.url} Failed: ${axiosBasedError?.message}. Aborting.
 ${axiosBasedError.cause? `Error Cause: ${axiosBasedError.cause!.message}` : ``}
 Please ensure that you are online.
 
@@ -298,8 +304,9 @@ If you're on a proxy and disable registry access, you must set the proxy in our 
                 }
                 else
                 {
-                    const genericError = new EventBasedError('WebRequestFailedGenerically',
-                        `Web Request to ${this.url} Failed: ${error.message}. Aborting. Stack: ${'stack' in error ? error?.stack : 'unavailable.'}`);
+                    // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    const genericError = new EventBasedError('WebRequestFailedGenerically', `Web Request to ${this.url} Failed: ${error?.message}. Aborting. Stack: ${'stack' in error ? error?.stack : 'unavailable.'}`);
                     this.context.eventStream.post(new WebRequestError(genericError, getInstallFromContext(this.context)));
                     throw genericError;
                 }

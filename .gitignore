@@ -29,6 +29,7 @@ project.lock.json
 *.*sdf
 *.ipch
 *.js
+!.eslintrc.js
 *.d.ts
 *.js.map
 .build/

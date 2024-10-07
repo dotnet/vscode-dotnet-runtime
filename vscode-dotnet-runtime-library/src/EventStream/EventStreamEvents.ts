@@ -8,12 +8,10 @@ import { IDotnetInstallationContext } from '../Acquisition/IDotnetInstallationCo
 import { EventType } from './EventType';
 import { IEvent } from './IEvent';
 import { TelemetryUtilities } from './TelemetryUtilities';
-import { InstallToStrings } from '../Acquisition/DotnetInstall';
-import { DotnetInstall } from '../Acquisition/DotnetInstall';
+import { InstallToStrings , DotnetInstall } from '../Acquisition/DotnetInstall';
 import { DotnetInstallMode } from '../Acquisition/DotnetInstallMode';
 import { DotnetInstallType } from '../IDotnetAcquireContext';
-
-// tslint:disable max-classes-per-file
+import { IDotnetFindPathContext } from '../IDotnetFindPathContext';
 
 export class EventCancellationError extends Error
 {
@@ -388,8 +386,8 @@ export class UserManualInstallFailure extends SuppressedAcquisitionError {
     eventName = 'UserManualInstallFailure';
 }
 
-export class OffilneDetectionLogicTriggered extends SuppressedAcquisitionError {
-    eventName = 'OffilneDetectionLogicTriggered';
+export class OfflineDetectionLogicTriggered extends SuppressedAcquisitionError {
+    eventName = 'OfflineDetectionLogicTriggered';
 }
 
 export class DotnetInstallationValidationMissed extends SuppressedAcquisitionError {
@@ -813,8 +811,81 @@ export class DotnetWSLOperationOutputEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetWSLOperationOutputEvent';
 }
 
+export class DotnetFindPathCommandInvoked extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathCommandInvoked';
+    constructor(public readonly eventMessage: string, public readonly request : IDotnetFindPathContext) { super(eventMessage); }
+
+    public getProperties() {
+        return { Message: this.eventMessage, Context : JSON.stringify(this.request)};
+    };
+}
+
+export class DotnetFindPathLookupSetting extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathLookupSetting';
+}
+
+export class DotnetFindPathSettingFound extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathSettingFound';
+}
+
+export class DotnetFindPathLookupPATH extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathLookupPATH';
+}
+
+export class DotnetFindPathPATHFound extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathPATHFound';
+}
+
+export class DotnetFindPathLookupRealPATH extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathLookupRealPATH';
+}
+
+export class DotnetFindPathRealPATHFound extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathRealPATHFound';
+}
+
+export class DotnetFindPathNoRuntimesOnHost extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathNoRuntimesOnHost';
+}
+
+export class DotnetFindPathLookupRootPATH extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathLookupRealPATH';
+}
+
+export class DotnetFindPathRootEmulationPATHFound extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathRealPATHFound';
+}
+
+export class DotnetFindPathRootUnderEmulationButNoneSet extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathRealPATHFound';
+}
+
+export class DotnetFindPathRootPATHFound extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathRealPATHFound';
+}
+
+export class DotnetFindPathMetCondition extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathMetCondition';
+}
+
+export class DotnetFindPathDidNotMeetCondition extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathDidNotMeetCondition';
+}
+
 export class DotnetTelemetrySettingEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetTelemetrySettingEvent';
+}
+
+export class DotnetVSCodeExtensionFound extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetVSCodeExtensionFound';
+}
+
+export class DotnetVSCodeExtensionHasInstallRequest extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetVSCodeExtensionHasInstallRequest';
+}
+
+export class DotnetVSCodeExtensionChange extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetVSCodeExtensionChange';
 }
 
 export class DotnetCommandNotFoundEvent extends DotnetCustomMessageEvent {

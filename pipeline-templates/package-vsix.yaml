@@ -12,7 +12,7 @@ jobs:
   displayName: '📦 Package and Publish'
   dependsOn:
   - ${{ parameters.pool.os }}_Build
-  - TSLint
+  - ESLint
   condition: succeeded()
   strategy:
     matrix:
