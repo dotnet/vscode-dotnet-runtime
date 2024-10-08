@@ -38,8 +38,23 @@ jobs:
       inputs:
         path: '$(System.ArtifactsDirectory)'
     - template: install-node.yaml
-    - bash: |
-        npm install @vscode/vsce@latest -g --reg https://registry.npmjs.org/ --verbose
-        vsce publish --packagePath vscode-dotnet-runtime-$(version)-signed.vsix -p $(VSCODE_MARKETPLACE_TOKEN)
-      displayName: '🍵 Publish to Marketplace'
-      workingDirectory: '$(System.ArtifactsDirectory)'
+    - task: AzureCLI@2
+      displayName: '🚀 Publish to Marketplace'
+      inputs:
+        azureSubscription: 'VSCode Marketplace Publishing'
+        scriptType: "pscore"
+        scriptLocation: 'inlineScript'
+        workingDirectory: '$(System.ArtifactsDirectory)'
+        inlineScript: |
+          npm install @vscode/vsce@latest -g --reg https://registry.npmjs.org/ --verbose
+          $basePublishArgs = , "publish --azure-credential"
+          $basePublishArgs += '--packagePath'
+          $publishArgs = $basePublishArgs + vscode-dotnet-runtime-$(version)-signed.vsix
+          If ("${{ parameters.SignType }}" -ne "Real") {
+            Write-Host "With a test-signed build, the command to publish is printed instead of run."
+            Write-Host "##[command]vsce $publishArgs"
+          }
+          Else {
+            Write-Host "##[command]vsce $publishArgs"
+            vsce @publishArgs
+          }
