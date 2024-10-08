@@ -30,12 +30,15 @@ parameters:
   - name: NetCore-Public
     vmImage: ubuntu-latest
     os: linux
+    emoji: '🐧'
   - name: NetCore-Public
     vmImage: macOS-latest
     os: macOS
+    emoji: '🐧'
   - name: NetCore-Public
     vmImage: windows-latest
     os: windows
+    emoji: '💣'
 
 stages:
 - stage: o # o is just used so it looks like a bullet point in the output of devops
