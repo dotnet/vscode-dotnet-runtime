@@ -22,7 +22,7 @@ jobs:
         vmImage: ${{ parameters.pool.vmImage }}
     displayName: '🌐 Publish to Marketplace'
     dependsOn:
-    - Deploy
+    - waitForValidation
     - ${{ parameters.pool.os }}_Package
     variables:
       version: $[ dependencies.GetVersion.outputs['${{ parameters.version }}'] ]
