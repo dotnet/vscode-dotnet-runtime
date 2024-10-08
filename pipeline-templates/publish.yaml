@@ -42,4 +42,4 @@ jobs:
         npm install @vscode/vsce@latest -g --reg https://registry.npmjs.org/ --verbose
         vsce publish --packagePath vscode-dotnet-runtime-$(version)-signed.vsix -p $(VSCODE_MARKETPLACE_TOKEN)
       displayName: '🍵 Publish to Marketplace'
-      workingDirectory: '$(System.ArtifactsDirectory)/vscode-dotnet-runtime-extension'
+      workingDirectory: '$(System.ArtifactsDirectory)'
