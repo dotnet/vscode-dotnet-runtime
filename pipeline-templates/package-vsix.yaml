@@ -42,7 +42,7 @@ jobs:
     name: GetVersion
     displayName: '❓ Get Version'
     workingDirectory: $(dir-name)
-  - ${{ if eq('${{ parameters.useOneEngineeringPool }}', 'true') }}:
+  - ${{ if eq(parameters.useOneEngineeringPool, 'true') }}:
     - template: prepare-signing.yaml
       parameters:
         SignType: ${{ parameters.SignType }}
@@ -61,7 +61,6 @@ jobs:
       SignType: ${{ parameters.SignType }}
   - task: CmdLine@2
     displayName: 🤌 Rename Signed VSIX
-
     inputs:
       script: rename ".\packages\$(package-name)-$(GetVersion.version).vsix" $(package-name)-$(GetVersion.version)-signed.vsix
   - task: CopyFiles@2
@@ -78,7 +77,7 @@ jobs:
       Contents: '**\*.binlog'
       TargetFolder: '$(Build.ArtifactStagingDirectory)'
       flattenFolders: false
-- ${{ if eq('${{ parameters.useOneEngineeringPool }}', 'true') }}:
+- ${{ if eq(parameters.useOneEngineeringPool, 'true') }}:
   - template: publish.yaml
     parameters:
       pool: ${{ parameters.pool }}
