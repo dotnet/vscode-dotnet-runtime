@@ -79,6 +79,7 @@ extends:
               name: ${{ image.name }}
               image: ${{ image.image }}
               os: ${{ image.os }}
+              emoji: ${{ image.emoji }}
             useOneEngineeringPool: true
       - template: pipeline-templates/upstream-verify.yaml@self
         parameters:
