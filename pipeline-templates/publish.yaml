@@ -24,7 +24,10 @@ jobs:
     environment: 'vscode-dotnetcore-extension-releases'
   - job: Publish
     pool:
-      vmImage: ${{ parameters.pool.vmImage }}
+      ${{ if eq(parameters.useOneEngineeringPool, 'true') }}:
+        ${{ parameters.pool }}
+      ${{ else }}:
+        vmImage: ${{ parameters.pool.vmImage }}
     displayName: '🌐 Publish to Marketplace'
     dependsOn:
     - Deploy
