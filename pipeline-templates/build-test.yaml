@@ -1,3 +1,9 @@
+variables:
+  ${{ if eq(parameters.pool.os, 'windows') }}:
+    buildEmoji: 💣
+  ${{ if ne(parameters.pool.os, 'windows') }}:
+    buildEmoji: 🐧
+
 parameters:
   pool: ''
 
@@ -8,7 +14,8 @@ jobs:
         ${{ parameters.pool }}
     ${{ else }}:
         vmImage: ${{ parameters.pool.vmImage }}
-  displayName: '🔨 ${{ parameters.pool.os }} Build and Test'
+
+  displayName: '${{ variables['buildEmoji'] }},  ${{ parameters.pool.os }} Build and Test'
   templateContext:
     outputs:
     - output: pipelineArtifact
