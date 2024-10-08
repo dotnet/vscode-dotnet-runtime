@@ -14,17 +14,6 @@ jobs:
       inputs:
         instructions: 'Please validate that the release build has been tested, and resume to publish a new version'
         onTimeout: 'reject'
-  - deployment: Deploy
-    pool:
-      ${{ if eq(parameters.useOneEngineeringPool, 'true') }}:
-        ${{ parameters.pool }}
-      ${{ else }}:
-        vmImage: ${{ parameters.pool.vmImage }}
-    displayName: '✨ Deploy to Release Environment'
-    dependsOn:
-    - ${{ parameters.pool.os }}_Package
-    - waitForValidation
-    environment: 'vscode-dotnetcore-extension-releases'
   - job: Publish
     pool:
       ${{ if eq(parameters.useOneEngineeringPool, 'true') }}:
