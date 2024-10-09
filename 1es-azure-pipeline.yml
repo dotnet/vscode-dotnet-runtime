@@ -39,15 +39,15 @@ parameters:
   - name: NetCore1ESPool-Internal
     image: 1es-windows-2022
     os: windows
-    emoji: 💣
+    emoji: ⚪
   - name: NetCore1ESPool-Internal
     image: 1es-ubuntu-2204
     os: linux
-    emoji: 🐧
+    emoji: 🟣
   - name: Azure Pipelines
     image: macOS-latest
     os: macOS
-    emoji: 🐧
+    emoji: ⚫
 - name: SignType
   displayName: Sign type
   type: string
