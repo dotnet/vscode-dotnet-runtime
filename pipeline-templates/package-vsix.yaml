@@ -83,3 +83,4 @@ jobs:
       pool: ${{ parameters.pool }}
       SignType: ${{ parameters.SignType }}
       version: $(GetVersion.version)
+      useOneEngineeringPool: true
