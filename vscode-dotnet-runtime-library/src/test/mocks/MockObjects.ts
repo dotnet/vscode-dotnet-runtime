@@ -226,6 +226,19 @@ export class MockIndexWebRequestWorker extends WebRequestWorker {
 
 export class MockVSCodeExtensionContext extends IVSCodeExtensionContext
 {
+    registerOnExtensionChange<A extends any[], R>(f: (...args: A) => R, ...args: A): void {
+        f(...args);
+    }
+
+    getExtensions(): readonly any[]
+    {
+        return [{ extensionId : 'test'}];
+    }
+
+    executeCommand(command: string, ...args: any[]): Thenable<any> {
+       return Promise.resolve({});
+    }
+
     appendToEnvironmentVariable(variable: string, pathAdditionWithDelimiter: string): void {
         // Do nothing.
     }

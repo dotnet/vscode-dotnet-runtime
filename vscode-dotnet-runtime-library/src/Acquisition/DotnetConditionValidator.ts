@@ -11,6 +11,7 @@ import { IDotnetListInfo } from './IDotnetListInfo';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetConditionValidator } from './IDotnetConditionValidator';
 import * as versionUtils from './VersionUtilities';
+import * as os from 'os';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { DotnetUnableToCheckPATHArchitecture } from '../EventStream/EventStreamEvents';
 
@@ -98,7 +99,8 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
 
     public async getSDKs(existingPath : string) : Promise<IDotnetListInfo[]>
     {
-        const findSDKsCommand = CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-sdks']);
+        const findSDKsCommand = await this.setCodePage() ? CommandExecutor.makeCommand(`chcp`, [`65001`, `|`,`"${existingPath}"`, '--list-sdks']) :
+            CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-sdks']);
 
         const sdkInfo = await (this.executor!).execute(findSDKsCommand, undefined, false).then((result) =>
         {
@@ -117,6 +119,13 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
         });
 
         return sdkInfo;
+    }
+
+    private async setCodePage() : Promise<boolean>
+    {
+        // For Windows, we need to change the code page to UTF-8 to handle the output of the command. https://github.com/nodejs/node-v0.x-archive/issues/2190
+        // Only certain builds of windows support UTF 8 so we need to check that we can use it.
+        return os.platform() === 'win32' ? (await this.executor!.tryFindWorkingCommand([CommandExecutor.makeCommand('chcp', ['65001'])])) !== null : false;
     }
 
     private stringVersionMeetsRequirement(foundVersion : string, requiredVersion : string, requirement : DotnetVersionSpecRequirement) : boolean
@@ -144,7 +153,8 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
 
     public async getRuntimes(existingPath : string) : Promise<IDotnetListInfo[]>
     {
-        const findRuntimesCommand = CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-runtimes']);
+        const findRuntimesCommand = await this.setCodePage() ? CommandExecutor.makeCommand(`chcp`, [`65001`, `|`,`"${existingPath}"`, '--list-runtimes']) :
+            CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-runtimes']);
 
         const windowsDesktopString = 'Microsoft.WindowsDesktop.App';
         const aspnetCoreString = 'Microsoft.AspNetCore.App';

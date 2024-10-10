@@ -22,9 +22,26 @@ export class VSCodeExtensionContext extends IVSCodeExtensionContext
         environment.replace(variable, value);
     }
 
-    appendToEnvironmentVariable(variable: string, appendingValue: string): void
+    public appendToEnvironmentVariable(variable: string, appendingValue: string): void
     {
         const environment = this.context.environmentVariableCollection;
         environment?.append(variable, appendingValue);
+    }
+
+    public registerOnExtensionChange<A extends any[], R>(f: (...args: A) => R, ...args: A): void
+    {
+        vscode.extensions.onDidChange(() => {
+            f(...(args));
+        })
+    }
+
+    public getExtensions() : readonly vscode.Extension<any>[]
+    {
+        return vscode.extensions.all;
+    }
+
+    public executeCommand(command : string, ...args: any[]) : Thenable<any>
+    {
+        return vscode.commands.executeCommand(command, ...args);
     }
 }
