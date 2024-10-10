@@ -12,7 +12,7 @@ import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetConditionValidator } from './IDotnetConditionValidator';
 import * as versionUtils from './VersionUtilities';
 import { FileUtilities } from '../Utils/FileUtilities';
-import { EnvironmentVariableIsDefined } from '../Utils/TypescriptUtilities';
+import { DotnetUnableToCheckPATHArchitecture } from '../EventStream/EventStreamEvents';
 
 
 export class DotnetConditionValidator implements IDotnetConditionValidator
@@ -26,7 +26,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
     {
         const availableRuntimes = await this.getRuntimes(dotnetExecutablePath);
         const requestedMajorMinor = versionUtils.getMajorMinor(requirement.acquireContext.version, this.workerContext.eventStream, this.workerContext);
-        const hostArch = await this.getHostArchitecture(dotnetExecutablePath);
+        const hostArch = await this.getHostArchitecture(dotnetExecutablePath, requirement);
 
         if(availableRuntimes.some((runtime) =>
             {
@@ -60,18 +60,40 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
      * @returns The architecture of the dotnet host from the PATH, in dotnet info string format
      * The .NET Host will only list versions of the runtime and sdk that match its architecture.
      * Thus, any runtime or sdk that it prints out will be the same architecture as the host.
+     * This information is not always accurate as dotnet info is subject to change.
      *
      * @remarks Will return '' if the architecture cannot be determined for some peculiar reason (e.g. dotnet --info is broken or changed).
      */
     // eslint-disable-next-line @typescript-eslint/require-await
-    private async getHostArchitecture(hostPath : string) : Promise<string>
+    private async getHostArchitecture(hostPath : string, requirement : IDotnetFindPathContext) : Promise<string>
     {
-        return '';
-        /* The host architecture can be inaccurate. Imagine a local runtime install. There is no way to tell the architecture of that runtime,
+        /* The host architecture we determine can be inaccurate. Imagine a local runtime install. There is no way to tell the architecture of that runtime,
         ... as the Host will not print its architecture in dotnet info.
-        Return '' for now to pass all arch checks.
+        Return '' for now to pass all arch checks in this case.
 
-        Need to get an issue from the runtime team. See https://github.com/dotnet/sdk/issues/33697 and https://github.com/dotnet/runtime/issues/98735/ */
+        Need to get an issue from the runtime team. See https://github.com/dotnet/sdk/issues/33697 and https://github.com/dotnet/runtime/issues/98735/
+        Unfortunately even with a new API, that might not go in until .NET 10 and beyond, so we have to rely on old behavior too.*/
+
+        const infoCommand = CommandExecutor.makeCommand(`"${hostPath}"`, ['--info']);
+        const envWithForceEnglish = process.env;
+        envWithForceEnglish.DOTNET_CLI_UI_LANGUAGE = 'en-US';
+        // System may not have english installed, but CDK already calls this without issue -- the .NET SDK language invocation is also wrapped by a runtime library and natively includes english assets
+        const hostArch = await (this.executor!).execute(infoCommand, { env: envWithForceEnglish }, false).then((result) =>
+        {
+            const lines = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
+            // This is subject to change but there is no good alternative to do this
+            const archLine = lines.find((line) => line.startsWith('Architecture:'));
+            if(archLine === undefined)
+            {
+                this.workerContext.eventStream.post(new DotnetUnableToCheckPATHArchitecture(`Could not find the architecture of the dotnet host ${hostPath}. If this host does not match the architecture ${requirement.acquireContext.architecture}:
+Please set the PATH to a dotnet host that matches the architecture ${requirement.acquireContext.architecture}. An incorrect architecture will cause instability for the extension ${requirement.acquireContext.requestingExtensionId}.`));
+                return '';
+            }
+            const arch = archLine.split(' ')[1];
+            return arch;
+        });
+
+        return hostArch;
     }
 
     public async getSDKs(existingPath : string) : Promise<IDotnetListInfo[]>

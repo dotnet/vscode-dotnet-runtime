@@ -746,6 +746,10 @@ export class DotnetFileIntegrityFailureEvent extends DotnetVisibleWarningEvent {
     public readonly eventName = 'DotnetFileIntegrityFailureEvent';
 }
 
+export class DotnetUnableToCheckPATHArchitecture extends DotnetVisibleWarningEvent {
+    public readonly eventName = 'DotnetUnableToCheckPATHArchitecture';
+}
+
 export class DotnetVersionCategorizedEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetVersionCategorizedEvent';
 }

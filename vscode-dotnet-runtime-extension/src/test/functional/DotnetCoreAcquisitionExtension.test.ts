@@ -319,7 +319,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     );
   }).timeout(standardTimeoutTime);
 
-  /*
   test('Find dotnet PATH Command Unmet Arch Condition', async () => {
     // look for a different architecture of 3.1
     if(os.platform() !== 'darwin')
@@ -328,13 +327,12 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
         // They also have an x64 HOST. We can't set DOTNET_MULTILEVEL_LOOKUP to 0 because it will break the ability to find the host on --info
         // As our runtime installs have no host. So the architecture will read as x64 even though it's not.
         //
-        // This is not fixable until the runtime team releases a better way to get the architecture of a particular dotnet installation.
+        // This is not completely fixable until the runtime team releases a better way to get the architecture of a particular dotnet installation.
         await findPathWithRequirementAndInstall('3.1', 'runtime', os.arch() == 'arm64' ? 'x64' : os.arch(), 'greater_than_or_equal', false,
             {version : '3.1', mode : 'runtime', architecture : 'arm64', requestingExtensionId : requestingExtensionId}
         );
     }
   }).timeout(standardTimeoutTime);
-  */
 
   test('Install SDK Globally E2E (Requires Admin)', async () => {
     // We only test if the process is running under ADMIN because non-admin requires user-intervention.
