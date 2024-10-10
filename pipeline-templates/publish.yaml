@@ -37,7 +37,7 @@ jobs:
         echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
       name: GetVersion
       displayName: '❓ Get Version'
-  workingDirectory: 'vscode-dotnet-runtime-extension'
+      workingDirectory: 'vscode-dotnet-runtime-extension'
     - task: AzureCLI@2
       displayName: '🚀 Publish to Marketplace'
       inputs:
