@@ -1,7 +1,7 @@
 parameters:
   pool: ''
   SignType: ''
-  version: ''
+  useOneEngineeringPool: ''
 
 jobs:
   - job: waitForValidation
@@ -24,8 +24,6 @@ jobs:
     dependsOn:
     - waitForValidation
     - ${{ parameters.pool.os }}_Package
-    variables:
-      version: $[ dependencies.GetVersion.outputs['${{ parameters.version }}'] ]
     steps:
     - checkout: none # Skip checking out repo
     - task: DownloadPipelineArtifact@2
@@ -33,6 +31,13 @@ jobs:
       inputs:
         path: '$(System.ArtifactsDirectory)'
     - template: install-node.yaml
+    - bash: |
+        VERSION=`node -p "require('./package.json').version"`
+        npm version $VERSION --allow-same-version
+        echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
+      name: GetVersion
+      displayName: '❓ Get Version'
+  workingDirectory: 'vscode-dotnet-runtime-extension'
     - task: AzureCLI@2
       displayName: '🚀 Publish to Marketplace'
       inputs:
@@ -45,7 +50,7 @@ jobs:
           $basePublishArgs = , "publish"
           $basePublishArgs += '--azure-credential'
           $basePublishArgs += '--packagePath'
-          $publishArgs = $basePublishArgs + vscode-dotnet-runtime-$(version)-signed.vsix
+          $publishArgs = $basePublishArgs + 'vscode-dotnet-runtime-$(GetVersion.version)-signed.vsix'
           If ("${{ parameters.SignType }}" -ne "Real") {
             Write-Host "With a test-signed build, the command to publish is printed instead of run."
             Write-Host "##[command]vsce $publishArgs"
