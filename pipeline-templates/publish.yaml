@@ -48,7 +48,7 @@ jobs:
           $basePublishArgs = , "publish"
           $basePublishArgs += '--azure-credential'
           $basePublishArgs += '--packagePath'
-          $publishArgs = $basePublishArgs + 'vscode-dotnet-runtime-$(version)-signed.vsix'
+          $publishArgs = $basePublishArgs + vscode-dotnet-runtime-$(version)-signed.vsix
           If ("${{ parameters.SignType }}" -ne "Real") {
             Write-Host "With a test-signed build, the command to publish is printed instead of run."
             Write-Host "##[command]vsce $publishArgs"
