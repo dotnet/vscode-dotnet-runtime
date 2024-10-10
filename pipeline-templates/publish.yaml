@@ -2,10 +2,12 @@ parameters:
   pool: ''
   SignType: ''
   version: ''
+  useOneEngineeringPool: ''
 
 jobs:
   - job: waitForValidation
     displayName: ☁️ Wait for release approval
+    condition: eq('${{ parameters.useOneEngineeringPool }}', 'true')
     pool: server
     timeoutInMinutes: 4320 # job times out in 3 days
     steps:
@@ -15,6 +17,7 @@ jobs:
         instructions: 'Please validate that the release build has been tested, and resume to publish a new version'
         onTimeout: 'reject'
   - job: Publish
+    condition: eq('${{ parameters.useOneEngineeringPool }}', 'true')
     pool:
       ${{ if eq(parameters.useOneEngineeringPool, 'true') }}:
         ${{ parameters.pool }}
