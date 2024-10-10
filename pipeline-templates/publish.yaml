@@ -25,7 +25,6 @@ jobs:
     - waitForValidation
     - ${{ parameters.pool.os }}_Package
     steps:
-    - checkout: none # Skip checking out repo
     - task: DownloadPipelineArtifact@2
       displayName: '⬇️ Download Packaged Extension'
       inputs:
