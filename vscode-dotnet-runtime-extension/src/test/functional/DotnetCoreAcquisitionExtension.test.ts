@@ -207,7 +207,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     return lowerPath.includes('dotnet') || lowerPath.includes('program') || lowerPath.includes('share') || lowerPath.includes('bin') || lowerPath.includes('snap') || lowerPath.includes('homebrew');
   }
 
-  async function findPathWithRequirementAndInstall(version : string, iMode : DotnetInstallMode, arch : string, condition : DotnetVersionSpecRequirement, shouldFind : boolean, contextToLookFor? : IDotnetAcquireContext, setPath = true)
+  async function findPathWithRequirementAndInstall(version : string, iMode : DotnetInstallMode, arch : string, condition : DotnetVersionSpecRequirement, shouldFind : boolean, contextToLookFor? : IDotnetAcquireContext, setPath = true,
+    blockNoArch = false)
   {
     const installPath = await installRuntime(version, iMode, arch);
 
@@ -224,6 +225,12 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     }
 
     extensionContext.environmentVariableCollection.replace('PATH', process.env.PATH ?? '');
+
+    if(blockNoArch)
+    {
+        extensionContext.environmentVariableCollection.replace('DOTNET_INSTALL_TOOL_DONT_ACCEPT_UNKNOWN_ARCH', '1');
+    }
+
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath',
         { acquireContext : contextToLookFor ?? { version, requestingExtensionId : requestingExtensionId, mode: iMode, architecture : arch } as IDotnetAcquireContext,
         versionSpecRequirement : condition} as IDotnetFindPathContext
@@ -329,6 +336,17 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
         //
         // This is not completely fixable until the runtime team releases a better way to get the architecture of a particular dotnet installation.
         await findPathWithRequirementAndInstall('3.1', 'runtime', os.arch() == 'arm64' ? 'x64' : os.arch(), 'greater_than_or_equal', false,
+            {version : '3.1', mode : 'runtime', architecture : 'arm64', requestingExtensionId : requestingExtensionId}, true, true
+        );
+    }
+  }).timeout(standardTimeoutTime);
+
+
+  test('Find dotnet PATH Command No Arch Available But Accept By Default', async () => {
+    // look for a different architecture of 3.1
+    if(os.platform() !== 'darwin')
+    {
+        await findPathWithRequirementAndInstall('3.1', 'runtime', os.arch() == 'arm64' ? 'x64' : os.arch(), 'greater_than_or_equal', true,
             {version : '3.1', mode : 'runtime', architecture : 'arm64', requestingExtensionId : requestingExtensionId}
         );
     }

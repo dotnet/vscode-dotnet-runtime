@@ -88,7 +88,14 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
             {
                 this.workerContext.eventStream.post(new DotnetUnableToCheckPATHArchitecture(`Could not find the architecture of the dotnet host ${hostPath}. If this host does not match the architecture ${requirement.acquireContext.architecture}:
 Please set the PATH to a dotnet host that matches the architecture ${requirement.acquireContext.architecture}. An incorrect architecture will cause instability for the extension ${requirement.acquireContext.requestingExtensionId}.`));
-                return '';
+                if(process.env.DOTNET_INSTALL_TOOL_DONT_ACCEPT_UNKNOWN_ARCH === '1')
+                {
+                    return 'unknown'; // Bad value to cause failure mismatch, which will become 'auto'
+                }
+                else
+                {
+                    return '';
+                }
             }
             const arch = archLine.split(' ')[1];
             return arch;
