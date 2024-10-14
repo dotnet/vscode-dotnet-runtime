@@ -332,11 +332,19 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     {
         // The CI Machines are running on ARM64 for OS X.
         // They also have an x64 HOST. We can't set DOTNET_MULTILEVEL_LOOKUP to 0 because it will break the ability to find the host on --info
-        // As our runtime installs have no host. So the architecture will read as x64 even though it's not.
+        // As a 3.1 runtime host does not provide the architecture, but we try to use 3.1 because CI machines won't have it.
         //
-        // This is not completely fixable until the runtime team releases a better way to get the architecture of a particular dotnet installation.
         await findPathWithRequirementAndInstall('3.1', 'runtime', os.arch() == 'arm64' ? 'x64' : os.arch(), 'greater_than_or_equal', false,
             {version : '3.1', mode : 'runtime', architecture : 'arm64', requestingExtensionId : requestingExtensionId}, true, true
+        );
+    }
+  }).timeout(standardTimeoutTime);
+
+  test('Find dotnet PATH Command Unmet Arch Condition With Host that prints Arch', async () => {
+    if(os.platform() !== 'darwin')
+    {
+        await findPathWithRequirementAndInstall('9.0', 'runtime', os.arch() == 'arm64' ? 'x64' : os.arch(), 'greater_than_or_equal', false,
+            {version : '9.0', mode : 'runtime', architecture : 'arm64', requestingExtensionId : requestingExtensionId}
         );
     }
   }).timeout(standardTimeoutTime);
