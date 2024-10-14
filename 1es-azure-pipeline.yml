@@ -24,6 +24,8 @@ variables:
   value: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/SDK-v')]
 - name: Codeql.Enabled
   value: true
+- name: MicroBuildOutputFolderOverride
+  value: '$(Agent.TempDirectory)'
 
 resources:
   repositories:
