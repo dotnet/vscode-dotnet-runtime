@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+## [2.2.1] - 2024-10-23
+
+Adds a check for the architecture of .NET on the findPath API.
+
 ## [2.2.0] - 2024-10-15
 
 Adds ability to install the runtime via the `package.json` file of an extension. See the documentation/commands.md section.
