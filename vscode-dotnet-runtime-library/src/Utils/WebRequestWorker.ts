@@ -3,7 +3,6 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import Axios, { AxiosError, isAxiosError } from 'axios';
-import axiosRetry from 'axios-retry';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 
 process.env.VSCODE_DOTNET_INSTALL_TOOL_ORIGINAL_HOME = process.env.HOME
@@ -23,6 +22,7 @@ else
 import { AxiosCacheInstance, buildMemoryStorage, setupCache } from 'axios-cache-interceptor';
 import * as dns from 'dns';
 import * as fs from 'fs';
+import * as axiosRetry from 'axios-retry';
 import { promisify } from 'util';
 import stream = require('stream');
 
