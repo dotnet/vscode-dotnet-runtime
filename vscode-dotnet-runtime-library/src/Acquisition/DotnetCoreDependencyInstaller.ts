@@ -181,11 +181,11 @@ export class DotnetCoreDependencyInstaller {
 
     private getShellCommand(): string {
         if (this.platform === 'win32') {
-            return which('cmd').toString();
+            return which('cmd')?.toString() ?? 'cmd';
         }
         // Test for existence of bash which won't exist on the base Alpine Linux container, use sh instead there
         const shellCommand = which('bash');
         // shellCommand will be null if bash is not found
-        return shellCommand ? shellCommand.toString() : which('sh').toString();
+        return shellCommand ? shellCommand.toString() : which('sh')?.toString() ?? 'sh';
     }
 }

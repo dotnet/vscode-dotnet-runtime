@@ -131,7 +131,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     // Reading Extension Configuration
     const timeoutValue = extensionConfiguration.get<number>(configKeys.installTimeoutValue);
     if (!fs.existsSync(vsCodeContext.globalStoragePath)) {
-        fs.mkdirSync(vsCodeContext.globalStoragePath);
+        fs.mkdirSync(vsCodeContext.globalStoragePath, {recursive: true});
     }
     const resolvedTimeoutSeconds = timeoutValue === undefined ? defaultTimeoutValue : timeoutValue;
     const proxyLink = extensionConfiguration.get<string>(configKeys.proxyUrl);

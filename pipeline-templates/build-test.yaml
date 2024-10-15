@@ -8,7 +8,8 @@ jobs:
         ${{ parameters.pool }}
     ${{ else }}:
         vmImage: ${{ parameters.pool.vmImage }}
-  displayName: '🔨 ${{ parameters.pool.os }} Build and Test'
+
+  displayName: '${{ parameters.pool.emoji }} ${{ parameters.pool.os }} Build and Test'
   templateContext:
     outputs:
     - output: pipelineArtifact
