@@ -73,7 +73,6 @@ import {
     IDotnetConditionValidator,
     DotnetFindPathSettingFound,
     DotnetFindPathLookupSetting,
-    DotnetFindPathDidNotMeetCondition,
     DotnetFindPathMetCondition,
     DotnetFindPathCommandInvoked,
     JsonInstaller,
@@ -522,10 +521,6 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             {
                 globalEventStream.post(new DotnetFindPathMetCondition(`${path} met the conditions.`));
                 return path;
-            }
-            else
-            {
-                globalEventStream.post(new DotnetFindPathDidNotMeetCondition(`${path} did NOT satisfy the conditions.`));
             }
         }
 

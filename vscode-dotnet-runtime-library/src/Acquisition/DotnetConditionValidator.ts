@@ -13,7 +13,7 @@ import { IDotnetConditionValidator } from './IDotnetConditionValidator';
 import * as versionUtils from './VersionUtilities';
 import * as os from 'os';
 import { FileUtilities } from '../Utils/FileUtilities';
-import { DotnetUnableToCheckPATHArchitecture } from '../EventStream/EventStreamEvents';
+import { DotnetFindPathDidNotMeetCondition, DotnetUnableToCheckPATHArchitecture } from '../EventStream/EventStreamEvents';
 
 
 export class DotnetConditionValidator implements IDotnetConditionValidator
@@ -50,6 +50,11 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
             {
                 return true;
             }
+            else
+            {
+                this.workerContext.eventStream.post(new DotnetFindPathDidNotMeetCondition(`${dotnetExecutablePath} did NOT satisfy the conditions: hostArch: ${hostArch}, requiredArch: ${requirement.acquireContext.architecture},
+                    required version: ${requestedMajorMinor}`));
+            }
         }
 
         return false;
@@ -68,12 +73,8 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
     // eslint-disable-next-line @typescript-eslint/require-await
     private async getHostArchitecture(hostPath : string, requirement : IDotnetFindPathContext) : Promise<string>
     {
-        /* The host architecture we determine can be inaccurate. Imagine a local runtime install. There is no way to tell the architecture of that runtime,
-        ... as the Host will not print its architecture in dotnet info.
-        Return '' for now to pass all arch checks in this case.
-
-        Need to get an issue from the runtime team. See https://github.com/dotnet/sdk/issues/33697 and https://github.com/dotnet/runtime/issues/98735/
-        Unfortunately even with a new API, that might not go in until .NET 10 and beyond, so we have to rely on old behavior too.*/
+        // dotnet --info is not machine-readable and subject to breaking changes. See https://github.com/dotnet/sdk/issues/33697 and https://github.com/dotnet/runtime/issues/98735/
+        // Unfortunately even with a new API, that might not go in until .NET 10 and beyond, so we have to rely on dotnet --info for now.*/
 
         const infoCommand = CommandExecutor.makeCommand(`"${hostPath}"`, ['--info']);
         const envWithForceEnglish = process.env;
