@@ -118,7 +118,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     } else {
         storagePath = path.join(os.homedir(), '.vscode-dotnet-sdk');
         if (!fs.existsSync(storagePath)) {
-            fs.mkdirSync(storagePath);
+            fs.mkdirSync(storagePath, {recursive: true});
         }
     }
 
