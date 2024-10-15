@@ -39,7 +39,7 @@ export function registerEventStream(context: IEventStreamContext, extensionConte
     const outputChannel = vscode.window.createOutputChannel(context.displayChannelName);
     if (!fs.existsSync(context.logPath))
     {
-        fs.mkdirSync(context.logPath);
+        fs.mkdirSync(context.logPath, {recursive: true});
     }
 
     const logFile = path.join(context.logPath, `DotNetAcquisition-${context.extensionId}-${ new Date().getTime() }.txt`);
