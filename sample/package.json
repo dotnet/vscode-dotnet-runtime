@@ -53,7 +53,7 @@
 			},
 			{
 				"command": "sample.dotnet.concurrentASPNETTest",
-				"title": "Concurrently acquire all 2.X ASPNET Core runtimes",
+				"title": "Concurrently acquire ASPNET Core runtimes",
 				"category": "Sample"
 			},
 			{
