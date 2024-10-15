@@ -15,7 +15,6 @@ import {
     DotnetInstallExpectedAbort,
     DotnetOfflineInstallUsed,
     DotnetOfflineWarning,
-    DotnetUninstallStarted,
     DotnetUpgradedEvent,
     DotnetVisibleWarningEvent,
 } from './EventStreamEvents';
