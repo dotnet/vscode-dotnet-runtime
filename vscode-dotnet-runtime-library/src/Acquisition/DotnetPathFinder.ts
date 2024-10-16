@@ -100,7 +100,7 @@ export class DotnetPathFinder implements IDotnetPathFinder
 
         this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Looking up .NET on the path. Process.env.path: ${process.env.PATH}.
 Executor Path: ${(await this.executor?.execute(
-    os.platform() === 'win32' ? CommandExecutor.makeCommand('echo', ['%PATH']) : CommandExecutor.makeCommand('env', []),
+    os.platform() === 'win32' ? CommandExecutor.makeCommand('echo', ['%PATH%']) : CommandExecutor.makeCommand('env', []),
     undefined,
     false))?.stdout}
 

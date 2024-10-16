@@ -30,10 +30,8 @@ export class TelemetryObserver implements IEventStreamObserver {
     {
         if (telemetryReporter === undefined)
         {
-            const extensionVersion = packageJson.version;
-            const connectionString = packageJson.connectionString;
-            const extensionId = packageJson.name;
-            this.telemetryReporter = new TelemetryReporter(connectionString);
+            const connectionString : string = packageJson.connectionString;
+            this.telemetryReporter = new TelemetryReporter(connectionString ?? '');
         }
         else
         {
