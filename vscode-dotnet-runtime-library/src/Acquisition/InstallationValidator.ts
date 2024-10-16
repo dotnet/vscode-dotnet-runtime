@@ -4,6 +4,7 @@
 *--------------------------------------------------------------------------------------------*/
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 import {
     DotnetInstallationValidated,
     DotnetInstallationValidationError,
@@ -12,63 +13,30 @@ import {
 } from '../EventStream/EventStreamEvents';
 import { IInstallationValidator } from './IInstallationValidator';
 import { DotnetInstall } from './DotnetInstall';
-import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
-import { IDotnetAcquireContext } from '..';
 
 export class InstallationValidator extends IInstallationValidator {
-    public validateDotnetInstall(install: DotnetInstall, dotnetPath: string, isDotnetFolder = false, failOnErr = true, sdkInstallationToRetry = undefined, vscodeAccessor = undefined): void {
+    public validateDotnetInstall(install: DotnetInstall, dotnetPath: string, isDotnetFolder = false, failOnErr = true): void {
         const dotnetValidationFailed = `Validation of .dotnet installation for version ${JSON.stringify(install)} failed:`;
         const folder = path.dirname(dotnetPath);
 
         if(!isDotnetFolder)
         {
-            try
-            {
-                this.assertOrThrowError(failOnErr, fs.existsSync(folder),
-                `${dotnetValidationFailed} Expected installation folder ${folder} does not exist.`, install, dotnetPath);
+            this.assertOrThrowError(failOnErr, fs.existsSync(folder),
+            `${dotnetValidationFailed} Expected installation folder ${folder} does not exist.`, install, dotnetPath);
 
-                this.assertOrThrowError(failOnErr, fs.existsSync(dotnetPath),
-                    `${dotnetValidationFailed} Expected executable does not exist at "${dotnetPath}"`, install, dotnetPath);
+            this.assertOrThrowError(failOnErr, fs.existsSync(dotnetPath),
+                `${dotnetValidationFailed} Expected executable does not exist at "${dotnetPath}"`, install, dotnetPath);
 
-                this.assertOrThrowError(failOnErr, fs.lstatSync(dotnetPath).isFile(),
-                    `${dotnetValidationFailed} Expected executable file exists but is not a file: "${dotnetPath}"`, install, dotnetPath);
-            }
-            catch(error : any)
-            {
-                if(sdkInstallationToRetry && vscodeAccessor)
-                {
-                    const yes = validationPromptConstants.allowOption;
-                    const no = validationPromptConstants.cancelOption;
-                    const message = validationPromptConstants.noSignatureMessage;
-
-                    const pick = await this.utilityContext.ui.getModalWarningResponse(message, no, yes);
-                    const userConsentsToContinue = pick === yes;
-                    if(userConsentsToContinue)
-                    {
-                        (vscodeAccessor as IVSCodeExtensionContext).executeCommand('dotnet.acquireGlobalSDK', (sdkInstallationToRetry as IDotnetAcquireContext));
-                    }
-                    return;
-                }
-                else
-                {
-                    throw error;
-                }
-            }
+            this.assertOrThrowError(failOnErr, fs.lstatSync(dotnetPath).isFile(),
+                `${dotnetValidationFailed} Expected executable file exists but is not a file: "${dotnetPath}"`, install, dotnetPath);
         }
         else
         {
-            try
-            {
-                this.assertOrThrowError(failOnErr, fs.existsSync(folder),
-                `${dotnetValidationFailed} Expected dotnet folder ${dotnetPath} does not exist.`, install, dotnetPath);
+            this.assertOrThrowError(failOnErr, fs.existsSync(folder),
+            `${dotnetValidationFailed} Expected dotnet folder ${dotnetPath} does not exist.`, install, dotnetPath);
 
-                this.assertOrThrowError(failOnErr, fs.readdirSync(folder).length !== 0,
-                `${dotnetValidationFailed} The dotnet folder is empty "${dotnetPath}"`, install, dotnetPath);
-            }
-            catch(error : any)
-            {
-
-            }
+            this.assertOrThrowError(failOnErr, fs.readdirSync(folder).length !== 0,
+            `${dotnetValidationFailed} The dotnet folder is empty "${dotnetPath}"`, install, dotnetPath);
         }
 
         this.eventStream.post(new DotnetInstallationValidated(install));
@@ -80,6 +48,13 @@ export class InstallationValidator extends IInstallationValidator {
             this.eventStream.post(new DotnetInstallationValidationError(new Error(message), install, dotnetPath));
             throw new EventBasedError('DotnetInstallationValidationError', message);
         }
+
+        if(os.platform() === 'darwin')
+        {
+            message = `Did you close the .NET Installer, cancel the installation, or refuse the password prompt? If you want to install the .NET SDK, please try again. If you are facing an error, please report it at https://github.com/dotnet/vscode-dotnet-runtime/issues.
+${message}`;
+        }
+
         else if(!passedValidation)
         {
             this.eventStream?.post(new DotnetInstallationValidationMissed(new Error(message), message))

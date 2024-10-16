@@ -505,8 +505,7 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
         dotnetPath = await installer.getExpectedGlobalSDKPath(installingVersion,
             context.acquisitionContext.architecture ?? this.getDefaultInternalArchitecture(context.acquisitionContext.architecture));
 
-
-        context.installationValidator.validateDotnetInstall(install, dotnetPath, os.platform() !== 'win32', os.platform() !== 'darwin', context.acquisitionContext, this.extensionContext);
+        context.installationValidator.validateDotnetInstall(install, dotnetPath, os.platform() !== 'win32', os.platform() !== 'darwin');
 
         context.eventStream.post(new DotnetAcquisitionCompleted(install, dotnetPath, installingVersion));
 
