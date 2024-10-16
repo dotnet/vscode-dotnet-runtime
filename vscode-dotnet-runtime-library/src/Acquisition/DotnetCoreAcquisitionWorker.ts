@@ -505,35 +505,7 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
         dotnetPath = await installer.getExpectedGlobalSDKPath(installingVersion,
             context.acquisitionContext.architecture ?? this.getDefaultInternalArchitecture(context.acquisitionContext.architecture));
 
-        try
-        {
-            context.installationValidator.validateDotnetInstall(install, dotnetPath, os.platform() !== 'win32');
-        }
-        catch(error : any)
-        {
-            if(os.platform() === 'darwin')
-            {
-                    const executor = new CommandExecutor(context, this.utilityContext);
-                    const result = await executor.execute(CommandExecutor.makeCommand('which', ['dotnet']));
-                    if(result?.status === '0')
-                    {
-                        context.eventStream.post(new DotnetInstallationValidated(install));
-                        dotnetPath = result.stdout;
-                    }
-                    else
-                    {
-                        // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                        error.message ??= 'The .NET SDK installer did not install the SDK correctly.';
-                        // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                        error.message += `Which dotnet returned ${result?.stdout} and ${result?.stderr}.`;
-                        throw error;
-                    }
-            }
-
-            throw error;
-        }
+        context.installationValidator.validateDotnetInstall(install, dotnetPath, os.platform() !== 'win32', os.platform() !== 'darwin');
 
         context.eventStream.post(new DotnetAcquisitionCompleted(install, dotnetPath, installingVersion));
 
