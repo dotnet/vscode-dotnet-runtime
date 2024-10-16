@@ -133,6 +133,9 @@ export class OutputChannelObserver implements IEventStreamObserver {
             case EventType.OfflineWarning:
                 const offlineWarning = event as DotnetOfflineWarning;
                 this.outputChannel.appendLine(offlineWarning.eventMessage);
+            case EventType.DotnetUninstallMessage:
+                const uninstallMessage = event as DotnetCustomMessageEvent;
+                this.outputChannel.appendLine(uninstallMessage.eventMessage);
         }
     }
 
