@@ -158,7 +158,8 @@ ${stderr}`);
     });
 
     const sampleConcurrentASPNETTest = vscode.commands.registerCommand('sample.dotnet.concurrentASPNETTest', async () => {
-        await acquireConcurrent(['2.0', '2.1', '2.2'], 'aspnetcore');
+        acquireConcurrent(['6.0', '8.0', '7.0'], 'runtime') // start this so we test concurrent types of runtime installs
+        await acquireConcurrent(['6.0', '8.0', '7.0'], 'aspnetcore');
     });
 
     const sampleShowAcquisitionLogRegistration = vscode.commands.registerCommand('sample.dotnet.showAcquisitionLog', async () => {

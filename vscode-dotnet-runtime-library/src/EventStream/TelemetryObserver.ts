@@ -67,6 +67,14 @@ export class TelemetryObserver implements IEventStreamObserver {
         if(TelemetryUtilities.isTelemetryEnabled(this.isExtensionTelemetryEnabled, this.utilityContext))
         {
             const properties = event.getSanitizedProperties(); // Get properties that don't contain personally identifiable data
+
+            // Certain events get sent way too often (ex: 700 million locks acquired over a few months which is causing problems for the data team) and aren't useful for telemetry.
+            // We allow suppressing certain events before even hitting the data ingestion service by doing a check here.
+            if(properties && properties?.suppressTelemetry === 'true')
+            {
+                return;
+            }
+
             if (!properties) {
                 this.telemetryReporter.sendTelemetryEvent(event.eventName);
             } else if (event.isError) {

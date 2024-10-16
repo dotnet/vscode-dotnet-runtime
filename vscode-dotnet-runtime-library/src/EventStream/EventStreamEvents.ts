@@ -752,6 +752,11 @@ export class DotnetUnableToCheckPATHArchitecture extends DotnetVisibleWarningEve
 
 export class DotnetVersionCategorizedEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetVersionCategorizedEvent';
+
+    public getProperties()
+    {
+        return {suppressTelemetry : 'true', ...super.getProperties()};
+    }
 }
 
 export class DuplicateInstallDetected extends DotnetCustomMessageEvent {
@@ -786,17 +791,37 @@ export class ConvertingLegacyInstallRecord extends DotnetCustomMessageEvent {
 }
 export class FoundTrackingVersions extends DotnetCustomMessageEvent {
     public readonly eventName = 'FoundTrackingVersions';
+
+    public getProperties()
+    {
+        return {suppressTelemetry : 'true', ...super.getProperties()};
+    }
 }
 export class RemovingVersionFromExtensionState extends DotnetCustomMessageEvent {
     public readonly eventName = 'RemovingVersionFromExtensionState';
+
+    public getProperties()
+    {
+        return {suppressTelemetry : 'true', ...super.getProperties()};
+    }
 }
 
 export class RemovingExtensionFromList extends DotnetCustomMessageEvent {
     public readonly eventName = 'RemovingExtensionFromList';
+
+    public getProperties()
+    {
+        return {suppressTelemetry : 'true', ...super.getProperties()};
+    }
 }
 
 export class RemovingOwnerFromList extends DotnetCustomMessageEvent {
     public readonly eventName = 'RemovingOwnerFromList';
+
+    public getProperties()
+    {
+        return {suppressTelemetry : 'true', ...super.getProperties()};
+    }
 }
 
 export class SkipAddingInstallEvent extends DotnetCustomMessageEvent {
@@ -805,10 +830,20 @@ export class SkipAddingInstallEvent extends DotnetCustomMessageEvent {
 
 export class AddTrackingVersions extends DotnetCustomMessageEvent {
     public readonly eventName = 'AddTrackingVersions';
+
+    public getProperties()
+    {
+        return {suppressTelemetry : 'true', ...super.getProperties()};
+    }
 }
 
 export class DotnetWSLCheckEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetWSLCheckEvent';
+
+    public getProperties()
+    {
+        return {suppressTelemetry : 'true', ...super.getProperties()};
+    }
 }
 
 export class DotnetWSLOperationOutputEvent extends DotnetCustomMessageEvent {
@@ -882,6 +917,11 @@ export class DotnetTelemetrySettingEvent extends DotnetCustomMessageEvent {
 
 export class DotnetVSCodeExtensionFound extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetVSCodeExtensionFound';
+
+    public getProperties()
+    {
+        return {suppressTelemetry : 'true', ...super.getProperties()};
+    }
 }
 
 export class DotnetVSCodeExtensionHasInstallRequest extends DotnetCustomMessageEvent {
@@ -890,6 +930,11 @@ export class DotnetVSCodeExtensionHasInstallRequest extends DotnetCustomMessageE
 
 export class DotnetVSCodeExtensionChange extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetVSCodeExtensionChange';
+
+    public getProperties()
+    {
+        return {suppressTelemetry : 'true', ...super.getProperties()};
+    }
 }
 
 export class DotnetCommandNotFoundEvent extends DotnetCustomMessageEvent {
@@ -961,6 +1006,11 @@ export class DotnetGlobalAcquisitionCompletionEvent extends DotnetCustomMessageE
 }
 export class DotnetInstallGraveyardEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetInstallGraveyardEvent';
+
+    public getProperties()
+    {
+        return {suppressTelemetry : 'true', ...super.getProperties()};
+    }
 }
 
 export class DotnetAlternativeCommandFoundEvent extends DotnetCustomMessageEvent {
@@ -977,6 +1027,11 @@ export class DotnetCommandFallbackOSEvent extends DotnetCustomMessageEvent {
 
 export class DotnetInstallIdCreatedEvent extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetInstallIdCreatedEvent';
+
+    public getProperties()
+    {
+        return {suppressTelemetry : 'true', ...super.getProperties()};
+    }
 }
 
 export class DotnetLegacyInstallDetectedEvent extends DotnetCustomMessageEvent {
@@ -1115,10 +1170,20 @@ export abstract class DotnetLockEvent extends DotnetFileEvent
 
 export class DotnetLockAcquiredEvent extends DotnetLockEvent {
     public readonly eventName = 'DotnetLockAcquiredEvent';
+
+    public getProperties()
+    {
+        return {suppressTelemetry : 'true', ...super.getProperties()};
+    }
 }
 
 export class DotnetLockReleasedEvent extends DotnetLockEvent {
     public readonly eventName = 'DotnetLockReleasedEvent';
+
+    public getProperties()
+    {
+        return {suppressTelemetry : 'true', ...super.getProperties()};
+    }
 }
 
 export class DotnetLockErrorEvent extends DotnetLockEvent {
@@ -1134,10 +1199,20 @@ export class DotnetLockErrorEvent extends DotnetLockEvent {
 
 export class DotnetLockAttemptingAcquireEvent extends DotnetLockEvent {
     public readonly eventName = 'DotnetLockAttemptingAcquireEvent';
+
+    public getProperties()
+    {
+        return {suppressTelemetry : 'true', ...super.getProperties()};
+    }
 }
 
 export class DotnetFileWriteRequestEvent extends DotnetFileEvent {
     public readonly eventName = 'DotnetFileWriteRequestEvent';
+
+    public getProperties()
+    {
+        return {suppressTelemetry : 'true', ...super.getProperties()};
+    }
 }
 
 export class DotnetAcquisitionPartialInstallation extends DotnetAcquisitionMessage {
