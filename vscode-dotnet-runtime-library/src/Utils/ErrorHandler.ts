@@ -98,7 +98,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
                         }
                     }, timeoutConstants.moreInfoOption);
             }
-            else if (!isCancellationStyleError(error) && showMessage)
+            else if (showMessage)
             {
                 let errorOptions = [errorConstants.reportOption, errorConstants.hideOption, errorConstants.moreInfoOption];
                 if (requestingExtensionId)
