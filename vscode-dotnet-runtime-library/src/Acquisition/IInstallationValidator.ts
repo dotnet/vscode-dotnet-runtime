@@ -3,6 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
+import { IDotnetAcquireContext, IVSCodeExtensionContext } from '..';
 import { IEventStream } from '../EventStream/EventStream';
 import { DotnetInstall } from './DotnetInstall';
 

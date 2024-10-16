@@ -4,6 +4,7 @@
 *--------------------------------------------------------------------------------------------*/
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 import {
     DotnetInstallationValidated,
     DotnetInstallationValidationError,
@@ -34,8 +35,16 @@ export class InstallationValidator extends IInstallationValidator {
             this.assertOrThrowError(failOnErr, fs.existsSync(folder),
             `${dotnetValidationFailed} Expected dotnet folder ${dotnetPath} does not exist.`, install, dotnetPath);
 
-            this.assertOrThrowError(failOnErr, fs.readdirSync(folder).length !== 0,
-            `${dotnetValidationFailed} The dotnet folder is empty "${dotnetPath}"`, install, dotnetPath);
+            try
+            {
+                this.assertOrThrowError(failOnErr, fs.readdirSync(folder).length !== 0,
+                `${dotnetValidationFailed} The dotnet folder is empty "${dotnetPath}"`, install, dotnetPath);
+            }
+            catch(error : any) // fs.readdirsync throws ENOENT so we need to recall the function
+            {
+                this.assertOrThrowError(failOnErr, false,
+                `${dotnetValidationFailed} The dotnet file dne "${dotnetPath}"`, install, dotnetPath);
+            }
         }
 
         this.eventStream.post(new DotnetInstallationValidated(install));
@@ -47,7 +56,14 @@ export class InstallationValidator extends IInstallationValidator {
             this.eventStream.post(new DotnetInstallationValidationError(new Error(message), install, dotnetPath));
             throw new EventBasedError('DotnetInstallationValidationError', message);
         }
-        else if(!passedValidation)
+
+        if(os.platform() === 'darwin')
+        {
+            message = `Did you close the .NET Installer, cancel the installation, or refuse the password prompt? If you want to install the .NET SDK, please try again. If you are facing an error, please report it at https://github.com/dotnet/vscode-dotnet-runtime/issues.
+${message}`;
+        }
+
+        if(!passedValidation && !failOnErr)
         {
             this.eventStream?.post(new DotnetInstallationValidationMissed(new Error(message), message))
         }
