@@ -35,8 +35,16 @@ export class InstallationValidator extends IInstallationValidator {
             this.assertOrThrowError(failOnErr, fs.existsSync(folder),
             `${dotnetValidationFailed} Expected dotnet folder ${dotnetPath} does not exist.`, install, dotnetPath);
 
-            this.assertOrThrowError(failOnErr, fs.readdirSync(folder).length !== 0,
-            `${dotnetValidationFailed} The dotnet folder is empty "${dotnetPath}"`, install, dotnetPath);
+            try
+            {
+                this.assertOrThrowError(failOnErr, fs.readdirSync(folder).length !== 0,
+                `${dotnetValidationFailed} The dotnet folder is empty "${dotnetPath}"`, install, dotnetPath);
+            }
+            catch(error : any) // fs.readdirsync throws ENOENT so we need to recall the function
+            {
+                this.assertOrThrowError(failOnErr, false,
+                `${dotnetValidationFailed} The dotnet file dne "${dotnetPath}"`, install, dotnetPath);
+            }
         }
 
         this.eventStream.post(new DotnetInstallationValidated(install));
