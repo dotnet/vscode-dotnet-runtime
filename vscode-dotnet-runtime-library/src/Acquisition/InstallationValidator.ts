@@ -63,7 +63,7 @@ export class InstallationValidator extends IInstallationValidator {
 ${message}`;
         }
 
-        else if(!passedValidation)
+        if(!passedValidation && !failOnErr)
         {
             this.eventStream?.post(new DotnetInstallationValidationMissed(new Error(message), message))
         }
