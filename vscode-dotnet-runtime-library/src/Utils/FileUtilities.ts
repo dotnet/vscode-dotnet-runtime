@@ -19,6 +19,8 @@ import { DotnetCommandFallbackArchitectureEvent,
    DotnetLockAttemptingAcquireEvent,
    DotnetLockErrorEvent,
    DotnetLockReleasedEvent,
+   EmptyDirectoryToWipe,
+   FileToWipe,
    SuppressedAcquisitionError
 } from '../EventStream/EventStreamEvents';
 
@@ -105,6 +107,7 @@ export class FileUtilities extends IFileUtilities
    {
        if(!fs.existsSync(directoryToWipe))
        {
+           eventStream?.post(new EmptyDirectoryToWipe(`The directory ${directoryToWipe} did not exist, so it was not wiped.`))
            return;
        }
 
@@ -113,6 +116,7 @@ export class FileUtilities extends IFileUtilities
        {
            try
            {
+               eventStream?.post(new FileToWipe(`The file ${f} is being deleted.`))
                if(!fileExtensionsToDelete || path.extname(f).toLocaleLowerCase() in fileExtensionsToDelete)
                fs.rmSync(path.join(directoryToWipe, f));
            }
