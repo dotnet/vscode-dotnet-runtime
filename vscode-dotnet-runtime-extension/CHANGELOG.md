@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+## [2.2.2] - ??
+
+
+
 ## [2.2.1] - 2024-10-23
 
 Adds a check for the architecture of .NET on the findPath API.
