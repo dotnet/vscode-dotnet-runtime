@@ -763,6 +763,14 @@ export class DuplicateInstallDetected extends DotnetCustomMessageEvent {
     public readonly eventName = 'DuplicateInstallDetected';
 }
 
+export class EmptyDirectoryToWipe extends DotnetCustomMessageEvent {
+    public readonly eventName = 'EmptyDirectoryToWipe';
+}
+
+export class FileToWipe extends DotnetCustomMessageEvent {
+    public readonly eventName = 'FileToWipe';
+}
+
 export class TriedToExitMasterSudoProcess extends DotnetCustomMessageEvent {
     public readonly eventName = 'TriedToExitMasterSudoProcess';
 }
