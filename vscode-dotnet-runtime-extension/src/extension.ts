@@ -451,7 +451,6 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
      *
      * @returns the path to the dotnet executable as an IDotnetAcquireResult (or undefined), if one can be found. This should be the true path to the executable. undefined if none can be found.
      * Before version 2.2.2, the result could be a string, undefined, or an IDotnetAcquireResult. This was changed to be more consistent with the rest of the APIs.
-
      *
      * @remarks Priority Order for path lookup:
      * VSCode Setting -> PATH -> Realpath of PATH -> DOTNET_ROOT (Emulation DOTNET_ROOT if set first)
