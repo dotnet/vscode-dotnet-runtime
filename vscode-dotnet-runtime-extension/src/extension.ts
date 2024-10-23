@@ -164,7 +164,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     checkIfSDKAcquisitionIsSupported();
 
     // Creating API Surfaces
-    const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) =>
+    const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext) : Promise<IDotnetAcquireResult | undefined> =>
     {
         const worker = getAcquisitionWorker();
         commandContext.mode = commandContext.mode ?? 'runtime' as DotnetInstallMode;
@@ -223,7 +223,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         return dotnetPath;
     });
 
-    const dotnetAcquireGlobalSDKRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquireGlobalSDK}`, async (commandContext: IDotnetAcquireContext) =>
+    const dotnetAcquireGlobalSDKRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquireGlobalSDK}`, async (commandContext: IDotnetAcquireContext) : Promise<IDotnetAcquireResult | undefined> =>
     {
         commandContext.mode = commandContext.mode ?? 'sdk' as DotnetInstallMode;
 
@@ -286,7 +286,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     });
 
     const dotnetListVersionsRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listVersions}`,
-    async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) =>
+    async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined) : Promise<IDotnetListVersionsResult | undefined> =>
     {
         return getAvailableVersions(commandContext, customWebWorker, false);
     });
@@ -347,7 +347,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         }
     });
 
-    const dotnetAcquireStatusRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquireStatus}`, async (commandContext: IDotnetAcquireContext) => {
+    const dotnetAcquireStatusRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquireStatus}`, async (commandContext: IDotnetAcquireContext) : Promise<IDotnetAcquireResult | undefined> =>
+    {
         const pathResult = await callWithErrorHandling(async () =>
         {
             const mode = commandContext.mode ?? 'runtime' as DotnetInstallMode;
@@ -438,7 +439,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     /**
      * @returns 0 on success. Error string if not.
      */
-    const dotnetUninstallRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstall}`, async (commandContext: IDotnetAcquireContext | undefined) =>
+    const dotnetUninstallRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstall}`, async (commandContext: IDotnetAcquireContext | undefined) : Promise<string> =>
     {
         return uninstall(commandContext);
     });
@@ -448,14 +449,15 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
      * We wrap an AcquisitionContext which must include the version, requestingExtensionId, architecture of .NET desired, and mode.
      * The architecture should be of the node format ('x64', 'x86', 'arm64', etc.)
      *
-     * @returns the path to the dotnet executable, if one can be found. This should be the true path to the executable. undefined if none can be found.
+     * @returns the path to the dotnet executable as an IDotnetAcquireResult (or undefined), if one can be found. This should be the true path to the executable. undefined if none can be found.
+     * Before version 2.2.2, the result could be a string, undefined, or an IDotnetAcquireResult. This was changed to be more consistent with the rest of the APIs.
      *
      * @remarks Priority Order for path lookup:
      * VSCode Setting -> PATH -> Realpath of PATH -> DOTNET_ROOT (Emulation DOTNET_ROOT if set first)
      *
      * This accounts for pmc installs, snap installs, bash configurations, and other non-standard installations such as homebrew.
      */
-    const dotnetFindPathRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.findPath}`, async (commandContext : IDotnetFindPathContext) =>
+    const dotnetFindPathRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.findPath}`, async (commandContext : IDotnetFindPathContext) : Promise<IDotnetAcquireResult | undefined> =>
     {
         globalEventStream.post(new DotnetFindPathCommandInvoked(`The find path command was invoked.`, commandContext));
 
@@ -485,7 +487,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             if(validatedPATH)
             {
                 loggingObserver.dispose();
-                return validatedPATH;
+                return { dotnetPath: validatedPATH };
             }
         }
 
@@ -496,7 +498,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             if(validatedRealPATH)
             {
                 loggingObserver.dispose();
-                return validatedRealPATH;
+                return { dotnetPath: validatedRealPATH };
             }
         }
 
@@ -505,7 +507,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         if(validatedRoot)
         {
             loggingObserver.dispose();
-            return validatedRoot;
+            return { dotnetPath: validatedRoot };
         }
 
         loggingObserver.dispose();
