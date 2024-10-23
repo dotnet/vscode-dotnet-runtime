@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning].
 
 ## [2.2.2] - ??
 
-
+Breaking change for the `dotnet.findPath` API - this API now always returns an `IDotnetAcquire` result instead of sometimes returning that object, and sometimes returning a `string`
 
 ## [2.2.1] - 2024-10-23
 
