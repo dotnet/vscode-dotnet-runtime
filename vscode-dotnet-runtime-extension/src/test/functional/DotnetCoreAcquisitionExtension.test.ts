@@ -317,7 +317,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
   }).timeout(standardTimeoutTime);
 
   test('Find dotnet PATH Command Met Version Condition', async () => {
-    // Install 8.0, look for 3.1 with accepting dotnet less than or eq to 8
+    // Install 8.0, look for 3.1 with accepting dotnet gr than or eq to 3.1
+
     await findPathWithRequirementAndInstall('8.0', 'runtime', os.arch(), 'greater_than_or_equal', true,
         {version : '3.1', mode : 'runtime', architecture : os.arch(), requestingExtensionId : requestingExtensionId}
     );
