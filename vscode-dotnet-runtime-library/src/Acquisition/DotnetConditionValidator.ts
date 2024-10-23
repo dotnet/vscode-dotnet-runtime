@@ -31,9 +31,9 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
 
         if(availableRuntimes.some((runtime) =>
             {
-                const foundVersion = versionUtils.getMajorMinor(runtime.version, this.workerContext.eventStream, this.workerContext);
+                const availableVersion = versionUtils.getMajorMinor(runtime.version, this.workerContext.eventStream, this.workerContext);
                 return runtime.mode === requirement.acquireContext.mode && this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) &&
-                    this.stringVersionMeetsRequirement(foundVersion, requestedMajorMinor, requirement.versionSpecRequirement);
+                    this.stringVersionMeetsRequirement(availableVersion, requestedMajorMinor, requirement.versionSpecRequirement);
             }))
         {
             return true;
@@ -44,8 +44,8 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
             if(availableSDKs.some((sdk) =>
                 {
                     // The SDK includes the Runtime, ASP.NET Core Runtime, and Windows Desktop Runtime. So, we don't need to check the mode.
-                    const foundVersion = versionUtils.getMajorMinor(sdk.version, this.workerContext.eventStream, this.workerContext);
-                    return this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) && this.stringVersionMeetsRequirement(foundVersion, requestedMajorMinor, requirement.versionSpecRequirement);
+                    const availableVersion = versionUtils.getMajorMinor(sdk.version, this.workerContext.eventStream, this.workerContext);
+                    return this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) && this.stringVersionMeetsRequirement(availableVersion, requestedMajorMinor, requirement.versionSpecRequirement);
                 }))
             {
                 return true;
@@ -136,31 +136,38 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
         return os.platform() === 'win32' ? (await this.executor!.tryFindWorkingCommand([CommandExecutor.makeCommand('chcp', ['65001'])])) !== null : false;
     }
 
-    private stringVersionMeetsRequirement(foundVersion : string, requiredVersion : string, requirement : DotnetVersionSpecRequirement) : boolean
+    private stringVersionMeetsRequirement(availableVersion : string, requestedVersion : string, requirement : DotnetVersionSpecRequirement) : boolean
     {
-        if(requirement === 'equal')
-        {
-            return Number(versionUtils.getMajor(foundVersion, this.workerContext.eventStream, this.workerContext)) ===
-            Number(versionUtils.getMajor(requiredVersion, this.workerContext.eventStream, this.workerContext)) &&
-            Number(versionUtils.getMinor(foundVersion, this.workerContext.eventStream, this.workerContext)) ===
-            Number(versionUtils.getMinor(requiredVersion, this.workerContext.eventStream, this.workerContext));
-        }
-        else if(requirement === 'greater_than_or_equal')
-        {
-            return Number(versionUtils.getMajor(foundVersion, this.workerContext.eventStream, this.workerContext)) >=
-            Number(versionUtils.getMajor(requiredVersion, this.workerContext.eventStream, this.workerContext)) &&
-            Number(versionUtils.getMinor(foundVersion, this.workerContext.eventStream, this.workerContext)) >=
-            Number(versionUtils.getMinor(requiredVersion, this.workerContext.eventStream, this.workerContext));
-        }
-        else if(requirement === 'less_than_or_equal')
-        {
-            return Number(versionUtils.getMajor(foundVersion, this.workerContext.eventStream, this.workerContext)) <=
-            Number(versionUtils.getMajor(requiredVersion, this.workerContext.eventStream, this.workerContext)) &&
-            Number(versionUtils.getMinor(foundVersion, this.workerContext.eventStream, this.workerContext)) <=
-            Number(versionUtils.getMinor(requiredVersion, this.workerContext.eventStream, this.workerContext));
-        }
+        const availableMajor = Number(versionUtils.getMajor(availableVersion, this.workerContext.eventStream, this.workerContext));
+        const requestedMajor = Number(versionUtils.getMajor(requestedVersion, this.workerContext.eventStream, this.workerContext));
 
-        return false;
+        if(availableMajor === requestedMajor)
+        {
+            const availableMinor = Number(versionUtils.getMinor(availableVersion, this.workerContext.eventStream, this.workerContext));
+            const requestedMinor = Number(versionUtils.getMinor(requestedVersion, this.workerContext.eventStream, this.workerContext));
+
+            switch(requirement)
+            {
+                case 'equal':
+                    return availableMinor === requestedMinor;
+                case 'greater_than_or_equal':
+                    return availableMinor >= requestedMinor;
+                case 'less_than_or_equal':
+                    return availableMinor <= requestedMinor;
+            }
+        }
+        else
+        {
+            switch(requirement)
+            {
+                case 'equal':
+                    return false;
+                case 'greater_than_or_equal':
+                    return availableMajor >= requestedMajor;
+                case 'less_than_or_equal':
+                    return availableMajor <= requestedMajor;
+            }
+        }
     }
 
     private stringArchitectureMeetsRequirement(outputArchitecture : string, requiredArchitecture : string | null | undefined) : boolean

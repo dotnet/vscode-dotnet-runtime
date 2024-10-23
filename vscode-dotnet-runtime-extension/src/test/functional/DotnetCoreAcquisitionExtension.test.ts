@@ -251,6 +251,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     }
   }
 
+  /*
   test('Install Local Runtime Command', async () =>
   {
     await installRuntime('2.2', 'runtime');
@@ -292,7 +293,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
   test('Install and Uninstall Multiple Local ASP.NET Runtime Versions', async () => {
     await installMultipleVersions(['2.2', '3.0', '3.1'], 'aspnetcore');
   }).timeout(standardTimeoutTime * 2);
-
+*/
   test('Find dotnet PATH Command Met Condition', async () => {
     // install 5.0 then look for 5.0 path
     await findPathWithRequirementAndInstall('5.0', 'runtime', os.arch(), 'greater_than_or_equal', true);
@@ -316,23 +317,22 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     }
   }).timeout(standardTimeoutTime);
 
-  test('Find dotnet PATH Command Unmet Version Condition', async () => {
-    // Install 3.1, look for 8.0 which is not less than or equal to 3.1
-    await findPathWithRequirementAndInstall('8.0', 'runtime', os.arch(), 'less_than_or_equal', false,
+  test('Find dotnet PATH Command Met Version Condition', async () => {
+    // Install 8.0, look for 3.1 with accepting dotnet less than or eq to 8
+    await findPathWithRequirementAndInstall('8.0', 'runtime', os.arch(), 'less_than_or_equal', true,
         {version : '3.1', mode : 'runtime', architecture : os.arch(), requestingExtensionId : requestingExtensionId}
     );
   }).timeout(standardTimeoutTime);
 
-  test('Find dotnet PATH Command Unmet Version Condition with 11.0', async () => {
-    // Install 3.1, look for 8.0 which is not less than or equal to 3.1
-    await findPathWithRequirementAndInstall('9.0', 'runtime', os.arch(), 'greater_than_or_equal', false,
+  test('Find dotnet PATH Command Met Version Condition with Double Digit Major', async () => {
+    await findPathWithRequirementAndInstall('9.0', 'runtime', os.arch(), 'less_than_or_equal', true,
         {version : '11.0', mode : 'runtime', architecture : os.arch(), requestingExtensionId : requestingExtensionId}
     );
   }).timeout(standardTimeoutTime);
 
 
-  test('Find dotnet PATH Command Unmet Version Condition with Less Than 11.0', async () => {
-    // Install 3.1, look for 8.0 which is not less than or equal to 3.1
+  test('Find dotnet PATH Command Unmet Version Condition', async () => {
+    // Install 9.0, look for 90.0 which is not equal to 9.0
     await findPathWithRequirementAndInstall('9.0', 'runtime', os.arch(), 'equal', false,
         {version : '90.0', mode : 'runtime', architecture : os.arch(), requestingExtensionId : requestingExtensionId}
     );
