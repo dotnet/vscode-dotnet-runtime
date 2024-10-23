@@ -140,15 +140,24 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
     {
         if(requirement === 'equal')
         {
-            return foundVersion === requiredVersion;
+            return Number(versionUtils.getMajor(foundVersion, this.workerContext.eventStream, this.workerContext)) ===
+            Number(versionUtils.getMajor(requiredVersion, this.workerContext.eventStream, this.workerContext)) &&
+            Number(versionUtils.getMinor(foundVersion, this.workerContext.eventStream, this.workerContext)) ===
+            Number(versionUtils.getMinor(requiredVersion, this.workerContext.eventStream, this.workerContext));
         }
         else if(requirement === 'greater_than_or_equal')
         {
-            return foundVersion >= requiredVersion;
+            return Number(versionUtils.getMajor(foundVersion, this.workerContext.eventStream, this.workerContext)) >=
+            Number(versionUtils.getMajor(requiredVersion, this.workerContext.eventStream, this.workerContext)) &&
+            Number(versionUtils.getMinor(foundVersion, this.workerContext.eventStream, this.workerContext)) >=
+            Number(versionUtils.getMinor(requiredVersion, this.workerContext.eventStream, this.workerContext));
         }
         else if(requirement === 'less_than_or_equal')
         {
-            return foundVersion <= requiredVersion;
+            return Number(versionUtils.getMajor(foundVersion, this.workerContext.eventStream, this.workerContext)) <=
+            Number(versionUtils.getMajor(requiredVersion, this.workerContext.eventStream, this.workerContext)) &&
+            Number(versionUtils.getMinor(foundVersion, this.workerContext.eventStream, this.workerContext)) <=
+            Number(versionUtils.getMinor(requiredVersion, this.workerContext.eventStream, this.workerContext));
         }
 
         return false;

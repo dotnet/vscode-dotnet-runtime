@@ -13,13 +13,25 @@ const invalidFeatureBandErrorString = `A feature band couldn't be determined for
 /**
  *
  * @param fullySpecifiedVersion the fully specified version of the sdk, e.g. 7.0.301 to get the major from.
- * @returns the major.minor in the form of '3', etc.
+ * @returns the major in the form of '3', etc.
  */
 export function getMajor(fullySpecifiedVersion : string, eventStream : IEventStream, context : IAcquisitionWorkerContext) : string
 {
     // The called function will check that we can do the split, so we don't need to check again.
     return getMajorMinor(fullySpecifiedVersion, eventStream, context).split('.')[0];
 }
+
+/**
+ *
+ * @param fullySpecifiedVersion the fully specified version of the sdk, e.g. 7.0.301 to get the minor from.
+ * @returns the major.minor in the form of '0', etc.
+ */
+export function getMinor(fullySpecifiedVersion : string, eventStream : IEventStream, context : IAcquisitionWorkerContext) : string
+{
+    // The called function will check that we can do the split, so we don't need to check again.
+    return getMajorMinor(fullySpecifiedVersion, eventStream, context).split('.')[1];
+}
+
 
 /**
  *

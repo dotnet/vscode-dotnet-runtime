@@ -323,6 +323,21 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     );
   }).timeout(standardTimeoutTime);
 
+  test('Find dotnet PATH Command Unmet Version Condition with 11.0', async () => {
+    // Install 3.1, look for 8.0 which is not less than or equal to 3.1
+    await findPathWithRequirementAndInstall('9.0', 'runtime', os.arch(), 'greater_than_or_equal', false,
+        {version : '11.0', mode : 'runtime', architecture : os.arch(), requestingExtensionId : requestingExtensionId}
+    );
+  }).timeout(standardTimeoutTime);
+
+
+  test('Find dotnet PATH Command Unmet Version Condition with Less Than 11.0', async () => {
+    // Install 3.1, look for 8.0 which is not less than or equal to 3.1
+    await findPathWithRequirementAndInstall('9.0', 'runtime', os.arch(), 'equal', false,
+        {version : '90.0', mode : 'runtime', architecture : os.arch(), requestingExtensionId : requestingExtensionId}
+    );
+  }).timeout(standardTimeoutTime);
+
   test('Find dotnet PATH Command Unmet Mode Condition', async () => {
     // look for 3.1 runtime but install 3.1 aspnetcore
     await findPathWithRequirementAndInstall('3.1', 'runtime', os.arch(), 'equal', false,
