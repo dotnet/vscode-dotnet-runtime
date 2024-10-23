@@ -232,7 +232,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
         process.env.DOTNET_INSTALL_TOOL_DONT_ACCEPT_UNKNOWN_ARCH = '1';
     }
 
-    const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath',
+    const result : IDotnetAcquireResult = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath',
         { acquireContext : contextToLookFor ?? { version, requestingExtensionId : requestingExtensionId, mode: iMode, architecture : arch } as IDotnetAcquireContext,
         versionSpecRequirement : condition} as IDotnetFindPathContext
     );
@@ -242,8 +242,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
 
     if(shouldFind)
     {
-        assert.exists(result, 'find path command returned a result');
-        assert.equal(result, installPath, 'The path returned by findPath is correct');
+        assert.exists(result.dotnetPath, 'find path command returned a result');
+        assert.equal(result.dotnetPath, installPath, 'The path returned by findPath is correct');
     }
     else
     {
