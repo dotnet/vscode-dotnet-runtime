@@ -251,7 +251,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     }
   }
 
-  /*
   test('Install Local Runtime Command', async () =>
   {
     await installRuntime('2.2', 'runtime');
@@ -293,7 +292,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
   test('Install and Uninstall Multiple Local ASP.NET Runtime Versions', async () => {
     await installMultipleVersions(['2.2', '3.0', '3.1'], 'aspnetcore');
   }).timeout(standardTimeoutTime * 2);
-*/
+
   test('Find dotnet PATH Command Met Condition', async () => {
     // install 5.0 then look for 5.0 path
     await findPathWithRequirementAndInstall('5.0', 'runtime', os.arch(), 'greater_than_or_equal', true);
