@@ -62,7 +62,8 @@ jobs:
   - task: CmdLine@2
     displayName: 🤌 Rename Signed VSIX
     inputs:
-      script: rename ".\packages\$(package-name)-$(GetVersion.version).vsix" $(package-name)-$(GetVersion.version)-signed.vsix
+      script: rename "$(package-name)-$(GetVersion.version).vsix" $(package-name)-$(GetVersion.version)-unsigned.vsix
+    workingDirectory: $(dir-name)
   - task: CopyFiles@2
     displayName: '📩 Copy Artifact'
     inputs:
