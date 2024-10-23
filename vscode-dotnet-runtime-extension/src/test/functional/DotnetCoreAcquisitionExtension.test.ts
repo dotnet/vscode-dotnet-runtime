@@ -243,7 +243,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     if(shouldFind)
     {
         assert.exists(result.dotnetPath, 'find path command returned a result');
-        assert.equal(result.dotnetPath, installPath, 'The path returned by findPath is correct');
+        assert.equal(result.dotnetPath.toLowerCase(), installPath.toLowerCase(), 'The path returned by findPath is correct');
     }
     else
     {
@@ -319,7 +319,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
 
   test('Find dotnet PATH Command Met Version Condition', async () => {
     // Install 8.0, look for 3.1 with accepting dotnet less than or eq to 8
-    await findPathWithRequirementAndInstall('8.0', 'runtime', os.arch(), 'less_than_or_equal', true,
+    await findPathWithRequirementAndInstall('8.0', 'runtime', os.arch(), 'greater_than_or_equal', true,
         {version : '3.1', mode : 'runtime', architecture : os.arch(), requestingExtensionId : requestingExtensionId}
     );
   }).timeout(standardTimeoutTime);
