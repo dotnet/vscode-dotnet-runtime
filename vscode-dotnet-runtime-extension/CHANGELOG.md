@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+## [2.2.2] - ??
+
+Breaking change for the `dotnet.findPath` API - this API now always returns an `IDotnetAcquire` result instead of sometimes returning that object, and sometimes returning a `string`. Fixes the API to scan versions of .NET 10 or above correctly.
+
+
 ## [2.2.1] - 2024-10-23
 
 Adds a check for the architecture of .NET on the findPath API.
