@@ -32,6 +32,12 @@ suite('Version Utilities Unit Tests', () => {
         assert.equal(resolver.getMajor(twoDigitMajorVersion, mockEventStream, mockCtx), '10');
     });
 
+    test('Get Minor from SDK Version', async () => {
+        assert.equal(resolver.getMinor(fullySpecifiedVersion, mockEventStream, mockCtx), '0');
+        assert.equal(resolver.getMinor(uniqueMajorMinorVersion, mockEventStream, mockCtx), '1');
+        assert.equal(resolver.getMinor(twoDigitMajorVersion, mockEventStream, mockCtx), '0');
+    });
+
     test('Get Major.Minor from SDK Version', async () => {
         assert.equal(resolver.getMajorMinor(fullySpecifiedVersion, mockEventStream, mockCtx), '7.0');
         assert.equal(resolver.getMajorMinor(featureBandVersion, mockEventStream, mockCtx), '7.0');
