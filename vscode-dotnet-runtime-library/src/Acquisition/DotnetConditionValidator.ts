@@ -2,7 +2,6 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
-import { DotnetVersionSpecRequirement } from '../DotnetVersionSpecRequirement';
 import { IDotnetFindPathContext } from '../IDotnetFindPathContext';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
@@ -33,7 +32,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
             {
                 const availableVersion = versionUtils.getMajorMinor(runtime.version, this.workerContext.eventStream, this.workerContext);
                 return runtime.mode === requirement.acquireContext.mode && this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) &&
-                    this.stringVersionMeetsRequirement(availableVersion, requestedMajorMinor, requirement.versionSpecRequirement);
+                    this.stringVersionMeetsRequirement(availableVersion, requestedMajorMinor, requirement);
             }))
         {
             return true;
@@ -45,7 +44,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
                 {
                     // The SDK includes the Runtime, ASP.NET Core Runtime, and Windows Desktop Runtime. So, we don't need to check the mode.
                     const availableVersion = versionUtils.getMajorMinor(sdk.version, this.workerContext.eventStream, this.workerContext);
-                    return this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) && this.stringVersionMeetsRequirement(availableVersion, requestedMajorMinor, requirement.versionSpecRequirement);
+                    return this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) && this.stringVersionMeetsRequirement(availableVersion, requestedMajorMinor, requirement);
                 }))
             {
                 return true;
@@ -136,29 +135,51 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
         return os.platform() === 'win32' ? (await this.executor!.tryFindWorkingCommand([CommandExecutor.makeCommand('chcp', ['65001'])])) !== null : false;
     }
 
-    private stringVersionMeetsRequirement(availableVersion : string, requestedVersion : string, requirement : DotnetVersionSpecRequirement) : boolean
+    private stringVersionMeetsRequirement(availableVersion : string, requestedVersion : string, requirement : IDotnetFindPathContext) : boolean
     {
         const availableMajor = Number(versionUtils.getMajor(availableVersion, this.workerContext.eventStream, this.workerContext));
         const requestedMajor = Number(versionUtils.getMajor(requestedVersion, this.workerContext.eventStream, this.workerContext));
+        const requestedPatchStr : string | null = requirement.acquireContext.mode !== 'sdk' ? versionUtils.getRuntimePatchVersionString(requestedVersion, this.workerContext.eventStream, this.workerContext)
+            : versionUtils.getSDKCompleteBandAndPatchVersionString(requestedVersion, this.workerContext.eventStream, this.workerContext);
+        const requestedPatch = requestedPatchStr ? Number(requestedPatchStr) : null;
 
         if(availableMajor === requestedMajor)
         {
             const availableMinor = Number(versionUtils.getMinor(availableVersion, this.workerContext.eventStream, this.workerContext));
             const requestedMinor = Number(versionUtils.getMinor(requestedVersion, this.workerContext.eventStream, this.workerContext));
 
-            switch(requirement)
+            if(availableMinor === requestedMinor && requestedPatch)
             {
-                case 'equal':
-                    return availableMinor === requestedMinor;
-                case 'greater_than_or_equal':
-                    return availableMinor >= requestedMinor;
-                case 'less_than_or_equal':
-                    return availableMinor <= requestedMinor;
+                const availablePatchStr : string | null = requirement.acquireContext.mode !== 'sdk' ? versionUtils.getRuntimePatchVersionString(availableVersion, this.workerContext.eventStream, this.workerContext)
+                    : versionUtils.getSDKCompleteBandAndPatchVersionString(availableVersion, this.workerContext.eventStream, this.workerContext);
+                const availablePatch = availablePatchStr ? Number(availablePatchStr) : null;
+                switch(requirement.versionSpecRequirement)
+                {
+                    case 'equal':
+                        return availablePatch === requestedPatch;
+                    case 'greater_than_or_equal':
+                        // the 'availablePatch' must exist, since the version is from --list-runtimes or --list-sdks.
+                        return availablePatch! >= requestedPatch;
+                    case 'less_than_or_equal':
+                        return availablePatch! <= requestedPatch;
+                }
+            }
+            else
+            {
+                switch(requirement.versionSpecRequirement)
+                {
+                    case 'equal':
+                        return availableMinor === requestedMinor;
+                    case 'greater_than_or_equal':
+                        return availableMinor >= requestedMinor;
+                    case 'less_than_or_equal':
+                        return availableMinor <= requestedMinor;
+                }
             }
         }
         else
         {
-            switch(requirement)
+            switch(requirement.versionSpecRequirement)
             {
                 case 'equal':
                     return false;
