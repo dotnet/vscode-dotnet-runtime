@@ -25,14 +25,12 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
     public async dotnetMeetsRequirement(dotnetExecutablePath: string, requirement : IDotnetFindPathContext) : Promise<boolean>
     {
         const availableRuntimes = await this.getRuntimes(dotnetExecutablePath);
-        const requestedMajorMinor = versionUtils.getMajorMinor(requirement.acquireContext.version, this.workerContext.eventStream, this.workerContext);
         const hostArch = await this.getHostArchitecture(dotnetExecutablePath, requirement);
 
         if(availableRuntimes.some((runtime) =>
             {
-                const availableVersion = versionUtils.getMajorMinor(runtime.version, this.workerContext.eventStream, this.workerContext);
                 return runtime.mode === requirement.acquireContext.mode && this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) &&
-                    this.stringVersionMeetsRequirement(availableVersion, requestedMajorMinor, requirement);
+                    this.stringVersionMeetsRequirement(runtime.version, requirement.acquireContext.version, requirement);
             }))
         {
             return true;
@@ -43,8 +41,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
             if(availableSDKs.some((sdk) =>
                 {
                     // The SDK includes the Runtime, ASP.NET Core Runtime, and Windows Desktop Runtime. So, we don't need to check the mode.
-                    const availableVersion = versionUtils.getMajorMinor(sdk.version, this.workerContext.eventStream, this.workerContext);
-                    return this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) && this.stringVersionMeetsRequirement(availableVersion, requestedMajorMinor, requirement);
+                    return this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) && this.stringVersionMeetsRequirement(sdk.version, requirement.acquireContext.version, requirement);
                 }))
             {
                 return true;
@@ -52,7 +49,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
             else
             {
                 this.workerContext.eventStream.post(new DotnetFindPathDidNotMeetCondition(`${dotnetExecutablePath} did NOT satisfy the conditions: hostArch: ${hostArch}, requiredArch: ${requirement.acquireContext.architecture},
-                    required version: ${requestedMajorMinor}`));
+                    required version: ${requirement.acquireContext.version}, required mode: ${requirement.acquireContext.mode}`));
             }
         }
 
