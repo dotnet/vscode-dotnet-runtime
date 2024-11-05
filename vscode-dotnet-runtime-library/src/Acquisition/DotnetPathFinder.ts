@@ -142,11 +142,12 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
             if (pathsOnPATH && pathsOnPATH.length > 0)
             {
                 const dotnetExecutable = getDotnetExecutable();
-                for (let i = 0; i < pathsOnPATH.length; i++)
+                for (const pathOnPATH of pathsOnPATH)
                 {
-                    const resolvedDotnetPath = path.resolve(pathsOnPATH[i], dotnetExecutable);
+                    const resolvedDotnetPath = path.resolve(pathOnPATH, dotnetExecutable);
                     if (existsSync(resolvedDotnetPath))
                     {
+                        this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Looking up .NET on the path by processing PATH string. resolved: ${resolvedDotnetPath}.`);
                         validPathsOnPATH.push(resolvedDotnetPath);
                     }
                 }

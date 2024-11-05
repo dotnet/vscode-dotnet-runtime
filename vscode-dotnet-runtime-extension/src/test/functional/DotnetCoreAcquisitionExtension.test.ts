@@ -508,7 +508,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     // The runtime setting on the path needs to be a match for a runtime but also a different folder name
     // so that we can tell the setting was used. We cant tell it to install an older  besides latest,
     // but we can rename the folder then re-acquire for latest and see that it uses the existing 'older' runtime path
-    assert.notEqual(path.dirname(resultForAcquiringPathSettingRuntime.dotnetPath), path.dirname(pathWithIncorrectVersionForTest));
+    assert.notEqual(path.dirname(resultForAcquiringPathSettingRuntime.dotnetPath), path.dirname(pathWithIncorrectVersionForTest), 'Test setup: path setting is different from the real path');
     fs.cpSync(path.dirname(resultForAcquiringPathSettingRuntime.dotnetPath), path.dirname(pathWithIncorrectVersionForTest), {recursive: true});
     assert.isTrue(fs.existsSync(path.dirname(pathWithIncorrectVersionForTest)), 'The copy of the real dotnet to the new wrong-versioned path succeeded');
 
@@ -517,9 +517,9 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
 
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
 
-    assert.exists(result);
-    assert.exists(result!.dotnetPath);
-    assert.equal(result!.dotnetPath, pathWithIncorrectVersionForTest); // this is set for the alternative.extension in the settings
+    assert.exists(result, 'returns a result with path setting');
+    assert.exists(result!.dotnetPath, 'path setting has a path');
+    assert.equal(result!.dotnetPath, pathWithIncorrectVersionForTest, 'path setting is used'); // this is set for the alternative.extension in the settings
 
     const findPath = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath', { acquireContext: Object.assign({}, context, {mode: 'aspnetcore'}), versionSpecRequirement: 'equal' });
     assert.equal(findPath!.dotnetPath, pathWithIncorrectVersionForTest, 'findPath uses vscode setting for aspnetcore runtime'); // this is set for the alternative.extension in the settings
