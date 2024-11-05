@@ -200,17 +200,21 @@ ${stderr}`);
             prompt: 'The .NET runtime version.',
         });
 
-        const arch = await vscode.window.showInputBox({
+        let arch = await vscode.window.showInputBox({
             placeHolder: 'x64',
             value: 'x64',
             prompt: 'The .NET runtime architecture.',
         });
 
-        const requirement = await vscode.window.showInputBox({
+        arch = arch?.toLowerCase();
+
+        let requirement = await vscode.window.showInputBox({
             placeHolder: 'greater_than_or_equal',
             value: 'greater_than_or_equal',
             prompt: 'The condition to search for a requirement.',
         });
+
+        requirement = requirement?.toLowerCase();
 
         let commandContext : IDotnetFindPathContext = { acquireContext: {version: version, requestingExtensionId: requestingExtensionId, architecture : arch, mode : 'runtime'} as IDotnetAcquireContext,
         versionSpecRequirement: requirement as DotnetVersionSpecRequirement};
