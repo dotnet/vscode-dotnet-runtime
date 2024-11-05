@@ -11,8 +11,8 @@ import { IDotnetPathFinder } from './IDotnetPathFinder';
 
 import * as os from 'os';
 import * as path from 'path';
-import { realpathSync } from 'fs';
-import { EnvironmentVariableIsDefined, getDotnetExecutable, getOSArch } from '../Utils/TypescriptUtilities';
+import { realpathSync, existsSync } from 'fs';
+import { EnvironmentVariableIsDefined, getDotnetExecutable, getOSArch, getPathSeparator } from '../Utils/TypescriptUtilities';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
 import {
     DotnetFindPathLookupPATH,
@@ -129,12 +129,35 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
 
         const findCommand = CommandExecutor.makeCommand(pathLocatorCommand, ['dotnet']);
         const dotnetsOnPATH = (await this.executor?.execute(findCommand, options))?.stdout.split('\n').map(x => x.trim()).filter(x => x !== '');
-        if(dotnetsOnPATH)
+        if(dotnetsOnPATH && dotnetsOnPATH.length > 0)
         {
             this.workerContext.eventStream.post(new DotnetFindPathPATHFound(`Found .NET on the path: ${JSON.stringify(dotnetsOnPATH)}`));
             return this.returnWithRestoringEnvironment(await this.getTruePath(dotnetsOnPATH), 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
 
         }
+        else
+        {
+            const pathsOnPATH = process.env.PATH?.split(getPathSeparator());
+            const validPathsOnPATH = [];
+            if (pathsOnPATH && pathsOnPATH.length > 0)
+            {
+                const dotnetExecutable = getDotnetExecutable();
+                for (let i = 0; i < pathsOnPATH.length; i++)
+                {
+                    const resolvedDotnetPath = path.resolve(pathsOnPATH[i], dotnetExecutable);
+                    if (existsSync(resolvedDotnetPath))
+                    {
+                        validPathsOnPATH.push(resolvedDotnetPath);
+                    }
+                }
+            }
+
+            if(validPathsOnPATH.length > 0)
+            {
+                return this.returnWithRestoringEnvironment(validPathsOnPATH, 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
+            }
+        }
+
         return this.returnWithRestoringEnvironment(undefined, 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
     }
 
@@ -163,7 +186,7 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
     {
         this.workerContext.eventStream.post(new DotnetFindPathLookupRealPATH(`Looking up .NET on the real path.`));
         const dotnetsOnPATH = await this.findRawPathEnvironmentSetting(tryUseTrueShell);
-        if(dotnetsOnPATH)
+        if(dotnetsOnPATH && dotnetsOnPATH.length > 0)
         {
             const realPaths = dotnetsOnPATH.map(x => realpathSync(x));
             this.workerContext.eventStream.post(new DotnetFindPathRealPATHFound(`Found .NET on the path: ${JSON.stringify(dotnetsOnPATH)}, realpath: ${realPaths}`));
