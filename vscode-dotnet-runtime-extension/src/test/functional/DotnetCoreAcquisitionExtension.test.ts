@@ -525,7 +525,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     assert.equal(findPath!.dotnetPath, pathWithIncorrectVersionForTest, 'findPath uses vscode setting for aspnetcore runtime'); // this is set for the alternative.extension in the settings
 
     const findSDKPath = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath', { acquireContext: Object.assign({}, context, {mode: 'sdk'}), versionSpecRequirement: 'equal' });
-    assert.equal(result?.dotnetPath ?? null, pathWithIncorrectVersionForTest, 'findPath does not find path setting for the SDK');
+    assert.equal(findSDKPath?.dotnetPath ?? null, pathWithIncorrectVersionForTest, 'findPath does not find path setting for the SDK');
   }).timeout(standardTimeoutTime);
 
   test('List Sdks & Runtimes', async () => {
