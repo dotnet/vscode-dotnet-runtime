@@ -5,7 +5,7 @@
 
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IEventStream } from '../EventStream/EventStream';
-import { DotnetFeatureBandDoesNotExistError, DotnetVersionParseEvent, DotnetVersionResolutionError, EventCancellationError } from '../EventStream/EventStreamEvents';
+import { DotnetFeatureBandDoesNotExistError, DotnetInvalidRuntimePatchVersion, DotnetVersionParseEvent, DotnetVersionResolutionError, EventCancellationError } from '../EventStream/EventStreamEvents';
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 
 const invalidFeatureBandErrorString = `A feature band couldn't be determined for the requested version: `;
@@ -78,7 +78,7 @@ export function getFeatureBandFromVersion(fullySpecifiedVersion : string, eventS
  */
 export function getFeatureBandPatchVersion(fullySpecifiedVersion : string, eventStream : IEventStream, context : IAcquisitionWorkerContext) : string
 {
-    return Number(getPatchVersionString(fullySpecifiedVersion, eventStream, context)).toString();
+    return Number(getSDKPatchVersionString(fullySpecifiedVersion, eventStream, context)).toString();
 }
 
 /**
@@ -86,7 +86,7 @@ export function getFeatureBandPatchVersion(fullySpecifiedVersion : string, event
  * @remarks the logic for getFeatureBandPatchVersion, except that it returns '01' or '00' instead of the patch number.
  * Not meant for public use.
  */
-export function getPatchVersionString(fullySpecifiedVersion : string, eventStream : IEventStream, context : IAcquisitionWorkerContext) : string
+export function getSDKPatchVersionString(fullySpecifiedVersion : string, eventStream : IEventStream, context : IAcquisitionWorkerContext) : string
 {
     const patch : string | undefined = fullySpecifiedVersion.split('.')?.at(2)?.substring(1)?.split('-')?.at(0);
     if(patch === undefined || !isNumber(patch))
@@ -102,6 +102,36 @@ export function getPatchVersionString(fullySpecifiedVersion : string, eventStrea
 
 /**
  *
+ * @param fullySpecifiedVersion the version of the sdk, either fully specified or not, but containing a band definition.
+ * @returns a single string representing the band and patch version, e.g. 312 in 7.0.312.
+ */
+export function getSDKCompleteBandAndPatchVersionString(fullySpecifiedVersion : string, eventStream : IEventStream, context : IAcquisitionWorkerContext) : string
+{
+    return `${getFeatureBandFromVersion(fullySpecifiedVersion, eventStream, context)}${getSDKPatchVersionString(fullySpecifiedVersion, eventStream, context)}`;
+}
+
+/**
+ * The runtime version doesn't have a feature band, unlike the SDK. We need to get the patch version from the runtime version.
+ * It can contain any amount of text after the patch, such as 9.0.0-rc.2.24473.5. We don't process any of that extra text and should ignore it.
+ * Needs to handle 8, 8.0, etc. This is why we don't use semver. We don't error if there isn't a patch but we should if the patch is invalid.
+ * Returns null if no patch is in the string (e.g. 8.0).
+ */
+export function getRuntimePatchVersionString(fullySpecifiedVersion : string, eventStream : IEventStream, context : IAcquisitionWorkerContext) : string | null
+{
+    const patch : string | undefined = fullySpecifiedVersion.split('.')?.at(2)?.split('-')?.at(0);
+    if(patch && !isNumber(patch))
+    {
+        const event = new DotnetInvalidRuntimePatchVersion(new EventCancellationError('DotnetInvalidRuntimePatchVersion',
+            `The runtime patch version ${patch} from ${fullySpecifiedVersion} is NaN.`),
+            getInstallFromContext(context));
+        eventStream.post(event);
+        throw event.error;
+    }
+    return patch ? patch : null;
+}
+
+/**
+ *
  * @param fullySpecifiedVersion the requested version to analyze.
  * @returns true IFF version is of an expected length and format.
  */
@@ -113,8 +143,8 @@ export function isValidLongFormVersionFormat(fullySpecifiedVersion : string, eve
     {
     if(isNonSpecificFeatureBandedVersion(fullySpecifiedVersion) ||
         (
-            getPatchVersionString(fullySpecifiedVersion, eventStream, context).length <= 2 &&
-            getPatchVersionString(fullySpecifiedVersion, eventStream, context).length > 1
+            getSDKPatchVersionString(fullySpecifiedVersion, eventStream, context).length <= 2 &&
+            getSDKPatchVersionString(fullySpecifiedVersion, eventStream, context).length > 1
         )
     )
     {

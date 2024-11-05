@@ -487,6 +487,10 @@ export class DotnetFeatureBandDoesNotExistError extends DotnetAcquisitionError {
     public readonly eventName = 'DotnetFeatureBandDoesNotExistError';
 }
 
+export class DotnetInvalidRuntimePatchVersion extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetInvalidRuntimePatchVersion';
+}
+
 export class DotnetWSLSecurityError extends DotnetInstallExpectedAbort {
     public readonly eventName = 'DotnetWSLSecurityError';
 }
