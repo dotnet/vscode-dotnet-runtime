@@ -147,7 +147,7 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
                     const resolvedDotnetPath = path.resolve(pathOnPATH, dotnetExecutable);
                     if (existsSync(resolvedDotnetPath))
                     {
-                        this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Looking up .NET on the path by processing PATH string. resolved: ${resolvedDotnetPath}.`);
+                        this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Looking up .NET on the path by processing PATH string. resolved: ${resolvedDotnetPath}.`));
                         validPathsOnPATH.push(resolvedDotnetPath);
                     }
                 }
