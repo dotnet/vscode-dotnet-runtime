@@ -59,6 +59,19 @@ suite('Version Utilities Unit Tests', () => {
         assert.equal(resolver.getFeatureBandPatchVersion(twoDigitPatchVersion, mockEventStream, mockCtx), '21');
     });
 
+    test('Get Band+Patch from SDK Version', async () => {
+        assert.equal(resolver.getSDKCompleteBandAndPatchVersionString(fullySpecifiedVersion, mockEventStream, mockCtx), '201');
+        assert.equal(resolver.getSDKCompleteBandAndPatchVersionString(uniqueMajorMinorVersion, mockEventStream, mockCtx), '300');
+        assert.equal(resolver.getSDKCompleteBandAndPatchVersionString(twoDigitMajorVersion, mockEventStream, mockCtx), '102');
+        assert.equal(resolver.getSDKCompleteBandAndPatchVersionString(twoDigitPatchVersion, mockEventStream, mockCtx), '221');
+    });
+
+    test('Get Patch from Runtime Version', async () => {
+        assert.equal(resolver.getRuntimePatchVersionString(majorMinorOnly, mockEventStream, mockCtx), null);
+        assert.equal(resolver.getRuntimePatchVersionString('8.0.10', mockEventStream, mockCtx), '10');
+        assert.equal(resolver.getRuntimePatchVersionString('8.0.9-rc.2.24502.A', mockEventStream, mockCtx), '9');
+    });
+
     test('Get Patch from SDK Preview Version', async () => {
         assert.equal(resolver.getFeatureBandPatchVersion('8.0.400-preview.0.24324.5', mockEventStream, mockCtx), '0');
     });

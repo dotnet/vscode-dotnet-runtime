@@ -247,7 +247,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     }
     else
     {
-        assert.equal(result, undefined, 'find path command returned no undefined if no path matches condition');
+        assert.equal(result?.dotnetPath, undefined, 'find path command returned no undefined if no path matches condition');
     }
   }
 
@@ -375,6 +375,17 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     {
         await findPathWithRequirementAndInstall('3.1', 'runtime', os.arch() == 'arm64' ? 'x64' : os.arch(), 'greater_than_or_equal', true,
             {version : '3.1', mode : 'runtime', architecture : 'arm64', requestingExtensionId : requestingExtensionId}
+        );
+    }
+  }).timeout(standardTimeoutTime);
+
+  test('Find dotnet PATH Command Unmet Runtime Patch Condition', async () => {
+    // Install 8.0.{LATEST, which will be < 99}, look for 8.0.99 with accepting dotnet gr than or eq to 8.0.99
+    // No tests for SDK since that's harder to replicate with a global install and different machine states
+    if(os.platform() !== 'darwin')
+    {
+        await findPathWithRequirementAndInstall('8.0', 'runtime', os.arch(), 'greater_than_or_equal', false,
+            {version : '8.0.99', mode : 'runtime', architecture : os.arch(), requestingExtensionId : requestingExtensionId}
         );
     }
   }).timeout(standardTimeoutTime);
