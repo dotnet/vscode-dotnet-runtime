@@ -470,8 +470,10 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         const workerContext = getAcquisitionWorkerContext(commandContext.acquireContext.mode, commandContext.acquireContext);
         const existingPath = await resolveExistingPathIfExists(existingPathConfigWorker, commandContext.acquireContext, workerContext, utilContext, commandContext.versionSpecRequirement);
 
-        if(existingPath)
+        // The setting is not intended to be used as the SDK, only the runtime for extensions to run on. Ex: PowerShell policy doesn't allow us to install the runtime, let users set the path manually.
+        if(existingPath && commandContext.acquireContext.mode !== 'sdk')
         {
+            // We don't need to validate the existing path as it gets validated in the lookup logic already.
             globalEventStream.post(new DotnetFindPathSettingFound(`Found vscode setting.`));
             loggingObserver.dispose();
             return existingPath;
