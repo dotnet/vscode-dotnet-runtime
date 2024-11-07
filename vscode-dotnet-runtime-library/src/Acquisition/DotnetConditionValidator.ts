@@ -30,7 +30,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
         if(availableRuntimes.some((runtime) =>
             {
                 return runtime.mode === requirement.acquireContext.mode && this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) &&
-                    this.stringVersionMeetsRequirement(runtime.version, requirement.acquireContext.version, requirement) && allowPreview(runtime.version, requirement);
+                    this.stringVersionMeetsRequirement(runtime.version, requirement.acquireContext.version, requirement) && this.allowPreview(runtime.version, requirement);
             }))
         {
             return true;
@@ -42,7 +42,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
                 {
                     // The SDK includes the Runtime, ASP.NET Core Runtime, and Windows Desktop Runtime. So, we don't need to check the mode.
                     return this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) &&
-                        this.stringVersionMeetsRequirement(sdk.version, requirement.acquireContext.version, requirement) && allowPreview(sdk.version, requirement);
+                        this.stringVersionMeetsRequirement(sdk.version, requirement.acquireContext.version, requirement) && this.allowPreview(sdk.version, requirement);
                 }))
             {
                 return true;
@@ -198,7 +198,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
     {
         if(requirement.rejectPreviews === true)
         {
-            return !versionUtils.isPreviewVersion(availableVersion);
+            return !versionUtils.isPreviewVersion(availableVersion, this.workerContext.eventStream, this.workerContext);
         }
         return true;
     }

@@ -104,10 +104,21 @@ export function getSDKPatchVersionString(fullySpecifiedVersion : string, eventSt
  *
  * @param fullySpecifiedVersion the version of the sdk, either fully specified or not, but containing a band definition.
  * @returns a single string representing the band and patch version, e.g. 312 in 7.0.312.
+ * Returns null if the string is not fully specified.
  */
-export function getSDKCompleteBandAndPatchVersionString(fullySpecifiedVersion : string, eventStream : IEventStream, context : IAcquisitionWorkerContext) : string
+export function getSDKCompleteBandAndPatchVersionString(fullySpecifiedVersion : string, eventStream : IEventStream, context : IAcquisitionWorkerContext) : string | null
 {
-    return `${getFeatureBandFromVersion(fullySpecifiedVersion, eventStream, context)}${getSDKPatchVersionString(fullySpecifiedVersion, eventStream, context)}`;
+    try
+    {
+        const band = getFeatureBandFromVersion(fullySpecifiedVersion, eventStream, context);
+        const patch = getSDKPatchVersionString(fullySpecifiedVersion, eventStream, context);
+        return `${band}${patch}`;
+    }
+    catch
+    {
+        // Catch failure for when version does not include a band, etc
+    }
+    return null;
 }
 
 /**
