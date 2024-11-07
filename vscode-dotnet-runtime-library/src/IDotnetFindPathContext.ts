@@ -10,4 +10,5 @@ export interface IDotnetFindPathContext
 {
     acquireContext: IDotnetAcquireContext;
     versionSpecRequirement: DotnetVersionSpecRequirement;
+    rejectPreviews?: boolean;
 }

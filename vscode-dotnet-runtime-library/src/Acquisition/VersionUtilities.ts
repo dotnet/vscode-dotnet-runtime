@@ -160,6 +160,16 @@ export function isValidLongFormVersionFormat(fullySpecifiedVersion : string, eve
 
 /**
  *
+ * @param fullySpecifiedVersion the requested version to analyze.
+ * @returns true IFF version is of an rc, preview, internal build, etc.
+ */
+export function isPreviewVersion(fullySpecifiedVersion : string, eventStream : IEventStream, context : IAcquisitionWorkerContext) : boolean
+{
+    return fullySpecifiedVersion.includes('-');
+}
+
+/**
+ *
  * @param version the requested version to analyze.
  * @returns true IFF version is a feature band with an unspecified sub-version was given e.g. 6.0.4xx or 6.0.40x
  */
