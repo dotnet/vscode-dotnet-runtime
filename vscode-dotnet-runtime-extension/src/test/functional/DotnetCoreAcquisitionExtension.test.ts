@@ -512,7 +512,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
   }).timeout(standardTimeoutTime);
 
   test('Install Local Runtime Command With Path Setting', async () => {
-    const context: IDotnetAcquireContext = { version: '5.0', requestingExtensionId: 'alternative.extension' };
+    const context: IDotnetAcquireContext = { version: '5.0', requestingExtensionId: 'alternative.extension', architecture: os.platform() };
     const resultForAcquiringPathSettingRuntime = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
     assert.exists(resultForAcquiringPathSettingRuntime!.dotnetPath, 'Basic acquire works');
 
@@ -532,11 +532,11 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     assert.exists(result!.dotnetPath, 'path setting has a path');
     assert.equal(result!.dotnetPath, pathWithIncorrectVersionForTest, 'path setting is used'); // this is set for the alternative.extension in the settings
 
-    const findPath = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath', { acquireContext: Object.assign({}, context, {mode: 'aspnetcore'}), versionSpecRequirement: 'equal' });
-    assert.equal(findPath!.dotnetPath, pathWithIncorrectVersionForTest, 'findPath uses vscode setting for aspnetcore runtime'); // this is set for the alternative.extension in the settings
+    const findPath = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath', { acquireContext: Object.assign({}, context, {mode: 'runtime'}), versionSpecRequirement: 'equal' });
+    assert.equal(findPath!.dotnetPath, pathWithIncorrectVersionForTest, 'findPath uses vscode setting for runtime'); // this is set for the alternative.extension in the settings
 
     const findSDKPath = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath', { acquireContext: Object.assign({}, context, {mode: 'sdk'}), versionSpecRequirement: 'equal' });
-    assert.equal(findSDKPath?.dotnetPath ?? null, pathWithIncorrectVersionForTest, 'findPath does not find path setting for the SDK');
+    assert.equal(findSDKPath?.dotnetPath ?? undefined, undefined, 'findPath does not find path setting for the SDK');
   }).timeout(standardTimeoutTime);
 
   test('List Sdks & Runtimes', async () => {
