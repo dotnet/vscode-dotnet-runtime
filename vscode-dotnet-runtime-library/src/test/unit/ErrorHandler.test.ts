@@ -4,7 +4,7 @@
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
 import { ExistingPathKeys, IExistingPaths } from '../../IExtensionContext';
-import { DotnetCommandFailed, DotnetCommandSucceeded, DotnetNotInstallRelatedCommandFailed } from '../../EventStream/EventStreamEvents';
+import { DotnetCommandSucceeded, DotnetNotInstallRelatedCommandFailed } from '../../EventStream/EventStreamEvents';
 import {
     errorConstants,
     timeoutConstants,
