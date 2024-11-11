@@ -24,7 +24,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
 
     public async dotnetMeetsRequirement(dotnetExecutablePath: string, requirement : IDotnetFindPathContext) : Promise<boolean>
     {
-        const availableRuntimes = await this.getRuntimes(dotnetExecutablePath);
+        const availableRuntimes = requirement.acquireContext.mode === 'sdk' ? [] : await this.getRuntimes(dotnetExecutablePath);
         const hostArch = await this.getHostArchitecture(dotnetExecutablePath, requirement);
 
         if(availableRuntimes.some((runtime) =>
