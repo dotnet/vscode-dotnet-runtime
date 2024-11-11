@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-## [2.2.2] - ??
+## [2.2.3] - 2024-11-16
+
+The `dotnet.findPath` API supports the SDK mode and also adds the option to reject preview builds of .NET.
+This API also now supports asking for a specific patch version of the runtime or a specific feature band of the SDK.
+Several other improvements to this logic were implemented.
+
+## [2.2.2] - 2024-10-30
 
 Breaking change for the `dotnet.findPath` API - this API now always returns an `IDotnetAcquire` result instead of sometimes returning that object, and sometimes returning a `string`. Fixes the API to scan versions of .NET 10 or above correctly.
 
