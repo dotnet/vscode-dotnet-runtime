@@ -208,6 +208,14 @@ ${stderr}`);
 
         arch = arch?.toLowerCase();
 
+        let searchMode = await vscode.window.showInputBox({
+            placeHolder: 'runtime',
+            value: 'runtime',
+            prompt: 'look for an sdk, runtime, aspnetcore runtime, etc',
+        });
+
+        searchMode = searchMode?.toLowerCase() ?? 'runtime';
+
         let requirement = await vscode.window.showInputBox({
             placeHolder: 'greater_than_or_equal',
             value: 'greater_than_or_equal',
@@ -216,7 +224,7 @@ ${stderr}`);
 
         requirement = requirement?.toLowerCase();
 
-        let commandContext : IDotnetFindPathContext = { acquireContext: {version: version, requestingExtensionId: requestingExtensionId, architecture : arch, mode : 'runtime'} as IDotnetAcquireContext,
+        let commandContext : IDotnetFindPathContext = { acquireContext: {version: version, requestingExtensionId: requestingExtensionId, architecture : arch, mode : searchMode} as IDotnetAcquireContext,
         versionSpecRequirement: requirement as DotnetVersionSpecRequirement};
 
         const result = await vscode.commands.executeCommand('dotnet.findPath', commandContext);
