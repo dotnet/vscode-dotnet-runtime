@@ -5,7 +5,14 @@
 
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IEventStream } from '../EventStream/EventStream';
-import { DotnetFeatureBandDoesNotExistError, DotnetInvalidRuntimePatchVersion, DotnetVersionParseEvent, DotnetVersionResolutionError, EventCancellationError, FeatureBandDoesNotExist } from '../EventStream/EventStreamEvents';
+import {
+    DotnetFeatureBandDoesNotExistError,
+    DotnetInvalidRuntimePatchVersion,
+    DotnetVersionParseEvent,
+    DotnetVersionResolutionError,
+    EventCancellationError,
+    FeatureBandDoesNotExist
+} from '../EventStream/EventStreamEvents';
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 
 const invalidFeatureBandErrorString = `A feature band couldn't be determined for the requested version: `;
