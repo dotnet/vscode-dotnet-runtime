@@ -5,7 +5,14 @@
 
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IEventStream } from '../EventStream/EventStream';
-import { DotnetFeatureBandDoesNotExistError, DotnetInvalidRuntimePatchVersion, DotnetVersionParseEvent, DotnetVersionResolutionError, EventCancellationError } from '../EventStream/EventStreamEvents';
+import {
+    DotnetFeatureBandDoesNotExistError,
+    DotnetInvalidRuntimePatchVersion,
+    DotnetVersionParseEvent,
+    DotnetVersionResolutionError,
+    EventCancellationError,
+    FeatureBandDoesNotExist
+} from '../EventStream/EventStreamEvents';
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 
 const invalidFeatureBandErrorString = `A feature band couldn't be determined for the requested version: `;
@@ -57,16 +64,24 @@ export function getMajorMinor(fullySpecifiedVersion : string, eventStream : IEve
  *
  * @param fullySpecifiedVersion the version of the sdk, either fully specified or not, but containing a band definition.
  * @returns a single string representing the band number, e.g. 3 in 7.0.301.
+ * @remarks can return '' if no band exists in the fully specified version, and if considerErrorIfNoBand is false.
  */
-export function getFeatureBandFromVersion(fullySpecifiedVersion : string, eventStream : IEventStream, context : IAcquisitionWorkerContext) : string
+export function getFeatureBandFromVersion(fullySpecifiedVersion : string, eventStream : IEventStream, context : IAcquisitionWorkerContext, considerErrorIfNoBand = true) : string
 {
     const band : string | undefined = fullySpecifiedVersion.split('.')?.at(2)?.charAt(0);
     if(band === undefined)
     {
-        const event = new DotnetFeatureBandDoesNotExistError(new EventCancellationError('DotnetFeatureBandDoesNotExistError', `${invalidFeatureBandErrorString}${fullySpecifiedVersion}.`),
-            getInstallFromContext(context));
-        eventStream.post(event);
-        throw event.error;
+        if(considerErrorIfNoBand)
+        {
+            const event = new DotnetFeatureBandDoesNotExistError(new EventCancellationError('DotnetFeatureBandDoesNotExistError', `${invalidFeatureBandErrorString}${fullySpecifiedVersion}.`),
+                getInstallFromContext(context));
+            eventStream.post(event);
+            throw event.error;
+        }
+
+        const nonErrEvent = new FeatureBandDoesNotExist(`${invalidFeatureBandErrorString}${fullySpecifiedVersion}.`);
+        eventStream.post(nonErrEvent);
+        return '';
     }
     return band;
 }
@@ -75,27 +90,36 @@ export function getFeatureBandFromVersion(fullySpecifiedVersion : string, eventS
  *
  * @param fullySpecifiedVersion the version of the sdk, either fully specified or not, but containing a band definition.
  * @returns a single string representing the band patch version, e.g. 12 in 7.0.312.
+ * @remarks can return '' if no band exists in the fully specified version, and if considerErrorIfNoBand is false.
  */
-export function getFeatureBandPatchVersion(fullySpecifiedVersion : string, eventStream : IEventStream, context : IAcquisitionWorkerContext) : string
+export function getFeatureBandPatchVersion(fullySpecifiedVersion : string, eventStream : IEventStream, context : IAcquisitionWorkerContext, considerErrorIfNoBand = true) : string
 {
-    return Number(getSDKPatchVersionString(fullySpecifiedVersion, eventStream, context)).toString();
+    return Number(getSDKPatchVersionString(fullySpecifiedVersion, eventStream, context, considerErrorIfNoBand)).toString();
 }
 
 /**
  *
  * @remarks the logic for getFeatureBandPatchVersion, except that it returns '01' or '00' instead of the patch number.
+ * Can return '' if no band exists in the fully specified version, and if considerErrorIfNoBand is false.
  * Not meant for public use.
  */
-export function getSDKPatchVersionString(fullySpecifiedVersion : string, eventStream : IEventStream, context : IAcquisitionWorkerContext) : string
+export function getSDKPatchVersionString(fullySpecifiedVersion : string, eventStream : IEventStream, context : IAcquisitionWorkerContext, considerErrorIfNoBand = true) : string
 {
     const patch : string | undefined = fullySpecifiedVersion.split('.')?.at(2)?.substring(1)?.split('-')?.at(0);
     if(patch === undefined || !isNumber(patch))
     {
-        const event = new DotnetFeatureBandDoesNotExistError(new EventCancellationError('DotnetFeatureBandDoesNotExistError',
-            `${invalidFeatureBandErrorString}${fullySpecifiedVersion}.`),
-            getInstallFromContext(context));
-        eventStream.post(event);
-        throw event.error;
+        if(considerErrorIfNoBand)
+        {
+            const event = new DotnetFeatureBandDoesNotExistError(new EventCancellationError('DotnetFeatureBandDoesNotExistError',
+                `${invalidFeatureBandErrorString}${fullySpecifiedVersion}.`),
+                getInstallFromContext(context));
+            eventStream.post(event);
+            throw event.error;
+        }
+
+        const nonErrEvent = new FeatureBandDoesNotExist(`${invalidFeatureBandErrorString}${fullySpecifiedVersion}.`);
+        eventStream.post(nonErrEvent);
+        return '';
     }
     return patch
 }
@@ -110,11 +134,11 @@ export function getSDKCompleteBandAndPatchVersionString(fullySpecifiedVersion : 
 {
     try
     {
-        const band = getFeatureBandFromVersion(fullySpecifiedVersion, eventStream, context);
-        const patch = getSDKPatchVersionString(fullySpecifiedVersion, eventStream, context);
+        const band = getFeatureBandFromVersion(fullySpecifiedVersion, eventStream, context, false);
+        const patch = getSDKPatchVersionString(fullySpecifiedVersion, eventStream, context, false);
         return `${band}${patch}`;
     }
-    catch
+    catch ( error : any )
     {
         // Catch failure for when version does not include a band, etc
     }

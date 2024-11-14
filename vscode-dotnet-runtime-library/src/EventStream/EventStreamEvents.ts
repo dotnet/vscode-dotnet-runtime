@@ -779,6 +779,10 @@ export class TriedToExitMasterSudoProcess extends DotnetCustomMessageEvent {
     public readonly eventName = 'TriedToExitMasterSudoProcess';
 }
 
+export class FeatureBandDoesNotExist extends DotnetCustomMessageEvent {
+    public readonly eventName = 'FeatureBandDoesNotExist';
+}
+
 export class DotnetUninstallStarted extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetUninstallStarted';
     public type = EventType.DotnetUninstallMessage;
