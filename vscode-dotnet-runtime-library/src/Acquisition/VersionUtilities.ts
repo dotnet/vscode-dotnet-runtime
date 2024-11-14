@@ -79,8 +79,8 @@ export function getFeatureBandFromVersion(fullySpecifiedVersion : string, eventS
             throw event.error;
         }
 
-        const event = new FeatureBandDoesNotExist(`${invalidFeatureBandErrorString}${fullySpecifiedVersion}.`);
-        eventStream.post(event);
+        const nonErrEvent = new FeatureBandDoesNotExist(`${invalidFeatureBandErrorString}${fullySpecifiedVersion}.`);
+        eventStream.post(nonErrEvent);
         return '';
     }
     return band;
@@ -117,8 +117,8 @@ export function getSDKPatchVersionString(fullySpecifiedVersion : string, eventSt
             throw event.error;
         }
 
-        const event = new FeatureBandDoesNotExist(`${invalidFeatureBandErrorString}${fullySpecifiedVersion}.`);
-        eventStream.post(event);
+        const nonErrEvent = new FeatureBandDoesNotExist(`${invalidFeatureBandErrorString}${fullySpecifiedVersion}.`);
+        eventStream.post(nonErrEvent);
         return '';
     }
     return patch
