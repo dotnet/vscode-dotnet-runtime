@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+## [2.2.4] - 2024-11-21
+
+The `dotnet.findPath` API now can work even if VS Code provides incorrect information about the PATH by using other methods to detect the PATH outside of VS Code.
+
 ## [2.2.3] - 2024-11-16
 
 The `dotnet.findPath` API supports the SDK mode and also adds the option to reject preview builds of .NET.
