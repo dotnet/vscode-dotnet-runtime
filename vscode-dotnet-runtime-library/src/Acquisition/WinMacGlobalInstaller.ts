@@ -37,6 +37,9 @@ import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { DotnetInstall } from './DotnetInstall';
 import { CommandExecutorResult } from '../Utils/CommandExecutorResult';
 import { getOSArch } from '../Utils/TypescriptUtilities';
+import { RegistryReader } from './RegistryReader';
+import { IRegistryReader } from './IRegistryReader';
+import { util } from 'chai';
 
 namespace validationPromptConstants
 {
@@ -57,6 +60,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
     private installingVersion : string;
     private installerHash : string;
     protected commandRunner : ICommandExecutor;
+    protected registry : IRegistryReader;
     public cleanupInstallFiles = true;
     private completedInstall = false;
     protected versionResolver : VersionResolver;
@@ -66,7 +70,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller {
 We cannot verify our .NET file host at this time. Please try again later or install the SDK manually.`;
 
     constructor(context : IAcquisitionWorkerContext, utilContext : IUtilityContext, installingVersion : string, installerUrl : string,
-        installerHash : string, executor : ICommandExecutor | null = null)
+        installerHash : string, executor : ICommandExecutor | null = null, registryReader : IRegistryReader | null = null)
     {
         super(context, utilContext);
         this.installerUrl = installerUrl;
@@ -76,6 +80,7 @@ We cannot verify our .NET file host at this time. Please try again later or inst
         this.versionResolver = new VersionResolver(context);
         this.file = new FileUtilities();
         this.webWorker = new WebRequestWorker(context, installerUrl);
+        this.registry = registryReader ?? new RegistryReader(context, utilContext);
     }
 
     public static InterpretExitCode(code : string) : string
@@ -462,31 +467,6 @@ Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.m
 
     /**
      *
-     * @param registryQueryResult the raw output of a registry query converted into a string
-     * @returns
-     */
-    private extractVersionsOutOfRegistryKeyStrings(registryQueryResult : string) : string[]
-    {
-        if(registryQueryResult === '')
-        {
-                return [];
-        }
-        else
-        {
-            return registryQueryResult.split(' ')
-            .filter
-            (
-                function(value : string, i : number) { return value !== '' && i !== 0; } // Filter out the whitespace & query as the query return value starts with the query.
-            )
-            .filter
-            (
-                function(value : string, i : number) { return i % 3 === 0; } // Every 0th, 4th, etc item will be a value name AKA the SDK version. The rest will be REGTYPE and REGHEXVALUE.
-            );
-        }
-    }
-
-    /**
-     *
      * @returns Returns '' if no conflicting version was found on the machine.
      * Returns the existing version if a global install with the requested version already exists.
      * OR: If a global install exists for the same band with a higher version.
@@ -495,7 +475,7 @@ Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.m
     public async GlobalWindowsInstallWithConflictingVersionAlreadyExists(requestedVersion : string) : Promise<string>
     {
         // Note that we could be more intelligent here and consider only if the SDKs conflict within an architecture, but for now we won't do this.
-        const sdks : Array<string> = await this.getGlobalSdkVersionsInstalledOnMachine();
+        const sdks : Array<string> = await this.registry.getGlobalSdkVersionsInstalledOnMachine();
         for (const sdk of sdks)
         {
             if
@@ -515,51 +495,5 @@ Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.m
         }
 
         return '';
-    }
-
-    /**
-     *
-     * @returns an array containing fully specified / specific versions of all globally installed sdks on the machine in windows for 32 and 64 bit sdks.
-     */
-    public async getGlobalSdkVersionsInstalledOnMachine() : Promise<Array<string>>
-    {
-        let sdks: string[] = [];
-
-
-        if (os.platform() === 'win32')
-        {
-            const sdkInstallRecords64Bit = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\dotnet\\Setup\\InstalledVersions\\x64\\sdk';
-            const sdkInstallRecords32Bit = sdkInstallRecords64Bit.replace('x64', 'x86');
-            const sdkInstallRecordsArm64 = sdkInstallRecords64Bit.replace('x64', 'arm64');
-
-            const queries = [sdkInstallRecords32Bit, sdkInstallRecords64Bit, sdkInstallRecordsArm64];
-            for ( const query of queries )
-            {
-                try
-                {
-                    const registryQueryCommand = path.join(`${process.env.SystemRoot}`, `System32\\reg.exe`);
-                    // /reg:32 is added because all keys on 64 bit machines are all put into the WOW node. They won't be on the WOW node on a 32 bit machine.
-                    const command = CommandExecutor.makeCommand(registryQueryCommand, [`query`, `${query}`, `\/reg:32`]);
-
-                    let installRecordKeysOfXBit = '';
-                    const registryLookup = (await this.commandRunner.execute(command));
-
-                    if(registryLookup.status === '0')
-                    {
-                        installRecordKeysOfXBit = registryLookup.stdout;
-                    }
-
-                    const installedSdks = this.extractVersionsOutOfRegistryKeyStrings(installRecordKeysOfXBit);
-                    // Append any newly found sdk versions
-                    sdks = sdks.concat(installedSdks.filter((item) => sdks.indexOf(item) < 0));
-                }
-                catch(e)
-                {
-                    // There are no "X" bit sdks on the machine.
-                }
-            }
-        }
-
-        return sdks;
     }
 }
