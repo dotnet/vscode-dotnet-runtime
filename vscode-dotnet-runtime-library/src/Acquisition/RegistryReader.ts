@@ -8,11 +8,22 @@ import * as path from 'path';
 
 import { IEventStream } from "../EventStream/EventStream";
 import { IRegistryReader } from "./IRegistryReader";
+import { CommandExecutor } from '../Utils/CommandExecutor';
+import { ICommandExecutor } from '../Utils/ICommandExecutor';
+import { IUtilityContext } from '../Utils/IUtilityContext';
+import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
 export class RegistryReader extends IRegistryReader
 {
+    protected commandRunner : ICommandExecutor;
+
+    constructor(context : IAcquisitionWorkerContext, utilContext : IUtilityContext, executor : ICommandExecutor | null = null)
+    {
+        super();
+        this.commandRunner = executor ?? new CommandExecutor(context, utilContext);
+    }
     /**
      *
      * @returns an array containing fully specified / specific versions of all globally installed sdks on the machine in windows for 32 and 64 bit sdks.
