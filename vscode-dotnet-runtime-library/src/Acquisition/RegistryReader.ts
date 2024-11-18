@@ -12,6 +12,7 @@ import { CommandExecutor } from '../Utils/CommandExecutor';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { CommandExecutorResult } from '../Utils/CommandExecutorResult';
 
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
@@ -24,6 +25,7 @@ export class RegistryReader extends IRegistryReader
         super();
         this.commandRunner = executor ?? new CommandExecutor(context, utilContext);
     }
+
     /**
      *
      * @returns an array containing fully specified / specific versions of all globally installed sdks on the machine in windows for 32 and 64 bit sdks.
@@ -42,32 +44,50 @@ export class RegistryReader extends IRegistryReader
             const queries = [sdkInstallRecords32Bit, sdkInstallRecords64Bit, sdkInstallRecordsArm64];
             for ( const query of queries )
             {
-                try
-                {
-                    const registryQueryCommand = path.join(`${process.env.SystemRoot}`, `System32\\reg.exe`);
                     // /reg:32 is added because all keys on 64 bit machines are all put into the WOW node. They won't be on the WOW node on a 32 bit machine.
-                    const command = CommandExecutor.makeCommand(registryQueryCommand, [`query`, `${query}`, `\/reg:32`]);
+                    const registryLookup = await this.queryRegistry(query, true);
+                    if(registryLookup === null)
+                    {
+                        return [];
+                    }
 
                     let installRecordKeysOfXBit = '';
-                    const registryLookup = (await this.commandRunner.execute(command));
-
                     if(registryLookup.status === '0')
                     {
+
                         installRecordKeysOfXBit = registryLookup.stdout;
                     }
 
                     const installedSdks = this.extractVersionsOutOfRegistryKeyStrings(installRecordKeysOfXBit);
                     // Append any newly found sdk versions
                     sdks = sdks.concat(installedSdks.filter((item) => sdks.indexOf(item) < 0));
-                }
-                catch(e)
-                {
-                    // There are no "X" bit sdks on the machine.
-                }
             }
         }
 
         return sdks;
+    }
+
+    private async queryRegistry(query : string, underWowNode : boolean) : Promise<CommandExecutorResult | null>
+    {
+        try
+        {
+            const registryQueryCommand = path.join(`${process.env.SystemRoot}`, `System32\\reg.exe`);
+            let queryParameters = [`query`, `${query}`];
+            if(underWowNode)
+            {
+                queryParameters = [...queryParameters, `\/reg:32`];
+            }
+
+            const command = CommandExecutor.makeCommand(registryQueryCommand, queryParameters);
+            const registryLookup = (await this.commandRunner.execute(command));
+            return registryLookup;
+        }
+        catch(e)
+        {
+            // There are no "X" bit sdks on the machine.
+        }
+
+        return null;
     }
 
     /**
