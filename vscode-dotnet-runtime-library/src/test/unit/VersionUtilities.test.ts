@@ -59,8 +59,34 @@ suite('Version Utilities Unit Tests', () => {
         assert.equal(resolver.getFeatureBandPatchVersion(twoDigitPatchVersion, mockEventStream, mockCtx), '21');
     });
 
+    test('Get Band+Patch from SDK Version', async () => {
+        assert.equal(resolver.getSDKCompleteBandAndPatchVersionString(fullySpecifiedVersion, mockEventStream, mockCtx), '201');
+        assert.equal(resolver.getSDKCompleteBandAndPatchVersionString(uniqueMajorMinorVersion, mockEventStream, mockCtx), '300');
+        assert.equal(resolver.getSDKCompleteBandAndPatchVersionString(twoDigitMajorVersion, mockEventStream, mockCtx), '102');
+        assert.equal(resolver.getSDKCompleteBandAndPatchVersionString(twoDigitPatchVersion, mockEventStream, mockCtx), '221');
+        assert.equal(resolver.getSDKPatchVersionString('8.0', mockEventStream, mockCtx, false), '', 'It does not error if no feature band in version if no error bool set');
+    });
+
+    test('Get Patch from Runtime Version', async () => {
+        assert.equal(resolver.getRuntimePatchVersionString(majorMinorOnly, mockEventStream, mockCtx), null);
+        assert.equal(resolver.getRuntimePatchVersionString('8.0.10', mockEventStream, mockCtx), '10');
+        assert.equal(resolver.getRuntimePatchVersionString('8.0.9-rc.2.24502.A', mockEventStream, mockCtx), '9');
+    });
+
     test('Get Patch from SDK Preview Version', async () => {
         assert.equal(resolver.getFeatureBandPatchVersion('8.0.400-preview.0.24324.5', mockEventStream, mockCtx), '0');
+    });
+
+    test('Detects IsPreview Version', async () => {
+        assert.equal(resolver.isPreviewVersion('8.0.400-preview.0.24324.5', mockEventStream, mockCtx), true);
+        assert.equal(resolver.isPreviewVersion('9.0.0-rc.2', mockEventStream, mockCtx), true);
+        assert.equal(resolver.isPreviewVersion('9.0.0-rc.2.24473.5', mockEventStream, mockCtx), true);
+        assert.equal(resolver.isPreviewVersion('9.0.0-rc.2.24473.5', mockEventStream, mockCtx), true);
+        assert.equal(resolver.isPreviewVersion('8.0.0-preview.7', mockEventStream, mockCtx), true);
+        assert.equal(resolver.isPreviewVersion('10.0.0-alpha.2.24522.8', mockEventStream, mockCtx), true);
+        assert.equal(resolver.isPreviewVersion(featureBandVersion, mockEventStream, mockCtx), false);
+        assert.equal(resolver.isPreviewVersion(majorMinorOnly, mockEventStream, mockCtx), false);
+        assert.equal(resolver.isPreviewVersion(badSDKVersionPatch, mockEventStream, mockCtx), false);
     });
 
     test('Detects Unspecified Patch Version', async () => {

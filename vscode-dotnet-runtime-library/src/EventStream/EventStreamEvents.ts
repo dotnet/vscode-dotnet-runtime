@@ -487,6 +487,10 @@ export class DotnetFeatureBandDoesNotExistError extends DotnetAcquisitionError {
     public readonly eventName = 'DotnetFeatureBandDoesNotExistError';
 }
 
+export class DotnetInvalidRuntimePatchVersion extends DotnetAcquisitionError {
+    public readonly eventName = 'DotnetInvalidRuntimePatchVersion';
+}
+
 export class DotnetWSLSecurityError extends DotnetInstallExpectedAbort {
     public readonly eventName = 'DotnetWSLSecurityError';
 }
@@ -773,6 +777,10 @@ export class FileToWipe extends DotnetCustomMessageEvent {
 
 export class TriedToExitMasterSudoProcess extends DotnetCustomMessageEvent {
     public readonly eventName = 'TriedToExitMasterSudoProcess';
+}
+
+export class FeatureBandDoesNotExist extends DotnetCustomMessageEvent {
+    public readonly eventName = 'FeatureBandDoesNotExist';
 }
 
 export class DotnetUninstallStarted extends DotnetCustomMessageEvent {

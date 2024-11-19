@@ -5,7 +5,14 @@
 
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IEventStream } from '../EventStream/EventStream';
-import { DotnetFeatureBandDoesNotExistError, DotnetVersionParseEvent, DotnetVersionResolutionError, EventCancellationError } from '../EventStream/EventStreamEvents';
+import {
+    DotnetFeatureBandDoesNotExistError,
+    DotnetInvalidRuntimePatchVersion,
+    DotnetVersionParseEvent,
+    DotnetVersionResolutionError,
+    EventCancellationError,
+    FeatureBandDoesNotExist
+} from '../EventStream/EventStreamEvents';
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 
 const invalidFeatureBandErrorString = `A feature band couldn't be determined for the requested version: `;
@@ -57,16 +64,24 @@ export function getMajorMinor(fullySpecifiedVersion : string, eventStream : IEve
  *
  * @param fullySpecifiedVersion the version of the sdk, either fully specified or not, but containing a band definition.
  * @returns a single string representing the band number, e.g. 3 in 7.0.301.
+ * @remarks can return '' if no band exists in the fully specified version, and if considerErrorIfNoBand is false.
  */
-export function getFeatureBandFromVersion(fullySpecifiedVersion : string, eventStream : IEventStream, context : IAcquisitionWorkerContext) : string
+export function getFeatureBandFromVersion(fullySpecifiedVersion : string, eventStream : IEventStream, context : IAcquisitionWorkerContext, considerErrorIfNoBand = true) : string
 {
     const band : string | undefined = fullySpecifiedVersion.split('.')?.at(2)?.charAt(0);
     if(band === undefined)
     {
-        const event = new DotnetFeatureBandDoesNotExistError(new EventCancellationError('DotnetFeatureBandDoesNotExistError', `${invalidFeatureBandErrorString}${fullySpecifiedVersion}.`),
-            getInstallFromContext(context));
-        eventStream.post(event);
-        throw event.error;
+        if(considerErrorIfNoBand)
+        {
+            const event = new DotnetFeatureBandDoesNotExistError(new EventCancellationError('DotnetFeatureBandDoesNotExistError', `${invalidFeatureBandErrorString}${fullySpecifiedVersion}.`),
+                getInstallFromContext(context));
+            eventStream.post(event);
+            throw event.error;
+        }
+
+        const nonErrEvent = new FeatureBandDoesNotExist(`${invalidFeatureBandErrorString}${fullySpecifiedVersion}.`);
+        eventStream.post(nonErrEvent);
+        return '';
     }
     return band;
 }
@@ -75,29 +90,79 @@ export function getFeatureBandFromVersion(fullySpecifiedVersion : string, eventS
  *
  * @param fullySpecifiedVersion the version of the sdk, either fully specified or not, but containing a band definition.
  * @returns a single string representing the band patch version, e.g. 12 in 7.0.312.
+ * @remarks can return '' if no band exists in the fully specified version, and if considerErrorIfNoBand is false.
  */
-export function getFeatureBandPatchVersion(fullySpecifiedVersion : string, eventStream : IEventStream, context : IAcquisitionWorkerContext) : string
+export function getFeatureBandPatchVersion(fullySpecifiedVersion : string, eventStream : IEventStream, context : IAcquisitionWorkerContext, considerErrorIfNoBand = true) : string
 {
-    return Number(getPatchVersionString(fullySpecifiedVersion, eventStream, context)).toString();
+    return Number(getSDKPatchVersionString(fullySpecifiedVersion, eventStream, context, considerErrorIfNoBand)).toString();
 }
 
 /**
  *
  * @remarks the logic for getFeatureBandPatchVersion, except that it returns '01' or '00' instead of the patch number.
+ * Can return '' if no band exists in the fully specified version, and if considerErrorIfNoBand is false.
  * Not meant for public use.
  */
-export function getPatchVersionString(fullySpecifiedVersion : string, eventStream : IEventStream, context : IAcquisitionWorkerContext) : string
+export function getSDKPatchVersionString(fullySpecifiedVersion : string, eventStream : IEventStream, context : IAcquisitionWorkerContext, considerErrorIfNoBand = true) : string
 {
     const patch : string | undefined = fullySpecifiedVersion.split('.')?.at(2)?.substring(1)?.split('-')?.at(0);
     if(patch === undefined || !isNumber(patch))
     {
-        const event = new DotnetFeatureBandDoesNotExistError(new EventCancellationError('DotnetFeatureBandDoesNotExistError',
-            `${invalidFeatureBandErrorString}${fullySpecifiedVersion}.`),
+        if(considerErrorIfNoBand)
+        {
+            const event = new DotnetFeatureBandDoesNotExistError(new EventCancellationError('DotnetFeatureBandDoesNotExistError',
+                `${invalidFeatureBandErrorString}${fullySpecifiedVersion}.`),
+                getInstallFromContext(context));
+            eventStream.post(event);
+            throw event.error;
+        }
+
+        const nonErrEvent = new FeatureBandDoesNotExist(`${invalidFeatureBandErrorString}${fullySpecifiedVersion}.`);
+        eventStream.post(nonErrEvent);
+        return '';
+    }
+    return patch
+}
+
+/**
+ *
+ * @param fullySpecifiedVersion the version of the sdk, either fully specified or not, but containing a band definition.
+ * @returns a single string representing the band and patch version, e.g. 312 in 7.0.312.
+ * Returns null if the string is not fully specified.
+ */
+export function getSDKCompleteBandAndPatchVersionString(fullySpecifiedVersion : string, eventStream : IEventStream, context : IAcquisitionWorkerContext) : string | null
+{
+    try
+    {
+        const band = getFeatureBandFromVersion(fullySpecifiedVersion, eventStream, context, false);
+        const patch = getSDKPatchVersionString(fullySpecifiedVersion, eventStream, context, false);
+        return `${band}${patch}`;
+    }
+    catch ( error : any )
+    {
+        // Catch failure for when version does not include a band, etc
+    }
+    return null;
+}
+
+/**
+ * The runtime version doesn't have a feature band, unlike the SDK. We need to get the patch version from the runtime version.
+ * It can contain any amount of text after the patch, such as 9.0.0-rc.2.24473.5. We don't process any of that extra text and should ignore it.
+ * Needs to handle 8, 8.0, etc. This is why we don't use semver. We don't error if there isn't a patch but we should if the patch is invalid.
+ * Returns null if no patch is in the string (e.g. 8.0).
+ */
+export function getRuntimePatchVersionString(fullySpecifiedVersion : string, eventStream : IEventStream, context : IAcquisitionWorkerContext) : string | null
+{
+    const patch : string | undefined = fullySpecifiedVersion.split('.')?.at(2)?.split('-')?.at(0);
+    if(patch && !isNumber(patch))
+    {
+        const event = new DotnetInvalidRuntimePatchVersion(new EventCancellationError('DotnetInvalidRuntimePatchVersion',
+            `The runtime patch version ${patch} from ${fullySpecifiedVersion} is NaN.`),
             getInstallFromContext(context));
         eventStream.post(event);
         throw event.error;
     }
-    return patch
+    return patch ? patch : null;
 }
 
 /**
@@ -113,8 +178,8 @@ export function isValidLongFormVersionFormat(fullySpecifiedVersion : string, eve
     {
     if(isNonSpecificFeatureBandedVersion(fullySpecifiedVersion) ||
         (
-            getPatchVersionString(fullySpecifiedVersion, eventStream, context).length <= 2 &&
-            getPatchVersionString(fullySpecifiedVersion, eventStream, context).length > 1
+            getSDKPatchVersionString(fullySpecifiedVersion, eventStream, context).length <= 2 &&
+            getSDKPatchVersionString(fullySpecifiedVersion, eventStream, context).length > 1
         )
     )
     {
@@ -126,6 +191,16 @@ export function isValidLongFormVersionFormat(fullySpecifiedVersion : string, eve
 
     eventStream.post(new DotnetVersionParseEvent(`The version has more or less than two periods, or it is too long: ${fullySpecifiedVersion}`));
     return false;
+}
+
+/**
+ *
+ * @param fullySpecifiedVersion the requested version to analyze.
+ * @returns true IFF version is of an rc, preview, internal build, etc.
+ */
+export function isPreviewVersion(fullySpecifiedVersion : string, eventStream : IEventStream, context : IAcquisitionWorkerContext) : boolean
+{
+    return fullySpecifiedVersion.includes('-');
 }
 
 /**
