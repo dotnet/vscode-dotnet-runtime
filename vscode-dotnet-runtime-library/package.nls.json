@@ -1,0 +1,4 @@
+{
+    "ms-dotnettools.vscode-dotnet-runtime.downloadRequest": "requested to download",
+    "ms-dotnettools.vscode-dotnet-runtime.installedExtChange": "A change was detected in the extensions. Installing .NET for new extensions."
+}

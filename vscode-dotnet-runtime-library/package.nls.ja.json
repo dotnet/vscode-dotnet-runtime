@@ -1,0 +1,4 @@
+{
+    "ms-dotnettools.vscode-dotnet-runtime.downloadRequest": "ダウンロードを要求された",
+    "ms-dotnettools.vscode-dotnet-runtime.installedExtChange": "拡張機能に変更が検出されました。新しい拡張機能用に .NET をインストールします。"
+}

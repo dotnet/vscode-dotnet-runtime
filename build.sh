@@ -25,6 +25,7 @@ pushd vscode-dotnet-runtime-library
 rm -rf node_modules
 npm ci
 npm run compile
+npx @vscode/l10n-dev export --outDir ./l10n ./src
 
 if [ $? -ne 0 ];
 then
@@ -41,6 +42,7 @@ pushd vscode-dotnet-runtime-extension
 rm -rf node_modules
 npm ci
 npm run compile
+npx @vscode/l10n-dev export --outDir ./l10n ./src
 
 if [ $? -ne 0 ];
 then

@@ -14,4 +14,6 @@ export abstract class IVSCodeExtensionContext
     abstract getExtensions() : readonly any[];
 
     abstract executeCommand(command : string, ...args: any[]) : Thenable<any>;
+
+    abstract localize(message: string, ...args: Array<string | number>): string
 }
