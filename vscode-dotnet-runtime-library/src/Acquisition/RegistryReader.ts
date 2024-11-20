@@ -27,6 +27,28 @@ export class RegistryReader extends IRegistryReader
     }
 
     /**
+     * @remarks architecture values accepted: x64, arm64. x86, arm32 possible on linux but 32 bit vscode is not supported.
+     */
+    public async getHostLocation(architecture : string) : Promise<string | undefined>
+    {
+        // TODO: Verify on ARM 64, the x64 path in paths and also reg.
+
+        "%programfiles%";
+
+        // InstallLocation vs sharedhost:
+        // See https://github.com/dotnet/runtime/issues/109974
+        const query = `HKEY_LOCAL_MACHINE\\SOFTWARE\\dotnet\\Setup\\InstalledVersions\\${architecture}\\sharedhost`;
+        const result = await this.queryRegistry(query, false);
+
+        if(result?.status === '0')
+        {
+
+        }
+
+        return undefined;
+    }
+
+    /**
      *
      * @returns an array containing fully specified / specific versions of all globally installed sdks on the machine in windows for 32 and 64 bit sdks.
     */

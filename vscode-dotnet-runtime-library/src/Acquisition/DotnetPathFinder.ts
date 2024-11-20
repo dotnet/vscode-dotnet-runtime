@@ -11,7 +11,7 @@ import { IDotnetPathFinder } from './IDotnetPathFinder';
 
 import * as os from 'os';
 import * as path from 'path';
-import { realpathSync, existsSync } from 'fs';
+import { realpathSync, existsSync, readFileSync } from 'fs';
 import { EnvironmentVariableIsDefined, getDotnetExecutable, getOSArch, getPathSeparator } from '../Utils/TypescriptUtilities';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
 import {
@@ -25,6 +25,7 @@ import {
     DotnetFindPathRootPATHFound,
     DotnetFindPathRootUnderEmulationButNoneSet
 } from '../EventStream/EventStreamEvents';
+import { RegistryReader } from './RegistryReader';
 
 export class DotnetPathFinder implements IDotnetPathFinder
 {
@@ -194,6 +195,46 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
             return this.getTruePath(realPaths);
         }
         return undefined;
+    }
+
+    public async findHostInstallPaths(requestedArchitecture : string) : Promise<string[] | undefined>
+    {
+        const oldLookup = process.env.DOTNET_MULTILEVEL_LOOKUP;
+        process.env.DOTNET_MULTILEVEL_LOOKUP = '0';
+
+        if(os.platform() === 'win32')
+        {
+            const registryReader = new RegistryReader(this.workerContext, this.utilityContext, this.executor);
+            const hostPathWin = await registryReader.getHostLocation(requestedArchitecture);
+            const paths = hostPathWin ? [hostPathWin, realpathSync(hostPathWin)] : [];
+            return this.returnWithRestoringEnvironment(await this.getTruePath(paths), 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
+        }
+        else
+        {
+            // Possible values for arch are: x86, x64, arm32, arm64
+            // x86 and arm32 are not a concern since 32 bit vscode is out of support and not needed by other extensions
+
+            // https://github.com/dotnet/designs/blob/main/accepted/2021/install-location-per-architecture.md#new-format
+
+            let paths : string[] = [];
+            const netSixAndAboveHostInstallSaveLocation = `/etc/dotnet/install_location_${requestedArchitecture}`;
+            const netFiveAndNetSixAboveFallBackInstallSaveLocation = `/etc/dotnet/install_location`;
+
+            if(existsSync(netSixAndAboveHostInstallSaveLocation))
+            {
+                const installPath = readFileSync(netSixAndAboveHostInstallSaveLocation).toString().trim();
+                paths.push(installPath);
+                paths.push(realpathSync(installPath))
+            }
+            else if(existsSync(netFiveAndNetSixAboveFallBackInstallSaveLocation))
+            {
+                const installPath = readFileSync(netFiveAndNetSixAboveFallBackInstallSaveLocation).toString().trim();
+                paths.push(installPath);
+                paths.push(realpathSync(installPath))
+            }
+
+            return this.returnWithRestoringEnvironment(await this.getTruePath(paths), 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
+        }
     }
 
     /**
