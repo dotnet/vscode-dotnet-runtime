@@ -131,7 +131,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`, std
         {
             const recVersion = await provider.getRecommendedDotnetVersion(installType);
             assert.equal(mockExecutor.attemptedCommand, 'dotnet --version', 'Correct command run to get recommended version, uses newest package in distro json');
-            assert.equal(recVersion, '8.0.1xx', 'The most in support version is suggested : will eventually break if not updated');
+            assert.equal(recVersion, '9.0.1xx', 'The most in support version is suggested : will eventually break if not updated');
         }
     }).timeout(standardTimeoutTime);
 
