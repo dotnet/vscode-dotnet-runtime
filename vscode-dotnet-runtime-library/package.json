@@ -10,6 +10,7 @@
 	"engines": {
 		"vscode": "^1.74.0"
 	},
+	"l10n": "./l10n",
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
 	"scripts": {

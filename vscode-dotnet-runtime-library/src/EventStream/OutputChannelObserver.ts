@@ -39,7 +39,7 @@ export class OutputChannelObserver implements IEventStreamObserver {
 
                 this.inProgressDownloads.push(acquisitionStarted.install.installId);
 
-                this.outputChannel.append(`${acquisitionStarted.requestingExtensionId} requested to download the ${
+                this.outputChannel.append(`${acquisitionStarted.requestingExtensionId} ${vscode.l10n.t('requested to download')} the ${
                 acquisitionStarted.install.installMode === 'sdk' ? '.NET SDK' :
                 acquisitionStarted.install.installMode === 'runtime' ? '.NET Runtime' :
                 '.NET ASP.NET Runtime'

@@ -44,4 +44,9 @@ export class VSCodeExtensionContext extends IVSCodeExtensionContext
     {
         return vscode.commands.executeCommand(command, ...args);
     }
+
+    public localize(message: string, ...args: Array<string | number>): string
+    {
+        return vscode.l10n.t(message, ...args);
+    }
 }
