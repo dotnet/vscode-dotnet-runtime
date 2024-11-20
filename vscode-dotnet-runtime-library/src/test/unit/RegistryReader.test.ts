@@ -18,6 +18,8 @@ suite('RegistryReader Tests', () =>
     const mockVersion = '7.0.306';
     const mockExecutor = new MockCommandExecutor(getMockAcquisitionContext('sdk', mockVersion), getMockUtilityContext());
     const reader : RegistryReader = new RegistryReader(getMockAcquisitionContext('sdk', mockVersion), getMockUtilityContext(), mockExecutor);
+    const thisArch = os.arch();
+    const notThisArch = thisArch === 'x64' ? 'arm64' : 'x64';
 
     test('It reads SDK registry entries correctly on windows', async () =>
     {
@@ -66,6 +68,72 @@ suite('RegistryReader Tests', () =>
             // Assert that it passes when running the command for real
             foundVersions = await reader.getGlobalSdkVersionsInstalledOnMachine();
             assert.exists(foundVersions);
+        }
+    });
+
+    test('It finds .NET host Path correctly', async () =>
+    {
+        if(os.platform() === 'win32')
+        {
+            const mockThisArchHostPath = 'C:\\Program Files\\dotnet\\dotnet.exe';
+            const mockNotThisArchHostPath = 'C:\\Program Files\\dotnet\\x64\\dotnet.exe';
+
+            mockExecutor.fakeReturnValue = {
+                stdout: `
+    Path    REG_SZ    ${mockThisArchHostPath}
+        `,
+                status: '0',
+                stderr: ''
+            };
+
+            // Test logic for sharedhost
+            const firstRes = await reader.getHostLocation(thisArch);
+            assert.exists(firstRes, 'It found something for sharedhost');
+            assert.strictEqual(firstRes, mockThisArchHostPath, 'It found the correct path for sharedhost');
+
+            mockExecutor.fakeReturnValue = {
+                stdout: `
+
+    InstallLocation    REG_SZ    ${mockNotThisArchHostPath}
+
+        `,
+                status: '0',
+                stderr: ''
+            };
+
+            // Test logic for InstallLocation
+            const secondRes = await reader.getHostLocation(notThisArch);
+            assert.exists(secondRes, 'It found something for InstallLocation');
+            assert.equal(secondRes, mockNotThisArchHostPath, 'It found the correct path for InstallLocation');
+
+            mockExecutor.resetReturnValues();
+        }
+    });
+
+    test('It uses reg32 WOW as backup', async () =>
+    {
+        if(os.platform() === 'win32')
+        {
+            const correctPath = 'C:\\Program Files\\foo\\dotnet.exe';
+            // only 1 64 bit sdks exist
+            mockExecutor.fakeReturnValue = {
+                stdout: `
+    Path    REG_SZ    C:\\Program Files\\dotnet\\dotnet.exe
+        `,
+                status: '1',
+                stderr: `ERROR: The system was unable to find the specified registry key or value.` // wont happen at the same time, but this is a mock so its ok
+            };
+
+            mockExecutor.otherCommandPatternsToMock = ['InstallLocation'];
+            mockExecutor.otherCommandsReturnValues = [{stderr: ``, status: '0', stdout: `
+                    InstallLocation    REG_SZ    ${correctPath}
+            `}];
+
+            const res = await reader.getHostLocation(thisArch);
+
+            assert.exists(res, 'It found something');
+            assert.equal(res, correctPath, 'It found the correct path falling back to InstallLocation if no sharedhost key is found');
+            mockExecutor.resetReturnValues();
         }
     });
 });

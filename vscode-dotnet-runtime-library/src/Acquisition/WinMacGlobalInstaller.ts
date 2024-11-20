@@ -332,9 +332,20 @@ Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.m
         {
             // The program files should always be set, but in the off chance they are wiped, we can try to use the default as backup.
             // Both ia32 and x64 machines will use 'Program Files'
-            // TODO: what about x64 on arm?
-            // We don't anticipate a user would need to install the x86 SDK, and we don't have any routes that support that yet.
-            return process.env.programfiles ? path.resolve(path.join(process.env.programfiles, 'dotnet', 'dotnet.exe')) : path.resolve(`C:\\Program Files\\dotnet\\dotnet.exe`);
+            if(process.env.programfiles)
+            {
+                if(os.arch() === 'arm64' && installedArch === 'x64')
+                {
+                    return path.resolve(path.join(process.env.programfiles, 'dotnet', 'x64', 'dotnet.exe'));
+                }
+                return path.resolve(path.join(process.env.programfiles, 'dotnet', 'dotnet.exe'))
+            }
+
+            if(os.arch() === 'arm64' && installedArch === 'x64')
+            {
+                return path.resolve(`C:\\Program Files\\dotnet\\x64\\dotnet.exe`);
+            }
+            return path.resolve(`C:\\Program Files\\dotnet\\dotnet.exe`);
         }
         else if(os.platform() === 'darwin')
         {

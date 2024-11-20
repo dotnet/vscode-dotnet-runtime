@@ -31,18 +31,34 @@ export class RegistryReader extends IRegistryReader
      */
     public async getHostLocation(architecture : string) : Promise<string | undefined>
     {
-        // TODO: Verify on ARM 64, the x64 path in paths and also reg.
-
-        "%programfiles%";
-
         // InstallLocation vs sharedhost:
+        // The sharedhost registry key stores the path of dotnet that gets put on the PATH.
+        // The InstallLocation stores other paths to the host that might not be on the PATH, such as an x64 host on an arm64 machine.
+        // The InstallLocation is always under the 32 bit reg node for our purposes, and the sharedhost is always on the native node.
+        // (You can't install arm64 SDK or Runtime on x64, but you can do vice versa and they follow the same methodology.)
+
+        // For non native installs: sharedhost nodes may exist, but there will be no path key
+
         // See https://github.com/dotnet/runtime/issues/109974
-        const query = `HKEY_LOCAL_MACHINE\\SOFTWARE\\dotnet\\Setup\\InstalledVersions\\${architecture}\\sharedhost`;
-        const result = await this.queryRegistry(query, false);
+        const queryForPATHLocationNotViaPATH = `HKEY_LOCAL_MACHINE\\SOFTWARE\\dotnet\\Setup\\InstalledVersions\\${architecture}\\sharedhost`;
+        const queryForInstallLocationNotPATH = `HKEY_LOCAL_MACHINE\\SOFTWARE\\dotnet\\Setup\\InstalledVersions\\${architecture}\\InstallLocation`;
+
+        let queryForPATH = os.arch() === architecture;
+        let queriedInstallationLocation = false;
+        let result = null;
+        if(queryForPATH)
+        {
+            result = await this.queryRegistry(queryForPATHLocationNotViaPATH, false, 'Path');
+        }
+        if(!queryForPATH || result?.status !== '0')
+        {
+            result = await this.queryRegistry(queryForInstallLocationNotPATH, true, 'InstallLocation');
+            queriedInstallationLocation = true;
+        }
 
         if(result?.status === '0')
         {
-
+            return result.stdout.trim().split(' ')[2]; // Output is of the type Key   REG_SZ    C:\path\to\dotnet
         }
 
         return undefined;
@@ -89,7 +105,7 @@ export class RegistryReader extends IRegistryReader
         return sdks;
     }
 
-    private async queryRegistry(query : string, underWowNode : boolean) : Promise<CommandExecutorResult | null>
+    private async queryRegistry(query : string, underWowNode : boolean, querySingleValue? : string) : Promise<CommandExecutorResult | null>
     {
         try
         {
@@ -99,9 +115,13 @@ export class RegistryReader extends IRegistryReader
             {
                 queryParameters = [...queryParameters, `\/reg:32`];
             }
+            if(querySingleValue)
+            {
+                queryParameters = [...queryParameters, `/v`, `${querySingleValue}`];
+            }
 
             const command = CommandExecutor.makeCommand(registryQueryCommand, queryParameters);
-            const registryLookup = (await this.commandRunner.execute(command));
+            const registryLookup = (await this.commandRunner.execute(command, undefined, false));
             return registryLookup;
         }
         catch(e)
