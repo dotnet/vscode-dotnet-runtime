@@ -15,10 +15,15 @@ import { realpathSync, existsSync, readFileSync } from 'fs';
 import { EnvironmentVariableIsDefined, getDotnetExecutable, getOSArch, getPathSeparator } from '../Utils/TypescriptUtilities';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
 import {
+    DotnetFindPathHostFxrResolutionLookup,
     DotnetFindPathLookupPATH,
     DotnetFindPathLookupRealPATH,
     DotnetFindPathLookupRootPATH,
+    DotnetFindPathNoHostOnFileSystem,
+    DotnetFindPathNoHostOnRegistry,
     DotnetFindPathNoRuntimesOnHost,
+    DotnetFindPathOnFileSystem,
+    DotnetFindPathOnRegistry,
     DotnetFindPathPATHFound,
     DotnetFindPathRealPATHFound,
     DotnetFindPathRootEmulationPATHFound,
@@ -199,6 +204,8 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
 
     public async findHostInstallPaths(requestedArchitecture : string) : Promise<string[] | undefined>
     {
+        this.workerContext.eventStream.post(new DotnetFindPathHostFxrResolutionLookup(`Looking up .NET without checking the PATH.`));
+
         const oldLookup = process.env.DOTNET_MULTILEVEL_LOOKUP;
         process.env.DOTNET_MULTILEVEL_LOOKUP = '0';
 
@@ -207,6 +214,14 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
             const registryReader = new RegistryReader(this.workerContext, this.utilityContext, this.executor);
             const hostPathWin = await registryReader.getHostLocation(requestedArchitecture);
             const paths = hostPathWin ? [hostPathWin, realpathSync(hostPathWin)] : [];
+            if(paths.length > 0)
+            {
+                this.workerContext.eventStream.post(new DotnetFindPathOnRegistry(`The host could be found in the registry. ${JSON.stringify(paths)}`));
+            }
+            else
+            {
+                this.workerContext.eventStream.post(new DotnetFindPathNoHostOnRegistry(`The host could not be found in the registry`));
+            }
             return this.returnWithRestoringEnvironment(await this.getTruePath(paths), 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
         }
         else
@@ -231,6 +246,15 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
                 const installPath = readFileSync(netFiveAndNetSixAboveFallBackInstallSaveLocation).toString().trim();
                 paths.push(installPath);
                 paths.push(realpathSync(installPath))
+            }
+
+            if(paths.length > 0)
+            {
+                this.workerContext.eventStream.post(new DotnetFindPathOnFileSystem(`The host could be found in the file system. ${JSON.stringify(paths)}`));
+            }
+            else
+            {
+                this.workerContext.eventStream.post(new DotnetFindPathNoHostOnFileSystem(`The host could not be found in the file system.`));
             }
 
             return this.returnWithRestoringEnvironment(await this.getTruePath(paths), 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);

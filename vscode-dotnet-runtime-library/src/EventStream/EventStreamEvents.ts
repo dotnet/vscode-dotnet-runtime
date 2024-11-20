@@ -899,6 +899,26 @@ export class DotnetFindPathRealPATHFound extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetFindPathRealPATHFound';
 }
 
+export class DotnetFindPathHostFxrResolutionLookup extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathHostFxrResolutionLookup';
+}
+
+export class DotnetFindPathOnRegistry extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathOnRegistry';
+}
+
+export class DotnetFindPathNoHostOnRegistry extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathNoHostOnRegistry';
+}
+
+export class DotnetFindPathOnFileSystem extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathOnFileSystem';
+}
+
+export class DotnetFindPathNoHostOnFileSystem extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathNoHostOnFileSystem';
+}
+
 export class DotnetFindPathNoRuntimesOnHost extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetFindPathNoRuntimesOnHost';
 }
@@ -921,6 +941,10 @@ export class DotnetFindPathRootPATHFound extends DotnetCustomMessageEvent {
 
 export class DotnetFindPathMetCondition extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetFindPathMetCondition';
+}
+
+export class DotnetFindPathNoPathMetCondition extends DotnetCustomMessageEvent {
+    public readonly eventName = 'DotnetFindPathNoPathMetCondition';
 }
 
 export class DotnetFindPathDidNotMeetCondition extends DotnetCustomMessageEvent {

@@ -32,6 +32,7 @@ export class RegistryReader extends IRegistryReader
     public async getHostLocation(architecture : string) : Promise<string | undefined>
     {
         // InstallLocation vs sharedhost:
+
         // The sharedhost registry key stores the path of dotnet that gets put on the PATH.
         // The InstallLocation stores other paths to the host that might not be on the PATH, such as an x64 host on an arm64 machine.
         // The InstallLocation is always under the 32 bit reg node for our purposes, and the sharedhost is always on the native node.

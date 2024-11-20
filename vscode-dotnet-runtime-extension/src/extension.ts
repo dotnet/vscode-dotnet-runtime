@@ -75,6 +75,7 @@ import {
     DotnetFindPathLookupSetting,
     DotnetFindPathMetCondition,
     DotnetFindPathCommandInvoked,
+    DotnetFindPathNoPathMetCondition,
     JsonInstaller,
 } from 'vscode-dotnet-runtime-library';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
@@ -512,7 +513,27 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             return { dotnetPath: validatedRoot };
         }
 
+        const dotnetOnHostfxrRecord = await finder.findHostInstallPaths(commandContext.acquireContext.architecture);
+        for(const dotnetPath of dotnetOnHostfxrRecord ?? [])
+        {
+            const validatedHostfxr = await getPathIfValid(dotnetPath, validator, commandContext);
+            if(validatedHostfxr)
+            {
+                loggingObserver.dispose();
+                return { dotnetPath: validatedHostfxr };
+            }
+        }
+
         loggingObserver.dispose();
+        globalEventStream.post(new DotnetFindPathNoPathMetCondition(`Could not find a single host path that met the conditions.
+existingPath : ${existingPath?.dotnetPath}
+onPath : ${JSON.stringify(dotnetsOnPATH)}
+onRealPath : ${JSON.stringify(dotnetsOnRealPATH)}
+onRoot : ${dotnetOnROOT}
+onHostfxrRecord : ${JSON.stringify(dotnetOnHostfxrRecord)}
+
+Requirement:
+${JSON.stringify(commandContext)}`));
         return undefined;
     });
 
