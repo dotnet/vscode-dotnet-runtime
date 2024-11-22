@@ -28,6 +28,7 @@ export class RegistryReader extends IRegistryReader
 
     /**
      * @remarks architecture values accepted: x64, arm64. x86, arm32 possible on linux but 32 bit vscode is not supported.
+     * @returns the folder containing the host
      */
     public async getHostLocation(architecture : string) : Promise<string | undefined>
     {
@@ -41,6 +42,7 @@ export class RegistryReader extends IRegistryReader
         // For non native installs: sharedhost nodes may exist, but there will be no path key
 
         // See https://github.com/dotnet/runtime/issues/109974
+        // Docs: https://github.com/dotnet/designs/blob/main/accepted/2021/install-location-per-architecture.md
         const queryForPATHLocationNotViaPATH = `HKEY_LOCAL_MACHINE\\SOFTWARE\\dotnet\\Setup\\InstalledVersions\\${architecture}\\sharedhost`;
         const queryForInstallLocationNotPATH = `HKEY_LOCAL_MACHINE\\SOFTWARE\\dotnet\\Setup\\InstalledVersions\\${architecture}\\InstallLocation`;
 
@@ -62,8 +64,13 @@ export class RegistryReader extends IRegistryReader
             // Output is of the type
             // REGISTRY_KEY
             // Key   REG_SZ    C:\path\to\dotnet
-            const keyRow = result.stdout?.trim()?.split("\n")?.at(1)?.trim(); // Get the line that contains Key REG_SZ Path
-            const finalPath = keyRow?.split(' ')?.filter((x : any) => x !== '')?.slice(2)?.join(' ');
+            let keyRow = result.stdout?.trim()?.split("\n")?.at(1)?.trim(); // Get the line that contains Key REG_SZ Path
+            if(!keyRow)
+            {
+                // If there's an extra newline in the output or reg.exe format changes, find the line which contains the key -- slower
+                keyRow = result.stdout?.trim()?.split("\n")?.filter((x) => x.toLowerCase().includes('path') || x.toLowerCase().includes('installlocation'))?.at(0)?.trim();
+            }
+            const finalPath = keyRow?.split(' ')?.filter((x : any) => x !== '')?.slice(2)?.join(' '); // remove N (typically 4) spaces between each output, then remove the ''s, then split by space again to remove Key and REG_SZ, and recombine any path with spaces
             return finalPath
         }
 
