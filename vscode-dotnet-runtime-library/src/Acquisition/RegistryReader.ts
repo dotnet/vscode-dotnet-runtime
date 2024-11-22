@@ -59,7 +59,12 @@ export class RegistryReader extends IRegistryReader
 
         if(result?.status === '0')
         {
-            return result.stdout.trim().split(' ')[2]; // Output is of the type Key   REG_SZ    C:\path\to\dotnet
+            // Output is of the type
+            // REGISTRY_KEY
+            // Key   REG_SZ    C:\path\to\dotnet
+            const keyRow = result.stdout?.trim()?.split("\n")?.at(1)?.trim(); // Get the line that contains Key REG_SZ Path
+            const finalPath = keyRow?.split(' ')?.filter((x : any) => x !== '')?.slice(2)?.join(' ');
+            return finalPath
         }
 
         return undefined;

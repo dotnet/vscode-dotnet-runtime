@@ -93,7 +93,7 @@ suite('RegistryReader Tests', () =>
 
             mockExecutor.fakeReturnValue = {
                 stdout: `
-
+HKEY_LOCAL_MACHINE\\SOFTWARE\\dotnet\\Setup\\InstalledVersions\\x64
     InstallLocation    REG_SZ    ${mockNotThisArchHostPath}
 
         `,
@@ -117,7 +117,7 @@ suite('RegistryReader Tests', () =>
             const correctPath = 'C:\\Program Files\\foo\\dotnet.exe';
             // only 1 64 bit sdks exist
             mockExecutor.fakeReturnValue = {
-                stdout: `
+                stdout: `HKEY_LOCAL_MACHINE\\SOFTWARE\\dotnet\\Setup\\InstalledVersions\\x64
     Path    REG_SZ    C:\\Program Files\\dotnet\\dotnet.exe
         `,
                 status: '1',
