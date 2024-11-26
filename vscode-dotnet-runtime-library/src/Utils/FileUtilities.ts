@@ -127,6 +127,16 @@ export class FileUtilities extends IFileUtilities
        });
    }
 
+   public readSync(filePath: string): string
+   {
+       return fs.readFileSync(filePath).toString();
+   }
+
+   public existsSync(filePath: string): boolean
+   {
+       return fs.existsSync(filePath);
+   }
+
    /**
     *
     * @param nodeArchitecture the architecture in node style string of what to install

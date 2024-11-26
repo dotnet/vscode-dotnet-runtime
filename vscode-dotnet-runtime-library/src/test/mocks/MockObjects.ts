@@ -385,6 +385,8 @@ export class MockCommandExecutor extends ICommandExecutor
 export class MockFileUtilities extends IFileUtilities
 {
     private trueUtilities = new FileUtilities();
+    public filePathsAndExistValues : { [filePath: string]: boolean; } = {};
+    public filePathsAndReadValues :  { [filePath: string]: string; } = {};
 
     public writeFileOntoDisk(content : string, filePath : string, alreadyHoldingLock = false)
     {
@@ -404,6 +406,16 @@ export class MockFileUtilities extends IFileUtilities
     public async getFileHash(filePath : string)
     {
         return '';
+    }
+
+    public existsSync(filePath : string)
+    {
+        return this.filePathsAndExistValues[filePath] || false;
+    }
+
+    public readSync(filePath: string): string
+    {
+        return this.filePathsAndReadValues[filePath] || '';
     }
 
 }

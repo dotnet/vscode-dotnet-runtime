@@ -26,8 +26,6 @@ export abstract class IGlobalInstaller {
 
     public abstract getExpectedGlobalSDKPath(specificSDKVersionInstalled : string, installedArch : string, macPathShouldExist? : boolean) : Promise<string>
 
-    public abstract getGlobalSdkVersionsInstalledOnMachine() : Promise<Array<string>>;
-
     /**
      *
      * @returns The folder where global sdk installers will be downloaded onto the disk.
