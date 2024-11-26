@@ -150,7 +150,7 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
                 const dotnetExecutable = getDotnetExecutable();
                 for (const pathOnPATH of pathsOnPATH)
                 {
-                    const resolvedDotnetPath = path.resolve(pathOnPATH, dotnetExecutable);
+                    const resolvedDotnetPath = path.join(pathOnPATH, dotnetExecutable);
                     if (existsSync(resolvedDotnetPath))
                     {
                         this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Looking up .NET on the path by processing PATH string. resolved: ${resolvedDotnetPath}.`));
@@ -213,7 +213,7 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
         {
             const registryReader = new RegistryReader(this.workerContext, this.utilityContext, this.executor);
             const hostPathWin = await registryReader.getHostLocation(requestedArchitecture);
-            const paths = hostPathWin ? [path.resolve(hostPathWin, getDotnetExecutable()), path.resolve(realpathSync(hostPathWin), getDotnetExecutable())] : [];
+            const paths = hostPathWin ? [path.join(hostPathWin, getDotnetExecutable()), path.join(realpathSync(hostPathWin), getDotnetExecutable())] : [];
             if(paths.length > 0)
             {
                 this.workerContext.eventStream.post(new DotnetFindPathOnRegistry(`The host could be found in the registry. ${JSON.stringify(paths)}`));
@@ -238,8 +238,8 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
             if(existsSync(netSixAndAboveHostInstallSaveLocation))
             {
                 const installPath = readFileSync(netSixAndAboveHostInstallSaveLocation).toString().trim();
-                paths.push(path.join(installPath), getDotnetExecutable());
-                paths.push(path.join(realpathSync(installPath)), getDotnetExecutable());
+                paths.push(path.join(installPath, getDotnetExecutable()));
+                paths.push(path.join(realpathSync(installPath)), getDotnetExecutable()));
             }
             else if(existsSync(netFiveAndNetSixAboveFallBackInstallSaveLocation))
             {
