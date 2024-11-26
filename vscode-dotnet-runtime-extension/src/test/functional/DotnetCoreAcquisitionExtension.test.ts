@@ -32,6 +32,8 @@ import {
   EnvironmentVariableIsDefined,
   MockEnvironmentVariableCollection,
   getPathSeparator,
+  LinuxVersionResolver,
+  getMockUtilityContext,
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { warn } from 'console';
@@ -580,8 +582,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     }
     else
     {
-      assert.equal(result[0].version, '9.0.1xx', 'The SDK did not recommend the version it was supposed to, which should be N.0.1xx based on surface level distro knowledge. If a new version is available, this test may need to be updated to the newest version.');
-
+      const distroVersion = await new LinuxVersionResolver(mockAcquisitionContext, getMockUtilityContext()).getRunningDistro();
+      assert.equal(result[0].version, Number(distroVersion) > 22.04 ? '9.0.1xx' : '8.0.1xx', 'The SDK did not recommend the version it was supposed to, which should be N.0.1xx based on surface level distro knowledge. If a new version is available, this test may need to be updated to the newest version.');
     }
   }).timeout(standardTimeoutTime);
 

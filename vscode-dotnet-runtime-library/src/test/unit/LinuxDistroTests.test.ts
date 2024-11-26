@@ -7,7 +7,7 @@ import * as chai from 'chai';
 import * as os from 'os';
 import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProvider';
 import { MockCommandExecutor, MockEventStream } from '../mocks/MockObjects';
-import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
+import { DistroVersionPair, DotnetDistroSupportStatus, LinuxVersionResolver } from '../../Acquisition/LinuxVersionResolver';
 import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 const assert = chai.assert;
@@ -39,7 +39,8 @@ suite('Linux Distro Logic Unit Tests', () =>
             assert.equal(mockExecutor.attemptedCommand,
 'apt-cache -o DPkg::Lock::Timeout=180 search --names-only ^dotnet-sdk-9.0$', 'Searched for the newest package last with regex'); // this may fail if test not exec'd first
             // the data is cached so --version may not be executed.
-            assert.equal(recVersion, '9.0.1xx', 'Resolved the most recent available version : will eventually break if the mock data is not updated');
+            const distroVersion = await new LinuxVersionResolver(acquisitionContext, getMockUtilityContext()).getRunningDistro();
+            assert.equal(recVersion, Number(distroVersion) > 22.04 ? '9.0.1xx' : '8.0.1xx', 'Resolved the most recent available version : will eventually break if the mock data is not updated');
         }
     }).timeout(standardTimeoutTime);
 

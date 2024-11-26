@@ -29,12 +29,12 @@ suite('DotnetPathFinder Unit Tests', function ()
 
     this.afterEach(async () =>
     {
-        if(madeFakeDotnetInstallRecord)
+        if(madeFakeDotnetInstallRecord && fs.existsSync(installRecordPath))
         {
             fs.rmSync(installRecordPath, { recursive: true });
         }
 
-        if(madeFakeDotnetDir)
+        if(madeFakeDotnetDir && fs.existsSync(madeFakeDotnetDir))
         {
             fs.rmdirSync(madeFakeDotnetDir, { recursive: true });
         }
