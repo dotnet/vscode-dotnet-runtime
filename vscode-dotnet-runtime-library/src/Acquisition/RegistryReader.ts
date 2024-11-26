@@ -46,7 +46,7 @@ export class RegistryReader extends IRegistryReader
         const queryForPATHLocationNotViaPATH = `HKEY_LOCAL_MACHINE\\SOFTWARE\\dotnet\\Setup\\InstalledVersions\\${architecture}\\sharedhost`;
         const queryForInstallLocationNotPATH = `HKEY_LOCAL_MACHINE\\SOFTWARE\\dotnet\\Setup\\InstalledVersions\\${architecture}\\InstallLocation`;
 
-        let queryForPATH = os.arch() === architecture;
+        const queryForPATH = os.arch() === architecture;
         let queriedInstallationLocation = false;
         let result = null;
         if(queryForPATH)
@@ -80,7 +80,7 @@ export class RegistryReader extends IRegistryReader
     /**
      *
      * @returns an array containing fully specified / specific versions of all globally installed sdks on the machine in windows for 32 and 64 bit sdks.
-    */
+     */
     public async getGlobalSdkVersionsInstalledOnMachine() : Promise<Array<string>>
     {
         let sdks: string[] = [];

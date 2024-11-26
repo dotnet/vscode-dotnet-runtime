@@ -783,6 +783,10 @@ export class FeatureBandDoesNotExist extends DotnetCustomMessageEvent {
     public readonly eventName = 'FeatureBandDoesNotExist';
 }
 
+export class FileDoesNotExist extends DotnetCustomMessageEvent {
+    public readonly eventName = 'FileDoesNotExist';
+}
+
 export class DotnetUninstallStarted extends DotnetCustomMessageEvent {
     public readonly eventName = 'DotnetUninstallStarted';
     public type = EventType.DotnetUninstallMessage;

@@ -11,6 +11,7 @@ import { IDotnetPathFinder } from './IDotnetPathFinder';
 
 import * as os from 'os';
 import * as path from 'path';
+import * as lodash from 'lodash';
 import { realpathSync, existsSync, readFileSync } from 'fs';
 import { EnvironmentVariableIsDefined, getDotnetExecutable, getOSArch, getPathSeparator } from '../Utils/TypescriptUtilities';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
@@ -28,7 +29,8 @@ import {
     DotnetFindPathRealPATHFound,
     DotnetFindPathRootEmulationPATHFound,
     DotnetFindPathRootPATHFound,
-    DotnetFindPathRootUnderEmulationButNoneSet
+    DotnetFindPathRootUnderEmulationButNoneSet,
+    FileDoesNotExist
 } from '../EventStream/EventStreamEvents';
 import { RegistryReader } from './RegistryReader';
 
@@ -222,7 +224,7 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
             {
                 this.workerContext.eventStream.post(new DotnetFindPathNoHostOnRegistry(`The host could not be found in the registry`));
             }
-            return this.returnWithRestoringEnvironment(await this.getTruePath(paths), 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
+            return this.returnWithRestoringEnvironment(await this.getTruePath(lodash.uniq(paths)), 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
         }
         else
         {
@@ -231,22 +233,12 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
 
             // https://github.com/dotnet/designs/blob/main/accepted/2021/install-location-per-architecture.md#new-format
 
-            let paths : string[] = [];
+            const paths : string[] = [];
             const netSixAndAboveHostInstallSaveLocation = `/etc/dotnet/install_location_${requestedArchitecture}`;
             const netFiveAndNetSixAboveFallBackInstallSaveLocation = `/etc/dotnet/install_location`;
 
-            if(existsSync(netSixAndAboveHostInstallSaveLocation))
-            {
-                const installPath = readFileSync(netSixAndAboveHostInstallSaveLocation).toString().trim();
-                paths.push(path.join(installPath, getDotnetExecutable()));
-                paths.push(path.join(realpathSync(installPath), getDotnetExecutable()));
-            }
-            else if(existsSync(netFiveAndNetSixAboveFallBackInstallSaveLocation))
-            {
-                const installPath = readFileSync(netFiveAndNetSixAboveFallBackInstallSaveLocation).toString().trim();
-                paths.push(path.join(installPath, getDotnetExecutable()));
-                paths.push(path.join(realpathSync(installPath), getDotnetExecutable()));
-            }
+            paths.push(...this.getPathsFromEtc(netSixAndAboveHostInstallSaveLocation));
+            paths.push(...this.getPathsFromEtc(netFiveAndNetSixAboveFallBackInstallSaveLocation));
 
             if(paths.length > 0)
             {
@@ -257,8 +249,33 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
                 this.workerContext.eventStream.post(new DotnetFindPathNoHostOnFileSystem(`The host could not be found in the file system.`));
             }
 
-            return this.returnWithRestoringEnvironment(await this.getTruePath(paths), 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
+            return this.returnWithRestoringEnvironment(await this.getTruePath(lodash.uniq(paths)), 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
         }
+    }
+
+    private getPathsFromEtc(etcLoc : string) : Array<string>
+    {
+        let paths : string[] = [];
+        if(existsSync(etcLoc))
+        {
+            try
+            {
+                const installPath = readFileSync(etcLoc).toString().trim();
+                paths.push(path.join(installPath, getDotnetExecutable()));
+                paths.push(path.join(realpathSync(installPath), getDotnetExecutable()));
+            }
+            catch(error : any) // eslint-disable-line @typescript-eslint/no-explicit-any
+            {
+                // readfile throws if the file gets deleted in between the existing check and now
+                this.workerContext.eventStream.post(new FileDoesNotExist(`The host was deleted after checking in the file system. ${error.message} ${etcLoc}`));
+            }
+        }
+        else
+        {
+            this.workerContext.eventStream.post(new FileDoesNotExist(`The host save location never existed at ${etcLoc}`));
+        }
+
+        return paths;
     }
 
     /**
