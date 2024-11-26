@@ -33,13 +33,16 @@ import {
     FileDoesNotExist
 } from '../EventStream/EventStreamEvents';
 import { RegistryReader } from './RegistryReader';
+import { FileUtilities } from '../Utils/FileUtilities';
+import { IFileUtilities } from '../Utils/IFileUtilities';
 
 export class DotnetPathFinder implements IDotnetPathFinder
 {
 
-    public constructor(private readonly workerContext : IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext, private executor? : ICommandExecutor)
+    public constructor(private readonly workerContext : IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext, private executor? : ICommandExecutor, private file? : IFileUtilities)
     {
         this.executor ??= new CommandExecutor(this.workerContext, this.utilityContext);
+        this.file ??= new FileUtilities();
     }
 
     /**
@@ -256,11 +259,11 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
     private getPathsFromEtc(etcLoc : string) : Array<string>
     {
         const paths : string[] = [];
-        if(existsSync(etcLoc))
+        if(this.file!.existsSync(etcLoc))
         {
             try
             {
-                const installPath = readFileSync(etcLoc).toString().trim();
+                const installPath = this.file!.readSync(etcLoc).toString().trim();
                 paths.push(path.join(installPath, getDotnetExecutable()));
                 paths.push(path.join(realpathSync(installPath), getDotnetExecutable()));
             }

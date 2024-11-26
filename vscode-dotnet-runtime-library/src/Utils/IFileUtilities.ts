@@ -21,4 +21,8 @@ export abstract class IFileUtilities
     public abstract isElevated(eventStream? : IEventStream) : boolean;
 
     public abstract getFileHash(filePath : string) : Promise<string | null>;
+
+    public abstract existsSync(filePath : string) : boolean;
+
+    public abstract readSync(filePath : string) : string;
 };
