@@ -238,14 +238,14 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
             if(existsSync(netSixAndAboveHostInstallSaveLocation))
             {
                 const installPath = readFileSync(netSixAndAboveHostInstallSaveLocation).toString().trim();
-                paths.push(path.resolve(installPath), getDotnetExecutable());
-                paths.push(path.resolve(realpathSync(installPath)), getDotnetExecutable());
+                paths.push(path.join(installPath), getDotnetExecutable());
+                paths.push(path.join(realpathSync(installPath)), getDotnetExecutable());
             }
             else if(existsSync(netFiveAndNetSixAboveFallBackInstallSaveLocation))
             {
                 const installPath = readFileSync(netFiveAndNetSixAboveFallBackInstallSaveLocation).toString().trim();
-                paths.push(path.resolve(installPath, getDotnetExecutable()));
-                paths.push(path.resolve(realpathSync(installPath), getDotnetExecutable()));
+                paths.push(path.join(installPath, getDotnetExecutable()));
+                paths.push(path.join(realpathSync(installPath), getDotnetExecutable()));
             }
 
             if(paths.length > 0)
