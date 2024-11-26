@@ -255,7 +255,7 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
 
     private getPathsFromEtc(etcLoc : string) : Array<string>
     {
-        let paths : string[] = [];
+        const paths : string[] = [];
         if(existsSync(etcLoc))
         {
             try
@@ -267,7 +267,8 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
             catch(error : any) // eslint-disable-line @typescript-eslint/no-explicit-any
             {
                 // readfile throws if the file gets deleted in between the existing check and now
-                this.workerContext.eventStream.post(new FileDoesNotExist(`The host was deleted after checking in the file system. ${error.message} ${etcLoc}`));
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                this.workerContext.eventStream.post(new FileDoesNotExist(`The host was deleted after checking in the file system. ${error?.message} ${etcLoc}`));
             }
         }
         else

@@ -50,6 +50,10 @@ suite('DotnetPathFinder Unit Tests', function ()
             if (!fs.existsSync(installRecordPath))
             {
                 madeFakeDotnetInstallRecord = true;
+                if(!fs.existsSync(path.dirname(installRecordPath)))
+                {
+                    fs.mkdirSync(path.dirname(installRecordPath), { recursive: true });
+                }
                 fs.writeFileSync(path.join(installRecordPath), fakeDotnetPath);
             }
 
@@ -76,6 +80,10 @@ suite('DotnetPathFinder Unit Tests', function ()
             if (!fs.existsSync(installRecordPathNoArch))
             {
                 madeFakeDotnetInstallRecord = true;
+                if(!fs.existsSync(path.dirname(installRecordPathNoArch)))
+                {
+                    fs.mkdirSync(path.dirname(installRecordPathNoArch), { recursive: true });
+                }
                 fs.writeFileSync(path.join(installRecordPathNoArch), fakeDotnetPath);
             }
 
