@@ -40,7 +40,7 @@ suite('DotnetPathFinder Unit Tests', function ()
             const result = await finder.findHostInstallPaths(os.arch());
 
             assert.isTrue(result !== undefined, 'The dotnet path finder found a dotnet path');
-            assert.equal(result?.at(0), fakeDotnetPath, 'The correct path is found');
+            assert.equal(result?.at(0), path.join(fakeDotnetPath, 'dotnet'), 'The correct path is found');
         } // Windows and other lookup is covered in the registryReader or the runtime extension functional test
     }).timeout(10000 * 2);
 
@@ -59,7 +59,7 @@ suite('DotnetPathFinder Unit Tests', function ()
             const result = await finder.findHostInstallPaths(os.arch());
 
             assert.isTrue(result !== undefined, 'The dotnet path finder found a dotnet path');
-            assert.equal(result?.at(0), fakeDotnetPath, 'The correct path is found');
+            assert.equal(result?.at(0), path.join(fakeDotnetPath, 'dotnet'), 'The correct path is found');
         }
     });
 });
