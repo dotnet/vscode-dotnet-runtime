@@ -208,7 +208,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
   }
 
   async function findPathWithRequirementAndInstall(version : string, iMode : DotnetInstallMode, arch : string, condition : DotnetVersionSpecRequirement, shouldFind : boolean, contextToLookFor? : IDotnetAcquireContext, setPath = true,
-    blockNoArch = false)
+    blockNoArch = false, dontCheckNonPaths = true)
   {
     const installPath = await installRuntime(version, iMode, arch);
 
@@ -232,6 +232,11 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
         process.env.DOTNET_INSTALL_TOOL_DONT_ACCEPT_UNKNOWN_ARCH = '1';
     }
 
+    if(dontCheckNonPaths)
+    {
+        process.env.DOTNET_INSTALL_TOOL_SKIP_HOSTFXR = 'true';
+    }
+
     const result : IDotnetAcquireResult = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath',
         { acquireContext : contextToLookFor ?? { version, requestingExtensionId : requestingExtensionId, mode: iMode, architecture : arch } as IDotnetAcquireContext,
         versionSpecRequirement : condition} as IDotnetFindPathContext
@@ -239,6 +244,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
 
     extensionContext.environmentVariableCollection.replace('DOTNET_INSTALL_TOOL_DONT_ACCEPT_UNKNOWN_ARCH', '0');
     process.env.DOTNET_INSTALL_TOOL_DONT_ACCEPT_UNKNOWN_ARCH = '0';
+    process.env.DOTNET_INSTALL_TOOL_SKIP_HOSTFXR = '0';
 
     if(shouldFind)
     {

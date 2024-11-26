@@ -517,7 +517,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         for(const dotnetPath of dotnetOnHostfxrRecord ?? [])
         {
             const validatedHostfxr = await getPathIfValid(dotnetPath, validator, commandContext);
-            if(validatedHostfxr)
+            if(validatedHostfxr && process.env.DOTNET_INSTALL_TOOL_SKIP_HOSTFXR !== 'true')
             {
                 loggingObserver.dispose();
                 return { dotnetPath: validatedHostfxr };
