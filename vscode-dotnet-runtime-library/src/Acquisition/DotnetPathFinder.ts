@@ -11,27 +11,38 @@ import { IDotnetPathFinder } from './IDotnetPathFinder';
 
 import * as os from 'os';
 import * as path from 'path';
-import { realpathSync, existsSync } from 'fs';
+import * as lodash from 'lodash';
+import { realpathSync, existsSync, readFileSync } from 'fs';
 import { EnvironmentVariableIsDefined, getDotnetExecutable, getOSArch, getPathSeparator } from '../Utils/TypescriptUtilities';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
 import {
+    DotnetFindPathHostFxrResolutionLookup,
     DotnetFindPathLookupPATH,
     DotnetFindPathLookupRealPATH,
     DotnetFindPathLookupRootPATH,
+    DotnetFindPathNoHostOnFileSystem,
+    DotnetFindPathNoHostOnRegistry,
     DotnetFindPathNoRuntimesOnHost,
+    DotnetFindPathOnFileSystem,
+    DotnetFindPathOnRegistry,
     DotnetFindPathPATHFound,
     DotnetFindPathRealPATHFound,
     DotnetFindPathRootEmulationPATHFound,
     DotnetFindPathRootPATHFound,
-    DotnetFindPathRootUnderEmulationButNoneSet
+    DotnetFindPathRootUnderEmulationButNoneSet,
+    FileDoesNotExist
 } from '../EventStream/EventStreamEvents';
+import { RegistryReader } from './RegistryReader';
+import { FileUtilities } from '../Utils/FileUtilities';
+import { IFileUtilities } from '../Utils/IFileUtilities';
 
 export class DotnetPathFinder implements IDotnetPathFinder
 {
 
-    public constructor(private readonly workerContext : IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext, private executor? : ICommandExecutor)
+    public constructor(private readonly workerContext : IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext, private executor? : ICommandExecutor, private file? : IFileUtilities)
     {
         this.executor ??= new CommandExecutor(this.workerContext, this.utilityContext);
+        this.file ??= new FileUtilities();
     }
 
     /**
@@ -144,7 +155,7 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
                 const dotnetExecutable = getDotnetExecutable();
                 for (const pathOnPATH of pathsOnPATH)
                 {
-                    const resolvedDotnetPath = path.resolve(pathOnPATH, dotnetExecutable);
+                    const resolvedDotnetPath = path.join(pathOnPATH, dotnetExecutable);
                     if (existsSync(resolvedDotnetPath))
                     {
                         this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Looking up .NET on the path by processing PATH string. resolved: ${resolvedDotnetPath}.`));
@@ -194,6 +205,81 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
             return this.getTruePath(realPaths);
         }
         return undefined;
+    }
+
+    public async findHostInstallPaths(requestedArchitecture : string) : Promise<string[] | undefined>
+    {
+        this.workerContext.eventStream.post(new DotnetFindPathHostFxrResolutionLookup(`Looking up .NET without checking the PATH.`));
+
+        const oldLookup = process.env.DOTNET_MULTILEVEL_LOOKUP;
+        process.env.DOTNET_MULTILEVEL_LOOKUP = '0';
+
+        if(os.platform() === 'win32')
+        {
+            const registryReader = new RegistryReader(this.workerContext, this.utilityContext, this.executor);
+            const hostPathWin = await registryReader.getHostLocation(requestedArchitecture);
+            const paths = hostPathWin ? [path.join(hostPathWin, getDotnetExecutable()), path.join(realpathSync(hostPathWin), getDotnetExecutable())] : [];
+            if(paths.length > 0)
+            {
+                this.workerContext.eventStream.post(new DotnetFindPathOnRegistry(`The host could be found in the registry. ${JSON.stringify(paths)}`));
+            }
+            else
+            {
+                this.workerContext.eventStream.post(new DotnetFindPathNoHostOnRegistry(`The host could not be found in the registry`));
+            }
+            return this.returnWithRestoringEnvironment(await this.getTruePath(lodash.uniq(paths)), 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
+        }
+        else
+        {
+            // Possible values for arch are: x86, x64, arm32, arm64
+            // x86 and arm32 are not a concern since 32 bit vscode is out of support and not needed by other extensions
+
+            // https://github.com/dotnet/designs/blob/main/accepted/2021/install-location-per-architecture.md#new-format
+
+            const paths : string[] = [];
+            const netSixAndAboveHostInstallSaveLocation = `/etc/dotnet/install_location_${requestedArchitecture}`;
+            const netFiveAndNetSixAboveFallBackInstallSaveLocation = `/etc/dotnet/install_location`;
+
+            paths.push(...this.getPathsFromEtc(netSixAndAboveHostInstallSaveLocation));
+            paths.push(...this.getPathsFromEtc(netFiveAndNetSixAboveFallBackInstallSaveLocation));
+
+            if(paths.length > 0)
+            {
+                this.workerContext.eventStream.post(new DotnetFindPathOnFileSystem(`The host could be found in the file system. ${JSON.stringify(paths)}`));
+            }
+            else
+            {
+                this.workerContext.eventStream.post(new DotnetFindPathNoHostOnFileSystem(`The host could not be found in the file system.`));
+            }
+
+            return this.returnWithRestoringEnvironment(await this.getTruePath(lodash.uniq(paths)), 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
+        }
+    }
+
+    private getPathsFromEtc(etcLoc : string) : Array<string>
+    {
+        const paths : string[] = [];
+        if(this.file!.existsSync(etcLoc))
+        {
+            try
+            {
+                const installPath = this.file!.readSync(etcLoc).toString().trim();
+                paths.push(path.join(installPath, getDotnetExecutable()));
+                paths.push(path.join(realpathSync(installPath), getDotnetExecutable()));
+            }
+            catch(error : any) // eslint-disable-line @typescript-eslint/no-explicit-any
+            {
+                // readfile throws if the file gets deleted in between the existing check and now
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                this.workerContext.eventStream.post(new FileDoesNotExist(`The host was deleted after checking in the file system. ${error?.message} ${etcLoc}`));
+            }
+        }
+        else
+        {
+            this.workerContext.eventStream.post(new FileDoesNotExist(`The host save location never existed at ${etcLoc}`));
+        }
+
+        return paths;
     }
 
     /**
