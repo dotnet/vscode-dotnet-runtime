@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 RESULT=0
 RED=`tput setaf 1`
 GREEN=`tput setaf 2`

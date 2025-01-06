@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 RED=`tput setaf 1`
 GREEN=`tput setaf 2`
 NC=`tput sgr0`
