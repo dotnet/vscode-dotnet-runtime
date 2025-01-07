@@ -767,6 +767,23 @@ export class DuplicateInstallDetected extends DotnetCustomMessageEvent {
     public readonly eventName = 'DuplicateInstallDetected';
 }
 
+export class WebRequestTime extends DotnetCustomMessageEvent {
+    public readonly eventName = 'WebRequestTime';
+
+    constructor(public readonly eventMessage: string, public readonly durationMs: string,
+        public readonly success: string, public readonly url: string
+    ) { super(eventMessage); }
+
+    public getProperties() {
+        return {
+            Message: this.eventMessage,
+            DurationMs : this.durationMs,
+            Success : this.success,
+            Url : this.url
+        };
+    }
+}
+
 export class EmptyDirectoryToWipe extends DotnetCustomMessageEvent {
     public readonly eventName = 'EmptyDirectoryToWipe';
 }

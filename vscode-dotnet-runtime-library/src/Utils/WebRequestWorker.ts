@@ -37,7 +37,8 @@ import {
     OfflineDetectionLogicTriggered,
     SuppressedAcquisitionError,
     WebRequestError,
-    WebRequestSent
+    WebRequestSent,
+    WebRequestTime
 } from '../EventStream/EventStreamEvents';
 import { getInstallFromContext } from './InstallIdUtilities';
 
@@ -100,6 +101,7 @@ export class WebRequestWorker
         const timeout = setTimeout(async () =>
         {
             timeoutCancelTokenHook.abort();
+            this.context.eventStream.post(new WebRequestTime(`Timer for request:`, String(this.websiteTimeoutMs), 'false', url));
             if(!(await WebRequestWorker.isOnline(this.websiteTimeoutMs / 1000, this.context.eventStream)))
             {
                 const offlineError = new EventBasedError('DotnetOfflineFailure', 'No internet connection detected: Cannot install .NET');
@@ -112,8 +114,26 @@ export class WebRequestWorker
             throw formattedError;
         }, this.websiteTimeoutMs);
 
+        // Get current time to evaluate CDNs
+        const timerPrecision = 2; // decimal places for timer
+        const startTime = process.hrtime.bigint();
+
+        // Make the web request
         const response = await this.client.get(url, { signal: timeoutCancelTokenHook.signal, ...options });
+        const finalTime = process.hrtime.bigint();
+        // Timeout for Web Request -> Not Timer. (Don't want to introduce more CPU time into timer)
         clearTimeout(timeout);
+
+        // CDN Timer
+        let durationMs = '-1';
+        // Standard timeout time in NS : 60,000,000,000 is < than std max_safe_int_size: 9,007,199,254,740,991
+        if(finalTime - startTime < Number.MAX_SAFE_INTEGER)
+        {
+            durationMs = (Number(finalTime - startTime) / 1000000).toFixed(timerPrecision);
+        }
+        this.context.eventStream.post(new WebRequestTime(`Timer for request:`, durationMs, 'true', url));
+
+        // Response
         return response;
     }
 
