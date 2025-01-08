@@ -43,7 +43,7 @@ import {
     WebRequestTimeUnknown
 } from '../EventStream/EventStreamEvents';
 import { getInstallFromContext } from './InstallIdUtilities';
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+import { json } from 'stream/consumers';
 
 export class WebRequestWorker
 {
@@ -346,9 +346,22 @@ export class WebRequestWorker
             this.context.eventStream.post(new WebRequestSent(this.url));
             const response = await this.axiosGet(
                 this.url,
-                options
+                {transformResponse: (x : any) => x, ... options}
             );
 
+            if(response !== null && response.headers['content-type'] === 'application/json')
+            {
+                try
+                {
+                    // Try to copy logic from https://github.com/axios/axios/blob/2e58825bc7773247ca5d8c2cae2ee041d38a0bb5/lib/defaults/index.js#L100
+                    const jsonData = JSON.parse(response.data);
+                    return jsonData;
+                }
+                catch(error : any)
+                {
+
+                }
+            }
             return response.data;
         }
         catch (error : any)
