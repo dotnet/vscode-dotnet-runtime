@@ -99,8 +99,11 @@ export class WebRequestWorker
             {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 startTime = BigInt(res.request._header?.split('\r\n')?.filter((headerLine : string) => headerLine !== '')?.map(
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                     (headerColonSpaceValue : any) => headerColonSpaceValue.split(':').map(
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                     (value : any) => value.trim())
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 ).filter((headerAndValue : any) => headerAndValue[0] === 'startTime')[0][1]);
             }
             catch(e : any)
@@ -349,7 +352,7 @@ export class WebRequestWorker
                 {transformResponse: (x : any) => x, ... options}
             );
 
-            if(response !== null && response.headers['content-type'] === 'application/json')
+            if(response !== null && response?.headers['content-type'] === 'application/json')
             {
                 try
                 {
