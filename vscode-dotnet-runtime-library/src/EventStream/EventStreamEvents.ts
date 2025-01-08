@@ -767,8 +767,7 @@ export class DuplicateInstallDetected extends DotnetCustomMessageEvent {
     public readonly eventName = 'DuplicateInstallDetected';
 }
 
-export class WebRequestTime extends DotnetCustomMessageEvent {
-    public readonly eventName = 'WebRequestTime';
+export abstract class WebRequestTimer extends DotnetCustomMessageEvent {
 
     constructor(public readonly eventMessage: string, public readonly durationMs: string,
         public readonly success: string, public readonly url: string
@@ -782,6 +781,16 @@ export class WebRequestTime extends DotnetCustomMessageEvent {
             Url : this.url
         };
     }
+}
+
+export class WebRequestTime extends WebRequestTimer
+{
+    public readonly eventName = 'WebRequestTime';
+}
+
+export class WebRequestCachedTime extends WebRequestTimer
+{
+    public readonly eventName = 'WebRequestCachedTime';
 }
 
 export class EmptyDirectoryToWipe extends DotnetCustomMessageEvent {

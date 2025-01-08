@@ -2,7 +2,7 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
-import Axios, { AxiosError, isAxiosError } from 'axios';
+import Axios, { AxiosError, isAxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 
 process.env.VSCODE_DOTNET_INSTALL_TOOL_ORIGINAL_HOME = process.env.HOME
@@ -36,6 +36,7 @@ import {
     EventCancellationError,
     OfflineDetectionLogicTriggered,
     SuppressedAcquisitionError,
+    WebRequestCachedTime,
     WebRequestError,
     WebRequestSent,
     WebRequestTime
@@ -74,12 +75,41 @@ export class WebRequestWorker
             }
         });
 
-            this.client = setupCache(uncachedAxiosClient,
-                {
-                    storage: buildMemoryStorage(),
-                    ttl: this.cacheTimeToLive
-                }
-            );
+        // Register this so it happens before the cache https://axios-cache-interceptor.js.org/guide/interceptors#explanation
+        uncachedAxiosClient.interceptors.request.use( req => {
+            req.headers.startTime = process.hrtime.bigint();
+            return req;
+        });
+
+        // Register this so it happens after the cache -- this means we need to check if the result is cached before reporting perf data!
+        // ^ the request should not be processed if it is in the cache, it seems nonsensical to check this before the cache is hit even though this is possible
+        uncachedAxiosClient.interceptors.response.use(res =>
+        {
+            // res.request headers is undefined. Need to access it via the member. Could not find any documentation or other variable access to do this.
+
+            // _header has all of the headers, separated by \r\n, with kv pair Name: Content
+            // Split it into arrays of headers, trim the whitespace and empty headers, then filter for the startTime header only, then grab the only result (startTime header array) and its value.
+            // Could be done more efficiently.
+            let startTime = undefined;
+            try
+            {
+                startTime = BigInt(res.request._header?.split('\r\n')?.filter((x : string) => x !== '')?.map((x : any) => x.split(':').map((x : any) => x.trim())).filter((x : any) => x[0] === 'startTime')[0][1]);
+            }
+            catch(e : any)
+            {
+                // protect against being intercepted and having a weird header type
+            }
+            res.headers.startTime = startTime;
+            res.headers.finalTime = process.hrtime.bigint();
+            return res;
+        });
+
+        this.client = setupCache(uncachedAxiosClient,
+            {
+                storage: buildMemoryStorage(),
+                ttl: this.cacheTimeToLive
+            }
+        );
     }
 
     /**
@@ -131,7 +161,26 @@ export class WebRequestWorker
         {
             durationMs = (Number(finalTime - startTime) / 1000000).toFixed(timerPrecision);
         }
-        this.context.eventStream.post(new WebRequestTime(`Timer for request:`, durationMs, 'true', url));
+        const startTimeHeader = response.headers?.startTime;
+        const finalTimeHeader = response.headers?.finalTime;
+        let headerDurationMs;
+        if(startTimeHeader && finalTimeHeader && finalTimeHeader - startTimeHeader < Number.MAX_SAFE_INTEGER)
+        {
+            headerDurationMs = (Number(finalTimeHeader - startTimeHeader) / 1000000).toFixed(timerPrecision);
+        }
+        else
+        {
+            // todo : report this somehow, startTime likely failed?
+        }
+        let foo = headerDurationMs;
+        if(!response.cached)
+        {
+            this.context.eventStream.post(new WebRequestTime(`Timer for request:`, durationMs, 'true', url));
+        }
+        else
+        {
+            this.context.eventStream.post(new WebRequestCachedTime(`Cached Timer for request:`, durationMs, 'true', url));
+        }
 
         // Response
         return response;
