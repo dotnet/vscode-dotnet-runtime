@@ -39,9 +39,11 @@ import {
     WebRequestCachedTime,
     WebRequestError,
     WebRequestSent,
-    WebRequestTime
+    WebRequestTime,
+    WebRequestTimeUnknown
 } from '../EventStream/EventStreamEvents';
 import { getInstallFromContext } from './InstallIdUtilities';
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
 export class WebRequestWorker
 {
@@ -75,12 +77,14 @@ export class WebRequestWorker
             }
         });
 
+        // Record when the web requests begin:
         // Register this so it happens before the cache https://axios-cache-interceptor.js.org/guide/interceptors#explanation
         uncachedAxiosClient.interceptors.request.use( req => {
             req.headers.startTime = process.hrtime.bigint();
             return req;
         });
 
+        // Record when the server responds:
         // Register this so it happens after the cache -- this means we need to check if the result is cached before reporting perf data!
         // ^ the request should not be processed if it is in the cache, it seems nonsensical to check this before the cache is hit even though this is possible
         uncachedAxiosClient.interceptors.response.use(res =>
@@ -90,10 +94,14 @@ export class WebRequestWorker
             // _header has all of the headers, separated by \r\n, with kv pair Name: Content
             // Split it into arrays of headers, trim the whitespace and empty headers, then filter for the startTime header only, then grab the only result (startTime header array) and its value.
             // Could be done more efficiently.
-            let startTime = undefined;
+            let startTime;
             try
             {
-                startTime = BigInt(res.request._header?.split('\r\n')?.filter((x : string) => x !== '')?.map((x : any) => x.split(':').map((x : any) => x.trim())).filter((x : any) => x[0] === 'startTime')[0][1]);
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                startTime = BigInt(res.request._header?.split('\r\n')?.filter((headerLine : string) => headerLine !== '')?.map(
+                    (headerColonSpaceValue : any) => headerColonSpaceValue.split(':').map(
+                    (value : any) => value.trim())
+                ).filter((headerAndValue : any) => headerAndValue[0] === 'startTime')[0][1]);
             }
             catch(e : any)
             {
@@ -144,42 +152,32 @@ export class WebRequestWorker
             throw formattedError;
         }, this.websiteTimeoutMs);
 
-        // Get current time to evaluate CDNs
-        const timerPrecision = 2; // decimal places for timer
-        const startTime = process.hrtime.bigint();
-
         // Make the web request
         const response = await this.client.get(url, { signal: timeoutCancelTokenHook.signal, ...options });
-        const finalTime = process.hrtime.bigint();
         // Timeout for Web Request -> Not Timer. (Don't want to introduce more CPU time into timer)
         clearTimeout(timeout);
 
         // CDN Timer
-        let durationMs = '-1';
         // Standard timeout time in NS : 60,000,000,000 is < than std max_safe_int_size: 9,007,199,254,740,991
-        if(finalTime - startTime < Number.MAX_SAFE_INTEGER)
+        const timerPrecision = 2; // decimal places for timer result
+        const startTimeHeaderNs = response.headers?.startTime;
+        const finalTimeHeaderNs = response.headers?.finalTime;
+        let headerDurationMs = '-1';
+        if(startTimeHeaderNs && finalTimeHeaderNs && finalTimeHeaderNs - startTimeHeaderNs < Number.MAX_SAFE_INTEGER)
         {
-            durationMs = (Number(finalTime - startTime) / 1000000).toFixed(timerPrecision);
-        }
-        const startTimeHeader = response.headers?.startTime;
-        const finalTimeHeader = response.headers?.finalTime;
-        let headerDurationMs;
-        if(startTimeHeader && finalTimeHeader && finalTimeHeader - startTimeHeader < Number.MAX_SAFE_INTEGER)
-        {
-            headerDurationMs = (Number(finalTimeHeader - startTimeHeader) / 1000000).toFixed(timerPrecision);
+            headerDurationMs = (Number(finalTimeHeaderNs - startTimeHeaderNs) / 1000000).toFixed(timerPrecision);
         }
         else
         {
-            // todo : report this somehow, startTime likely failed?
+            this.context.eventStream.post(new WebRequestTimeUnknown(`Timer for request failed. Start time: ${startTimeHeaderNs}, end time: ${finalTimeHeaderNs}`, headerDurationMs, 'true', url));
         }
-        let foo = headerDurationMs;
         if(!response.cached)
         {
-            this.context.eventStream.post(new WebRequestTime(`Timer for request:`, durationMs, 'true', url));
+            this.context.eventStream.post(new WebRequestTime(`Timer for request:`, headerDurationMs, 'true', url));
         }
         else
         {
-            this.context.eventStream.post(new WebRequestCachedTime(`Cached Timer for request:`, durationMs, 'true', url));
+            this.context.eventStream.post(new WebRequestCachedTime(`Cached Timer for request:`, headerDurationMs, 'true', url));
         }
 
         // Response

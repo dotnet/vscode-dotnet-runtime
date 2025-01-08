@@ -793,6 +793,11 @@ export class WebRequestCachedTime extends WebRequestTimer
     public readonly eventName = 'WebRequestCachedTime';
 }
 
+export class WebRequestTimeUnknown extends WebRequestTimer
+{
+    public readonly eventName = 'WebRequestTimeUnknown';
+}
+
 export class EmptyDirectoryToWipe extends DotnetCustomMessageEvent {
     public readonly eventName = 'EmptyDirectoryToWipe';
 }
