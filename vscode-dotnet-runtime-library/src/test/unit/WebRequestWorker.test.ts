@@ -101,12 +101,12 @@ suite('WebRequestWorker Unit Tests', () => {
 
     test('It actually times requests', async () => {
         const eventStream = new MockEventStream();
-        const webWorker = new MockTrackingWebRequestWorker(getMockAcquisitionContext('runtime', ''), staticWebsiteUrl);
+        const webWorker = new MockTrackingWebRequestWorker(getMockAcquisitionContext('runtime', '', 600, eventStream), staticWebsiteUrl);
 
         const _ = await webWorker.getCachedData();
         const timerEvents = eventStream.events.find(event => event instanceof WebRequestTime);
         assert.exists(timerEvents, 'There exist WebRequestTime Events');
-        assert.isTrue(timerEvents?.finished, 'The timed event time finished');
+        assert.equal(timerEvents?.finished, 'true', 'The timed event time finished');
         assert.isTrue(Number(timerEvents?.durationMs) > 0, 'The timed event time is > 0');
         assert.isTrue(String(timerEvents?.status).startsWith('2'), 'The timed event has a status 2XX');
     });
