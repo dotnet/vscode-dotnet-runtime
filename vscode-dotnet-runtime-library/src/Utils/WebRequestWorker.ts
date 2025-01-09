@@ -146,7 +146,9 @@ export class WebRequestWorker
         // CDN Timer
         // Standard timeout time in NS : 60,000,000,000 is < than std max_safe_int_size: 9,007,199,254,740,991
         const timerPrecision = 2; // decimal places for timer result
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         const startTimeNs = (response as any)?.startTime;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         const finalTimeNs = (response as any)?.finalTime;
         let durationMs = '-1';
         if(startTimeNs && finalTimeNs && finalTimeNs - startTimeNs < Number.MAX_SAFE_INTEGER)
