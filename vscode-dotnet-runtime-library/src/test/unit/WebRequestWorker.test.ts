@@ -11,6 +11,7 @@ import { IInstallScriptAcquisitionWorker } from '../../Acquisition/IInstallScrip
 import {
     DotnetFallbackInstallScriptUsed,
     DotnetInstallScriptAcquisitionError,
+    WebRequestTime,
 } from '../../EventStream/EventStreamEvents';
 import {
     ErrorAcquisitionInvoker,
@@ -97,5 +98,17 @@ suite('WebRequestWorker Unit Tests', () => {
         const requestCount = webWorker.getRequestCount();
         assert.isAtLeast(requestCount, 2);
     }).timeout((maxTimeoutTime*7) + 2000);
+
+    test('It actually times requests', async () => {
+        const eventStream = new MockEventStream();
+        const webWorker = new MockTrackingWebRequestWorker(getMockAcquisitionContext('runtime', ''), staticWebsiteUrl);
+
+        const _ = await webWorker.getCachedData();
+        const timerEvents = eventStream.events.find(event => event instanceof WebRequestTime);
+        assert.exists(timerEvents, 'There exist WebRequestTime Events');
+        assert.isTrue(timerEvents?.finished, 'The timed event time finished');
+        assert.isTrue(Number(timerEvents?.durationMs) > 0, 'The timed event time is > 0');
+        assert.isTrue(String(timerEvents?.status).startsWith('2'), 'The timed event has a status 2XX');
+    });
 });
 
