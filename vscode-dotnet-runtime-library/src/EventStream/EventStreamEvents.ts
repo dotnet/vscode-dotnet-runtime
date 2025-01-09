@@ -778,7 +778,8 @@ export abstract class WebRequestTimer extends DotnetCustomMessageEvent {
             Message: this.eventMessage,
             DurationMs : this.durationMs,
             Finished : this.finished,
-            Url : this.url,
+            Url : this.url.replace(/\//g, '.'), // urls get redacted as paths, they are not PII able since they are shared common urls. replaceAll may not exist with certain compilers, use regex
+            // see: https://github.com/microsoft/vscode/blob/a26fe3e4666aae75fdbfaacf7be153a07bdd12e8/src/vs/platform/telemetry/common/telemetryUtils.ts#L295C20-L295C105
             Status : this.status
         };
     }
