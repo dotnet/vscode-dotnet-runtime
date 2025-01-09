@@ -770,15 +770,16 @@ export class DuplicateInstallDetected extends DotnetCustomMessageEvent {
 export abstract class WebRequestTimer extends DotnetCustomMessageEvent {
 
     constructor(public readonly eventMessage: string, public readonly durationMs: string,
-        public readonly success: string, public readonly url: string
+        public readonly finished: string, public readonly url: string, public readonly status : string
     ) { super(eventMessage); }
 
     public getProperties() {
         return {
             Message: this.eventMessage,
             DurationMs : this.durationMs,
-            Success : this.success,
-            Url : this.url
+            Finished : this.finished,
+            Url : this.url,
+            Status : this.status
         };
     }
 }

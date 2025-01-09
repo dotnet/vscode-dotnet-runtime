@@ -96,7 +96,15 @@ export class WebRequestWorker
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             (res as any).finalTime = process.hrtime.bigint();
             return res;
-        });
+        },
+        res => // triggered when status code is not 2XX
+        {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            (res as any).startTime = (res.config as any).startTime;
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            (res as any).finalTime = process.hrtime.bigint();
+            return res;
+        })
 
         this.client = setupCache(uncachedAxiosClient,
         {
@@ -125,7 +133,7 @@ export class WebRequestWorker
         const timeout = setTimeout(async () =>
         {
             timeoutCancelTokenHook.abort();
-            this.context.eventStream.post(new WebRequestTime(`Timer for request:`, String(this.websiteTimeoutMs), 'false', url));
+            this.context.eventStream.post(new WebRequestTime(`Timer for request:`, String(this.websiteTimeoutMs), 'false', url, '777')); // 777 for custom abort status. arbitrary
             if(!(await WebRequestWorker.isOnline(this.websiteTimeoutMs / 1000, this.context.eventStream)))
             {
                 const offlineError = new EventBasedError('DotnetOfflineFailure', 'No internet connection detected: Cannot install .NET');
@@ -157,15 +165,15 @@ export class WebRequestWorker
         }
         else
         {
-            this.context.eventStream.post(new WebRequestTimeUnknown(`Timer for request failed. Start time: ${startTimeNs}, end time: ${finalTimeNs}`, durationMs, 'true', url));
+            this.context.eventStream.post(new WebRequestTimeUnknown(`Timer for request failed. Start time: ${startTimeNs}, end time: ${finalTimeNs}`, durationMs, 'true', url, String(response.status)));
         }
         if(!response.cached)
         {
-            this.context.eventStream.post(new WebRequestTime(`Timer for request:`, durationMs, 'true', url));
+            this.context.eventStream.post(new WebRequestTime(`Timer for request:`, durationMs, 'true', url, String(response.status)));
         }
         else
         {
-            this.context.eventStream.post(new WebRequestCachedTime(`Cached Timer for request:`, durationMs, 'true', url));
+            this.context.eventStream.post(new WebRequestCachedTime(`Cached Timer for request:`, durationMs, 'true', url, String(response.status)));
         }
 
         // Response
