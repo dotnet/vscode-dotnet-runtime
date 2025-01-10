@@ -767,6 +767,39 @@ export class DuplicateInstallDetected extends DotnetCustomMessageEvent {
     public readonly eventName = 'DuplicateInstallDetected';
 }
 
+export abstract class WebRequestTimer extends DotnetCustomMessageEvent {
+
+    constructor(public readonly eventMessage: string, public readonly durationMs: string,
+        public readonly finished: string, public readonly url: string, public readonly status : string
+    ) { super(eventMessage); }
+
+    public getProperties() {
+        return {
+            Message: this.eventMessage,
+            DurationMs : this.durationMs,
+            Finished : this.finished,
+            Url : this.url.replace(/\//g, '.'), // urls get redacted as paths, they are not PII able since they are shared common urls. replaceAll may not exist with certain compilers, use regex
+            // see: https://github.com/microsoft/vscode/blob/a26fe3e4666aae75fdbfaacf7be153a07bdd12e8/src/vs/platform/telemetry/common/telemetryUtils.ts#L295C20-L295C105
+            Status : this.status
+        };
+    }
+}
+
+export class WebRequestTime extends WebRequestTimer
+{
+    public readonly eventName = 'WebRequestTime';
+}
+
+export class WebRequestCachedTime extends WebRequestTimer
+{
+    public readonly eventName = 'WebRequestCachedTime';
+}
+
+export class WebRequestTimeUnknown extends WebRequestTimer
+{
+    public readonly eventName = 'WebRequestTimeUnknown';
+}
+
 export class EmptyDirectoryToWipe extends DotnetCustomMessageEvent {
     public readonly eventName = 'EmptyDirectoryToWipe';
 }

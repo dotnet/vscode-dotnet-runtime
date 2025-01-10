@@ -2,7 +2,7 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
-import Axios, { AxiosError, isAxiosError } from 'axios';
+import Axios, { AxiosError, isAxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 
 process.env.VSCODE_DOTNET_INSTALL_TOOL_ORIGINAL_HOME = process.env.HOME
@@ -36,10 +36,14 @@ import {
     EventCancellationError,
     OfflineDetectionLogicTriggered,
     SuppressedAcquisitionError,
+    WebRequestCachedTime,
     WebRequestError,
-    WebRequestSent
+    WebRequestSent,
+    WebRequestTime,
+    WebRequestTimeUnknown
 } from '../EventStream/EventStreamEvents';
 import { getInstallFromContext } from './InstallIdUtilities';
+import { json } from 'stream/consumers';
 
 export class WebRequestWorker
 {
@@ -73,12 +77,41 @@ export class WebRequestWorker
             }
         });
 
-            this.client = setupCache(uncachedAxiosClient,
-                {
-                    storage: buildMemoryStorage(),
-                    ttl: this.cacheTimeToLive
-                }
-            );
+        // Record when the web requests begin:
+        // Register this so it happens before the cache https://axios-cache-interceptor.js.org/guide/interceptors#explanation
+        uncachedAxiosClient.interceptors.request.use( config =>
+        {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            (config as any).startTime = process.hrtime.bigint();
+            return config;
+        });
+
+        // Record when the server responds:
+        // Register this so it happens after the cache -- this means we need to check if the result is cached before reporting perf data!
+        // ^ the request should not be processed if it is in the cache, it seems nonsensical to check this before the cache is hit even though this is possible
+        uncachedAxiosClient.interceptors.response.use(res =>
+        {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            (res as any).startTime = (res.config as any).startTime;
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            (res as any).finalTime = process.hrtime.bigint();
+            return res;
+        },
+        res => // triggered when status code is not 2XX
+        {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            (res as any).startTime = (res.config as any).startTime;
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            (res as any).finalTime = process.hrtime.bigint();
+            return res;
+        })
+
+        this.client = setupCache(uncachedAxiosClient,
+        {
+            storage: buildMemoryStorage(),
+            ttl: this.cacheTimeToLive
+        }
+        );
     }
 
     /**
@@ -100,6 +133,7 @@ export class WebRequestWorker
         const timeout = setTimeout(async () =>
         {
             timeoutCancelTokenHook.abort();
+            this.context.eventStream.post(new WebRequestTime(`Timer for request:`, String(this.websiteTimeoutMs), 'false', url, '777')); // 777 for custom abort status. arbitrary
             if(!(await WebRequestWorker.isOnline(this.websiteTimeoutMs / 1000, this.context.eventStream)))
             {
                 const offlineError = new EventBasedError('DotnetOfflineFailure', 'No internet connection detected: Cannot install .NET');
@@ -112,8 +146,37 @@ export class WebRequestWorker
             throw formattedError;
         }, this.websiteTimeoutMs);
 
+        // Make the web request
         const response = await this.client.get(url, { signal: timeoutCancelTokenHook.signal, ...options });
+        // Timeout for Web Request -> Not Timer. (Don't want to introduce more CPU time into timer)
         clearTimeout(timeout);
+
+        // CDN Timer
+        // Standard timeout time in NS : 60,000,000,000 is < than std max_safe_int_size: 9,007,199,254,740,991
+        const timerPrecision = 2; // decimal places for timer result
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        const startTimeNs = (response as any)?.startTime;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        const finalTimeNs = (response as any)?.finalTime;
+        let durationMs = '-1';
+        if(startTimeNs && finalTimeNs && finalTimeNs - startTimeNs < Number.MAX_SAFE_INTEGER)
+        {
+            durationMs = (Number(finalTimeNs - startTimeNs) / 1000000).toFixed(timerPrecision);
+        }
+        else
+        {
+            this.context.eventStream.post(new WebRequestTimeUnknown(`Timer for request failed. Start time: ${startTimeNs}, end time: ${finalTimeNs}`, durationMs, 'true', url, String(response.status)));
+        }
+        if(!response.cached)
+        {
+            this.context.eventStream.post(new WebRequestTime(`Timer for request:`, durationMs, 'true', url, String(response.status)));
+        }
+        else
+        {
+            this.context.eventStream.post(new WebRequestCachedTime(`Cached Timer for request:`, durationMs, 'true', url, String(response.status)));
+        }
+
+        // Response
         return response;
     }
 
@@ -279,9 +342,22 @@ export class WebRequestWorker
             this.context.eventStream.post(new WebRequestSent(this.url));
             const response = await this.axiosGet(
                 this.url,
-                options
+                {transformResponse: (x : any) => x, ... options}
             );
 
+            if(response !== null && response?.headers['content-type'] === 'application/json')
+            {
+                try
+                {
+                    // Try to copy logic from https://github.com/axios/axios/blob/2e58825bc7773247ca5d8c2cae2ee041d38a0bb5/lib/defaults/index.js#L100
+                    const jsonData = JSON.parse(response.data);
+                    return jsonData;
+                }
+                catch(error : any)
+                {
+
+                }
+            }
             return response.data;
         }
         catch (error : any)
