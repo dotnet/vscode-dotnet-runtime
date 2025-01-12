@@ -2,7 +2,7 @@
 	"version": "0.2.0",
 	"configurations": [{
 			"name": "Run .NET SDK Acquisition Extension",
-			"type": "extensionHost",
+			"type": "pwa-extensionHost",
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
 			"args": [

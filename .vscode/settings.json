@@ -1,4 +1,15 @@
 // Ensure that we don't send telemetry when using the sample extension in this workspace
 {
-    "dotnetAcquisitionExtension.enableTelemetry": false
+    "dotnetAcquisitionExtension.enableTelemetry": false,
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "name": "iqdshb",
+            "database": "data.db"
+        }
+    ],
+    "sqltools.useNodeRuntime": true,
+    "svn.ignoreMissingSvnWarning": true,
+    "cmake.options.statusBarVisibility": "visible"
 }
