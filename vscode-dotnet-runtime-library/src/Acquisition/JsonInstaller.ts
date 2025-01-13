@@ -2,7 +2,6 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
-
 import { IEventStream } from "../EventStream/EventStream";
 import { DotnetVSCodeExtensionChange, DotnetVSCodeExtensionFound, DotnetVSCodeExtensionHasInstallRequest } from "../EventStream/EventStreamEvents";
 import { IDotnetAcquireContext } from "../IDotnetAcquireContext";
@@ -19,7 +18,7 @@ export class JsonInstaller extends IJsonInstaller
         // If a new extension is installed, we want to install .NET preemptively for it if specified
         vscodeAccessor.registerOnExtensionChange(() =>
         {
-            this.eventStream.post(new DotnetVSCodeExtensionChange(`A change was detected in the extensions. Installing .NET for new extensions.`));
+            this.eventStream.post(new DotnetVSCodeExtensionChange(vscodeAccessor.localize(`A change was detected in the extensions. Installing .NET for new extensions.`)));
             this.executeJSONRequests().catch( () => {});
         })
 

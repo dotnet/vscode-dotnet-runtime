@@ -37,19 +37,25 @@ if (! $?)
     Write-Host "`nBuild failed!" -ForegroundColor $errorColor
     exit 1
 }
+Write-Host "Creating Localization Files" -ForegroundColor $successColor
+npx @vscode/l10n-dev export --outDir ./l10n ./src
 popd
 
 #################### Compile runtime extension ####################
 pushd vscode-dotnet-runtime-extension
+
 if (Test-Path node_modules) { rm -r -force node_modules }
 npm ci
 npm run compile
-
 if (! $?)
 {
     Write-Host "`nBuild failed!" -ForegroundColor $errorColor
     exit 1
 }
+
+Write-Host "Creating Localization Files" -ForegroundColor $successColor
+npx @vscode/l10n-dev export --outDir ./l10n ./src
+
 popd
 
 #################### Compile SDK extension ####################

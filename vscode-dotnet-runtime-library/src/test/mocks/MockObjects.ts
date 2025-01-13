@@ -246,6 +246,10 @@ export class MockVSCodeExtensionContext extends IVSCodeExtensionContext
     setVSCodeEnvironmentVariable(variable: string, value: string): void {
         // Do nothing.
     }
+
+    localize(message: string, ...args: Array<string | number>): string {
+        return message;
+    }
 }
 
 export class MockVSCodeEnvironment extends IVSCodeEnvironment

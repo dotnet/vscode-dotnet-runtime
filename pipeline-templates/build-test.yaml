@@ -24,6 +24,8 @@ jobs:
       artifactName: '${{ parameters.pool.os }} SDK logs'
   steps:
   - template: install-node.yaml
+  - bash: |
+      npm install -g @vscode/l10n-dev
   - ${{ if eq(parameters.pool.os, 'windows') }}:
     - script: build.cmd
       displayName: 💻 Build Windows
