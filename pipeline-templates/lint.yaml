@@ -13,6 +13,6 @@ jobs:
     - template: install-node.yaml
     - script: build.cmd
     - bash: |
-        npm i eslint@^8.57.0 @typescript-eslint/parser@^8.0.0 @typescript-eslint/eslint-plugin@^8.0.0 --save-dev --verbose
+        npm i -g --verbose eslint@^8.57.0 @typescript-eslint/parser@^8.0.0 @typescript-eslint/eslint-plugin@^8.0.0
         npm run lint
       displayName: 🧶 Run Lint
