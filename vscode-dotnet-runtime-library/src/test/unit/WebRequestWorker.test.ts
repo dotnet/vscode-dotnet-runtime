@@ -31,7 +31,7 @@ chai.use(chaiAsPromised);
 
 const maxTimeoutTime = 10000;
 // Website used for the sake of it returning the same response always (tm)
-const staticWebsiteUrl = 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/2.1/releases.json';
+const staticWebsiteUrl = 'https://builds.dotnet.microsoft.com/dotnet/release-metadata/2.1/releases.json';
 
 suite('WebRequestWorker Unit Tests', () => {
     test('Acquire Version Network Failure', async () => {
