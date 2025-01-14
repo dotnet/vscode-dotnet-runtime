@@ -46,7 +46,7 @@ jobs:
       parameters:
         SignType: ${{ parameters.SignType }}
   - bash: |
-      npm i --verbose rimraf
+      npm i -g rimraf
       npm i -g @vscode/vsce
       vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
       cp $(package-name)-$(GetVersion.version).vsix ../packages/$(package-name)-$(GetVersion.version).vsix
