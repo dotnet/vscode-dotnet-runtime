@@ -83,7 +83,7 @@
 		"test": "npm run compile --silent && node ./dist/test/functional/runTest.js",
 		"clean": "rimraf dist",
 		"compile-all": "cd ../vscode-dotnet-runtime-library && npm install && npm run compile && cd ../vscode-dotnet-sdk-extension && npm install && npm run compile",
-		"lint": "eslint -c .eslintrc.js --ext=.ts vscode-dotnet-runtime-library/src/**/*.ts vscode-dotnet-runtime-extension/src/**/*.ts --ignore-pattern \"**/test/\" --fix",
+		"lint": "npx eslint -c .eslintrc.js --ext=.ts vscode-dotnet-runtime-library/src/**/*.ts vscode-dotnet-runtime-extension/src/**/*.ts --ignore-pattern \"**/test/\" --fix",
 		"webpack": "webpack --mode development"
 	},
 	"dependencies": {

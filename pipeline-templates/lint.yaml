@@ -14,6 +14,5 @@ jobs:
     - script: build.cmd
     - bash: |
         npm i eslint@^8.57.0 @typescript-eslint/parser@^8.0.0 @typescript-eslint/eslint-plugin@^8.0.0 --save-dev
-        npm i -g eslint@^8.57.0 # eslint plugins do not work with -g. but for the package.json to call eslint on the cmd, we need that to be on -g.
         npm run lint
       displayName: 🧶 Run Lint
