@@ -425,7 +425,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
 
             this.acquisitionContext.eventStream.post(new NetInstallerBeginExecutionEvent(`The OS X .NET Installer has been launched.`));
 
-            const commandResult = await this.commandRunner.execute(workingCommand, {timeout : this.acquisitionContext.timeoutSeconds * 1000});
+            const commandResult = await this.commandRunner.execute(workingCommand, {timeout : this.acquisitionContext.timeoutSeconds * 1000, runtimeExtensionKillTask : true});
 
             this.acquisitionContext.eventStream.post(new NetInstallerEndExecutionEvent(`The OS X .NET Installer has closed.`));
             this.handleTimeout(commandResult);
@@ -448,7 +448,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
             this.acquisitionContext.eventStream.post(new NetInstallerBeginExecutionEvent(`The Windows .NET Installer has been launched.`));
             try
             {
-                const commandResult = await this.commandRunner.execute(CommandExecutor.makeCommand(command, commandOptions, elevateVsCode), {timeout : this.acquisitionContext.timeoutSeconds * 1000});
+                const commandResult = await this.commandRunner.execute(CommandExecutor.makeCommand(command, commandOptions, elevateVsCode), {timeout : this.acquisitionContext.timeoutSeconds * 1000, runtimeExtensionKillTask : true});
                 this.handleTimeout(commandResult);
                 this.acquisitionContext.eventStream.post(new NetInstallerEndExecutionEvent(`The Windows .NET Installer has closed.`));
                 return commandResult.status;

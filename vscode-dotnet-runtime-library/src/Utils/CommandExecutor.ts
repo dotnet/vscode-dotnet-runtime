@@ -438,7 +438,7 @@ with options ${JSON.stringify(options)}.`));
 
             const commandResult : proc.SpawnSyncReturns<string> = proc.spawnSync(command.commandRoot, command.commandParts, options);
 
-            if(os.platform() === 'win32')
+            if(os.platform() === 'win32' && options.runtimeExtensionKillTask === true)
             {
                 proc.spawn('taskkill', ['/pid', commandResult.pid.toString(), '/f', '/t']);
             }
