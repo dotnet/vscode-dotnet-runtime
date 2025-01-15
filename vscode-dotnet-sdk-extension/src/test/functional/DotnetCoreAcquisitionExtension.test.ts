@@ -197,7 +197,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function()
     const newestVersion = '6.0.408';
     const mockAcquisitionContext = getMockAcquisitionContext('sdk', '');
 
-    const url = 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/6.0/releases.json'
+    const url = 'https://builds.dotnet.microsoft.com/dotnet/release-metadata/6.0/releases.json'
     const webWorker = new MockIndexWebRequestWorker(mockAcquisitionContext, url);
     webWorker.knownUrls.push(url);
     // Note that ZIPS in the data below come before EXEs to make sure the file extension check works.
