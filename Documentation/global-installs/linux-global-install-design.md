@@ -63,7 +63,7 @@ To do the install on linux, we just run the `installCommand`.
 
 ### Newest on Win/Mac -- The Available SDK API:
 This uses the data from:
-https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json
+https://builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json
 
 We created an API to get the newest SDKs available that were in support. We can use this for Windows and Mac to tell which SDK to use.
 
