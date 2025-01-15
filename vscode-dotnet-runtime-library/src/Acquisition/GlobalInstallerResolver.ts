@@ -293,7 +293,7 @@ Visit https://dotnet.microsoft.com/platform/support/policy/dotnet-core for suppo
      */
     private getIndexUrl(majorMinor : string ) : string
     {
-        return `https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/${majorMinor}/releases.json`;
+        return `https://builds.dotnet.microsoft.com/dotnet/release-metadata/${majorMinor}/releases.json`;
     }
 
     /**

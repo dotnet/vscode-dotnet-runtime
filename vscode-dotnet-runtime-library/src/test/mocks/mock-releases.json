@@ -11,7 +11,7 @@
             "support-phase": "maintenance",
             "release-type" : "lts",
             "eol-date": "2019-12-23",
-            "releases.json": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/2.2/releases.json"
+            "releases.json": "https://builds.dotnet.microsoft.com/dotnet/release-metadata/2.2/releases.json"
           },
           {
             "channel-version": "2.1",
@@ -24,7 +24,7 @@
             "release-type" : "lts",
             "support-phase": "lts",
             "eol-date": null,
-            "releases.json": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/2.1/releases.json"
+            "releases.json": "https://builds.dotnet.microsoft.com/dotnet/release-metadata/2.1/releases.json"
           },
         {
             "channel-version": "2.0",
@@ -37,7 +37,7 @@
             "release-type" : "lts",
             "support-phase": "eol",
             "eol-date": "2018-10-01",
-            "releases.json": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/2.0/releases.json"
+            "releases.json": "https://builds.dotnet.microsoft.com/dotnet/release-metadata/2.0/releases.json"
         },
         {
             "channel-version": "1.1",
@@ -50,7 +50,7 @@
             "release-type" : "lts",
             "support-phase": "eol",
             "eol-date": "2019-06-27",
-            "releases.json": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/1.1/releases.json"
+            "releases.json": "https://builds.dotnet.microsoft.com/dotnet/release-metadata/1.1/releases.json"
         },
         {
             "channel-version": "1.0",
@@ -63,7 +63,7 @@
             "release-type" : "lts",
             "support-phase": "eol",
             "eol-date": "2019-06-27",
-            "releases.json": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/1.0/releases.json"
+            "releases.json": "https://builds.dotnet.microsoft.com/dotnet/release-metadata/1.0/releases.json"
         }
     ]
 }
