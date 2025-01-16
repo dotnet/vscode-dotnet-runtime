@@ -101,9 +101,9 @@ private innerWriteFile(scriptContent: string, filePath: string, eventStream? : I
 }
 
 /**
-    * @param directoryToWipe the directory to delete all of the files in if privilege to do so exists.
-    * @param fileExtensionsToDelete - if undefined, delete all files. if not, delete only files with extensions in this array in lower case.
-    */
+ * @param directoryToWipe the directory to delete all of the files in if privilege to do so exists.
+ * @param fileExtensionsToDelete - if undefined, delete all files. if not, delete only files with extensions in this array in lower case.
+ */
 public wipeDirectory(directoryToWipe : string, eventStream? : IEventStream, fileExtensionsToDelete? : string[])
 {
     if(!fs.existsSync(directoryToWipe))
@@ -142,17 +142,17 @@ public existsSync(filePath: string): boolean
 }
 
 /**
-    *
-    * @param nodeArchitecture the architecture in node style string of what to install
-    * @returns the architecture in the style that .net / the .net install scripts expect
-    *
-    * Node - amd64 is documented as an option for install scripts but its no longer used.
-    * s390x is also no longer used.
-    * ppc64le is supported but this version of node has no distinction of the endianness of the process.
-    * It has no mapping to mips or other node architectures.
-    *
-    * @remarks Falls back to string 'auto' if a mapping does not exist which is not a valid architecture.
-    */
+ *
+ * @param nodeArchitecture the architecture in node style string of what to install
+ * @returns the architecture in the style that .net / the .net install scripts expect
+ *
+ * Node - amd64 is documented as an option for install scripts but its no longer used.
+ * s390x is also no longer used.
+ * ppc64le is supported but this version of node has no distinction of the endianness of the process.
+ * It has no mapping to mips or other node architectures.
+ *
+ * @remarks Falls back to string 'auto' if a mapping does not exist which is not a valid architecture.
+ */
 public nodeArchToDotnetArch(nodeArchitecture : string, eventStream : IEventStream)
 {
     switch(nodeArchitecture)
@@ -216,11 +216,11 @@ public nodeArchToDotnetArch(nodeArchitecture : string, eventStream : IEventStrea
     }
 
 /**
-    *
-    * @param nodeOS the OS in node style string of what to install
-    * @returns the OS in the style that .net / the .net install scripts expect
-    *
-    */
+ *
+ * @param nodeOS the OS in node style string of what to install
+ * @returns the OS in the style that .net / the .net install scripts expect
+ *
+ */
 public nodeOSToDotnetOS(nodeOS : string, eventStream : IEventStream)
 {
     switch(nodeOS)
@@ -242,9 +242,9 @@ public nodeOSToDotnetOS(nodeOS : string, eventStream : IEventStream)
 }
 
 /**
-    *
-    * @returns true if the process is running with admin privileges
-    */
+ *
+ * @returns true if the process is running with admin privileges
+ */
 public isElevated(eventStream? : IEventStream) : boolean
 {
     if(os.platform() !== 'win32')
