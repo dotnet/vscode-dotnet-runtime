@@ -14,6 +14,6 @@ jobs:
     - script: ./build.sh
       displayName: 🐧 Build To Install Deps
     - bash: |
-        npm i eslint@^8.57.0 @typescript-eslint/parser@^8.0.0 @typescript-eslint/eslint-plugin@^8.0.0 --save-dev
+        npm ci eslint@^8.57.0 @typescript-eslint/parser@^8.0.0 @typescript-eslint/eslint-plugin@^8.0.0 --save-dev
         npm run lint
       displayName: 🧶 Run Lint
