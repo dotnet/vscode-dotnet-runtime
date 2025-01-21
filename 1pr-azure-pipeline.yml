@@ -2,7 +2,6 @@
 # URL: https://dev.azure.com/dnceng-public/public/_build?definitionId=60
 
 trigger:
-  batch: true
   branches:
     include:
     - main

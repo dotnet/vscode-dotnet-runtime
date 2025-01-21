@@ -3,7 +3,6 @@
 # URL: https://dev.azure.com/dnceng/internal/_build?definitionId=656
 
 trigger:
-  batch: true
   branches:
     include:
     - main
