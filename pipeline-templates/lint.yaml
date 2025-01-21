@@ -11,7 +11,7 @@ jobs:
     displayName: '🧶 ESLint'
     steps:
     - template: install-node.yaml
-    - script: build.cmd
+    - script: build.sh
     - bash: |
         npm i eslint@^8.57.0 @typescript-eslint/parser@^8.0.0 @typescript-eslint/eslint-plugin@^8.0.0 --save-dev
         npm run lint
