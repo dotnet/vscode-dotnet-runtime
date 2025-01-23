@@ -8,7 +8,8 @@ import path = require('path');
 
 /* eslint-disable */ // When editing this file, please remove this and fix the linting concerns.
 
-import {
+import
+{
     DotnetAcquisitionCompleted,
     DotnetAcquisitionInstallError,
     DotnetAcquisitionScriptError,
@@ -34,20 +35,22 @@ import { DotnetInstall } from './DotnetInstall';
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
 
-export class AcquisitionInvoker extends IAcquisitionInvoker {
+export class AcquisitionInvoker extends IAcquisitionInvoker
+{
     protected readonly scriptWorker: IInstallScriptAcquisitionWorker;
-    protected fileUtilities : FileUtilities;
+    protected fileUtilities: FileUtilities;
     private noPowershellError = `powershell.exe is not discoverable on your system. Is PowerShell added to your PATH and correctly installed? Please visit: https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows.
 You will need to restart VS Code after these changes. If PowerShell is still not discoverable, try setting a custom existingDotnetPath following our instructions here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`
 
-    constructor(private readonly workerContext : IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext) {
+    constructor(private readonly workerContext: IAcquisitionWorkerContext, private readonly utilityContext: IUtilityContext)
+    {
 
         super(workerContext.eventStream);
         this.scriptWorker = new InstallScriptAcquisitionWorker(workerContext);
         this.fileUtilities = new FileUtilities();
     }
 
-    public async installDotnet(installContext: IDotnetInstallationContext, install : DotnetInstall): Promise<void>
+    public async installDotnet(installContext: IDotnetInstallationContext, install: DotnetInstall): Promise<void>
     {
         const winOS = os.platform() === 'win32';
         const installCommand = await this.getInstallCommand(installContext.version, installContext.installDir, installContext.installMode, installContext.architecture);
@@ -56,60 +59,61 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         {
             try
             {
-                let windowsFullCommand = `powershell.exe -NoProfile -NonInteractive -NoLogo -ExecutionPolicy unrestricted -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; & ${installCommand} }"`;
-                if(winOS)
+                let windowsFullCommand = `powershell.exe -NoProfile -NonInteractive -NoLogo -ExecutionPolicy bypass -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; & ${installCommand} }"`;
+                if (winOS)
                 {
                     const powershellReference = await this.verifyPowershellCanRun(installContext, install);
                     windowsFullCommand = windowsFullCommand.replace('powershell.exe', powershellReference);
                 }
 
                 cp.exec(winOS ? windowsFullCommand : installCommand,
-                        { cwd: process.cwd(), maxBuffer: 500 * 1024, timeout: 1000 * installContext.timeoutSeconds, killSignal: 'SIGKILL' },
-                        async (error, stdout, stderr) =>
-                {
-                    if (stdout)
+                    { cwd: process.cwd(), maxBuffer: 500 * 1024, timeout: 1000 * installContext.timeoutSeconds, killSignal: 'SIGKILL' },
+                    async (error, stdout, stderr) =>
                     {
-                            this.eventStream.post(new DotnetAcquisitionScriptOutput(install, TelemetryUtilities.HashAllPaths(stdout)));
-                    }
-                    if (stderr)
-                    {
-                            this.eventStream.post(new DotnetAcquisitionScriptOutput(install, `STDERR: ${TelemetryUtilities.HashAllPaths(stderr)}`));
-                    }
-                    if (error)
-                    {
-                        if (!(await WebRequestWorker.isOnline(installContext.timeoutSeconds, this.eventStream)))
+                        if (stdout)
                         {
-                            const offlineError = new EventBasedError('DotnetOfflineFailure', 'No internet connection detected: Cannot install .NET');
-                            this.eventStream.post(new DotnetOfflineFailure(offlineError, install));
-                            reject(offlineError);
+                            this.eventStream.post(new DotnetAcquisitionScriptOutput(install, TelemetryUtilities.HashAllPaths(stdout)));
                         }
-                        else if (error.signal === 'SIGKILL') {
-                            const newError = new EventBasedError('DotnetAcquisitionTimeoutError',
-                                `${timeoutConstants.timeoutMessage}, MESSAGE: ${error.message}, CODE: ${error.code}, KILLED: ${error.killed}`, error.stack);
-                            this.eventStream.post(new DotnetAcquisitionTimeoutError(error, install, installContext.timeoutSeconds));
-                            reject(newError);
+                        if (stderr)
+                        {
+                            this.eventStream.post(new DotnetAcquisitionScriptOutput(install, `STDERR: ${TelemetryUtilities.HashAllPaths(stderr)}`));
+                        }
+                        if (error)
+                        {
+                            if (!(await WebRequestWorker.isOnline(installContext.timeoutSeconds, this.eventStream)))
+                            {
+                                const offlineError = new EventBasedError('DotnetOfflineFailure', 'No internet connection detected: Cannot install .NET');
+                                this.eventStream.post(new DotnetOfflineFailure(offlineError, install));
+                                reject(offlineError);
+                            }
+                            else if (error.signal === 'SIGKILL')
+                            {
+                                const newError = new EventBasedError('DotnetAcquisitionTimeoutError',
+                                    `${timeoutConstants.timeoutMessage}, MESSAGE: ${error.message}, CODE: ${error.code}, KILLED: ${error.killed}`, error.stack);
+                                this.eventStream.post(new DotnetAcquisitionTimeoutError(error, install, installContext.timeoutSeconds));
+                                reject(newError);
+                            }
+                            else
+                            {
+                                const newError = new EventBasedError('DotnetAcquisitionInstallError',
+                                    `${timeoutConstants.timeoutMessage}, MESSAGE: ${error.message}, CODE: ${error.code}, SIGNAL: ${error.signal}`, error.stack);
+                                this.eventStream.post(new DotnetAcquisitionInstallError(newError, install));
+                                reject(newError);
+                            }
+                        }
+                        else if (stderr && stderr.length > 0)
+                        {
+                            this.eventStream.post(new DotnetAcquisitionCompleted(install, installContext.dotnetPath, installContext.version));
+                            resolve();
                         }
                         else
                         {
-                            const newError = new EventBasedError('DotnetAcquisitionInstallError',
-                                `${timeoutConstants.timeoutMessage}, MESSAGE: ${error.message}, CODE: ${error.code}, SIGNAL: ${error.signal}`, error.stack);
-                            this.eventStream.post(new DotnetAcquisitionInstallError(newError, install));
-                            reject(newError);
+                            this.eventStream.post(new DotnetAcquisitionCompleted(install, installContext.dotnetPath, installContext.version));
+                            resolve();
                         }
-                    }
-                    else if (stderr && stderr.length > 0)
-                    {
-                        this.eventStream.post(new DotnetAcquisitionCompleted(install, installContext.dotnetPath, installContext.version));
-                        resolve();
-                    }
-                    else
-                    {
-                        this.eventStream.post(new DotnetAcquisitionCompleted(install, installContext.dotnetPath, installContext.version));
-                        resolve();
-                    }
-                });
+                    });
             }
-            catch (error : any)
+            catch (error: any)
             {
                 // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -120,7 +124,8 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         });
     }
 
-    private async getInstallCommand(version: string, dotnetInstallDir: string, installMode: DotnetInstallMode, architecture: string): Promise<string> {
+    private async getInstallCommand(version: string, dotnetInstallDir: string, installMode: DotnetInstallMode, architecture: string): Promise<string>
+    {
         const arch = this.fileUtilities.nodeArchToDotnetArch(architecture, this.eventStream);
         let args = [
             '-InstallDir', this.escapeFilePath(dotnetInstallDir),
@@ -131,20 +136,21 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         {
             args = args.concat('-Runtime', 'dotnet');
         }
-        else if(installMode === 'aspnetcore')
+        else if (installMode === 'aspnetcore')
         {
             args = args.concat('-Runtime', 'aspnetcore');
         }
-        if(arch !== 'auto')
+        if (arch !== 'auto')
         {
             args = args.concat('-Architecture', arch);
         }
 
         const scriptPath = await this.scriptWorker.getDotnetInstallScriptPath();
-        return `${ this.escapeFilePath(scriptPath) } ${ args.join(' ') }`;
+        return `${this.escapeFilePath(scriptPath)} ${args.join(' ')}`;
     }
 
-    private escapeFilePath(pathToEsc: string): string {
+    private escapeFilePath(pathToEsc: string): string
+    {
         if (os.platform() === 'win32')
         {
             // Need to escape apostrophes with two apostrophes
@@ -163,26 +169,26 @@ You will need to restart VS Code after these changes. If PowerShell is still not
      * @remarks Some users have reported not having powershell.exe or having execution policy that fails property evaluation functions in powershell install scripts.
      * We use this function to throw better errors if powershell is not configured correctly.
      */
-    private async verifyPowershellCanRun(installContext : IDotnetInstallationContext, installId : DotnetInstall) : Promise<string>
+    private async verifyPowershellCanRun(installContext: IDotnetInstallationContext, installId: DotnetInstall): Promise<string>
     {
         let knownError = false;
         let error = null;
         let command = null;
 
         const possibleCommands =
-        [
-            CommandExecutor.makeCommand(`powershell.exe`, []),
-            CommandExecutor.makeCommand(`%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`, []),
-            CommandExecutor.makeCommand(`pwsh`, []),
-            CommandExecutor.makeCommand(`powershell`, []),
-            CommandExecutor.makeCommand(`pwsh.exe`, [])
-        ];
+            [
+                CommandExecutor.makeCommand(`powershell.exe`, []),
+                CommandExecutor.makeCommand(`%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`, []),
+                CommandExecutor.makeCommand(`pwsh`, []),
+                CommandExecutor.makeCommand(`powershell`, []),
+                CommandExecutor.makeCommand(`pwsh.exe`, [])
+            ];
 
         try
         {
             // Check if PowerShell exists and is on the path.
             command = await new CommandExecutor(this.workerContext, this.utilityContext).tryFindWorkingCommand(possibleCommands);
-            if(!command)
+            if (!command)
             {
                 knownError = true;
                 const err = Error(this.noPowershellError);
@@ -190,9 +196,9 @@ You will need to restart VS Code after these changes. If PowerShell is still not
             }
 
             // Check Execution Policy
-            const execPolicyOutput = cp.spawnSync(command!.commandRoot, [`-command`, `$ExecutionContext.SessionState.LanguageMode`], {cwd : path.resolve(__dirname), shell: true});
+            const execPolicyOutput = cp.spawnSync(command!.commandRoot, [`-command`, `$ExecutionContext.SessionState.LanguageMode`], { cwd: path.resolve(__dirname), shell: true });
             const languageMode = execPolicyOutput.stdout.toString().trim();
-            if(languageMode === 'ConstrainedLanguage' || languageMode === 'NoLanguage')
+            if (languageMode === 'ConstrainedLanguage' || languageMode === 'NoLanguage')
             {
                 knownError = true;
                 const err = Error(`Your machine policy ${languageMode} disables PowerShell language features that may be needed to install .NET. Read more at: https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_language_modes?view=powershell-7.3.
@@ -200,15 +206,15 @@ If you cannot safely and confidently change the execution policy, try setting a 
                 error = err;
             }
         }
-        catch(err : any)
+        catch (err: any)
         {
-            if(!knownError)
+            if (!knownError)
             {
                 error = new Error(`${this.noPowershellError} More details: ${(err as Error).message}`);
             }
         }
 
-        if(error != null)
+        if (error != null)
         {
             this.eventStream.post(new DotnetAcquisitionScriptError(error as Error, installId));
             throw new EventBasedError('DotnetAcquisitionScriptError', error?.message, error?.stack);
