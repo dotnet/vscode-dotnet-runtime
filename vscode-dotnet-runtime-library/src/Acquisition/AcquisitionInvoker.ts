@@ -18,6 +18,7 @@ import
     DotnetAcquisitionUnexpectedError,
     DotnetOfflineFailure,
     EventBasedError,
+    PowershellBadExecutionPolicy,
 } from '../EventStream/EventStreamEvents';
 
 import { timeoutConstants } from '../Utils/ErrorHandler'
@@ -78,6 +79,13 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                         {
                             this.eventStream.post(new DotnetAcquisitionScriptOutput(install, `STDERR: ${TelemetryUtilities.HashAllPaths(stderr)}`));
                         }
+                        if (this.looksLikeBadExecutionPolicyError(stderr))
+                        {
+                            const badPolicyError = new EventBasedError('PowershellBadExecutionPolicy', `Your powershell execution policy does not allow script execution, so we can't automate the installation.
+Please read more at https:/go.microsoft.com/fwlink/?LinkID=135170`);
+                            this.eventStream.post(new PowershellBadExecutionPolicy(badPolicyError, install));
+                            reject(badPolicyError);
+                        }
                         if (error)
                         {
                             if (!(await WebRequestWorker.isOnline(installContext.timeoutSeconds, this.eventStream)))
@@ -122,6 +130,14 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                 reject(newError);
             }
         });
+    }
+
+    private looksLikeBadExecutionPolicyError(stderr: string): boolean
+    {
+        // tls12 is from the command output and gets truncated like so with this error
+        // 135170 is the link id to the error, which may be subject to change but is a good language agnostic way to catch this
+        // about_Execution_Policies this is a relatively language agnostic way to check as well
+        return stderr.includes('+ ... ]::Tls12;') || stderr.includes('135170') || stderr.includes('about_Execution_Policies');
     }
 
     private async getInstallCommand(version: string, dotnetInstallDir: string, installMode: DotnetInstallMode, architecture: string): Promise<string>
@@ -195,14 +211,14 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                 error = err;
             }
 
-            // Check Execution Policy
-            const execPolicyOutput = cp.spawnSync(command!.commandRoot, [`-command`, `$ExecutionContext.SessionState.LanguageMode`], { cwd: path.resolve(__dirname), shell: true });
-            const languageMode = execPolicyOutput.stdout.toString().trim();
+            // Check LanguageMode
+            const languageModeOutput = cp.spawnSync(command!.commandRoot, [`-command`, `$ExecutionContext.SessionState.LanguageMode`], { cwd: path.resolve(__dirname), shell: true });
+            const languageMode = languageModeOutput.stdout.toString().trim();
             if (languageMode === 'ConstrainedLanguage' || languageMode === 'NoLanguage')
             {
                 knownError = true;
-                const err = Error(`Your machine policy ${languageMode} disables PowerShell language features that may be needed to install .NET. Read more at: https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_language_modes?view=powershell-7.3.
-If you cannot safely and confidently change the execution policy, try setting a custom existingDotnetPath following our instructions here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`);
+                const err = Error(`Your Language Mode: ${languageMode} disables PowerShell language features needed to install .NET. Read more at: https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_language_modes?view=powershell-7.3.
+If you cannot change this flag, try setting a custom existingDotnetPath via the instructions here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`);
                 error = err;
             }
         }
