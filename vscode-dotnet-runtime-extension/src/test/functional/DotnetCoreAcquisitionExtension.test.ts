@@ -619,7 +619,15 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
     else
     {
       const distroVersion = await new LinuxVersionResolver(mockAcquisitionContext, getMockUtilityContext()).getRunningDistro();
-      assert.equal(result[0].version, Number(distroVersion) >= 22.04 ? '9.0.1xx' : '8.0.1xx', `The SDK did not recommend the version (it said ${result[0].version}) it was supposed to, which should be N.0.1xx based on surface level distro knowledge, version ${distroVersion}. If a new version is available, this test may need to be updated to the newest version.`);
+      if (Number(distroVersion) === 22.04)
+      {
+        // certain versions have 9 support but others do not
+        assert.include(['9.0.1xx', '8.0.1xx'], result[0].version, `${result[0].version} is 9 or 8 : special check for ubuntu 22.04`);
+      }
+      else
+      {
+        assert.equal(result[0].version, Number(distroVersion) >= 22.04 ? '9.0.1xx' : '8.0.1xx', `The SDK did not recommend the version (it said ${result[0].version}) it was supposed to, which should be N.0.1xx based on surface level distro knowledge, version ${distroVersion.version}. If a new version is available, this test may need to be updated to the newest version.`);
+      }
     }
   }).timeout(standardTimeoutTime);
 

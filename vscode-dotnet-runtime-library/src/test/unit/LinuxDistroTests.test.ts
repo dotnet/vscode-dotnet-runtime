@@ -41,7 +41,15 @@ suite('Linux Distro Logic Unit Tests', () =>
                 'apt-cache -o DPkg::Lock::Timeout=180 search --names-only ^dotnet-sdk-9.0$', 'Searched for the newest package last with regex'); // this may fail if test not exec'd first
             // the data is cached so --version may not be executed.
             const distroVersion = await new LinuxVersionResolver(acquisitionContext, getMockUtilityContext()).getRunningDistro();
-            assert.equal(recVersion, Number(distroVersion) >= 22.04 ? '9.0.1xx' : '8.0.1xx', 'Resolved the most recent available version : will eventually break if the mock data is not updated');
+            if (Number(distroVersion) === 22.04)
+            {
+                // certain versions have 9 support but others do not
+                assert.include(['9.0.1xx', '8.0.1xx'], recVersion, `${recVersion} is 9 or 8 : special check for ubuntu 22.04`);
+            }
+            else
+            {
+                assert.equal(recVersion, Number(distroVersion) >= 22.04 ? '9.0.1xx' : '8.0.1xx', 'Resolved the most recent available version : will eventually break if the mock data is not updated');
+            }
         }
     }).timeout(standardTimeoutTime);
 
