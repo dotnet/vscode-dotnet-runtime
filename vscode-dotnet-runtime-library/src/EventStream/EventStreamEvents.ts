@@ -650,11 +650,15 @@ export class DotnetOfflineFailure extends DotnetAcquisitionVersionError
     public readonly eventName = 'DotnetOfflineFailure';
 }
 
+export class PowershellBadLanguageMode extends DotnetAcquisitionVersionError
+{
+    public readonly eventName = 'PowershellBadLanguageMode';
+}
+
 export class PowershellBadExecutionPolicy extends DotnetAcquisitionVersionError
 {
     public readonly eventName = 'PowershellBadExecutionPolicy';
 }
-
 export class DotnetAcquisitionTimeoutError extends DotnetAcquisitionVersionError
 {
     public readonly eventName = 'DotnetAcquisitionTimeoutError';

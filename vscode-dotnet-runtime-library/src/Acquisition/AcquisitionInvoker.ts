@@ -19,6 +19,7 @@ import
     DotnetOfflineFailure,
     EventBasedError,
     PowershellBadExecutionPolicy,
+    PowershellBadLanguageMode,
 } from '../EventStream/EventStreamEvents';
 
 import { timeoutConstants } from '../Utils/ErrorHandler'
@@ -60,10 +61,11 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         {
             try
             {
-                let windowsFullCommand = `powershell.exe -NoProfile -NonInteractive -NoLogo -ExecutionPolicy bypass -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; & ${installCommand} }"`;
+                let windowsFullCommand = `powershell.exe -NoProfile -NonInteractive -NoLogo -ExecutionPolicy bypass -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; & $ExecutionContext.SessionState.LanguageMode = "ConstrainedLanguage"; ${installCommand} }"`;
+                let powershellReference = 'powershell.exe';
                 if (winOS)
                 {
-                    const powershellReference = await this.verifyPowershellCanRun(installContext, install);
+                    powershellReference = await this.verifyPowershellCanRun(installContext, install);
                     windowsFullCommand = windowsFullCommand.replace('powershell.exe', powershellReference);
                 }
 
@@ -85,6 +87,13 @@ You will need to restart VS Code after these changes. If PowerShell is still not
 Please read more at https:/go.microsoft.com/fwlink/?LinkID=135170`);
                             this.eventStream.post(new PowershellBadExecutionPolicy(badPolicyError, install));
                             reject(badPolicyError);
+                        }
+                        if ((this.looksLikeBadLanguageModeError(stderr) || error?.code == 1) && this.badLanguageModeSet(powershellReference))
+                        {
+                            const badModeError = new EventBasedError('PowershellBadLanguageMode', `Your Language Mode disables PowerShell language features needed to install .NET. Read more at: https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_language_modes?view=powershell-7.3.
+If you cannot change this flag, try setting a custom existingDotnetPath via the instructions here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`);
+                            this.eventStream.post(new PowershellBadLanguageMode(badModeError, install));
+                            reject(badModeError);
                         }
                         if (error)
                         {
@@ -138,6 +147,31 @@ Please read more at https:/go.microsoft.com/fwlink/?LinkID=135170`);
         // 135170 is the link id to the error, which may be subject to change but is a good language agnostic way to catch this
         // about_Execution_Policies this is a relatively language agnostic way to check as well
         return stderr.includes('+ ... ]::Tls12;') || stderr.includes('135170') || stderr.includes('about_Execution_Policies');
+    }
+
+    private looksLikeBadLanguageModeError(stderr: string): boolean
+    {
+        /*
+This is one possible output of a failed command for this right now, but the install script might change so we account for multiple possibilities.
+
+        Failed to resolve the exact version number.
+At dotnet-install.ps1:1189 char:5
++     throw "Failed to resolve the exact version number."
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (Failed to resol...version number.:String) [], RuntimeException
+    + FullyQualifiedErrorId : Failed to resolve the exact version number.
+        */
+
+        // Unexpected Token may also appear
+
+        return stderr.includes('FullyQualifiedErrorId') || stderr.includes('unexpectedToken')
+    }
+
+    private badLanguageModeSet(powershellReference: string): boolean
+    {
+        const languageModeOutput = cp.spawnSync(powershellReference, [`-command`, `$ExecutionContext.SessionState.LanguageMode`], { cwd: path.resolve(__dirname), shell: true });
+        const languageMode = languageModeOutput.stdout.toString().trim();
+        return (languageMode === 'ConstrainedLanguage' || languageMode === 'NoLanguage');
     }
 
     private async getInstallCommand(version: string, dotnetInstallDir: string, installMode: DotnetInstallMode, architecture: string): Promise<string>
@@ -208,17 +242,6 @@ Please read more at https:/go.microsoft.com/fwlink/?LinkID=135170`);
             {
                 knownError = true;
                 const err = Error(this.noPowershellError);
-                error = err;
-            }
-
-            // Check LanguageMode
-            const languageModeOutput = cp.spawnSync(command!.commandRoot, [`-command`, `$ExecutionContext.SessionState.LanguageMode`], { cwd: path.resolve(__dirname), shell: true });
-            const languageMode = languageModeOutput.stdout.toString().trim();
-            if (languageMode === 'ConstrainedLanguage' || languageMode === 'NoLanguage')
-            {
-                knownError = true;
-                const err = Error(`Your Language Mode: ${languageMode} disables PowerShell language features needed to install .NET. Read more at: https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_language_modes?view=powershell-7.3.
-If you cannot change this flag, try setting a custom existingDotnetPath via the instructions here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`);
                 error = err;
             }
         }
