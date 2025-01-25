@@ -169,9 +169,21 @@ At dotnet-install.ps1:1189 char:5
 
     private badLanguageModeSet(powershellReference: string): boolean
     {
-        const languageModeOutput = cp.spawnSync(powershellReference, [`-command`, `$ExecutionContext.SessionState.LanguageMode`], { cwd: path.resolve(__dirname), shell: true });
-        const languageMode = languageModeOutput.stdout.toString().trim();
-        return (languageMode === 'ConstrainedLanguage' || languageMode === 'NoLanguage');
+        if (os.platform() !== 'win32')
+        {
+            return false;
+        }
+
+        try
+        {
+            const languageModeOutput = cp.spawnSync(powershellReference, [`-command`, `$ExecutionContext.SessionState.LanguageMode`], { cwd: path.resolve(__dirname), shell: true });
+            const languageMode = languageModeOutput.stdout.toString().trim();
+            return (languageMode === 'ConstrainedLanguage' || languageMode === 'NoLanguage');
+        }
+        catch (e: any)
+        {
+            return true;
+        }
     }
 
     private async getInstallCommand(version: string, dotnetInstallDir: string, installMode: DotnetInstallMode, architecture: string): Promise<string>
