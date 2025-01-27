@@ -1,5 +1,0 @@
-steps:
-- task: ComponentGovernanceComponentDetection@0
-  displayName: 👓 Component Governance scan
-  inputs:
-    ignoreDirectories: '.vscode-test/**'
