@@ -21,4 +21,3 @@ jobs:
       scriptSource: 'filePath'
       scriptPath: 'dependency-verifier.py'
       arguments: '$(System.PullRequest.TargetBranch)'
-  - template: component-governance.yaml
