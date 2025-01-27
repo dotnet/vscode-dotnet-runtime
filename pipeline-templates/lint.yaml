@@ -17,7 +17,3 @@ jobs:
         npm run lint
       displayName: 🧶 Run Lint
     - template: component-governance.yaml
-      parameters:
-        pool: ${{ parameters.pool }}
-        SignType: ${{ parameters.SignType }}
-        useOneEngineeringPool: ${{ parameters.useOneEngineeringPool }}

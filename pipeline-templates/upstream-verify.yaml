@@ -22,7 +22,3 @@ jobs:
       scriptPath: 'dependency-verifier.py'
       arguments: '$(System.PullRequest.TargetBranch)'
   - template: component-governance.yaml
-    parameters:
-      pool: ${{ parameters.pool }}
-      SignType: ${{ parameters.SignType }}
-      useOneEngineeringPool: ${{ parameters.useOneEngineeringPool }}

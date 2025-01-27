@@ -1,18 +1,5 @@
-
-
-parameters:
-  pool: ''
-
-jobs:
-  - job: Component Governance
-    pool:
-      ${{ if eq(parameters.useOneEngineeringPool, 'true') }}:
-        ${{ parameters.pool }}
-      ${{ else }}:
-        vmImage: ${{ parameters.pool.vmImage }}
-    displayName: '⚔️ Component Governance'
-    steps:
-    - task: ComponentGovernanceComponentDetection@0
-      displayName: 👓 Component Governance scan
-      inputs:
-        ignoreDirectories: '.vscode-test/**'
+steps:
+- task: ComponentGovernanceComponentDetection@0
+  displayName: 👓 Component Governance scan
+  inputs:
+    ignoreDirectories: '.vscode-test/**'
