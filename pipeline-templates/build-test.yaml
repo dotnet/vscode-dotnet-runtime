@@ -42,3 +42,8 @@ jobs:
     - script: ./test.sh
       displayName: 🔎 Test Mac and Linux
       env: {DISPLAY: ':99.0'}
+  - template: component-governance.yaml
+    parameters:
+      pool: ${{ parameters.pool }}
+      SignType: ${{ parameters.SignType }}
+      useOneEngineeringPool: ${{ parameters.useOneEngineeringPool }}

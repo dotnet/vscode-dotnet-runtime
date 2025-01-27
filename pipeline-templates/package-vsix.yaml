@@ -77,6 +77,11 @@ jobs:
       Contents: '**\*.binlog'
       TargetFolder: '$(Build.ArtifactStagingDirectory)'
       flattenFolders: false
+  - template: component-governance.yaml
+    parameters:
+      pool: ${{ parameters.pool }}
+      SignType: ${{ parameters.SignType }}
+      useOneEngineeringPool: ${{ parameters.useOneEngineeringPool }}
 - ${{ if eq(parameters.useOneEngineeringPool, 'true') }}:
   - template: publish.yaml
     parameters:

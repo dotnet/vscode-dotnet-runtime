@@ -16,3 +16,8 @@ jobs:
         npm install eslint@^8.57.0 @typescript-eslint/parser@^8.0.0 @typescript-eslint/eslint-plugin@^8.0.0 --reg https://registry.npmjs.org/ --save-dev --verbose
         npm run lint
       displayName: 🧶 Run Lint
+    - template: component-governance.yaml
+      parameters:
+        pool: ${{ parameters.pool }}
+        SignType: ${{ parameters.SignType }}
+        useOneEngineeringPool: ${{ parameters.useOneEngineeringPool }}
