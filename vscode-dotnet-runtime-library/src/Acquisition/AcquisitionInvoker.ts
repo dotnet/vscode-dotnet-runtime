@@ -84,7 +84,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                         if (this.looksLikeBadExecutionPolicyError(stderr))
                         {
                             const badPolicyError = new EventBasedError('PowershellBadExecutionPolicy', `Your powershell execution policy does not allow script execution, so we can't automate the installation.
-Please read more at https:/go.microsoft.com/fwlink/?LinkID=135170`);
+Please read more at https://go.microsoft.com/fwlink/?LinkID=135170`);
                             this.eventStream.post(new PowershellBadExecutionPolicy(badPolicyError, install));
                             reject(badPolicyError);
                         }
