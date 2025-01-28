@@ -32,8 +32,11 @@ export class ExistingPathResolver
     public async resolveExistingPath(existingPaths: IExistingPaths | undefined, extensionId: string | undefined, windowDisplayWorker: IWindowDisplayWorker, requirement?: DotnetVersionSpecRequirement): Promise<IDotnetAcquireResult | undefined>
     {
         let existingPath = this.getExistingPath(existingPaths, extensionId, windowDisplayWorker);
-        // The user path setting may be a symlink but we dont want to resolve it since a snap symlink isnt a real directory, we can find the true path better this way:
-        existingPath = (await new DotnetPathFinder(this.workerContext, this.utilityContext, this.executor).getTruePath([existingPath ?? '']))?.at(0) ?? null;
+        if (!this.allowInvalidPath(this.workerContext))
+        {
+            // The user path setting may be a symlink but we dont want to resolve it since a snap symlink isnt a real directory, we can find the true path better this way:
+            existingPath = (await new DotnetPathFinder(this.workerContext, this.utilityContext, this.executor).getTruePath([existingPath ?? '']))?.at(0) ?? null;
+        }
         if (existingPath && (await this.providedPathMeetsAPIRequirement(this.workerContext, existingPath, this.workerContext.acquisitionContext, requirement) || this.allowInvalidPath(this.workerContext)))
         {
             return { dotnetPath: existingPath } as IDotnetAcquireResult;
