@@ -33,6 +33,8 @@ import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWork
 import { DotnetInstall } from './DotnetInstall';
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
+import { executeWithLock } from './LockUtilities';
+import { getDotnetExecutable } from '../Utils/TypescriptUtilities';
 
 export class AcquisitionInvoker extends IAcquisitionInvoker {
     protected readonly scriptWorker: IInstallScriptAcquisitionWorker;
@@ -49,75 +51,84 @@ You will need to restart VS Code after these changes. If PowerShell is still not
 
     public async installDotnet(installContext: IDotnetInstallationContext, install : DotnetInstall): Promise<void>
     {
-        const winOS = os.platform() === 'win32';
-        const installCommand = await this.getInstallCommand(installContext.version, installContext.installDir, installContext.installMode, installContext.architecture);
-
-        return new Promise<void>(async (resolve, reject) =>
+        return executeWithLock(this.eventStream, false, installContext.installDir, async (installContext: IDotnetInstallationContext, install : DotnetInstall) =>
         {
-            try
+            return new Promise<void>(async (resolve, reject) =>
             {
-                let windowsFullCommand = `powershell.exe -NoProfile -NonInteractive -NoLogo -ExecutionPolicy unrestricted -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; & ${installCommand} }"`;
-                if(winOS)
+                try
                 {
-                    const powershellReference = await this.verifyPowershellCanRun(installContext, install);
-                    windowsFullCommand = windowsFullCommand.replace('powershell.exe', powershellReference);
-                }
+                    const winOS = os.platform() === 'win32';
+                    const installCommand = await this.getInstallCommand(installContext.version, installContext.installDir, installContext.installMode, installContext.architecture);
 
-                cp.exec(winOS ? windowsFullCommand : installCommand,
-                        { cwd: process.cwd(), maxBuffer: 500 * 1024, timeout: 1000 * installContext.timeoutSeconds, killSignal: 'SIGKILL' },
-                        async (error, stdout, stderr) =>
-                {
-                    if (stdout)
+                    let windowsFullCommand = `powershell.exe -NoProfile -NonInteractive -NoLogo -ExecutionPolicy unrestricted -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; & ${installCommand} }"`;
+                    if(winOS)
                     {
-                            this.eventStream.post(new DotnetAcquisitionScriptOutput(install, TelemetryUtilities.HashAllPaths(stdout)));
+                        const powershellReference = await this.verifyPowershellCanRun(installContext, install);
+                        windowsFullCommand = windowsFullCommand.replace('powershell.exe', powershellReference);
                     }
-                    if (stderr)
+
+                    // The install script can leave behind a directory in an invalid install state. Make sure the executable is present at the very least.
+                    if(this.fileUtilities.existsSync(installContext.installDir) && !this.fileUtilities.existsSync(path.join(installContext.installDir, getDotnetExecutable())))
                     {
-                            this.eventStream.post(new DotnetAcquisitionScriptOutput(install, `STDERR: ${TelemetryUtilities.HashAllPaths(stderr)}`));
+                        this.fileUtilities.wipeDirectory(installContext.installDir, this.eventStream);
                     }
-                    if (error)
+
+                    cp.exec(winOS ? windowsFullCommand : installCommand,
+                            { cwd: process.cwd(), maxBuffer: 500 * 1024, timeout: 1000 * installContext.timeoutSeconds, killSignal: 'SIGKILL' },
+                            async (error, stdout, stderr) =>
                     {
-                        if (!(await WebRequestWorker.isOnline(installContext.timeoutSeconds, this.eventStream)))
+                        if (stdout)
                         {
-                            const offlineError = new EventBasedError('DotnetOfflineFailure', 'No internet connection detected: Cannot install .NET');
-                            this.eventStream.post(new DotnetOfflineFailure(offlineError, install));
-                            reject(offlineError);
+                                this.eventStream.post(new DotnetAcquisitionScriptOutput(install, TelemetryUtilities.HashAllPaths(stdout)));
                         }
-                        else if (error.signal === 'SIGKILL') {
-                            const newError = new EventBasedError('DotnetAcquisitionTimeoutError',
-                                `${timeoutConstants.timeoutMessage}, MESSAGE: ${error.message}, CODE: ${error.code}, KILLED: ${error.killed}`, error.stack);
-                            this.eventStream.post(new DotnetAcquisitionTimeoutError(error, install, installContext.timeoutSeconds));
-                            reject(newError);
+                        if (stderr)
+                        {
+                                this.eventStream.post(new DotnetAcquisitionScriptOutput(install, `STDERR: ${TelemetryUtilities.HashAllPaths(stderr)}`));
+                        }
+                        if (error)
+                        {
+                            if (!(await WebRequestWorker.isOnline(installContext.timeoutSeconds, this.eventStream)))
+                            {
+                                const offlineError = new EventBasedError('DotnetOfflineFailure', 'No internet connection detected: Cannot install .NET');
+                                this.eventStream.post(new DotnetOfflineFailure(offlineError, install));
+                                reject(offlineError);
+                            }
+                            else if (error.signal === 'SIGKILL') {
+                                const newError = new EventBasedError('DotnetAcquisitionTimeoutError',
+                                    `${timeoutConstants.timeoutMessage}, MESSAGE: ${error.message}, CODE: ${error.code}, KILLED: ${error.killed}`, error.stack);
+                                this.eventStream.post(new DotnetAcquisitionTimeoutError(error, install, installContext.timeoutSeconds));
+                                reject(newError);
+                            }
+                            else
+                            {
+                                const newError = new EventBasedError('DotnetAcquisitionInstallError',
+                                    `${timeoutConstants.timeoutMessage}, MESSAGE: ${error.message}, CODE: ${error.code}, SIGNAL: ${error.signal}`, error.stack);
+                                this.eventStream.post(new DotnetAcquisitionInstallError(newError, install));
+                                reject(newError);
+                            }
+                        }
+                        else if (stderr && stderr.length > 0)
+                        {
+                            this.eventStream.post(new DotnetAcquisitionCompleted(install, installContext.dotnetPath, installContext.version));
+                            resolve();
                         }
                         else
                         {
-                            const newError = new EventBasedError('DotnetAcquisitionInstallError',
-                                `${timeoutConstants.timeoutMessage}, MESSAGE: ${error.message}, CODE: ${error.code}, SIGNAL: ${error.signal}`, error.stack);
-                            this.eventStream.post(new DotnetAcquisitionInstallError(newError, install));
-                            reject(newError);
+                            this.eventStream.post(new DotnetAcquisitionCompleted(install, installContext.dotnetPath, installContext.version));
+                            resolve();
                         }
-                    }
-                    else if (stderr && stderr.length > 0)
-                    {
-                        this.eventStream.post(new DotnetAcquisitionCompleted(install, installContext.dotnetPath, installContext.version));
-                        resolve();
-                    }
-                    else
-                    {
-                        this.eventStream.post(new DotnetAcquisitionCompleted(install, installContext.dotnetPath, installContext.version));
-                        resolve();
-                    }
-                });
-            }
-            catch (error : any)
-            {
-                // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                const newError = new EventBasedError('DotnetAcquisitionUnexpectedError', error?.message, error?.stack)
-                this.eventStream.post(new DotnetAcquisitionUnexpectedError(newError, install));
-                reject(newError);
-            }
-        });
+                    });
+                }
+                catch (error : any)
+                {
+                    // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    const newError = new EventBasedError('DotnetAcquisitionUnexpectedError', error?.message, error?.stack)
+                    this.eventStream.post(new DotnetAcquisitionUnexpectedError(newError, install));
+                    reject(newError);
+                }
+            });
+        }, installContext, install );
     }
 
     private async getInstallCommand(version: string, dotnetInstallDir: string, installMode: DotnetInstallMode, architecture: string): Promise<string> {
