@@ -90,7 +90,7 @@ Please read more at https:/go.microsoft.com/fwlink/?LinkID=135170`);
                         }
                         if ((this.looksLikeBadLanguageModeError(stderr) || error?.code === 1) && this.badLanguageModeSet(powershellReference))
                         {
-                            const badModeError = new EventBasedError('PowershellBadLanguageMode', `Your Language Mode disables PowerShell language features needed to install .NET. Read more at: https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_language_modes?view=powershell-7.3.
+                            const badModeError = new EventBasedError('PowershellBadLanguageMode', `Your Language Mode disables PowerShell language features needed to install .NET. Read more at: https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_language_modes.
 If you cannot change this flag, try setting a custom existingDotnetPath via the instructions here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`);
                             this.eventStream.post(new PowershellBadLanguageMode(badModeError, install));
                             reject(badModeError);
