@@ -16,23 +16,23 @@ import { realpathSync, existsSync, readFileSync } from 'fs';
 import { EnvironmentVariableIsDefined, getDotnetExecutable, getOSArch, getPathSeparator } from '../Utils/TypescriptUtilities';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
 import
-    {
-        DotnetFindPathHostFxrResolutionLookup,
-        DotnetFindPathLookupPATH,
-        DotnetFindPathLookupRealPATH,
-        DotnetFindPathLookupRootPATH,
-        DotnetFindPathNoHostOnFileSystem,
-        DotnetFindPathNoHostOnRegistry,
-        DotnetFindPathNoRuntimesOnHost,
-        DotnetFindPathOnFileSystem,
-        DotnetFindPathOnRegistry,
-        DotnetFindPathPATHFound,
-        DotnetFindPathRealPATHFound,
-        DotnetFindPathRootEmulationPATHFound,
-        DotnetFindPathRootPATHFound,
-        DotnetFindPathRootUnderEmulationButNoneSet,
-        FileDoesNotExist
-    } from '../EventStream/EventStreamEvents';
+{
+    DotnetFindPathHostFxrResolutionLookup,
+    DotnetFindPathLookupPATH,
+    DotnetFindPathLookupRealPATH,
+    DotnetFindPathLookupRootPATH,
+    DotnetFindPathNoHostOnFileSystem,
+    DotnetFindPathNoHostOnRegistry,
+    DotnetFindPathNoRuntimesOnHost,
+    DotnetFindPathOnFileSystem,
+    DotnetFindPathOnRegistry,
+    DotnetFindPathPATHFound,
+    DotnetFindPathRealPATHFound,
+    DotnetFindPathRootEmulationPATHFound,
+    DotnetFindPathRootPATHFound,
+    DotnetFindPathRootUnderEmulationButNoneSet,
+    FileDoesNotExist
+} from '../EventStream/EventStreamEvents';
 import { RegistryReader } from './RegistryReader';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { IFileUtilities } from '../Utils/IFileUtilities';
@@ -295,6 +295,7 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
 
         for (const tentativePath of tentativePaths)
         {
+            // This will even work if only the sdk is installed, list-runtimes on an sdk installed host would work
             const runtimeInfo = await new DotnetConditionValidator(this.workerContext, this.utilityContext, this.executor).getRuntimes(tentativePath);
             if (runtimeInfo.length > 0)
             {

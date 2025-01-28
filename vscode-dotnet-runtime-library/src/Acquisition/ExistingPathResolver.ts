@@ -23,6 +23,7 @@ If you would like to continue to use the setting anyways, set dotnetAcquisitionE
 
 export class ExistingPathResolver
 {
+    private lastSeenNonTruePathValue: string | null = null;
 
     public constructor(private readonly workerContext: IAcquisitionWorkerContext, private readonly utilityContext: IUtilityContext, private executor?: ICommandExecutor)
     {
@@ -32,6 +33,7 @@ export class ExistingPathResolver
     public async resolveExistingPath(existingPaths: IExistingPaths | undefined, extensionId: string | undefined, windowDisplayWorker: IWindowDisplayWorker, requirement?: DotnetVersionSpecRequirement): Promise<IDotnetAcquireResult | undefined>
     {
         let existingPath = this.getExistingPath(existingPaths, extensionId, windowDisplayWorker);
+        this.lastSeenNonTruePathValue = existingPath;
         if (!this.allowInvalidPath(this.workerContext))
         {
             // The user path setting may be a symlink but we dont want to resolve it since a snap symlink isnt a real directory, we can find the true path better this way:
@@ -43,6 +45,15 @@ export class ExistingPathResolver
         }
 
         return undefined;
+    }
+
+    /**
+     * @remarks Returns the last path this class processed before getting the true path.
+     * This is a bit of a hack to allow tests to evaluate the class more thoroughly.
+     */
+    public getlastSeenNonTruePathValue(): string | null
+    {
+        return this.lastSeenNonTruePathValue;
     }
 
     private getExistingPath(existingPaths: IExistingPaths | undefined, extensionId: string | undefined, windowDisplayWorker: IWindowDisplayWorker): string | null

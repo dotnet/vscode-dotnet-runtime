@@ -3,6 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
+import * as os from 'os';
 import { MockCommandExecutor, MockExtensionConfiguration, MockExtensionContext } from '../mocks/MockObjects';
 import { IExistingPaths } from '../../IExtensionContext';
 import { ExistingPathResolver } from '../../Acquisition/ExistingPathResolver';
@@ -70,9 +71,12 @@ suite('ExistingPathResolver Unit Tests', () =>
     const existingPathResolver = getExistingPathResolverWithVersionAndCommandResult('8.0', undefined, executionResultWithEightOnly);
 
     const existingPath = await existingPathResolver.resolveExistingPath(extensionConfigWorker.getAllPathConfigurationValues(), undefined, new MockWindowDisplayWorker());
+    const nonTrueExistingPath = existingPathResolver.getlastSeenNonTruePathValue();
+
     assert(existingPath, 'The existing path is returned');
-    assert(existingPath?.dotnetPath, 'The existing path is using a dotnet path object');
-    assert.equal(existingPath?.dotnetPath, sharedPath);
+    assert(nonTrueExistingPath, 'The existing path is using a dotnet path object');
+    assert.equal(nonTrueExistingPath, sharedPath);
+    assert.equal(existingPath?.dotnetPath, os.platform() === 'win32' ? 'C:\\Program Files\\dotnet\\dotnet.exe' : 'dotnet', 'The true path is called on the fake path to get dotnet executable');
   }).timeout(standardTimeoutTime);
 
   test('Prefer Individual Existing Path Setting over Shared Setting', async () =>
@@ -81,9 +85,12 @@ suite('ExistingPathResolver Unit Tests', () =>
     const existingPathResolver = getExistingPathResolverWithVersionAndCommandResult('8.0', extensionIdAlt, executionResultWithEightOnly);
 
     const existingPath = await existingPathResolver.resolveExistingPath(extensionConfigWorker.getAllPathConfigurationValues(), extensionIdAlt, new MockWindowDisplayWorker());
+    const nonTrueExistingPath = existingPathResolver.getlastSeenNonTruePathValue();
+
     assert(existingPath, 'The existing path is returned');
-    assert(existingPath?.dotnetPath, 'The existing path is using a dotnet path object');
-    assert.equal(existingPath?.dotnetPath, individualPath);
+    assert(nonTrueExistingPath, 'The existing path is using a dotnet path object');
+    assert.equal(nonTrueExistingPath, individualPath);
+    assert.equal(existingPath?.dotnetPath, os.platform() === 'win32' ? 'C:\\Program Files\\dotnet\\dotnet.exe' : 'dotnet', 'The true path is called on the fake path to get dotnet executable');
   }).timeout(standardTimeoutTime);
 
   test('It will use the legacy mode and return the path even if it does not meet an api request if allowInvalidPaths is set', async () =>
@@ -111,6 +118,7 @@ suite('ExistingPathResolver Unit Tests', () =>
   {
     const context: IDotnetAcquireContext = { version: '8.0', mode: 'runtime' };
     const mockWorkerContext = getMockAcquisitionWorkerContext(context);
+    mockWorkerContext.extensionState.update('dotnetAcquisitionExtension.allowInvalidPaths', true);
     const mockExecutor = new MockCommandExecutor(mockWorkerContext, mockUtility);
     mockExecutor.fakeReturnValue = executionResultWithEightAspOnly;
     mockExecutor.otherCommandPatternsToMock = ['--list-runtimes', '--list-sdks'];
@@ -118,8 +126,11 @@ suite('ExistingPathResolver Unit Tests', () =>
     const existingPathResolver = new ExistingPathResolver(mockWorkerContext, mockUtility, mockExecutor);
 
     const existingPath = await existingPathResolver.resolveExistingPath(extensionConfigWorker.getAllPathConfigurationValues(), undefined, new MockWindowDisplayWorker());
+    const nonTrueExistingPath = existingPathResolver.getlastSeenNonTruePathValue();
+
     assert(existingPath, 'The existing path is returned when an SDK matches the path but no runtime is installed');
-    assert(existingPath?.dotnetPath, 'The existing path is using a dotnet path object');
-    assert.equal(existingPath?.dotnetPath, sharedPath);
+    assert(nonTrueExistingPath, 'The existing path is using a dotnet path object');
+    assert.equal(nonTrueExistingPath, sharedPath);
+    assert.equal(existingPath?.dotnetPath, os.platform() === 'win32' ? 'C:\\Program Files\\dotnet\\dotnet.exe' : 'dotnet', 'The true path is called on the fake path to get dotnet executable');
   }).timeout(standardTimeoutTime);
 });
