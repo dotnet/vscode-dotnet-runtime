@@ -21,7 +21,7 @@ import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 
 export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisitionWorker {
     protected webWorker: WebRequestWorker;
-    private readonly scriptAcquisitionUrl: string = 'https://dot.net/v1/dotnet-install.';
+    private readonly scriptAcquisitionUrl: string = 'https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.';
     protected readonly scriptFilePath: string;
     private readonly fileUtilities: FileUtilities;
 
