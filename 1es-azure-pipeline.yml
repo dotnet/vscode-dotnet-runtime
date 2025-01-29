@@ -3,7 +3,6 @@
 # URL: https://dev.azure.com/dnceng/internal/_build?definitionId=656
 
 trigger:
-  batch: true
   branches:
     include:
     - main
@@ -88,16 +87,16 @@ extends:
       - template: pipeline-templates/upstream-verify.yaml@self
         parameters:
           pool:
-            name: NetCore1ESPool-Internal
-            image: 1es-windows-2022
-            os: windows
+            name: Azure Pipelines
+            image: macOS-latest
+            os: macOS
           useOneEngineeringPool: true
       - template: pipeline-templates/lint.yaml@self
         parameters:
           pool:
-            name: NetCore1ESPool-Internal
-            image: 1es-windows-2022
-            os: windows
+            name: Azure Pipelines
+            image: macOS-latest
+            os: macOS
           useOneEngineeringPool: true
       - template: pipeline-templates/package-vsix.yaml@self
         parameters:

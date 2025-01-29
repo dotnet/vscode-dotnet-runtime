@@ -12,7 +12,6 @@ jobs:
   displayName: '📦 Package and Publish'
   dependsOn:
   - ${{ parameters.pool.os }}_Build
-  - ESLint
   condition: succeeded()
   strategy:
     matrix:
@@ -47,8 +46,8 @@ jobs:
       parameters:
         SignType: ${{ parameters.SignType }}
   - bash: |
-      npm install rimraf --reg https://registry.npmjs.org/ --verbose
-      npm install @vscode/vsce@latest -g --reg https://registry.npmjs.org/ --verbose
+      npm i -g rimraf
+      npm i -g @vscode/vsce
       vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
       cp $(package-name)-$(GetVersion.version).vsix ../packages/$(package-name)-$(GetVersion.version).vsix
     displayName: 📦 Package Artifact
