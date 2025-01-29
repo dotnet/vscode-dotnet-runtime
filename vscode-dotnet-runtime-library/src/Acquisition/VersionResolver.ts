@@ -28,7 +28,7 @@ import { DotnetInstallMode } from './DotnetInstallMode';
 
 export class VersionResolver implements IVersionResolver {
     protected webWorker: WebRequestWorker;
-    private readonly releasesUrl = 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json';
+    private readonly releasesUrl = 'https://builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json';
 
     constructor(
         private readonly context : IAcquisitionWorkerContext,

@@ -2,11 +2,9 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
-import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
-import { IEventStream } from "../EventStream/EventStream";
 import { IRegistryReader } from "./IRegistryReader";
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
@@ -85,7 +83,6 @@ export class RegistryReader extends IRegistryReader
     {
         let sdks: string[] = [];
 
-
         if (os.platform() === 'win32')
         {
             const sdkInstallRecords64Bit = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\dotnet\\Setup\\InstalledVersions\\x64\\sdk';
@@ -95,23 +92,22 @@ export class RegistryReader extends IRegistryReader
             const queries = [sdkInstallRecords32Bit, sdkInstallRecords64Bit, sdkInstallRecordsArm64];
             for ( const query of queries )
             {
-                    // /reg:32 is added because all keys on 64 bit machines are all put into the WOW node. They won't be on the WOW node on a 32 bit machine.
-                    const registryLookup = await this.queryRegistry(query, true);
-                    if(registryLookup === null)
-                    {
-                        return [];
-                    }
+                // /reg:32 is added because all keys on 64 bit machines are all put into the WOW node. They won't be on the WOW node on a 32 bit machine.
+                const registryLookup = await this.queryRegistry(query, true);
+                if(registryLookup === null)
+                {
+                    return [];
+                }
 
-                    let installRecordKeysOfXBit = '';
-                    if(registryLookup.status === '0')
-                    {
+                let installRecordKeysOfXBit = '';
+                if(registryLookup.status === '0')
+                {
+                    installRecordKeysOfXBit = registryLookup.stdout;
+                }
 
-                        installRecordKeysOfXBit = registryLookup.stdout;
-                    }
-
-                    const installedSdks = this.extractVersionsOutOfRegistryKeyStrings(installRecordKeysOfXBit);
-                    // Append any newly found sdk versions
-                    sdks = sdks.concat(installedSdks.filter((item) => sdks.indexOf(item) < 0));
+                const installedSdks = this.extractVersionsOutOfRegistryKeyStrings(installRecordKeysOfXBit);
+                // Append any newly found sdk versions
+                sdks = sdks.concat(installedSdks.filter((item) => sdks.indexOf(item) < 0));
             }
         }
 
@@ -154,7 +150,7 @@ export class RegistryReader extends IRegistryReader
     {
         if(registryQueryResult === '')
         {
-                return [];
+            return [];
         }
         else
         {
