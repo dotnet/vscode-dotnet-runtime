@@ -77,6 +77,7 @@ import {
     DotnetFindPathCommandInvoked,
     DotnetFindPathNoPathMetCondition,
     JsonInstaller,
+    LocalMemoryCacheSingleton,
 } from 'vscode-dotnet-runtime-library';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
@@ -91,6 +92,7 @@ namespace configKeys {
     export const existingSharedPath = 'sharedExistingDotnetPath'
     export const proxyUrl = 'proxyUrl';
     export const allowInvalidPaths = 'allowInvalidPaths';
+    export const cacheTimeToLiveMultiplier = 'cacheTimeToLiveMultiplier';
 }
 
 namespace commandKeys {
@@ -136,6 +138,10 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     }
     const resolvedTimeoutSeconds = timeoutValue === undefined ? defaultTimeoutValue : timeoutValue;
     const proxyLink = extensionConfiguration.get<string>(configKeys.proxyUrl);
+
+    // Create a cache with the TTL setting that we can only reasonably access from here.
+    const _localCache = LocalMemoryCacheSingleton.getInstance(Number(extensionConfiguration.get<string>(configKeys.cacheTimeToLiveMultiplier)) ?? 1);
+
     const allowInvalidPathSetting = extensionConfiguration.get<boolean>(configKeys.allowInvalidPaths);
     const isExtensionTelemetryEnabled = enableExtensionTelemetry(extensionConfiguration, configKeys.enableTelemetry);
     const displayWorker = extensionContext ? extensionContext.displayWorker : new WindowDisplayWorker();

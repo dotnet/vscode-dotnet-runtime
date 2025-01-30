@@ -58,6 +58,7 @@ import { IFileUtilities } from './IFileUtilities';
 import { CommandExecutorResult } from './CommandExecutorResult';
 import { isRunningUnderWSL, loopWithTimeoutOnCond } from './TypescriptUtilities';
 import { IEventStream } from '../EventStream/EventStream';
+import { LocalMemoryCacheSingleton } from '../LocalMemoryCacheSingleton';
 
 export class CommandExecutor extends ICommandExecutor
 {
@@ -379,6 +380,7 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
      *
      * @param workingDirectory The directory to execute in. Only works for non sudo commands.
      * @param terminalFailure Whether to throw up an error when executing under sudo or suppress it and return stderr
+     * @param options the dictionary of options to forward to the child_process. Set dotnetInstallToolCacheTtlMs=number to cache the result with a ttl and also use cached results.
      * @returns the result(s) of each command. Can throw generically if the command fails.
      */
     public async execute(command: CommandExecutorCommand, options: any = null, terminalFailure = true): Promise<CommandExecutorResult>
@@ -405,9 +407,23 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
             options = { cwd: path.resolve(__dirname), shell: true };
         }
 
+        if(options?.dotnetInstallToolCacheTtlMs)
+        {
+            const result = LocalMemoryCacheSingleton.getInstance().getCommand({command, options}, this.context);
+            if(result !== undefined)
+            {
+                return result;
+            }
+        }
+
         if (command.runUnderSudo && os.platform() === 'linux')
         {
-            return this.ExecSudoAsync(command, terminalFailure);
+            const result = await this.ExecSudoAsync(command, terminalFailure);
+            if(options?.dotnetInstallToolCacheTtlMs)
+            {
+                LocalMemoryCacheSingleton.getInstance().putCommand({command, options}, result, this.context);
+            }
+            return result;
         }
         else
         {
@@ -432,7 +448,12 @@ with options ${JSON.stringify(options)}.`));
                             this.context?.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandString} encountered ERROR: ${JSON.stringify(error)}`));
                         }
 
-                        return resolve({ status: error ? error.message : '0', stderr: execStderr, stdout: execStdout } as CommandExecutorResult);
+                        const result = { status: error ? error.message : '0', stderr: execStderr, stdout: execStdout } as CommandExecutorResult
+                        if(options?.dotnetInstallToolCacheTtlMs)
+                        {
+                            LocalMemoryCacheSingleton.getInstance().putCommand({command, options}, result, this.context);
+                        }
+                        return resolve(result);
                     });
                 });
             }
@@ -463,7 +484,12 @@ result: ${JSON.stringify(commandResult)} had no status or signal.`));
                 }
             })();
 
-            return { status: statusCode, stderr: commandResult.stderr?.toString() ?? '', stdout: commandResult.stdout?.toString() ?? '' }
+            const result = { status: statusCode, stderr: commandResult.stderr?.toString() ?? '', stdout: commandResult.stdout?.toString() ?? '' } as CommandExecutorResult;
+            if(options?.dotnetInstallToolCacheTtlMs)
+            {
+                LocalMemoryCacheSingleton.getInstance().putCommand({command, options}, result, this.context);
+            }
+            return result;
         }
     }
 

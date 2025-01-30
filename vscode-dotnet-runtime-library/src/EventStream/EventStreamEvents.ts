@@ -1014,6 +1014,7 @@ export class FoundTrackingVersions extends DotnetCustomMessageEvent
         return { suppressTelemetry: 'true', ...super.getProperties() };
     }
 }
+
 export class RemovingVersionFromExtensionState extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'RemovingVersionFromExtensionState';
@@ -1082,6 +1083,33 @@ export class DotnetFindPathCommandInvoked extends DotnetCustomMessageEvent
     public getProperties()
     {
         return { Message: this.eventMessage, Context: JSON.stringify(this.request) };
+    };
+}
+
+export class CacheClearEvent extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'CacheClearEvent';
+}
+
+export class CachePutEvent extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'CachePutEvent';
+    constructor(public readonly eventMessage: string, public readonly key: string, public readonly value: string, public readonly ttl: string) { super(eventMessage); }
+
+    public getProperties()
+    {
+        return { Message: this.eventMessage, key : this.key, value: this.value, ttl: this.ttl };
+    };
+}
+
+export class CacheGetEvent extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'CacheGetEvent';
+    constructor(public readonly eventMessage: string, public readonly key: string, public readonly value: string) { super(eventMessage); }
+
+    public getProperties()
+    {
+        return { Message: this.eventMessage, key : this.key, value: this.value };
     };
 }
 

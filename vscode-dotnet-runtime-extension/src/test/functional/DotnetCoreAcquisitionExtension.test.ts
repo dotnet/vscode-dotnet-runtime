@@ -37,6 +37,7 @@ import
   getMockUtilityContext,
   DotnetPathFinder,
   DotnetConditionValidator,
+  LocalMemoryCacheSingleton,
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { warn } from 'console';
@@ -118,6 +119,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
     MockTelemetryReporter.telemetryEvents = [];
     rimraf.sync(storagePath);
     InstallTrackerSingleton.getInstance(new MockEventStream(), new MockExtensionContext()).clearPromises();
+    // Dont want cached results from prior tests to interfere
+    LocalMemoryCacheSingleton.getInstance().invalidate();
   }).timeout(standardTimeoutTime);
 
   test('Activate', async () =>

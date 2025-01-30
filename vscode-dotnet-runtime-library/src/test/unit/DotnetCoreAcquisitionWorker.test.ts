@@ -39,6 +39,7 @@ import { DotnetInstallType} from '../../IDotnetAcquireContext';
 import { getInstallIdCustomArchitecture } from '../../Utils/InstallIdUtilities';
 import { InstallTrackerSingleton } from '../../Acquisition/InstallTrackerSingleton';
 import { getDotnetExecutable } from '../../Utils/TypescriptUtilities';
+import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
 
 const assert = chai.assert;
 chai.use(chaiAsPromised);
@@ -52,6 +53,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
     this.afterEach(async () => {
         // Tear down tmp storage for fresh run
         InstallTrackerSingleton.getInstance(new MockEventStream(), new MockExtensionContext()).clearPromises();
+        LocalMemoryCacheSingleton.getInstance().invalidate();
     });
 
     function setupStates(): [MockEventStream, MockExtensionContext]
