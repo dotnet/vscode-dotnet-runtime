@@ -14,21 +14,21 @@ import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import
-    {
-        DotnetAcquisitionAlreadyInstalled,
-        DotnetConflictingGlobalWindowsInstallError,
-        DotnetFileIntegrityCheckEvent,
-        DotnetFileIntegrityFailureEvent,
-        DotnetInstallCancelledByUserError,
-        DotnetNoInstallerResponseError,
-        DotnetUnexpectedInstallerOSError,
-        EventBasedError,
-        EventCancellationError,
-        NetInstallerBeginExecutionEvent,
-        NetInstallerEndExecutionEvent,
-        OSXOpenNotAvailableError,
-        SuppressedAcquisitionError,
-    } from '../EventStream/EventStreamEvents';
+{
+    DotnetAcquisitionAlreadyInstalled,
+    DotnetConflictingGlobalWindowsInstallError,
+    DotnetFileIntegrityCheckEvent,
+    DotnetFileIntegrityFailureEvent,
+    DotnetInstallCancelledByUserError,
+    DotnetNoInstallerResponseError,
+    DotnetUnexpectedInstallerOSError,
+    EventBasedError,
+    EventCancellationError,
+    NetInstallerBeginExecutionEvent,
+    NetInstallerEndExecutionEvent,
+    OSXOpenNotAvailableError,
+    SuppressedAcquisitionError,
+} from '../EventStream/EventStreamEvents';
 
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
@@ -41,6 +41,7 @@ import { getOSArch } from '../Utils/TypescriptUtilities';
 import { RegistryReader } from './RegistryReader';
 import { IRegistryReader } from './IRegistryReader';
 import { util } from 'chai';
+import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
 
 namespace validationPromptConstants
 {
@@ -250,7 +251,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             if (os.platform() === 'win32') // Windows does not have chmod +x ability with nodejs.
             {
                 const permissionsCommand = CommandExecutor.makeCommand('icacls', [`"${installerPath}"`, '/grant:r', `"%username%":F`, '/t', '/c']);
-                const commandRes = await this.commandRunner.execute(permissionsCommand, {}, false);
+                const commandRes = await this.commandRunner.execute(permissionsCommand, { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }, false);
                 if (commandRes.stderr !== '')
                 {
                     const error = new EventBasedError('FailedToSetInstallerPermissions', `Failed to set icacls permissions on the installer file ${installerPath}. ${commandRes.stderr}`);

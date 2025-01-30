@@ -36,6 +36,7 @@ import
 import { RegistryReader } from './RegistryReader';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { IFileUtilities } from '../Utils/IFileUtilities';
+import { DOTNET_INFORMATION_CACHE_DURATION_MS, SYS_CMD_SEARCH_CACHE_DURATION_MS } from './CacheTimeConstants';
 
 export class DotnetPathFinder implements IDotnetPathFinder
 {
@@ -108,12 +109,14 @@ export class DotnetPathFinder implements IDotnetPathFinder
         process.env.DOTNET_MULTILEVEL_LOOKUP = '0'; // make it so --list-runtimes only finds the runtimes on that path: https://learn.microsoft.com/en-us/dotnet/core/compatibility/deployment/7.0/multilevel-lookup#reason-for-change
 
         const searchEnvironment = process.env; // this is the default, but sometimes it does not get picked up
-        const options = tryUseTrueShell && os.platform() !== 'win32' ? { env: searchEnvironment, shell: process.env.SHELL === '/bin/bash' ? '/bin/bash' : '/bin/sh' } : { env: searchEnvironment };
+        const options = tryUseTrueShell && os.platform() !== 'win32' ? { env: searchEnvironment, shell: process.env.SHELL === '/bin/bash' ? '/bin/bash' : '/bin/sh', dotnetInstallToolCacheTtlMs: SYS_CMD_SEARCH_CACHE_DURATION_MS } : {
+            env: searchEnvironment, dotnetInstallToolCacheTtlMs: SYS_CMD_SEARCH_CACHE_DURATION_MS
+        };
 
         this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Looking up .NET on the path. Process.env.path: ${process.env.PATH}.
 Executor Path: ${(await this.executor?.execute(
             os.platform() === 'win32' ? CommandExecutor.makeCommand('echo', ['%PATH%']) : CommandExecutor.makeCommand('env', []),
-            undefined,
+            { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS },
             false))?.stdout}
 
 Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(CommandExecutor.makeCommand('env', ['bash']), { shell: '/bin/bash' }, false))?.stdout : 'N/A'}
@@ -139,6 +142,7 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
             ], options))?.commandRoot ?? 'which';
         }
 
+        options.dotnetInstallToolCacheTtlMs = DOTNET_INFORMATION_CACHE_DURATION_MS;
         const findCommand = CommandExecutor.makeCommand(pathLocatorCommand, ['dotnet']);
         const dotnetsOnPATH = (await this.executor?.execute(findCommand, options))?.stdout.split('\n').map(x => x.trim()).filter(x => x !== '');
         if (dotnetsOnPATH && dotnetsOnPATH.length > 0)

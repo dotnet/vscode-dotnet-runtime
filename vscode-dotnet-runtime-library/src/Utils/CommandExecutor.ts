@@ -388,29 +388,31 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
         const fullCommandString = `${command.commandRoot} ${command.commandParts.join(' ')}`;
         // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        if (options && !options?.cwd)
+        if (options)
         {
-            // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            options.cwd = path.resolve(__dirname);
-        }
-        // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        if (options && !options?.shell)
-        {
-            // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+            if (!options?.cwd)
+            {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                options.cwd = path.resolve(__dirname);
+            }
+
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            options.shell = true;
+            if (!options?.shell)
+            {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                options.shell = true;
+            }
         }
-        if (!options)
+        else
         {
             options = { cwd: path.resolve(__dirname), shell: true };
         }
 
-        if(options?.dotnetInstallToolCacheTtlMs)
+        if (options?.dotnetInstallToolCacheTtlMs)
         {
-            const result = LocalMemoryCacheSingleton.getInstance().getCommand({command, options}, this.context);
-            if(result !== undefined)
+            const result = LocalMemoryCacheSingleton.getInstance().getCommand({ command, options }, this.context);
+            if (result !== undefined)
             {
                 return result;
             }
@@ -419,9 +421,9 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
         if (command.runUnderSudo && os.platform() === 'linux')
         {
             const result = await this.ExecSudoAsync(command, terminalFailure);
-            if(options?.dotnetInstallToolCacheTtlMs)
+            if (options?.dotnetInstallToolCacheTtlMs)
             {
-                LocalMemoryCacheSingleton.getInstance().putCommand({command, options}, result, this.context);
+                LocalMemoryCacheSingleton.getInstance().putCommand({ command, options }, result, this.context);
             }
             return result;
         }
@@ -449,9 +451,9 @@ with options ${JSON.stringify(options)}.`));
                         }
 
                         const result = { status: error ? error.message : '0', stderr: execStderr, stdout: execStdout } as CommandExecutorResult
-                        if(options?.dotnetInstallToolCacheTtlMs)
+                        if (options?.dotnetInstallToolCacheTtlMs)
                         {
-                            LocalMemoryCacheSingleton.getInstance().putCommand({command, options}, result, this.context);
+                            LocalMemoryCacheSingleton.getInstance().putCommand({ command, options }, result, this.context);
                         }
                         return resolve(result);
                     });
@@ -485,9 +487,9 @@ result: ${JSON.stringify(commandResult)} had no status or signal.`));
             })();
 
             const result = { status: statusCode, stderr: commandResult.stderr?.toString() ?? '', stdout: commandResult.stdout?.toString() ?? '' } as CommandExecutorResult;
-            if(options?.dotnetInstallToolCacheTtlMs)
+            if (options?.dotnetInstallToolCacheTtlMs)
             {
-                LocalMemoryCacheSingleton.getInstance().putCommand({command, options}, result, this.context);
+                LocalMemoryCacheSingleton.getInstance().putCommand({ command, options }, result, this.context);
             }
             return result;
         }
