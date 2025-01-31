@@ -409,23 +409,25 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
             options = { cwd: path.resolve(__dirname), shell: true };
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if (options?.dotnetInstallToolCacheTtlMs)
         {
-            const result = LocalMemoryCacheSingleton.getInstance().getCommand({ command, options }, this.context);
-            if (result !== undefined)
+            const cachedResult = LocalMemoryCacheSingleton.getInstance().getCommand({ command, options }, this.context);
+            if (cachedResult !== undefined)
             {
-                return result;
+                return cachedResult;
             }
         }
 
         if (command.runUnderSudo && os.platform() === 'linux')
         {
-            const result = await this.ExecSudoAsync(command, terminalFailure);
+            const sudoResult = await this.ExecSudoAsync(command, terminalFailure);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             if (options?.dotnetInstallToolCacheTtlMs)
             {
-                LocalMemoryCacheSingleton.getInstance().putCommand({ command, options }, result, this.context);
+                LocalMemoryCacheSingleton.getInstance().putCommand({ command, options }, sudoResult, this.context);
             }
-            return result;
+            return sudoResult;
         }
         else
         {
@@ -451,6 +453,7 @@ with options ${JSON.stringify(options)}.`));
                         }
 
                         const result = { status: error ? error.message : '0', stderr: execStderr, stdout: execStdout } as CommandExecutorResult
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                         if (options?.dotnetInstallToolCacheTtlMs)
                         {
                             LocalMemoryCacheSingleton.getInstance().putCommand({ command, options }, result, this.context);
@@ -486,12 +489,13 @@ result: ${JSON.stringify(commandResult)} had no status or signal.`));
                 }
             })();
 
-            const result = { status: statusCode, stderr: commandResult.stderr?.toString() ?? '', stdout: commandResult.stdout?.toString() ?? '' } as CommandExecutorResult;
+            const standardResult = { status: statusCode, stderr: commandResult.stderr?.toString() ?? '', stdout: commandResult.stdout?.toString() ?? '' } as CommandExecutorResult;
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             if (options?.dotnetInstallToolCacheTtlMs)
             {
-                LocalMemoryCacheSingleton.getInstance().putCommand({ command, options }, result, this.context);
+                LocalMemoryCacheSingleton.getInstance().putCommand({ command, options }, standardResult, this.context);
             }
-            return result;
+            return standardResult;
         }
     }
 

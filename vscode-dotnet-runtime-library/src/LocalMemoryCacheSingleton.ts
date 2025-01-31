@@ -43,9 +43,9 @@ export class LocalMemoryCacheSingleton
      *
      * @returns The instance of the singleton.
      */
-    public static getInstance(timeToLiveMultiplier = 1) : LocalMemoryCacheSingleton
+    public static getInstance(timeToLiveMultiplier = 1): LocalMemoryCacheSingleton
     {
-        if(!LocalMemoryCacheSingleton.instance)
+        if (!LocalMemoryCacheSingleton.instance)
         {
             LocalMemoryCacheSingleton.instance = new LocalMemoryCacheSingleton(timeToLiveMultiplier);
         }
@@ -56,41 +56,44 @@ export class LocalMemoryCacheSingleton
     /**
      * @returns the object in the cache with the key, key. undefined if the cache is empty.
      */
-    public get(key : string, context : IAcquisitionWorkerContext) : any
+    public get(key: string, context: IAcquisitionWorkerContext): any
     {
         const result = this.cache.get(key);
         context.eventStream.post(new CacheGetEvent(`Checking the cache at ${new Date().toISOString()}`, key, JSON.stringify(result)));
         return result;
     }
 
-    public getCommand(key : CacheableCommand,  context : IAcquisitionWorkerContext) : CommandExecutorResult | undefined
+    public getCommand(key: CacheableCommand, context: IAcquisitionWorkerContext): CommandExecutorResult | undefined
     {
         return this.get(this.cacheableCommandToKey(key), context);
     }
 
 
-    public put(key : string, obj : any, metadata : LocalMemoryCacheMetadata, context : IAcquisitionWorkerContext) : void
+    public put(key: string, obj: any, metadata: LocalMemoryCacheMetadata, context: IAcquisitionWorkerContext): void
     {
         metadata.ttlMs = metadata.ttlMs * this.timeToLiveMultiplier;
         context.eventStream.post(new CachePutEvent(`Adding to the cache at ${new Date().toISOString()}`, key, JSON.stringify(obj), metadata.ttlMs.toString()));
         this.cache.set(key, obj, metadata.ttlMs / 1000);
     }
 
-    public putCommand(key : CacheableCommand, obj : any, context : IAcquisitionWorkerContext) : void
+    public putCommand(key: CacheableCommand, obj: any, context: IAcquisitionWorkerContext): void
     {
-        return this.put(this.cacheableCommandToKey(key), obj, {ttlMs : key.options?.dotnetInstallToolCacheTtlMs ?? 5000} as LocalMemoryCacheMetadata, context);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        return this.put(this.cacheableCommandToKey(key), obj, { ttlMs: key.options?.dotnetInstallToolCacheTtlMs ?? 5000 } as LocalMemoryCacheMetadata, context);
     }
 
-    public invalidate(context? : IAcquisitionWorkerContext) : void
+    public invalidate(context?: IAcquisitionWorkerContext): void
     {
         context?.eventStream.post(new CacheClearEvent(`Wiping the cache at ${new Date().toISOString()}`));
         this.cache.flushAll();
     }
 
-    private cacheableCommandToKey(key : CacheableCommand) : string
+    private cacheableCommandToKey(key: CacheableCommand): string
     {
         // Don't want the cache ttl to impact the result of whether it's cached or not.
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         delete key.options?.dotnetInstallToolCacheTtlMs;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         return `${CommandExecutor.prettifyCommandExecutorCommand(key.command)}${JSON.stringify(key.options)}`;
     }
 };
