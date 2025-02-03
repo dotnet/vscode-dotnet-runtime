@@ -38,6 +38,7 @@ import
   DotnetPathFinder,
   DotnetConditionValidator,
   LocalMemoryCacheSingleton,
+  getMockAcquisitionWorkerContext,
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { warn } from 'console';
@@ -435,7 +436,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
     // We only test if the process is running under ADMIN because non-admin requires user-intervention.
     const sdkVersion = '7.0.103';
     const context: IDotnetAcquireContext = { version: sdkVersion, requestingExtensionId: 'sample-extension', installType: 'global' };
-    if (await new FileUtilities().isElevated(context, getMockUtilityContext()))
+    if (await new FileUtilities().isElevated(getMockAcquisitionWorkerContext(context), getMockUtilityContext()))
     {
       const originalPath = process.env.PATH;
 
