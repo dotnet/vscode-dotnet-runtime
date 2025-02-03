@@ -440,7 +440,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
         {
             const command = `"${path.resolve(installerPath)}"`;
             let commandOptions: string[] = [];
-            if (this.file.isElevated(this.acquisitionContext.eventStream))
+            if (await this.file.isElevated(this.acquisitionContext, this.utilityContext))
             {
                 commandOptions = [`/quiet`, `/install`, `/norestart`];
             }

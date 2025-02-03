@@ -25,6 +25,10 @@ import
         FileToWipe,
         SuppressedAcquisitionError
     } from '../EventStream/EventStreamEvents';
+import { CommandExecutor } from './CommandExecutor';
+import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
+import { IUtilityContext } from './IUtilityContext';
+import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from '../Acquisition/CacheTimeConstants';
 
 export class FileUtilities extends IFileUtilities
 {
@@ -247,18 +251,19 @@ export class FileUtilities extends IFileUtilities
      *
      * @returns true if the process is running with admin privileges
      */
-    public isElevated(eventStream?: IEventStream): boolean
+    public async isElevated(context: IAcquisitionWorkerContext, utilContext: IUtilityContext): Promise<boolean>
     {
+        const executor = new CommandExecutor(context, utilContext);
         if (os.platform() !== 'win32')
         {
             try
             {
-                const commandResult = proc.spawnSync('id', ['-u']);
-                return commandResult.status === 0;
+                const commandResult = await executor.execute(CommandExecutor.makeCommand('id', ['-u']), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS });
+                return commandResult.status === '0';
             }
             catch (error: any)
             {
-                eventStream?.post(new SuppressedAcquisitionError(error, `Failed to run 'id' to check for privilege, running without privilege.`))
+                context.eventStream?.post(new SuppressedAcquisitionError(error, `Failed to run 'id' to check for privilege, running without privilege.`))
                 return false;
             }
         }
@@ -266,12 +271,12 @@ export class FileUtilities extends IFileUtilities
         try
         {
             // If we can execute this command on Windows then we have admin rights.
-            proc.execFileSync('net', ['session'], { 'stdio': 'ignore' });
+            const _ = await executor.execute(CommandExecutor.makeCommand('net', ['session']), { 'stdio': 'ignore', dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS });
             return true;
         }
         catch (error: any)
         {
-            eventStream?.post(new SuppressedAcquisitionError(error, `Failed to run 'net' to check for privilege, running without privilege.`))
+            context.eventStream?.post(new SuppressedAcquisitionError(error, `Failed to run 'net' to check for privilege, running without privilege.`))
             return false;
         }
     }

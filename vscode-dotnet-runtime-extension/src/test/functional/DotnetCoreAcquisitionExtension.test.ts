@@ -433,11 +433,11 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
   test('Install SDK Globally E2E (Requires Admin)', async () =>
   {
     // We only test if the process is running under ADMIN because non-admin requires user-intervention.
-    if (new FileUtilities().isElevated())
+    const sdkVersion = '7.0.103';
+    const context: IDotnetAcquireContext = { version: sdkVersion, requestingExtensionId: 'sample-extension', installType: 'global' };
+    if (await new FileUtilities().isElevated(context, getMockUtilityContext()))
     {
       const originalPath = process.env.PATH;
-      const sdkVersion = '7.0.103';
-      const context: IDotnetAcquireContext = { version: sdkVersion, requestingExtensionId: 'sample-extension', installType: 'global' };
 
       // We cannot use the describe pattern to restore the environment variables using vscode's extension testing infrastructure.
       // So we must set and unset it ourselves, which isn't ideal as this variable could remain.

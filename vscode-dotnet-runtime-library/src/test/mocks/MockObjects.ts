@@ -398,9 +398,9 @@ export class MockFileUtilities extends IFileUtilities
         return this.trueUtilities.wipeDirectory(directoryToWipe, eventSteam, fileExtensionsToDelete);
     }
 
-    public isElevated()
+    public isElevated(context: IAcquisitionWorkerContext, utilContext: IUtilityContext)
     {
-        return this.trueUtilities.isElevated();
+        return this.trueUtilities.isElevated(context, utilContext);
     }
 
     public async getFileHash(filePath : string)
