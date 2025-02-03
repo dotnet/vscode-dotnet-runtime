@@ -13,7 +13,7 @@ import * as versionUtils from './VersionUtilities';
 import * as os from 'os';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { DotnetFindPathDidNotMeetCondition, DotnetUnableToCheckPATHArchitecture } from '../EventStream/EventStreamEvents';
-import { DOTNET_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
+import { DOTNET_INFORMATION_CACHE_DURATION_MS, SYS_CMD_SEARCH_CACHE_DURATION_MS } from './CacheTimeConstants';
 
 
 export class DotnetConditionValidator implements IDotnetConditionValidator
@@ -131,7 +131,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
     {
         // For Windows, we need to change the code page to UTF-8 to handle the output of the command. https://github.com/nodejs/node-v0.x-archive/issues/2190
         // Only certain builds of windows support UTF 8 so we need to check that we can use it.
-        return os.platform() === 'win32' ? (await this.executor!.tryFindWorkingCommand([CommandExecutor.makeCommand('chcp', ['65001'])])) !== null : false;
+        return os.platform() === 'win32' ? (await this.executor!.tryFindWorkingCommand([CommandExecutor.makeCommand('chcp', ['65001'])], {dotnetInstallToolCacheTtlMs: SYS_CMD_SEARCH_CACHE_DURATION_MS})) !== null : false;
     }
 
     private stringVersionMeetsRequirement(availableVersion: string, requestedVersion: string, requirement: IDotnetFindPathContext): boolean

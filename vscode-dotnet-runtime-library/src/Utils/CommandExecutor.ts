@@ -386,6 +386,7 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
     public async execute(command: CommandExecutorCommand, options: any = null, terminalFailure = true): Promise<CommandExecutorResult>
     {
         const fullCommandString = `${command.commandRoot} ${command.commandParts.join(' ')}`;
+        let useCache = false;
         // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if (options)
@@ -412,6 +413,8 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if (options?.dotnetInstallToolCacheTtlMs)
         {
+            // useCache is preferred to checking the property each time as that gets removed to prevent exposing this to other tooling.
+            useCache = true;
             const cachedResult = LocalMemoryCacheSingleton.getInstance().getCommand({ command, options }, this.context);
             if (cachedResult !== undefined)
             {
@@ -422,8 +425,7 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
         if (command.runUnderSudo && os.platform() === 'linux')
         {
             const sudoResult = await this.ExecSudoAsync(command, terminalFailure);
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            if (options?.dotnetInstallToolCacheTtlMs)
+            if (useCache)
             {
                 LocalMemoryCacheSingleton.getInstance().putCommand({ command, options }, sudoResult, this.context);
             }
@@ -453,8 +455,7 @@ with options ${JSON.stringify(options)}.`));
                         }
 
                         const result = { status: error ? error.message : '0', stderr: execStderr, stdout: execStdout } as CommandExecutorResult
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                        if (options?.dotnetInstallToolCacheTtlMs)
+                        if (useCache)
                         {
                             LocalMemoryCacheSingleton.getInstance().putCommand({ command, options }, result, this.context);
                         }
@@ -490,8 +491,7 @@ result: ${JSON.stringify(commandResult)} had no status or signal.`));
             })();
 
             const standardResult = { status: statusCode, stderr: commandResult.stderr?.toString() ?? '', stdout: commandResult.stdout?.toString() ?? '' } as CommandExecutorResult;
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            if (options?.dotnetInstallToolCacheTtlMs)
+            if (useCache)
             {
                 LocalMemoryCacheSingleton.getInstance().putCommand({ command, options }, standardResult, this.context);
             }

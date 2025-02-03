@@ -59,7 +59,7 @@ export class LocalMemoryCacheSingleton
     public get(key: string, context: IAcquisitionWorkerContext): any
     {
         const result = this.cache.get(key);
-        context.eventStream.post(new CacheGetEvent(`Checking the cache at ${new Date().toISOString()}`, key, JSON.stringify(result)));
+        context.eventStream.post(new CacheGetEvent(`Checking the cache at ${new Date().toISOString()}`, key, JSON.stringify(result) ?? 'undefined'));
         return result;
     }
 
