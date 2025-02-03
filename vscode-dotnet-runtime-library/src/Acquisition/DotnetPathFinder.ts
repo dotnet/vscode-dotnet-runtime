@@ -119,7 +119,7 @@ Executor Path: ${(await this.executor?.execute(
             { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS },
             false))?.stdout}
 
-Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(CommandExecutor.makeCommand('env', ['bash']), { shell: '/bin/bash' }, false))?.stdout : 'N/A'}
+Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(CommandExecutor.makeCommand('env', ['bash']), { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS, shell: '/bin/bash' }, false))?.stdout : 'N/A'}
 `
         ));
 

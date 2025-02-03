@@ -71,6 +71,7 @@ import { IEventStream } from '../EventStream/EventStream';
 import { IExtensionState } from '../IExtensionState';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { getInstallFromContext, getInstallIdCustomArchitecture } from '../Utils/InstallIdUtilities';
+import { DOTNET_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
 
 
 export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
@@ -391,7 +392,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
     {
         const executor = new CommandExecutor(context, this.utilityContext);
         const listSDKsCommand = CommandExecutor.makeCommand('dotnet', ['--list-sdks']);
-        const result = await executor.execute(listSDKsCommand, null, false);
+        const result = await executor.execute(listSDKsCommand, {dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS}, false);
 
         if (result.status !== '0')
         {

@@ -108,7 +108,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
         const findSDKsCommand = await this.setCodePage() ? CommandExecutor.makeCommand(`chcp`, [`65001`, `|`, `"${existingPath}"`, '--list-sdks']) :
             CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-sdks']);
 
-        const sdkInfo = await (this.executor!).execute(findSDKsCommand, undefined, false).then((result) =>
+        const sdkInfo = await (this.executor!).execute(findSDKsCommand, {dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS}, false).then((result) =>
         {
             const sdks = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
             const sdkInfos: IDotnetListInfo[] = sdks.map((sdk) =>
@@ -213,7 +213,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
         const aspnetCoreString = 'Microsoft.AspNetCore.App';
         const runtimeString = 'Microsoft.NETCore.App';
 
-        const runtimeInfo = await (this.executor!).execute(findRuntimesCommand, undefined, false).then((result) =>
+        const runtimeInfo = await (this.executor!).execute(findRuntimesCommand, {dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS}, false).then((result) =>
         {
             const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
             const runtimeInfos: IDotnetListInfo[] = runtimes.map((runtime) =>
