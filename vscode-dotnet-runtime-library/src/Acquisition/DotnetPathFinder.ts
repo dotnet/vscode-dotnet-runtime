@@ -179,7 +179,7 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
     }
 
     // eslint-disable-next-line @typescript-eslint/require-await
-    private async returnWithRestoringEnvironment(returnValue: string[] | undefined, envVarToRestore: string, envResToRestore: string | undefined): Promise<string[] | undefined>
+    public async returnWithRestoringEnvironment(returnValue: string[] | undefined, envVarToRestore: string, envResToRestore: string | undefined): Promise<string[] | undefined>
     {
         if (EnvironmentVariableIsDefined(envVarToRestore))
         {
