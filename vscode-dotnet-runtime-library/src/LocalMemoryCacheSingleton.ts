@@ -4,20 +4,20 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-import { IAcquisitionWorkerContext } from "./Acquisition/IAcquisitionWorkerContext";
 import * as nodeCache from 'node-cache';
-import { CommandExecutorCommand } from "./Utils/CommandExecutorCommand";
-import { CommandExecutor } from "./Utils/CommandExecutor";
-import { CommandExecutorResult } from "./Utils/CommandExecutorResult";
+import { IAcquisitionWorkerContext } from "./Acquisition/IAcquisitionWorkerContext";
 import { CacheClearEvent, CacheGetEvent, CachePutEvent } from "./EventStream/EventStreamEvents";
+import { CommandExecutor } from "./Utils/CommandExecutor";
+import { CommandExecutorCommand } from "./Utils/CommandExecutorCommand";
+import { CommandExecutorResult } from "./Utils/CommandExecutorResult";
 
-interface CacheableCommand
+export interface CacheableCommand
 {
     command: CommandExecutorCommand;
     options: any;
 }
 
-interface LocalMemoryCacheMetadata
+export interface LocalMemoryCacheMetadata
 {
     ttlMs: number;
 }
@@ -54,7 +54,7 @@ export class LocalMemoryCacheSingleton
     }
 
     /**
-     * @returns the object in the cache with the key, key. undefined if the cache is empty.
+     * @returns the object in the cache with the key, key. undefined if the cache is empty. Telemetry will show this as a string undefined but it is undefined.
      */
     public get(key: string, context: IAcquisitionWorkerContext): any
     {
@@ -69,9 +69,20 @@ export class LocalMemoryCacheSingleton
     }
 
 
+    /**
+     *
+     * @param metadata if ttl is 0, it won't be added to the cache.
+     * @returns
+     */
     public put(key: string, obj: any, metadata: LocalMemoryCacheMetadata, context: IAcquisitionWorkerContext): void
     {
         metadata.ttlMs = metadata.ttlMs * this.timeToLiveMultiplier;
+        if (metadata.ttlMs === 0)
+        {
+            context.eventStream.post(new CachePutEvent(`TTL is 0 : Not to the cache at ${new Date().toISOString()}`, key, JSON.stringify(obj), metadata.ttlMs.toString()));
+            return;
+        }
+
         context.eventStream.post(new CachePutEvent(`Adding to the cache at ${new Date().toISOString()}`, key, JSON.stringify(obj), metadata.ttlMs.toString()));
         this.cache.set(key, obj, metadata.ttlMs / 1000);
     }
@@ -92,10 +103,10 @@ export class LocalMemoryCacheSingleton
     private cacheableCommandToKey(key: CacheableCommand): string
     {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        return `${CommandExecutor.prettifyCommandExecutorCommand(key.command)}${JSON.stringify(key.options, function replacer (k,v)
+        return `${CommandExecutor.prettifyCommandExecutorCommand(key.command)}${JSON.stringify(key.options, function replacer(k, v)
         {
             // Replace the dotnetInstallToolCacheTtlMs key with undefined so that it doesn't affect the cache key.
-            if(k === 'dotnetInstallToolCacheTtlMs')
+            if (k === 'dotnetInstallToolCacheTtlMs')
             {
                 return undefined;
             }
