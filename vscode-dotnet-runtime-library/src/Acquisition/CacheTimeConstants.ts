@@ -3,7 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-export const DOTNET_INFORMATION_CACHE_DURATION_MS = 5000;
+export const DOTNET_INFORMATION_CACHE_DURATION_MS = 3000;
 
 export const SYS_CMD_SEARCH_CACHE_DURATION_MS = 30000;
 

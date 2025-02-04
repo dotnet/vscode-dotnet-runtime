@@ -114,6 +114,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
   {
     // Tear down tmp storage for fresh run
     process.env.PATH = originalPATH;
+    LocalMemoryCacheSingleton.getInstance().invalidate();
 
     await vscode.commands.executeCommand<string>('dotnet.uninstallAll');
     mockState.clear();
@@ -575,12 +576,14 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
     assert.isTrue(!fs.existsSync(resultForAcquiringPathSettingRuntime.dotnetPath), 'The deletion of the real path succeeded');
     assert.isTrue(fs.existsSync(path.dirname(pathWithIncorrectVersionForTest)), 'The copy of the real dotnet to the new wrong-versioned path was not deleted');
 
+    LocalMemoryCacheSingleton.getInstance().invalidate();
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
 
     assert.exists(result, 'returns a result with path setting');
     assert.exists(result!.dotnetPath, 'path setting has a path');
     assert.equal(result!.dotnetPath, pathWithIncorrectVersionForTest, 'path setting is used'); // this is set for the alternative.extension in the settings
 
+    LocalMemoryCacheSingleton.getInstance().invalidate();
     const findPath = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath', { acquireContext: Object.assign({}, context, { mode: 'runtime' }), versionSpecRequirement: 'equal' });
     assert.equal(findPath!.dotnetPath, pathWithIncorrectVersionForTest, 'findPath uses vscode setting for runtime'); // this is set for the alternative.extension in the settings
 
