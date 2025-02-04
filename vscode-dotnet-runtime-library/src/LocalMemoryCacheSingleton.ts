@@ -79,7 +79,8 @@ export class LocalMemoryCacheSingleton
     public putCommand(key: CacheableCommand, obj: any, context: IAcquisitionWorkerContext): void
     {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        return this.put(this.cacheableCommandToKey(key), obj, { ttlMs: key.options?.dotnetInstallToolCacheTtlMs ?? 5000 } as LocalMemoryCacheMetadata, context);
+        const ttl = key.options?.dotnetInstallToolCacheTtlMs ?? 5000;
+        return this.put(this.cacheableCommandToKey(key), obj, { ttlMs: ttl } as LocalMemoryCacheMetadata, context);
     }
 
     public invalidate(context?: IAcquisitionWorkerContext): void
