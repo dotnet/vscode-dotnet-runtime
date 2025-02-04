@@ -413,7 +413,6 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if (options?.dotnetInstallToolCacheTtlMs)
         {
-            // useCache is preferred to checking the property each time as that gets removed to prevent exposing this to other tooling.
             useCache = true;
             const cachedResult = LocalMemoryCacheSingleton.getInstance().getCommand({ command, options }, this.context);
             if (cachedResult !== undefined)

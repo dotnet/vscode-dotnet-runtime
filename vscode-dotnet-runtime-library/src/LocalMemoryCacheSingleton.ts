@@ -91,10 +91,15 @@ export class LocalMemoryCacheSingleton
 
     private cacheableCommandToKey(key: CacheableCommand): string
     {
-        // Don't want the cache ttl to impact the result of whether it's cached or not.
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        delete key.options?.dotnetInstallToolCacheTtlMs;
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        return `${CommandExecutor.prettifyCommandExecutorCommand(key.command)}${JSON.stringify(key.options)}`;
+        return `${CommandExecutor.prettifyCommandExecutorCommand(key.command)}${JSON.stringify(key.options, function replacer (k,v)
+        {
+            // Replace the dotnetInstallToolCacheTtlMs key with undefined so that it doesn't affect the cache key.
+            if(k === 'dotnetInstallToolCacheTtlMs')
+            {
+                return undefined;
+            }
+            return v;
+        })}`;
     }
 };
