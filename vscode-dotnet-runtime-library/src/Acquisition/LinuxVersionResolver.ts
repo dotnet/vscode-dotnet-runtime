@@ -30,6 +30,7 @@ import { IDotnetAcquireContext } from '../IDotnetAcquireContext'
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { version } from 'os';
+import { DebianDistroSDKProvider } from './DebianDistroSDKProvider';
 
 /**
  * An enumeration type representing all distros with their versions that we recognize.
@@ -214,6 +215,8 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
                     throw unsupportedRhelErr.error;
                 }
                 return new RedHatDistroSDKProvider(distroAndVersion, this.workerContext, this.utilityContext);
+            case 'Debian':
+                return new DebianDistroSDKProvider(distroAndVersion, this.workerContext, this.utilityContext);
             default:
                 return new GenericDistroSDKProvider(distroAndVersion, this.workerContext, this.utilityContext);
         }
