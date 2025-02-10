@@ -399,11 +399,7 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
             }
 
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            if (!options?.shell)
-            {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                options.shell = true;
-            }
+            options.shell ??= true;
         }
         else
         {
