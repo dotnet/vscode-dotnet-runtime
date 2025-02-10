@@ -141,7 +141,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
     // Create a cache with the TTL setting that we can only reasonably access from here.
     const cacheTimeToLiveMultiplier = Math.abs(Number(extensionConfiguration.get<string>(configKeys.cacheTimeToLiveMultiplier)));
-    const _localCache = LocalMemoryCacheSingleton.getInstance(cacheTimeToLiveMultiplier ?? 1);
+    const _localCache = LocalMemoryCacheSingleton.getInstance(cacheTimeToLiveMultiplier);
+
 
     const allowInvalidPathSetting = extensionConfiguration.get<boolean>(configKeys.allowInvalidPaths);
     const isExtensionTelemetryEnabled = enableExtensionTelemetry(extensionConfiguration, configKeys.enableTelemetry);
