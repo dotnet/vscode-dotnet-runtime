@@ -58,12 +58,12 @@ suite('Global Installer Resolver Tests', () =>
 
     test('It works with other URLs', async () =>
     {
-        const acquisitionContext = getMockAcquisitionContext('runtime', mockVersion);
-        const provider: GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, mockVersion);
+        const acquisitionContext = getMockAcquisitionContext('sdk', '6.0.200');
+        const provider: GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, '6.0.200');
         const webWorker = new FileWebRequestWorker(acquisitionContext, '', otherUrlFilePath);
         provider.customWebRequestWorker = webWorker;
 
-        assert.equal(await provider.getFullySpecifiedVersion(), mockVersion);
+        assert.equal(await provider.getFullySpecifiedVersion(), '6.0.200');
         const installerUrl = await provider.getInstallerUrl();
         if (os.platform() === 'win32')
         {
