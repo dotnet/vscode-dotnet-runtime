@@ -70,6 +70,8 @@ extends:
         exclusionsFile: $(System.DefaultWorkingDirectory)\PoliCheckExclusions.xml
       tsa:
         enabled: true
+      componentgovernance:
+        ignoreDirectories: '.vscode-test/**'
     stages:
     - stage: Internal
       jobs:
