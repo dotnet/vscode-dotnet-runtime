@@ -392,11 +392,7 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
         if (options)
         {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            if (!options?.cwd)
-            {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                options.cwd = path.resolve(__dirname);
-            }
+            options.cwd ??= path.resolve(__dirname);
 
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             options.shell ??= true;
