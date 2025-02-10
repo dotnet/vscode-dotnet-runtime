@@ -7,7 +7,7 @@
 		"url": "https://github.com/dotnet/vscode-dotnet-runtime.git"
 	},
 	"license": "MIT",
-	"version": "2.2.7",
+	"version": "2.2.8",
 	"publisher": "ms-dotnettools",
 	"engines": {
 		"vscode": "^1.75.0"
