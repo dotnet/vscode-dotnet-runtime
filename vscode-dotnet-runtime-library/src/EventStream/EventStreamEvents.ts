@@ -1098,7 +1098,7 @@ export class CachePutEvent extends DotnetCustomMessageEvent
 
     public getProperties()
     {
-        return { Message: this.eventMessage, key : this.key, value: this.value, ttl: this.ttl };
+        return { Message: this.eventMessage, key: this.key, value: this.value, ttl: this.ttl };
     };
 }
 
