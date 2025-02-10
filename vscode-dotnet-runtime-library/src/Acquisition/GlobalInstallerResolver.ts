@@ -6,22 +6,24 @@
 import * as os from 'os';
 import * as path from 'path';
 
-import * as versionUtils from './VersionUtilities';
-import { WebRequestWorker } from '../Utils/WebRequestWorker';
-import { VersionResolver } from './VersionResolver';
-import { getInstallFromContext } from '../Utils/InstallIdUtilities';
-import { DotnetFeatureBandDoesNotExistError,
-        DotnetFileIntegrityCheckEvent,
-        DotnetInvalidReleasesJSONError,
-        DotnetNoInstallerFileExistsError,
-        DotnetUnexpectedInstallerArchitectureError,
-        DotnetUnexpectedInstallerOSError,
-        DotnetVersionCategorizedEvent,
-        DotnetVersionResolutionError,
-        EventBasedError,
-        EventCancellationError
+import
+{
+    DotnetFeatureBandDoesNotExistError,
+    DotnetFileIntegrityCheckEvent,
+    DotnetInvalidReleasesJSONError,
+    DotnetNoInstallerFileExistsError,
+    DotnetUnexpectedInstallerArchitectureError,
+    DotnetUnexpectedInstallerOSError,
+    DotnetVersionCategorizedEvent,
+    DotnetVersionResolutionError,
+    EventBasedError,
+    EventCancellationError
 } from '../EventStream/EventStreamEvents';
 import { FileUtilities } from '../Utils/FileUtilities';
+import { getInstallFromContext } from '../Utils/InstallIdUtilities';
+import { WebRequestWorker } from '../Utils/WebRequestWorker';
+import { VersionResolver } from './VersionResolver';
+import * as versionUtils from './VersionUtilities';
 
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
@@ -33,22 +35,23 @@ import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
  * It currently only is used for SDK Global acquisition to prevent breaking existing behaviors.
  * Throws various errors in the event that a version is incorrectly formatted, the sdk server is unavailable, etc.
  */
-export class GlobalInstallerResolver {
+export class GlobalInstallerResolver
+{
     // The unparsed version into given to the API to request a version of the SDK.
     // The word 'version' is 2nd in the name so that it's not auto-completed and mistaken for fullySpecifiedVersionRequested, which is what should be used.
-    private requestedVersion : string;
+    private requestedVersion: string;
 
     // The url for a the installer matching the machine os and arch of the system running the extension
-    private discoveredInstallerUrl : string;
+    private discoveredInstallerUrl: string;
 
     // The properly resolved version that was requested in the fully-specified 3-part semver version of the .NET SDK.
-    private fullySpecifiedVersionRequested : string;
+    private fullySpecifiedVersionRequested: string;
 
-    private expectedInstallerHash : string;
+    private expectedInstallerHash: string;
 
-    protected fileUtilities : FileUtilities;
+    protected fileUtilities: FileUtilities;
 
-    private versionResolver : VersionResolver;
+    private versionResolver: VersionResolver;
 
     private releasesJsonErrorString = `The API hosting the dotnet releases.json is invalid or has changed and the extension needs to be updated. Invalid API URL: `;
     private badResolvedVersionErrorString = `The requested version was not in the correct format. Allowable formats are
@@ -71,13 +74,13 @@ export class GlobalInstallerResolver {
      * @remarks Do NOT set this unless you are testing.
      * Written to allow mock data to be given to the resolver.
      */
-    public customWebRequestWorker? : WebRequestWorker | null = null;
+    public customWebRequestWorker?: WebRequestWorker | null = null;
 
     constructor
-    (
-        private readonly context : IAcquisitionWorkerContext,
-        requestedVersion : string,
-    )
+        (
+            private readonly context: IAcquisitionWorkerContext,
+            requestedVersion: string,
+        )
     {
         this.requestedVersion = requestedVersion;
         this.discoveredInstallerUrl = '';
@@ -121,7 +124,7 @@ export class GlobalInstallerResolver {
 
     private async determineVersionAndInstallerUrl()
     {
-        if(this.fullySpecifiedVersionRequested === '' || this.discoveredInstallerUrl === '')
+        if (this.fullySpecifiedVersionRequested === '' || this.discoveredInstallerUrl === '')
         {
             [this.discoveredInstallerUrl, this.fullySpecifiedVersionRequested, this.expectedInstallerHash] = await this.routeRequestToProperVersionRequestType(this.requestedVersion);
         }
@@ -134,9 +137,9 @@ export class GlobalInstallerResolver {
      * @returns The installer download URL for the correct OS, Architecture, & Specific Version based on the given input version, and then the resolved version we determined to install,
      * ... followed by the expected hash.
      */
-    private async routeRequestToProperVersionRequestType(version : string) : Promise<[string, string, string]>
+    private async routeRequestToProperVersionRequestType(version: string): Promise<[string, string, string]>
     {
-        if(versionUtils.isNonSpecificMajorOrMajorMinorVersion(version))
+        if (versionUtils.isNonSpecificMajorOrMajorMinorVersion(version))
         {
             this.context.eventStream.post(new DotnetVersionCategorizedEvent(`The VersionResolver resolved the version ${version} to be major, or major.minor.`));
             const numberOfPeriods = version.split('.').length - 1;
@@ -146,7 +149,7 @@ export class GlobalInstallerResolver {
             const installerUrlAndHash = await this.findCorrectInstallerUrlAndHash(fullySpecifiedVersionRequested, indexUrl);
             return [installerUrlAndHash[0], fullySpecifiedVersionRequested, installerUrlAndHash[1]];
         }
-        else if(versionUtils.isNonSpecificFeatureBandedVersion(version))
+        else if (versionUtils.isNonSpecificFeatureBandedVersion(version))
         {
             this.context.eventStream.post(new DotnetVersionCategorizedEvent(`The VersionResolver resolved the version ${version} to be a N.Y.XXX version.`));
             const fullySpecifiedVersion = await this.getNewestSpecificVersionFromFeatureBand(version);
@@ -154,7 +157,7 @@ export class GlobalInstallerResolver {
                 this.getIndexUrl(versionUtils.getMajorMinor(fullySpecifiedVersion, this.context.eventStream, this.context)));
             return [installerUrlAndHash[0], fullySpecifiedVersion, installerUrlAndHash[1]];
         }
-        else if(versionUtils.isFullySpecifiedVersion(version, this.context.eventStream, this.context))
+        else if (versionUtils.isFullySpecifiedVersion(version, this.context.eventStream, this.context))
         {
             this.context.eventStream.post(new DotnetVersionCategorizedEvent(`The VersionResolver resolved the version ${version} to be a fully specified version.`));
             const fullySpecifiedVersionRequested = version;
@@ -176,9 +179,9 @@ export class GlobalInstallerResolver {
      * @param indexUrl The url of the index server that hosts installer download links.
      * @returns The installer url to download as the first item of a tuple and then the expected hash of said installer
      */
-    private async findCorrectInstallerUrlAndHash(specificVersion : string, indexUrl : string) : Promise<[string, string]>
+    private async findCorrectInstallerUrlAndHash(specificVersion: string, indexUrl: string): Promise<[string, string]>
     {
-        if(specificVersion === null || specificVersion === undefined || specificVersion === '')
+        if (specificVersion === null || specificVersion === undefined || specificVersion === '')
         {
             const versionErr = new DotnetVersionResolutionError(new EventCancellationError('DotnetVersionResolutionError',
                 `${this.badResolvedVersionErrorString} ${specificVersion}.`),
@@ -188,16 +191,16 @@ export class GlobalInstallerResolver {
         }
 
         const convertedOs = this.fileUtilities.nodeOSToDotnetOS(os.platform(), this.context.eventStream);
-        if(convertedOs === 'auto')
+        if (convertedOs === 'auto')
         {
             const osErr = new DotnetUnexpectedInstallerOSError(new EventBasedError('DotnetUnexpectedInstallerOSError',
-            `The OS ${os.platform()} is currently unsupported or unknown.`), getInstallFromContext(this.context));
+                `The OS ${os.platform()} is currently unsupported or unknown.`), getInstallFromContext(this.context));
             this.context.eventStream.post(osErr);
             throw osErr.error;
         }
 
         const convertedArch = this.fileUtilities.nodeArchToDotnetArch(os.arch(), this.context.eventStream);
-        if(convertedArch === 'auto')
+        if (convertedArch === 'auto')
         {
             const archErr = new DotnetUnexpectedInstallerArchitectureError(new EventBasedError('DotnetUnexpectedInstallerArchitectureError',
                 `The architecture ${os.arch()} is currently unsupported or unknown.
@@ -208,9 +211,9 @@ export class GlobalInstallerResolver {
 
         const desiredRidPackage = `${convertedOs}-${convertedArch}`;
 
-        const indexJson : any = await this.fetchJsonObjectFromUrl(indexUrl);
+        const indexJson: any = await this.fetchJsonObjectFromUrl(indexUrl);
         const releases = indexJson![this.releasesJsonKey];
-        if(releases.length === 0)
+        if (releases.length === 0)
         {
             const jsonErr = new DotnetInvalidReleasesJSONError(new EventBasedError('DotnetInvalidReleasesJSONError',
                 `${this.releasesJsonErrorString}${indexUrl}`), getInstallFromContext(this.context));
@@ -221,7 +224,7 @@ export class GlobalInstallerResolver {
         const sdks: any[] = [];
         const releasesKeyAlias = this.releasesSdksKey; // the forEach creates a separate 'this', so we introduce this copy to reduce ambiguity to the compiler
 
-        releases.forEach(function (release : any)
+        releases.forEach(function (release: any)
         {
             // eslint-disable-next-line prefer-spread
             sdks.push.apply(sdks, release[releasesKeyAlias]);
@@ -229,28 +232,31 @@ export class GlobalInstallerResolver {
 
         for (const sdk of sdks)
         {
-            const thisSDKVersion : string = sdk[this.releasesSdkVersionKey];
-            if(thisSDKVersion === specificVersion) // NOTE that this will not catch things like -preview or build number suffixed versions.
+            const thisSDKVersion: string = sdk[this.releasesSdkVersionKey];
+            if (thisSDKVersion === specificVersion) // NOTE that this will not catch things like -preview or build number suffixed versions.
             {
-               const thisSDKFiles = sdk[this.releasesSdkFileKey];
-               for (const installer of thisSDKFiles)
-               {
-                    if(installer[this.releasesSdkRidKey] === desiredRidPackage && this.installerMatchesDesiredFileExtension(specificVersion, installer, convertedOs))
+                const thisSDKFiles = sdk[this.releasesSdkFileKey];
+                for (const installer of thisSDKFiles)
+                {
+                    if (installer[this.releasesSdkRidKey] === desiredRidPackage && this.installerMatchesDesiredFileExtension(specificVersion, installer, convertedOs))
                     {
                         const installerUrl = installer[this.releasesUrlKey];
-                        if(installerUrl === undefined)
+                        if (installerUrl === undefined)
                         {
                             const releaseJsonErr = new DotnetInvalidReleasesJSONError(new EventBasedError('DotnetInvalidReleasesJSONError',
-                            `URL for ${desiredRidPackage} on ${specificVersion} is unavailable:
+                                `URL for ${desiredRidPackage} on ${specificVersion} is unavailable:
 The version may be Out of Support, or the releases json format used by ${indexUrl} may be invalid and the extension needs to be updated.`),
                                 getInstallFromContext(this.context));
                             this.context.eventStream.post(releaseJsonErr);
                             throw releaseJsonErr.error;
                         }
-                        if(!(installerUrl as string).startsWith('https://download.visualstudio.microsoft.com/'))
+                        if (!this.startsWithAny((installerUrl as string), [
+                            'https://download.visualstudio.microsoft.com/', 'https://builds.dotnet.microsoft.com/', 'https://dotnetcli.trafficmanager.net/',
+                            'https://builds.dotnet.microsoft.com.edgesuite.net/', 'https://dotnetcli.azureedge.net/', 'https://dotnetcli.blob.core.windows.net/',
+                        ]))
                         {
                             const releaseJsonErr = new DotnetInvalidReleasesJSONError(new EventBasedError('DotnetInvalidReleasesJSONError',
-                            `The url: ${installerUrl} is hosted on an unexpected domain.
+                                `The url: ${installerUrl} is hosted on an unexpected domain.
 We cannot verify that .NET downloads are hosted in a secure location, so we have rejected .NET. The url should be download.visualstudio.microsoft.com.
 Please report this issue so it can be remedied or investigated.`), getInstallFromContext(this.context));
                             this.context.eventStream.post(releaseJsonErr);
@@ -262,7 +268,7 @@ Please report this issue so it can be remedied or investigated.`), getInstallFro
                         }
 
                         let installerHash = installer[this.releasesHashKey];
-                        if(!installerHash)
+                        if (!installerHash)
                         {
                             installerHash = null;
                         }
@@ -271,7 +277,7 @@ Please report this issue so it can be remedied or investigated.`), getInstallFro
                 }
 
                 const installerErr = new DotnetNoInstallerFileExistsError(new EventBasedError('DotnetNoInstallerFileExistsError',
-                `An installer for the runtime ${desiredRidPackage} could not be found for version ${specificVersion}.`),
+                    `An installer for the runtime ${desiredRidPackage} could not be found for version ${specificVersion}.`),
                     getInstallFromContext(this.context));
                 this.context.eventStream.post(installerErr);
                 throw installerErr.error;
@@ -279,7 +285,7 @@ Please report this issue so it can be remedied or investigated.`), getInstallFro
         }
 
         const fileErr = new DotnetNoInstallerFileExistsError(new EventBasedError('DotnetNoInstallerFileExistsError',
-        `The SDK installation files for version ${specificVersion} running on ${desiredRidPackage} couldn't be found.
+            `The SDK installation files for version ${specificVersion} running on ${desiredRidPackage} couldn't be found.
 Is the version in support? Note that -preview versions or versions with build numbers aren't yet supported.
 Visit https://dotnet.microsoft.com/platform/support/policy/dotnet-core for support information.`), getInstallFromContext(this.context));
         this.context.eventStream.post(fileErr);
@@ -291,7 +297,7 @@ Visit https://dotnet.microsoft.com/platform/support/policy/dotnet-core for suppo
      * @param majorMinor the major.minor in the form of '3.1', etc.
      * @returns the url to obtain the installer for the version.
      */
-    private getIndexUrl(majorMinor : string ) : string
+    private getIndexUrl(majorMinor: string): string
     {
         return `https://builds.dotnet.microsoft.com/dotnet/release-metadata/${majorMinor}/releases.json`;
     }
@@ -303,13 +309,13 @@ Visit https://dotnet.microsoft.com/platform/support/policy/dotnet-core for suppo
      * @returns true if the filetype of the installer json entry containing the installer file name in the key 'name' is of a desired installer file extension type.
      * (e.g. EXE on windows or PKG on mac.)
      */
-    private installerMatchesDesiredFileExtension(version : string, installerJson : any, operatingSystemInDotnetFormat : string) : boolean
+    private installerMatchesDesiredFileExtension(version: string, installerJson: any, operatingSystemInDotnetFormat: string): boolean
     {
         const installerFileName = installerJson[this.releasesSdkNameKey];
-        if(installerFileName === undefined)
+        if (installerFileName === undefined)
         {
             const err = new DotnetInvalidReleasesJSONError(new EventBasedError('DotnetInvalidReleasesJSONError',
-            `${this.releasesJsonErrorString}
+                `${this.releasesJsonErrorString}
                 ${this.getIndexUrl(versionUtils.getMajorMinor(version, this.context.eventStream, this.context))}.
 The json does not have the parameter ${this.releasesSdkNameKey} which means the API publisher has published invalid dotnet release data.
 Please file an issue at https://github.com/dotnet/vscode-dotnet-runtime.`), getInstallFromContext(this.context));
@@ -319,7 +325,7 @@ Please file an issue at https://github.com/dotnet/vscode-dotnet-runtime.`), getI
 
         let desiredFileExtension = '';
 
-        switch(operatingSystemInDotnetFormat)
+        switch (operatingSystemInDotnetFormat)
         {
             case 'win': {
                 desiredFileExtension = '.exe';
@@ -334,13 +340,13 @@ Please file an issue at https://github.com/dotnet/vscode-dotnet-runtime.`), getI
                 break;
             }
             default:
-            {
-                const err = new DotnetUnexpectedInstallerOSError(new EventBasedError('DotnetUnexpectedInstallerOSError',
-                `The SDK Extension failed to map the OS ${operatingSystemInDotnetFormat} to a proper package type.
+                {
+                    const err = new DotnetUnexpectedInstallerOSError(new EventBasedError('DotnetUnexpectedInstallerOSError',
+                        `The SDK Extension failed to map the OS ${operatingSystemInDotnetFormat} to a proper package type.
 Your architecture: ${os.arch()}. Your OS: ${os.platform()}.`), getInstallFromContext(this.context));
-                this.context.eventStream.post(err);
-                throw err.error;
-            }
+                    this.context.eventStream.post(err);
+                    throw err.error;
+                }
         }
 
         return path.extname(installerFileName) === desiredFileExtension;
@@ -351,16 +357,16 @@ Your architecture: ${os.arch()}. Your OS: ${os.platform()}.`), getInstallFromCon
      * @param version the non-specific version, such as 6.0.4xx.
      * @param band The band of the version.
      */
-    private async getNewestSpecificVersionFromFeatureBand(version : string) : Promise<string>
+    private async getNewestSpecificVersionFromFeatureBand(version: string): Promise<string>
     {
-        const band : string = versionUtils.getFeatureBandFromVersion(version, this.context.eventStream, this.context);
-        const indexUrl : string = this.getIndexUrl(versionUtils.getMajorMinor(version, this.context.eventStream, this.context));
+        const band: string = versionUtils.getFeatureBandFromVersion(version, this.context.eventStream, this.context);
+        const indexUrl: string = this.getIndexUrl(versionUtils.getMajorMinor(version, this.context.eventStream, this.context));
 
         // Get the sdks
-        const indexJson : any = await this.fetchJsonObjectFromUrl(indexUrl);
+        const indexJson: any = await this.fetchJsonObjectFromUrl(indexUrl);
         const releases = indexJson[this.releasesJsonKey]
 
-        if(releases.length === 0)
+        if (releases.length === 0)
         {
             const badJsonErr = new DotnetInvalidReleasesJSONError(new EventBasedError('DotnetInvalidReleasesJSONError',
                 `${this.releasesJsonErrorString}${indexUrl}`), getInstallFromContext(this.context));
@@ -374,19 +380,31 @@ Your architecture: ${os.arch()}. Your OS: ${os.platform()}.`), getInstallFromCon
         {
             // The SDKs in the index should be in-order, so we can rely on that property.
             // The first one we find with the given feature band will also be the 'newest.'
-            const thisSDKVersion : string = sdk[this.releasesSdkVersionKey];
-            if(versionUtils.getFeatureBandFromVersion(thisSDKVersion, this.context.eventStream, this.context) === band)
+            const thisSDKVersion: string = sdk[this.releasesSdkVersionKey];
+            if (versionUtils.getFeatureBandFromVersion(thisSDKVersion, this.context.eventStream, this.context) === band)
             {
                 return thisSDKVersion;
             }
         }
 
-        const availableBands : string[] = Array.from(new Set(sdks.map((x : any) => versionUtils.getFeatureBandFromVersion(x[this.releasesSdkVersionKey], this.context.eventStream, this.context))));
+        const availableBands: string[] = Array.from(new Set(sdks.map((x: any) => versionUtils.getFeatureBandFromVersion(x[this.releasesSdkVersionKey], this.context.eventStream, this.context))));
         const err = new DotnetFeatureBandDoesNotExistError(new EventBasedError('DotnetFeatureBandDoesNotExistError',
             `The feature band '${band}' doesn't exist for the SDK major version '${version}'.
 Available feature bands for this SDK version are ${availableBands}.`), getInstallFromContext(this.context));
         this.context.eventStream.post(err);
         throw err.error;
+    }
+
+    private startsWithAny(str: string, substrings: string[]): boolean
+    {
+        for (const substring of substrings)
+        {
+            if (str.startsWith(substring))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -395,7 +413,7 @@ Available feature bands for this SDK version are ${availableBands}.`), getInstal
      * @returns a serialized JSON object.
      * @remarks A wrapper around the real web request worker class to call into either the mock or real web worker. The main point of this function is  to dedupe logic.
      */
-    private async fetchJsonObjectFromUrl(url : string)
+    private async fetchJsonObjectFromUrl(url: string)
     {
         const webWorker = this.customWebRequestWorker ? this.customWebRequestWorker : new WebRequestWorker(this.context, url);
         return webWorker.getCachedData();
