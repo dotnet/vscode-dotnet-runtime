@@ -140,7 +140,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     const proxyLink = extensionConfiguration.get<string>(configKeys.proxyUrl);
 
     // Create a cache with the TTL setting that we can only reasonably access from here.
-    const cacheTimeToLiveMultiplier = Math.abs(Number(extensionConfiguration.get<string>(configKeys.cacheTimeToLiveMultiplier)));
+    const cacheTimeToLiveMultiplier = Math.abs(Number(extensionConfiguration.get<string>(configKeys.cacheTimeToLiveMultiplier) ?? 1));
+
     const _localCache = LocalMemoryCacheSingleton.getInstance(cacheTimeToLiveMultiplier);
 
 
