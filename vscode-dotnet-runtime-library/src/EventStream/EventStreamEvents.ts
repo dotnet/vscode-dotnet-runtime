@@ -1109,7 +1109,7 @@ export class CacheGetEvent extends DotnetCustomMessageEvent
 
     public getProperties()
     {
-        return { Message: this.eventMessage, key : this.key, value: this.value };
+        return { Message: this.eventMessage, key: this.key, value: this.value };
     };
 }
 
