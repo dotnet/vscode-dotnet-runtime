@@ -5,10 +5,10 @@
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
 import * as os from 'os';
-import { FileWebRequestWorker, MockEventStream, MockExtensionContext } from '../mocks/MockObjects';
 import { GlobalInstallerResolver } from '../../Acquisition/GlobalInstallerResolver';
-import path = require('path');
+import { FileWebRequestWorker, MockEventStream, MockExtensionContext } from '../mocks/MockObjects';
 import { getMockAcquisitionContext } from './TestUtility';
+import path = require('path');
 const assert = chai.assert;
 
 const mockVersion = '7.0.306';
@@ -20,32 +20,35 @@ const majorMinorOnly = '7.0';
 const context = new MockExtensionContext();
 const eventStream = new MockEventStream();
 const filePath = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-channel-7-index.json');
+const otherUrlFilePath = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-channel-6-index.json');
 const timeoutTime = 10000;
 
 suite('Global Installer Resolver Tests', () =>
 {
-    test('It finds the newest patch version given a feature band', async () => {
+    test('It finds the newest patch version given a feature band', async () =>
+    {
         const acquisitionContext = getMockAcquisitionContext('runtime', featureBandVersion);
-        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, featureBandVersion);
+        const provider: GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, featureBandVersion);
         const webWorker = new FileWebRequestWorker(acquisitionContext, '', filePath);
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullySpecifiedVersion(), newestFeatureBandedVersion);
     });
 
-    test('It finds the correct installer download url for the os', async () => {
+    test('It finds the correct installer download url for the os', async () =>
+    {
         const acquisitionContext = getMockAcquisitionContext('runtime', mockVersion);
-        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, mockVersion);
+        const provider: GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, mockVersion);
         const webWorker = new FileWebRequestWorker(acquisitionContext, '', filePath);
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullySpecifiedVersion(), mockVersion);
         const installerUrl = await provider.getInstallerUrl();
-        if(os.platform() === 'win32')
+        if (os.platform() === 'win32')
         {
             assert.include(installerUrl, 'exe');
         }
-        else if(os.platform() === 'darwin')
+        else if (os.platform() === 'darwin')
         {
             assert.include(installerUrl, 'pkg');
         }
@@ -53,28 +56,50 @@ suite('Global Installer Resolver Tests', () =>
         assert.include(installerUrl, (os.arch() === 'ia32' ? 'x86' : os.arch()));
     });
 
-    test('It parses the major format', async () => {
+    test('It works with other URLs', async () =>
+    {
+        const acquisitionContext = getMockAcquisitionContext('sdk', '6.0.200');
+        const provider: GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, '6.0.200');
+        const webWorker = new FileWebRequestWorker(acquisitionContext, '', otherUrlFilePath);
+        provider.customWebRequestWorker = webWorker;
+
+        assert.equal(await provider.getFullySpecifiedVersion(), '6.0.200');
+        const installerUrl = await provider.getInstallerUrl();
+        if (os.platform() === 'win32')
+        {
+            assert.include(installerUrl, 'exe');
+        }
+        else if (os.platform() === 'darwin')
+        {
+            assert.include(installerUrl, 'pkg');
+        }
+    });
+
+    test('It parses the major format', async () =>
+    {
         const acquisitionContext = getMockAcquisitionContext('runtime', majorMinorOnly);
-        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, majorMinorOnly);
+        const provider: GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, majorMinorOnly);
         const webWorker = new FileWebRequestWorker(acquisitionContext, '', filePath);
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullySpecifiedVersion(), mockVersion);
     });
 
-    test('It parses the major.minor format', async () => {
+    test('It parses the major.minor format', async () =>
+    {
         const acquisitionContext = getMockAcquisitionContext('runtime', majorOnly);
-        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, majorOnly);
+        const provider: GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, majorOnly);
         const webWorker = new FileWebRequestWorker(acquisitionContext, '', filePath);
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullySpecifiedVersion(), mockVersion);
     });
 
-    test('It rejects correctly with undiscoverable feature band', async () => {
+    test('It rejects correctly with undiscoverable feature band', async () =>
+    {
         const version = '7.0.500';
         const acquisitionContext = getMockAcquisitionContext('runtime', version);
-        const provider : GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, version);
+        const provider: GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, version);
         const webWorker = new FileWebRequestWorker(acquisitionContext, '', filePath);
         provider.customWebRequestWorker = webWorker;
 
