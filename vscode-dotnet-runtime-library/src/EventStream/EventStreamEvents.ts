@@ -4,14 +4,14 @@
 *--------------------------------------------------------------------------------------------*/
 import * as fs from 'fs';
 import * as path from 'path';
+import { DotnetInstall, InstallToStrings } from '../Acquisition/DotnetInstall';
+import { DotnetInstallMode } from '../Acquisition/DotnetInstallMode';
 import { IDotnetInstallationContext } from '../Acquisition/IDotnetInstallationContext';
+import { DotnetInstallType } from '../IDotnetAcquireContext';
+import { IDotnetFindPathContext } from '../IDotnetFindPathContext';
 import { EventType } from './EventType';
 import { IEvent } from './IEvent';
 import { TelemetryUtilities } from './TelemetryUtilities';
-import { InstallToStrings, DotnetInstall } from '../Acquisition/DotnetInstall';
-import { DotnetInstallMode } from '../Acquisition/DotnetInstallMode';
-import { DotnetInstallType } from '../IDotnetAcquireContext';
-import { IDotnetFindPathContext } from '../IDotnetFindPathContext';
 
 export class EventCancellationError extends Error
 {
@@ -1094,22 +1094,22 @@ export class CacheClearEvent extends DotnetCustomMessageEvent
 export class CachePutEvent extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'CachePutEvent';
-    constructor(public readonly eventMessage: string, public readonly key: string, public readonly value: string, public readonly ttl: string) { super(eventMessage); }
+    constructor(public readonly eventMessage: string, public readonly indexStr: string, public readonly value: string, public readonly ttl: string) { super(eventMessage); }
 
     public getProperties()
     {
-        return { Message: this.eventMessage, key: this.key, value: this.value, ttl: this.ttl };
+        return { Message: this.eventMessage, indexStr: this.indexStr, value: this.value, ttl: this.ttl };
     };
 }
 
 export class CacheGetEvent extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'CacheGetEvent';
-    constructor(public readonly eventMessage: string, public readonly key: string, public readonly value: string) { super(eventMessage); }
+    constructor(public readonly eventMessage: string, public readonly indexStr: string, public readonly value: string) { super(eventMessage); }
 
     public getProperties()
     {
-        return { Message: this.eventMessage, key: this.key, value: this.value };
+        return { Message: this.eventMessage, indexStr: this.indexStr, value: this.value };
     };
 }
 

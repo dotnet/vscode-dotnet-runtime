@@ -31,10 +31,10 @@ suite('LocalMemoryCacheSingleton Unit Tests', function ()
         const result = await finder.getTruePath(['dotnet']);
 
         const cachePutEvent = eventStream.events.find(event => event instanceof CachePutEvent && Number((event as CachePutEvent).ttl) === DOTNET_INFORMATION_CACHE_DURATION_MS
-            && (event as CachePutEvent).key.includes('--list-runtimes') && (event as CachePutEvent).key.includes('dotnet'));
+            && (event as CachePutEvent).indexStr.includes('--list-runtimes') && (event as CachePutEvent).indexStr.includes('dotnet'));
 
         const cacheShouldBeEmptyOneTimeEvent = eventStream.events.find(event => event instanceof CacheGetEvent
-            && (event as CacheGetEvent).key.includes('--list-runtimes') && (event as CacheGetEvent).value === 'undefined');
+            && (event as CacheGetEvent).indexStr.includes('--list-runtimes') && (event as CacheGetEvent).value === 'undefined');
 
         assert.exists(cachePutEvent, `The cache put event was found: ${JSON.stringify(eventStream.events)}.`);
         assert.exists(cacheShouldBeEmptyOneTimeEvent, `The cache was checked but it was empty at first: ${JSON.stringify(eventStream.events, null, " ")}`);
@@ -42,7 +42,7 @@ suite('LocalMemoryCacheSingleton Unit Tests', function ()
         const secondResult = await finder.getTruePath(['dotnet']);
 
         const cacheShouldHaveItEvent = eventStream.events.find(event => event instanceof CacheGetEvent
-            && (event as CacheGetEvent).key.includes('dotnet') && (event as CacheGetEvent).key.includes('--list-runtimes') && (event as CacheGetEvent).value !== undefined);
+            && (event as CacheGetEvent).indexStr.includes('dotnet') && (event as CacheGetEvent).indexStr.includes('--list-runtimes') && (event as CacheGetEvent).value !== undefined);
 
         assert.exists(cacheShouldHaveItEvent, `The cache was checked and it wasn't empty later: ${JSON.stringify(eventStream.events, null, " ")}`);
     }).timeout(10000 * 2);
