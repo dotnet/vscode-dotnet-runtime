@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-## [2.2.7] - 2025-2-TBD
+## [2.2.8] - 2025-2-11
+
+Fix for breaking change to releases.json when downloading .NET 9.
+
+## [2.2.7] - 2025-2-10
 
 Fix some issues with powershell language mode and execution policy. Improve error messages for this.
 Performance improvements.

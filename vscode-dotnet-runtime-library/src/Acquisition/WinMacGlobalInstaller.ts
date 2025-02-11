@@ -14,21 +14,21 @@ import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import
-    {
-        DotnetAcquisitionAlreadyInstalled,
-        DotnetConflictingGlobalWindowsInstallError,
-        DotnetFileIntegrityCheckEvent,
-        DotnetFileIntegrityFailureEvent,
-        DotnetInstallCancelledByUserError,
-        DotnetNoInstallerResponseError,
-        DotnetUnexpectedInstallerOSError,
-        EventBasedError,
-        EventCancellationError,
-        NetInstallerBeginExecutionEvent,
-        NetInstallerEndExecutionEvent,
-        OSXOpenNotAvailableError,
-        SuppressedAcquisitionError,
-    } from '../EventStream/EventStreamEvents';
+{
+    DotnetAcquisitionAlreadyInstalled,
+    DotnetConflictingGlobalWindowsInstallError,
+    DotnetFileIntegrityCheckEvent,
+    DotnetFileIntegrityFailureEvent,
+    DotnetInstallCancelledByUserError,
+    DotnetNoInstallerResponseError,
+    DotnetUnexpectedInstallerOSError,
+    EventBasedError,
+    EventCancellationError,
+    NetInstallerBeginExecutionEvent,
+    NetInstallerEndExecutionEvent,
+    OSXOpenNotAvailableError,
+    SuppressedAcquisitionError,
+} from '../EventStream/EventStreamEvents';
 
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
@@ -41,6 +41,7 @@ import { getOSArch } from '../Utils/TypescriptUtilities';
 import { RegistryReader } from './RegistryReader';
 import { IRegistryReader } from './IRegistryReader';
 import { util } from 'chai';
+import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
 
 namespace validationPromptConstants
 {
@@ -250,7 +251,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             if (os.platform() === 'win32') // Windows does not have chmod +x ability with nodejs.
             {
                 const permissionsCommand = CommandExecutor.makeCommand('icacls', [`"${installerPath}"`, '/grant:r', `"%username%":F`, '/t', '/c']);
-                const commandRes = await this.commandRunner.execute(permissionsCommand, {}, false);
+                const commandRes = await this.commandRunner.execute(permissionsCommand, { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }, false);
                 if (commandRes.stderr !== '')
                 {
                     const error = new EventBasedError('FailedToSetInstallerPermissions', `Failed to set icacls permissions on the installer file ${installerPath}. ${commandRes.stderr}`);
@@ -321,7 +322,7 @@ Please try again, or download the .NET Installer file yourself. You may also rep
             else if (error?.message?.includes('EPERM'))
             {
                 this.acquisitionContext.eventStream.post(new DotnetFileIntegrityFailureEvent(`The file ${installerFile} did not have the correct permissions scope to be assessed.
-Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerFile}"`])))}`));
+Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerFile}"`]), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }))}`));
             }
             return this.userChoosesToContinueWithInvalidHash();
         }
@@ -439,7 +440,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
         {
             const command = `"${path.resolve(installerPath)}"`;
             let commandOptions: string[] = [];
-            if (this.file.isElevated(this.acquisitionContext.eventStream))
+            if (await this.file.isElevated(this.acquisitionContext, this.utilityContext))
             {
                 commandOptions = [`/quiet`, `/install`, `/norestart`];
             }
@@ -465,7 +466,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
                     // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                     error.message = `The installer does not have permission to execute. Please try running as an administrator. ${error?.message}.
-Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerPath}"`])))}`;
+Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerPath}"`]), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }))}`;
                 }
                 // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access

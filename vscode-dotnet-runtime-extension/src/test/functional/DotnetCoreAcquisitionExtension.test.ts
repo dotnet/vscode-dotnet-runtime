@@ -37,6 +37,8 @@ import
   getMockUtilityContext,
   DotnetPathFinder,
   DotnetConditionValidator,
+  LocalMemoryCacheSingleton,
+  getMockAcquisitionWorkerContext,
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { warn } from 'console';
@@ -112,12 +114,15 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
   {
     // Tear down tmp storage for fresh run
     process.env.PATH = originalPATH;
+    LocalMemoryCacheSingleton.getInstance().invalidate();
 
     await vscode.commands.executeCommand<string>('dotnet.uninstallAll');
     mockState.clear();
     MockTelemetryReporter.telemetryEvents = [];
     rimraf.sync(storagePath);
     InstallTrackerSingleton.getInstance(new MockEventStream(), new MockExtensionContext()).clearPromises();
+    // Dont want cached results from prior tests to interfere
+    LocalMemoryCacheSingleton.getInstance().invalidate();
   }).timeout(standardTimeoutTime);
 
   test('Activate', async () =>
@@ -430,11 +435,11 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
   test('Install SDK Globally E2E (Requires Admin)', async () =>
   {
     // We only test if the process is running under ADMIN because non-admin requires user-intervention.
-    if (new FileUtilities().isElevated())
+    const sdkVersion = '7.0.103';
+    const context: IDotnetAcquireContext = { version: sdkVersion, requestingExtensionId: 'sample-extension', installType: 'global' };
+    if (await new FileUtilities().isElevated(getMockAcquisitionWorkerContext(context), getMockUtilityContext()))
     {
       const originalPath = process.env.PATH;
-      const sdkVersion = '7.0.103';
-      const context: IDotnetAcquireContext = { version: sdkVersion, requestingExtensionId: 'sample-extension', installType: 'global' };
 
       // We cannot use the describe pattern to restore the environment variables using vscode's extension testing infrastructure.
       // So we must set and unset it ourselves, which isn't ideal as this variable could remain.
@@ -571,12 +576,14 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
     assert.isTrue(!fs.existsSync(resultForAcquiringPathSettingRuntime.dotnetPath), 'The deletion of the real path succeeded');
     assert.isTrue(fs.existsSync(path.dirname(pathWithIncorrectVersionForTest)), 'The copy of the real dotnet to the new wrong-versioned path was not deleted');
 
+    LocalMemoryCacheSingleton.getInstance().invalidate();
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
 
     assert.exists(result, 'returns a result with path setting');
     assert.exists(result!.dotnetPath, 'path setting has a path');
     assert.equal(result!.dotnetPath, pathWithIncorrectVersionForTest, 'path setting is used'); // this is set for the alternative.extension in the settings
 
+    LocalMemoryCacheSingleton.getInstance().invalidate();
     const findPath = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath', { acquireContext: Object.assign({}, context, { mode: 'runtime' }), versionSpecRequirement: 'equal' });
     assert.equal(findPath!.dotnetPath, pathWithIncorrectVersionForTest, 'findPath uses vscode setting for runtime'); // this is set for the alternative.extension in the settings
 

@@ -14,6 +14,7 @@ export * from './IDotnetEnsureDependenciesContext';
 export * from './IExtensionContext';
 export * from './IExtensionState';
 export * from './IVSCodeExtensionContext';
+export * from './LocalMemoryCacheSingleton';
 export * from './VSCodeExtensionContext';
 export * from './EventStream/EventStream';
 export * from './EventStream/EventStreamRegistration';

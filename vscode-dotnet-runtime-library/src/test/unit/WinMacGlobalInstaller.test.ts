@@ -22,9 +22,11 @@ suite('Windows & Mac Global Installer Tests', () =>
     const mockVersion = '7.0.306';
     const mockUrl = 'https://download.visualstudio.microsoft.com/download/pr/4c0aaf08-3fa1-4fa0-8435-73b85eee4b32/e8264b3530b03b74b04ecfcf1666fe93/dotnet-sdk-7.0.306-win-x64.exe';
     const mockHash = '';
-    const mockExecutor = new MockCommandExecutor(getMockAcquisitionContext('sdk', mockVersion), getMockUtilityContext());
+    const utilContext = getMockUtilityContext();
+    const mockSdkContext = getMockAcquisitionContext('sdk', mockVersion);
+    const mockExecutor = new MockCommandExecutor(mockSdkContext, utilContext);
     const mockFileUtils = new MockFileUtilities();
-    const reader : RegistryReader = new RegistryReader(getMockAcquisitionContext('sdk', mockVersion), getMockUtilityContext(), mockExecutor);
+    const reader : RegistryReader = new RegistryReader(mockSdkContext, utilContext, mockExecutor);
     const installer : WinMacGlobalInstaller = new WinMacGlobalInstaller(getMockAcquisitionContext('sdk', mockVersion), getMockUtilityContext(), mockVersion, mockUrl, mockHash, mockExecutor, reader);
     installer.file = mockFileUtils;
 
@@ -103,12 +105,12 @@ suite('Windows & Mac Global Installer Tests', () =>
             const returnedPath = mockExecutor.attemptedCommand.split(' ')[0].slice(1, -1);
             assert.isTrue(fs.existsSync(returnedPath), `It ran a command to an executable that exists: ${returnedPath}`);
             assert.isTrue(mockExecutor.attemptedCommand.includes('"'), 'It put the installer in quotes for username with space in it');
-            if(new FileUtilities().isElevated())
+            if(await new FileUtilities().isElevated(mockSdkContext, utilContext))
             {
                 assert.include(mockExecutor.attemptedCommand, ' /quiet /install /norestart', 'It ran under the hood if it had privileges already');
             }
         }
-
+mockSdkContext
         // Rerun install to clean it up.
         installer.cleanupInstallFiles = true;
         await installer.installSDK(install);
@@ -135,7 +137,7 @@ suite('Windows & Mac Global Installer Tests', () =>
         await installer.installSDK(install);
         // The installer files should be removed. Note this doesn't really check the default as we changed it manually
 
-        if(new FileUtilities().isElevated())
+        if(await new FileUtilities().isElevated(mockSdkContext, utilContext))
         {
             assert.equal(fs.readdirSync(installersDir).length, 0, `the installer file was deleted upon exit. files:
 ${fs.readdirSync(installerDownloadFolder).join(', ')}`);
@@ -164,7 +166,7 @@ ${fs.readdirSync(installerDownloadFolder).join(', ')}`);
             else if(os.platform() === 'win32')
             {
                 assert.isTrue(fs.existsSync(mockExecutor.attemptedCommand.split(' ')[0]), 'It ran a command to an executable that exists');
-                if(new FileUtilities().isElevated())
+                if(await new FileUtilities().isElevated(mockSdkContext, utilContext))
                 {
                     assert.include(mockExecutor.attemptedCommand, ' /uninstall /passive /norestart', 'It ran under the hood if it had privileges already');
                 }
