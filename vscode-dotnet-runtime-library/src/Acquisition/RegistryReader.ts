@@ -11,14 +11,15 @@ import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { CommandExecutorResult } from '../Utils/CommandExecutorResult';
+import { DOTNET_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
 
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
 export class RegistryReader extends IRegistryReader
 {
-    protected commandRunner : ICommandExecutor;
+    protected commandRunner: ICommandExecutor;
 
-    constructor(context : IAcquisitionWorkerContext, utilContext : IUtilityContext, executor : ICommandExecutor | null = null)
+    constructor(context: IAcquisitionWorkerContext, utilContext: IUtilityContext, executor: ICommandExecutor | null = null)
     {
         super();
         this.commandRunner = executor ?? new CommandExecutor(context, utilContext);
@@ -28,7 +29,7 @@ export class RegistryReader extends IRegistryReader
      * @remarks architecture values accepted: x64, arm64. x86, arm32 possible on linux but 32 bit vscode is not supported.
      * @returns the folder containing the host
      */
-    public async getHostLocation(architecture : string) : Promise<string | undefined>
+    public async getHostLocation(architecture: string): Promise<string | undefined>
     {
         // InstallLocation vs sharedhost:
 
@@ -47,28 +48,28 @@ export class RegistryReader extends IRegistryReader
         const queryForPATH = os.arch() === architecture;
         let queriedInstallationLocation = false;
         let result = null;
-        if(queryForPATH)
+        if (queryForPATH)
         {
             result = await this.queryRegistry(queryForPATHLocationNotViaPATH, false, 'Path');
         }
-        if(!queryForPATH || result?.status !== '0')
+        if (!queryForPATH || result?.status !== '0')
         {
             result = await this.queryRegistry(queryForInstallLocationNotPATH, true, 'InstallLocation');
             queriedInstallationLocation = true;
         }
 
-        if(result?.status === '0')
+        if (result?.status === '0')
         {
             // Output is of the type
             // REGISTRY_KEY
             // Key   REG_SZ    C:\path\to\dotnet
             let keyRow = result.stdout?.trim()?.split("\n")?.at(1)?.trim(); // Get the line that contains Key REG_SZ Path
-            if(!keyRow)
+            if (!keyRow)
             {
                 // If there's an extra newline in the output or reg.exe format changes, find the line which contains the key -- slower
                 keyRow = result.stdout?.trim()?.split("\n")?.filter((x) => x.toLowerCase().includes('path') || x.toLowerCase().includes('installlocation'))?.at(0)?.trim();
             }
-            const finalPath = keyRow?.split(' ')?.filter((x : any) => x !== '')?.slice(2)?.join(' '); // remove N (typically 4) spaces between each output, then remove the ''s, then split by space again to remove Key and REG_SZ, and recombine any path with spaces
+            const finalPath = keyRow?.split(' ')?.filter((x: any) => x !== '')?.slice(2)?.join(' '); // remove N (typically 4) spaces between each output, then remove the ''s, then split by space again to remove Key and REG_SZ, and recombine any path with spaces
             return finalPath
         }
 
@@ -79,7 +80,7 @@ export class RegistryReader extends IRegistryReader
      *
      * @returns an array containing fully specified / specific versions of all globally installed sdks on the machine in windows for 32 and 64 bit sdks.
      */
-    public async getGlobalSdkVersionsInstalledOnMachine() : Promise<Array<string>>
+    public async getGlobalSdkVersionsInstalledOnMachine(): Promise<Array<string>>
     {
         let sdks: string[] = [];
 
@@ -90,17 +91,17 @@ export class RegistryReader extends IRegistryReader
             const sdkInstallRecordsArm64 = sdkInstallRecords64Bit.replace('x64', 'arm64');
 
             const queries = [sdkInstallRecords32Bit, sdkInstallRecords64Bit, sdkInstallRecordsArm64];
-            for ( const query of queries )
+            for (const query of queries)
             {
                 // /reg:32 is added because all keys on 64 bit machines are all put into the WOW node. They won't be on the WOW node on a 32 bit machine.
                 const registryLookup = await this.queryRegistry(query, true);
-                if(registryLookup === null)
+                if (registryLookup === null)
                 {
                     return [];
                 }
 
                 let installRecordKeysOfXBit = '';
-                if(registryLookup.status === '0')
+                if (registryLookup.status === '0')
                 {
                     installRecordKeysOfXBit = registryLookup.stdout;
                 }
@@ -114,26 +115,26 @@ export class RegistryReader extends IRegistryReader
         return sdks;
     }
 
-    private async queryRegistry(query : string, underWowNode : boolean, querySingleValue? : string) : Promise<CommandExecutorResult | null>
+    private async queryRegistry(query: string, underWowNode: boolean, querySingleValue?: string): Promise<CommandExecutorResult | null>
     {
         try
         {
             const registryQueryCommand = path.join(`${process.env.SystemRoot}`, `System32\\reg.exe`);
             let queryParameters = [`query`, `${query}`];
-            if(underWowNode)
+            if (underWowNode)
             {
                 queryParameters = [...queryParameters, `\/reg:32`];
             }
-            if(querySingleValue)
+            if (querySingleValue)
             {
                 queryParameters = [...queryParameters, `/v`, `${querySingleValue}`];
             }
 
             const command = CommandExecutor.makeCommand(registryQueryCommand, queryParameters);
-            const registryLookup = (await this.commandRunner.execute(command, undefined, false));
+            const registryLookup = (await this.commandRunner.execute(command, { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false));
             return registryLookup;
         }
-        catch(e)
+        catch (e)
         {
             // There are no "X" bit sdks on the machine.
         }
@@ -146,23 +147,23 @@ export class RegistryReader extends IRegistryReader
      * @param registryQueryResult the raw output of a registry query converted into a string
      * @returns
      */
-    private extractVersionsOutOfRegistryKeyStrings(registryQueryResult : string) : string[]
+    private extractVersionsOutOfRegistryKeyStrings(registryQueryResult: string): string[]
     {
-        if(registryQueryResult === '')
+        if (registryQueryResult === '')
         {
             return [];
         }
         else
         {
             return registryQueryResult.split(' ')
-            .filter
-            (
-                function(value : string, i : number) { return value !== '' && i !== 0; } // Filter out the whitespace & query as the query return value starts with the query.
-            )
-            .filter
-            (
-                function(value : string, i : number) { return i % 3 === 0; } // Every 0th, 4th, etc item will be a value name AKA the SDK version. The rest will be REGTYPE and REGHEXVALUE.
-            );
+                .filter
+                (
+                    function (value: string, i: number) { return value !== '' && i !== 0; } // Filter out the whitespace & query as the query return value starts with the query.
+                )
+                .filter
+                (
+                    function (value: string, i: number) { return i % 3 === 0; } // Every 0th, 4th, etc item will be a value name AKA the SDK version. The rest will be REGTYPE and REGHEXVALUE.
+                );
         }
     }
 }

@@ -30,6 +30,7 @@ import { IDotnetAcquireContext } from '../IDotnetAcquireContext'
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { version } from 'os';
+import { READ_SYMLINK_CACHE_DURATION_MS, SYSTEM_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
 
 /**
  * An enumeration type representing all distros with their versions that we recognize.
@@ -37,9 +38,10 @@ import { version } from 'os';
  * Each . in a semver should be represented with _.
  * The string representation of the enum should contain exactly one space that separates the distro, then the version.
  */
-export interface DistroVersionPair {
-    distro : string,
-    version : string
+export interface DistroVersionPair
+{
+    distro: string,
+    version: string
 }
 
 /**
@@ -54,7 +56,8 @@ export interface DistroVersionPair {
  *
  * Unknown is a placeholder for development testing and future potential implementation and should not be used by contributors.
  */
-export const enum DotnetDistroSupportStatus {
+export const enum DotnetDistroSupportStatus
+{
     Unsupported = 'UNSUPPORTED',
     Distro = 'DISTRO',
     Microsoft = 'MICROSOFT',
@@ -71,10 +74,10 @@ export const enum DotnetDistroSupportStatus {
  */
 export class LinuxVersionResolver
 {
-    private distro : DistroVersionPair | null = null;
-    protected distroSDKProvider : IDistroDotnetSDKProvider | null = null;
-    protected commandRunner : ICommandExecutor;
-    protected versionResolver : VersionResolver;
+    private distro: DistroVersionPair | null = null;
+    protected distroSDKProvider: IDistroDotnetSDKProvider | null = null;
+    protected commandRunner: ICommandExecutor;
+    protected versionResolver: VersionResolver;
     public okUpdateExitCode = 11188; // Arbitrary number that is not shared or used by other things we rely on as an exit code
     public okAlreadyExistsExitCode = 11166;
 
@@ -93,12 +96,12 @@ Follow the instructions here to download the .NET SDK: https://learn.microsoft.c
 Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from https://access.redhat.com/downloads/;`
     protected acquireCtx: IDotnetAcquireContext | null | undefined;
 
-    constructor(private readonly workerContext : IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext,
-        executor : ICommandExecutor | null = null, distroProvider : IDistroDotnetSDKProvider | null = null)
+    constructor(private readonly workerContext: IAcquisitionWorkerContext, private readonly utilityContext: IUtilityContext,
+        executor: ICommandExecutor | null = null, distroProvider: IDistroDotnetSDKProvider | null = null)
     {
         this.commandRunner = executor ?? new CommandExecutor(this.workerContext, this.utilityContext);
         this.versionResolver = new VersionResolver(workerContext);
-        if(distroProvider)
+        if (distroProvider)
         {
             this.distroSDKProvider = distroProvider;
         }
@@ -110,14 +113,14 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
      * @remarks relies on /etc/os-release currently. public for testing purposes.
      * @returns The linux distro and version thats running this app. Should only ever be ran on linux.
      */
-    public async getRunningDistro() : Promise<DistroVersionPair>
+    public async getRunningDistro(): Promise<DistroVersionPair>
     {
-        if(this.distro)
+        if (this.distro)
         {
             return this.distro;
         }
 
-        const commandResult = await this.commandRunner.execute(CommandExecutor.makeCommand(`cat`, [`/etc/os-release`]));
+        const commandResult = await this.commandRunner.execute(CommandExecutor.makeCommand(`cat`, [`/etc/os-release`]), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS });
         const distroNameKey = 'NAME';
         const distroVersionKey = 'VERSION_ID';
 
@@ -126,15 +129,15 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
             const stdOut = commandResult.stdout.toString().split('\n');
             // We need to remove the quotes from the KEY="VALUE"\n pairs returned by the command stdout, and then turn it into a dictionary. We can't use replaceAll for older browsers.
             // Replace only replaces one quote, so we remove the 2nd one later.
-            const stdOutWithQuotesRemoved = stdOut.map( x => x.replace('"', ''));
-            const stdOutWithSeparatedKeyValues = stdOutWithQuotesRemoved.map( x => x.split('='));
-            const keyValueMap =  Object.fromEntries(stdOutWithSeparatedKeyValues.map(x => [x[0], x[1]]));
+            const stdOutWithQuotesRemoved = stdOut.map(x => x.replace('"', ''));
+            const stdOutWithSeparatedKeyValues = stdOutWithQuotesRemoved.map(x => x.split('='));
+            const keyValueMap = Object.fromEntries(stdOutWithSeparatedKeyValues.map(x => [x[0], x[1]]));
 
             // Remove the 2nd quotes.
-            const distroName : string = keyValueMap[distroNameKey]?.replace('"', '') ?? '';
-            const distroVersion : string = keyValueMap[distroVersionKey]?.replace('"', '') ?? '';
+            const distroName: string = keyValueMap[distroNameKey]?.replace('"', '') ?? '';
+            const distroVersion: string = keyValueMap[distroVersionKey]?.replace('"', '') ?? '';
 
-            if(distroName === '' || distroVersion === '')
+            if (distroName === '' || distroVersion === '')
             {
                 const error = new DotnetAcquisitionDistroUnknownError(new EventCancellationError('DotnetAcquisitionDistroUnknownError',
                     this.baseUnsupportedDistroErrorMessage), getInstallFromContext(this.workerContext));
@@ -142,10 +145,10 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
                 throw error.error;
             }
 
-            const pair : DistroVersionPair = { distro : distroName, version : distroVersion };
+            const pair: DistroVersionPair = { distro: distroName, version: distroVersion };
             return pair;
         }
-        catch(error)
+        catch (error)
         {
             const err = new DotnetAcquisitionDistroUnknownError(new EventCancellationError('DotnetAcquisitionDistroUnknownError',
                 `${this.baseUnsupportedDistroErrorMessage} ... does /etc/os-release exist?`),
@@ -163,17 +166,17 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
      */
     public async Initialize()
     {
-        if(!this.distro)
+        if (!this.distro)
         {
             this.distro = await this.getRunningDistro();
         }
 
-        if(!this.distroSDKProvider)
+        if (!this.distroSDKProvider)
         {
             this.distroSDKProvider = this.DistroProviderFactory(this.distro);
         }
 
-        if(!this.distro || !this.distroSDKProvider)
+        if (!this.distro || !this.distroSDKProvider)
         {
             const error = new DotnetAcquisitionDistroUnknownError(new EventCancellationError(
                 'DotnetAcquisitionDistroUnknownError',
@@ -184,17 +187,18 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
         }
     }
 
-    private isRedHatVersion7(rhelVersion: string){
-        if(Math.floor(parseFloat(rhelVersion)) === 7)
+    private isRedHatVersion7(rhelVersion: string)
+    {
+        if (Math.floor(parseFloat(rhelVersion)) === 7)
         {
             return true;
         }
         return false;
     }
 
-    private DistroProviderFactory(distroAndVersion : DistroVersionPair) : IDistroDotnetSDKProvider
+    private DistroProviderFactory(distroAndVersion: DistroVersionPair): IDistroDotnetSDKProvider
     {
-        switch(distroAndVersion.distro)
+        switch (distroAndVersion.distro)
         {
             // Implement any custom logic for a Distro Class in a new DistroSDKProvider and add it to the factory here.
             case null:
@@ -204,7 +208,7 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
                 this.workerContext.eventStream.post(unknownDistroErr);
                 throw unknownDistroErr.error;
             case 'Red Hat Enterprise Linux':
-                if(this.isRedHatVersion7(distroAndVersion.version))
+                if (this.isRedHatVersion7(distroAndVersion.version))
                 {
                     const unsupportedRhelErr = new DotnetAcquisitionDistroUnknownError(new EventCancellationError(
                         'DotnetAcquisitionDistroUnknownError',
@@ -227,26 +231,26 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
      * Microsoft and distro feed packages together cause system instability with dotnet, so we don't want to let people get into those states.
      * Eventually, we could add logic to remove them for users, but that may require consent first.
      */
-    public async VerifyNoConflictInstallTypeExists(supportStatus : DotnetDistroSupportStatus, fullySpecifiedDotnetVersion : string) : Promise<void>
+    public async VerifyNoConflictInstallTypeExists(supportStatus: DotnetDistroSupportStatus, fullySpecifiedDotnetVersion: string): Promise<void>
     {
         await this.Initialize();
 
-        if(supportStatus === DotnetDistroSupportStatus.Distro)
+        if (supportStatus === DotnetDistroSupportStatus.Distro)
         {
             const microsoftFeedDir = this.distroSDKProvider!.getExpectedDotnetMicrosoftFeedInstallationDirectory();
-            if(fs.existsSync(microsoftFeedDir))
+            if (fs.existsSync(microsoftFeedDir))
             {
                 const err = new DotnetConflictingLinuxInstallTypesError(new EventCancellationError('DotnetConflictingLinuxInstallTypesError',
-                this.conflictingInstallErrorMessage + microsoftFeedDir),
+                    this.conflictingInstallErrorMessage + microsoftFeedDir),
                     getInstallFromContext(this.workerContext));
                 this.workerContext.eventStream.post(err);
                 throw err.error;
             }
         }
-        else if(supportStatus === DotnetDistroSupportStatus.Microsoft)
+        else if (supportStatus === DotnetDistroSupportStatus.Microsoft)
         {
             const distroFeedDir = this.distroSDKProvider!.getExpectedDotnetDistroFeedInstallationDirectory();
-            if(fs.existsSync(distroFeedDir))
+            if (fs.existsSync(distroFeedDir))
             {
                 const err = new DotnetConflictingLinuxInstallTypesError(new EventCancellationError('DotnetConflictingLinuxInstallTypesError',
                     this.conflictingInstallErrorMessage + distroFeedDir),
@@ -261,13 +265,13 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
      * Similar to VerifyNoConflictInstallTypeExists, but checks if a custom install exists. We don't want to override that.
      * It could also cause unstable behavior and break a users current setup.
      */
-    private async VerifyNoCustomInstallExists(supportStatus : DotnetDistroSupportStatus, fullySpecifiedDotnetVersion : string, existingInstall : string | null) : Promise<void>
+    private async VerifyNoCustomInstallExists(supportStatus: DotnetDistroSupportStatus, fullySpecifiedDotnetVersion: string, existingInstall: string | null): Promise<void>
     {
         await this.Initialize();
 
-        if(existingInstall && path.resolve(existingInstall) !== path.resolve(
+        if (existingInstall && path.resolve(existingInstall) !== path.resolve(
             supportStatus === DotnetDistroSupportStatus.Distro ? this.distroSDKProvider!.getExpectedDotnetDistroFeedInstallationDirectory()
-            : this.distroSDKProvider!.getExpectedDotnetMicrosoftFeedInstallationDirectory() ))
+                : this.distroSDKProvider!.getExpectedDotnetMicrosoftFeedInstallationDirectory()))
         {
             const err = new DotnetCustomLinuxInstallExistsError(new EventCancellationError('DotnetCustomLinuxInstallExistsError',
                 this.conflictingCustomInstallErrorMessage + existingInstall),
@@ -284,23 +288,23 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
      * @returns 0 if we can proceed. Will throw if a conflicting install exists. If we can update, it will do the update and return 1.
      * A string is returned in case we want to make this return more info about the update.
      */
-    private async UpdateOrRejectIfVersionRequestDoesNotRequireInstall(fullySpecifiedDotnetVersion : string, existingInstall : string | null) : Promise<string>
+    private async UpdateOrRejectIfVersionRequestDoesNotRequireInstall(fullySpecifiedDotnetVersion: string, existingInstall: string | null): Promise<string>
     {
         await this.Initialize();
 
         this.workerContext.eventStream.post(new DotnetInstallLinuxChecks(`Checking to see if we should install, update, or cancel...`));
-        if(existingInstall)
+        if (existingInstall)
         {
             const existingGlobalInstallSDKVersion = await this.distroSDKProvider!.getInstalledGlobalDotnetVersionIfExists();
-            if(existingGlobalInstallSDKVersion && Number(versionUtils.getMajorMinor(existingGlobalInstallSDKVersion, this.workerContext.eventStream, this.workerContext)) ===
+            if (existingGlobalInstallSDKVersion && Number(versionUtils.getMajorMinor(existingGlobalInstallSDKVersion, this.workerContext.eventStream, this.workerContext)) ===
                 Number(versionUtils.getMajorMinor(fullySpecifiedDotnetVersion, this.workerContext.eventStream, this.workerContext)))
             {
                 const isPatchUpgrade = Number(versionUtils.getFeatureBandPatchVersion(existingGlobalInstallSDKVersion, this.workerContext.eventStream, this.workerContext)) <
                     Number(versionUtils.getFeatureBandPatchVersion(fullySpecifiedDotnetVersion, this.workerContext.eventStream, this.workerContext));
 
-                if(Number(versionUtils.getMajorMinor(existingGlobalInstallSDKVersion, this.workerContext.eventStream, this.workerContext)) >
+                if (Number(versionUtils.getMajorMinor(existingGlobalInstallSDKVersion, this.workerContext.eventStream, this.workerContext)) >
                     Number(versionUtils.getMajorMinor(fullySpecifiedDotnetVersion, this.workerContext.eventStream, this.workerContext))
-                || Number(versionUtils.getFeatureBandFromVersion(existingGlobalInstallSDKVersion, this.workerContext.eventStream, this.workerContext)) >
+                    || Number(versionUtils.getFeatureBandFromVersion(existingGlobalInstallSDKVersion, this.workerContext.eventStream, this.workerContext)) >
                     Number(versionUtils.getFeatureBandFromVersion(fullySpecifiedDotnetVersion, this.workerContext.eventStream, this.workerContext)))
                 {
                     // We shouldn't downgrade to a lower patch
@@ -310,14 +314,14 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
                     this.workerContext.eventStream.post(err);
                     throw err.error;
                 }
-                else if(await this.distroSDKProvider!.dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion, 'sdk') || isPatchUpgrade)
+                else if (await this.distroSDKProvider!.dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion, 'sdk') || isPatchUpgrade)
                 {
                     // We can update instead of doing an install
                     this.workerContext.eventStream.post(new DotnetUpgradedEvent(
                         isPatchUpgrade ?
-                        `Updating .NET: Current Version: ${existingGlobalInstallSDKVersion} to ${fullySpecifiedDotnetVersion}.`
-                        :
-                        `Repairing .NET Packages for ${existingGlobalInstallSDKVersion}.`));
+                            `Updating .NET: Current Version: ${existingGlobalInstallSDKVersion} to ${fullySpecifiedDotnetVersion}.`
+                            :
+                            `Repairing .NET Packages for ${existingGlobalInstallSDKVersion}.`));
                     return (await this.distroSDKProvider!.upgradeDotnet(existingGlobalInstallSDKVersion, 'sdk')) === '0' ? String(this.okUpdateExitCode) : '1';
                 }
                 else
@@ -331,12 +335,12 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
         return '0';
     }
 
-    public async ValidateAndInstallSDK(fullySpecifiedDotnetVersion : string) : Promise<string>
+    public async ValidateAndInstallSDK(fullySpecifiedDotnetVersion: string): Promise<string>
     {
         await this.Initialize();
 
         // Verify the version of dotnet is supported
-        if (!( await this.distroSDKProvider!.isDotnetVersionSupported(fullySpecifiedDotnetVersion, 'sdk') ))
+        if (!(await this.distroSDKProvider!.isDotnetVersionSupported(fullySpecifiedDotnetVersion, 'sdk')))
         {
             throw new EventBasedError('UnsupportedDistro', `The distro ${this.distro?.distro} ${this.distro?.version} does not officially support dotnet version ${fullySpecifiedDotnetVersion}.`);
         }
@@ -352,18 +356,18 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
 
         // Check if we need to install or not, if we can install (if the version conflicts with an existing one), or if we can just update the existing install.
         const updateOrRejectState = await this.UpdateOrRejectIfVersionRequestDoesNotRequireInstall(fullySpecifiedDotnetVersion, existingInstall);
-        if(updateOrRejectState === '0')
+        if (updateOrRejectState === '0')
         {
             return await this.distroSDKProvider!.installDotnet(fullySpecifiedDotnetVersion, 'sdk') ? '0' : '1';
         }
-        else if(updateOrRejectState === String(this.okUpdateExitCode) || updateOrRejectState === String(this.okAlreadyExistsExitCode))
+        else if (updateOrRejectState === String(this.okUpdateExitCode) || updateOrRejectState === String(this.okAlreadyExistsExitCode))
         {
             return '0';
         }
         return String(updateOrRejectState);
     }
 
-    public async UninstallSDK(fullySpecifiedDotnetVersion : string) : Promise<string>
+    public async UninstallSDK(fullySpecifiedDotnetVersion: string): Promise<string>
     {
         await this.Initialize();
 
@@ -375,13 +379,13 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
      * ... so other's can use it. (It is a terrible pattern but used because the ctor cannot be async.)
      * @returns the distroSDKProvider to call distro related functions on top of.
      */
-    public async distroCall() : Promise<IDistroDotnetSDKProvider>
+    public async distroCall(): Promise<IDistroDotnetSDKProvider>
     {
         await this.Initialize();
         return this.distroSDKProvider!;
     }
 
-    public async getRecommendedDotnetVersion(installType : DotnetInstallMode) : Promise<string>
+    public async getRecommendedDotnetVersion(installType: DotnetInstallMode): Promise<string>
     {
         await this.Initialize();
         return this.distroSDKProvider!.getRecommendedDotnetVersion(installType);

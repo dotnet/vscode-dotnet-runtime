@@ -3,7 +3,9 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
+import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { IEventStream } from '../EventStream/EventStream';
+import { IUtilityContext } from './IUtilityContext';
 
 export abstract class IFileUtilities
 {
@@ -18,7 +20,7 @@ export abstract class IFileUtilities
      *
      * @returns true if the process is running with admin privileges on windows.
      */
-    public abstract isElevated(eventStream? : IEventStream) : boolean;
+    public abstract isElevated(context: IAcquisitionWorkerContext, utilContext: IUtilityContext) :  Promise<boolean>;
 
     public abstract getFileHash(filePath : string) : Promise<string | null>;
 

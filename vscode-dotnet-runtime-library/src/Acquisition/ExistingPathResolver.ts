@@ -37,7 +37,12 @@ export class ExistingPathResolver
         if (!this.allowInvalidPath(this.workerContext))
         {
             // The user path setting may be a symlink but we dont want to resolve it since a snap symlink isnt a real directory, we can find the true path better this way:
-            existingPath = (await new DotnetPathFinder(this.workerContext, this.utilityContext, this.executor).getTruePath([existingPath ?? '']))?.at(0) ?? null;
+            const oldLookup = process.env.DOTNET_MULTILEVEL_LOOKUP;
+            process.env.DOTNET_MULTILEVEL_LOOKUP = '0'; // make it so --list-runtimes only finds the runtimes on that path: https://learn.microsoft.com/en-us/dotnet/core/compatibility/deployment/7.0/multilevel-lookup#reason-for-change
+
+            const dotnetFinder = new DotnetPathFinder(this.workerContext, this.utilityContext, this.executor);
+            const resolvedPaths = await dotnetFinder.returnWithRestoringEnvironment(await dotnetFinder.getTruePath([existingPath ?? '']), 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
+            existingPath = resolvedPaths?.at(0) ?? null;
         }
         if (existingPath && (await this.providedPathMeetsAPIRequirement(this.workerContext, existingPath, this.workerContext.acquisitionContext, requirement) || this.allowInvalidPath(this.workerContext)))
         {

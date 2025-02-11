@@ -7,70 +7,69 @@ import * as os from 'os';
 import * as path from 'path';
 import rimraf = require('rimraf');
 
-import * as versionUtils from './VersionUtilities'
 import
-    {
-        DotnetAcquisitionAlreadyInstalled,
-        DotnetAcquisitionCompleted,
-        DotnetAcquisitionDeletion,
-        DotnetAcquisitionInProgress,
-        DotnetAcquisitionPartialInstallation,
-        DotnetAcquisitionStarted,
-        DotnetAcquisitionStatusResolved,
-        DotnetAcquisitionStatusUndefined,
-        DotnetNonZeroInstallerExitCodeError,
-        DotnetInstallGraveyardEvent,
-        DotnetInstallIdCreatedEvent,
-        DotnetLegacyInstallDetectedEvent,
-        DotnetLegacyInstallRemovalRequestEvent,
-        DotnetUninstallAllCompleted,
-        DotnetUninstallAllStarted,
-        DotnetGlobalAcquisitionCompletionEvent,
-        DotnetGlobalVersionResolutionCompletionEvent,
-        DotnetBeginGlobalInstallerExecution,
-        DotnetCompletedGlobalInstallerExecution,
-        DotnetFakeSDKEnvironmentVariableTriggered,
-        SuppressedAcquisitionError,
-        EventBasedError,
-        EventCancellationError,
-        DotnetInstallationValidated,
-        DotnetUninstallStarted,
-        DotnetUninstallCompleted,
-        DotnetUninstallFailed,
-        DotnetOfflineInstallUsed,
-    } from '../EventStream/EventStreamEvents';
+{
+    DotnetAcquisitionAlreadyInstalled,
+    DotnetAcquisitionCompleted,
+    DotnetAcquisitionDeletion,
+    DotnetAcquisitionPartialInstallation,
+    DotnetAcquisitionStarted,
+    DotnetAcquisitionStatusResolved,
+    DotnetAcquisitionStatusUndefined,
+    DotnetBeginGlobalInstallerExecution,
+    DotnetCompletedGlobalInstallerExecution,
+    DotnetFakeSDKEnvironmentVariableTriggered,
+    DotnetGlobalAcquisitionCompletionEvent,
+    DotnetGlobalVersionResolutionCompletionEvent,
+    DotnetInstallGraveyardEvent,
+    DotnetInstallIdCreatedEvent,
+    DotnetLegacyInstallDetectedEvent,
+    DotnetLegacyInstallRemovalRequestEvent,
+    DotnetNonZeroInstallerExitCodeError,
+    DotnetOfflineInstallUsed,
+    DotnetUninstallAllCompleted,
+    DotnetUninstallAllStarted,
+    DotnetUninstallCompleted,
+    DotnetUninstallFailed,
+    DotnetUninstallStarted,
+    EventBasedError,
+    EventCancellationError,
+    SuppressedAcquisitionError
+} from '../EventStream/EventStreamEvents';
+import * as versionUtils from './VersionUtilities';
 
-import { GlobalInstallerResolver } from './GlobalInstallerResolver';
-import { WinMacGlobalInstaller } from './WinMacGlobalInstaller';
-import { LinuxGlobalInstaller } from './LinuxGlobalInstaller';
+import { IEventStream } from '../EventStream/EventStream';
 import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
-import { Debugging } from '../Utils/Debugging';
-import { IGlobalInstaller } from './IGlobalInstaller';
-import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
-import { IUtilityContext } from '../Utils/IUtilityContext';
-import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
+import { IExtensionState } from '../IExtensionState';
+import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
+import { CommandExecutor } from '../Utils/CommandExecutor';
+import { Debugging } from '../Utils/Debugging';
+import { getInstallFromContext, getInstallIdCustomArchitecture } from '../Utils/InstallIdUtilities';
+import { IUtilityContext } from '../Utils/IUtilityContext';
+import { DOTNET_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
+import
+{
+    DotnetInstall,
+    GetDotnetInstallInfo,
+    IsEquivalentInstallation,
+    IsEquivalentInstallationFile
+} from './DotnetInstall';
+import { DotnetInstallMode } from './DotnetInstallMode';
+import { GlobalInstallerResolver } from './GlobalInstallerResolver';
+import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetCoreAcquisitionWorker } from './IDotnetCoreAcquisitionWorker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
-import
-    {
-        InstallRecord,
-    } from './InstallRecord';
-import
-    {
-        GetDotnetInstallInfo,
-        IsEquivalentInstallationFile,
-        IsEquivalentInstallation
-        , DotnetInstall
-    } from './DotnetInstall';
+import { IGlobalInstaller } from './IGlobalInstaller';
 import { InstallationGraveyard } from './InstallationGraveyard';
+import
+{
+    InstallRecord,
+} from './InstallRecord';
 import { InstallTrackerSingleton } from './InstallTrackerSingleton';
-import { DotnetInstallMode } from './DotnetInstallMode';
-import { IEventStream } from '../EventStream/EventStream';
-import { IExtensionState } from '../IExtensionState';
-import { CommandExecutor } from '../Utils/CommandExecutor';
-import { getInstallFromContext, getInstallIdCustomArchitecture } from '../Utils/InstallIdUtilities';
+import { LinuxGlobalInstaller } from './LinuxGlobalInstaller';
+import { WinMacGlobalInstaller } from './WinMacGlobalInstaller';
 
 
 export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
@@ -391,7 +390,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
     {
         const executor = new CommandExecutor(context, this.utilityContext);
         const listSDKsCommand = CommandExecutor.makeCommand('dotnet', ['--list-sdks']);
-        const result = await executor.execute(listSDKsCommand, null, false);
+        const result = await executor.execute(listSDKsCommand, { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false);
 
         if (result.status !== '0')
         {
