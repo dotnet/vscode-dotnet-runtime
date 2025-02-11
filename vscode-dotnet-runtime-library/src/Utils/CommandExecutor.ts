@@ -58,6 +58,7 @@ import { IFileUtilities } from './IFileUtilities';
 import { CommandExecutorResult } from './CommandExecutorResult';
 import { isRunningUnderWSL, loopWithTimeoutOnCond } from './TypescriptUtilities';
 import { IEventStream } from '../EventStream/EventStream';
+import { LocalMemoryCacheSingleton } from '../LocalMemoryCacheSingleton';
 
 export class CommandExecutor extends ICommandExecutor
 {
@@ -379,35 +380,47 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
      *
      * @param workingDirectory The directory to execute in. Only works for non sudo commands.
      * @param terminalFailure Whether to throw up an error when executing under sudo or suppress it and return stderr
+     * @param options the dictionary of options to forward to the child_process. Set dotnetInstallToolCacheTtlMs=number to cache the result with a ttl and also use cached results.
      * @returns the result(s) of each command. Can throw generically if the command fails.
      */
     public async execute(command: CommandExecutorCommand, options: any = null, terminalFailure = true): Promise<CommandExecutorResult>
     {
         const fullCommandString = `${command.commandRoot} ${command.commandParts.join(' ')}`;
+        let useCache = false;
         // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        if (options && !options?.cwd)
+        if (options)
         {
-            // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            options.cwd = path.resolve(__dirname);
-        }
-        // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        if (options && !options?.shell)
-        {
-            // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+            options.cwd ??= path.resolve(__dirname);
+
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            options.shell = true;
+            options.shell ??= true;
         }
-        if (!options)
+        else
         {
             options = { cwd: path.resolve(__dirname), shell: true };
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        if (options?.dotnetInstallToolCacheTtlMs)
+        {
+            useCache = true;
+            const cachedResult = LocalMemoryCacheSingleton.getInstance().getCommand({ command, options }, this.context);
+            if (cachedResult !== undefined)
+            {
+                return cachedResult;
+            }
+        }
+
         if (command.runUnderSudo && os.platform() === 'linux')
         {
-            return this.ExecSudoAsync(command, terminalFailure);
+            const sudoResult = await this.ExecSudoAsync(command, terminalFailure);
+            if (useCache)
+            {
+                LocalMemoryCacheSingleton.getInstance().putCommand({ command, options }, sudoResult, this.context);
+            }
+            return sudoResult;
         }
         else
         {
@@ -432,7 +445,12 @@ with options ${JSON.stringify(options)}.`));
                             this.context?.eventStream.post(new CommandExecutionStdError(`The command ${fullCommandString} encountered ERROR: ${JSON.stringify(error)}`));
                         }
 
-                        return resolve({ status: error ? error.message : '0', stderr: execStderr, stdout: execStdout } as CommandExecutorResult);
+                        const result = { status: error ? error.message : '0', stderr: execStderr, stdout: execStdout } as CommandExecutorResult
+                        if (useCache)
+                        {
+                            LocalMemoryCacheSingleton.getInstance().putCommand({ command, options }, result, this.context);
+                        }
+                        return resolve(result);
                     });
                 });
             }
@@ -463,7 +481,12 @@ result: ${JSON.stringify(commandResult)} had no status or signal.`));
                 }
             })();
 
-            return { status: statusCode, stderr: commandResult.stderr?.toString() ?? '', stdout: commandResult.stdout?.toString() ?? '' }
+            const standardResult = { status: statusCode, stderr: commandResult.stderr?.toString() ?? '', stdout: commandResult.stdout?.toString() ?? '' } as CommandExecutorResult;
+            if (useCache)
+            {
+                LocalMemoryCacheSingleton.getInstance().putCommand({ command, options }, standardResult, this.context);
+            }
+            return standardResult;
         }
     }
 

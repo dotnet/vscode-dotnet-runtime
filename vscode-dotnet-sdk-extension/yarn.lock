@@ -600,9 +600,9 @@ core-util-is@~1.0.0:
   integrity sha1-pgQtNjTCsn6TKPg3uWX6yDgI24U=
 
 cross-spawn@^7.0.3:
-  version "7.0.3"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/cross-spawn/-/cross-spawn-7.0.3.tgz"
-  integrity sha1-9zqFudXUHQRVUcF34ogtSshXKKY=
+  version "7.0.6"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/cross-spawn/-/cross-spawn-7.0.6.tgz"
+  integrity sha1-ilj+ePANzXDDcEUXWd+/rwPo7p8=
   dependencies:
     path-key "^3.1.0"
     shebang-command "^2.0.0"
@@ -1772,7 +1772,9 @@ util-deprecate@~1.0.1:
     eol "^0.9.1"
     get-proxy-settings "^0.1.13"
     https-proxy-agent "^7.0.4"
+    lodash "^4.17.21"
     mocha "^9.1.3"
+    node-cache "^5.1.2"
     open "^8.4.0"
     proper-lockfile "^4.1.2"
     rimraf "3.0.2"

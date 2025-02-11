@@ -10,6 +10,7 @@ import * as os from 'os';
 import { DotnetPathFinder } from '../../Acquisition/DotnetPathFinder';
 import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 import { MockCommandExecutor, MockFileUtilities } from '../mocks/MockObjects';
+import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
 
 const assert = chai.assert;
 chai.use(chaiAsPromised);
@@ -24,6 +25,10 @@ suite('DotnetPathFinder Unit Tests', function ()
     const mockUtility = getMockUtilityContext();
     const mockExecutor = new MockCommandExecutor(mockContext, mockUtility);
 
+    this.afterEach(async () => {
+        // Tear down tmp storage for fresh run
+        LocalMemoryCacheSingleton.getInstance().invalidate();
+    });
 
     test('It can find the hostfxr record on mac/linux', async () =>
     {

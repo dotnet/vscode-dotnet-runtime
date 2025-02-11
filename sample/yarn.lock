@@ -42,7 +42,6 @@
   version "1.17.0"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@azure/core-rest-pipeline/-/core-rest-pipeline-1.17.0.tgz"
   integrity sha1-Vdr6EJNVPFSe1tjbymmqUFx7OqM=
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@azure/core-rest-pipeline/-/core-rest-pipeline-1.17.0.tgz"
   dependencies:
     "@azure/abort-controller" "^2.0.0"
     "@azure/core-auth" "^1.8.0"
@@ -2140,9 +2139,9 @@ underscore@^1.12.1:
   integrity sha1-lw4zljr5p92iKPF+voOZ5fvmOhA=
 
 undici@^6.19.5:
-  version "6.20.1"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/undici/-/undici-6.20.1.tgz"
-  integrity sha1-+7h7Hitp2WP/LVQQpA/7TJ6BtiE=
+  version "6.21.1"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/undici/-/undici-6.21.1.tgz"
+  integrity sha1-M2AloUFi5oN+RK17gZs1tsavDgU=
 
 update-browserslist-db@^1.1.0:
   version "1.1.1"
@@ -2196,7 +2195,9 @@ uuid@^8.3.0:
     eol "^0.9.1"
     get-proxy-settings "^0.1.13"
     https-proxy-agent "^7.0.4"
+    lodash "^4.17.21"
     mocha "^9.1.3"
+    node-cache "^5.1.2"
     open "^8.4.0"
     proper-lockfile "^4.1.2"
     rimraf "3.0.2"
@@ -2245,7 +2246,6 @@ uuid@^8.3.0:
     chai "4.3.4"
     chai-as-promised "^7.1.1"
     glob "^7.2.0"
-    is-online "^9.0.1"
     mocha "^9.1.3"
     open "^8.4.0"
     rimraf "3.0.2"

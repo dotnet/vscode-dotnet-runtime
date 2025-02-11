@@ -102,6 +102,11 @@
 				"dotnetAcquisitionExtension.allowInvalidPaths": {
 					"type": "boolean",
 					"description": "If you'd like to continue using a .NET path that is not meant to be used for an extension and may cause instability (please read above about the existingDotnetPath setting) then set this to true and restart."
+				},
+				"dotnetAcquisitionExtension.cacheTimeToLiveMultiplier": {
+					"type": "number",
+					"default": 1,
+					"description": "To improve performance, the results of checking .NET Installations may be cached. If you're facing issues with an install not being detected, try setting this to 0.5, or 0; or increasing the number to improve performance. Restart to change."
 				}
 			}
 		}

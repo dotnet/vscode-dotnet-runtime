@@ -10,15 +10,16 @@ import { DotnetWSLCheckEvent, DotnetWSLOperationOutputEvent } from '../EventStre
 import { IEvent } from '../EventStream/IEvent';
 import { ICommandExecutor } from './ICommandExecutor';
 import { CommandExecutor } from './CommandExecutor';
+import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from '../Acquisition/CacheTimeConstants';
 
-export async function loopWithTimeoutOnCond(sampleRatePerMs : number, durationToWaitBeforeTimeoutMs : number, conditionToStop : () => boolean, doAfterStop : () => void,
-    eventStream : IEventStream, waitEvent : IEvent)
+export async function loopWithTimeoutOnCond(sampleRatePerMs: number, durationToWaitBeforeTimeoutMs: number, conditionToStop: () => boolean, doAfterStop: () => void,
+    eventStream: IEventStream, waitEvent: IEvent)
 {
     return new Promise(async (resolve, reject) =>
     {
         for (let i = 0; i < (durationToWaitBeforeTimeoutMs / sampleRatePerMs); i++)
         {
-            if(conditionToStop())
+            if (conditionToStop())
             {
                 doAfterStop();
                 return resolve('The promise succeeded.');
@@ -34,13 +35,13 @@ export async function loopWithTimeoutOnCond(sampleRatePerMs : number, durationTo
 /**
  * Returns true if the linux agent is running under WSL, else false.
  */
-export function isRunningUnderWSL(eventStream? : IEventStream) : boolean
+export function isRunningUnderWSL(eventStream?: IEventStream): boolean
 {
     // See https://github.com/microsoft/WSL/issues/4071 for evidence that we can rely on this behavior.
 
     eventStream?.post(new DotnetWSLCheckEvent(`Checking if system is WSL. OS: ${os.platform()}`));
 
-    if(os.platform() !== 'linux')
+    if (os.platform() !== 'linux')
     {
         return false;
     }
@@ -55,7 +56,7 @@ stderr: ${commandResult.stderr?.toString()}
 status: ${commandResult.status?.toString()}`
     ));
 
-    if(!commandResult || !commandResult.stdout)
+    if (!commandResult || !commandResult.stdout)
     {
         return false;
     }
@@ -63,29 +64,29 @@ status: ${commandResult.status?.toString()}`
     return commandResult.stdout.toString() !== '';
 }
 
-export async function getOSArch(executor : ICommandExecutor) : Promise<string>
+export async function getOSArch(executor: ICommandExecutor): Promise<string>
 {
-    if(os.platform() === 'darwin')
+    if (os.platform() === 'darwin')
     {
         const findTrueArchCommand = CommandExecutor.makeCommand(`uname`, [`-p`]);
-        return (await executor.execute(findTrueArchCommand, null, false)).stdout.toLowerCase().trim();
+        return (await executor.execute(findTrueArchCommand, { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }, false)).stdout.toLowerCase().trim();
     }
 
     return os.arch();
 }
 
-export function getDotnetExecutable() : string
+export function getDotnetExecutable(): string
 {
     return os.platform() === 'win32' ? 'dotnet.exe' : 'dotnet';
 }
 
-export function EnvironmentVariableIsDefined(variable : any) : boolean
+export function EnvironmentVariableIsDefined(variable: any): boolean
 {
     // Most of the time this will be 'undefined', so this is the fastest check.
     return variable !== 'undefined' && variable !== null && variable !== '' && variable !== undefined;
 }
 
-export function getPathSeparator() : string
+export function getPathSeparator(): string
 {
     return os.platform() === 'win32' ? ';' : ':';
 }
