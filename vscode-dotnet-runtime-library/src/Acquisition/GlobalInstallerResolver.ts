@@ -251,8 +251,8 @@ The version may be Out of Support, or the releases json format used by ${indexUr
                             throw releaseJsonErr.error;
                         }
                         if (!this.startsWithAny((installerUrl as string), [
-                            'https://download.visualstudio.microsoft.com/', 'https://builds.dotnet.microsoft.com/', 'https://dotnetcli.trafficmanager.net/',
-                            'https://builds.dotnet.microsoft.com.edgesuite.net/', 'https://dotnetcli.azureedge.net/', 'https://dotnetcli.blob.core.windows.net/',
+                            'https://download.visualstudio.microsoft.com/', 'https://builds.dotnet.microsoft.com/', 'https://ci.dot.net',
+                       'https://dotnetcli.blob.core.windows.net/',
                         ]))
                         {
                             const releaseJsonErr = new DotnetInvalidReleasesJSONError(new EventBasedError('DotnetInvalidReleasesJSONError',
