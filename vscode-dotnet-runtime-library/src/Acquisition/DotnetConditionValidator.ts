@@ -2,18 +2,18 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
+import * as os from 'os';
+import { DotnetFindPathDidNotMeetCondition, DotnetUnableToCheckPATHArchitecture } from '../EventStream/EventStreamEvents';
 import { IDotnetFindPathContext } from '../IDotnetFindPathContext';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+import { FileUtilities } from '../Utils/FileUtilities';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { IDotnetListInfo } from './IDotnetListInfo';
+import { DOTNET_INFORMATION_CACHE_DURATION_MS, SYS_CMD_SEARCH_CACHE_DURATION_MS } from './CacheTimeConstants';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetConditionValidator } from './IDotnetConditionValidator';
+import { IDotnetListInfo } from './IDotnetListInfo';
 import * as versionUtils from './VersionUtilities';
-import * as os from 'os';
-import { FileUtilities } from '../Utils/FileUtilities';
-import { DotnetFindPathDidNotMeetCondition, DotnetUnableToCheckPATHArchitecture } from '../EventStream/EventStreamEvents';
-import { DOTNET_INFORMATION_CACHE_DURATION_MS, SYS_CMD_SEARCH_CACHE_DURATION_MS } from './CacheTimeConstants';
 
 
 export class DotnetConditionValidator implements IDotnetConditionValidator
@@ -108,7 +108,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
         const findSDKsCommand = await this.setCodePage() ? CommandExecutor.makeCommand(`chcp`, [`65001`, `|`, `"${existingPath}"`, '--list-sdks']) :
             CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-sdks']);
 
-        const sdkInfo = await (this.executor!).execute(findSDKsCommand, {dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS}, false).then((result) =>
+        const sdkInfo = await (this.executor!).execute(findSDKsCommand, { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false).then((result) =>
         {
             const sdks = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
             const sdkInfos: IDotnetListInfo[] = sdks.map((sdk) =>
@@ -131,7 +131,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
     {
         // For Windows, we need to change the code page to UTF-8 to handle the output of the command. https://github.com/nodejs/node-v0.x-archive/issues/2190
         // Only certain builds of windows support UTF 8 so we need to check that we can use it.
-        return os.platform() === 'win32' ? (await this.executor!.tryFindWorkingCommand([CommandExecutor.makeCommand('chcp', ['65001'])], {dotnetInstallToolCacheTtlMs: SYS_CMD_SEARCH_CACHE_DURATION_MS})) !== null : false;
+        return os.platform() === 'win32' ? (await this.executor!.tryFindWorkingCommand([CommandExecutor.makeCommand('chcp', ['65001'])], { dotnetInstallToolCacheTtlMs: SYS_CMD_SEARCH_CACHE_DURATION_MS })) !== null : false;
     }
 
     private stringVersionMeetsRequirement(availableVersion: string, requestedVersion: string, requirement: IDotnetFindPathContext): boolean
@@ -213,7 +213,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
         const aspnetCoreString = 'Microsoft.AspNetCore.App';
         const runtimeString = 'Microsoft.NETCore.App';
 
-        const runtimeInfo = await (this.executor!).execute(findRuntimesCommand, {dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS}, false).then((result) =>
+        const runtimeInfo = await (this.executor!).execute(findRuntimesCommand, { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false).then((result) =>
         {
             const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
             const runtimeInfos: IDotnetListInfo[] = runtimes.map((runtime) =>

@@ -4,34 +4,38 @@
 *--------------------------------------------------------------------------------------------*/
 
 import * as semver from 'semver';
-import {
+import
+{
     DotnetInvalidReleasesJSONError,
     DotnetOfflineFailure,
     DotnetVersionResolutionCompleted,
     DotnetVersionResolutionError,
-    EventCancellationError,
-    EventBasedError
+    EventBasedError,
+    EventCancellationError
 } from '../EventStream/EventStreamEvents';
-import { WebRequestWorker } from '../Utils/WebRequestWorker';
-import { getInstallFromContext , getAssumedInstallInfo } from '../Utils/InstallIdUtilities';
 import { Debugging } from '../Utils/Debugging';
+import { getAssumedInstallInfo, getInstallFromContext } from '../Utils/InstallIdUtilities';
+import { WebRequestWorker } from '../Utils/WebRequestWorker';
 
-import { IVersionResolver } from './IVersionResolver';
-import { DotnetVersionSupportPhase,
+import
+{
+    DotnetVersionSupportPhase,
     DotnetVersionSupportStatus,
     IDotnetListVersionsContext,
     IDotnetListVersionsResult,
     IDotnetVersion
 } from '../IDotnetListVersionsContext';
-import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { DotnetInstallMode } from './DotnetInstallMode';
+import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { IVersionResolver } from './IVersionResolver';
 
-export class VersionResolver implements IVersionResolver {
+export class VersionResolver implements IVersionResolver
+{
     protected webWorker: WebRequestWorker;
     private readonly releasesUrl = 'https://builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json';
 
     constructor(
-        private readonly context : IAcquisitionWorkerContext,
+        private readonly context: IAcquisitionWorkerContext,
         webWorker?: WebRequestWorker
     )
     {
@@ -52,12 +56,12 @@ export class VersionResolver implements IVersionResolver {
      * @throws
      * Exception if the API service for releases-index.json is unavailable.
      */
-    public async GetAvailableDotnetVersions(commandContext: IDotnetListVersionsContext | undefined) : Promise<IDotnetListVersionsResult>
+    public async GetAvailableDotnetVersions(commandContext: IDotnetListVersionsContext | undefined): Promise<IDotnetListVersionsResult>
     {
-        const getSdkVersions  = !commandContext?.listRuntimes;
-        const availableVersions : IDotnetListVersionsResult = [];
+        const getSdkVersions = !commandContext?.listRuntimes;
+        const availableVersions: IDotnetListVersionsResult = [];
 
-        const response : any = await this.webWorker.getCachedData();
+        const response: any = await this.webWorker.getCachedData();
 
         return new Promise<IDotnetListVersionsResult>((resolve, reject) =>
         {
@@ -70,24 +74,20 @@ export class VersionResolver implements IVersionResolver {
             else
             {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                const releases = response['releases-index'];
+                const releases = response?.['releases-index'];
 
-                for(const release of releases)
+                for (const release of releases)
                 {
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                    if(release['release-type'] === 'lts' || release['release-type'] === 'sts')
+                    if (release?.['release-type'] === 'lts' || release?.['release-type'] === 'sts')
                     {
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                         availableVersions.push({
-                                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                                supportStatus: (release['release-type'] as DotnetVersionSupportStatus),
-                                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                                supportPhase: (release['support-phase'] as DotnetVersionSupportPhase),
-                                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                                version: release[getSdkVersions ? 'latest-sdk' : 'latest-runtime'],
-                                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                                channelVersion: release['channel-version']
-                            } as IDotnetVersion
+                            supportStatus: (release?.['release-type'] as DotnetVersionSupportStatus) ?? 'sts',
+                            supportPhase: (release?.['support-phase'] as DotnetVersionSupportPhase) ?? 'eol',
+                            version: release?.[getSdkVersions ? 'latest-sdk' : 'latest-runtime'] ?? '0.0',
+                            channelVersion: release?.['channel-version'] ?? '0.0'
+                        } as IDotnetVersion
                         );
                     }
                 }
@@ -99,12 +99,12 @@ export class VersionResolver implements IVersionResolver {
 
     public async getFullVersion(version: string, mode: DotnetInstallMode): Promise<string>
     {
-        let releasesVersions : IDotnetListVersionsResult;
+        let releasesVersions: IDotnetListVersionsResult;
         try
         {
             releasesVersions = await this.getReleasesInfo(mode);
         }
-        catch(error : any)
+        catch (error: any)
         {
             // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -119,7 +119,7 @@ export class VersionResolver implements IVersionResolver {
                 this.context.eventStream.post(new DotnetVersionResolutionCompleted(version, versionResult));
                 resolve(versionResult);
             }
-            catch (error : any)
+            catch (error: any)
             {
                 // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -134,12 +134,12 @@ export class VersionResolver implements IVersionResolver {
         this.validateVersionInput(version);
 
         // Search for the specific version
-        let matchingVersion = releases.filter((availableVersions : IDotnetVersion) => availableVersions.version === version);
+        let matchingVersion = releases.filter((availableVersions: IDotnetVersion) => availableVersions.version === version);
 
         // If a x.y version is given, just find that instead (which is how almost all requests are given atm)
-        if(!matchingVersion || matchingVersion.length < 1)
+        if (!matchingVersion || matchingVersion.length < 1)
         {
-            matchingVersion = releases.filter((availableVersions : IDotnetVersion) => availableVersions.channelVersion === version);
+            matchingVersion = releases.filter((availableVersions: IDotnetVersion) => availableVersions.channelVersion === version);
         }
         if (!matchingVersion || matchingVersion.length < 1)
         {
@@ -160,7 +160,7 @@ export class VersionResolver implements IVersionResolver {
         {
             parsedVer = semver.coerce(version);
         }
-        catch(err)
+        catch (err)
         {
             parsedVer = null;
         }
@@ -178,7 +178,7 @@ export class VersionResolver implements IVersionResolver {
         Debugging.log(`The version ${version} was determined to be valid.`, this.context.eventStream);
     }
 
-    private async getReleasesInfo(mode : DotnetInstallMode): Promise<IDotnetListVersionsResult>
+    private async getReleasesInfo(mode: DotnetInstallMode): Promise<IDotnetListVersionsResult>
     {
         const apiContext: IDotnetListVersionsContext = { listRuntimes: mode === 'runtime' || mode === 'aspnetcore' };
 
