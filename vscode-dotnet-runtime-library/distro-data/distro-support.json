@@ -1,6 +1,6 @@
 {
     "$schema": "../../Documentation/json-schema/distro-support-schema.json",
-    "Debian": {
+    "Debian GNU/Linux": {
         "installCommand": [
             {
                 "runUnderSudo": true,
