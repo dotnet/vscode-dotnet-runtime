@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+## [2.2.9] - 2025-2-26
+
+Add community support for Debian.
+Fix issue with install scripts on validating the dotnet install.
+Performance improvements.
+
 ## [2.2.8] - 2025-2-11
 
 Fix for breaking change to releases.json when downloading .NET 9.
