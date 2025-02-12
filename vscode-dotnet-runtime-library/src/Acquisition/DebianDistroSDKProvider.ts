@@ -5,18 +5,19 @@
  * ------------------------------------------------------------------------------------------ */
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
+import { DotnetInstallMode } from './DotnetInstallMode';
 import { GenericDistroSDKProvider } from './GenericDistroSDKProvider';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { DistroVersionPair } from './LinuxVersionResolver';
 
 export class DebianDistroSDKProvider extends GenericDistroSDKProvider
 {
-    constructor(distroVersion : DistroVersionPair, context : IAcquisitionWorkerContext, utilContext : IUtilityContext, executor : ICommandExecutor | null = null)
+    constructor(distroVersion: DistroVersionPair, context: IAcquisitionWorkerContext, utilContext: IUtilityContext, executor: ICommandExecutor | null = null)
     {
         super(distroVersion, context, utilContext, executor);
     }
 
-    protected myVersionDetails() : any
+    protected myVersionDetails(): any
     {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         const distroVersions = this.distroJson[this.distroVersion.distro][this.distroVersionsKey];
@@ -24,5 +25,10 @@ export class DebianDistroSDKProvider extends GenericDistroSDKProvider
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         const versionData = distroVersions.filter((x: { [x: string]: string; }) => x[this.versionKey] === String(targetVersion));
         return versionData;
+    }
+    public override async dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion: string, installType: DotnetInstallMode): Promise<boolean>
+    {
+        this.injectPMCFeed(fullySpecifiedDotnetVersion, installType);
+        return super.dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion, installType);
     }
 }
