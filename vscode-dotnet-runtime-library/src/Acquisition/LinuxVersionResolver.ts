@@ -6,7 +6,6 @@
 import * as fs from 'fs';
 import path = require('path');
 
-import * as versionUtils from './VersionUtilities';
 import
 {
     DotnetAcquisitionDistroUnknownError,
@@ -17,23 +16,23 @@ import
     EventBasedError,
     EventCancellationError
 } from '../EventStream/EventStreamEvents';
-import { GenericDistroSDKProvider } from './GenericDistroSDKProvider'
-import { VersionResolver } from './VersionResolver';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+import { GenericDistroSDKProvider } from './GenericDistroSDKProvider';
 import { RedHatDistroSDKProvider } from './RedHatDistroSDKProvider';
+import { VersionResolver } from './VersionResolver';
+import * as versionUtils from './VersionUtilities';
 
+import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
+import { ICommandExecutor } from '../Utils/ICommandExecutor';
+import { getInstallFromContext } from '../Utils/InstallIdUtilities';
+import { IUtilityContext } from '../Utils/IUtilityContext';
+import { DotnetInstallMode } from './DotnetInstallMode';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
-import { ICommandExecutor } from '../Utils/ICommandExecutor';
-import { IUtilityContext } from '../Utils/IUtilityContext';
-import { IDotnetAcquireContext } from '../IDotnetAcquireContext'
-import { getInstallFromContext } from '../Utils/InstallIdUtilities';
-import { DotnetInstallMode } from './DotnetInstallMode';
-import { version } from 'os';
 
 import { DebianDistroSDKProvider } from './DebianDistroSDKProvider';
 
-import { READ_SYMLINK_CACHE_DURATION_MS, SYSTEM_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
+import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
 
 
 /**
@@ -222,7 +221,7 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
                     throw unsupportedRhelErr.error;
                 }
                 return new RedHatDistroSDKProvider(distroAndVersion, this.workerContext, this.utilityContext);
-            case 'Debian':
+            case 'Debian GNU/Linux':
                 return new DebianDistroSDKProvider(distroAndVersion, this.workerContext, this.utilityContext);
             default:
                 return new GenericDistroSDKProvider(distroAndVersion, this.workerContext, this.utilityContext);
