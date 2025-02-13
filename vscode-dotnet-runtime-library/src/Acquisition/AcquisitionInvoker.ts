@@ -118,7 +118,8 @@ If you cannot change this flag, try setting a custom existingDotnetPath via the 
                                 reject(newError);
                             }
                         }
-                        else if (stderr?.length > 0)
+                        else if ((stderr?.length ?? 0) > 0)
+
                         {
                             this.eventStream.post(new DotnetAcquisitionCompleted(install, installContext.dotnetPath, installContext.version));
                             resolve();
