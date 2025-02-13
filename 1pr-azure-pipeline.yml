@@ -2,7 +2,6 @@
 # URL: https://dev.azure.com/dnceng-public/public/_build?definitionId=60
 
 trigger:
-  batch: true
   branches:
     include:
     - main
@@ -54,14 +53,14 @@ stages:
   - template: pipeline-templates/upstream-verify.yaml
     parameters:
       pool:
-        vmImage: windows-latest
-        os: windows
+        vmImage: macOS-latest
+        os: macOS
       useOneEngineeringPool: false
   - template: pipeline-templates/lint.yaml
     parameters:
       pool:
-        vmImage: windows-latest
-        os: windows
+        vmImage: macOS-latest
+        os: macOS
       useOneEngineeringPool: false
   - template: pipeline-templates/package-vsix.yaml
     parameters:

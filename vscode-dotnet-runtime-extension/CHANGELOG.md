@@ -7,13 +7,30 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-## [2.2.6] - 2025-1
+## [2.2.9] - 2025-2-26
+
+Add community support for Debian.
+Fix issue with install scripts on validating the dotnet install.
+Performance improvements.
+
+## [2.2.8] - 2025-2-11
+
+Fix for breaking change to releases.json when downloading .NET 9.
+
+## [2.2.7] - 2025-2-10
+
+Fix some issues with powershell language mode and execution policy. Improve error messages for this.
+Performance improvements.
+Fix for the existingDotnetPathSetting when a symlink is used.
+Improvements to product deployment and packaging.
+
+## [2.2.6] - 2025-1-28
 
 Update CDNs to new domains for faster downloads.
 
 ## [2.2.5] - 2025-1-14
 
- Collect server side network delay to evaluate CDN delivery times and proficiency.
+Collect server side network delay to evaluate CDN delivery times and proficiency.
 
 ## [2.2.4] - 2025-1-14
 

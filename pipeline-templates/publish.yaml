@@ -45,7 +45,7 @@ jobs:
         scriptLocation: 'inlineScript'
         workingDirectory: '$(System.ArtifactsDirectory)'
         inlineScript: |
-          npm install @vscode/vsce@latest -g --reg https://registry.npmjs.org/ --verbose
+          npm i -g --verbose @vscode/vsce
           $basePublishArgs = , "publish"
           $basePublishArgs += '--azure-credential'
           $basePublishArgs += '--packagePath'

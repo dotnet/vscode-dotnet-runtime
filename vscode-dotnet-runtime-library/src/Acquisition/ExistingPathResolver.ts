@@ -14,6 +14,7 @@ import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
 import { IDotnetFindPathContext } from '../IDotnetFindPathContext';
 import { DotnetVersionSpecRequirement } from '../DotnetVersionSpecRequirement';
+import { DotnetPathFinder } from './DotnetPathFinder';
 
 const badExistingPathWarningMessage = `The 'existingDotnetPath' setting was set, but it did not meet the requirements for this extension to run properly.
 This setting has been ignored.
@@ -22,15 +23,27 @@ If you would like to continue to use the setting anyways, set dotnetAcquisitionE
 
 export class ExistingPathResolver
 {
+    private lastSeenNonTruePathValue: string | null = null;
 
-    public constructor(private readonly workerContext : IAcquisitionWorkerContext, private readonly utilityContext : IUtilityContext, private executor? : ICommandExecutor)
+    public constructor(private readonly workerContext: IAcquisitionWorkerContext, private readonly utilityContext: IUtilityContext, private executor?: ICommandExecutor)
     {
         this.executor ??= new CommandExecutor(this.workerContext, this.utilityContext);
     }
 
-    public async resolveExistingPath(existingPaths: IExistingPaths | undefined, extensionId: string | undefined, windowDisplayWorker: IWindowDisplayWorker, requirement? : DotnetVersionSpecRequirement): Promise<IDotnetAcquireResult | undefined>
+    public async resolveExistingPath(existingPaths: IExistingPaths | undefined, extensionId: string | undefined, windowDisplayWorker: IWindowDisplayWorker, requirement?: DotnetVersionSpecRequirement): Promise<IDotnetAcquireResult | undefined>
     {
-        const existingPath = this.getExistingPath(existingPaths, extensionId, windowDisplayWorker);
+        let existingPath = this.getExistingPath(existingPaths, extensionId, windowDisplayWorker);
+        this.lastSeenNonTruePathValue = existingPath;
+        if (!this.allowInvalidPath(this.workerContext))
+        {
+            // The user path setting may be a symlink but we dont want to resolve it since a snap symlink isnt a real directory, we can find the true path better this way:
+            const oldLookup = process.env.DOTNET_MULTILEVEL_LOOKUP;
+            process.env.DOTNET_MULTILEVEL_LOOKUP = '0'; // make it so --list-runtimes only finds the runtimes on that path: https://learn.microsoft.com/en-us/dotnet/core/compatibility/deployment/7.0/multilevel-lookup#reason-for-change
+
+            const dotnetFinder = new DotnetPathFinder(this.workerContext, this.utilityContext, this.executor);
+            const resolvedPaths = await dotnetFinder.returnWithRestoringEnvironment(await dotnetFinder.getTruePath([existingPath ?? '']), 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
+            existingPath = resolvedPaths?.at(0) ?? null;
+        }
         if (existingPath && (await this.providedPathMeetsAPIRequirement(this.workerContext, existingPath, this.workerContext.acquisitionContext, requirement) || this.allowInvalidPath(this.workerContext)))
         {
             return { dotnetPath: existingPath } as IDotnetAcquireResult;
@@ -39,7 +52,16 @@ export class ExistingPathResolver
         return undefined;
     }
 
-    private getExistingPath(existingPaths: IExistingPaths | undefined, extensionId: string | undefined, windowDisplayWorker: IWindowDisplayWorker) : string | null
+    /**
+     * @remarks Returns the last path this class processed before getting the true path.
+     * This is a bit of a hack to allow tests to evaluate the class more thoroughly.
+     */
+    public getlastSeenNonTruePathValue(): string | null
+    {
+        return this.lastSeenNonTruePathValue;
+    }
+
+    private getExistingPath(existingPaths: IExistingPaths | undefined, extensionId: string | undefined, windowDisplayWorker: IWindowDisplayWorker): string | null
     {
         if (existingPaths && ((existingPaths?.individualizedExtensionPaths?.length ?? 0) > 0 || existingPaths?.sharedExistingPath))
         {
@@ -62,10 +84,11 @@ export class ExistingPathResolver
             else
             {
                 const matchingExtensions = existingPaths.individualizedExtensionPaths?.filter((pair) => pair.extensionId === extensionId);
-                if(matchingExtensions && matchingExtensions.length > 0)
+                if (matchingExtensions && matchingExtensions.length > 0)
                 {
                     const existingLocalPath = existingPaths.individualizedExtensionPaths?.filter((pair) => pair.extensionId === extensionId);
-                    if (existingLocalPath && existingLocalPath.length > 0) {
+                    if (existingLocalPath && existingLocalPath.length > 0)
+                    {
                         return existingLocalPath![0].path;
                     }
                 }
@@ -87,19 +110,19 @@ export class ExistingPathResolver
         return null;
     }
 
-    private allowInvalidPath(workerContext : IAcquisitionWorkerContext) : boolean
+    private allowInvalidPath(workerContext: IAcquisitionWorkerContext): boolean
     {
         return workerContext.allowInvalidPathSetting ?? false;
     }
 
-    private async providedPathMeetsAPIRequirement(workerContext : IAcquisitionWorkerContext, existingPath : string, apiRequest : IDotnetAcquireContext, requirement? : DotnetVersionSpecRequirement) : Promise<boolean>
+    private async providedPathMeetsAPIRequirement(workerContext: IAcquisitionWorkerContext, existingPath: string, apiRequest: IDotnetAcquireContext, requirement?: DotnetVersionSpecRequirement): Promise<boolean>
     {
         const validator = new DotnetConditionValidator(this.workerContext, this.utilityContext, this.executor);
-        const validated = await validator.dotnetMeetsRequirement(existingPath, {acquireContext : apiRequest, versionSpecRequirement : requirement ?? 'equal'} as IDotnetFindPathContext);
+        const validated = await validator.dotnetMeetsRequirement(existingPath, { acquireContext: apiRequest, versionSpecRequirement: requirement ?? 'equal' } as IDotnetFindPathContext);
 
-        if(!validated && !this.allowInvalidPath(workerContext))
+        if (!validated && !this.allowInvalidPath(workerContext))
         {
-            this.utilityContext.ui.showWarningMessage(`${badExistingPathWarningMessage}\nExtension: ${workerContext.acquisitionContext.requestingExtensionId ?? 'Unspecified'}`, () => {/* No Callback */}, );
+            this.utilityContext.ui.showWarningMessage(`${badExistingPathWarningMessage}\nExtension: ${workerContext.acquisitionContext.requestingExtensionId ?? 'Unspecified'}`, () => {/* No Callback */ },);
         }
 
         return validated;
