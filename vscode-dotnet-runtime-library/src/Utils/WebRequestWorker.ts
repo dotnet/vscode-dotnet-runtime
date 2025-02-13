@@ -343,7 +343,7 @@ export class WebRequestWorker
             this.context.eventStream.post(new WebRequestSent(this.url));
             const response = await this.axiosGet(
                 this.url,
-                { transformResponse: (x: any) => x, ...options }
+                { transformResponse: (x: any) => x as any, ...options }
             );
 
             if (response?.headers?.['content-type'] === 'application/json')
@@ -351,15 +351,18 @@ export class WebRequestWorker
                 try
                 {
                     // Try to copy logic from https://github.com/axios/axios/blob/2e58825bc7773247ca5d8c2cae2ee041d38a0bb5/lib/defaults/index.js#L100
-                    const jsonData = JSON.parse(response.data);
-                    return jsonData;
+                    const jsonData = JSON.parse(response?.data ?? null);
+                    if (jsonData) // JSON.parse(null) => null but JSON.parse(undefined) => SyntaxError. We only want to return undefined and not null based on funct signature.
+                    {
+                        return jsonData;
+                    };
                 }
                 catch (error: any)
                 {
 
                 }
             }
-            return response.data;
+            return response?.data;
         }
         catch (error: any)
         {

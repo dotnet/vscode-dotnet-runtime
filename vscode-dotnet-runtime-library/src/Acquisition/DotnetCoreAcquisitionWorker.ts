@@ -206,7 +206,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
             context.eventStream.post(new DotnetAcquisitionStatusResolved(install, version));
             return { dotnetPath };
         }
-        else if (installedVersions.length === 0 && fs.existsSync(dotnetPath) && installMode === 'sdk')
+        else if ((installedVersions?.length ?? 0) === 0 && fs.existsSync(dotnetPath) && installMode === 'sdk')
         {
             // The education bundle already laid down a local install, add it to our managed installs
             const preinstalledVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).checkForUnrecordedLocalSDKSuccessfulInstall(
@@ -312,7 +312,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
 
-        if (fs.existsSync(dotnetPath) && installedVersions.length === 0)
+        if (fs.existsSync(dotnetPath) && (installedVersions?.length ?? 0) === 0)
         {
             // The education bundle already laid down a local install, add it to our managed installs
             installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream,

@@ -80,7 +80,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
         // System may not have english installed, but CDK already calls this without issue -- the .NET SDK language invocation is also wrapped by a runtime library and natively includes english assets
         const hostArch = await (this.executor!).execute(infoCommand, { env: envWithForceEnglish, dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false).then((result) =>
         {
-            const lines = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
+            const lines = result.stdout.split('\n').map((line) => line.trim()).filter((line) => (line?.length ?? 0) > 0);
             // This is subject to change but there is no good alternative to do this
             const archLine = lines.find((line) => line.startsWith('Architecture:'));
             if (archLine === undefined)
@@ -110,7 +110,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
 
         const sdkInfo = await (this.executor!).execute(findSDKsCommand, { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false).then((result) =>
         {
-            const sdks = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
+            const sdks = result.stdout.split('\n').map((line) => line.trim()).filter((line) => (line?.length ?? 0) > 0);
             const sdkInfos: IDotnetListInfo[] = sdks.map((sdk) =>
             {
                 const parts = sdk.split(' ', 2);
@@ -215,7 +215,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
 
         const runtimeInfo = await (this.executor!).execute(findRuntimesCommand, { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false).then((result) =>
         {
-            const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
+            const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line?.length > 0);
             const runtimeInfos: IDotnetListInfo[] = runtimes.map((runtime) =>
             {
                 const parts = runtime.split(' ', 3); // account for spaces in PATH, no space should appear before then and luckily path is last

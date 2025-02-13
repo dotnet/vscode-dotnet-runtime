@@ -9,9 +9,10 @@ import * as os from 'os';
 import open = require('open');
 import path = require('path');
 
+import { exec as execElevated } from '@vscode/sudo-prompt';
+import * as lockfile from 'proper-lockfile';
 import
 {
-    EventCancellationError,
     CommandExecutionEvent,
     CommandExecutionNoStatusCodeWarning,
     CommandExecutionNonZeroExitFailure,
@@ -32,6 +33,8 @@ import
     DotnetLockAcquiredEvent,
     DotnetLockReleasedEvent,
     DotnetWSLSecurityError,
+    EventBasedError,
+    EventCancellationError,
     SudoProcAliveCheckBegin,
     SudoProcAliveCheckEnd,
     SudoProcCommandExchangeBegin,
@@ -39,26 +42,23 @@ import
     SudoProcCommandExchangePing,
     TimeoutSudoCommandExecutionError,
     TimeoutSudoProcessSpawnerError,
-    EventBasedError,
     TriedToExitMasterSudoProcess
 } from '../EventStream/EventStreamEvents';
-import { exec as execElevated } from '@vscode/sudo-prompt';
-import * as lockfile from 'proper-lockfile';
 import { CommandExecutorCommand } from './CommandExecutorCommand';
 import { getInstallFromContext } from './InstallIdUtilities';
 
 
-import { ICommandExecutor } from './ICommandExecutor';
-import { IUtilityContext } from './IUtilityContext';
-import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
-import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
-import { FileUtilities } from './FileUtilities';
-import { IFileUtilities } from './IFileUtilities';
-import { CommandExecutorResult } from './CommandExecutorResult';
-import { isRunningUnderWSL, loopWithTimeoutOnCond } from './TypescriptUtilities';
 import { IEventStream } from '../EventStream/EventStream';
+import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
+import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { LocalMemoryCacheSingleton } from '../LocalMemoryCacheSingleton';
+import { CommandExecutorResult } from './CommandExecutorResult';
+import { FileUtilities } from './FileUtilities';
+import { ICommandExecutor } from './ICommandExecutor';
+import { IFileUtilities } from './IFileUtilities';
+import { IUtilityContext } from './IUtilityContext';
+import { isRunningUnderWSL, loopWithTimeoutOnCond } from './TypescriptUtilities';
 
 export class CommandExecutor extends ICommandExecutor
 {
@@ -460,14 +460,14 @@ with options ${JSON.stringify(options)}.`));
 
             const statusCode: string = (() =>
             {
-                if (commandResult.status !== null)
+                if (commandResult.status)
                 {
                     return commandResult.status.toString() ?? '';
                 }
                 else
                 {
                     // A signal is generally given if a status is not given, and they are 'equivalent' enough
-                    if (commandResult.signal !== null)
+                    if (commandResult.signal)
                     {
 
                         return commandResult.signal.toString() ?? '';
