@@ -1098,7 +1098,7 @@ export class CachePutEvent extends DotnetCustomMessageEvent
 
     public getProperties()
     {
-        return { Message: this.eventMessage, indexStr: this.indexStr, value: this.value, ttl: this.ttl };
+        return { Message: this.eventMessage, indexStr: this.indexStr, value: this.value, ttl: this.ttl, ...getDisabledTelemetryOnChance(1) };
     };
 }
 
@@ -1109,7 +1109,7 @@ export class CacheGetEvent extends DotnetCustomMessageEvent
 
     public getProperties()
     {
-        return { Message: this.eventMessage, indexStr: this.indexStr, value: this.value };
+        return { Message: this.eventMessage, indexStr: this.indexStr, value: this.value, ...getDisabledTelemetryOnChance(1) };
     };
 }
 
@@ -1753,4 +1753,9 @@ export class TestAcquireCalled extends IEvent
     {
         return undefined;
     }
+}
+
+function getDisabledTelemetryOnChance(percentIntToSend: number): { [disableTelemetryId: string]: boolean }
+{
+    return { suppressTelemetry: Math.random() * 100 < percentIntToSend ? true : false };
 }
