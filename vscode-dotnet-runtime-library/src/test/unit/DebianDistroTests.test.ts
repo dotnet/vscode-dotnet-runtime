@@ -16,7 +16,7 @@ const standardTimeoutTime = 100000;
 const mockVersion = '7.0.103';
 const acquisitionContext = getMockAcquisitionContext('sdk', mockVersion);
 const mockExecutor = new MockCommandExecutor(acquisitionContext, getMockUtilityContext());
-const pair: DistroVersionPair = { distro: 'Debian', version: '12' };
+const pair: DistroVersionPair = { distro: 'Debian GNU/Linux', version: '12' };
 const provider: DebianDistroSDKProvider = new DebianDistroSDKProvider(pair, acquisitionContext, getMockUtilityContext(), mockExecutor);
 const shouldRun = os.platform() === 'linux';
 const installType: DotnetInstallMode = 'sdk';

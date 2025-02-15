@@ -19,7 +19,7 @@ if type zypper > /dev/null 2>&1; then
 
 # Debian / Ubuntu
 elif type apt-get > /dev/null 2>&1; then
-    echo "Debian"
+    echo "Debian GNU/Linux"
     exit 0
 
 #RHL/Fedora/CentOS

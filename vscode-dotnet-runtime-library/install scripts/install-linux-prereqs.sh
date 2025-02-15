@@ -129,7 +129,7 @@ if [ "$DISTRO" = "SUSE" ]; then
     checkNetCoreDeps sudoIf "zypper -n in libopenssl1_0_0 libicu krb5 libz1"
 
 # Debian / Ubuntu
-elif [ "$DISTRO" = "Debian" ]; then
+elif [ "$DISTRO" = "Debian GNU/Linux" ]; then
     echo "(*) Detected Debian / Ubuntu"
    
     # Get latest package data
