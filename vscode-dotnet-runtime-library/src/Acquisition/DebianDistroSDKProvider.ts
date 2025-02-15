@@ -28,7 +28,7 @@ export class DebianDistroSDKProvider extends GenericDistroSDKProvider
     }
     public override async dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion: string, installType: DotnetInstallMode): Promise<boolean>
     {
-        this.injectPMCFeed(fullySpecifiedDotnetVersion, installType);
+        await this.injectPMCFeed(fullySpecifiedDotnetVersion, installType);
         return super.dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion, installType);
     }
 }
