@@ -99,6 +99,9 @@ Follow the instructions here to download the .NET SDK: https://learn.microsoft.c
 Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from https://access.redhat.com/downloads/;`
     protected acquireCtx: IDotnetAcquireContext | null | undefined;
 
+    // This includes all distros that we officially support for this tool as a company. If a distro is not in this list, it can still have community member support.
+    public microsoftSupportedDistroIds = ['Red Hat Enterprise Linux', 'Ubuntu'];
+
     constructor(private readonly workerContext: IAcquisitionWorkerContext, private readonly utilityContext: IUtilityContext,
         executor: ICommandExecutor | null = null, distroProvider: IDistroDotnetSDKProvider | null = null)
     {
@@ -187,6 +190,16 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
                 getInstallFromContext(this.workerContext));
             this.workerContext.eventStream.post(error);
             throw error.error;
+        }
+        else
+        {
+            if (!this.microsoftSupportedDistroIds.includes(this.distro.distro))
+            {
+                // UX: Could eventually add a 'Go away' button via the callback:
+                this.utilityContext.ui.showInformationMessage(`Automated SDK installation for the distro ${this.distro.distro} is not officially supported, except for community implemented and Microsoft approved support. If you experience issues, please reach out on https://github.com/dotnet/vscode-dotnet-runtime/issues.`,
+                    () => {/* No Callback */ },
+                );
+            }
         }
     }
 
