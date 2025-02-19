@@ -7,7 +7,7 @@ import * as fs from 'fs';
 
 import path = require('path');
 
-import { DotnetAcquisitionDistroUnknownError, DotnetVersionResolutionError, EventBasedError, EventCancellationError, FeedInjection, SuppressedAcquisitionError } from '../EventStream/EventStreamEvents';
+import { DotnetAcquisitionDistroUnknownError, DotnetVersionResolutionError, EventBasedError, EventCancellationError, FeedInjection, FoundDistroVersionDetails, SuppressedAcquisitionError } from '../EventStream/EventStreamEvents';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { CommandExecutorCommand } from '../Utils/CommandExecutorCommand';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
@@ -280,11 +280,14 @@ If you would like to contribute to the list of supported distros, please visit: 
 
         const distroVersions = this.distroJson[this.distroVersion.distro][this.distroVersionsKey];
         const versionData = distroVersions.filter((x: { [x: string]: string; }) => x[this.versionKey] === this.distroVersion.version)[0];
+
         if (!versionData)
         {
             const closestVersion = this.findMostSimilarVersion(this.distroVersion.version, distroVersions.map((x: { [x: string]: string; }) => parseFloat(x[this.versionKey])));
             return distroVersions.filter((x: { [x: string]: string; }) => parseFloat(x[this.versionKey]) === closestVersion)[0];
         }
+
+        this.context.eventStream.post(new FoundDistroVersionDetails(`Found distro version details: ${JSON.stringify(versionData)}`));
         return versionData;
     }
 
@@ -293,6 +296,7 @@ If you would like to contribute to the list of supported distros, please visit: 
         const sameMajorVersions = knownVersions.filter(x => Math.floor(x) === Math.floor(parseFloat(myVersion)));
         if (sameMajorVersions && sameMajorVersions.length)
         {
+            this.context.eventStream.post(new FoundDistroVersionDetails(`Found similar version details for same major: ${JSON.stringify(sameMajorVersions)}`));
             return Math.max(...sameMajorVersions);
         }
 
