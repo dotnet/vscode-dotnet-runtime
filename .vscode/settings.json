@@ -11,5 +11,10 @@
     ],
     "sqltools.useNodeRuntime": true,
     "svn.ignoreMissingSvnWarning": true,
-    "cmake.options.statusBarVisibility": "visible"
+    "cmake.options.statusBarVisibility": "visible",
+    "files.autoSave": "onFocusChange",
+    "application.experimental.rendererProfiling": true,
+    "accessibility.signalOptions.experimental.delays.errorAtPosition": {
+        "announcement": 3000
+    }
 }
