@@ -93,7 +93,7 @@ suite('DotnetConditionValidator Unit Tests', () =>
         contextThatCanBeIgnoredExceptMode.mode = 'sdk';
 
         let isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.100', '8.0.201', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'latestPatch' });
-        assert.isNotTrue(isAccepted, 'It doesnt take 9.0 sdk for 8.0 latestPatch');
+        assert.isNotTrue(isAccepted, 'It doesn't take 9.0 sdk for 8.0 latestPatch');
 
         isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.100', '8.0.201', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'latestFeature' });
         assert.isNotTrue(isAccepted, 'It doesnt take 9.0 sdk for 8.0 latestFeature');
