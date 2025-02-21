@@ -162,4 +162,42 @@ suite('DotnetConditionValidator Unit Tests', () =>
         isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.2', '9.0.3', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'latestPatch' });
         assert.isNotTrue(isAccepted, 'It does not take old runtime on latestPatch');
     });
+
+    test('rollForward disable is equal to == on runtime', async () =>
+    {
+        const conditionValidator = new DotnetConditionValidator(acquisitionContext, utilityContext, mockExecutor);
+        const contextThatCanBeIgnoredExceptMode = lodash.cloneDeep(acquisitionContext.acquisitionContext);
+        contextThatCanBeIgnoredExceptMode.mode = 'aspnetcore';
+
+        let isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.2', '9.0.1', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'disable' });
+        assert.isNotTrue(isAccepted, 'disable does not allow upgrade');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.2', '9.0.3', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'disable' });
+        assert.isNotTrue(isAccepted, 'disable does not allow downgrade');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('10.0.4', '9.0.3', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'disable' });
+        assert.isNotTrue(isAccepted, 'disable does not allow major upgrade');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.1', '9.0.1', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'disable' });
+        assert.isTrue(isAccepted, 'disable only takes the exact match runtime');
+    });
+
+    test('rollForward disable is equal to == on sdk', async () =>
+    {
+        const conditionValidator = new DotnetConditionValidator(acquisitionContext, utilityContext, mockExecutor);
+        const contextThatCanBeIgnoredExceptMode = lodash.cloneDeep(acquisitionContext.acquisitionContext);
+        contextThatCanBeIgnoredExceptMode.mode = 'sdk';
+
+        let isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.102', '9.0.101', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'disable' });
+        assert.isNotTrue(isAccepted, 'disable does not allow upgrade on sdk patch');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.201', '9.0.101', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'disable' });
+        assert.isNotTrue(isAccepted, 'disable does not allow upgraded sdk band');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.201', '9.0.300', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'disable' });
+        assert.isNotTrue(isAccepted, 'disable does not allow downgrade');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.1', '9.0.1', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'disable' });
+        assert.isTrue(isAccepted, 'disable only takes the exact match sdk');
+    });
 });
