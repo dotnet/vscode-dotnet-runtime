@@ -136,7 +136,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
         return os.platform() === 'win32' ? (await this.executor!.tryFindWorkingCommand([CommandExecutor.makeCommand('chcp', ['65001'])], { dotnetInstallToolCacheTtlMs: SYS_CMD_SEARCH_CACHE_DURATION_MS })) !== null : false;
     }
 
-    private stringVersionMeetsRequirement(availableVersion: string, requestedVersion: string, requirement: IDotnetFindPathContext): boolean
+    public stringVersionMeetsRequirement(availableVersion: string, requestedVersion: string, requirement: IDotnetFindPathContext): boolean
     {
         const availableMajor = Number(versionUtils.getMajor(availableVersion, this.workerContext.eventStream, this.workerContext));
         const requestedMajor = Number(versionUtils.getMajor(requestedVersion, this.workerContext.eventStream, this.workerContext));
