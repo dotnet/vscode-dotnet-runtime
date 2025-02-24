@@ -1213,6 +1213,22 @@ export class DotnetTelemetrySettingEvent extends DotnetCustomMessageEvent
     public readonly eventName = 'DotnetTelemetrySettingEvent';
 }
 
+
+export class DistroSupport extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'DistroSupport';
+}
+
+export class FeedInjection extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'FeedInjection';
+}
+
+export class FoundDistroVersionDetails extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'FoundDistroVersionDetails';
+}
+
 export class DotnetVSCodeExtensionFound extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'DotnetVSCodeExtensionFound';

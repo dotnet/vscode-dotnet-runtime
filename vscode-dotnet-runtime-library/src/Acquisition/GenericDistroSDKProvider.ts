@@ -5,13 +5,13 @@
  * ------------------------------------------------------------------------------------------ */
 import * as path from 'path';
 
-import * as versionUtils from './VersionUtilities'
+import { DistroSupport, DotnetVersionResolutionError, EventBasedError } from '../EventStream/EventStreamEvents';
 import { CommandExecutor } from '../Utils/CommandExecutor';
-import { DotnetDistroSupportStatus } from './LinuxVersionResolver';
+import { READ_SYMLINK_CACHE_DURATION_MS } from './CacheTimeConstants';
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
-import { DotnetVersionResolutionError, EventBasedError } from '../EventStream/EventStreamEvents';
-import { READ_SYMLINK_CACHE_DURATION_MS } from './CacheTimeConstants';
+import { DotnetDistroSupportStatus } from './LinuxVersionResolver';
+import * as versionUtils from './VersionUtilities';
 
 export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 {
@@ -162,6 +162,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         if (versionUtils.getFeatureBandFromVersion(fullySpecifiedVersion, this.context.eventStream, this.context) !== '1' ||
             Number(versionUtils.getMajor(fullySpecifiedVersion, this.context.eventStream, this.context)) < 6)
         {
+            this.context.eventStream.post(new DistroSupport(`Version ${fullySpecifiedVersion} is not supported by this extension. It has a non 1 level band or < 6.0.`));
             return Promise.resolve(DotnetDistroSupportStatus.Unsupported);
         }
 
@@ -169,6 +170,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         if (this.myVersionDetails().hasOwnProperty(this.preinstallCommandKey))
         {
             // If preinstall commands exist ( to add the msft feed ) then it's a microsoft feed.
+            this.context.eventStream.post(new DistroSupport(`Version ${fullySpecifiedVersion} is Microsoft support, because it has preinstallCmdKey.`));
             return Promise.resolve(DotnetDistroSupportStatus.Microsoft);
         }
         else
@@ -180,11 +182,13 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
             {
                 if (Number(dotnetPackages.version) === Number(simplifiedVersion))
                 {
+                    this.context.eventStream.post(new DistroSupport(`Version ${fullySpecifiedVersion} is Distro supported, because it has packages already.`));
                     return Promise.resolve(DotnetDistroSupportStatus.Distro);
                 }
             }
         }
 
+        this.context.eventStream.post(new DistroSupport(`Version ${fullySpecifiedVersion} is unknown.`));
         return Promise.resolve(DotnetDistroSupportStatus.Unknown);
     }
 
