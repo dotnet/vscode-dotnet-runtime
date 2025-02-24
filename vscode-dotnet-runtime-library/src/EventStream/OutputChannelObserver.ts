@@ -3,7 +3,8 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
-import {
+import
+{
     DotnetAcquisitionAlreadyInstalled,
     DotnetAcquisitionCompleted,
     DotnetAcquisitionError,
@@ -22,12 +23,14 @@ import { EventType } from './EventType';
 import { IEvent } from './IEvent';
 import { IEventStreamObserver } from './IEventStreamObserver';
 
-export class OutputChannelObserver implements IEventStreamObserver {
+export class OutputChannelObserver implements IEventStreamObserver
+{
     private readonly inProgressDownloads: string[] = [];
     private downloadProgressInterval: NodeJS.Timeout | undefined;
 
     // private inProgressDownloads:
-    constructor(private readonly outputChannel: vscode.OutputChannel) {
+    constructor(private readonly outputChannel: vscode.OutputChannel)
+    {
     }
 
     public post(event: IEvent): void
@@ -39,19 +42,20 @@ export class OutputChannelObserver implements IEventStreamObserver {
 
                 this.inProgressDownloads.push(acquisitionStarted.install.installId);
 
-                this.outputChannel.append(`${acquisitionStarted.requestingExtensionId} requested to download the ${
-                acquisitionStarted.install.installMode === 'sdk' ? '.NET SDK' :
-                acquisitionStarted.install.installMode === 'runtime' ? '.NET Runtime' :
-                '.NET ASP.NET Runtime'
-                }.`);
+                this.outputChannel.append(`${acquisitionStarted.requestingExtensionId} requested to download the ${acquisitionStarted.install.installMode === 'sdk' ? '.NET SDK' :
+                    acquisitionStarted.install.installMode === 'runtime' ? '.NET Runtime' :
+                        '.NET ASP.NET Runtime'
+                    }.`);
 
                 this.outputChannel.appendLine('');
 
-                if (this.inProgressDownloads.length > 1) {
+                if ((this.inProgressDownloads?.length ?? 0) > 1)
+                {
                     // Already a download in progress
                     this.outputChannel.appendLine(` -- Concurrent download of '${acquisitionStarted.install.installId}' started!`);
                     this.outputChannel.appendLine('');
-                } else {
+                } else
+                {
                     this.startDownloadIndicator();
                 }
 
@@ -66,16 +70,19 @@ export class OutputChannelObserver implements IEventStreamObserver {
 
                 this.inProgressVersionDone(acquisitionCompleted.install.installId);
 
-                if (this.inProgressDownloads.length > 0) {
+                if ((this.inProgressDownloads?.length ?? 0) > 0)
+                {
                     const completedVersionString = `'${this.inProgressDownloads.join('\', \'')}'`;
                     this.outputChannel.append(`Still downloading .NET version(s) ${completedVersionString} ...`);
-                } else {
+                } else
+                {
                     this.stopDownloadIndicator();
                 }
                 break;
             case EventType.DotnetAcquisitionSuccessEvent:
-                if (event instanceof DotnetExistingPathResolutionCompleted) {
-                    this.outputChannel.append(`Using configured .NET path: ${ (event as DotnetExistingPathResolutionCompleted).resolvedPath }\n`);
+                if (event instanceof DotnetExistingPathResolutionCompleted)
+                {
+                    this.outputChannel.append(`Using configured .NET path: ${(event as DotnetExistingPathResolutionCompleted).resolvedPath}\n`);
                 }
                 break;
             case EventType.DotnetVisibleWarning:
@@ -84,23 +91,19 @@ export class OutputChannelObserver implements IEventStreamObserver {
                 this.outputChannel.appendLine('');
                 break;
             case EventType.DotnetAcquisitionAlreadyInstalled:
-                if(event instanceof DotnetAcquisitionAlreadyInstalled)
+                if (event instanceof DotnetAcquisitionAlreadyInstalled)
                 {
-                    this.outputChannel.append(`${
-                        (event as DotnetAcquisitionAlreadyInstalled).requestingExtensionId
-                    }: Trying to install .NET ${
-                        (event as DotnetAcquisitionAlreadyInstalled).install.installId
-                    } but it already exists. No downloads or changes were made.\n`);
+                    this.outputChannel.append(`${(event as DotnetAcquisitionAlreadyInstalled).requestingExtensionId
+                        }: Trying to install .NET ${(event as DotnetAcquisitionAlreadyInstalled).install.installId
+                        } but it already exists. No downloads or changes were made.\n`);
                 }
                 break;
             case EventType.DotnetAcquisitionInProgress:
-                if(event instanceof DotnetAcquisitionInProgress)
+                if (event instanceof DotnetAcquisitionInProgress)
                 {
-                    this.outputChannel.append(`${
-                        (event as DotnetAcquisitionInProgress).requestingExtensionId
-                    } tried to install .NET ${
-                        (event as DotnetAcquisitionInProgress).install.installId
-                    } but that install had already been requested. No downloads or changes were made.\n`);
+                    this.outputChannel.append(`${(event as DotnetAcquisitionInProgress).requestingExtensionId
+                        } tried to install .NET ${(event as DotnetAcquisitionInProgress).install.installId
+                        } but that install had already been requested. No downloads or changes were made.\n`);
                 }
                 break;
             case EventType.DotnetAcquisitionError:
@@ -139,39 +142,45 @@ export class OutputChannelObserver implements IEventStreamObserver {
         }
     }
 
-    public dispose(): void {
+    public dispose(): void
+    {
         // Nothing to dispose
     }
 
-    private updateDownloadIndicators(installId : string | null | undefined)
+    private updateDownloadIndicators(installId: string | null | undefined)
     {
-        if(installId && installId !== 'null')
+        if (installId && installId !== 'null')
         {
             this.inProgressVersionDone(installId);
         }
 
-        if (this.inProgressDownloads.length > 0)
+        if ((this.inProgressDownloads?.length ?? 0) > 0)
         {
             const errorVersionString = this.inProgressDownloads.join(', ');
             this.outputChannel.append(`Still downloading .NET version(s) ${errorVersionString} ...`);
         }
-        else {
+        else
+        {
             this.stopDownloadIndicator();
         }
     }
 
-    private startDownloadIndicator() {
+    private startDownloadIndicator()
+    {
         this.downloadProgressInterval = setInterval(() => this.outputChannel.append('.'), 1000);
     }
 
-    private stopDownloadIndicator() {
-        if (this.downloadProgressInterval) {
+    private stopDownloadIndicator()
+    {
+        if (this.downloadProgressInterval)
+        {
             clearTimeout(this.downloadProgressInterval);
             this.downloadProgressInterval = undefined;
         }
     }
 
-    private inProgressVersionDone(version: string) {
+    private inProgressVersionDone(version: string)
+    {
         const index = this.inProgressDownloads.indexOf(version);
         this.inProgressDownloads.splice(index, 1);
     }

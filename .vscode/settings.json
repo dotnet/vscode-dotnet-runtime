@@ -6,6 +6,7 @@
         "aspnet",
         "aspnetcore",
         "distros",
+        "dotnets",
         "HKCU",
         "HKEY",
         "norestart",
@@ -24,5 +25,5 @@
         "./vscode-dotnet-runtime-extension",
         "./vscode-dotnet-sdk-extension",
         "./sample"
-      ]
+    ]
 }

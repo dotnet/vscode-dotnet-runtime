@@ -206,7 +206,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
             context.eventStream.post(new DotnetAcquisitionStatusResolved(install, version));
             return { dotnetPath };
         }
-        else if (installedVersions.length === 0 && fs.existsSync(dotnetPath) && installMode === 'sdk')
+        else if ((installedVersions?.length ?? 0) === 0 && fs.existsSync(dotnetPath) && installMode === 'sdk')
         {
             // The education bundle already laid down a local install, add it to our managed installs
             const preinstalledVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).checkForUnrecordedLocalSDKSuccessfulInstall(
@@ -235,12 +235,12 @@ To keep your .NET version up to date, please reconnect to the internet at your s
     private async acquire(context: IAcquisitionWorkerContext, mode: DotnetInstallMode,
         globalInstallerResolver: GlobalInstallerResolver | null = null, localInvoker?: IAcquisitionInvoker): Promise<IDotnetAcquireResult>
     {
-        if (globalInstallerResolver !== null)
+        if (globalInstallerResolver)
         {
             context.acquisitionContext.version = await globalInstallerResolver.getFullySpecifiedVersion();
         }
         const version = context.acquisitionContext.version;
-        let install = GetDotnetInstallInfo(version, mode, globalInstallerResolver !== null ? 'global' : 'local',
+        let install = GetDotnetInstallInfo(version, mode, globalInstallerResolver ? 'global' : 'local',
             context.acquisitionContext.architecture ?? this.getDefaultInternalArchitecture(context.acquisitionContext.architecture));
 
         // Allow for the architecture to be null, which is a legacy behavior.
@@ -249,7 +249,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
             install =
                 {
                     installId: getInstallIdCustomArchitecture(version, context.acquisitionContext.architecture,
-                        context.acquisitionContext.mode!, globalInstallerResolver !== null ? 'global' : 'local'),
+                        context.acquisitionContext.mode!, globalInstallerResolver ? 'global' : 'local'),
                     version: install.version,
                     isGlobal: install.isGlobal,
                     installMode: mode,
@@ -266,7 +266,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         {
             // We're the only one acquiring this version of dotnet, start the acquisition process.
             let acquisitionPromise = null;
-            if (globalInstallerResolver !== null)
+            if (globalInstallerResolver)
             {
                 Debugging.log(`The Acquisition Worker has Determined a Global Install was requested.`, context.eventStream);
 
@@ -312,7 +312,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
 
-        if (fs.existsSync(dotnetPath) && installedVersions.length === 0)
+        if (fs.existsSync(dotnetPath) && (installedVersions?.length ?? 0) === 0)
         {
             // The education bundle already laid down a local install, add it to our managed installs
             installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream,

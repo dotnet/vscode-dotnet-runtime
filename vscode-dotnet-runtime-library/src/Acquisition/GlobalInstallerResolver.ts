@@ -213,7 +213,7 @@ export class GlobalInstallerResolver
 
         const indexJson: any = await this.fetchJsonObjectFromUrl(indexUrl);
         const releases = indexJson![this.releasesJsonKey];
-        if (releases.length === 0)
+        if ((releases?.length ?? 0) === 0)
         {
             const jsonErr = new DotnetInvalidReleasesJSONError(new EventBasedError('DotnetInvalidReleasesJSONError',
                 `${this.releasesJsonErrorString}${indexUrl}`), getInstallFromContext(this.context));
@@ -252,7 +252,7 @@ The version may be Out of Support, or the releases json format used by ${indexUr
                         }
                         if (!this.startsWithAny((installerUrl as string), [
                             'https://download.visualstudio.microsoft.com/', 'https://builds.dotnet.microsoft.com/', 'https://ci.dot.net',
-                       'https://dotnetcli.blob.core.windows.net/',
+                            'https://dotnetcli.blob.core.windows.net/',
                         ]))
                         {
                             const releaseJsonErr = new DotnetInvalidReleasesJSONError(new EventBasedError('DotnetInvalidReleasesJSONError',
@@ -366,7 +366,7 @@ Your architecture: ${os.arch()}. Your OS: ${os.platform()}.`), getInstallFromCon
         const indexJson: any = await this.fetchJsonObjectFromUrl(indexUrl);
         const releases = indexJson[this.releasesJsonKey]
 
-        if (releases.length === 0)
+        if ((releases?.length ?? 0) === 0)
         {
             const badJsonErr = new DotnetInvalidReleasesJSONError(new EventBasedError('DotnetInvalidReleasesJSONError',
                 `${this.releasesJsonErrorString}${indexUrl}`), getInstallFromContext(this.context));

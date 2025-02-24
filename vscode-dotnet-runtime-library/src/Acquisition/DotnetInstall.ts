@@ -7,7 +7,8 @@ import { DotnetInstallType } from '../IDotnetAcquireContext';
 import { getInstallIdCustomArchitecture } from '../Utils/InstallIdUtilities';
 import { DotnetInstallMode } from './DotnetInstallMode';
 
-export interface DotnetInstall {
+export interface DotnetInstall
+{
     installId: string;
     version: string;
     architecture: string;
@@ -74,7 +75,7 @@ export function InstallToStrings(install: DotnetInstall)
 export function looksLikeRuntimeVersion(version: string): boolean
 {
     const band: string | undefined = version.split('.')?.at(2);
-    return !band || band.length <= 2; // assumption : there exists no runtime version at this point over 99 sub versions
+    return (band?.length ?? 0) <= 2; // assumption : there exists no runtime version at this point over 99 sub versions
 }
 
 export function GetDotnetInstallInfo(installVersion: string, installationMode: DotnetInstallMode, installType: DotnetInstallType, installArchitecture: string): DotnetInstall
