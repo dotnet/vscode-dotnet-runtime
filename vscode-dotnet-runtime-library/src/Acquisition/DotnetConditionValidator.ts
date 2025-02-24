@@ -144,7 +144,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
             : versionUtils.getSDKCompleteBandAndPatchVersionString(requestedVersion, this.workerContext.eventStream, this.workerContext);
         const requestedPatch = requestedPatchStr ? Number(requestedPatchStr) : null;
 
-        let adjustedVersionSpec: simplifiedVersionSpec = [requirement.versionSpecRequirement].map(x =>
+        const adjustedVersionSpec: simplifiedVersionSpec = [requirement.versionSpecRequirement].map(x =>
         {
             switch (x)
             {
@@ -164,11 +164,30 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
 
             if (availableMinor === requestedMinor && requestedPatch)
             {
-                const availablePatchStr: string | null = requirement.acquireContext.mode !== 'sdk' ? versionUtils.getRuntimePatchVersionString(availableVersion, this.workerContext.eventStream, this.workerContext)
-                    : versionUtils.getSDKCompleteBandAndPatchVersionString(availableVersion, this.workerContext.eventStream, this.workerContext);
+                const availablePatchStr: string | null = requirement.acquireContext.mode !== 'sdk' ?
+                    versionUtils.getRuntimePatchVersionString(availableVersion, this.workerContext.eventStream, this.workerContext)
+                    :
+                    (() =>
+                    {
+                        const band = versionUtils.getSDKCompleteBandAndPatchVersionString(availableVersion, this.workerContext.eventStream, this.workerContext);
+                        if (band)
+                        {
+                            return band;
+                        }
+                        return null;
+                    })();
                 const availablePatch = availablePatchStr ? Number(availablePatchStr) : null;
 
-                const availableBandStr = requirement.acquireContext.mode === 'sdk' ? versionUtils.getFeatureBandFromVersion(availableVersion, this.workerContext.eventStream, this.workerContext, false) ?? null : null;
+                const availableBandStr: string | null = requirement.acquireContext.mode === 'sdk' ?
+                    (() =>
+                    {
+                        const featureBand = versionUtils.getFeatureBandFromVersion(availableVersion, this.workerContext.eventStream, this.workerContext, false);
+                        if (featureBand)
+                        {
+                            return featureBand;
+                        }
+                        return null;
+                    })() : null;
                 const availableBand = availableBandStr ? Number(availableBandStr) : null;
 
                 switch (adjustedVersionSpec)

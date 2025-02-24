@@ -4,10 +4,10 @@
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
 import * as lodash from 'lodash';
-import { MockCommandExecutor } from '../mocks/MockObjects';
 import { DotnetConditionValidator } from '../../Acquisition/DotnetConditionValidator';
-import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 import { IDotnetFindPathContext } from '../../IDotnetFindPathContext';
+import { MockCommandExecutor } from '../mocks/MockObjects';
+import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 const assert = chai.assert;
 
 const listRuntimesResultWithEightPreviewOnly = `
@@ -93,10 +93,10 @@ suite('DotnetConditionValidator Unit Tests', () =>
         contextThatCanBeIgnoredExceptMode.mode = 'sdk';
 
         let isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.100', '8.0.201', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'latestPatch' });
-        assert.isNotTrue(isAccepted, 'It doesn't take 9.0 sdk for 8.0 latestPatch');
+        assert.isNotTrue(isAccepted, 'It does not take 9.0 sdk for 8.0 latestPatch');
 
         isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.100', '8.0.201', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'latestFeature' });
-        assert.isNotTrue(isAccepted, 'It doesnt take 9.0 sdk for 8.0 latestFeature');
+        assert.isNotTrue(isAccepted, 'It does not take 9.0 sdk for 8.0 latestFeature');
 
         isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.100', '8.0.201', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'latestMajor' });
         assert.isTrue(isAccepted, 'It does take 9.0 sdk for 8.0 latestMajor');
