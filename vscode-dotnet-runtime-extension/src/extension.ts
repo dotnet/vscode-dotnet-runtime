@@ -406,7 +406,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 }
             });
 
-        if (menuItems.length < 1)
+        if (menuItems?.length ?? 0 < 1)
         {
             vscode.window.showInformationMessage('No .NET installations were found to uninstall.');
             return;

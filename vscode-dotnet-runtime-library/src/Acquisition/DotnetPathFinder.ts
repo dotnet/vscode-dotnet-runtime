@@ -9,12 +9,10 @@ import { IUtilityContext } from '../Utils/IUtilityContext';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetPathFinder } from './IDotnetPathFinder';
 
+import { existsSync, realpathSync } from 'fs';
+import * as lodash from 'lodash';
 import * as os from 'os';
 import * as path from 'path';
-import * as lodash from 'lodash';
-import { realpathSync, existsSync, readFileSync } from 'fs';
-import { EnvironmentVariableIsDefined, getDotnetExecutable, getOSArch, getPathSeparator } from '../Utils/TypescriptUtilities';
-import { DotnetConditionValidator } from './DotnetConditionValidator';
 import
 {
     DotnetFindPathHostFxrResolutionLookup,
@@ -33,10 +31,12 @@ import
     DotnetFindPathRootUnderEmulationButNoneSet,
     FileDoesNotExist
 } from '../EventStream/EventStreamEvents';
-import { RegistryReader } from './RegistryReader';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { IFileUtilities } from '../Utils/IFileUtilities';
+import { EnvironmentVariableIsDefined, getDotnetExecutable, getOSArch, getPathSeparator } from '../Utils/TypescriptUtilities';
 import { DOTNET_INFORMATION_CACHE_DURATION_MS, SYS_CMD_SEARCH_CACHE_DURATION_MS } from './CacheTimeConstants';
+import { DotnetConditionValidator } from './DotnetConditionValidator';
+import { RegistryReader } from './RegistryReader';
 
 export class DotnetPathFinder implements IDotnetPathFinder
 {
@@ -145,7 +145,7 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
         options.dotnetInstallToolCacheTtlMs = DOTNET_INFORMATION_CACHE_DURATION_MS;
         const findCommand = CommandExecutor.makeCommand(pathLocatorCommand, ['dotnet']);
         const dotnetsOnPATH = (await this.executor?.execute(findCommand, options))?.stdout.split('\n').map(x => x.trim()).filter(x => x !== '');
-        if (dotnetsOnPATH && dotnetsOnPATH.length > 0)
+        if (dotnetsOnPATH && (dotnetsOnPATH?.length ?? 0) > 0)
         {
             this.workerContext.eventStream.post(new DotnetFindPathPATHFound(`Found .NET on the path: ${JSON.stringify(dotnetsOnPATH)}`));
             return this.returnWithRestoringEnvironment(await this.getTruePath(dotnetsOnPATH), 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
@@ -155,7 +155,7 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
         {
             const pathsOnPATH = process.env.PATH?.split(getPathSeparator());
             const validPathsOnPATH = [];
-            if (pathsOnPATH && pathsOnPATH.length > 0)
+            if (pathsOnPATH && (pathsOnPATH?.length ?? 0) > 0)
             {
                 const dotnetExecutable = getDotnetExecutable();
                 for (const pathOnPATH of pathsOnPATH)
@@ -169,7 +169,7 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
                 }
             }
 
-            if (validPathsOnPATH.length > 0)
+            if ((validPathsOnPATH?.length ?? 0) > 0)
             {
                 return this.returnWithRestoringEnvironment(validPathsOnPATH, 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
             }
@@ -301,7 +301,7 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
         {
             // This will even work if only the sdk is installed, list-runtimes on an sdk installed host would work
             const runtimeInfo = await new DotnetConditionValidator(this.workerContext, this.utilityContext, this.executor).getRuntimes(tentativePath);
-            if (runtimeInfo.length > 0)
+            if ((runtimeInfo?.length ?? 0) > 0)
             {
                 // q.t. from @dibarbet on the C# Extension:
                 // The .NET install layout is a well known structure on all platforms.
@@ -320,6 +320,6 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
             }
         }
 
-        return truePaths.length > 0 ? truePaths : tentativePaths;
+        return (truePaths?.length ?? 0) > 0 ? truePaths : tentativePaths;
     }
 }
