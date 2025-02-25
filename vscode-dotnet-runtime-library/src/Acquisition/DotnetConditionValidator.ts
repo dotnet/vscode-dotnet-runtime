@@ -15,6 +15,8 @@ import { IDotnetConditionValidator } from './IDotnetConditionValidator';
 import { IDotnetListInfo } from './IDotnetListInfo';
 import * as versionUtils from './VersionUtilities';
 
+type simplifiedVersionSpec = 'equal' | 'greater_than_or_equal' | 'less_than_or_equal' |
+    'latestPatch' | 'latestFeature';
 
 export class DotnetConditionValidator implements IDotnetConditionValidator
 {
@@ -134,13 +136,26 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
         return os.platform() === 'win32' ? (await this.executor!.tryFindWorkingCommand([CommandExecutor.makeCommand('chcp', ['65001'])], { dotnetInstallToolCacheTtlMs: SYS_CMD_SEARCH_CACHE_DURATION_MS })) !== null : false;
     }
 
-    private stringVersionMeetsRequirement(availableVersion: string, requestedVersion: string, requirement: IDotnetFindPathContext): boolean
+    public stringVersionMeetsRequirement(availableVersion: string, requestedVersion: string, requirement: IDotnetFindPathContext): boolean
     {
         const availableMajor = Number(versionUtils.getMajor(availableVersion, this.workerContext.eventStream, this.workerContext));
         const requestedMajor = Number(versionUtils.getMajor(requestedVersion, this.workerContext.eventStream, this.workerContext));
         const requestedPatchStr: string | null = requirement.acquireContext.mode !== 'sdk' ? versionUtils.getRuntimePatchVersionString(requestedVersion, this.workerContext.eventStream, this.workerContext)
             : versionUtils.getSDKCompleteBandAndPatchVersionString(requestedVersion, this.workerContext.eventStream, this.workerContext);
         const requestedPatch = requestedPatchStr ? Number(requestedPatchStr) : null;
+
+        const adjustedVersionSpec: simplifiedVersionSpec = [requirement.versionSpecRequirement].map(x =>
+        {
+            switch (x)
+            {
+                case 'latestMajor':
+                    return 'greater_than_or_equal';
+                case 'disable':
+                    return 'equal';
+                default:
+                    return x;
+            }
+        }).at(0)!;
 
         if (availableMajor === requestedMajor)
         {
@@ -149,23 +164,51 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
 
             if (availableMinor === requestedMinor && requestedPatch)
             {
-                const availablePatchStr: string | null = requirement.acquireContext.mode !== 'sdk' ? versionUtils.getRuntimePatchVersionString(availableVersion, this.workerContext.eventStream, this.workerContext)
-                    : versionUtils.getSDKCompleteBandAndPatchVersionString(availableVersion, this.workerContext.eventStream, this.workerContext);
+                const availablePatchStr: string | null = requirement.acquireContext.mode !== 'sdk' ?
+                    versionUtils.getRuntimePatchVersionString(availableVersion, this.workerContext.eventStream, this.workerContext)
+                    :
+                    (() =>
+                    {
+                        const band = versionUtils.getSDKCompleteBandAndPatchVersionString(availableVersion, this.workerContext.eventStream, this.workerContext);
+                        if (band)
+                        {
+                            return band;
+                        }
+                        return null;
+                    })();
                 const availablePatch = availablePatchStr ? Number(availablePatchStr) : null;
-                switch (requirement.versionSpecRequirement)
+
+                const availableBandStr: string | null = requirement.acquireContext.mode === 'sdk' ?
+                    (() =>
+                    {
+                        const featureBand = versionUtils.getFeatureBandFromVersion(availableVersion, this.workerContext.eventStream, this.workerContext, false);
+                        if (featureBand)
+                        {
+                            return featureBand;
+                        }
+                        return null;
+                    })() : null;
+                const availableBand = availableBandStr ? Number(availableBandStr) : null;
+
+                switch (adjustedVersionSpec)
                 {
+                    // the 'availablePatch' must exist, since the version is from --list-runtimes or --list-sdks.
                     case 'equal':
                         return availablePatch === requestedPatch;
                     case 'greater_than_or_equal':
-                        // the 'availablePatch' must exist, since the version is from --list-runtimes or --list-sdks.
+                    case 'latestFeature':
                         return availablePatch! >= requestedPatch;
                     case 'less_than_or_equal':
                         return availablePatch! <= requestedPatch;
+                    case 'latestPatch':
+                        const requestedBandStr = requirement.acquireContext.mode === 'sdk' ? versionUtils.getFeatureBandFromVersion(requestedVersion, this.workerContext.eventStream, this.workerContext, false) ?? null : null;
+                        const requestedBand = requestedBandStr ? Number(requestedBandStr) : null;
+                        return availablePatch! >= requestedPatch && (availableBand ? availableBand === requestedBand : true);
                 }
             }
             else
             {
-                switch (requirement.versionSpecRequirement)
+                switch (adjustedVersionSpec)
                 {
                     case 'equal':
                         return availableMinor === requestedMinor;
@@ -173,12 +216,15 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
                         return availableMinor >= requestedMinor;
                     case 'less_than_or_equal':
                         return availableMinor <= requestedMinor;
+                    case 'latestPatch':
+                    case 'latestFeature':
+                        return false
                 }
             }
         }
         else
         {
-            switch (requirement.versionSpecRequirement)
+            switch (adjustedVersionSpec)
             {
                 case 'equal':
                     return false;
@@ -186,6 +232,9 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
                     return availableMajor >= requestedMajor;
                 case 'less_than_or_equal':
                     return availableMajor <= requestedMajor;
+                case 'latestPatch':
+                case 'latestFeature':
+                    return false
             }
         }
     }
