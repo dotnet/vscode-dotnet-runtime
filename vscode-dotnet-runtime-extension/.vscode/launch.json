@@ -25,7 +25,6 @@
             "runtimeExecutable": "${execPath}",
             "args": [
                 "--disable-extensions",
-                // Can't use --disable-extensions here if you want to debug from within VS Code, since it needs to be launched from within the same vscode instance to do so
                 "--extensionDevelopmentPath=${workspaceFolder}",
                 "--extensionTestsPath=${workspaceFolder}/dist/test/functional"
             ],
