@@ -196,7 +196,8 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
             if (!this.microsoftSupportedDistroIds.includes(this.distro.distro))
             {
                 // UX: Could eventually add a 'Go away' button via the callback:
-                this.utilityContext.ui.showInformationMessage(`Automated SDK installation for the distro ${this.distro.distro} is not officially supported, except for community implemented and Microsoft approved support. If you experience issues, please reach out on https://github.com/dotnet/vscode-dotnet-runtime/issues.`,
+                this.utilityContext.ui.showInformationMessage(`Automated SDK installation for the distro ${this.distro.distro} is not officially supported, except for community implemented and Microsoft approved support.
+If you experience issues, please reach out on https://github.com/dotnet/vscode-dotnet-runtime/issues.`,
                     () => {/* No Callback */ },
                 );
             }

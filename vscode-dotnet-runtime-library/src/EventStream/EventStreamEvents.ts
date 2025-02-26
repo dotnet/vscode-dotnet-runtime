@@ -1771,7 +1771,7 @@ export class TestAcquireCalled extends IEvent
     }
 }
 
-function getDisabledTelemetryOnChance(percentIntToSend: number): { [disableTelemetryId: string]: boolean }
+function getDisabledTelemetryOnChance(percentIntToSend: number): { [disableTelemetryId: string]: string }
 {
-    return { suppressTelemetry: !(Math.random() < percentIntToSend / 100) };
+    return { suppressTelemetry: (!(Math.random() < percentIntToSend / 100)).toString() };
 }
