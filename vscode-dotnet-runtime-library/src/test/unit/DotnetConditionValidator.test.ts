@@ -4,10 +4,10 @@
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
 import * as lodash from 'lodash';
-import { MockCommandExecutor } from '../mocks/MockObjects';
 import { DotnetConditionValidator } from '../../Acquisition/DotnetConditionValidator';
-import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 import { IDotnetFindPathContext } from '../../IDotnetFindPathContext';
+import { MockCommandExecutor } from '../mocks/MockObjects';
+import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 const assert = chai.assert;
 
 const listRuntimesResultWithEightPreviewOnly = `
@@ -29,13 +29,14 @@ const listSDKsResultWithEightFull = `
 ${listSDKsResultWithEightPreviewOnly}
 8.0.101 [C:\\Program Files\\dotnet\\sdk]
 `
-const executionResultWithListRuntimesResultWithPreviewOnly = { status : '', stdout: listRuntimesResultWithEightPreviewOnly, stderr: '' };
-const executionResultWithListRuntimesResultWithFullOnly = { status : '', stdout: listRuntimesResultWithEightFull, stderr: '' };
+const executionResultWithListRuntimesResultWithPreviewOnly = { status: '', stdout: listRuntimesResultWithEightPreviewOnly, stderr: '' };
+const executionResultWithListRuntimesResultWithFullOnly = { status: '', stdout: listRuntimesResultWithEightFull, stderr: '' };
 
-const executionResultWithListSDKsResultWithPreviewOnly = { status : '', stdout: listSDKsResultWithEightPreviewOnly, stderr: '' };
-const executionResultWithListSDKsResultFullSDK = { status : '', stdout: listSDKsResultWithEightFull, stderr: '' };
+const executionResultWithListSDKsResultWithPreviewOnly = { status: '', stdout: listSDKsResultWithEightPreviewOnly, stderr: '' };
+const executionResultWithListSDKsResultFullSDK = { status: '', stdout: listSDKsResultWithEightFull, stderr: '' };
 
-suite('DotnetConditionValidator Unit Tests', () => {
+suite('DotnetConditionValidator Unit Tests', () =>
+{
     const utilityContext = getMockUtilityContext();
     const acquisitionContext = getMockAcquisitionContext('runtime', '8.0');
     const mockExecutor = new MockCommandExecutor(acquisitionContext, utilityContext);
@@ -44,8 +45,8 @@ suite('DotnetConditionValidator Unit Tests', () => {
     {
         const requirementWithRejectPreviews = {
             acquireContext: acquisitionContext.acquisitionContext,
-            versionSpecRequirement : 'greater_than_or_equal',
-            rejectPreviews : true
+            versionSpecRequirement: 'greater_than_or_equal',
+            rejectPreviews: true
         } as IDotnetFindPathContext
 
         const requirementAllowingPreviews = lodash.cloneDeep(requirementWithRejectPreviews);
@@ -83,5 +84,120 @@ suite('DotnetConditionValidator Unit Tests', () => {
         mockExecutor.otherCommandsReturnValues = [executionResultWithListRuntimesResultWithFullOnly, executionResultWithListSDKsResultFullSDK];
         meetsReq = await conditionValidator.dotnetMeetsRequirement('dotnet', requirementRejectingPreviewsSDKs);
         assert.isTrue(meetsReq, 'It finds non preview SDK if rejectPreviews set');
+    });
+
+    test('It does not take newer major SDK if latestPatch or feature used', async () =>
+    {
+        const conditionValidator = new DotnetConditionValidator(acquisitionContext, utilityContext, mockExecutor);
+        const contextThatCanBeIgnoredExceptMode = lodash.cloneDeep(acquisitionContext.acquisitionContext);
+        contextThatCanBeIgnoredExceptMode.mode = 'sdk';
+
+        let isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.100', '8.0.201', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'latestPatch' });
+        assert.isNotTrue(isAccepted, 'It does not take 9.0 sdk for 8.0 latestPatch');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.100', '8.0.201', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'latestFeature' });
+        assert.isNotTrue(isAccepted, 'It does not take 9.0 sdk for 8.0 latestFeature');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.100', '8.0.201', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'latestMajor' });
+        assert.isTrue(isAccepted, 'It does take 9.0 sdk for 8.0 latestMajor');
+    });
+
+    test('It does not take newer major Runtime if latestPatch or feature used', async () =>
+    {
+        const conditionValidator = new DotnetConditionValidator(acquisitionContext, utilityContext, mockExecutor);
+        const contextThatCanBeIgnoredExceptMode = lodash.cloneDeep(acquisitionContext.acquisitionContext);
+        contextThatCanBeIgnoredExceptMode.mode = 'aspnetcore';
+
+        let isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.2', '8.0.1', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'latestPatch' });
+        assert.isNotTrue(isAccepted, 'It doesnt take 9.0 runtime for 8.0 latestPatch');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.2', '8.0.1', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'latestFeature' });
+        assert.isNotTrue(isAccepted, 'It doesnt take 9.0 runtime for 8.0 latestFeature');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.2', '8.0.1', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'latestMajor' });
+        assert.isTrue(isAccepted, 'It does take 9.0 runtime for 8.0 latestMajor');
+    });
+
+    test('It does not take latest SDK feature band on latestPatch', async () =>
+    {
+        const conditionValidator = new DotnetConditionValidator(acquisitionContext, utilityContext, mockExecutor);
+        const contextThatCanBeIgnoredExceptMode = lodash.cloneDeep(acquisitionContext.acquisitionContext);
+        contextThatCanBeIgnoredExceptMode.mode = 'sdk';
+
+        let isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.200', '9.0.102', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'latestPatch' });
+        assert.isNotTrue(isAccepted, 'It does not take latest feature band on latestPatch');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.200', '9.0.102', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'latestFeature' });
+        assert.isTrue(isAccepted, 'It does take latest feature on latestFeature');
+    });
+
+    test('It does not take lower than patch on latestPatch or feature or band', async () =>
+    {
+        const conditionValidator = new DotnetConditionValidator(acquisitionContext, utilityContext, mockExecutor);
+        const contextThatCanBeIgnoredExceptMode = lodash.cloneDeep(acquisitionContext.acquisitionContext);
+        contextThatCanBeIgnoredExceptMode.mode = 'sdk';
+
+        let isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.201', '9.0.202', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'latestFeature' });
+        assert.isNotTrue(isAccepted, 'It does not take old sdk on latestFeature');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.201', '9.0.202', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'latestPatch' });
+        assert.isNotTrue(isAccepted, 'It does not take old sdk on latestPatch');
+    });
+
+    test('latestPatch and latestFeature work on runtime search', async () =>
+    {
+        const conditionValidator = new DotnetConditionValidator(acquisitionContext, utilityContext, mockExecutor);
+        const contextThatCanBeIgnoredExceptMode = lodash.cloneDeep(acquisitionContext.acquisitionContext);
+        contextThatCanBeIgnoredExceptMode.mode = 'runtime';
+
+        let isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.2', '9.0.1', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'latestPatch' });
+        assert.isTrue(isAccepted, 'It does not fail with latestPatch on runtime');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.2', '9.0.1', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'latestFeature' });
+        assert.isTrue(isAccepted, 'It does take latest runtime patch on latestFeature');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.2', '9.0.3', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'latestFeature' });
+        assert.isNotTrue(isAccepted, 'It does not take old runtime on latestFeature');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.2', '9.0.3', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'latestPatch' });
+        assert.isNotTrue(isAccepted, 'It does not take old runtime on latestPatch');
+    });
+
+    test('rollForward disable is equal to == on runtime', async () =>
+    {
+        const conditionValidator = new DotnetConditionValidator(acquisitionContext, utilityContext, mockExecutor);
+        const contextThatCanBeIgnoredExceptMode = lodash.cloneDeep(acquisitionContext.acquisitionContext);
+        contextThatCanBeIgnoredExceptMode.mode = 'aspnetcore';
+
+        let isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.2', '9.0.1', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'disable' });
+        assert.isNotTrue(isAccepted, 'disable does not allow upgrade');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.2', '9.0.3', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'disable' });
+        assert.isNotTrue(isAccepted, 'disable does not allow downgrade');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('10.0.4', '9.0.3', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'disable' });
+        assert.isNotTrue(isAccepted, 'disable does not allow major upgrade');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.1', '9.0.1', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'disable' });
+        assert.isTrue(isAccepted, 'disable only takes the exact match runtime');
+    });
+
+    test('rollForward disable is equal to == on sdk', async () =>
+    {
+        const conditionValidator = new DotnetConditionValidator(acquisitionContext, utilityContext, mockExecutor);
+        const contextThatCanBeIgnoredExceptMode = lodash.cloneDeep(acquisitionContext.acquisitionContext);
+        contextThatCanBeIgnoredExceptMode.mode = 'sdk';
+
+        let isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.102', '9.0.101', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'disable' });
+        assert.isNotTrue(isAccepted, 'disable does not allow upgrade on sdk patch');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.201', '9.0.101', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'disable' });
+        assert.isNotTrue(isAccepted, 'disable does not allow upgraded sdk band');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.201', '9.0.300', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'disable' });
+        assert.isNotTrue(isAccepted, 'disable does not allow downgrade');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.1', '9.0.1', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'disable' });
+        assert.isTrue(isAccepted, 'disable only takes the exact match sdk');
     });
 });

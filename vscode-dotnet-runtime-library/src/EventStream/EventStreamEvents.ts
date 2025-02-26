@@ -1773,5 +1773,5 @@ export class TestAcquireCalled extends IEvent
 
 function getDisabledTelemetryOnChance(percentIntToSend: number): { [disableTelemetryId: string]: boolean }
 {
-    return { suppressTelemetry: Math.random() * 100 < percentIntToSend };
+    return { suppressTelemetry: !(Math.random() < percentIntToSend / 100) };
 }

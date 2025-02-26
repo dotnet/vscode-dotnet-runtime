@@ -2,19 +2,21 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
+import * as os from 'os';
+import { DotnetFindPathDidNotMeetCondition, DotnetUnableToCheckPATHArchitecture } from '../EventStream/EventStreamEvents';
 import { IDotnetFindPathContext } from '../IDotnetFindPathContext';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+import { FileUtilities } from '../Utils/FileUtilities';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { IDotnetListInfo } from './IDotnetListInfo';
+import { DOTNET_INFORMATION_CACHE_DURATION_MS, SYS_CMD_SEARCH_CACHE_DURATION_MS } from './CacheTimeConstants';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetConditionValidator } from './IDotnetConditionValidator';
+import { IDotnetListInfo } from './IDotnetListInfo';
 import * as versionUtils from './VersionUtilities';
-import * as os from 'os';
-import { FileUtilities } from '../Utils/FileUtilities';
-import { DotnetFindPathDidNotMeetCondition, DotnetUnableToCheckPATHArchitecture } from '../EventStream/EventStreamEvents';
-import { DOTNET_INFORMATION_CACHE_DURATION_MS, SYS_CMD_SEARCH_CACHE_DURATION_MS } from './CacheTimeConstants';
 
+type simplifiedVersionSpec = 'equal' | 'greater_than_or_equal' | 'less_than_or_equal' |
+    'latestPatch' | 'latestFeature';
 
 export class DotnetConditionValidator implements IDotnetConditionValidator
 {
@@ -108,7 +110,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
         const findSDKsCommand = await this.setCodePage() ? CommandExecutor.makeCommand(`chcp`, [`65001`, `|`, `"${existingPath}"`, '--list-sdks']) :
             CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-sdks']);
 
-        const sdkInfo = await (this.executor!).execute(findSDKsCommand, {dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS}, false).then((result) =>
+        const sdkInfo = await (this.executor!).execute(findSDKsCommand, { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false).then((result) =>
         {
             const sdks = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
             const sdkInfos: IDotnetListInfo[] = sdks.map((sdk) =>
@@ -131,16 +133,29 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
     {
         // For Windows, we need to change the code page to UTF-8 to handle the output of the command. https://github.com/nodejs/node-v0.x-archive/issues/2190
         // Only certain builds of windows support UTF 8 so we need to check that we can use it.
-        return os.platform() === 'win32' ? (await this.executor!.tryFindWorkingCommand([CommandExecutor.makeCommand('chcp', ['65001'])], {dotnetInstallToolCacheTtlMs: SYS_CMD_SEARCH_CACHE_DURATION_MS})) !== null : false;
+        return os.platform() === 'win32' ? (await this.executor!.tryFindWorkingCommand([CommandExecutor.makeCommand('chcp', ['65001'])], { dotnetInstallToolCacheTtlMs: SYS_CMD_SEARCH_CACHE_DURATION_MS })) !== null : false;
     }
 
-    private stringVersionMeetsRequirement(availableVersion: string, requestedVersion: string, requirement: IDotnetFindPathContext): boolean
+    public stringVersionMeetsRequirement(availableVersion: string, requestedVersion: string, requirement: IDotnetFindPathContext): boolean
     {
         const availableMajor = Number(versionUtils.getMajor(availableVersion, this.workerContext.eventStream, this.workerContext));
         const requestedMajor = Number(versionUtils.getMajor(requestedVersion, this.workerContext.eventStream, this.workerContext));
         const requestedPatchStr: string | null = requirement.acquireContext.mode !== 'sdk' ? versionUtils.getRuntimePatchVersionString(requestedVersion, this.workerContext.eventStream, this.workerContext)
             : versionUtils.getSDKCompleteBandAndPatchVersionString(requestedVersion, this.workerContext.eventStream, this.workerContext);
         const requestedPatch = requestedPatchStr ? Number(requestedPatchStr) : null;
+
+        const adjustedVersionSpec: simplifiedVersionSpec = [requirement.versionSpecRequirement].map(x =>
+        {
+            switch (x)
+            {
+                case 'latestMajor':
+                    return 'greater_than_or_equal';
+                case 'disable':
+                    return 'equal';
+                default:
+                    return x;
+            }
+        }).at(0)!;
 
         if (availableMajor === requestedMajor)
         {
@@ -149,23 +164,51 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
 
             if (availableMinor === requestedMinor && requestedPatch)
             {
-                const availablePatchStr: string | null = requirement.acquireContext.mode !== 'sdk' ? versionUtils.getRuntimePatchVersionString(availableVersion, this.workerContext.eventStream, this.workerContext)
-                    : versionUtils.getSDKCompleteBandAndPatchVersionString(availableVersion, this.workerContext.eventStream, this.workerContext);
+                const availablePatchStr: string | null = requirement.acquireContext.mode !== 'sdk' ?
+                    versionUtils.getRuntimePatchVersionString(availableVersion, this.workerContext.eventStream, this.workerContext)
+                    :
+                    (() =>
+                    {
+                        const band = versionUtils.getSDKCompleteBandAndPatchVersionString(availableVersion, this.workerContext.eventStream, this.workerContext);
+                        if (band)
+                        {
+                            return band;
+                        }
+                        return null;
+                    })();
                 const availablePatch = availablePatchStr ? Number(availablePatchStr) : null;
-                switch (requirement.versionSpecRequirement)
+
+                const availableBandStr: string | null = requirement.acquireContext.mode === 'sdk' ?
+                    (() =>
+                    {
+                        const featureBand = versionUtils.getFeatureBandFromVersion(availableVersion, this.workerContext.eventStream, this.workerContext, false);
+                        if (featureBand)
+                        {
+                            return featureBand;
+                        }
+                        return null;
+                    })() : null;
+                const availableBand = availableBandStr ? Number(availableBandStr) : null;
+
+                switch (adjustedVersionSpec)
                 {
+                    // the 'availablePatch' must exist, since the version is from --list-runtimes or --list-sdks.
                     case 'equal':
                         return availablePatch === requestedPatch;
                     case 'greater_than_or_equal':
-                        // the 'availablePatch' must exist, since the version is from --list-runtimes or --list-sdks.
+                    case 'latestFeature':
                         return availablePatch! >= requestedPatch;
                     case 'less_than_or_equal':
                         return availablePatch! <= requestedPatch;
+                    case 'latestPatch':
+                        const requestedBandStr = requirement.acquireContext.mode === 'sdk' ? versionUtils.getFeatureBandFromVersion(requestedVersion, this.workerContext.eventStream, this.workerContext, false) ?? null : null;
+                        const requestedBand = requestedBandStr ? Number(requestedBandStr) : null;
+                        return availablePatch! >= requestedPatch && (availableBand ? availableBand === requestedBand : true);
                 }
             }
             else
             {
-                switch (requirement.versionSpecRequirement)
+                switch (adjustedVersionSpec)
                 {
                     case 'equal':
                         return availableMinor === requestedMinor;
@@ -173,12 +216,15 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
                         return availableMinor >= requestedMinor;
                     case 'less_than_or_equal':
                         return availableMinor <= requestedMinor;
+                    case 'latestPatch':
+                    case 'latestFeature':
+                        return false
                 }
             }
         }
         else
         {
-            switch (requirement.versionSpecRequirement)
+            switch (adjustedVersionSpec)
             {
                 case 'equal':
                     return false;
@@ -186,6 +232,9 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
                     return availableMajor >= requestedMajor;
                 case 'less_than_or_equal':
                     return availableMajor <= requestedMajor;
+                case 'latestPatch':
+                case 'latestFeature':
+                    return false
             }
         }
     }
@@ -213,7 +262,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
         const aspnetCoreString = 'Microsoft.AspNetCore.App';
         const runtimeString = 'Microsoft.NETCore.App';
 
-        const runtimeInfo = await (this.executor!).execute(findRuntimesCommand, {dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS}, false).then((result) =>
+        const runtimeInfo = await (this.executor!).execute(findRuntimesCommand, { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false).then((result) =>
         {
             const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
             const runtimeInfos: IDotnetListInfo[] = runtimes.map((runtime) =>
