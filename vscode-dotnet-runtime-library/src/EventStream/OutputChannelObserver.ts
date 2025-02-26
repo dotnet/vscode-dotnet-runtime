@@ -54,7 +54,8 @@ export class OutputChannelObserver implements IEventStreamObserver
                     // Already a download in progress
                     this.outputChannel.appendLine(` -- Concurrent download of '${acquisitionStarted.install.installId}' started!`);
                     this.outputChannel.appendLine('');
-                } else
+                }
+                else
                 {
                     this.startDownloadIndicator();
                 }

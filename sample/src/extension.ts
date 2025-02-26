@@ -71,7 +71,7 @@ export function activate(context: vscode.ExtensionContext)
 
             const result = cp.spawnSync(dotnetPath, helloWorldArgs);
             const stderr = result?.stderr?.toString();
-            if (stderr?.length > 0)
+            if ((stderr?.length ?? 0) > 0)
             {
                 vscode.window.showErrorMessage(`Failed to run Hello World:
 ${stderr}`);
@@ -80,7 +80,8 @@ ${stderr}`);
 
             const appOutput = result?.stdout?.toString();
             vscode.window.showInformationMessage(`.NET Output: ${appOutput}`);
-        } catch (error)
+        }
+        catch (error)
         {
             vscode.window.showErrorMessage((error as Error).toString());
         }
@@ -101,7 +102,8 @@ ${stderr}`);
         {
             await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
             await vscode.commands.executeCommand('dotnet.acquire', { version, requestingExtensionId, mode: installMode });
-        } catch (error)
+        }
+        catch (error)
         {
             vscode.window.showErrorMessage((error as Error).toString());
         }
@@ -133,7 +135,8 @@ ${stderr}`);
             await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
             const status = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquireStatus', { version, requestingExtensionId });
             vscode.window.showInformationMessage(status === undefined ? '.NET is not installed' : `.NET version ${version} installed at ${status.dotnetPath}`);
-        } catch (error)
+        }
+        catch (error)
         {
             vscode.window.showErrorMessage((error as Error).toString());
         }
@@ -166,7 +169,8 @@ ${stderr}`);
                 // Await here so we can detect errors
                 await promise;
             }
-        } catch (error)
+        }
+        catch (error)
         {
             vscode.window.showErrorMessage((error as Error).toString());
         }
@@ -188,7 +192,8 @@ ${stderr}`);
         try
         {
             await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
-        } catch (error)
+        }
+        catch (error)
         {
             vscode.window.showErrorMessage((error as Error).toString());
         }
@@ -292,7 +297,8 @@ ${JSON.stringify(result) ?? 'undefined'}`);
         {
             await vscode.commands.executeCommand('dotnet-sdk.showAcquisitionLog');
             await vscode.commands.executeCommand('dotnet-sdk.acquire', { version, requestingExtensionId });
-        } catch (error)
+        }
+        catch (error)
         {
             vscode.window.showErrorMessage((error as Error).toString());
         }
@@ -337,7 +343,8 @@ ${JSON.stringify(result) ?? 'undefined'}`);
             await vscode.commands.executeCommand('dotnet-sdk.showAcquisitionLog');
             const status = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquireStatus', { version, requestingExtensionId });
             vscode.window.showInformationMessage(status === undefined ? '.NET is not installed' : `.NET version ${version} installed at ${status.dotnetPath}`);
-        } catch (error)
+        }
+        catch (error)
         {
             vscode.window.showErrorMessage((error as Error).toString());
         }
@@ -358,7 +365,8 @@ ${JSON.stringify(result) ?? 'undefined'}`);
         {
             const result: IDotnetListVersionsResult | undefined = await vscode.commands.executeCommand('dotnet-sdk.listVersions', { listRuntimes: getRuntimes });
             vscode.window.showInformationMessage(`Available ${getRuntimes == false ? 'SDKS' : 'Runtimes'}: ${result?.map((x: any) => x.version).join(", ")}`);
-        } catch (error)
+        }
+        catch (error)
         {
             vscode.window.showErrorMessage((error as Error).toString());
         }
@@ -370,7 +378,8 @@ ${JSON.stringify(result) ?? 'undefined'}`);
         {
             const result: IDotnetListVersionsResult | undefined = await vscode.commands.executeCommand('dotnet.recommendedVersion', { listRuntimes: getRuntimes });
             vscode.window.showInformationMessage(`Recommended SDK Version to Install: ${result?.at(0)?.version}`);
-        } catch (error)
+        }
+        catch (error)
         {
             vscode.window.showErrorMessage((error as Error).toString());
         }
@@ -382,7 +391,8 @@ ${JSON.stringify(result) ?? 'undefined'}`);
         {
             await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
             vscode.window.showInformationMessage('.NET SDKs uninstalled.');
-        } catch (error)
+        }
+        catch (error)
         {
             vscode.window.showErrorMessage((error as Error).toString());
         }
@@ -393,7 +403,8 @@ ${JSON.stringify(result) ?? 'undefined'}`);
         try
         {
             await vscode.commands.executeCommand('dotnet-sdk.showAcquisitionLog');
-        } catch (error)
+        }
+        catch (error)
         {
             vscode.window.showErrorMessage((error as Error).toString());
         }

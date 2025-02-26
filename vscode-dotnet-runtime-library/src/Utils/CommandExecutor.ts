@@ -460,14 +460,14 @@ with options ${JSON.stringify(options)}.`));
 
             const statusCode: string = (() =>
             {
-                if (commandResult.status)
+                if (commandResult.status !== null) // This must be a null check, as 0 is a valid status code
                 {
                     return commandResult.status.toString() ?? '';
                 }
                 else
                 {
                     // A signal is generally given if a status is not given, and they are 'equivalent' enough
-                    if (commandResult.signal)
+                    if (commandResult.signal !== null)
                     {
 
                         return commandResult.signal.toString() ?? '';

@@ -264,7 +264,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
 
         const runtimeInfo = await (this.executor!).execute(findRuntimesCommand, { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false).then((result) =>
         {
-            const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line?.length > 0);
+            const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => (line?.length ?? 0) > 0);
             const runtimeInfos: IDotnetListInfo[] = runtimes.map((runtime) =>
             {
                 const parts = runtime.split(' ', 3); // account for spaces in PATH, no space should appear before then and luckily path is last

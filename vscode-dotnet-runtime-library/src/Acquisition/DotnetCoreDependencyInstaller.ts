@@ -85,7 +85,8 @@ export class DotnetCoreDependencyInstaller
             {
                 // Don't return, user has to explicitly hit "cancel"
                 vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(moreInfoUrl));
-            } else if (response === 'Install')
+            }
+            else if (response === 'Install')
             {
                 const exitCode = await this.installLinuxDependencies(additionalLibs, skipDotNetCore);
 
@@ -113,7 +114,8 @@ export class DotnetCoreDependencyInstaller
                     await vscode.commands.executeCommand('workbench.action.reloadWindow');
                 }
                 return true;
-            } else
+            }
+            else
             {
                 // response === 'Cancel'
                 return false;
@@ -142,7 +144,8 @@ export class DotnetCoreDependencyInstaller
                 {
                     commandList.push('pause');
                 }
-            } else
+            }
+            else
             {
                 // Note that "|| echo $? >" in this command sequence is a hack to get the exit code from the
                 // executed command given VS Code terminal does not return it.
@@ -184,23 +187,27 @@ export class DotnetCoreDependencyInstaller
                                 if (exitCode === 0)
                                 {
                                     // Expected exit code
-                                } else
+                                }
+                                else
                                 {
                                     // Possible that this is an expected exit code, so just a warning
                                     console.log('Non-zero exit code detected.');
                                 }
                                 resolve(exitCode);
-                            } else
+                            }
+                            else
                             {
                                 const message = `Terminal "${name}" run resulted in empty exit file. Command likely did not execute successfully.`;
                                 reject(new Error(message));
                             }
-                        } else
+                        }
+                        else
                         {
                             const message = `Terminal "${name}" did not generate an exit file. Command likely did not execute successfully.`;
                             reject(new Error(message));
                         }
-                    } catch (err)
+                    }
+                    catch (err)
                     {
                         reject(err);
                     }
