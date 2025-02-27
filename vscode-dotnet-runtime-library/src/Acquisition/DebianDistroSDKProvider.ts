@@ -21,7 +21,7 @@ export class DebianDistroSDKProvider extends GenericDistroSDKProvider
     {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         const distroVersions = this.distroJson[this.distroVersion.distro][this.distroVersionsKey];
-        const targetVersion = Math.floor(parseFloat(this.distroVersion.version[0])).toFixed(1);
+        const targetVersion = Math.floor(parseFloat(this.distroVersion.version[0])).toFixed(0);
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         const versionData = distroVersions.filter((x: { [x: string]: string; }) => x[this.versionKey] === String(targetVersion));
         return versionData;

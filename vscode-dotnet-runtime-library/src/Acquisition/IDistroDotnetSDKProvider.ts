@@ -7,7 +7,7 @@ import * as fs from 'fs';
 
 import path = require('path');
 
-import { DotnetAcquisitionDistroUnknownError, DotnetVersionResolutionError, EventBasedError, EventCancellationError, FeedInjection, FoundDistroVersionDetails, SuppressedAcquisitionError } from '../EventStream/EventStreamEvents';
+import { DistroPackagesSearch, DotnetAcquisitionDistroUnknownError, DotnetVersionResolutionError, EventBasedError, EventCancellationError, FeedInjection, FoundDistroVersionDetails, SuppressedAcquisitionError } from '../EventStream/EventStreamEvents';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { CommandExecutorCommand } from '../Utils/CommandExecutorCommand';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
@@ -62,7 +62,7 @@ export abstract class IDistroDotnetSDKProvider
     protected aspNetKey = 'aspnetcore';
 
     protected isMidFeedInjection = false;
-    protected cachedMyVersionPacakges: any = null;
+    protected cachedMyVersionPackages: any = null;
 
     constructor(distroVersion: DistroVersionPair, context: IAcquisitionWorkerContext, utilContext: IUtilityContext, executor: ICommandExecutor | null = null)
     {
@@ -191,9 +191,12 @@ If you would like to contribute to the list of supported distros, please visit: 
 
     protected async myVersionPackages(installType: DotnetInstallMode, haveTriedFeedInjectionAlready = false): Promise<LinuxPackageCollection[]>
     {
-        if (this.cachedMyVersionPacakges)
+        this.context.eventStream.post(new DistroPackagesSearch(`Searching for .NET packages for distro ${this.distroVersion.distro} version ${this.distroVersion.version}: has tried injection? ${haveTriedFeedInjectionAlready}`));
+
+        if (this.cachedMyVersionPackages)
         {
-            return this.cachedMyVersionPacakges;
+            this.context.eventStream.post(new FoundDistroVersionDetails(`Found cached distro version details: ${JSON.stringify(this.cachedMyVersionPackages)}`));
+            return this.cachedMyVersionPackages;
         }
 
         const availableVersions: LinuxPackageCollection[] = [];
@@ -201,6 +204,7 @@ If you would like to contribute to the list of supported distros, please visit: 
         const potentialDotnetPackageNames = this.distroJson[this.distroVersion.distro][this.distroPackagesKey];
         for (const packageSet of potentialDotnetPackageNames)
         {
+            this.context.eventStream.post(new DistroPackagesSearch(`Searching for .NET packages for distro ${this.distroVersion.distro} version ${this.distroVersion.version} in package set ${JSON.stringify(packageSet)}`));
             const thisVersionPackage: LinuxPackageCollection =
             {
                 version: packageSet[this.versionKey],
@@ -238,15 +242,19 @@ If you would like to contribute to the list of supported distros, please visit: 
             // Our check runs by checking the feature band first, so that needs to be supported for it to fallback to the preinstall command check.
             const fakeVersionToCheckMicrosoftSupportStatus = '6.0.1xx';
 
+            this.context.eventStream.post(new FeedInjection(`Starting feed injection after package version searching as no packages could be found.`));
             await this.injectPMCFeed(fakeVersionToCheckMicrosoftSupportStatus, installType);
-            this.cachedMyVersionPacakges = this.myVersionPackages(installType, true);
+            const packagesAfterFeedInjection = this.myVersionPackages(installType, true);
+            this.context.eventStream.post(new FoundDistroVersionDetails(`Caching distro version details after injection: ${JSON.stringify(packagesAfterFeedInjection)}`));
+            this.cachedMyVersionPackages = packagesAfterFeedInjection;
         }
         else
         {
-            this.cachedMyVersionPacakges = availableVersions;
+            this.context.eventStream.post(new FoundDistroVersionDetails(`Caching distro version details: ${JSON.stringify(this.cachedMyVersionPackages)}`));
+            this.cachedMyVersionPackages = availableVersions;
         }
 
-        return this.cachedMyVersionPacakges;
+        return this.cachedMyVersionPackages;
     }
 
     protected async injectPMCFeed(fullySpecifiedVersion: string, installType: DotnetInstallMode)
@@ -262,6 +270,7 @@ If you would like to contribute to the list of supported distros, please visit: 
         const supportStatus = await this.getDotnetVersionSupportStatus(fullySpecifiedVersion, installType);
         if (supportStatus === DotnetDistroSupportStatus.Microsoft)
         {
+            this.context.eventStream.post(new FeedInjection(`Starting feed injection.`));
             const myVersionDetails = this.myVersionDetails();
             const preInstallCommands = myVersionDetails[this.preinstallCommandKey] as CommandExecutorCommand[];
             await this.commandRunner.executeMultipleCommands(preInstallCommands);
@@ -382,6 +391,7 @@ If you would like to contribute to the list of supported distros, please visit: 
             if (dotnetPackage.version === this.JsonDotnetVersion(fullySpecifiedDotnetVersion))
             {
                 // Arbitrarily pick the first existing package.
+                this.context.eventStream.post(new DistroPackagesSearch(`Found .NET package for version ${fullySpecifiedDotnetVersion} and taking the first: ${JSON.stringify(dotnetPackage.packages)}`));
                 return dotnetPackage.packages[0];
             }
         }

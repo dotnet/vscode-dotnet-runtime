@@ -1224,6 +1224,11 @@ export class FeedInjection extends DotnetCustomMessageEvent
     public readonly eventName = 'FeedInjection';
 }
 
+export class DistroPackagesSearch extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'DistroPackagesSearch';
+}
+
 export class FoundDistroVersionDetails extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'FoundDistroVersionDetails';
