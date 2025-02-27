@@ -1213,6 +1213,27 @@ export class DotnetTelemetrySettingEvent extends DotnetCustomMessageEvent
     public readonly eventName = 'DotnetTelemetrySettingEvent';
 }
 
+
+export class DistroSupport extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'DistroSupport';
+}
+
+export class FeedInjection extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'FeedInjection';
+}
+
+export class DistroPackagesSearch extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'DistroPackagesSearch';
+}
+
+export class FoundDistroVersionDetails extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'FoundDistroVersionDetails';
+}
+
 export class DotnetVSCodeExtensionFound extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'DotnetVSCodeExtensionFound';
@@ -1755,7 +1776,7 @@ export class TestAcquireCalled extends IEvent
     }
 }
 
-function getDisabledTelemetryOnChance(percentIntToSend: number): { [disableTelemetryId: string]: boolean }
+function getDisabledTelemetryOnChance(percentIntToSend: number): { [disableTelemetryId: string]: string }
 {
-    return { suppressTelemetry: !(Math.random() < percentIntToSend / 100) };
+    return { suppressTelemetry: (!(Math.random() < percentIntToSend / 100)).toString() };
 }
