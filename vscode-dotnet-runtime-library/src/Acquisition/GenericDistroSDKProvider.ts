@@ -189,7 +189,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
             }
         }
 
-        this.context.eventStream.post(new DistroSupport(`Version ${fullySpecifiedVersion} is unknown.`));
+        this.context.eventStream.post(new DistroSupport(`Version ${fullySpecifiedVersion} is unknown for distro ${this.distroVersion.distro} ${this.distroVersion.version} with ${this.myVersionDetails()}`));
         return Promise.resolve(DotnetDistroSupportStatus.Unknown);
     }
 

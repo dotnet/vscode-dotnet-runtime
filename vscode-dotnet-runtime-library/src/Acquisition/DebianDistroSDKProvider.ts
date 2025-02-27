@@ -16,16 +16,6 @@ export class DebianDistroSDKProvider extends GenericDistroSDKProvider
     {
         super(distroVersion, context, utilContext, executor);
     }
-
-    protected myVersionDetails(): any
-    {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        const distroVersions = this.distroJson[this.distroVersion.distro][this.distroVersionsKey];
-        const targetVersion = Math.floor(parseFloat(this.distroVersion.version[0])).toFixed(0);
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        const versionData = distroVersions.filter((x: { [x: string]: string; }) => x[this.versionKey] === String(targetVersion));
-        return versionData;
-    }
     public override async dotnetPackageExistsOnSystem(fullySpecifiedDotnetVersion: string, installType: DotnetInstallMode): Promise<boolean>
     {
         await this.injectPMCFeed(fullySpecifiedDotnetVersion, installType);
