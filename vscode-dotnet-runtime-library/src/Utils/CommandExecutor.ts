@@ -465,15 +465,17 @@ with options ${JSON.stringify(options)}.`));
                 },
                 rejected => // Rejected object: error type with stderr : Buffer, stdout : Buffer ... with .code (number) or .signal (string)}
                 { // see https://nodejs.org/api/child_process.html#child_processexeccommand-options-callback
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    const result = { stdout: rejected?.stdout?.toString() ?? '', stderr: rejected?.stderr?.toString() ?? '', status: rejected?.error?.code?.toString() ?? rejected?.error?.signal.toString() ?? '' };
                     if (terminalFailure)
                     {
+                        this.logCommandResult(result, fullCommandString);
                         throw rejected ?? new Error(`Spawning ${fullCommandString} failed with an unspecified error.`); // according to nodejs spec, this should never be possible
                     }
                     else
                     {
                         // signal is a string or obj, code is a number
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                        return { stdout: rejected?.stdout?.toString() ?? '', stderr: rejected?.stderr?.toString() ?? '', status: rejected?.error?.code?.toString() ?? rejected?.error?.signal.toString() ?? '' };
+                        return result;
                     }
                 }
             );
@@ -586,9 +588,9 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
             const setSystemVariable = CommandExecutor.makeCommand(`setx`, [`${variable}`, `"${value}"`]);
             try
             {
-                const shellEditResponse = (await this.execute(setShellVariable)).status;
+                const shellEditResponse = (await this.execute(setShellVariable, null, false)).status;
                 environmentEditExitCode += Number(shellEditResponse[0]);
-                const systemEditResponse = (await this.execute(setSystemVariable)).status
+                const systemEditResponse = (await this.execute(setSystemVariable, null, false)).status
                 environmentEditExitCode += Number(systemEditResponse[0]);
             }
             catch (error)
