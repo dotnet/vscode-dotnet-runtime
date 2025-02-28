@@ -167,7 +167,7 @@ At dotnet-install.ps1:1189 char:5
         return stderr.includes('FullyQualifiedErrorId') || stderr.includes('unexpectedToken')
     }
 
-    private async badLanguageModeSet(powershellReference: string): boolean
+    private async badLanguageModeSet(powershellReference: string): Promise<boolean>
     {
         if (os.platform() !== 'win32')
         {
