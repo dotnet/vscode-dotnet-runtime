@@ -75,7 +75,8 @@ export class OutputChannelObserver implements IEventStreamObserver
                 {
                     const completedVersionString = `'${this.inProgressDownloads.join('\', \'')}'`;
                     this.outputChannel.append(`Still downloading .NET version(s) ${completedVersionString} ...`);
-                } else
+                }
+                else
                 {
                     this.stopDownloadIndicator();
                 }
