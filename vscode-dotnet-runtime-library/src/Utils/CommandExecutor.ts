@@ -396,6 +396,7 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             options.shell ??= true;
 
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             options.encoding = 'utf8';
         }
         else
@@ -463,7 +464,7 @@ with options ${JSON.stringify(options)}.`));
                     return { stdout: fulfilled.stdout?.toString() ?? '', stderr: fulfilled.stderr?.toString() ?? '', status: '0' };
                 },
                 rejected => // Rejected object: error type with stderr : Buffer, stdout : Buffer ... with .code (number) or .signal (string)}
-                { // see https://nodejs.org/api/child_process.html#child_processexeccommand-options-callback:~:text=execute%20the%20command.-,If%20this%20method%20is%20invoked%20as%20its%20util.promisify()ed,the%20callback%2C%20but%20with%20two%20additional%20properties%20stdout%20and%20stderr.,-const%20util%20%3D
+                { // see https://nodejs.org/api/child_process.html#child_processexeccommand-options-callback
                     if (terminalFailure)
                     {
                         throw rejected ?? new Error(`Spawning ${fullCommandString} failed with an unspecified error.`); // according to nodejs spec, this should never be possible
@@ -471,6 +472,7 @@ with options ${JSON.stringify(options)}.`));
                     else
                     {
                         // signal is a string or obj, code is a number
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                         return { stdout: rejected?.stdout?.toString() ?? '', stderr: rejected?.stderr?.toString() ?? '', status: rejected?.error?.code?.toString() ?? rejected?.error?.signal.toString() ?? '' };
                     }
                 }
@@ -547,6 +549,7 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
         {
             try
             {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 const cmdFoundOutput = (await this.execute(command, options?.at(optIdx) ?? options)).status;
                 if (cmdFoundOutput === '0')
                 {
