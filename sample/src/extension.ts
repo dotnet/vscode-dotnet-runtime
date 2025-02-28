@@ -148,7 +148,8 @@ ${stderr}`);
         {
             await vscode.commands.executeCommand('dotnet.uninstallAll');
             vscode.window.showInformationMessage('.NET runtimes uninstalled.');
-        } catch (error)
+        }
+        catch (error)
         {
             vscode.window.showErrorMessage((error as Error).toString());
         }
