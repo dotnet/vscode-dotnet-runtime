@@ -2,7 +2,7 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
-import Axios, { AxiosError, isAxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
+import Axios, { AxiosError, isAxiosError } from 'axios';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 
 process.env.VSCODE_DOTNET_INSTALL_TOOL_ORIGINAL_HOME = process.env.HOME
@@ -20,15 +20,16 @@ else
 }
 
 import { AxiosCacheInstance, buildMemoryStorage, setupCache } from 'axios-cache-interceptor';
+import * as axiosRetry from 'axios-retry';
 import * as dns from 'dns';
 import * as fs from 'fs';
-import * as axiosRetry from 'axios-retry';
 import { promisify } from 'util';
 import stream = require('stream');
 
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { IEventStream } from '../EventStream/EventStream';
-import {
+import
+{
     DiskIsFullError,
     DotnetDownloadFailure,
     DotnetOfflineFailure,
@@ -43,7 +44,6 @@ import {
     WebRequestTimeUnknown
 } from '../EventStream/EventStreamEvents';
 import { getInstallFromContext } from './InstallIdUtilities';
-import { json } from 'stream/consumers';
 
 export class WebRequestWorker
 {
@@ -53,10 +53,10 @@ export class WebRequestWorker
      * The responses from GET requests are cached with a 'time-to-live' of 5 minutes by default.
      */
     private client: AxiosCacheInstance;
-    private websiteTimeoutMs : number;
-    private proxy : string | undefined;
+    private websiteTimeoutMs: number;
+    private proxy: string | undefined;
 
-    private proxyAgent : HttpsProxyAgent<string> | null = null;
+    private proxyAgent: HttpsProxyAgent<string> | null = null;
 
     constructor(
         private readonly context: IAcquisitionWorkerContext,
@@ -72,14 +72,15 @@ export class WebRequestWorker
         // Wrap the client with a retry interceptor. We don't need to return a new client, it should be applied automatically.
         axiosRetry(uncachedAxiosClient, {
             // Inject a custom retry delay to exponentially increase the time until we retry.
-            retryDelay(retryCount: number) {
+            retryDelay(retryCount: number)
+            {
                 return Math.pow(2, retryCount); // Takes in the int as (ms) to delay.
             }
         });
 
         // Record when the web requests begin:
         // Register this so it happens before the cache https://axios-cache-interceptor.js.org/guide/interceptors#explanation
-        uncachedAxiosClient.interceptors.request.use( config =>
+        uncachedAxiosClient.interceptors.request.use(config =>
         {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             (config as any).startTime = process.hrtime.bigint();
@@ -97,20 +98,20 @@ export class WebRequestWorker
             (res as any).finalTime = process.hrtime.bigint();
             return res;
         },
-        res => // triggered when status code is not 2XX
-        {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            (res as any).startTime = (res.config as any).startTime;
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            (res as any).finalTime = process.hrtime.bigint();
-            return res;
-        })
+            res => // triggered when status code is not 2XX
+            {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                (res as any).startTime = (res.config as any).startTime;
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                (res as any).finalTime = process.hrtime.bigint();
+                return res;
+            })
 
         this.client = setupCache(uncachedAxiosClient,
-        {
-            storage: buildMemoryStorage(),
-            ttl: this.cacheTimeToLive
-        }
+            {
+                storage: buildMemoryStorage(),
+                ttl: this.cacheTimeToLive
+            }
         );
     }
 
@@ -123,9 +124,9 @@ export class WebRequestWorker
      * @remarks This function is used as a custom axios.get with a timeout because axios does not correctly handle CONNECTION-based timeouts:
      * https://github.com/axios/axios/issues/647 (e.g. bad URL/site down).
      */
-    private async axiosGet(url : string, options = {})
+    private async axiosGet(url: string, options = {})
     {
-        if(url === '' || !url)
+        if (url === '' || !url)
         {
             throw new EventBasedError('AxiosGetFailedWithInvalidURL', `Request to the url ${this.url} failed, as the URL is invalid.`);
         }
@@ -134,7 +135,7 @@ export class WebRequestWorker
         {
             timeoutCancelTokenHook.abort();
             this.context.eventStream.post(new WebRequestTime(`Timer for request:`, String(this.websiteTimeoutMs), 'false', url, '777')); // 777 for custom abort status. arbitrary
-            if(!(await WebRequestWorker.isOnline(this.websiteTimeoutMs / 1000, this.context.eventStream)))
+            if (!(await WebRequestWorker.isOnline(this.websiteTimeoutMs / 1000, this.context.eventStream)))
             {
                 const offlineError = new EventBasedError('DotnetOfflineFailure', 'No internet connection detected: Cannot install .NET');
                 this.context.eventStream.post(new DotnetOfflineFailure(offlineError, null));
@@ -159,7 +160,7 @@ export class WebRequestWorker
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         const finalTimeNs = (response as any)?.finalTime;
         let durationMs = '-1';
-        if(startTimeNs && finalTimeNs && finalTimeNs - startTimeNs < Number.MAX_SAFE_INTEGER)
+        if (startTimeNs && finalTimeNs && finalTimeNs - startTimeNs < Number.MAX_SAFE_INTEGER)
         {
             durationMs = (Number(finalTimeNs - startTimeNs) / 1000000).toFixed(timerPrecision);
         }
@@ -167,7 +168,7 @@ export class WebRequestWorker
         {
             this.context.eventStream.post(new WebRequestTimeUnknown(`Timer for request failed. Start time: ${startTimeNs}, end time: ${finalTimeNs}`, durationMs, 'true', url, String(response.status)));
         }
-        if(!response.cached)
+        if (!response.cached)
         {
             this.context.eventStream.post(new WebRequestTime(`Timer for request:`, durationMs, 'true', url, String(response.status)));
         }
@@ -190,7 +191,7 @@ export class WebRequestWorker
     }
 
 
-    public static async isOnline(timeoutSec : number, eventStream : IEventStream) : Promise<boolean>
+    public static async isOnline(timeoutSec: number, eventStream: IEventStream): Promise<boolean>
     {
         const microsoftServer = 'www.microsoft.com';
         const expectedDNSResolutionTimeMs = Math.max(timeoutSec * 10, 100); // Assumption: DNS resolution should take less than 1/100 of the time it'd take to download .NET.
@@ -200,7 +201,7 @@ export class WebRequestWorker
         const couldConnect = await dnsResolver.resolve(microsoftServer).then(() =>
         {
             return true;
-        }).catch((error : any) =>
+        }).catch((error: any) =>
         {
             eventStream.post(new OfflineDetectionLogicTriggered((error as EventCancellationError), `DNS resolution failed at microsoft.com, ${JSON.stringify(error)}.`));
             return false;
@@ -216,9 +217,9 @@ export class WebRequestWorker
      * (Checking the storage cache state results in invalid results.)
      * Returns false if the url is unavailable.
      */
-    protected async isUrlCached(urlInQuestion : string = this.url) : Promise<boolean>
+    protected async isUrlCached(urlInQuestion: string = this.url): Promise<boolean>
     {
-        if(urlInQuestion === '' || !urlInQuestion)
+        if (urlInQuestion === '' || !urlInQuestion)
         {
             return false;
         }
@@ -237,26 +238,26 @@ export class WebRequestWorker
 
     private async ActivateProxyAgentIfFound()
     {
-        if(!this.proxyEnabled())
+        if (!this.proxyEnabled())
         {
             try
             {
                 const autoDetectProxies = await getProxySettings();
-                if(autoDetectProxies?.https)
+                if (autoDetectProxies?.https)
                 {
                     this.proxy = autoDetectProxies.https.toString();
                 }
-                else if(autoDetectProxies?.http)
+                else if (autoDetectProxies?.http)
                 {
                     this.proxy = autoDetectProxies.http.toString();
                 }
             }
-            catch(error : any)
+            catch (error: any)
             {
                 this.context.eventStream.post(new SuppressedAcquisitionError(error, `The proxy lookup failed, most likely due to limited registry access. Skipping automatic proxy lookup.`));
             }
         }
-        if(this.proxyEnabled() && this.proxy)
+        if (this.proxyEnabled() && this.proxy)
         {
             this.proxyAgent = new HttpsProxyAgent(this.proxy);
         }
@@ -266,60 +267,60 @@ export class WebRequestWorker
      * @returns an empty promise. It will download the file from the url. The url is expected to be a file server that responds with the file directly.
      * We cannot use a simpler download pattern because we need to download the byte stream 1-1.
      */
-    public async downloadFile(url : string, dest : string)
+    public async downloadFile(url: string, dest: string)
     {
-        if(fs.existsSync(dest))
+        if (fs.existsSync(dest))
         {
             return;
         }
 
         const finished = promisify(stream.finished);
         const file = fs.createWriteStream(dest, { flags: 'wx' });
-        const options = await this.getAxiosOptions(3, {responseType: 'stream', transformResponse: (x : any) => x}, false);
+        const options = await this.getAxiosOptions(3, { responseType: 'stream', transformResponse: (x: any) => x }, false);
         try
         {
             await this.axiosGet(url, options)
-            .then(response =>
-            {
-                // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                response?.data?.pipe(file);
-                return finished(file);
-            });
+                .then(response =>
+                {
+                    // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    response?.data?.pipe(file);
+                    return finished(file);
+                });
         }
-        catch(error : any)
+        catch (error: any)
         {
             // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            if(error?.message && (error?.message as string)?.includes('ENOSPC'))
+            if (error?.message && (error?.message as string)?.includes('ENOSPC'))
             {
                 const err = new DiskIsFullError(new EventBasedError('DiskIsFullError',
-`You don't have enough space left on your disk to install the .NET SDK. Please clean up some space.`), getInstallFromContext(this.context));
+                    `You don't have enough space left on your disk to install the .NET SDK. Please clean up some space.`), getInstallFromContext(this.context));
                 this.context.eventStream.post(err);
                 throw err.error;
             }
             else
             {
                 const err = new DotnetDownloadFailure(new EventBasedError('DotnetDownloadFailure',
-// Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
-// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-`We failed to download the .NET Installer. Please try to install the .NET SDK manually. Error: ${error?.message}`), getInstallFromContext(this.context));
+                    // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    `We failed to download the .NET Installer. Please try to install the .NET SDK manually. Error: ${error?.message}`), getInstallFromContext(this.context));
                 this.context.eventStream.post(err);
                 throw err.error;
             }
         }
     }
 
-    private async getAxiosOptions(numRetries: number, furtherOptions? : object, keepAlive = true) : Promise<object>
+    private async getAxiosOptions(numRetries: number, furtherOptions?: object, keepAlive = true): Promise<object>
     {
         await this.ActivateProxyAgentIfFound();
 
-        const options : object = {
+        const options: object = {
             timeout: this.websiteTimeoutMs,
             'axios-retry': { retries: numRetries },
-            ...(keepAlive && {headers: { 'Connection': 'keep-alive' }}),
-            ...(this.proxyEnabled() && {proxy : false}),
-            ...(this.proxyEnabled() && {httpsAgent : this.proxyAgent}),
+            ...(keepAlive && { headers: { 'Connection': 'keep-alive' } }),
+            ...(this.proxyEnabled() && { proxy: false }),
+            ...(this.proxyEnabled() && { httpsAgent: this.proxyAgent }),
             ...furtherOptions
         };
 
@@ -342,36 +343,39 @@ export class WebRequestWorker
             this.context.eventStream.post(new WebRequestSent(this.url));
             const response = await this.axiosGet(
                 this.url,
-                {transformResponse: (x : any) => x, ... options}
+                { transformResponse: (x: any) => x as any, ...options }
             );
 
-            if(response !== null && response?.headers['content-type'] === 'application/json')
+            if (response?.headers?.['content-type'] === 'application/json')
             {
                 try
                 {
                     // Try to copy logic from https://github.com/axios/axios/blob/2e58825bc7773247ca5d8c2cae2ee041d38a0bb5/lib/defaults/index.js#L100
-                    const jsonData = JSON.parse(response.data);
-                    return jsonData;
+                    const jsonData = JSON.parse(response?.data ?? null);
+                    if (jsonData) // JSON.parse(null) => null but JSON.parse(undefined) => SyntaxError. We only want to return undefined and not null based on funct signature.
+                    {
+                        return jsonData;
+                    };
                 }
-                catch(error : any)
+                catch (error: any)
                 {
 
                 }
             }
-            return response.data;
+            return response?.data;
         }
-        catch (error : any)
+        catch (error: any)
         {
             if (throwOnError)
             {
-                if(isAxiosError(error))
+                if (isAxiosError(error))
                 {
                     const axiosBasedError = error as AxiosError;
                     // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                     const summarizedError = new EventBasedError('WebRequestFailedFromAxios',
-`Request to ${this.url} Failed: ${axiosBasedError?.message}. Aborting.
-${axiosBasedError.cause? `Error Cause: ${axiosBasedError.cause!.message}` : ``}
+                        `Request to ${this.url} Failed: ${axiosBasedError?.message}. Aborting.
+${axiosBasedError.cause ? `Error Cause: ${axiosBasedError.cause!.message}` : ``}
 Please ensure that you are online.
 
 If you're on a proxy and disable registry access, you must set the proxy in our extension settings. See https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`);
@@ -391,7 +395,7 @@ If you're on a proxy and disable registry access, you must set the proxy in our 
         }
     }
 
-    private proxyEnabled() : boolean
+    private proxyEnabled(): boolean
     {
         return this.proxy !== '';
     }

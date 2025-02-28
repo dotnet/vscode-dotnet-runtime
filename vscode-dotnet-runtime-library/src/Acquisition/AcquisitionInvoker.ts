@@ -22,20 +22,20 @@ import
     PowershellBadLanguageMode,
 } from '../EventStream/EventStreamEvents';
 
-import { timeoutConstants } from '../Utils/ErrorHandler'
-import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker';
 import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
-import { FileUtilities } from '../Utils/FileUtilities';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+import { timeoutConstants } from '../Utils/ErrorHandler';
+import { FileUtilities } from '../Utils/FileUtilities';
+import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker';
 
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
-import { IAcquisitionInvoker } from './IAcquisitionInvoker';
-import { IDotnetInstallationContext } from './IDotnetInstallationContext';
-import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
+import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { DotnetInstall } from './DotnetInstall';
 import { DotnetInstallMode } from './DotnetInstallMode';
-import { WebRequestWorker } from '../Utils/WebRequestWorker';
+import { IAcquisitionInvoker } from './IAcquisitionInvoker';
+import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { IDotnetInstallationContext } from './IDotnetInstallationContext';
+import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
 
 export class AcquisitionInvoker extends IAcquisitionInvoker
 {
@@ -118,7 +118,7 @@ If you cannot change this flag, try setting a custom existingDotnetPath via the 
                                 reject(newError);
                             }
                         }
-                        else if (stderr && stderr.length > 0)
+                        else if ((stderr?.length ?? 0) > 0)
                         {
                             this.eventStream.post(new DotnetAcquisitionCompleted(install, installContext.dotnetPath, installContext.version));
                             resolve();
