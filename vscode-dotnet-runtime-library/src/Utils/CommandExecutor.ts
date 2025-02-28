@@ -462,15 +462,16 @@ with options ${JSON.stringify(options)}.`));
                     // If any status besides 0 is returned, an error is thrown by nodejs
                     return { stdout: fulfilled.stdout?.toString() ?? '', stderr: fulfilled.stderr?.toString() ?? '', status: '0' };
                 },
-                rejected => // Rejected object: {stderr : Buffer, stdout : Buffer, error : Error with .code (number) or .signal (string)}
+                rejected => // Rejected object: error type with stderr : Buffer, stdout : Buffer ... with .code (number) or .signal (string)}
                 { // see https://nodejs.org/api/child_process.html#child_processexeccommand-options-callback:~:text=execute%20the%20command.-,If%20this%20method%20is%20invoked%20as%20its%20util.promisify()ed,the%20callback%2C%20but%20with%20two%20additional%20properties%20stdout%20and%20stderr.,-const%20util%20%3D
                     if (terminalFailure)
                     {
-                        throw rejected?.error ?? new Error(`Spawning ${fullCommandString} failed with an unspecified error.`); // according to nodejs spec, this should never be possible
+                        throw rejected ?? new Error(`Spawning ${fullCommandString} failed with an unspecified error.`); // according to nodejs spec, this should never be possible
                     }
                     else
                     {
-                        return { stdout: rejected?.stdout?.toString() ?? '', stderr: rejected?.stderr?.toString() ?? '', status: rejected?.error?.code?.toString() ?? rejected?.error?.signal ?? '' };
+                        // signal is a string or obj, code is a number
+                        return { stdout: rejected?.stdout?.toString() ?? '', stderr: rejected?.stderr?.toString() ?? '', status: rejected?.error?.code?.toString() ?? rejected?.error?.signal.toString() ?? '' };
                     }
                 }
             );
