@@ -3,32 +3,31 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 * Licensed under the MIT License. See License.txt in the project root for license information.
 * ------------------------------------------------------------------------------------------ */
+import * as crypto from 'crypto';
 import * as eol from 'eol';
 import * as fs from 'fs';
-import * as path from 'path';
 import * as os from 'os';
-import * as proc from 'child_process';
-import * as crypto from 'crypto';
-import { IFileUtilities } from './IFileUtilities';
+import * as path from 'path';
 import * as lockfile from 'proper-lockfile';
+import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from '../Acquisition/CacheTimeConstants';
+import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { IEventStream } from '../EventStream/EventStream';
 import
-    {
-        DotnetCommandFallbackArchitectureEvent,
-        DotnetCommandFallbackOSEvent,
-        DotnetFileWriteRequestEvent,
-        DotnetLockAcquiredEvent,
-        DotnetLockAttemptingAcquireEvent,
-        DotnetLockErrorEvent,
-        DotnetLockReleasedEvent,
-        EmptyDirectoryToWipe,
-        FileToWipe,
-        SuppressedAcquisitionError
-    } from '../EventStream/EventStreamEvents';
+{
+    DotnetCommandFallbackArchitectureEvent,
+    DotnetCommandFallbackOSEvent,
+    DotnetFileWriteRequestEvent,
+    DotnetLockAcquiredEvent,
+    DotnetLockAttemptingAcquireEvent,
+    DotnetLockErrorEvent,
+    DotnetLockReleasedEvent,
+    EmptyDirectoryToWipe,
+    FileToWipe,
+    SuppressedAcquisitionError
+} from '../EventStream/EventStreamEvents';
 import { CommandExecutor } from './CommandExecutor';
-import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
+import { IFileUtilities } from './IFileUtilities';
 import { IUtilityContext } from './IUtilityContext';
-import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from '../Acquisition/CacheTimeConstants';
 
 export class FileUtilities extends IFileUtilities
 {
@@ -258,7 +257,7 @@ export class FileUtilities extends IFileUtilities
         {
             try
             {
-                const commandResult = await executor.execute(CommandExecutor.makeCommand('id', ['-u']), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS });
+                const commandResult = await executor.execute(CommandExecutor.makeCommand('id', ['-u']), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }, false);
                 return commandResult.status === '0';
             }
             catch (error: any)

@@ -9,12 +9,10 @@ import { IUtilityContext } from '../Utils/IUtilityContext';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetPathFinder } from './IDotnetPathFinder';
 
+import { existsSync, realpathSync } from 'fs';
+import * as lodash from 'lodash';
 import * as os from 'os';
 import * as path from 'path';
-import * as lodash from 'lodash';
-import { realpathSync, existsSync, readFileSync } from 'fs';
-import { EnvironmentVariableIsDefined, getDotnetExecutable, getOSArch, getPathSeparator } from '../Utils/TypescriptUtilities';
-import { DotnetConditionValidator } from './DotnetConditionValidator';
 import
 {
     DotnetFindPathHostFxrResolutionLookup,
@@ -33,10 +31,12 @@ import
     DotnetFindPathRootUnderEmulationButNoneSet,
     FileDoesNotExist
 } from '../EventStream/EventStreamEvents';
-import { RegistryReader } from './RegistryReader';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { IFileUtilities } from '../Utils/IFileUtilities';
+import { EnvironmentVariableIsDefined, getDotnetExecutable, getOSArch, getPathSeparator } from '../Utils/TypescriptUtilities';
 import { DOTNET_INFORMATION_CACHE_DURATION_MS, SYS_CMD_SEARCH_CACHE_DURATION_MS } from './CacheTimeConstants';
+import { DotnetConditionValidator } from './DotnetConditionValidator';
+import { RegistryReader } from './RegistryReader';
 
 export class DotnetPathFinder implements IDotnetPathFinder
 {
@@ -144,7 +144,7 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
 
         options.dotnetInstallToolCacheTtlMs = DOTNET_INFORMATION_CACHE_DURATION_MS;
         const findCommand = CommandExecutor.makeCommand(pathLocatorCommand, ['dotnet']);
-        const dotnetsOnPATH = (await this.executor?.execute(findCommand, options))?.stdout.split('\n').map(x => x.trim()).filter(x => x !== '');
+        const dotnetsOnPATH = (await this.executor?.execute(findCommand, options, false))?.stdout.split('\n').map(x => x.trim()).filter(x => x !== '');
         if (dotnetsOnPATH && dotnetsOnPATH.length > 0)
         {
             this.workerContext.eventStream.post(new DotnetFindPathPATHFound(`Found .NET on the path: ${JSON.stringify(dotnetsOnPATH)}`));

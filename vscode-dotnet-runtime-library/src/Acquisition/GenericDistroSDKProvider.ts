@@ -5,13 +5,13 @@
  * ------------------------------------------------------------------------------------------ */
 import * as path from 'path';
 
-import * as versionUtils from './VersionUtilities'
+import { DotnetVersionResolutionError, EventBasedError } from '../EventStream/EventStreamEvents';
 import { CommandExecutor } from '../Utils/CommandExecutor';
-import { DotnetDistroSupportStatus } from './LinuxVersionResolver';
+import { READ_SYMLINK_CACHE_DURATION_MS } from './CacheTimeConstants';
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
-import { DotnetVersionResolutionError, EventBasedError } from '../EventStream/EventStreamEvents';
-import { READ_SYMLINK_CACHE_DURATION_MS } from './CacheTimeConstants';
+import { DotnetDistroSupportStatus } from './LinuxVersionResolver';
+import * as versionUtils from './VersionUtilities';
 
 export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 {
@@ -26,14 +26,14 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
 
         commands = CommandExecutor.replaceSubstringsInCommands(commands, this.missingPackageNameKey, sdkPackage);
         const updateCommandsResult = (await this.commandRunner.executeMultipleCommands(commands.slice(0, -1), undefined))[0];
-        const installCommandResult = (await this.commandRunner.execute(commands.slice(-1)[0])).status;
+        const installCommandResult = (await this.commandRunner.execute(commands.slice(-1)[0], null, false)).status;
 
         return installCommandResult;
     }
 
     public async getInstalledGlobalDotnetPathIfExists(installType: DotnetInstallMode): Promise<string | null>
     {
-        const commandResult = await this.commandRunner.executeMultipleCommands(this.myDistroCommands(this.currentInstallPathCommandKey));
+        const commandResult = await this.commandRunner.executeMultipleCommands(this.myDistroCommands(this.currentInstallPathCommandKey), null, false);
 
         if (commandResult[0].status !== '0') // no dotnet error can be returned, dont want to try to parse this as a path
         {
@@ -64,7 +64,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         let command = this.myDistroCommands(this.packageLookupCommandKey);
         const sdkPackage = await this.myDotnetVersionPackageName(this.JsonDotnetVersion(fullySpecifiedDotnetVersion), installType);
         command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, sdkPackage);
-        const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
+        const commandResult = (await this.commandRunner.executeMultipleCommands(command, null, false))[0];
 
         return commandResult.status === '0';
     }
@@ -84,7 +84,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         let command = this.myDistroCommands(this.updateCommandKey);
         const sdkPackage = await this.myDotnetVersionPackageName(versionToUpgrade, installType);
         command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, sdkPackage);
-        const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0].status;
+        const commandResult = (await this.commandRunner.executeMultipleCommands(command, null, false))[0].status;
 
         return commandResult[0];
     }
@@ -94,7 +94,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         let command = this.myDistroCommands(this.uninstallCommandKey);
         const sdkPackage = await this.myDotnetVersionPackageName(versionToUninstall, installType);
         command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, sdkPackage);
-        const commandResult = (await this.commandRunner.executeMultipleCommands(command))[0];
+        const commandResult = (await this.commandRunner.executeMultipleCommands(command, null, false))[0];
 
         return commandResult.status;
     }

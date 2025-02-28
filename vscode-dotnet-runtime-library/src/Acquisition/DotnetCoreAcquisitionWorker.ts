@@ -32,6 +32,7 @@ import
     DotnetUninstallCompleted,
     DotnetUninstallFailed,
     DotnetUninstallStarted,
+    DotnetWSLSecurityError,
     EventBasedError,
     EventCancellationError,
     SuppressedAcquisitionError
@@ -47,6 +48,7 @@ import { CommandExecutor } from '../Utils/CommandExecutor';
 import { Debugging } from '../Utils/Debugging';
 import { getInstallFromContext, getInstallIdCustomArchitecture } from '../Utils/InstallIdUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
+import { isRunningUnderWSL } from '../Utils/TypescriptUtilities';
 import { DOTNET_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
 import
 {
@@ -465,6 +467,16 @@ To keep your .NET version up to date, please reconnect to the internet at your s
 
     private async acquireGlobalCore(context: IAcquisitionWorkerContext, globalInstallerResolver: GlobalInstallerResolver, install: DotnetInstall): Promise<string>
     {
+        if (await isRunningUnderWSL(context, this.utilityContext))
+        {
+            const err = new DotnetWSLSecurityError(new EventCancellationError('DotnetWSLSecurityError',
+                `Automatic .NET SDK Installation is not yet supported in WSL due to VS Code & WSL limitations.
+            Please install the .NET SDK manually by following https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu. Then, add it to the path by following https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#manually-installing-net`,
+            ), getInstallFromContext(context));
+            context.eventStream.post(err);
+            throw err.error;
+        }
+
         const installingVersion = await globalInstallerResolver.getFullySpecifiedVersion();
         context.eventStream.post(new DotnetGlobalVersionResolutionCompletionEvent(`The version we resolved that was requested is: ${installingVersion}.`));
         this.checkForPartialInstalls(context, install).catch(() => {});
