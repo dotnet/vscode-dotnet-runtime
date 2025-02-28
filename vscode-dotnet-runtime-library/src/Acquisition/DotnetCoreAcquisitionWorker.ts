@@ -46,6 +46,8 @@ import { IExtensionState } from '../IExtensionState';
 import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { Debugging } from '../Utils/Debugging';
+import { FileUtilities } from '../Utils/FileUtilities';
+import { IFileUtilities } from '../Utils/IFileUtilities';
 import { getInstallFromContext, getInstallIdCustomArchitecture } from '../Utils/InstallIdUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { isRunningUnderWSL } from '../Utils/TypescriptUtilities';
@@ -84,12 +86,15 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     // @member usingNoInstallInvoker - Only use this for test when using the No Install Invoker to fake the worker into thinking a path is on disk.
     protected usingNoInstallInvoker = false;
 
+    protected file: IFileUtilities;
+
     constructor(private readonly utilityContext: IUtilityContext, extensionContext: IVSCodeExtensionContext)
     {
         const dotnetExtension = os.platform() === 'win32' ? '.exe' : '';
         this.dotnetExecutable = `dotnet${dotnetExtension}`;
         this.globalResolver = null;
         this.extensionContext = extensionContext;
+        this.file = new FileUtilities();
     }
 
     public async uninstallAll(eventStream: IEventStream, storagePath: string, extensionState: IExtensionState): Promise<void>
@@ -165,7 +170,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
                             install.dotnetInstall.version, install.dotnetInstall.architecture) :
                     path.join(context.installDirectoryProvider.getInstallDir(install.dotnetInstall.installId), this.dotnetExecutable);
 
-                if ((fs.existsSync(dotnetExePath) || this.usingNoInstallInvoker))
+                if ((await this.file.exists(dotnetExePath) || this.usingNoInstallInvoker))
                 {
                     context.eventStream.post(new DotnetAcquisitionStatusResolved(possibleInstallWithSameMajorMinor,
                         possibleInstallWithSameMajorMinor.version));
@@ -208,13 +213,13 @@ To keep your .NET version up to date, please reconnect to the internet at your s
             context.eventStream.post(new DotnetAcquisitionStatusResolved(install, version));
             return { dotnetPath };
         }
-        else if (installedVersions.length === 0 && fs.existsSync(dotnetPath) && installMode === 'sdk')
+        else if (installedVersions.length === 0 && await this.file.exists(dotnetPath) && installMode === 'sdk')
         {
             // The education bundle already laid down a local install, add it to our managed installs
             const preinstalledVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).checkForUnrecordedLocalSDKSuccessfulInstall(
                 context, dotnetInstallDir, installedVersions);
             if (preinstalledVersions.some(x => IsEquivalentInstallationFile(x.dotnetInstall, install)) &&
-                (fs.existsSync(dotnetPath) || this.usingNoInstallInvoker))
+                (await this.file.exists(dotnetPath) || this.usingNoInstallInvoker))
             {
                 // Requested version has already been installed.
                 context.eventStream.post(new DotnetAcquisitionStatusResolved(install, version));
@@ -314,7 +319,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
 
-        if (fs.existsSync(dotnetPath) && installedVersions.length === 0)
+        if (await this.file.exists(dotnetPath) && installedVersions.length === 0)
         {
             // The education bundle already laid down a local install, add it to our managed installs
             installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream,

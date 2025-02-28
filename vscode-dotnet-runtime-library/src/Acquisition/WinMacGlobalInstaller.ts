@@ -239,9 +239,9 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         const installerPath = path.join(ourInstallerDownloadFolder, `${installerUrl.split('/').slice(-1)}`);
 
         const installerDir = path.dirname(installerPath);
-        if (!fs.existsSync(installerDir))
+        if (!(await this.file.exists(installerDir)))
         {
-            fs.mkdirSync(installerDir, { recursive: true });
+            await fs.promises.mkdir(installerDir, { recursive: true });
         }
 
         await this.webWorker.downloadFile(installerUrl, installerPath);
@@ -380,14 +380,14 @@ If you were waiting for the install to succeed, please extend the timeout settin
         const standardHostPath = path.resolve(`/usr/local/share/dotnet/dotnet`);
         const arm64EmulationHostPath = path.resolve(`/usr/local/share/dotnet/x64/dotnet`);
 
-        if ((os.arch() === 'x64' || os.arch() === 'ia32') && (await getOSArch(this.commandRunner)).includes('arm') && (fs.existsSync(arm64EmulationHostPath) || !macPathShouldExist))
+        if ((os.arch() === 'x64' || os.arch() === 'ia32') && (await getOSArch(this.commandRunner)).includes('arm') && (await this.file.exists(arm64EmulationHostPath) || !macPathShouldExist))
         {
             // VS Code runs on an emulated version of node which will return x64 or use x86 emulation for ARM devices.
             // os.arch() returns the architecture of the node binary, not the system architecture, so it will not report arm on an arm device.
             return arm64EmulationHostPath;
         }
 
-        if (!macPathShouldExist || fs.existsSync(standardHostPath) || !fs.existsSync(arm64EmulationHostPath))
+        if (!macPathShouldExist || (await this.file.exists(standardHostPath)) || !(await this.file.exists(arm64EmulationHostPath)))
         {
             return standardHostPath;
         }

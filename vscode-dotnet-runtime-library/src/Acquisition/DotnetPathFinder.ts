@@ -9,7 +9,7 @@ import { IUtilityContext } from '../Utils/IUtilityContext';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetPathFinder } from './IDotnetPathFinder';
 
-import { existsSync, realpathSync } from 'fs';
+import { realpathSync } from 'fs';
 import * as lodash from 'lodash';
 import * as os from 'os';
 import * as path from 'path';
@@ -161,7 +161,7 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
                 for (const pathOnPATH of pathsOnPATH)
                 {
                     const resolvedDotnetPath = path.join(pathOnPATH, dotnetExecutable);
-                    if (existsSync(resolvedDotnetPath))
+                    if (await this.file!.exists(resolvedDotnetPath))
                     {
                         this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Looking up .NET on the path by processing PATH string. resolved: ${resolvedDotnetPath}.`));
                         validPathsOnPATH.push(resolvedDotnetPath);
@@ -245,8 +245,8 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
             const netSixAndAboveHostInstallSaveLocation = `/etc/dotnet/install_location_${requestedArchitecture}`;
             const netFiveAndNetSixAboveFallBackInstallSaveLocation = `/etc/dotnet/install_location`;
 
-            paths.push(...this.getPathsFromEtc(netSixAndAboveHostInstallSaveLocation));
-            paths.push(...this.getPathsFromEtc(netFiveAndNetSixAboveFallBackInstallSaveLocation));
+            paths.push(...(await this.getPathsFromEtc(netSixAndAboveHostInstallSaveLocation)));
+            paths.push(...(await this.getPathsFromEtc(netFiveAndNetSixAboveFallBackInstallSaveLocation)));
 
             if (paths.length > 0)
             {
@@ -261,14 +261,14 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
         }
     }
 
-    private getPathsFromEtc(etcLoc: string): Array<string>
+    private async getPathsFromEtc(etcLoc: string): Promise<Array<string>>
     {
         const paths: string[] = [];
-        if (this.file!.existsSync(etcLoc))
+        if (await this.file!.exists(etcLoc))
         {
             try
             {
-                const installPath = this.file!.readSync(etcLoc).toString().trim();
+                const installPath = (await this.file!.read(etcLoc)).trim();
                 paths.push(path.join(installPath, getDotnetExecutable()));
                 paths.push(path.join(realpathSync(installPath), getDotnetExecutable()));
             }

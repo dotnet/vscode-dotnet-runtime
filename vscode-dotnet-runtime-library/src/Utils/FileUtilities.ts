@@ -35,9 +35,9 @@ export class FileUtilities extends IFileUtilities
     {
         eventStream?.post(new DotnetFileWriteRequestEvent(`Request to write`, new Date().toISOString(), filePath));
 
-        if (!fs.existsSync(path.dirname(filePath)))
+        if (!(await this.exists(path.dirname(filePath))))
         {
-            fs.mkdirSync(path.dirname(filePath), { recursive: true });
+            await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
         }
         // Prepare to lock directory so we can check file exists atomically
         const directoryLock = 'dir.lock';
@@ -45,8 +45,7 @@ export class FileUtilities extends IFileUtilities
 
         // Begin Critical Section
         // This check is part of a RACE CONDITION, it is technically part of the critical section as you will fail if the file DNE,
-        //  but you cant lock the file until it exists. Since there is no context in which files written by this are deleted while this can run,
-        //  theoretically, this ok. The library SHOULD provide a RAII based system for locks, but it does not.
+        // but you cant lock the file until it exists. Since existsSync blocks the entire node thread, theoretically, this ok.
         if (!fs.existsSync(filePath))
         {
             // Create an empty file, as proper-lockfile fails to lock a file if file dne
@@ -68,7 +67,7 @@ export class FileUtilities extends IFileUtilities
                     // operate, then unlock file once the operation is done.
                     // For now, keep the entire directory locked.
 
-                    this.innerWriteFile(scriptContent, filePath, eventStream);
+                    await this.innerWriteFile(scriptContent, filePath, eventStream);
 
                     eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), directoryLockPath, filePath));
                     return release();
@@ -81,20 +80,20 @@ export class FileUtilities extends IFileUtilities
         }
         else
         {
-            this.innerWriteFile(scriptContent, filePath, eventStream);
+            await this.innerWriteFile(scriptContent, filePath, eventStream);
         }
         // End Critical Section
     }
 
-    private innerWriteFile(scriptContent: string, filePath: string, eventStream?: IEventStream)
+    private async innerWriteFile(scriptContent: string, filePath: string, eventStream?: IEventStream)
     {
         scriptContent = eol.auto(scriptContent);
-        const existingScriptContent = fs.readFileSync(filePath).toString();
+        const existingScriptContent = await this.read(filePath);
         // fs.writeFile will replace the file if it exists.
         // https://nodejs.org/api/fs.html#fswritefilefile-data-options-callback
         if (scriptContent !== existingScriptContent)
         {
-            fs.writeFileSync(filePath, scriptContent);
+            await fs.promises.writeFile(filePath, scriptContent);
             eventStream?.post(new DotnetFileWriteRequestEvent(`File content needed to be updated.`, new Date().toISOString(), filePath));
         }
         else
@@ -102,23 +101,22 @@ export class FileUtilities extends IFileUtilities
             eventStream?.post(new DotnetFileWriteRequestEvent(`File content is an exact match, not writing file.`, new Date().toISOString(), filePath));
         }
 
-        fs.chmodSync(filePath, 0o744);
+        await fs.promises.chmod(filePath, 0o744);
     }
 
     /**
      * @param directoryToWipe the directory to delete all of the files in if privilege to do so exists.
      * @param fileExtensionsToDelete - if undefined, delete all files. if not, delete only files with extensions in this array in lower case.
      */
-    public wipeDirectory(directoryToWipe: string, eventStream?: IEventStream, fileExtensionsToDelete?: string[])
+    public async wipeDirectory(directoryToWipe: string, eventStream?: IEventStream, fileExtensionsToDelete?: string[])
     {
-        if (!fs.existsSync(directoryToWipe))
+        if (!await this.exists(directoryToWipe))
         {
             eventStream?.post(new EmptyDirectoryToWipe(`The directory ${directoryToWipe} did not exist, so it was not wiped.`))
             return;
         }
 
-        // Use rimraf to delete all of the items in a directory without the directory itself.
-        fs.readdirSync(directoryToWipe).forEach(f =>
+        (await fs.promises.readdir(directoryToWipe)).forEach(async f =>
         {
             try
             {
@@ -126,7 +124,7 @@ export class FileUtilities extends IFileUtilities
                 if (!fileExtensionsToDelete || path.extname(f).toLocaleLowerCase() in fileExtensionsToDelete)
                 {
                     eventStream?.post(new FileToWipe(`The file ${f} is being deleted -- if no error is reported, it should be wiped.`))
-                    fs.rmSync(path.join(directoryToWipe, f));
+                    await fs.promises.rm(path.join(directoryToWipe, f));
                 }
             }
             catch (error: any)
@@ -136,14 +134,23 @@ export class FileUtilities extends IFileUtilities
         });
     }
 
-    public readSync(filePath: string): string
+    public async read(filePath: string): Promise<string>
     {
-        return fs.readFileSync(filePath).toString();
+        const output = await fs.promises.readFile(filePath, 'utf8');
+        return output;
     }
 
-    public existsSync(filePath: string): boolean
+    public async exists(filePath: string): Promise<boolean>
     {
-        return fs.existsSync(filePath);
+        try
+        {
+            await fs.promises.stat(filePath);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     /**
