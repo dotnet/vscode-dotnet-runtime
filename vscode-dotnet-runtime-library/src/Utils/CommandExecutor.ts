@@ -6,16 +6,16 @@
 import * as proc from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
+import { promisify } from 'util';
 import open = require('open');
 import path = require('path');
 
+import { exec as execElevated } from '@vscode/sudo-prompt';
+import * as lockfile from 'proper-lockfile';
 import
 {
-    EventCancellationError,
     CommandExecutionEvent,
-    CommandExecutionNoStatusCodeWarning,
     CommandExecutionNonZeroExitFailure,
-    CommandExecutionSignalSentEvent,
     CommandExecutionStatusEvent,
     CommandExecutionStdError,
     CommandExecutionStdOut,
@@ -32,6 +32,8 @@ import
     DotnetLockAcquiredEvent,
     DotnetLockReleasedEvent,
     DotnetWSLSecurityError,
+    EventBasedError,
+    EventCancellationError,
     SudoProcAliveCheckBegin,
     SudoProcAliveCheckEnd,
     SudoProcCommandExchangeBegin,
@@ -39,26 +41,23 @@ import
     SudoProcCommandExchangePing,
     TimeoutSudoCommandExecutionError,
     TimeoutSudoProcessSpawnerError,
-    EventBasedError,
     TriedToExitMasterSudoProcess
 } from '../EventStream/EventStreamEvents';
-import { exec as execElevated } from '@vscode/sudo-prompt';
-import * as lockfile from 'proper-lockfile';
 import { CommandExecutorCommand } from './CommandExecutorCommand';
 import { getInstallFromContext } from './InstallIdUtilities';
 
 
-import { ICommandExecutor } from './ICommandExecutor';
-import { IUtilityContext } from './IUtilityContext';
-import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
-import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
-import { FileUtilities } from './FileUtilities';
-import { IFileUtilities } from './IFileUtilities';
-import { CommandExecutorResult } from './CommandExecutorResult';
-import { isRunningUnderWSL, loopWithTimeoutOnCond } from './TypescriptUtilities';
 import { IEventStream } from '../EventStream/EventStream';
+import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
+import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { LocalMemoryCacheSingleton } from '../LocalMemoryCacheSingleton';
+import { CommandExecutorResult } from './CommandExecutorResult';
+import { FileUtilities } from './FileUtilities';
+import { ICommandExecutor } from './ICommandExecutor';
+import { IFileUtilities } from './IFileUtilities';
+import { IUtilityContext } from './IUtilityContext';
+import { isRunningUnderWSL, loopWithTimeoutOnCond } from './TypescriptUtilities';
 
 export class CommandExecutor extends ICommandExecutor
 {
@@ -396,10 +395,12 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
 
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             options.shell ??= true;
+
+            options.encoding = 'utf8';
         }
         else
         {
-            options = { cwd: path.resolve(__dirname), shell: true };
+            options = { cwd: path.resolve(__dirname), shell: true, encoding: 'utf8' };
         }
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -455,48 +456,39 @@ with options ${JSON.stringify(options)}.`));
                 });
             }
 
-            const commandResult: proc.SpawnSyncReturns<string> = proc.spawnSync(command.commandRoot, command.commandParts, options);
-            this.logCommandResult(commandResult, fullCommandString);
-
-            const statusCode: string = (() =>
-            {
-                if (commandResult.status !== null)
+            const commandResult: CommandExecutorResult = await promisify(proc.exec)(fullCommandString, options).then(
+                fulfilled =>
                 {
-                    return commandResult.status.toString() ?? '';
-                }
-                else
-                {
-                    // A signal is generally given if a status is not given, and they are 'equivalent' enough
-                    if (commandResult.signal !== null)
+                    // If any status besides 0 is returned, an error is thrown by nodejs
+                    return { stdout: fulfilled.stdout?.toString() ?? '', stderr: fulfilled.stderr?.toString() ?? '', status: '0' };
+                },
+                rejected => // Rejected object: {stderr : Buffer, stdout : Buffer, error : Error with .code (number) or .signal (string)}
+                { // see https://nodejs.org/api/child_process.html#child_processexeccommand-options-callback:~:text=execute%20the%20command.-,If%20this%20method%20is%20invoked%20as%20its%20util.promisify()ed,the%20callback%2C%20but%20with%20two%20additional%20properties%20stdout%20and%20stderr.,-const%20util%20%3D
+                    if (terminalFailure)
                     {
-
-                        return commandResult.signal.toString() ?? '';
+                        throw rejected?.error ?? new Error(`Spawning ${fullCommandString} failed with an unspecified error.`); // according to nodejs spec, this should never be possible
                     }
                     else
                     {
-                        this.context?.eventStream.post(new CommandExecutionNoStatusCodeWarning(`The command ${fullCommandString} with
-result: ${JSON.stringify(commandResult)} had no status or signal.`));
-                        return '000751'; // Error code 000751 : The command did not report an exit code upon completion. This is never expected
+                        return { stdout: rejected?.stdout?.toString() ?? '', stderr: rejected?.stderr?.toString() ?? '', status: rejected?.error?.code?.toString() ?? rejected?.error?.signal ?? '' };
                     }
                 }
-            })();
+            );
 
-            const standardResult = { status: statusCode, stderr: commandResult.stderr?.toString() ?? '', stdout: commandResult.stdout?.toString() ?? '' } as CommandExecutorResult;
+            this.logCommandResult(commandResult, fullCommandString);
+
             if (useCache)
             {
-                LocalMemoryCacheSingleton.getInstance().putCommand({ command, options }, standardResult, this.context);
+                LocalMemoryCacheSingleton.getInstance().putCommand({ command, options }, commandResult, this.context);
             }
-            return standardResult;
+            return commandResult;
         }
     }
 
-    private logCommandResult(commandResult: proc.SpawnSyncReturns<string>, fullCommandStringForTelemetryOnly: string)
+    private logCommandResult(commandResult: CommandExecutorResult, fullCommandStringForTelemetryOnly: string)
     {
-        this.context?.eventStream.post(new CommandExecutionStatusEvent(`The command ${fullCommandStringForTelemetryOnly} exited
-        with status: ${commandResult.status?.toString()}.`));
-
-        this.context?.eventStream.post(new CommandExecutionSignalSentEvent(`The command ${fullCommandStringForTelemetryOnly} exited
-with signal: ${commandResult.signal?.toString()}.`));
+        this.context?.eventStream.post(new CommandExecutionStatusEvent(`The command ${fullCommandStringForTelemetryOnly} exited:
+${commandResult.status}.`));
 
         this.context?.eventStream.post(new CommandExecutionStdOut(`The command ${fullCommandStringForTelemetryOnly} encountered stdout:
 ${commandResult.stdout}`));
@@ -542,17 +534,19 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
      *
      * @param commandRoots The first word of each command to try
      * @param matchingCommandParts Any follow up words in that command to execute, matching in the same order as commandRoots
+     * @remarks You can pass a set of options per command which must match the index of each command.
      * @returns the index of the working command you provided, if no command works, -1.
      */
     public async tryFindWorkingCommand(commands: CommandExecutorCommand[], options?: any): Promise<CommandExecutorCommand | null>
     {
         let workingCommand: CommandExecutorCommand | null = null;
+        let optIdx = 0;
 
         for (const command of commands)
         {
             try
             {
-                const cmdFoundOutput = (await this.execute(command, options)).status;
+                const cmdFoundOutput = (await this.execute(command, options?.at(optIdx) ?? options)).status;
                 if (cmdFoundOutput === '0')
                 {
                     workingCommand = command;
@@ -569,6 +563,7 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
                 // Do nothing. The error should be raised higher up.
                 this.context?.eventStream.post(new DotnetCommandNotFoundEvent(`The command ${command.commandRoot} was NOT found, and we caught any errors.`));
             }
+            ++optIdx;
         }
 
         return workingCommand;
@@ -673,6 +668,7 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
     {
         try
         {
+            // this should be optimized eventually but its called only once and in mostly deprecated scenarios
             proc.execSync(pathCommand);
         }
         catch (error: any)

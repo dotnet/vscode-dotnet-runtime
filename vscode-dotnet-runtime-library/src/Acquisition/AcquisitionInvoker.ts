@@ -22,26 +22,26 @@ import
     PowershellBadLanguageMode,
 } from '../EventStream/EventStreamEvents';
 
-import { timeoutConstants } from '../Utils/ErrorHandler'
-import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker';
 import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
-import { FileUtilities } from '../Utils/FileUtilities';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+import { timeoutConstants } from '../Utils/ErrorHandler';
+import { FileUtilities } from '../Utils/FileUtilities';
+import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker';
 
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
-import { IAcquisitionInvoker } from './IAcquisitionInvoker';
-import { IDotnetInstallationContext } from './IDotnetInstallationContext';
-import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
+import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { DotnetInstall } from './DotnetInstall';
 import { DotnetInstallMode } from './DotnetInstallMode';
-import { WebRequestWorker } from '../Utils/WebRequestWorker';
+import { IAcquisitionInvoker } from './IAcquisitionInvoker';
+import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { IDotnetInstallationContext } from './IDotnetInstallationContext';
+import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
 
 export class AcquisitionInvoker extends IAcquisitionInvoker
 {
     protected readonly scriptWorker: IInstallScriptAcquisitionWorker;
     protected fileUtilities: FileUtilities;
-    private noPowershellError = `powershell.exe is not discoverable on your system. Is PowerShell added to your PATH and correctly installed? Please visit: https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows.
+    private noPowershellError = `powershell is not discoverable on your system. Is PowerShell added to your PATH and correctly installed? Please visit: https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows.
 You will need to restart VS Code after these changes. If PowerShell is still not discoverable, try setting a custom existingDotnetPath following our instructions here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`
 
     constructor(private readonly workerContext: IAcquisitionWorkerContext, private readonly utilityContext: IUtilityContext)
@@ -88,7 +88,7 @@ Please read more at https://go.microsoft.com/fwlink/?LinkID=135170`);
                             this.eventStream.post(new PowershellBadExecutionPolicy(badPolicyError, install));
                             reject(badPolicyError);
                         }
-                        if ((this.looksLikeBadLanguageModeError(stderr) || error?.code === 1) && this.badLanguageModeSet(powershellReference))
+                        if ((this.looksLikeBadLanguageModeError(stderr) || error?.code === 1) && await this.badLanguageModeSet(powershellReference))
                         {
                             const badModeError = new EventBasedError('PowershellBadLanguageMode', `Your Language Mode disables PowerShell language features needed to install .NET. Read more at: https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_language_modes.
 If you cannot change this flag, try setting a custom existingDotnetPath via the instructions here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`);
@@ -167,7 +167,7 @@ At dotnet-install.ps1:1189 char:5
         return stderr.includes('FullyQualifiedErrorId') || stderr.includes('unexpectedToken')
     }
 
-    private badLanguageModeSet(powershellReference: string): boolean
+    private async badLanguageModeSet(powershellReference: string): boolean
     {
         if (os.platform() !== 'win32')
         {
@@ -176,8 +176,9 @@ At dotnet-install.ps1:1189 char:5
 
         try
         {
-            const languageModeOutput = cp.spawnSync(powershellReference, [`-command`, `$ExecutionContext.SessionState.LanguageMode`], { cwd: path.resolve(__dirname), shell: true });
-            const languageMode = languageModeOutput.stdout.toString().trim();
+            const checkLanguageModeCmd = CommandExecutor.makeCommand(powershellReference, [`-command`, `$ExecutionContext.SessionState.LanguageMode`]);
+            const languageModeOutput = await new CommandExecutor(this.workerContext, this.utilityContext).execute(checkLanguageModeCmd, { cwd: path.resolve(__dirname), shell: true });
+            const languageMode = languageModeOutput.stdout.trim();
             return (languageMode === 'ConstrainedLanguage' || languageMode === 'NoLanguage');
         }
         catch (e: any)
@@ -237,19 +238,26 @@ At dotnet-install.ps1:1189 char:5
         let error = null;
         let command = null;
 
-        const possibleCommands =
+        const possibleCommands = // create a bunch of commands that just return the index of the correct shell in powershell
             [
-                CommandExecutor.makeCommand(`powershell.exe`, []),
-                CommandExecutor.makeCommand(`%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`, []),
-                CommandExecutor.makeCommand(`pwsh`, []),
-                CommandExecutor.makeCommand(`powershell`, []),
-                CommandExecutor.makeCommand(`pwsh.exe`, [])
+                CommandExecutor.makeCommand('0', []),
+                CommandExecutor.makeCommand('1', []),
+                CommandExecutor.makeCommand('2', []),
+                CommandExecutor.makeCommand('3', []),
+                CommandExecutor.makeCommand('4', []),
             ];
-
+        const possiblePowershellPaths =
+            [ // use shell as powershell and see if it passes or not. This is faster than doing it with the default shell, as that spawns a cmd to spawn a pwsh
+                { shell: `%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe` },
+                { shell: `pwsh.exe` },
+                { shell: `powershell.exe` },
+                { shell: `pwsh` },
+                { shell: `powershell` }
+            ]
         try
         {
             // Check if PowerShell exists and is on the path.
-            command = await new CommandExecutor(this.workerContext, this.utilityContext).tryFindWorkingCommand(possibleCommands);
+            command = await new CommandExecutor(this.workerContext, this.utilityContext).tryFindWorkingCommand(possibleCommands, possiblePowershellPaths);
             if (!command)
             {
                 knownError = true;
@@ -271,6 +279,6 @@ At dotnet-install.ps1:1189 char:5
             throw new EventBasedError('DotnetAcquisitionScriptError', error?.message, error?.stack);
         }
 
-        return command!.commandRoot;
+        return possiblePowershellPaths.at(Number(command!.commandRoot))?.shell ?? 'powershell.exe';
     }
 }
