@@ -88,7 +88,7 @@ export class CommandExecutor extends ICommandExecutor
         this.context?.eventStream.post(new CommandExecutionUnderSudoEvent(`The command ${fullCommandString} is being ran under sudo.`));
         const shellScript = path.join(this.sudoProcessCommunicationDir, 'interprocess-communicator.sh');
 
-        if (isRunningUnderWSL(this.context?.eventStream))
+        if (await isRunningUnderWSL(this.context, this.utilityContext, this))
         {
             // For WSL, vscode/sudo-prompt does not work.
             // This is because it relies on pkexec or a GUI app to popup and request sudo privilege.

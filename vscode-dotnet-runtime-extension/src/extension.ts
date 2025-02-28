@@ -62,7 +62,6 @@ import
     InstallationValidator,
     InstallRecord,
     InvalidUninstallRequest,
-    isRunningUnderWSL,
     IUtilityContext,
     JsonInstaller,
     LinuxVersionResolver,
@@ -77,7 +76,7 @@ import
     VSCodeEnvironment,
     VSCodeExtensionContext,
     WebRequestWorker,
-    WindowDisplayWorker,
+    WindowDisplayWorker
 } from 'vscode-dotnet-runtime-library';
 import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
@@ -677,14 +676,6 @@ ${JSON.stringify(commandContext)}`));
         {
             resolve(null);
         });
-    }
-
-    function checkIfSDKAcquisitionIsSupported(): boolean
-    {
-        let isSupported = true;
-        isSupported = isSupported && !isRunningUnderWSL(globalEventStream);
-        vscode.commands.executeCommand('setContext', 'dotnetAcquisitionExtension.isGlobalSDKUnsupported', !isSupported);
-        return isSupported;
     }
 
     const getAvailableVersions = async (commandContext: IDotnetListVersionsContext | undefined,
