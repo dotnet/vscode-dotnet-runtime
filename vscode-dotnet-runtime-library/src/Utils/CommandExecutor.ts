@@ -550,7 +550,7 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
             try
             {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                const cmdFoundOutput = (await this.execute(command, options?.at(optIdx) ?? options)).status;
+                const cmdFoundOutput = (await this.execute(command, options?.at(optIdx) ?? options, false)).status;
                 if (cmdFoundOutput === '0')
                 {
                     workingCommand = command;
