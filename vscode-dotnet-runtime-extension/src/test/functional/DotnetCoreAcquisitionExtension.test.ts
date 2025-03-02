@@ -118,7 +118,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
     await vscode.commands.executeCommand<string>('dotnet.uninstallAll');
     mockState.clear();
     MockTelemetryReporter.telemetryEvents = [];
-    new FileUtilities().wipeDirectory(storagePath);
+    await new FileUtilities().wipeDirectory(storagePath);
     InstallTrackerSingleton.getInstance(new MockEventStream(), new MockExtensionContext()).clearPromises();
     // Do not want cached results from prior tests to interfere
     LocalMemoryCacheSingleton.getInstance().invalidate();
