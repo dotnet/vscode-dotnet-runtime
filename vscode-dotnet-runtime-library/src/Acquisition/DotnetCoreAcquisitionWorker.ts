@@ -214,7 +214,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
             context.eventStream.post(new DotnetAcquisitionStatusResolved(install, version));
             return { dotnetPath };
         }
-        else if ((installedVersions?.length ?? 0) && await this.file.exists(dotnetPath) && installMode === 'sdk')
+        else if ((installedVersions?.length ?? 0) === 0 && await this.file.exists(dotnetPath) && installMode === 'sdk')
         {
             // The education bundle already laid down a local install, add it to our managed installs
             const preinstalledVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).checkForUnrecordedLocalSDKSuccessfulInstall(
