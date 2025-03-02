@@ -9,7 +9,6 @@ import { IUtilityContext } from '../Utils/IUtilityContext';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetPathFinder } from './IDotnetPathFinder';
 
-import { realpathSync } from 'fs';
 import * as lodash from 'lodash';
 import * as os from 'os';
 import * as path from 'path';
@@ -205,7 +204,11 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
         const dotnetsOnPATH = await this.findRawPathEnvironmentSetting(tryUseTrueShell);
         if (dotnetsOnPATH && dotnetsOnPATH.length > 0)
         {
-            const realPaths = dotnetsOnPATH.map(x => realpathSync(x));
+            const realPaths = await Promise.all(dotnetsOnPATH.map(async (x): Promise<string> =>
+            {
+                const resolvedPath = await this.file?.realpath(x);
+                return resolvedPath ?? x;
+            }));
             this.workerContext.eventStream.post(new DotnetFindPathRealPATHFound(`Found .NET on the path: ${JSON.stringify(dotnetsOnPATH)}, realpath: ${realPaths}`));
             return this.getTruePath(realPaths);
         }
@@ -223,7 +226,16 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
         {
             const registryReader = new RegistryReader(this.workerContext, this.utilityContext, this.executor);
             const hostPathWin = await registryReader.getHostLocation(requestedArchitecture);
-            const paths = hostPathWin ? [path.join(hostPathWin, getDotnetExecutable()), path.join(realpathSync(hostPathWin), getDotnetExecutable())] : [];
+            const realHostPathWin = hostPathWin ? await this.file?.realpath(hostPathWin) : null;
+            const paths = [];
+            if (hostPathWin)
+            {
+                paths.push(path.join(hostPathWin, getDotnetExecutable()));
+            }
+            if (realHostPathWin)
+            {
+                paths.push(path.join(realHostPathWin, getDotnetExecutable()));
+            }
             if (paths.length > 0)
             {
                 this.workerContext.eventStream.post(new DotnetFindPathOnRegistry(`The host could be found in the registry. ${JSON.stringify(paths)}`));
@@ -270,7 +282,11 @@ Bin Bash Path: ${os.platform() !== 'win32' ? (await this.executor?.execute(Comma
             {
                 const installPath = (await this.file!.read(etcLoc)).trim();
                 paths.push(path.join(installPath, getDotnetExecutable()));
-                paths.push(path.join(realpathSync(installPath), getDotnetExecutable()));
+                const realPath = await this.file?.realpath(installPath);
+                if (realPath)
+                {
+                    paths.push(path.join(realPath, getDotnetExecutable()));
+                }
             }
             catch (error: any) // eslint-disable-line @typescript-eslint/no-explicit-any
             {

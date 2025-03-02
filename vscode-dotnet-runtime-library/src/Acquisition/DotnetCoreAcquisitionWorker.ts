@@ -39,6 +39,7 @@ import
 } from '../EventStream/EventStreamEvents';
 import * as versionUtils from './VersionUtilities';
 
+import { promisify } from 'util';
 import { IEventStream } from '../EventStream/EventStream';
 import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
@@ -102,7 +103,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         eventStream.post(new DotnetUninstallAllStarted());
         InstallTrackerSingleton.getInstance(eventStream, extensionState).clearPromises();
 
-        this.removeFolderRecursively(eventStream, storagePath);
+        await this.removeFolderRecursively(eventStream, storagePath);
 
         await InstallTrackerSingleton.getInstance(eventStream, extensionState).uninstallAllRecords();
 
@@ -616,7 +617,7 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
             if (force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).canUninstall(true, install))
             {
                 context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install.installId}.`));
-                this.removeFolderRecursively(context.eventStream, dotnetInstallDir);
+                await this.removeFolderRecursively(context.eventStream, dotnetInstallDir);
                 context.eventStream.post(new DotnetUninstallCompleted(`Uninstalled .NET ${install.installId}.`));
                 await graveyard.remove(install);
                 context.eventStream.post(new DotnetInstallGraveyardEvent(`Success at uninstalling ${JSON.stringify(install)} in path ${dotnetInstallDir}`));
@@ -674,12 +675,12 @@ Other dependents remain.`));
         }
     }
 
-    private removeFolderRecursively(eventStream: IEventStream, folderPath: string)
+    private async removeFolderRecursively(eventStream: IEventStream, folderPath: string)
     {
         eventStream.post(new DotnetAcquisitionDeletion(folderPath));
         try
         {
-            fs.chmodSync(folderPath, 0o744);
+            await fs.promises.chmod(folderPath, 0o744);
         }
         catch (error: any)
         {
@@ -688,7 +689,7 @@ Other dependents remain.`));
 
         try
         {
-            rimraf.sync(folderPath);
+            await promisify(rimraf)(folderPath);
         }
         catch (error: any)
         {

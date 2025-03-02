@@ -9,6 +9,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as lockfile from 'proper-lockfile';
+import { promisify } from 'util';
 import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from '../Acquisition/CacheTimeConstants';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { IEventStream } from '../EventStream/EventStream';
@@ -150,6 +151,19 @@ export class FileUtilities extends IFileUtilities
         catch
         {
             return false;
+        }
+    }
+
+    public async realpath(filePath: string): Promise<string | null>
+    {
+        try
+        {
+            const resolvedRealPath = await promisify(fs.realpath)(filePath);
+            return resolvedRealPath;
+        }
+        catch
+        {
+            return null;
         }
     }
 

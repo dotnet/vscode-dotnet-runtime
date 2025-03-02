@@ -463,6 +463,11 @@ export class MockFileUtilities extends IFileUtilities
         return this.filePathsAndReadValues[filePath] || '';
     }
 
+    public async realpath(filePath: string): Promise<string | null>
+    {
+        return new FileUtilities().realpath(filePath);
+    }
+
 }
 
 /**

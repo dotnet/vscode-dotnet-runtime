@@ -3,10 +3,12 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
+import { warn } from 'console';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as rimraf from 'rimraf';
+import { promisify } from 'util';
 import * as vscode from 'vscode';
 import
 {
@@ -120,6 +122,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
     mockState.clear();
     MockTelemetryReporter.telemetryEvents = [];
     rimraf.sync(storagePath);
+    await promisify(rimraf)(storagePath);
     InstallTrackerSingleton.getInstance(new MockEventStream(), new MockExtensionContext()).clearPromises();
     // Dont want cached results from prior tests to interfere
     LocalMemoryCacheSingleton.getInstance().invalidate();
@@ -652,6 +655,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
     assert.exists(result!.dotnetPath);
     assert.isTrue(fs.existsSync(result!.dotnetPath!));
     rimraf.sync(result!.dotnetPath!);
+    await promisify(rimraf)(result!.dotnetPath!);
   }
 
   test('Install Runtime Status Command', async () =>

@@ -27,4 +27,8 @@ export abstract class IFileUtilities
     public abstract exists(filePath: string): Promise<boolean>;
 
     public abstract read(filePath: string): Promise<string>;
+
+    // return the realpath if possible and valid, else null
+    public abstract realpath(filePath: string): Promise<string | null>;
+
 };
