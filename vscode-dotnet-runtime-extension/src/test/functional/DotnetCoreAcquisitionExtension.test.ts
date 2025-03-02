@@ -12,39 +12,36 @@ import { promisify } from 'util';
 import * as vscode from 'vscode';
 import
 {
+  DotnetInstallMode,
+  DotnetInstallType,
+  DotnetVersionSpecRequirement,
+  EnvironmentVariableIsDefined,
   FileUtilities,
   IDotnetAcquireContext,
   IDotnetAcquireResult,
-  IExistingPaths,
+  IDotnetFindPathContext,
   IDotnetListVersionsContext,
   IDotnetListVersionsResult,
-  getInstallIdCustomArchitecture,
+  IExistingPaths,
   ITelemetryEvent,
+  LinuxVersionResolver,
+  LocalMemoryCacheSingleton,
+  MockEnvironmentVariableCollection,
+  MockEventStream,
   MockExtensionConfiguration,
   MockExtensionContext,
   MockTelemetryReporter,
   MockWebRequestWorker,
   MockWindowDisplayWorker,
-  getMockAcquisitionContext,
-  DotnetInstallMode,
-  DotnetInstallType,
-  MockEventStream,
-  IDotnetFindPathContext,
   getDotnetExecutable,
-  DotnetVersionSpecRequirement,
-  EnvironmentVariableIsDefined,
-  MockEnvironmentVariableCollection,
-  getPathSeparator,
-  LinuxVersionResolver,
-  getMockUtilityContext,
-  DotnetPathFinder,
-  DotnetConditionValidator,
-  LocalMemoryCacheSingleton,
+  getInstallIdCustomArchitecture,
+  getMockAcquisitionContext,
   getMockAcquisitionWorkerContext,
+  getMockUtilityContext,
+  getPathSeparator
 } from 'vscode-dotnet-runtime-library';
-import * as extension from '../../extension';
-import { warn } from 'console';
 import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
+import * as extension from '../../extension';
 
 const assert: any = chai.assert;
 const standardTimeoutTime = 40000;
@@ -121,9 +118,9 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
     await vscode.commands.executeCommand<string>('dotnet.uninstallAll');
     mockState.clear();
     MockTelemetryReporter.telemetryEvents = [];
-    await promisify(rimraf)(storagePath);
+    new FileUtilities().wipeDirectory(storagePath);
     InstallTrackerSingleton.getInstance(new MockEventStream(), new MockExtensionContext()).clearPromises();
-    // Dont want cached results from prior tests to interfere
+    // Do not want cached results from prior tests to interfere
     LocalMemoryCacheSingleton.getInstance().invalidate();
   }).timeout(standardTimeoutTime);
 

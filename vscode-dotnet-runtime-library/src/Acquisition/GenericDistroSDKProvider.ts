@@ -111,7 +111,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         {
             const splitLine = line.split(/\s+/);
             // list sdk lines shows in the form: version [path], so the version is the 2nd item
-            if (splitLine.length === 2 && splitLine[0] !== '')
+            if ((splitLine?.length ?? 0) === 2 && splitLine[0] !== '')
             {
                 versions.push(splitLine[0]);
             }
@@ -131,7 +131,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         {
             const splitLine = line.split(/\s+/);
             // list runtimes lines shows in the form: runtime version [path], so the version is the 3rd item
-            if (splitLine.length === 3)
+            if ((splitLine?.length ?? 0) === 3)
             {
                 versions.push(splitLine[1]);
             }
