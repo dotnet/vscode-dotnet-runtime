@@ -121,7 +121,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
     await vscode.commands.executeCommand<string>('dotnet.uninstallAll');
     mockState.clear();
     MockTelemetryReporter.telemetryEvents = [];
-    rimraf.sync(storagePath);
     await promisify(rimraf)(storagePath);
     InstallTrackerSingleton.getInstance(new MockEventStream(), new MockExtensionContext()).clearPromises();
     // Dont want cached results from prior tests to interfere
@@ -654,7 +653,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
     assert.exists(result);
     assert.exists(result!.dotnetPath);
     assert.isTrue(fs.existsSync(result!.dotnetPath!));
-    rimraf.sync(result!.dotnetPath!);
     await promisify(rimraf)(result!.dotnetPath!);
   }
 
