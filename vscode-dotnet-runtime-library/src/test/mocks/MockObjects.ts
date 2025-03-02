@@ -317,7 +317,8 @@ export class MockInstallScriptWorker extends InstallScriptAcquisitionWorker
         if (this.fallback)
         {
             return path.join(__dirname, '..');
-        } else
+        }
+        else
         {
             return super.getFallbackScriptPath();
         }
