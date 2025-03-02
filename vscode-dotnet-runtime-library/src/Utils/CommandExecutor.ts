@@ -190,7 +190,7 @@ ${stderr}`));
             {
                 this.context?.eventStream.post(new DotnetLockAcquiredEvent(`Lock Acquired.`, new Date().toISOString(), directoryLockPath, fakeLockFile));
 
-                (this.fileUtil as FileUtilities).wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt']);
+                await (this.fileUtil as FileUtilities).wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt']);
 
                 await (this.fileUtil as FileUtilities).writeFileOntoDisk('', processAliveOkSentinelFile, true, this.context?.eventStream);
                 this.context?.eventStream.post(new SudoProcAliveCheckBegin(`Looking for Sudo Process Master, wrote OK file. ${new Date().toISOString()}`));
@@ -260,7 +260,7 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallFromCon
             .then(async (release: () => any) =>
             {
                 this.context?.eventStream.post(new DotnetLockAcquiredEvent(`Lock Acquired.`, new Date().toISOString(), directoryLockPath, fakeLockFile));
-                (this.fileUtil as FileUtilities).wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt', '.json']);
+                await (this.fileUtil as FileUtilities).wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt', '.json']);
 
                 await (this.fileUtil as FileUtilities).writeFileOntoDisk(`${commandToExecuteString}`, commandFile, true, this.context?.eventStream);
                 this.context?.eventStream.post(new SudoProcCommandExchangeBegin(`Handing command off to master process. ${new Date().toISOString()}`));
@@ -285,7 +285,7 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallFromCon
                     status: (fs.readFileSync(statusFile, 'utf8')).trim()
                 } as CommandExecutorResult;
                 this.context?.eventStream.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), directoryLockPath, fakeLockFile));
-                (this.fileUtil as FileUtilities).wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt']);
+                await (this.fileUtil as FileUtilities).wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt']);
 
                 return release();
             });

@@ -170,7 +170,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         {
             if (this.cleanupInstallFiles)
             {
-                this.file.wipeDirectory(path.dirname(installerFile), this.acquisitionContext.eventStream);
+                await this.file.wipeDirectory(path.dirname(installerFile), this.acquisitionContext.eventStream);
             }
             return '0'; // These statuses are a success, we don't want to throw.
         }
@@ -235,7 +235,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
     private async downloadInstaller(installerUrl: string): Promise<string>
     {
         const ourInstallerDownloadFolder = IGlobalInstaller.getDownloadedInstallFilesFolder(installerUrl);
-        this.file.wipeDirectory(ourInstallerDownloadFolder, this.acquisitionContext.eventStream);
+        await this.file.wipeDirectory(ourInstallerDownloadFolder, this.acquisitionContext.eventStream);
         const installerPath = path.join(ourInstallerDownloadFolder, `${installerUrl.split('/').slice(-1)}`);
 
         const installerDir = path.dirname(installerPath);
