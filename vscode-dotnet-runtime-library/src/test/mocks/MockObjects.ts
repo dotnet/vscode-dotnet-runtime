@@ -455,7 +455,7 @@ export class MockFileUtilities extends IFileUtilities
 
     public async exists(filePath: string)
     {
-        return this.filePathsAndExistValues[filePath] || false;
+        return this.filePathsAndExistValues[filePath] || new FileUtilities().exists(filePath);
     }
 
     public async read(filePath: string): Promise<string>
