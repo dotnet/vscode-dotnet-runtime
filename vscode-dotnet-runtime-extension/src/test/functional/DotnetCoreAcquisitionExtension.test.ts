@@ -560,7 +560,16 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
 
     test('Install Local Runtime Command With Path Settings', async () =>
     {
-        assert.isEmpty(fs.existsSync(path.dirname(pathWithIncorrectVersionForTest)) ? fs.readdirSync(path.dirname(pathWithIncorrectVersionForTest)) : [], 'Test setup: the fake dotnet path setting is an empty dir -- if it is not empty, test cleanup must not work properly.');
+        let clearedFolder = false;
+        if (fs.existsSync(path.dirname(pathWithIncorrectVersionForTest)))
+        {
+            // Delete the test folder so it doesn't exist from any old test run
+            fs.rmSync(path.dirname(pathWithIncorrectVersionForTest), { recursive: true, force: true });
+            clearedFolder = true;
+        }
+        assert.isEmpty(fs.existsSync(path.dirname(pathWithIncorrectVersionForTest)) ? fs.readdirSync(path.dirname(pathWithIncorrectVersionForTest)) : [], `Test setup: cleared folder ${clearedFolder}?
+the fake dotnet path setting is an empty dir -- if it is not empty, test cleanup must not work properly.`);
+
         // acquire with the alternative extension id which has a path setting set to the fake path
         // If the setting is bad then it should also acquire somewhere else.
         const context: IDotnetAcquireContext = { version: '5.0', requestingExtensionId: 'alternative.extension', architecture: os.platform() };
@@ -601,9 +610,6 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
         // check that find path does not use the setting even if its set because it should not use the wrong thing that does not meet the condition
         const findSDKPath = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath', { acquireContext: Object.assign({}, context, { mode: 'sdk' }), versionSpecRequirement: 'equal' });
         assert.equal(findSDKPath?.dotnetPath ?? undefined, undefined, 'findPath does not find path setting for the SDK');
-
-        // Delete the test folder so it doesn't exist next time
-        fs.rmSync(path.dirname(pathWithIncorrectVersionForTest), { recursive: true, force: true });
     }).timeout(standardTimeoutTime);
 
     test('List Sdks & Runtimes', async () =>
