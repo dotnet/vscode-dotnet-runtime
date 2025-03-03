@@ -616,7 +616,7 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
     {
         const mockAcquisitionContext = getMockAcquisitionContext('sdk', '');
         const webWorker = new MockWebRequestWorker(mockAcquisitionContext, '');
-        webWorker.response = (mockReleasesData);
+        webWorker.response = JSON.parse(mockReleasesData);
 
         // The API can find the available SDKs and list their versions.
         const apiContext: IDotnetListVersionsContext = { listRuntimes: false };
