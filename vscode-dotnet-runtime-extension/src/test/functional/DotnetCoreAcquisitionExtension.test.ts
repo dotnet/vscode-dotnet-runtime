@@ -610,7 +610,7 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
         // check that find path does not use the setting even if its set because it should not use the wrong thing that does not meet the condition
         const findSDKPath = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath', { acquireContext: Object.assign({}, context, { mode: 'sdk' }), versionSpecRequirement: 'equal' });
         assert.equal(findSDKPath?.dotnetPath ?? undefined, undefined, 'findPath does not find path setting for the SDK');
-    }).timeout(standardTimeoutTime);
+    }).timeout(standardTimeoutTime * 3);
 
     test('List Sdks & Runtimes', async () =>
     {

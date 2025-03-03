@@ -734,7 +734,8 @@ ${JSON.stringify(commandContext)}`));
                 installType: typeOfInstall,
                 version: 'notAnAcquisitionRequest',
                 errorConfiguration: errorsConfiguration,
-                architecture: DotnetCoreAcquisitionWorker.defaultArchitecture()
+                architecture: DotnetCoreAcquisitionWorker.defaultArchitecture(),
+                mode: mode
             } as IDotnetAcquireContext
         )
     }
