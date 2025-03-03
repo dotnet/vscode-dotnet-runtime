@@ -112,6 +112,10 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
 
         const sdkInfo = await (this.executor!).execute(findSDKsCommand, { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false).then((result) =>
         {
+            if (result.status !== '0')
+            {
+                return [];
+            }
             const sdks = result.stdout.split('\n').map((line) => line.trim()).filter((line) => (line?.length ?? 0) > 0);
             const sdkInfos: IDotnetListInfo[] = sdks.map((sdk) =>
             {
@@ -264,6 +268,10 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
 
         const runtimeInfo = await (this.executor!).execute(findRuntimesCommand, { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false).then((result) =>
         {
+            if (result.status !== '0')
+            {
+                return [];
+            }
             const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => (line?.length ?? 0) > 0);
             const runtimeInfos: IDotnetListInfo[] = runtimes.map((runtime) =>
             {

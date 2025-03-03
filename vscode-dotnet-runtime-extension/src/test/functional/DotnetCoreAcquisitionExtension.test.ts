@@ -558,34 +558,45 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
     assert.include(mockDisplayWorker.warningMessage, 'Ignoring existing .NET paths');
   }).timeout(standardTimeoutTime);
 
-  test('Install Local Runtime Command With Path Setting', async () =>
+  test('Install Local Runtime Command With Path Settings', async () =>
   {
+    // acquire with the alternative extension id which has a path setting set to the fake path
+    // If the seting is bad then it should also acquire somewhere else.
     const context: IDotnetAcquireContext = { version: '5.0', requestingExtensionId: 'alternative.extension', architecture: os.platform() };
+
     const resultForAcquiringPathSettingRuntime = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
     assert.exists(resultForAcquiringPathSettingRuntime!.dotnetPath, 'Basic acquire works');
 
     // The runtime setting on the path needs to be a match for a runtime but also a different folder name
     // so that we can tell the setting was used. We cant tell it to install an older  besides latest,
     // but we can rename the folder then re-acquire for latest and see that it uses the existing 'older' runtime path
-    assert.notEqual(path.dirname(resultForAcquiringPathSettingRuntime.dotnetPath), path.dirname(pathWithIncorrectVersionForTest), 'Test setup: path setting is different from the real path');
+    assert.notEqual(path.dirname(resultForAcquiringPathSettingRuntime.dotnetPath), path.dirname(pathWithIncorrectVersionForTest), `Test setup: path setting is different from the path acquire chose when the setting is enabled but nothing exists there.
+File system at ${pathWithIncorrectVersionForTest}: ${fs.readdirSync(path.dirname(pathWithIncorrectVersionForTest))}.
+Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} while the fake setting is ${pathWithIncorrectVersionForTest}`);
+
+    // Copy the real install to the fake install directory with a differnt version
     fs.cpSync(path.dirname(resultForAcquiringPathSettingRuntime.dotnetPath), path.dirname(pathWithIncorrectVersionForTest), { recursive: true });
     assert.isTrue(fs.existsSync(path.dirname(pathWithIncorrectVersionForTest)), 'The copy of the real dotnet to the new wrong-versioned path succeeded');
 
+    // Delete the actual install that was done so it looks like it was correctly installed to the fake location
     fs.rmSync(resultForAcquiringPathSettingRuntime.dotnetPath);
     assert.isTrue(!fs.existsSync(resultForAcquiringPathSettingRuntime.dotnetPath), 'The deletion of the real path succeeded');
     assert.isTrue(fs.existsSync(path.dirname(pathWithIncorrectVersionForTest)), 'The copy of the real dotnet to the new wrong-versioned path was not deleted');
 
+    // Call Acquire on the alternative extension to cause it to return the path setting
     LocalMemoryCacheSingleton.getInstance().invalidate();
     const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
 
     assert.exists(result, 'returns a result with path setting');
-    assert.exists(result!.dotnetPath, 'path setting has a path');
+    assert.exists(result!.dotnetPath, 'path setting has a path in its object');
     assert.equal(result!.dotnetPath, pathWithIncorrectVersionForTest, 'path setting is used'); // this is set for the alternative.extension in the settings
 
+    // check that find path uses the setting
     LocalMemoryCacheSingleton.getInstance().invalidate();
     const findPath = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath', { acquireContext: Object.assign({}, context, { mode: 'runtime' }), versionSpecRequirement: 'equal' });
     assert.equal(findPath!.dotnetPath, pathWithIncorrectVersionForTest, 'findPath uses vscode setting for runtime'); // this is set for the alternative.extension in the settings
 
+    // check that find path does not use the setting even if its set because it shouldnt use the wrong thing that does not meet the condition
     const findSDKPath = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath', { acquireContext: Object.assign({}, context, { mode: 'sdk' }), versionSpecRequirement: 'equal' });
     assert.equal(findSDKPath?.dotnetPath ?? undefined, undefined, 'findPath does not find path setting for the SDK');
   }).timeout(standardTimeoutTime);
