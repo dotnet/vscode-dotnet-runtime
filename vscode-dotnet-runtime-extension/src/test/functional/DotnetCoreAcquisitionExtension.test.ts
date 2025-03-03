@@ -571,7 +571,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
     // so that we can tell the setting was used. We cant tell it to install an older  besides latest,
     // but we can rename the folder then re-acquire for latest and see that it uses the existing 'older' runtime path
     assert.notEqual(path.dirname(resultForAcquiringPathSettingRuntime.dotnetPath), path.dirname(pathWithIncorrectVersionForTest), `Test setup: path setting is different from the path acquire chose when the setting is enabled but nothing exists there.
-File system at ${pathWithIncorrectVersionForTest}: ${fs.readdirSync(path.dirname(pathWithIncorrectVersionForTest))}.
+File system at ${pathWithIncorrectVersionForTest}: ${fs.existsSync(path.dirname(pathWithIncorrectVersionForTest)) ?
+        fs.readdirSync(path.dirname(pathWithIncorrectVersionForTest)) : 'empty'}.
 Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} while the fake setting is ${pathWithIncorrectVersionForTest}`);
 
     // Copy the real install to the fake install directory with a differnt version
