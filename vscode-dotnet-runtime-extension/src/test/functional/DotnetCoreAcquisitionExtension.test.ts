@@ -119,14 +119,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
         mockState.clear();
         MockTelemetryReporter.telemetryEvents = [];
         await new FileUtilities().wipeDirectory(storagePath);
-        try
-        {
-            fs.rmdirSync(path.dirname(pathWithIncorrectVersionForTest));
-        }
-        catch (error)
-        {
-            // ignore as the directory may not exist
-        }
         InstallTrackerSingleton.getInstance(new MockEventStream(), new MockExtensionContext()).clearPromises();
         // Do not want cached results from prior tests to interfere
         LocalMemoryCacheSingleton.getInstance().invalidate();
@@ -568,6 +560,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
 
     test('Install Local Runtime Command With Path Settings', async () =>
     {
+        assert.isEmpty(fs.existsSync(path.dirname(pathWithIncorrectVersionForTest)) ? fs.readdirSync(path.dirname(pathWithIncorrectVersionForTest)) : [], 'Test setup: the fake dotnet path setting is an empty dir -- if it is not empty, test cleanup must not work properly.');
         // acquire with the alternative extension id which has a path setting set to the fake path
         // If the setting is bad then it should also acquire somewhere else.
         const context: IDotnetAcquireContext = { version: '5.0', requestingExtensionId: 'alternative.extension', architecture: os.platform() };
@@ -588,8 +581,8 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
         assert.isTrue(fs.existsSync(path.dirname(pathWithIncorrectVersionForTest)), 'The copy of the real dotnet to the new wrong-versioned path succeeded');
 
         // Delete the actual install that was done so it looks like it was correctly installed to the fake location
-        fs.rmSync(resultForAcquiringPathSettingRuntime.dotnetPath);
-        assert.isTrue(!fs.existsSync(resultForAcquiringPathSettingRuntime.dotnetPath), 'The deletion of the real path succeeded');
+        fs.rmSync(resultForAcquiringPathSettingRuntime.dotnetPath, { recursive: true, force: true });
+        assert.isTrue(!fs.existsSync(resultForAcquiringPathSettingRuntime.dotnetPath), 'The deletion of the acquired install path succeeded');
         assert.isTrue(fs.existsSync(path.dirname(pathWithIncorrectVersionForTest)), 'The copy of the real dotnet to the new wrong-versioned path was not deleted');
 
         // Call Acquire on the alternative extension to cause it to return the path setting
@@ -605,9 +598,12 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
         const findPath = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath', { acquireContext: Object.assign({}, context, { mode: 'runtime' }), versionSpecRequirement: 'equal' });
         assert.equal(findPath!.dotnetPath, pathWithIncorrectVersionForTest, 'findPath uses vscode setting for runtime'); // this is set for the alternative.extension in the settings
 
-        // check that find path does not use the setting even if its set because it shouldnt use the wrong thing that does not meet the condition
+        // check that find path does not use the setting even if its set because it should not use the wrong thing that does not meet the condition
         const findSDKPath = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath', { acquireContext: Object.assign({}, context, { mode: 'sdk' }), versionSpecRequirement: 'equal' });
         assert.equal(findSDKPath?.dotnetPath ?? undefined, undefined, 'findPath does not find path setting for the SDK');
+
+        // Delete the test folder so it doesn't exist next time
+        fs.rmSync(path.dirname(pathWithIncorrectVersionForTest), { recursive: true, force: true });
     }).timeout(standardTimeoutTime);
 
     test('List Sdks & Runtimes', async () =>
