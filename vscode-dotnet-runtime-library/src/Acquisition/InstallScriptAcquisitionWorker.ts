@@ -2,31 +2,33 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
-import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import {
+import
+{
     DotnetFallbackInstallScriptUsed,
     DotnetInstallScriptAcquisitionCompleted,
     DotnetInstallScriptAcquisitionError,
     EventBasedError,
 } from '../EventStream/EventStreamEvents';
-import { WebRequestWorker } from '../Utils/WebRequestWorker';
 import { Debugging } from '../Utils/Debugging';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
+import { WebRequestWorker } from '../Utils/WebRequestWorker';
 
-import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
 
-export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisitionWorker {
+export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisitionWorker
+{
     protected webWorker: WebRequestWorker;
     private readonly scriptAcquisitionUrl: string = 'https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.';
     protected readonly scriptFilePath: string;
     private readonly fileUtilities: FileUtilities;
 
 
-    constructor(private readonly context : IAcquisitionWorkerContext) {
+    constructor(private readonly context: IAcquisitionWorkerContext)
+    {
         const scriptFileEnding = os.platform() === 'win32' ? 'ps1' : 'sh';
         const scriptFileName = 'dotnet-install';
         this.scriptFilePath = path.join(__dirname, 'install scripts', `${scriptFileName}.${scriptFileEnding}`);
@@ -34,12 +36,14 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
         this.fileUtilities = new FileUtilities();
     }
 
-    public async getDotnetInstallScriptPath(): Promise<string> {
+    public async getDotnetInstallScriptPath(): Promise<string>
+    {
         try
         {
             Debugging.log('getDotnetInstallScriptPath() invoked.');
             const script = await this.webWorker.getCachedData();
-            if (!script) {
+            if (!script)
+            {
                 Debugging.log('The request to acquire the script failed.');
                 throw new EventBasedError('NoInstallScriptPathExists', 'Unable to get script path.');
             }
@@ -48,14 +52,15 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
             this.context.eventStream.post(new DotnetInstallScriptAcquisitionCompleted());
             return this.scriptFilePath;
         }
-        catch (error : any)
+        catch (error: any)
         {
             Debugging.log('An error occurred processing the install script.');
             this.context.eventStream.post(new DotnetInstallScriptAcquisitionError(error as Error, getInstallFromContext(this.context)));
 
             // Try to use fallback install script
             const fallbackPath = this.getFallbackScriptPath();
-            if (fs.existsSync(fallbackPath)) {
+            if ((await this.fileUtilities.exists(fallbackPath)))
+            {
                 Debugging.log('Returning the fallback script path.');
                 this.context.eventStream.post(new DotnetFallbackInstallScriptUsed());
                 return fallbackPath;
@@ -65,7 +70,8 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
         }
     }
 
-    protected getFallbackScriptPath(): string {
+    protected getFallbackScriptPath(): string
+    {
         return this.scriptFilePath;
     }
 }

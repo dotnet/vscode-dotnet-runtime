@@ -3,10 +3,8 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
-import * as fs from 'fs';
 import path = require('path');
 
-import * as versionUtils from './VersionUtilities';
 import
 {
     DotnetAcquisitionDistroUnknownError,
@@ -17,20 +15,21 @@ import
     EventBasedError,
     EventCancellationError
 } from '../EventStream/EventStreamEvents';
-import { GenericDistroSDKProvider } from './GenericDistroSDKProvider'
-import { VersionResolver } from './VersionResolver';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+import { GenericDistroSDKProvider } from './GenericDistroSDKProvider';
 import { RedHatDistroSDKProvider } from './RedHatDistroSDKProvider';
+import { VersionResolver } from './VersionResolver';
+import * as versionUtils from './VersionUtilities';
 
+import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
+import { FileUtilities } from '../Utils/FileUtilities';
+import { ICommandExecutor } from '../Utils/ICommandExecutor';
+import { getInstallFromContext } from '../Utils/InstallIdUtilities';
+import { IUtilityContext } from '../Utils/IUtilityContext';
+import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
+import { DotnetInstallMode } from './DotnetInstallMode';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
-import { ICommandExecutor } from '../Utils/ICommandExecutor';
-import { IUtilityContext } from '../Utils/IUtilityContext';
-import { IDotnetAcquireContext } from '../IDotnetAcquireContext'
-import { getInstallFromContext } from '../Utils/InstallIdUtilities';
-import { DotnetInstallMode } from './DotnetInstallMode';
-import { version } from 'os';
-import { READ_SYMLINK_CACHE_DURATION_MS, SYSTEM_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
 
 /**
  * An enumeration type representing all distros with their versions that we recognize.
@@ -238,7 +237,7 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
         if (supportStatus === DotnetDistroSupportStatus.Distro)
         {
             const microsoftFeedDir = this.distroSDKProvider!.getExpectedDotnetMicrosoftFeedInstallationDirectory();
-            if (fs.existsSync(microsoftFeedDir))
+            if (await new FileUtilities().exists(microsoftFeedDir))
             {
                 const err = new DotnetConflictingLinuxInstallTypesError(new EventCancellationError('DotnetConflictingLinuxInstallTypesError',
                     this.conflictingInstallErrorMessage + microsoftFeedDir),
@@ -250,7 +249,7 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
         else if (supportStatus === DotnetDistroSupportStatus.Microsoft)
         {
             const distroFeedDir = this.distroSDKProvider!.getExpectedDotnetDistroFeedInstallationDirectory();
-            if (fs.existsSync(distroFeedDir))
+            if (await new FileUtilities().exists(distroFeedDir))
             {
                 const err = new DotnetConflictingLinuxInstallTypesError(new EventCancellationError('DotnetConflictingLinuxInstallTypesError',
                     this.conflictingInstallErrorMessage + distroFeedDir),

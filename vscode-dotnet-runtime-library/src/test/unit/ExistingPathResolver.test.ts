@@ -4,16 +4,15 @@
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
 import * as os from 'os';
-import { MockCommandExecutor, MockExtensionConfiguration, MockExtensionContext } from '../mocks/MockObjects';
-import { IExistingPaths } from '../../IExtensionContext';
-import { ExistingPathResolver } from '../../Acquisition/ExistingPathResolver';
-import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
-import { MockExtensionConfigurationWorker } from '../mocks/MockExtensionConfigurationWorker';
-import { IDotnetAcquireContext } from '../../IDotnetAcquireContext';
-import { getMockAcquisitionContext, getMockAcquisitionWorkerContext, getMockUtilityContext } from './TestUtility';
-import { CommandExecutorResult } from '../../Utils/CommandExecutorResult';
 import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
-import { mock } from 'node:test';
+import { ExistingPathResolver } from '../../Acquisition/ExistingPathResolver';
+import { IDotnetAcquireContext } from '../../IDotnetAcquireContext';
+import { IExistingPaths } from '../../IExtensionContext';
+import { CommandExecutorResult } from '../../Utils/CommandExecutorResult';
+import { MockExtensionConfigurationWorker } from '../mocks/MockExtensionConfigurationWorker';
+import { MockCommandExecutor, MockExtensionConfiguration, MockExtensionContext } from '../mocks/MockObjects';
+import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
+import { getMockAcquisitionContext, getMockAcquisitionWorkerContext, getMockUtilityContext } from './TestUtility';
 const assert = chai.assert;
 
 const individualPath = 'foo';
@@ -33,18 +32,18 @@ const listRuntimesResultWithEightOnly = `
 Microsoft.NETCore.App 8.0.7 [C:\\Program Files\\dotnet\\shared\\Microsoft.AspNetCore.App]
 
 `;
-const executionResultWithEightOnly = { status: '', stdout: listRuntimesResultWithEightOnly, stderr: '' };
+const executionResultWithEightOnly = { status: '0', stdout: listRuntimesResultWithEightOnly, stderr: '' };
 
 const listRuntimesResultWithEightASPOnly = `
 Microsoft.AspNetCore.App 8.0.7 [C:\\Program Files\\dotnet\\shared\\Microsoft.AspNetCore.App]
 
 `;
-const executionResultWithEightAspOnly = { status: '', stdout: listRuntimesResultWithEightASPOnly, stderr: '' };
+const executionResultWithEightAspOnly = { status: '0', stdout: listRuntimesResultWithEightASPOnly, stderr: '' };
 
 const listSDKsResultWithEightOnly = `
 8.0.101 [C:\\Program Files\\dotnet\\sdk]
 `
-const executionResultWithListSDKsResultWithEightOnly = { status: '', stdout: listSDKsResultWithEightOnly, stderr: '' };
+const executionResultWithListSDKsResultWithEightOnly = { status: '0', stdout: listSDKsResultWithEightOnly, stderr: '' };
 
 function getExistingPathResolverWithVersionAndCommandResult(version: string, requestingExtensionId: string | undefined, commandResult: CommandExecutorResult, allowInvalidPaths = false, mode: DotnetInstallMode | undefined = undefined): ExistingPathResolver
 {
