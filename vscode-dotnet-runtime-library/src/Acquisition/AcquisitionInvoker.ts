@@ -249,9 +249,8 @@ At dotnet-install.ps1:1189 char:5
             ];
         const possiblePowershellPaths =
             [ // use shell as powershell and see if it passes or not. This is faster than doing it with the default shell, as that spawns a cmd to spawn a pwsh
-                { shell: `%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe` },
-                { shell: `pwsh.exe` },
                 { shell: `powershell.exe` },
+                { shell: `%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe` },
                 { shell: `pwsh` },
                 { shell: `powershell` }
             ]
