@@ -136,7 +136,7 @@ export class DotnetPathFinder implements IDotnetPathFinder
 
             if (!(options.shell === '/bin/bash'))
             {
-                const bashPath = await this.executor?.execute(CommandExecutor.makeCommand('env', []), { shell: 'bin/bash', dotnetInstallToolCacheTtlMs: SYS_CMD_SEARCH_CACHE_DURATION_MS, shell: '/bin/bash' }, false);
+                const bashPath = await this.executor?.execute(CommandExecutor.makeCommand('env', []), { shell: 'bin/bash', dotnetInstallToolCacheTtlMs: SYS_CMD_SEARCH_CACHE_DURATION_MS }, false);
                 this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Execution Path (Unix Bash): ${bashPath?.stdout}`));
             }
         }
