@@ -110,6 +110,8 @@ export class DotnetPathFinder implements IDotnetPathFinder
         const searchEnvironment = process.env; // this is the default, but sometimes it does not get picked up
         const options = tryUseTrueShell && os.platform() !== 'win32' ?
             {
+                // Use /bin/bash as the default shell, but if it's not available try to use /bin/sh
+                // Users may see different behavior due to this if they have a custom shell such as zsh but those shells may have unexpected behaviors.
                 env: searchEnvironment, shell: process.env.SHELL === '/bin/bash' ? '/bin/bash' : '/bin/sh', dotnetInstallToolCacheTtlMs: SYS_CMD_SEARCH_CACHE_DURATION_MS
             }
             :
@@ -123,16 +125,20 @@ export class DotnetPathFinder implements IDotnetPathFinder
         {
             const winPath = await this.executor?.execute(CommandExecutor.makeCommand('echo', ['%PATH%']), { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS },
                 false);
-            this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Execution Path: ${winPath?.stdout}`));
+            this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Execution Path (Win): ${winPath?.stdout}`));
         }
         else
         {
             const unixPath = await this.executor?.execute(CommandExecutor.makeCommand('env', []), { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS },
                 false);
-            this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Execution Path: ${unixPath?.stdout}`));
+            // Log the default shell state
+            this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Execution Path (Unix-Default-Shell): ${unixPath?.stdout}`));
 
-            const bashPath = await this.executor?.execute(CommandExecutor.makeCommand('env', ['bash']), { dotnetInstallToolCacheTtlMs: SYS_CMD_SEARCH_CACHE_DURATION_MS, shell: '/bin/bash' }, false);
-            this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Bin Bash Path: ${bashPath?.stdout}`));
+            if (!(options.shell === '/bin/bash'))
+            {
+                const bashPath = await this.executor?.execute(CommandExecutor.makeCommand('env', []), { shell: 'bin/bash', dotnetInstallToolCacheTtlMs: SYS_CMD_SEARCH_CACHE_DURATION_MS, shell: '/bin/bash' }, false);
+                this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Execution Path (Unix Bash): ${bashPath?.stdout}`));
+            }
         }
 
         let pathLocatorCommand = '';
@@ -273,8 +279,8 @@ export class DotnetPathFinder implements IDotnetPathFinder
             // https://github.com/dotnet/designs/blob/main/accepted/2021/install-location-per-architecture.md#new-format
 
             const paths: string[] = [];
-            const netSixAndAboveHostInstallSaveLocation = `/ etc / dotnet / install_location_${requestedArchitecture}`;
-            const netFiveAndNetSixAboveFallBackInstallSaveLocation = `/ etc / dotnet / install_location`;
+            const netSixAndAboveHostInstallSaveLocation = `/etc/dotnet/install_location_${requestedArchitecture}`;
+            const netFiveAndNetSixAboveFallBackInstallSaveLocation = `/etc/dotnet/install_location`;
 
             paths.push(...(await this.getPathsFromEtc(netSixAndAboveHostInstallSaveLocation)));
             paths.push(...(await this.getPathsFromEtc(netFiveAndNetSixAboveFallBackInstallSaveLocation)));
