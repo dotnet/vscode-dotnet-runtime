@@ -242,7 +242,8 @@ export class DotnetPathFinder implements IDotnetPathFinder
 
     public async findHostInstallPaths(requestedArchitecture: string): Promise<string[] | undefined>
     {
-        this.workerContext.eventStream.post(new DotnetFindPathHostFxrResolutionLookup(`Looking up.NET without checking the PATH.`));
+        this.workerContext.eventStream.post(new DotnetFindPathHostFxrResolutionLookup(`Looking up .NET without checking the PATH.`));
+
 
         const oldLookup = process.env.DOTNET_MULTILEVEL_LOOKUP;
         process.env.DOTNET_MULTILEVEL_LOOKUP = '0';
