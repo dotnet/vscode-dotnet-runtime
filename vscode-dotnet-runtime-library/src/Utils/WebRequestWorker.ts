@@ -43,6 +43,7 @@ import
     WebRequestTime,
     WebRequestTimeUnknown
 } from '../EventStream/EventStreamEvents';
+import { FileUtilities } from './FileUtilities';
 import { getInstallFromContext } from './InstallIdUtilities';
 
 export class WebRequestWorker
@@ -269,7 +270,7 @@ export class WebRequestWorker
      */
     public async downloadFile(url: string, dest: string)
     {
-        if (fs.existsSync(dest))
+        if (await new FileUtilities().exists(dest))
         {
             return;
         }

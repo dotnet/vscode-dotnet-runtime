@@ -49,8 +49,7 @@
             {
                 "command": "dotnet.acquireGlobalSDKPublic",
                 "title": "Install the .NET SDK System-Wide.",
-                "category": ".NET Install Tool",
-                "enablement": "!dotnetAcquisitionExtension.isGlobalSDKUnsupported"
+                "category": ".NET Install Tool"
             },
             {
                 "command": "dotnet.uninstallPublic",
