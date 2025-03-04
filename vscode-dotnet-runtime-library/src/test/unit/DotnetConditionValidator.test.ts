@@ -29,11 +29,11 @@ const listSDKsResultWithEightFull = `
 ${listSDKsResultWithEightPreviewOnly}
 8.0.101 [C:\\Program Files\\dotnet\\sdk]
 `
-const executionResultWithListRuntimesResultWithPreviewOnly = { status: '', stdout: listRuntimesResultWithEightPreviewOnly, stderr: '' };
-const executionResultWithListRuntimesResultWithFullOnly = { status: '', stdout: listRuntimesResultWithEightFull, stderr: '' };
+const executionResultWithListRuntimesResultWithPreviewOnly = { status: '0', stdout: listRuntimesResultWithEightPreviewOnly, stderr: '' };
+const executionResultWithListRuntimesResultWithFullOnly = { status: '0', stdout: listRuntimesResultWithEightFull, stderr: '' };
 
-const executionResultWithListSDKsResultWithPreviewOnly = { status: '', stdout: listSDKsResultWithEightPreviewOnly, stderr: '' };
-const executionResultWithListSDKsResultFullSDK = { status: '', stdout: listSDKsResultWithEightFull, stderr: '' };
+const executionResultWithListSDKsResultWithPreviewOnly = { status: '0', stdout: listSDKsResultWithEightPreviewOnly, stderr: '' };
+const executionResultWithListSDKsResultFullSDK = { status: '0', stdout: listSDKsResultWithEightFull, stderr: '' };
 
 suite('DotnetConditionValidator Unit Tests', () =>
 {

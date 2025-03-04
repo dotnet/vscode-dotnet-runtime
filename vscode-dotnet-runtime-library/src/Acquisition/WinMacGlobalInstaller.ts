@@ -7,12 +7,6 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
-import * as versionUtils from './VersionUtilities'
-import { FileUtilities } from '../Utils/FileUtilities';
-import { VersionResolver } from './VersionResolver';
-import { WebRequestWorker } from '../Utils/WebRequestWorker';
-import { getInstallFromContext } from '../Utils/InstallIdUtilities';
-import { CommandExecutor } from '../Utils/CommandExecutor';
 import
 {
     DotnetAcquisitionAlreadyInstalled,
@@ -29,19 +23,24 @@ import
     OSXOpenNotAvailableError,
     SuppressedAcquisitionError,
 } from '../EventStream/EventStreamEvents';
+import { CommandExecutor } from '../Utils/CommandExecutor';
+import { FileUtilities } from '../Utils/FileUtilities';
+import { getInstallFromContext } from '../Utils/InstallIdUtilities';
+import { WebRequestWorker } from '../Utils/WebRequestWorker';
+import { VersionResolver } from './VersionResolver';
+import * as versionUtils from './VersionUtilities';
 
-import { IGlobalInstaller } from './IGlobalInstaller';
+import { CommandExecutorResult } from '../Utils/CommandExecutorResult';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IFileUtilities } from '../Utils/IFileUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
-import { DotnetInstall } from './DotnetInstall';
-import { CommandExecutorResult } from '../Utils/CommandExecutorResult';
 import { getOSArch } from '../Utils/TypescriptUtilities';
-import { RegistryReader } from './RegistryReader';
-import { IRegistryReader } from './IRegistryReader';
-import { util } from 'chai';
 import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
+import { DotnetInstall } from './DotnetInstall';
+import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { IGlobalInstaller } from './IGlobalInstaller';
+import { IRegistryReader } from './IRegistryReader';
+import { RegistryReader } from './RegistryReader';
 
 namespace validationPromptConstants
 {
@@ -171,7 +170,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         {
             if (this.cleanupInstallFiles)
             {
-                this.file.wipeDirectory(path.dirname(installerFile), this.acquisitionContext.eventStream);
+                await this.file.wipeDirectory(path.dirname(installerFile), this.acquisitionContext.eventStream);
             }
             return '0'; // These statuses are a success, we don't want to throw.
         }
@@ -210,7 +209,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
 
             const command = `${path.resolve(installerFile)}`;
             const uninstallArgs = ['/uninstall', '/passive', '/norestart'];
-            const commandResult = await this.commandRunner.execute(CommandExecutor.makeCommand(command, uninstallArgs), { timeout: this.acquisitionContext.timeoutSeconds * 1000 });
+            const commandResult = await this.commandRunner.execute(CommandExecutor.makeCommand(command, uninstallArgs), { timeout: this.acquisitionContext.timeoutSeconds * 1000 }, false);
             this.handleTimeout(commandResult);
 
             return commandResult.status;
@@ -221,7 +220,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             const command = CommandExecutor.makeCommand(`rm`, [`-rf`, `${path.join(path.dirname(macPath), 'sdk', install.version)}`, `&&`,
                 `rm`, `-rf`, `${path.join(path.dirname(macPath), 'sdk-manifests', install.version)}`], true);
 
-            const commandResult = await this.commandRunner.execute(command, { timeout: this.acquisitionContext.timeoutSeconds * 1000 });
+            const commandResult = await this.commandRunner.execute(command, { timeout: this.acquisitionContext.timeoutSeconds * 1000 }, false);
             this.handleTimeout(commandResult);
 
             return commandResult.status;
@@ -236,13 +235,13 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
     private async downloadInstaller(installerUrl: string): Promise<string>
     {
         const ourInstallerDownloadFolder = IGlobalInstaller.getDownloadedInstallFilesFolder(installerUrl);
-        this.file.wipeDirectory(ourInstallerDownloadFolder, this.acquisitionContext.eventStream);
+        await this.file.wipeDirectory(ourInstallerDownloadFolder, this.acquisitionContext.eventStream);
         const installerPath = path.join(ourInstallerDownloadFolder, `${installerUrl.split('/').slice(-1)}`);
 
         const installerDir = path.dirname(installerPath);
-        if (!fs.existsSync(installerDir))
+        if (!(await this.file.exists(installerDir)))
         {
-            fs.mkdirSync(installerDir, { recursive: true });
+            await fs.promises.mkdir(installerDir, { recursive: true });
         }
 
         await this.webWorker.downloadFile(installerUrl, installerPath);
@@ -381,14 +380,14 @@ If you were waiting for the install to succeed, please extend the timeout settin
         const standardHostPath = path.resolve(`/usr/local/share/dotnet/dotnet`);
         const arm64EmulationHostPath = path.resolve(`/usr/local/share/dotnet/x64/dotnet`);
 
-        if ((os.arch() === 'x64' || os.arch() === 'ia32') && (await getOSArch(this.commandRunner)).includes('arm') && (fs.existsSync(arm64EmulationHostPath) || !macPathShouldExist))
+        if ((os.arch() === 'x64' || os.arch() === 'ia32') && (await getOSArch(this.commandRunner)).includes('arm') && (await this.file.exists(arm64EmulationHostPath) || !macPathShouldExist))
         {
             // VS Code runs on an emulated version of node which will return x64 or use x86 emulation for ARM devices.
             // os.arch() returns the architecture of the node binary, not the system architecture, so it will not report arm on an arm device.
             return arm64EmulationHostPath;
         }
 
-        if (!macPathShouldExist || fs.existsSync(standardHostPath) || !fs.existsSync(arm64EmulationHostPath))
+        if (!macPathShouldExist || (await this.file.exists(standardHostPath)) || !(await this.file.exists(arm64EmulationHostPath)))
         {
             return standardHostPath;
         }
@@ -429,7 +428,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
 
             this.acquisitionContext.eventStream.post(new NetInstallerBeginExecutionEvent(`The OS X .NET Installer has been launched.`));
 
-            const commandResult = await this.commandRunner.execute(workingCommand, { timeout: this.acquisitionContext.timeoutSeconds * 1000 });
+            const commandResult = await this.commandRunner.execute(workingCommand, { timeout: this.acquisitionContext.timeoutSeconds * 1000 }, false);
 
             this.acquisitionContext.eventStream.post(new NetInstallerEndExecutionEvent(`The OS X .NET Installer has closed.`));
             this.handleTimeout(commandResult);
@@ -452,7 +451,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
             this.acquisitionContext.eventStream.post(new NetInstallerBeginExecutionEvent(`The Windows .NET Installer has been launched.`));
             try
             {
-                const commandResult = await this.commandRunner.execute(CommandExecutor.makeCommand(command, commandOptions, elevateVsCode), { timeout: this.acquisitionContext.timeoutSeconds * 1000 });
+                const commandResult = await this.commandRunner.execute(CommandExecutor.makeCommand(command, commandOptions, elevateVsCode), { timeout: this.acquisitionContext.timeoutSeconds * 1000 }, false);
                 this.handleTimeout(commandResult);
                 this.acquisitionContext.eventStream.post(new NetInstallerEndExecutionEvent(`The Windows .NET Installer has closed.`));
                 return commandResult.status;

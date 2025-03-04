@@ -32,12 +32,14 @@ import
     DotnetUninstallCompleted,
     DotnetUninstallFailed,
     DotnetUninstallStarted,
+    DotnetWSLSecurityError,
     EventBasedError,
     EventCancellationError,
     SuppressedAcquisitionError
 } from '../EventStream/EventStreamEvents';
 import * as versionUtils from './VersionUtilities';
 
+import { promisify } from 'util';
 import { IEventStream } from '../EventStream/EventStream';
 import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
@@ -45,8 +47,11 @@ import { IExtensionState } from '../IExtensionState';
 import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { Debugging } from '../Utils/Debugging';
+import { FileUtilities } from '../Utils/FileUtilities';
+import { IFileUtilities } from '../Utils/IFileUtilities';
 import { getInstallFromContext, getInstallIdCustomArchitecture } from '../Utils/InstallIdUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
+import { isRunningUnderWSL } from '../Utils/TypescriptUtilities';
 import { DOTNET_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
 import
 {
@@ -82,12 +87,15 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     // @member usingNoInstallInvoker - Only use this for test when using the No Install Invoker to fake the worker into thinking a path is on disk.
     protected usingNoInstallInvoker = false;
 
+    protected file: IFileUtilities;
+
     constructor(private readonly utilityContext: IUtilityContext, extensionContext: IVSCodeExtensionContext)
     {
         const dotnetExtension = os.platform() === 'win32' ? '.exe' : '';
         this.dotnetExecutable = `dotnet${dotnetExtension}`;
         this.globalResolver = null;
         this.extensionContext = extensionContext;
+        this.file = new FileUtilities();
     }
 
     public async uninstallAll(eventStream: IEventStream, storagePath: string, extensionState: IExtensionState): Promise<void>
@@ -95,7 +103,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         eventStream.post(new DotnetUninstallAllStarted());
         InstallTrackerSingleton.getInstance(eventStream, extensionState).clearPromises();
 
-        this.removeFolderRecursively(eventStream, storagePath);
+        await this.removeFolderRecursively(eventStream, storagePath);
 
         await InstallTrackerSingleton.getInstance(eventStream, extensionState).uninstallAllRecords();
 
@@ -163,7 +171,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
                             install.dotnetInstall.version, install.dotnetInstall.architecture) :
                     path.join(context.installDirectoryProvider.getInstallDir(install.dotnetInstall.installId), this.dotnetExecutable);
 
-                if ((fs.existsSync(dotnetExePath) || this.usingNoInstallInvoker))
+                if ((await this.file.exists(dotnetExePath) || this.usingNoInstallInvoker))
                 {
                     context.eventStream.post(new DotnetAcquisitionStatusResolved(possibleInstallWithSameMajorMinor,
                         possibleInstallWithSameMajorMinor.version));
@@ -206,13 +214,13 @@ To keep your .NET version up to date, please reconnect to the internet at your s
             context.eventStream.post(new DotnetAcquisitionStatusResolved(install, version));
             return { dotnetPath };
         }
-        else if ((installedVersions?.length ?? 0) === 0 && fs.existsSync(dotnetPath) && installMode === 'sdk')
+        else if ((installedVersions?.length ?? 0) === 0 && await this.file.exists(dotnetPath) && installMode === 'sdk')
         {
             // The education bundle already laid down a local install, add it to our managed installs
             const preinstalledVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).checkForUnrecordedLocalSDKSuccessfulInstall(
                 context, dotnetInstallDir, installedVersions);
             if (preinstalledVersions.some(x => IsEquivalentInstallationFile(x.dotnetInstall, install)) &&
-                (fs.existsSync(dotnetPath) || this.usingNoInstallInvoker))
+                (await this.file.exists(dotnetPath) || this.usingNoInstallInvoker))
             {
                 // Requested version has already been installed.
                 context.eventStream.post(new DotnetAcquisitionStatusResolved(install, version));
@@ -312,7 +320,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
 
-        if (fs.existsSync(dotnetPath) && (installedVersions?.length ?? 0) === 0)
+        if (await this.file.exists(dotnetPath) && (installedVersions?.length ?? 0) === 0)
         {
             // The education bundle already laid down a local install, add it to our managed installs
             installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream,
@@ -465,6 +473,16 @@ To keep your .NET version up to date, please reconnect to the internet at your s
 
     private async acquireGlobalCore(context: IAcquisitionWorkerContext, globalInstallerResolver: GlobalInstallerResolver, install: DotnetInstall): Promise<string>
     {
+        if (await isRunningUnderWSL(context, this.utilityContext))
+        {
+            const err = new DotnetWSLSecurityError(new EventCancellationError('DotnetWSLSecurityError',
+                `Automatic .NET SDK Installation is not yet supported in WSL due to VS Code & WSL limitations.
+            Please install the .NET SDK manually by following https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu. Then, add it to the path by following https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#manually-installing-net`,
+            ), getInstallFromContext(context));
+            context.eventStream.post(err);
+            throw err.error;
+        }
+
         const installingVersion = await globalInstallerResolver.getFullySpecifiedVersion();
         context.eventStream.post(new DotnetGlobalVersionResolutionCompletionEvent(`The version we resolved that was requested is: ${installingVersion}.`));
         this.checkForPartialInstalls(context, install).catch(() => {});
@@ -599,7 +617,7 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
             if (force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).canUninstall(true, install))
             {
                 context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install.installId}.`));
-                this.removeFolderRecursively(context.eventStream, dotnetInstallDir);
+                await this.removeFolderRecursively(context.eventStream, dotnetInstallDir);
                 context.eventStream.post(new DotnetUninstallCompleted(`Uninstalled .NET ${install.installId}.`));
                 await graveyard.remove(install);
                 context.eventStream.post(new DotnetInstallGraveyardEvent(`Success at uninstalling ${JSON.stringify(install)} in path ${dotnetInstallDir}`));
@@ -657,12 +675,12 @@ Other dependents remain.`));
         }
     }
 
-    private removeFolderRecursively(eventStream: IEventStream, folderPath: string)
+    private async removeFolderRecursively(eventStream: IEventStream, folderPath: string)
     {
         eventStream.post(new DotnetAcquisitionDeletion(folderPath));
         try
         {
-            fs.chmodSync(folderPath, 0o744);
+            await fs.promises.chmod(folderPath, 0o744);
         }
         catch (error: any)
         {
@@ -671,7 +689,7 @@ Other dependents remain.`));
 
         try
         {
-            rimraf.sync(folderPath);
+            await promisify(rimraf)(folderPath);
         }
         catch (error: any)
         {
