@@ -357,7 +357,8 @@ export class DotnetPathFinder implements IDotnetPathFinder
             }
             else
             {
-                this.workerContext.eventStream.post(new DotnetFindPathNoRuntimesOnHost(`The host: ${tentativePath} does not contain a.NET runtime installation.`));
+                this.workerContext.eventStream.post(new DotnetFindPathNoRuntimesOnHost(`The host: ${tentativePath} does not contain a .NET runtime installation.`));
+
             }
         }
 
