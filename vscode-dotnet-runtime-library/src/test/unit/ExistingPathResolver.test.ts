@@ -113,7 +113,7 @@ suite('ExistingPathResolver Unit Tests', () =>
     assert.equal(existingPath, undefined, 'It returns undefined when the setting does not match the API request');
   }).timeout(standardTimeoutTime);
 
-  test('It will still use the PATH if it has an SDK which satisfies the condition even if there is no runtime that does', async () =>
+  test('It will not use the PATH if it does not have a runtime which satisfies the condition even if there is an SDK that does', async () =>
   {
     const context: IDotnetAcquireContext = { version: '8.0', mode: 'runtime' };
     const mockWorkerContext = getMockAcquisitionWorkerContext(context);
@@ -125,11 +125,7 @@ suite('ExistingPathResolver Unit Tests', () =>
     const existingPathResolver = new ExistingPathResolver(mockWorkerContext, mockUtility, mockExecutor);
 
     const existingPath = await existingPathResolver.resolveExistingPath(extensionConfigWorker.getAllPathConfigurationValues(), undefined, new MockWindowDisplayWorker());
-    const nonTrueExistingPath = existingPathResolver.getlastSeenNonTruePathValue();
 
-    assert(existingPath, 'The existing path is returned when an SDK matches the path but no runtime is installed');
-    assert(nonTrueExistingPath, 'The existing path is using a dotnet path object');
-    assert.equal(nonTrueExistingPath, sharedPath);
-    assert.equal(existingPath?.dotnetPath, os.platform() === 'win32' ? 'C:\\Program Files\\dotnet\\dotnet.exe' : 'dotnet', 'The true path is called on the fake path to get dotnet executable');
+    assert.notExists(existingPath, 'The existing path is not returned when an SDK matches the path but no runtime is installed');
   }).timeout(standardTimeoutTime);
 });
