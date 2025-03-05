@@ -336,7 +336,7 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
     {
         return this.executeWithLock(alreadyHoldingLock, idStr, async (id: string, install: DotnetInstall) =>
         {
-            this.eventStream.post(new RemovingVersionFromExtensionState(`Adding ${JSON.stringify(install)} with id ${id} from the state.`));
+            this.eventStream.post(new AddTrackingVersions(`Adding ${JSON.stringify(install)} with id ${id} from the state.`));
 
             const existingVersions = await this.getExistingInstalls(id === this.installedVersionsId, true);
             const preExistingInstallIndex = existingVersions.findIndex(x => IsEquivalentInstallation(x.dotnetInstall, install));

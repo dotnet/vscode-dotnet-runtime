@@ -690,6 +690,7 @@ Other dependents remain.`));
         try
         {
             await promisify(rimraf)(folderPath);
+            eventStream.post(new DotnetAcquisitionDeletion(`Deleted .NET folder ${folderPath} when marked for deletion.`));
         }
         catch (error: any)
         {
