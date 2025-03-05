@@ -27,35 +27,31 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
 
     public async dotnetMeetsRequirement(dotnetExecutablePath: string, requirement: IDotnetFindPathContext): Promise<boolean>
     {
-        const availableRuntimes = requirement.acquireContext.mode === 'sdk' ? [] : await this.getRuntimes(dotnetExecutablePath);
         const hostArch = await this.getHostArchitecture(dotnetExecutablePath, requirement);
 
-        if (availableRuntimes.some((runtime) =>
-        {
-            return runtime.mode === requirement.acquireContext.mode && this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) &&
-                this.stringVersionMeetsRequirement(runtime.version, requirement.acquireContext.version, requirement) && this.allowPreview(runtime.version, requirement);
-        }))
-        {
-            return true;
-        }
-        else
-        {
+        if (requirement.acquireContext.mode === 'sdk') {
             const availableSDKs = await this.getSDKs(dotnetExecutablePath);
-            if (availableSDKs.some((sdk) =>
-            {
+            if (availableSDKs.some((sdk) => {
                 // The SDK includes the Runtime, ASP.NET Core Runtime, and Windows Desktop Runtime. So, we don't need to check the mode.
                 return this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) &&
                     this.stringVersionMeetsRequirement(sdk.version, requirement.acquireContext.version, requirement) && this.allowPreview(sdk.version, requirement);
-            }))
-            {
+            })) {
                 return true;
             }
-            else
-            {
-                this.workerContext.eventStream.post(new DotnetFindPathDidNotMeetCondition(`${dotnetExecutablePath} did NOT satisfy the conditions: hostArch: ${hostArch}, requiredArch: ${requirement.acquireContext.architecture},
-                    required version: ${requirement.acquireContext.version}, required mode: ${requirement.acquireContext.mode}`));
+        }
+        else {
+            // No need to consider SDKs when looking for runtimes as all the runtimes installed with the SDKs will be included in the runtimes list.
+            const availableRuntimes = await this.getRuntimes(dotnetExecutablePath);
+            if (availableRuntimes.some((runtime) => {
+                return runtime.mode === requirement.acquireContext.mode && this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) &&
+                    this.stringVersionMeetsRequirement(runtime.version, requirement.acquireContext.version, requirement) && this.allowPreview(runtime.version, requirement);
+            })) {
+                return true;
             }
         }
+
+        this.workerContext.eventStream.post(new DotnetFindPathDidNotMeetCondition(`${dotnetExecutablePath} did NOT satisfy the conditions: hostArch: ${hostArch}, requiredArch: ${requirement.acquireContext.architecture},
+            required version: ${requirement.acquireContext.version}, required mode: ${requirement.acquireContext.mode}`));
 
         return false;
     }
