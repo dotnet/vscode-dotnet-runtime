@@ -32,7 +32,6 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
         if (requirement.acquireContext.mode === 'sdk') {
             const availableSDKs = await this.getSDKs(dotnetExecutablePath);
             if (availableSDKs.some((sdk) => {
-                // The SDK includes the Runtime, ASP.NET Core Runtime, and Windows Desktop Runtime. So, we don't need to check the mode.
                 return this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) &&
                     this.stringVersionMeetsRequirement(sdk.version, requirement.acquireContext.version, requirement) && this.allowPreview(sdk.version, requirement);
             })) {
