@@ -21,7 +21,6 @@ import
     DotnetFakeSDKEnvironmentVariableTriggered,
     DotnetGlobalAcquisitionCompletionEvent,
     DotnetGlobalVersionResolutionCompletionEvent,
-    DotnetInstallGraveyardEvent,
     DotnetInstallIdCreatedEvent,
     DotnetLegacyInstallDetectedEvent,
     DotnetLegacyInstallRemovalRequestEvent,
@@ -67,7 +66,6 @@ import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetCoreAcquisitionWorker } from './IDotnetCoreAcquisitionWorker';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 import { IGlobalInstaller } from './IGlobalInstaller';
-import { InstallationGraveyard } from './InstallationGraveyard';
 import
 {
     InstallRecord,
@@ -354,7 +352,6 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         context.installationValidator.validateDotnetInstall(install, dotnetPath);
 
         await this.removeMatchingLegacyInstall(context, installedVersions, version);
-        await this.tryCleanUpInstallGraveyard(context);
 
         await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).reclassifyInstallingVersionToInstalled(context, install);
 
@@ -422,18 +419,6 @@ To keep your .NET version up to date, please reconnect to the internet at your s
 
             // Delete the existing local files so we can re-install. For global installs, let the installer handle it.
             await this.uninstallLocal(context, installId);
-        }
-    }
-
-    public async tryCleanUpInstallGraveyard(context: IAcquisitionWorkerContext): Promise<void>
-    {
-        const graveyard = new InstallationGraveyard(context);
-        const installsToRemove = await graveyard.get();
-        for (const install of installsToRemove)
-        {
-            context.eventStream.post(new DotnetInstallGraveyardEvent(
-                `Attempting to remove .NET at ${JSON.stringify(install)} again, as it was left in the graveyard.`));
-            await this.uninstallLocal(context, install);
         }
     }
 
@@ -605,10 +590,6 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
         try
         {
             const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
-            const graveyard = new InstallationGraveyard(context);
-
-            await graveyard.add(install, dotnetInstallDir);
-            context.eventStream.post(new DotnetInstallGraveyardEvent(`Attempting to remove .NET at ${JSON.stringify(install)} in path ${dotnetInstallDir}`));
 
             await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, force);
             // this is the only place where installed and installing could deal with pre existing installing id
@@ -619,12 +600,10 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
                 context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install.installId}.`));
                 await this.removeFolderRecursively(context.eventStream, dotnetInstallDir);
                 context.eventStream.post(new DotnetUninstallCompleted(`Uninstalled .NET ${install.installId}.`));
-                await graveyard.remove(install);
-                context.eventStream.post(new DotnetInstallGraveyardEvent(`Success at uninstalling ${JSON.stringify(install)} in path ${dotnetInstallDir}`));
             }
             else
             {
-                context.eventStream.post(new DotnetInstallGraveyardEvent(`Removed reference of ${JSON.stringify(install)} in path ${dotnetInstallDir}, but did not uninstall.
+                context.eventStream.post(new DotnetUninstallFailed(`Removed reference of ${JSON.stringify(install)} in path ${dotnetInstallDir}, but did not uninstall.
 Other dependents remain.`));
             }
 
@@ -663,7 +642,7 @@ Other dependents remain.`));
                     return '0';
                 }
             }
-            context.eventStream.post(new DotnetUninstallFailed(`Failed to uninstall .NET ${install.installId}. Uninstall manually or delete the folder.`));
+            context.eventStream.post(new DotnetUninstallFailed(`Failed to uninstall .NET ${install.installId}. Another install may be in progress? Uninstall manually or delete the folder.`));
             return '117778'; // arbitrary error code to indicate uninstall failed without error.
         }
         catch (error: any)

@@ -184,8 +184,12 @@ export class InstallTrackerSingleton
             const existingInstalls = await this.getExistingInstalls(id === this.installedVersionsId, true);
             const installRecord = existingInstalls.filter(x => IsEquivalentInstallation(x.dotnetInstall, install));
 
-            return (installRecord?.length ?? 0) === 0 || installRecord[0]?.installingExtensions?.length === 0 ||
-                (allowUninstallUserOnlyInstall && installRecord[0]?.installingExtensions?.length === 1 && installRecord[0]?.installingExtensions?.includes('user'));
+            const zeroInstalledRecordsLeft = (installRecord?.length ?? 0) === 0;
+            const installedRecordsLeftButNoOwnersRemain = installRecord[0]?.installingExtensions?.length === 0;
+            const installWasMadeByUserAndHasNoExtensionDependencies = (allowUninstallUserOnlyInstall &&
+                installRecord[0]?.installingExtensions?.length === 1 && installRecord[0]?.installingExtensions?.includes('user'))
+
+            return zeroInstalledRecordsLeft || installedRecordsLeftButNoOwnersRemain || installWasMadeByUserAndHasNoExtensionDependencies;
         }, isFinishedInstall ? this.installedVersionsId : this.installingVersionsId, dotnetInstall);
     }
 

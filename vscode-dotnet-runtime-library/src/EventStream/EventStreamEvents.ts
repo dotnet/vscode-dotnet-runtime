@@ -1322,15 +1322,6 @@ export class DotnetGlobalAcquisitionCompletionEvent extends DotnetCustomMessageE
 {
     public readonly eventName = 'DotnetGlobalAcquisitionCompletionEvent';
 }
-export class DotnetInstallGraveyardEvent extends DotnetCustomMessageEvent
-{
-    public readonly eventName = 'DotnetInstallGraveyardEvent';
-
-    public getProperties()
-    {
-        return { suppressTelemetry: 'true', ...super.getProperties() };
-    }
-}
 
 export class DotnetAlternativeCommandFoundEvent extends DotnetCustomMessageEvent
 {
