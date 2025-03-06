@@ -7,11 +7,24 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-## [2.2.9] - 2025-2-26
+## [2.3.0] - TBD
 
-Add community support for Debian.
-Fix issue with install scripts on validating the dotnet install.
-Performance improvements.
+- Adds Automated SDK Installation community support for Debian : thank you @curllog for your help!
+- Fix issue with install scripts on validating the dotnet install.
+- Fixes an issue with the Uninstall command.
+- Improvements to how installations are managed and tracked.
+- Performance improvements by reducing network activity requirements.
+- Fixed auditing of internal CDN performance metrics.
+
+## [2.2.9] - 2025-3-12
+
+- Widescale performance improvements throughout the entire extension. Better asynchronicity, efficient utilization of shells, eliminating process calls, improving file system / io.
+- Removes code that may slow down other extensions while this extension is operating.
+- Fixes a bug with dotnet lookup where SDKs that include runtimes may be used from the PATH even though their runtime may be out of date compared to the actual SDK version. Thank you @JoeRobich.
+- Adds support for many global.json rollForward options in the `findPath` API to ask for minimum patch versions without accepting later major versions.
+- WSL users will be able to see the 'Install SDK' command even though it does not work : previously, it was hidden. Now it will give an unsupported error. The check to hide this command caused slowdown on vscode startup for everyone and was decided to not be worth it, even if this is worse UX.
+- Reduce amount of data to be collected.
+- Refactoring of code to better handle web requests and other potential bugs or failure points.
 
 ## [2.2.8] - 2025-2-11
 
