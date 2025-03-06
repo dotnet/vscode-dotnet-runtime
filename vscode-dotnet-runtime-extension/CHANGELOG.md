@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning].
 ## [2.3.0] - TBD
 
 - Adds Automated SDK Installation community support for Debian : thank you @curllog for your help!
-- Fix issue with install scripts on validating the dotnet install.
+- Fixes an issue with install scripts on validating the dotnet install.
+
 - Fixes an issue with the Uninstall command.
 - Improvements to how installations are managed and tracked.
 - Performance improvements by reducing network activity requirements.
