@@ -2,15 +2,15 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
-import * as proc from 'child_process';
 import * as os from 'os';
 
-import { IEventStream } from '../EventStream/EventStream';
-import { DotnetWSLCheckEvent, DotnetWSLOperationOutputEvent } from '../EventStream/EventStreamEvents';
-import { IEvent } from '../EventStream/IEvent';
-import { ICommandExecutor } from './ICommandExecutor';
-import { CommandExecutor } from './CommandExecutor';
+import { IAcquisitionWorkerContext, IUtilityContext } from '..';
 import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from '../Acquisition/CacheTimeConstants';
+import { IEventStream } from '../EventStream/EventStream';
+import { DotnetWSLCheckEvent } from '../EventStream/EventStreamEvents';
+import { IEvent } from '../EventStream/IEvent';
+import { CommandExecutor } from './CommandExecutor';
+import { ICommandExecutor } from './ICommandExecutor';
 
 export async function loopWithTimeoutOnCond(sampleRatePerMs: number, durationToWaitBeforeTimeoutMs: number, conditionToStop: () => boolean, doAfterStop: () => void,
     eventStream: IEventStream, waitEvent: IEvent)
@@ -35,33 +35,27 @@ export async function loopWithTimeoutOnCond(sampleRatePerMs: number, durationToW
 /**
  * Returns true if the linux agent is running under WSL, else false.
  */
-export function isRunningUnderWSL(eventStream?: IEventStream): boolean
+export async function isRunningUnderWSL(acquisitionContext: IAcquisitionWorkerContext, utilityContext: IUtilityContext, executor?: ICommandExecutor): Promise<boolean>
 {
     // See https://github.com/microsoft/WSL/issues/4071 for evidence that we can rely on this behavior.
 
-    eventStream?.post(new DotnetWSLCheckEvent(`Checking if system is WSL. OS: ${os.platform()}`));
+    acquisitionContext.eventStream?.post(new DotnetWSLCheckEvent(`Checking if system is WSL. OS: ${os.platform()}`));
 
     if (os.platform() !== 'linux')
     {
         return false;
     }
 
-    const command = 'grep';
-    const args = ['-i', 'Microsoft', '/proc/version'];
-    const commandResult = proc.spawnSync(command, args);
-
-    eventStream?.post(new DotnetWSLOperationOutputEvent(`The output of the WSL check:
-stdout: ${commandResult.stdout?.toString()}
-stderr: ${commandResult.stderr?.toString()}
-status: ${commandResult.status?.toString()}`
-    ));
+    const command = CommandExecutor.makeCommand('grep', ['-i', 'Microsoft', '/proc/version']);
+    executor ??= new CommandExecutor(acquisitionContext, utilityContext);
+    const commandResult = await executor.execute(command, {}, false);
 
     if (!commandResult || !commandResult.stdout)
     {
         return false;
     }
 
-    return commandResult.stdout.toString() !== '';
+    return true;
 }
 
 export async function getOSArch(executor: ICommandExecutor): Promise<string>

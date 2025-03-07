@@ -216,7 +216,7 @@ If you would like to contribute to the list of supported distros, please visit: 
                 let command = this.myDistroCommands(this.searchCommandKey);
                 command = CommandExecutor.replaceSubstringsInCommands(command, this.missingPackageNameKey, packageName);
 
-                const packageIsAvailableResult = (await this.commandRunner.executeMultipleCommands(command))[0];
+                const packageIsAvailableResult = (await this.commandRunner.executeMultipleCommands(command, null, false))[0];
                 packageIsAvailableResult.stdout = packageIsAvailableResult.stdout.trim();
                 packageIsAvailableResult.stderr = packageIsAvailableResult.stderr.trim();
                 packageIsAvailableResult.status = packageIsAvailableResult.status.trim();
@@ -259,7 +259,6 @@ If you would like to contribute to the list of supported distros, please visit: 
 
     protected async injectPMCFeed(fullySpecifiedVersion: string, installType: DotnetInstallMode)
     {
-
         if (this.isMidFeedInjection)
         {
             this.context.eventStream.post(new FeedInjection(`Skipping injection : already started.`));
@@ -273,7 +272,7 @@ If you would like to contribute to the list of supported distros, please visit: 
             this.context.eventStream.post(new FeedInjection(`Starting feed injection.`));
             const myVersionDetails = this.myVersionDetails();
             const preInstallCommands = myVersionDetails[this.preinstallCommandKey] as CommandExecutorCommand[];
-            await this.commandRunner.executeMultipleCommands(preInstallCommands);
+            await this.commandRunner.executeMultipleCommands(preInstallCommands, {}, false);
             this.context.eventStream.post(new FeedInjection(`Finished injection.`));
         }
         else

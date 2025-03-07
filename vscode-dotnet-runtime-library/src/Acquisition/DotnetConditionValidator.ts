@@ -27,35 +27,30 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
 
     public async dotnetMeetsRequirement(dotnetExecutablePath: string, requirement: IDotnetFindPathContext): Promise<boolean>
     {
-        const availableRuntimes = requirement.acquireContext.mode === 'sdk' ? [] : await this.getRuntimes(dotnetExecutablePath);
         const hostArch = await this.getHostArchitecture(dotnetExecutablePath, requirement);
 
-        if (availableRuntimes.some((runtime) =>
-        {
-            return runtime.mode === requirement.acquireContext.mode && this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) &&
-                this.stringVersionMeetsRequirement(runtime.version, requirement.acquireContext.version, requirement) && this.allowPreview(runtime.version, requirement);
-        }))
-        {
-            return true;
-        }
-        else
-        {
+        if (requirement.acquireContext.mode === 'sdk') {
             const availableSDKs = await this.getSDKs(dotnetExecutablePath);
-            if (availableSDKs.some((sdk) =>
-            {
-                // The SDK includes the Runtime, ASP.NET Core Runtime, and Windows Desktop Runtime. So, we don't need to check the mode.
+            if (availableSDKs.some((sdk) => {
                 return this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) &&
                     this.stringVersionMeetsRequirement(sdk.version, requirement.acquireContext.version, requirement) && this.allowPreview(sdk.version, requirement);
-            }))
-            {
+            })) {
                 return true;
             }
-            else
-            {
-                this.workerContext.eventStream.post(new DotnetFindPathDidNotMeetCondition(`${dotnetExecutablePath} did NOT satisfy the conditions: hostArch: ${hostArch}, requiredArch: ${requirement.acquireContext.architecture},
-                    required version: ${requirement.acquireContext.version}, required mode: ${requirement.acquireContext.mode}`));
+        }
+        else {
+            // No need to consider SDKs when looking for runtimes as all the runtimes installed with the SDKs will be included in the runtimes list.
+            const availableRuntimes = await this.getRuntimes(dotnetExecutablePath);
+            if (availableRuntimes.some((runtime) => {
+                return runtime.mode === requirement.acquireContext.mode && this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) &&
+                    this.stringVersionMeetsRequirement(runtime.version, requirement.acquireContext.version, requirement) && this.allowPreview(runtime.version, requirement);
+            })) {
+                return true;
             }
         }
+
+        this.workerContext.eventStream.post(new DotnetFindPathDidNotMeetCondition(`${dotnetExecutablePath} did NOT satisfy the conditions: hostArch: ${hostArch}, requiredArch: ${requirement.acquireContext.architecture},
+            required version: ${requirement.acquireContext.version}, required mode: ${requirement.acquireContext.mode}`));
 
         return false;
     }
@@ -82,7 +77,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
         // System may not have english installed, but CDK already calls this without issue -- the .NET SDK language invocation is also wrapped by a runtime library and natively includes english assets
         const hostArch = await (this.executor!).execute(infoCommand, { env: envWithForceEnglish, dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false).then((result) =>
         {
-            const lines = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
+            const lines = result.stdout.split('\n').map((line) => line.trim()).filter((line) => (line?.length ?? 0) > 0);
             // This is subject to change but there is no good alternative to do this
             const archLine = lines.find((line) => line.startsWith('Architecture:'));
             if (archLine === undefined)
@@ -112,7 +107,11 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
 
         const sdkInfo = await (this.executor!).execute(findSDKsCommand, { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false).then((result) =>
         {
-            const sdks = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
+            if (result.status !== '0')
+            {
+                return [];
+            }
+            const sdks = result.stdout.split('\n').map((line) => line.trim()).filter((line) => (line?.length ?? 0) > 0);
             const sdkInfos: IDotnetListInfo[] = sdks.map((sdk) =>
             {
                 const parts = sdk.split(' ', 2);
@@ -264,7 +263,11 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
 
         const runtimeInfo = await (this.executor!).execute(findRuntimesCommand, { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false).then((result) =>
         {
-            const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
+            if (result.status !== '0')
+            {
+                return [];
+            }
+            const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => (line?.length ?? 0) > 0);
             const runtimeInfos: IDotnetListInfo[] = runtimes.map((runtime) =>
             {
                 const parts = runtime.split(' ', 3); // account for spaces in PATH, no space should appear before then and luckily path is last

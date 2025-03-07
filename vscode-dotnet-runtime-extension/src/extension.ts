@@ -62,7 +62,6 @@ import
     InstallationValidator,
     InstallRecord,
     InvalidUninstallRequest,
-    isRunningUnderWSL,
     IUtilityContext,
     JsonInstaller,
     LinuxVersionResolver,
@@ -77,7 +76,7 @@ import
     VSCodeEnvironment,
     VSCodeExtensionContext,
     WebRequestWorker,
-    WindowDisplayWorker,
+    WindowDisplayWorker
 } from 'vscode-dotnet-runtime-library';
 import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
@@ -174,7 +173,6 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
     // Setting up command-shared classes for Runtime & SDK Acquisition
     const existingPathConfigWorker = new ExtensionConfigurationWorker(extensionConfiguration, configKeys.existingPath, configKeys.existingSharedPath);
-    checkIfSDKAcquisitionIsSupported();
 
     // Creating API Surfaces
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext): Promise<IDotnetAcquireResult | undefined> =>
@@ -406,7 +404,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 }
             });
 
-        if (menuItems.length < 1)
+        if ((menuItems?.length ?? 0) < 1)
         {
             vscode.window.showInformationMessage('No .NET installations were found to uninstall.');
             return;
@@ -679,14 +677,6 @@ ${JSON.stringify(commandContext)}`));
         });
     }
 
-    function checkIfSDKAcquisitionIsSupported(): boolean
-    {
-        let isSupported = true;
-        isSupported = isSupported && !isRunningUnderWSL(globalEventStream);
-        vscode.commands.executeCommand('setContext', 'dotnetAcquisitionExtension.isGlobalSDKUnsupported', !isSupported);
-        return isSupported;
-    }
-
     const getAvailableVersions = async (commandContext: IDotnetListVersionsContext | undefined,
         customWebWorker: WebRequestWorker | undefined, onRecommendationMode: boolean): Promise<IDotnetListVersionsResult | undefined> =>
     {
@@ -744,7 +734,8 @@ ${JSON.stringify(commandContext)}`));
                 installType: typeOfInstall,
                 version: 'notAnAcquisitionRequest',
                 errorConfiguration: errorsConfiguration,
-                architecture: DotnetCoreAcquisitionWorker.defaultArchitecture()
+                architecture: DotnetCoreAcquisitionWorker.defaultArchitecture(),
+                mode: mode
             } as IDotnetAcquireContext
         )
     }

@@ -29,20 +29,21 @@ import stream = require('stream');
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { IEventStream } from '../EventStream/EventStream';
 import
-    {
-        DiskIsFullError,
-        DotnetDownloadFailure,
-        DotnetOfflineFailure,
-        EventBasedError,
-        EventCancellationError,
-        OfflineDetectionLogicTriggered,
-        SuppressedAcquisitionError,
-        WebRequestCachedTime,
-        WebRequestError,
-        WebRequestSent,
-        WebRequestTime,
-        WebRequestTimeUnknown
-    } from '../EventStream/EventStreamEvents';
+{
+    DiskIsFullError,
+    DotnetDownloadFailure,
+    DotnetOfflineFailure,
+    EventBasedError,
+    EventCancellationError,
+    OfflineDetectionLogicTriggered,
+    SuppressedAcquisitionError,
+    WebRequestCachedTime,
+    WebRequestError,
+    WebRequestSent,
+    WebRequestTime,
+    WebRequestTimeUnknown
+} from '../EventStream/EventStreamEvents';
+import { FileUtilities } from './FileUtilities';
 import { getInstallFromContext } from './InstallIdUtilities';
 
 export class WebRequestWorker
@@ -269,8 +270,9 @@ export class WebRequestWorker
      */
     public async downloadFile(url: string, dest: string)
     {
+<<<<<<< HEAD
         if (fs.existsSync(dest))
-        {
+{
             return;
         }
 
@@ -343,23 +345,27 @@ export class WebRequestWorker
             this.context.eventStream.post(new WebRequestSent(this.url));
             const response = await this.axiosGet(
                 this.url,
+<<<<<<< HEAD
                 { transformResponse: (x: any) => x, ...options }
             );
 
             if (response !== null && response?.headers['content-type'] === 'application/json')
-            {
+{
                 try
                 {
                     // Try to copy logic from https://github.com/axios/axios/blob/2e58825bc7773247ca5d8c2cae2ee041d38a0bb5/lib/defaults/index.js#L100
-                    const jsonData = JSON.parse(response.data);
-                    return jsonData;
+                    const jsonData = JSON.parse(response?.data ?? null);
+                    if (jsonData) // JSON.parse(null) => null but JSON.parse(undefined) => SyntaxError. We only want to return undefined and not null based on funct signature.
+                    {
+                        return jsonData;
+                    };
                 }
                 catch (error: any)
                 {
 
                 }
             }
-            return response.data;
+            return response?.data;
         }
         catch (error: any)
         {
