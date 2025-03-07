@@ -270,9 +270,8 @@ export class WebRequestWorker
      */
     public async downloadFile(url: string, dest: string)
     {
-<<<<<<< HEAD
         if (fs.existsSync(dest))
-{
+        {
             return;
         }
 
@@ -345,12 +344,11 @@ export class WebRequestWorker
             this.context.eventStream.post(new WebRequestSent(this.url));
             const response = await this.axiosGet(
                 this.url,
-<<<<<<< HEAD
                 { transformResponse: (x: any) => x, ...options }
             );
 
             if (response !== null && response?.headers['content-type'] === 'application/json')
-{
+            {
                 try
                 {
                     // Try to copy logic from https://github.com/axios/axios/blob/2e58825bc7773247ca5d8c2cae2ee041d38a0bb5/lib/defaults/index.js#L100
