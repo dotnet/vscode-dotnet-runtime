@@ -4,16 +4,15 @@
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
 import * as os from 'os';
-import { MockCommandExecutor, MockExtensionConfiguration, MockExtensionContext } from '../mocks/MockObjects';
-import { IExistingPaths } from '../../IExtensionContext';
-import { ExistingPathResolver } from '../../Acquisition/ExistingPathResolver';
-import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
-import { MockExtensionConfigurationWorker } from '../mocks/MockExtensionConfigurationWorker';
-import { IDotnetAcquireContext } from '../../IDotnetAcquireContext';
-import { getMockAcquisitionContext, getMockAcquisitionWorkerContext, getMockUtilityContext } from './TestUtility';
-import { CommandExecutorResult } from '../../Utils/CommandExecutorResult';
 import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
-import { mock } from 'node:test';
+import { ExistingPathResolver } from '../../Acquisition/ExistingPathResolver';
+import { IDotnetAcquireContext } from '../../IDotnetAcquireContext';
+import { IExistingPaths } from '../../IExtensionContext';
+import { CommandExecutorResult } from '../../Utils/CommandExecutorResult';
+import { MockExtensionConfigurationWorker } from '../mocks/MockExtensionConfigurationWorker';
+import { MockCommandExecutor, MockExtensionConfiguration, MockExtensionContext } from '../mocks/MockObjects';
+import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
+import { getMockAcquisitionContext, getMockAcquisitionWorkerContext, getMockUtilityContext } from './TestUtility';
 const assert = chai.assert;
 
 const individualPath = 'foo';
@@ -33,18 +32,18 @@ const listRuntimesResultWithEightOnly = `
 Microsoft.NETCore.App 8.0.7 [C:\\Program Files\\dotnet\\shared\\Microsoft.AspNetCore.App]
 
 `;
-const executionResultWithEightOnly = { status: '', stdout: listRuntimesResultWithEightOnly, stderr: '' };
+const executionResultWithEightOnly = { status: '0', stdout: listRuntimesResultWithEightOnly, stderr: '' };
 
 const listRuntimesResultWithEightASPOnly = `
 Microsoft.AspNetCore.App 8.0.7 [C:\\Program Files\\dotnet\\shared\\Microsoft.AspNetCore.App]
 
 `;
-const executionResultWithEightAspOnly = { status: '', stdout: listRuntimesResultWithEightASPOnly, stderr: '' };
+const executionResultWithEightAspOnly = { status: '0', stdout: listRuntimesResultWithEightASPOnly, stderr: '' };
 
 const listSDKsResultWithEightOnly = `
 8.0.101 [C:\\Program Files\\dotnet\\sdk]
 `
-const executionResultWithListSDKsResultWithEightOnly = { status: '', stdout: listSDKsResultWithEightOnly, stderr: '' };
+const executionResultWithListSDKsResultWithEightOnly = { status: '0', stdout: listSDKsResultWithEightOnly, stderr: '' };
 
 function getExistingPathResolverWithVersionAndCommandResult(version: string, requestingExtensionId: string | undefined, commandResult: CommandExecutorResult, allowInvalidPaths = false, mode: DotnetInstallMode | undefined = undefined): ExistingPathResolver
 {
@@ -114,7 +113,7 @@ suite('ExistingPathResolver Unit Tests', () =>
     assert.equal(existingPath, undefined, 'It returns undefined when the setting does not match the API request');
   }).timeout(standardTimeoutTime);
 
-  test('It will still use the PATH if it has an SDK which satisfies the condition even if there is no runtime that does', async () =>
+  test('It will not use the PATH if it does not have a runtime which satisfies the condition even if there is an SDK that does', async () =>
   {
     const context: IDotnetAcquireContext = { version: '8.0', mode: 'runtime' };
     const mockWorkerContext = getMockAcquisitionWorkerContext(context);
@@ -126,11 +125,7 @@ suite('ExistingPathResolver Unit Tests', () =>
     const existingPathResolver = new ExistingPathResolver(mockWorkerContext, mockUtility, mockExecutor);
 
     const existingPath = await existingPathResolver.resolveExistingPath(extensionConfigWorker.getAllPathConfigurationValues(), undefined, new MockWindowDisplayWorker());
-    const nonTrueExistingPath = existingPathResolver.getlastSeenNonTruePathValue();
 
-    assert(existingPath, 'The existing path is returned when an SDK matches the path but no runtime is installed');
-    assert(nonTrueExistingPath, 'The existing path is using a dotnet path object');
-    assert.equal(nonTrueExistingPath, sharedPath);
-    assert.equal(existingPath?.dotnetPath, os.platform() === 'win32' ? 'C:\\Program Files\\dotnet\\dotnet.exe' : 'dotnet', 'The true path is called on the fake path to get dotnet executable');
+    assert.notExists(existingPath, 'The existing path is not returned when an SDK matches the path but no runtime is installed');
   }).timeout(standardTimeoutTime);
 });

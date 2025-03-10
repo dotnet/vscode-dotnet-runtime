@@ -4,21 +4,21 @@
  * ------------------------------------------------------------------------------------------ */
 
 import { DotnetCoreAcquisitionWorker } from '../Acquisition/DotnetCoreAcquisitionWorker';
-import { looksLikeRuntimeVersion , DotnetInstall } from '../Acquisition/DotnetInstall';
+import { DotnetInstall, looksLikeRuntimeVersion } from '../Acquisition/DotnetInstall';
 import { DOTNET_INSTALL_MODE_LIST, DotnetInstallMode } from '../Acquisition/DotnetInstallMode';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { DotnetInstallType } from '../IDotnetAcquireContext';
 
 
-export function getInstallIdCustomArchitecture(version : string, architecture: string | null | undefined, mode: DotnetInstallMode,
-    installType : DotnetInstallType = 'local') : string
+export function getInstallIdCustomArchitecture(version: string, architecture: string | null | undefined, mode: DotnetInstallMode,
+    installType: DotnetInstallType = 'local'): string
 {
-    if(architecture === null || architecture === 'null')
+    if (architecture === null || architecture === 'null')
     {
         // Use the legacy method (no architecture) of installs
         return installType === 'global' ? `${version}-global` : version;
     }
-    else if(architecture === undefined)
+    else if (architecture === undefined)
     {
         architecture = DotnetCoreAcquisitionWorker.defaultArchitecture();
     }
@@ -27,12 +27,12 @@ export function getInstallIdCustomArchitecture(version : string, architecture: s
         `${version}~${architecture}${mode === 'aspnetcore' ? '~aspnetcore' : ''}`;
 }
 
-export function getInstallFromContext(ctx : IAcquisitionWorkerContext) : DotnetInstall
+export function getInstallFromContext(ctx: IAcquisitionWorkerContext): DotnetInstall
 {
     const acquireContext = ctx.acquisitionContext!;
 
     return {
-        installId : getInstallIdCustomArchitecture(acquireContext.version, acquireContext.architecture, ctx.acquisitionContext.mode!,
+        installId: getInstallIdCustomArchitecture(acquireContext.version, acquireContext.architecture, ctx.acquisitionContext.mode!,
             acquireContext.installType),
         version: acquireContext.version,
         architecture: acquireContext.architecture,
@@ -42,30 +42,37 @@ export function getInstallFromContext(ctx : IAcquisitionWorkerContext) : DotnetI
 
 
 }
-export function isRuntimeInstallId(installId: string): boolean {
+export function isRuntimeInstallId(installId: string): boolean
+{
     const installIdVersion = getVersionFromLegacyInstallId(installId);
-    return !(DOTNET_INSTALL_MODE_LIST.filter( (x : string) => x !== 'runtime')).some( (mode) => installId.includes(mode))
+    return !(DOTNET_INSTALL_MODE_LIST.filter((x: string) => x !== 'runtime')).some((mode) => installId.includes(mode))
         && looksLikeRuntimeVersion(installIdVersion);
 }
 
-export function isGlobalLegacyInstallId(installId: string): boolean {
+export function isGlobalLegacyInstallId(installId: string): boolean
+{
     return installId.toLowerCase().includes('global');
 }
 
-export function getArchFromLegacyInstallId(installId: string): string | undefined {
+export function getArchFromLegacyInstallId(installId: string): string | undefined
+{
     const splitId = installId.split('~');
-    if (splitId.length >= 2) {
+    if ((splitId?.length ?? 0) >= 2)
+    {
         return splitId[1];
     }
     return undefined;
 }
 
-export function getVersionFromLegacyInstallId(installId: string): string {
-    if (isGlobalLegacyInstallId(installId)) {
+export function getVersionFromLegacyInstallId(installId: string): string
+{
+    if (isGlobalLegacyInstallId(installId))
+    {
         const splitId = installId.split('-');
         return splitId[0];
     }
-    else if (installId.includes('~')) {
+    else if (installId.includes('~'))
+    {
         const splitId = installId.split('~');
         return splitId[0];
     }
@@ -78,7 +85,8 @@ export function getVersionFromLegacyInstallId(installId: string): string {
 /**
  * @deprecated This function is for legacy install ids only. Do not use for new code.
  */
-export function getAssumedInstallInfo(id: string, mode : DotnetInstallMode | null): DotnetInstall {
+export function getAssumedInstallInfo(id: string, mode: DotnetInstallMode | null): DotnetInstall
+{
     return {
         installId: id,
         version: getVersionFromLegacyInstallId(id),

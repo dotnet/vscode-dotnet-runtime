@@ -3,7 +3,6 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
-import * as fs from 'fs';
 import path = require('path');
 
 import
@@ -23,6 +22,8 @@ import { VersionResolver } from './VersionResolver';
 import * as versionUtils from './VersionUtilities';
 
 import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
+import { FileUtilities } from '../Utils/FileUtilities';
+
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
@@ -257,7 +258,7 @@ If you experience issues, please reach out on https://github.com/dotnet/vscode-d
         if (supportStatus === DotnetDistroSupportStatus.Distro)
         {
             const microsoftFeedDir = this.distroSDKProvider!.getExpectedDotnetMicrosoftFeedInstallationDirectory();
-            if (fs.existsSync(microsoftFeedDir))
+            if (await new FileUtilities().exists(microsoftFeedDir))
             {
                 const err = new DotnetConflictingLinuxInstallTypesError(new EventCancellationError('DotnetConflictingLinuxInstallTypesError',
                     this.conflictingInstallErrorMessage + microsoftFeedDir),
@@ -269,7 +270,7 @@ If you experience issues, please reach out on https://github.com/dotnet/vscode-d
         else if (supportStatus === DotnetDistroSupportStatus.Microsoft)
         {
             const distroFeedDir = this.distroSDKProvider!.getExpectedDotnetDistroFeedInstallationDirectory();
-            if (fs.existsSync(distroFeedDir))
+            if (await new FileUtilities().exists(distroFeedDir))
             {
                 const err = new DotnetConflictingLinuxInstallTypesError(new EventCancellationError('DotnetConflictingLinuxInstallTypesError',
                     this.conflictingInstallErrorMessage + distroFeedDir),

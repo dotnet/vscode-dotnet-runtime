@@ -29,11 +29,11 @@ const listSDKsResultWithEightFull = `
 ${listSDKsResultWithEightPreviewOnly}
 8.0.101 [C:\\Program Files\\dotnet\\sdk]
 `
-const executionResultWithListRuntimesResultWithPreviewOnly = { status: '', stdout: listRuntimesResultWithEightPreviewOnly, stderr: '' };
-const executionResultWithListRuntimesResultWithFullOnly = { status: '', stdout: listRuntimesResultWithEightFull, stderr: '' };
+const executionResultWithListRuntimesResultWithPreviewOnly = { status: '0', stdout: listRuntimesResultWithEightPreviewOnly, stderr: '' };
+const executionResultWithListRuntimesResultWithFullOnly = { status: '0', stdout: listRuntimesResultWithEightFull, stderr: '' };
 
-const executionResultWithListSDKsResultWithPreviewOnly = { status: '', stdout: listSDKsResultWithEightPreviewOnly, stderr: '' };
-const executionResultWithListSDKsResultFullSDK = { status: '', stdout: listSDKsResultWithEightFull, stderr: '' };
+const executionResultWithListSDKsResultWithPreviewOnly = { status: '0', stdout: listSDKsResultWithEightPreviewOnly, stderr: '' };
+const executionResultWithListSDKsResultFullSDK = { status: '0', stdout: listSDKsResultWithEightFull, stderr: '' };
 
 suite('DotnetConditionValidator Unit Tests', () =>
 {
@@ -84,6 +84,30 @@ suite('DotnetConditionValidator Unit Tests', () =>
         mockExecutor.otherCommandsReturnValues = [executionResultWithListRuntimesResultWithFullOnly, executionResultWithListSDKsResultFullSDK];
         meetsReq = await conditionValidator.dotnetMeetsRequirement('dotnet', requirementRejectingPreviewsSDKs);
         assert.isTrue(meetsReq, 'It finds non preview SDK if rejectPreviews set');
+    });
+
+    test('It validates runtimes separately from sdks', async () => {
+        const runtime8_0_7Requirement = {
+            acquireContext: getMockAcquisitionContext('runtime', '8.0.7').acquisitionContext,
+            versionSpecRequirement: 'greater_than_or_equal'
+        } as IDotnetFindPathContext
+
+        mockExecutor.fakeReturnValue = executionResultWithListRuntimesResultWithFullOnly;
+        mockExecutor.otherCommandPatternsToMock = ['--list-runtimes', '--list-sdks'];
+        mockExecutor.otherCommandsReturnValues = [executionResultWithListRuntimesResultWithFullOnly, executionResultWithListSDKsResultWithPreviewOnly];
+
+        const conditionValidator = new DotnetConditionValidator(acquisitionContext, utilityContext, mockExecutor);
+
+        let meetsReq = await conditionValidator.dotnetMeetsRequirement('dotnet', runtime8_0_7Requirement);
+        assert.isTrue(meetsReq, 'It finds the 8.0.7 runtime');
+
+        const runtime8_0_8Requirement = {
+            acquireContext: getMockAcquisitionContext('runtime', '8.0.8').acquisitionContext,
+            versionSpecRequirement: 'greater_than_or_equal'
+        } as IDotnetFindPathContext
+
+        meetsReq = await conditionValidator.dotnetMeetsRequirement('dotnet', runtime8_0_8Requirement);
+        assert.isFalse(meetsReq, 'It does not find the 8.0.8 runtime or treat the 8.0.101 SDK as a runtime');
     });
 
     test('It does not take newer major SDK if latestPatch or feature used', async () =>
