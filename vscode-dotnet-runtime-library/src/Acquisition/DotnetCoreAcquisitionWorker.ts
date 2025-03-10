@@ -16,6 +16,7 @@ import
     DotnetAcquisitionStarted,
     DotnetAcquisitionStatusResolved,
     DotnetAcquisitionStatusUndefined,
+    DotnetAcquisitionThoughtInstalledButNot,
     DotnetBeginGlobalInstallerExecution,
     DotnetCompletedGlobalInstallerExecution,
     DotnetFakeSDKEnvironmentVariableTriggered,
@@ -369,6 +370,8 @@ To keep your .NET version up to date, please reconnect to the internet at your s
             }
             catch (error: any)
             {
+                context.eventStream.post(new DotnetAcquisitionThoughtInstalledButNot(`Local Install ${JSON.stringify(install)} at ${dotnetPath} was tracked under installed but it wasn't found. Maybe it got removed externally.`));
+                await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, true);
                 return null;
             }
 
@@ -376,7 +379,8 @@ To keep your .NET version up to date, please reconnect to the internet at your s
             {
                 if (!(await this.sdkIsFound(context, context.acquisitionContext.version)))
                 {
-                    await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install);
+                    context.eventStream.post(new DotnetAcquisitionThoughtInstalledButNot(`Global Install ${JSON.stringify(install)} at ${dotnetPath} was tracked under installed but it wasn't found. Maybe it got removed externally.`));
+                    await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, true);
                     return null;
                 }
             }

@@ -1614,6 +1614,10 @@ export class DotnetAcquisitionMissingLinuxDependencies extends DotnetAcquisition
     public readonly eventName = 'DotnetAcquisitionMissingLinuxDependencies';
 }
 
+export class DotnetAcquisitionThoughtInstalledButNot extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'DotnetAcquisitionThoughtInstalledButNot';
+}
 
 export class DotnetAcquisitionScriptOutput extends DotnetAcquisitionMessage
 {
