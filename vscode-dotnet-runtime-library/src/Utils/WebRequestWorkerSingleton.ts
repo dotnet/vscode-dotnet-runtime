@@ -157,13 +157,38 @@ export class WebRequestWorkerSingleton
         // Timeout for Web Request -> Not Timer. (Don't want to introduce more CPU time into timer)
         clearTimeout(timeout);
 
-        // CDN Timer
+        this.reportTimeAnalytics(response, options, url, ctx);
+
+        // Response
+        return response;
+    }
+
+    /**
+     * @returns The data from a web request that was hopefully cached. Even if it wasn't cached, we will make an attempt to get the data.
+     * @remarks This function is no longer needed as the data is cached either way if you call makeWebRequest, but it was kept to prevent breaking APIs.
+     */
+    public async getCachedData(url: string, ctx: IAcquisitionWorkerContext, retriesCount = 2): Promise<string | undefined>
+    {
+        return this.makeWebRequest(url, ctx, true, retriesCount);
+    }
+
+    private async reportTimeAnalytics(response: any, options: any, url: string, ctx: IAcquisitionWorkerContext, manualFinalTime: bigint | null = null): Promise<void>
+    {
+        // Streamed responses return out bits of data to be piped, so this would record the end time as if only the first few bytes finished.
+        // Instead we can manually report this when the stream is finished.
+        if (!manualFinalTime && options?.responseType === 'stream')
+        {
+            return;
+        }
+
         // Standard timeout time in NS : 60,000,000,000 is < than std max_safe_int_size: 9,007,199,254,740,991
         const timerPrecision = 2; // decimal places for timer result
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         const startTimeNs = (response as any)?.startTime;
+
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        const finalTimeNs = (response as any)?.finalTime;
+        const finalTimeNs = manualFinalTime ?? (response as any)?.finalTime;
+
         let durationMs = '-1';
         if (startTimeNs && finalTimeNs && finalTimeNs - startTimeNs < Number.MAX_SAFE_INTEGER)
         {
@@ -181,20 +206,7 @@ export class WebRequestWorkerSingleton
         {
             ctx.eventStream.post(new WebRequestCachedTime(`Cached Timer for request:`, durationMs, 'true', url, String(response.status)));
         }
-
-        // Response
-        return response;
     }
-
-    /**
-     * @returns The data from a web request that was hopefully cached. Even if it wasn't cached, we will make an attempt to get the data.
-     * @remarks This function is no longer needed as the data is cached either way if you call makeWebRequest, but it was kept to prevent breaking APIs.
-     */
-    public async getCachedData(url: string, ctx: IAcquisitionWorkerContext, retriesCount = 2): Promise<string | undefined>
-    {
-        return this.makeWebRequest(url, ctx, true, retriesCount);
-    }
-
 
     public static async isOnline(timeoutSec: number, eventStream: IEventStream): Promise<boolean>
     {
@@ -284,18 +296,28 @@ export class WebRequestWorkerSingleton
             return;
         }
 
-        const finished = promisify(stream.finished);
         const file = fs.createWriteStream(dest, { flags: 'wx' });
         const options = await this.getAxiosOptions(ctx, 3, { responseType: 'stream', transformResponse: (x: any) => x }, false);
         try
         {
             await this.axiosGet(url, ctx, options)
-                .then(response =>
+                .then(async response =>
                 {
                     // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                     response?.data?.pipe(file);
-                    return finished(file);
+                    await promisify(stream.finished)(file)
+                        .then(
+                            () =>
+                            {
+                                this.reportTimeAnalytics(response, {}, url, ctx, process.hrtime.bigint());
+                            },
+                            () =>
+                            {
+                                this.reportTimeAnalytics(response, {}, url, ctx, process.hrtime.bigint());
+                            }
+                        );
+                    return;
                 });
         }
         catch (error: any)
