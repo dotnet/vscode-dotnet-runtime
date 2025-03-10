@@ -140,7 +140,7 @@ export class WebRequestWorkerSingleton
         {
             timeoutCancelTokenHook.abort();
             ctx.eventStream.post(new WebRequestTime(`Timer for request:`, String(this.timeoutMsFromCtx(ctx)), 'false', url, '777')); // 777 for custom abort status. arbitrary
-            if (!(await WebRequestWorkerSingleton.isOnline(ctx.timeoutSeconds, ctx.eventStream)))
+            if (!(await this.isOnline(ctx.timeoutSeconds, ctx.eventStream)))
             {
                 const offlineError = new EventBasedError('DotnetOfflineFailure', 'No internet connection detected: Cannot install .NET');
                 ctx.eventStream.post(new DotnetOfflineFailure(offlineError, null));
@@ -208,7 +208,7 @@ export class WebRequestWorkerSingleton
         }
     }
 
-    public static async isOnline(timeoutSec: number, eventStream: IEventStream): Promise<boolean>
+    public async isOnline(timeoutSec: number, eventStream: IEventStream): Promise<boolean>
     {
         const microsoftServer = 'www.microsoft.com';
         const expectedDNSResolutionTimeMs = Math.max(timeoutSec * 10, 100); // Assumption: DNS resolution should take less than 1/100 of the time it'd take to download .NET.

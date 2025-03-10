@@ -145,12 +145,12 @@ export const versionPairs = [['1.0', '1.0.16'], ['1.1', '1.1.13'], ['2.0', '2.0.
 
 export class FileWebRequestWorker extends WebRequestWorkerSingleton
 {
-    constructor(ctx: IAcquisitionWorkerContext, uri: string, private readonly mockFilePath: string)
+    constructor(private readonly mockFilePath: string)
     {
         super();
     }
 
-    protected async makeWebRequest(): Promise<string | undefined>
+    protected async makeWebRequest(uri: string, ctx: IAcquisitionWorkerContext): Promise<string | undefined>
     {
         const result = JSON.parse(fs.readFileSync(this.mockFilePath, 'utf8'));
         return result;
@@ -159,19 +159,21 @@ export class FileWebRequestWorker extends WebRequestWorkerSingleton
 
 export class FailingWebRequestWorker extends WebRequestWorkerSingleton
 {
-    constructor(private readonly ctx: IAcquisitionWorkerContext, uri: string)
+    constructor()
     {
-        super(); // Empty string as uri to cause failure. Uri is required to match the interface even though it's unused.
+        // Use Empty strings as uri to cause failure. Uri is required to match the interface even though it's unused.
+        super();
+        const _ = WebRequestWorkerSingleton.getInstance(); // cause super to exist
     }
 
-    public async getCachedData(): Promise<string | undefined>
+    public async getCachedData(uri: string, ctx: IAcquisitionWorkerContext): Promise<string | undefined>
     {
         throw new Error('Fail!');
     }
 
-    public async makeWebRequest(): Promise<string | undefined>
+    public async makeWebRequest(uri: string, ctx: IAcquisitionWorkerContext): Promise<string | undefined>
     {
-        return super.makeWebRequest('', this.ctx, true, 0);
+        return super.makeWebRequest('', ctx, true, 0);
     }
 
     public async downloadFile(url: string, dest: string, ctx: IAcquisitionWorkerContext): Promise<void>
@@ -185,10 +187,10 @@ export class MockTrackingWebRequestWorker extends WebRequestWorkerSingleton
     private requestCount = 0;
     public response = 'Mock Web Request Result';
 
-    constructor(ctx: IAcquisitionWorkerContext, url: string,
-        protected readonly succeed = true, webTimeToLive = testDefaultTimeoutTimeMs)
+    constructor(protected readonly succeed = true)
     {
         super();
+        const _ = WebRequestWorkerSingleton.getInstance(); // cause super to exist
     }
 
     public getRequestCount()
@@ -215,9 +217,10 @@ export class MockWebRequestWorker extends MockTrackingWebRequestWorker
     public readonly errorMessage = 'Web Request Failed';
     public response = 'Mock Web Request Result';
 
-    constructor(ctx: IAcquisitionWorkerContext, url: string)
+    constructor()
     {
-        super(ctx, url);
+        super();
+        const _ = WebRequestWorkerSingleton.getInstance(); // cause super to exist
     }
 
     protected async makeWebRequest(): Promise<string | undefined>
@@ -251,6 +254,7 @@ export class MockIndexWebRequestWorker extends WebRequestWorkerSingleton
         protected readonly succeed = true, webTimeToLive = testDefaultTimeoutTimeMs)
     {
         super();
+        const _ = WebRequestWorkerSingleton.getInstance(); // cause super to exist
     }
 
     public async getCachedData(url: string, ctx: IAcquisitionWorkerContext, retriesCount = 2): Promise<string | undefined>
@@ -318,8 +322,8 @@ export class MockInstallScriptWorker extends InstallScriptAcquisitionWorker
     {
         super(ctx);
         this.webWorker = failing ?
-            new FailingWebRequestWorker(ctx, '') :
-            new MockWebRequestWorker(ctx, '');
+            new FailingWebRequestWorker() :
+            new MockWebRequestWorker();
     }
 
     protected getFallbackScriptPath(): string
@@ -596,7 +600,7 @@ export class FailingInstallScriptWorker extends InstallScriptAcquisitionWorker
     constructor(ctx: IAcquisitionWorkerContext)
     {
         super(ctx);
-        this.webWorker = new MockWebRequestWorker(ctx, '');
+        this.webWorker = new MockWebRequestWorker();
     }
 
     public getDotnetInstallScriptPath(): Promise<string>

@@ -615,7 +615,7 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
     test('List Sdks & Runtimes', async () =>
     {
         const mockAcquisitionContext = getMockAcquisitionContext('sdk', '');
-        const webWorker = new MockWebRequestWorker(mockAcquisitionContext, '');
+        const webWorker = new MockWebRequestWorker();
         webWorker.response = JSON.parse(mockReleasesData);
 
         // The API can find the available SDKs and list their versions.
@@ -638,7 +638,7 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
     test('Get Recommended SDK Version', async () =>
     {
         const mockAcquisitionContext = getMockAcquisitionContext('sdk', '');
-        const webWorker = new MockWebRequestWorker(mockAcquisitionContext, '');
+        const webWorker = new MockWebRequestWorker();
         webWorker.response = JSON.parse(mockReleasesData);
 
         const result = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet.recommendedVersion', null, webWorker);

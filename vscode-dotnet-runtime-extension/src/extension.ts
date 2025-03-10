@@ -781,7 +781,7 @@ ${JSON.stringify(commandContext)}`));
 
     async function getExistingInstallIfOffline(worker: DotnetCoreAcquisitionWorker, workerContext: IAcquisitionWorkerContext): Promise<IDotnetAcquireResult | null>
     {
-        if (!(await WebRequestWorkerSingleton.isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream)))
+        if (!(await WebRequestWorkerSingleton.getInstance().isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream)))
         {
             workerContext.acquisitionContext.architecture ??= DotnetCoreAcquisitionWorker.defaultArchitecture();
             const existingOfflinePath = await worker.getSimilarExistingInstall(workerContext);

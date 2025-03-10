@@ -98,7 +98,7 @@ If you cannot change this flag, try setting a custom existingDotnetPath via the 
                         }
                         if (error)
                         {
-                            if (!(await WebRequestWorkerSingleton.isOnline(installContext.timeoutSeconds, this.eventStream)))
+                            if (!(await WebRequestWorkerSingleton.getInstance().isOnline(installContext.timeoutSeconds, this.eventStream)))
                             {
                                 const offlineError = new EventBasedError('DotnetOfflineFailure', 'No internet connection detected: Cannot install .NET');
                                 this.eventStream.post(new DotnetOfflineFailure(offlineError, install));

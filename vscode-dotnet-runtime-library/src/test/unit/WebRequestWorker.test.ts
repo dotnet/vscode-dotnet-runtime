@@ -85,7 +85,7 @@ suite('WebRequestWorker Unit Tests', () =>
     test('Web Requests Cached on Repeated calls', async () =>
     {
         const ctx = getMockAcquisitionContext('runtime', '');
-        const webWorker = new MockTrackingWebRequestWorker(ctx, staticWebsiteUrl);
+        const webWorker = new MockTrackingWebRequestWorker();
 
         const uncachedResult = await webWorker.getCachedData(staticWebsiteUrl, ctx);
         // The data should now be cached.
@@ -104,7 +104,7 @@ suite('WebRequestWorker Unit Tests', () =>
         const ctx = getMockAcquisitionContext('runtime', '');
         const uri = 'https://microsoft.com';
 
-        const webWorker = new MockTrackingWebRequestWorker(ctx, uri, true, cacheTimeoutTime);
+        const webWorker = new MockTrackingWebRequestWorker(true);
         const uncachedResult = await webWorker.getCachedData(uri, ctx);
         await new Promise(resolve => setTimeout(resolve, cacheTimeoutTime));
         const cachedResult = await webWorker.getCachedData(uri, ctx);
@@ -117,7 +117,7 @@ suite('WebRequestWorker Unit Tests', () =>
     {
         const eventStream = new MockEventStream();
         const ctx = getMockAcquisitionContext('runtime', '', 600, eventStream);
-        const webWorker = new MockTrackingWebRequestWorker(ctx, staticWebsiteUrl);
+        const webWorker = new MockTrackingWebRequestWorker();
 
         const _ = await webWorker.getCachedData(staticWebsiteUrl, ctx);
         const timerEvents = eventStream.events.find(event => event instanceof WebRequestTime);
