@@ -26,7 +26,7 @@ import
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
-import { WebRequestWorker } from '../Utils/WebRequestWorker';
+import { WebRequestWorkerSingleton } from '../Utils/WebRequestWorkerSingleton';
 import { VersionResolver } from './VersionResolver';
 import * as versionUtils from './VersionUtilities';
 
@@ -67,7 +67,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller
     private completedInstall = false;
     protected versionResolver: VersionResolver;
     public file: IFileUtilities;
-    protected webWorker: WebRequestWorker;
+    protected webWorker: WebRequestWorkerSingleton;
     private invalidIntegrityError = `The integrity of the .NET install file is invalid, or there was no integrity to check and you denied the request to continue with those risks.
 We cannot verify our .NET file host at this time. Please try again later or install the SDK manually.`;
 
@@ -81,7 +81,7 @@ We cannot verify our .NET file host at this time. Please try again later or inst
         this.commandRunner = executor ?? new CommandExecutor(context, utilContext);
         this.versionResolver = new VersionResolver(context);
         this.file = new FileUtilities();
-        this.webWorker = new WebRequestWorker(context, installerUrl);
+        this.webWorker = WebRequestWorkerSingleton.getInstance();
         this.registry = registryReader ?? new RegistryReader(context, utilContext);
     }
 
@@ -251,7 +251,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             await fs.promises.mkdir(installerDir, { recursive: true });
         }
 
-        await this.webWorker.downloadFile(installerUrl, installerPath);
+        await this.webWorker.downloadFile(installerUrl, installerPath, this.acquisitionContext);
         try
         {
             if (os.platform() === 'win32') // Windows does not have chmod +x ability with nodejs.

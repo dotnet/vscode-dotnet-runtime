@@ -46,7 +46,7 @@ import
 import { FileUtilities } from './FileUtilities';
 import { getInstallFromContext } from './InstallIdUtilities';
 
-export class WebRequestWorker
+export class WebRequestWorkerSingleton
 {
     /**
      * @remarks
@@ -54,20 +54,13 @@ export class WebRequestWorker
      * The responses from GET requests are cached with a 'time-to-live' of 5 minutes by default.
      */
     private client: AxiosCacheInstance;
-    private websiteTimeoutMs: number;
+    protected static instance: WebRequestWorkerSingleton;
     private proxy: string | undefined;
 
     private proxyAgent: HttpsProxyAgent<string> | null = null;
 
-    constructor(
-        private readonly context: IAcquisitionWorkerContext,
-        protected readonly url: string,
-        private cacheTimeToLive = -1
-    )
+    protected constructor()
     {
-        this.websiteTimeoutMs = this.context.timeoutSeconds * 1000;
-        this.proxy = this.context.proxyUrl;
-        this.cacheTimeToLive = this.cacheTimeToLive === -1 ? this.websiteTimeoutMs * 100 : this.cacheTimeToLive; // make things live 100x the default time, which is ~16 hrs
         const uncachedAxiosClient = Axios.create({});
 
         // Wrap the client with a retry interceptor. We don't need to return a new client, it should be applied automatically.
@@ -110,12 +103,23 @@ export class WebRequestWorker
 
         this.client = setupCache(uncachedAxiosClient,
             {
-                storage: buildMemoryStorage(),
-                ttl: this.cacheTimeToLive
+                storage: buildMemoryStorage(
+                    false,
+                    1000 * 60 * 1 // Reset the cache every 1 minute
+                ),
             }
         );
     }
 
+    public static getInstance(): WebRequestWorkerSingleton
+    {
+        if (!WebRequestWorkerSingleton.instance)
+        {
+            WebRequestWorkerSingleton.instance = new WebRequestWorkerSingleton();
+        }
+
+        return WebRequestWorkerSingleton.instance;
+    }
     /**
      *
      * @param url The URL of the website to send a get request to.
@@ -125,28 +129,28 @@ export class WebRequestWorker
      * @remarks This function is used as a custom axios.get with a timeout because axios does not correctly handle CONNECTION-based timeouts:
      * https://github.com/axios/axios/issues/647 (e.g. bad URL/site down).
      */
-    private async axiosGet(url: string, options = {})
+    private async axiosGet(url: string, ctx: IAcquisitionWorkerContext, options = {})
     {
         if (url === '' || !url)
         {
-            throw new EventBasedError('AxiosGetFailedWithInvalidURL', `Request to the url ${this.url} failed, as the URL is invalid.`);
+            throw new EventBasedError('AxiosGetFailedWithInvalidURL', `Request to the url ${url} failed, as the URL is invalid.`);
         }
         const timeoutCancelTokenHook = new AbortController();
         const timeout = setTimeout(async () =>
         {
             timeoutCancelTokenHook.abort();
-            this.context.eventStream.post(new WebRequestTime(`Timer for request:`, String(this.websiteTimeoutMs), 'false', url, '777')); // 777 for custom abort status. arbitrary
-            if (!(await WebRequestWorker.isOnline(this.websiteTimeoutMs / 1000, this.context.eventStream)))
+            ctx.eventStream.post(new WebRequestTime(`Timer for request:`, String(this.timeoutMsFromCtx(ctx)), 'false', url, '777')); // 777 for custom abort status. arbitrary
+            if (!(await WebRequestWorkerSingleton.isOnline(ctx.timeoutSeconds, ctx.eventStream)))
             {
                 const offlineError = new EventBasedError('DotnetOfflineFailure', 'No internet connection detected: Cannot install .NET');
-                this.context.eventStream.post(new DotnetOfflineFailure(offlineError, null));
+                ctx.eventStream.post(new DotnetOfflineFailure(offlineError, null));
                 throw offlineError;
             }
-            const formattedError = new Error(`TIMEOUT: The request to ${this.url} timed out at ${this.websiteTimeoutMs} ms. This only occurs if your internet
+            const formattedError = new Error(`TIMEOUT: The request to ${url} timed out at ${ctx.timeoutSeconds} s. This only occurs if your internet
  or the url are experiencing connection difficulties; not if the server is being slow to respond. Check your connection, the url, and or increase the timeout value here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#install-script-timeouts`);
-            this.context.eventStream.post(new WebRequestError(new EventBasedError('WebRequestError', formattedError.message, formattedError.stack), null));
+            ctx.eventStream.post(new WebRequestError(new EventBasedError('WebRequestError', formattedError.message, formattedError.stack), null));
             throw formattedError;
-        }, this.websiteTimeoutMs);
+        }, this.timeoutMsFromCtx(ctx));
 
         // Make the web request
         const response = await this.client.get(url, { signal: timeoutCancelTokenHook.signal, ...options });
@@ -167,15 +171,15 @@ export class WebRequestWorker
         }
         else
         {
-            this.context.eventStream.post(new WebRequestTimeUnknown(`Timer for request failed. Start time: ${startTimeNs}, end time: ${finalTimeNs}`, durationMs, 'true', url, String(response.status)));
+            ctx.eventStream.post(new WebRequestTimeUnknown(`Timer for request failed. Start time: ${startTimeNs}, end time: ${finalTimeNs}`, durationMs, 'true', url, String(response.status)));
         }
         if (!response.cached)
         {
-            this.context.eventStream.post(new WebRequestTime(`Timer for request:`, durationMs, 'true', url, String(response.status)));
+            ctx.eventStream.post(new WebRequestTime(`Timer for request:`, durationMs, 'true', url, String(response.status)));
         }
         else
         {
-            this.context.eventStream.post(new WebRequestCachedTime(`Cached Timer for request:`, durationMs, 'true', url, String(response.status)));
+            ctx.eventStream.post(new WebRequestCachedTime(`Cached Timer for request:`, durationMs, 'true', url, String(response.status)));
         }
 
         // Response
@@ -186,9 +190,9 @@ export class WebRequestWorker
      * @returns The data from a web request that was hopefully cached. Even if it wasn't cached, we will make an attempt to get the data.
      * @remarks This function is no longer needed as the data is cached either way if you call makeWebRequest, but it was kept to prevent breaking APIs.
      */
-    public async getCachedData(retriesCount = 2): Promise<string | undefined>
+    public async getCachedData(url: string, ctx: IAcquisitionWorkerContext, retriesCount = 2): Promise<string | undefined>
     {
-        return this.makeWebRequest(true, retriesCount);
+        return this.makeWebRequest(url, ctx, true, retriesCount);
     }
 
 
@@ -218,7 +222,7 @@ export class WebRequestWorker
      * (Checking the storage cache state results in invalid results.)
      * Returns false if the url is unavailable.
      */
-    protected async isUrlCached(urlInQuestion: string = this.url): Promise<boolean>
+    protected async isUrlCached(urlInQuestion: string, ctx: IAcquisitionWorkerContext): Promise<boolean>
     {
         if (urlInQuestion === '' || !urlInQuestion)
         {
@@ -226,7 +230,7 @@ export class WebRequestWorker
         }
         try
         {
-            const requestFunction = this.axiosGet(urlInQuestion, await this.getAxiosOptions(3));
+            const requestFunction = this.axiosGet(urlInQuestion, ctx, await this.getAxiosOptions(ctx, 3));
             const requestResult = await Promise.resolve(requestFunction);
             const cachedState = requestResult.cached;
             return cachedState;
@@ -237,9 +241,10 @@ export class WebRequestWorker
         }
     }
 
-    private async ActivateProxyAgentIfFound()
+    private async GetProxyAgentIfNeeded(ctx: IAcquisitionWorkerContext): Promise<HttpsProxyAgent<string> | null>
     {
-        if (!this.proxyEnabled())
+        let discoveredProxy = '';
+        if (!this.proxySettingConfiguredManually(ctx))
         {
             try
             {
@@ -255,20 +260,24 @@ export class WebRequestWorker
             }
             catch (error: any)
             {
-                this.context.eventStream.post(new SuppressedAcquisitionError(error, `The proxy lookup failed, most likely due to limited registry access. Skipping automatic proxy lookup.`));
+                ctx.eventStream.post(new SuppressedAcquisitionError(error, `The proxy lookup failed, most likely due to limited registry access. Skipping automatic proxy lookup.`));
             }
         }
-        if (this.proxyEnabled() && this.proxy)
+
+        if (this.proxySettingConfiguredManually(ctx) || discoveredProxy)
         {
-            this.proxyAgent = new HttpsProxyAgent(this.proxy);
+            this.proxyAgent = new HttpsProxyAgent(ctx.proxyUrl ?? discoveredProxy);
+            return this.proxyAgent;
         }
+
+        return null;
     }
 
     /**
      * @returns an empty promise. It will download the file from the url. The url is expected to be a file server that responds with the file directly.
      * We cannot use a simpler download pattern because we need to download the byte stream 1-1.
      */
-    public async downloadFile(url: string, dest: string)
+    public async downloadFile(url: string, dest: string, ctx: IAcquisitionWorkerContext): Promise<void>
     {
         if (await new FileUtilities().exists(dest))
         {
@@ -277,10 +286,10 @@ export class WebRequestWorker
 
         const finished = promisify(stream.finished);
         const file = fs.createWriteStream(dest, { flags: 'wx' });
-        const options = await this.getAxiosOptions(3, { responseType: 'stream', transformResponse: (x: any) => x }, false);
+        const options = await this.getAxiosOptions(ctx, 3, { responseType: 'stream', transformResponse: (x: any) => x }, false);
         try
         {
-            await this.axiosGet(url, options)
+            await this.axiosGet(url, ctx, options)
                 .then(response =>
                 {
                     // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
@@ -296,8 +305,8 @@ export class WebRequestWorker
             if (error?.message && (error?.message as string)?.includes('ENOSPC'))
             {
                 const err = new DiskIsFullError(new EventBasedError('DiskIsFullError',
-                    `You don't have enough space left on your disk to install the .NET SDK. Please clean up some space.`), getInstallFromContext(this.context));
-                this.context.eventStream.post(err);
+                    `You don't have enough space left on your disk to install the .NET SDK. Please clean up some space.`), getInstallFromContext(ctx));
+                ctx.eventStream.post(err);
                 throw err.error;
             }
             else
@@ -305,23 +314,22 @@ export class WebRequestWorker
                 const err = new DotnetDownloadFailure(new EventBasedError('DotnetDownloadFailure',
                     // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                    `We failed to download the .NET Installer. Please try to install the .NET SDK manually. Error: ${error?.message}`), getInstallFromContext(this.context));
-                this.context.eventStream.post(err);
+                    `We failed to download the .NET Installer. Please try to install the .NET SDK manually. Error: ${error?.message}`), getInstallFromContext(ctx));
+                ctx.eventStream.post(err);
                 throw err.error;
             }
         }
     }
 
-    private async getAxiosOptions(numRetries: number, furtherOptions?: object, keepAlive = true): Promise<object>
+    private async getAxiosOptions(ctx: IAcquisitionWorkerContext, numRetries: number, furtherOptions?: object, keepAlive = true): Promise<object>
     {
-        await this.ActivateProxyAgentIfFound();
+        const proxyAgent = await this.GetProxyAgentIfNeeded(ctx);
 
         const options: object = {
-            timeout: this.websiteTimeoutMs,
+            timeout: this.timeoutMsFromCtx(ctx),
             'axios-retry': { retries: numRetries },
             ...(keepAlive && { headers: { 'Connection': 'keep-alive' } }),
-            ...(this.proxyEnabled() && { proxy: false }),
-            ...(this.proxyEnabled() && { httpsAgent: this.proxyAgent }),
+            ...(proxyAgent !== null && { proxy: false, httpsAgent: proxyAgent }),
             ...furtherOptions
         };
 
@@ -335,16 +343,14 @@ export class WebRequestWorker
      * @returns The data returned from a get request to the url. It may be of string type, but it may also be of another type if the return result is convert-able (e.g. JSON.)
      * @remarks protected for ease of testing.
      */
-    protected async makeWebRequest(throwOnError: boolean, numRetries: number): Promise<string | undefined>
+    protected async makeWebRequest(url: string, ctx: IAcquisitionWorkerContext, throwOnError: boolean, numRetries: number): Promise<string | undefined>
     {
-        const options = await this.getAxiosOptions(numRetries);
+        const options = await this.getAxiosOptions(ctx, numRetries);
 
         try
         {
-            this.context.eventStream.post(new WebRequestSent(this.url));
-            const response = await this.axiosGet(
-                this.url,
-                { transformResponse: (x: any) => x as any, ...options }
+            ctx.eventStream.post(new WebRequestSent(url));
+            const response = await this.axiosGet(url, ctx, { transformResponse: (x: any) => x as any, ...options }
             );
 
             if (response?.headers?.['content-type'] === 'application/json')
@@ -375,20 +381,20 @@ export class WebRequestWorker
                     // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                     const summarizedError = new EventBasedError('WebRequestFailedFromAxios',
-                        `Request to ${this.url} Failed: ${axiosBasedError?.message}. Aborting.
+                        `Request to ${url} Failed: ${axiosBasedError?.message}. Aborting.
 ${axiosBasedError.cause ? `Error Cause: ${axiosBasedError.cause!.message}` : ``}
 Please ensure that you are online.
 
 If you're on a proxy and disable registry access, you must set the proxy in our extension settings. See https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`);
-                    this.context.eventStream.post(new WebRequestError(summarizedError, getInstallFromContext(this.context)));
+                    ctx.eventStream.post(new WebRequestError(summarizedError, getInstallFromContext(ctx)));
                     throw summarizedError;
                 }
                 else
                 {
                     // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                    const genericError = new EventBasedError('WebRequestFailedGenerically', `Web Request to ${this.url} Failed: ${error?.message}. Aborting. Stack: ${'stack' in error ? error?.stack : 'unavailable.'}`);
-                    this.context.eventStream.post(new WebRequestError(genericError, getInstallFromContext(this.context)));
+                    const genericError = new EventBasedError('WebRequestFailedGenerically', `Web Request to ${url} Failed: ${error?.message}. Aborting. Stack: ${'stack' in error ? error?.stack : 'unavailable.'}`);
+                    ctx.eventStream.post(new WebRequestError(genericError, getInstallFromContext(ctx)));
                     throw genericError;
                 }
             }
@@ -396,8 +402,13 @@ If you're on a proxy and disable registry access, you must set the proxy in our 
         }
     }
 
-    private proxyEnabled(): boolean
+    private proxySettingConfiguredManually(ctx: IAcquisitionWorkerContext): boolean
     {
-        return this.proxy !== '';
+        return ctx.proxyUrl ? true : false;
+    }
+
+    private timeoutMsFromCtx(ctx: IAcquisitionWorkerContext): number
+    {
+        return ctx.timeoutSeconds * 1000;
     }
 }
