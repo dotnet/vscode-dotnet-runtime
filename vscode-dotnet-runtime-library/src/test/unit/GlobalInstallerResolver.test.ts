@@ -29,7 +29,7 @@ suite('Global Installer Resolver Tests', () =>
     {
         const acquisitionContext = getMockAcquisitionContext('runtime', featureBandVersion);
         const provider: GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, featureBandVersion);
-        const webWorker = new FileWebRequestWorker(acquisitionContext, '', filePath);
+        const webWorker = new FileWebRequestWorker(filePath);
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullySpecifiedVersion(), newestFeatureBandedVersion);
@@ -39,7 +39,7 @@ suite('Global Installer Resolver Tests', () =>
     {
         const acquisitionContext = getMockAcquisitionContext('runtime', mockVersion);
         const provider: GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, mockVersion);
-        const webWorker = new FileWebRequestWorker(acquisitionContext, '', filePath);
+        const webWorker = new FileWebRequestWorker(filePath);
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullySpecifiedVersion(), mockVersion);
@@ -60,7 +60,7 @@ suite('Global Installer Resolver Tests', () =>
     {
         const acquisitionContext = getMockAcquisitionContext('sdk', '6.0.200');
         const provider: GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, '6.0.200');
-        const webWorker = new FileWebRequestWorker(acquisitionContext, '', otherUrlFilePath);
+        const webWorker = new FileWebRequestWorker(otherUrlFilePath);
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullySpecifiedVersion(), '6.0.200');
@@ -79,7 +79,7 @@ suite('Global Installer Resolver Tests', () =>
     {
         const acquisitionContext = getMockAcquisitionContext('runtime', majorMinorOnly);
         const provider: GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, majorMinorOnly);
-        const webWorker = new FileWebRequestWorker(acquisitionContext, '', filePath);
+        const webWorker = new FileWebRequestWorker(filePath);
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullySpecifiedVersion(), mockVersion);
@@ -89,7 +89,7 @@ suite('Global Installer Resolver Tests', () =>
     {
         const acquisitionContext = getMockAcquisitionContext('runtime', majorOnly);
         const provider: GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, majorOnly);
-        const webWorker = new FileWebRequestWorker(acquisitionContext, '', filePath);
+        const webWorker = new FileWebRequestWorker(filePath);
         provider.customWebRequestWorker = webWorker;
 
         assert.equal(await provider.getFullySpecifiedVersion(), mockVersion);
@@ -100,7 +100,7 @@ suite('Global Installer Resolver Tests', () =>
         const version = '7.0.500';
         const acquisitionContext = getMockAcquisitionContext('runtime', version);
         const provider: GlobalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, version);
-        const webWorker = new FileWebRequestWorker(acquisitionContext, '', filePath);
+        const webWorker = new FileWebRequestWorker(filePath);
         provider.customWebRequestWorker = webWorker;
 
         assert.isRejected(provider.getFullySpecifiedVersion());

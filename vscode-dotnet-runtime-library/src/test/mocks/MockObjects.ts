@@ -148,6 +148,7 @@ export class FileWebRequestWorker extends WebRequestWorkerSingleton
     constructor(private readonly mockFilePath: string)
     {
         super();
+        const _ = WebRequestWorkerSingleton.getInstance(); // cause super to exist
     }
 
     protected async makeWebRequest(uri: string, ctx: IAcquisitionWorkerContext): Promise<string | undefined>
@@ -250,8 +251,7 @@ export class MockIndexWebRequestWorker extends WebRequestWorkerSingleton
         ``
     ];
 
-    constructor(ctx: IAcquisitionWorkerContext, url: string,
-        protected readonly succeed = true, webTimeToLive = testDefaultTimeoutTimeMs)
+    constructor(protected readonly succeed = true)
     {
         super();
         const _ = WebRequestWorkerSingleton.getInstance(); // cause super to exist
@@ -312,7 +312,7 @@ export class MockVersionResolver extends VersionResolver
     constructor(ctx: IAcquisitionWorkerContext)
     {
         super(ctx);
-        this.webWorker = new FileWebRequestWorker(ctx, 'releases', this.filePath);
+        this.webWorker = new FileWebRequestWorker(this.filePath);
     }
 }
 
