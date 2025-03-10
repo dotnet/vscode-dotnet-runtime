@@ -235,8 +235,15 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
     private async downloadInstaller(installerUrl: string): Promise<string>
     {
         const ourInstallerDownloadFolder = IGlobalInstaller.getDownloadedInstallFilesFolder(installerUrl);
-        await this.file.wipeDirectory(ourInstallerDownloadFolder, this.acquisitionContext.eventStream);
         const installerPath = path.join(ourInstallerDownloadFolder, `${installerUrl.split('/').slice(-1)}`);
+
+        if (await this.file.exists(installerPath) && await this.installerFileHasValidIntegrity(installerPath))
+        {
+            this.acquisitionContext.eventStream.post(new DotnetFileIntegrityCheckEvent(`The installer file ${installerPath} already exists and is valid.`));
+            return installerPath;
+        }
+
+        await this.file.wipeDirectory(ourInstallerDownloadFolder, this.acquisitionContext.eventStream);
 
         const installerDir = path.dirname(installerPath);
         if (!(await this.file.exists(installerDir)))
@@ -259,7 +266,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             }
             else
             {
-                fs.chmodSync(installerPath, 0o744);
+                await fs.promises.chmod(installerPath, 0o744);
             }
         }
         catch (error: any)
