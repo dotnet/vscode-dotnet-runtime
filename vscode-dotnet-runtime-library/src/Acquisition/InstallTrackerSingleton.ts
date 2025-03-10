@@ -184,8 +184,12 @@ export class InstallTrackerSingleton
             const existingInstalls = await this.getExistingInstalls(id === this.installedVersionsId, true);
             const installRecord = existingInstalls.filter(x => IsEquivalentInstallation(x.dotnetInstall, install));
 
-            return (installRecord?.length ?? 0) === 0 || installRecord[0]?.installingExtensions?.length === 0 ||
-                (allowUninstallUserOnlyInstall && installRecord[0]?.installingExtensions?.length === 1 && installRecord[0]?.installingExtensions?.includes('user'));
+            const zeroInstalledRecordsLeft = (installRecord?.length ?? 0) === 0;
+            const installedRecordsLeftButNoOwnersRemain = installRecord[0]?.installingExtensions?.length === 0;
+            const installWasMadeByUserAndHasNoExtensionDependencies = (allowUninstallUserOnlyInstall &&
+                installRecord[0]?.installingExtensions?.length === 1 && installRecord[0]?.installingExtensions?.includes('user'))
+
+            return zeroInstalledRecordsLeft || installedRecordsLeftButNoOwnersRemain || installWasMadeByUserAndHasNoExtensionDependencies;
         }, isFinishedInstall ? this.installedVersionsId : this.installingVersionsId, dotnetInstall);
     }
 
@@ -336,7 +340,7 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
     {
         return this.executeWithLock(alreadyHoldingLock, idStr, async (id: string, install: DotnetInstall) =>
         {
-            this.eventStream.post(new RemovingVersionFromExtensionState(`Adding ${JSON.stringify(install)} with id ${id} from the state.`));
+            this.eventStream.post(new AddTrackingVersions(`Adding ${JSON.stringify(install)} with id ${id} from the state.`));
 
             const existingVersions = await this.getExistingInstalls(id === this.installedVersionsId, true);
             const preExistingInstallIndex = existingVersions.findIndex(x => IsEquivalentInstallation(x.dotnetInstall, install));

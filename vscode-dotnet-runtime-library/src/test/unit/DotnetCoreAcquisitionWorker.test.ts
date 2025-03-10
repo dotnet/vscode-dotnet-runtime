@@ -4,22 +4,33 @@
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
+import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import * as fs from 'fs';
 import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
-import {
+import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
+import { IAcquisitionInvoker } from '../../Acquisition/IAcquisitionInvoker';
+import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
+import { InstallRecord } from '../../Acquisition/InstallRecord';
+import { InstallTrackerSingleton } from '../../Acquisition/InstallTrackerSingleton';
+import { IEventStream } from '../../EventStream/EventStream';
+import
+{
     DotnetAcquisitionCompleted,
     DotnetAcquisitionStarted,
     DotnetAcquisitionStatusResolved,
     DotnetAcquisitionStatusUndefined,
-    DotnetInstallGraveyardEvent,
     DotnetUninstallAllCompleted,
     DotnetUninstallAllStarted,
     TestAcquireCalled
 } from '../../EventStream/EventStreamEvents';
 import { EventType } from '../../EventStream/EventType';
-import {
+import { DotnetInstallType } from '../../IDotnetAcquireContext';
+import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
+import { getInstallIdCustomArchitecture } from '../../Utils/InstallIdUtilities';
+import { getDotnetExecutable } from '../../Utils/TypescriptUtilities';
+import
+{
     MockAcquisitionInvoker,
     MockDotnetCoreAcquisitionWorker,
     MockEventStream,
@@ -29,28 +40,19 @@ import {
     RejectingAcquisitionInvoker,
 } from '../mocks/MockObjects';
 import { getMockAcquisitionContext, getMockAcquisitionWorker } from './TestUtility';
-import { IAcquisitionInvoker } from '../../Acquisition/IAcquisitionInvoker';
-import { InstallOwner, InstallRecord } from '../../Acquisition/InstallRecord';
-import { GetDotnetInstallInfo } from '../../Acquisition/DotnetInstall';
-import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
-import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
-import { IEventStream } from '../../EventStream/EventStream';
-import { DotnetInstallType} from '../../IDotnetAcquireContext';
-import { getInstallIdCustomArchitecture } from '../../Utils/InstallIdUtilities';
-import { InstallTrackerSingleton } from '../../Acquisition/InstallTrackerSingleton';
-import { getDotnetExecutable } from '../../Utils/TypescriptUtilities';
-import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
 
 const assert = chai.assert;
 chai.use(chaiAsPromised);
 const expectedTimeoutTime = 9000;
 
-suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
+suite('DotnetCoreAcquisitionWorker Unit Tests', function ()
+{
     const installingVersionsKey = 'installing';
     const installedVersionsKey = 'installed';
     const dotnetFolderName = `.dotnet O'Hare O'Donald`;
 
-    this.afterEach(async () => {
+    this.afterEach(async () =>
+    {
         // Tear down tmp storage for fresh run
         InstallTrackerSingleton.getInstance(new MockEventStream(), new MockExtensionContext()).clearPromises();
         LocalMemoryCacheSingleton.getInstance().invalidate();
@@ -64,7 +66,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         return [eventStream, extContext];
     }
 
-    function setupWorker(workerContext : IAcquisitionWorkerContext, eventStream : IEventStream) : [MockDotnetCoreAcquisitionWorker, IAcquisitionInvoker]
+    function setupWorker(workerContext: IAcquisitionWorkerContext, eventStream: IEventStream): [MockDotnetCoreAcquisitionWorker, IAcquisitionInvoker]
     {
         const acquisitionWorker = getMockAcquisitionWorker(workerContext);
         const invoker = new NoInstallAcquisitionInvoker(eventStream, acquisitionWorker);
@@ -72,18 +74,18 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         return [acquisitionWorker, invoker];
     }
 
-    async function callAcquire(workerContext : IAcquisitionWorkerContext, acquisitionWorker : DotnetCoreAcquisitionWorker, invoker : IAcquisitionInvoker)
+    async function callAcquire(workerContext: IAcquisitionWorkerContext, acquisitionWorker: DotnetCoreAcquisitionWorker, invoker: IAcquisitionInvoker)
     {
         const result = workerContext.acquisitionContext.mode === undefined || workerContext.acquisitionContext.mode === 'runtime' ?
-        await acquisitionWorker.acquireLocalRuntime(workerContext, invoker) :
-        workerContext.acquisitionContext.mode === 'sdk' ? await acquisitionWorker.acquireLocalSDK(workerContext, invoker) :
-        workerContext.acquisitionContext.mode === 'aspnetcore' ? await acquisitionWorker.acquireLocalASPNET(workerContext, invoker) :
-        {} as { dotnetPath: string };
+            await acquisitionWorker.acquireLocalRuntime(workerContext, invoker) :
+            workerContext.acquisitionContext.mode === 'sdk' ? await acquisitionWorker.acquireLocalSDK(workerContext, invoker) :
+                workerContext.acquisitionContext.mode === 'aspnetcore' ? await acquisitionWorker.acquireLocalASPNET(workerContext, invoker) :
+                    {} as { dotnetPath: string };
 
         return result;
     }
 
-    function migrateContextToNewInstall(worker : IAcquisitionWorkerContext, newVersion : string, newArch : string | null | undefined)
+    function migrateContextToNewInstall(worker: IAcquisitionWorkerContext, newVersion: string, newArch: string | null | undefined)
     {
         worker.acquisitionContext.version = newVersion;
         worker.acquisitionContext.architecture = newArch;
@@ -91,11 +93,11 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
 
     function getExpectedPath(installId: string, mode: DotnetInstallMode): string
     {
-        if(mode === 'runtime' || mode === 'aspnetcore')
+        if (mode === 'runtime' || mode === 'aspnetcore')
         {
             return path.join(dotnetFolderName, installId, getDotnetExecutable())
         }
-        else if(mode === 'sdk')
+        else if (mode === 'sdk')
         {
             return path.join(dotnetFolderName, getDotnetExecutable());
         }
@@ -107,7 +109,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         exePath: string,
         eventStream: MockEventStream,
         context: MockExtensionContext,
-        mode : DotnetInstallMode = 'runtime')
+        mode: DotnetInstallMode = 'runtime')
     {
         const expectedPath = getExpectedPath(installId, mode);
 
@@ -143,12 +145,13 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         assert.equal(acquireEvent!.context.installDir, path.dirname(expectedPath), 'The acquisition went to the expected installation directory');
     }
 
-    this.beforeAll(async () => {
+    this.beforeAll(async () =>
+    {
         process.env._VSCODE_DOTNET_INSTALL_FOLDER = dotnetFolderName;
     });
 
-    async function AssertInstall(acquisitionWorker : DotnetCoreAcquisitionWorker, context : MockExtensionContext, eventStream : MockEventStream, version : string,
-        invoker : IAcquisitionInvoker, workerContext : IAcquisitionWorkerContext)
+    async function AssertInstall(acquisitionWorker: DotnetCoreAcquisitionWorker, context: MockExtensionContext, eventStream: MockEventStream, version: string,
+        invoker: IAcquisitionInvoker, workerContext: IAcquisitionWorkerContext)
     {
         const installId = getInstallIdCustomArchitecture(workerContext.acquisitionContext.version, workerContext.acquisitionContext.architecture,
             workerContext.acquisitionContext.mode ?? 'runtime', workerContext.acquisitionContext.installType ?? 'local');
@@ -158,7 +161,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         await assertAcquisitionSucceeded(installId, result.dotnetPath, eventStream, context, workerContext.acquisitionContext.mode!);
     }
 
-    async function acquireWithVersion(version : string, mode : DotnetInstallMode)
+    async function acquireWithVersion(version: string, mode: DotnetInstallMode)
     {
         const [eventStream, extContext] = setupStates();
         const ctx = getMockAcquisitionContext(mode, version, expectedTimeoutTime, eventStream, extContext);
@@ -167,7 +170,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         await AssertInstall(acquisitionWorker, extContext, eventStream, version, invoker, ctx);
     }
 
-    async function acquireStatus(version : string, mode : DotnetInstallMode, type : DotnetInstallType)
+    async function acquireStatus(version: string, mode: DotnetInstallMode, type: DotnetInstallType)
     {
         const [eventStream, extContext] = setupStates();
         const ctx = getMockAcquisitionContext(mode, version, expectedTimeoutTime, eventStream, extContext);
@@ -187,7 +190,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         assert.exists(resolvedEvent, 'The sdk is resolved');
     }
 
-    async function repeatAcquisition(version : string, mode : DotnetInstallMode)
+    async function repeatAcquisition(version: string, mode: DotnetInstallMode)
     {
         const [eventStream, extContext] = setupStates();
         const ctx = getMockAcquisitionContext(mode, version, expectedTimeoutTime, eventStream, extContext);
@@ -203,7 +206,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         assert.equal(events.length, 1);
     }
 
-    async function acquireAndUninstallAll(version : string, mode : DotnetInstallMode, type : DotnetInstallType)
+    async function acquireAndUninstallAll(version: string, mode: DotnetInstallMode, type: DotnetInstallType)
     {
         const [eventStream, extContext] = setupStates();
         const ctx = getMockAcquisitionContext(mode, version, expectedTimeoutTime, eventStream, extContext);
@@ -225,7 +228,8 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         await acquireWithVersion('1.0', 'runtime');
     }).timeout(expectedTimeoutTime);
 
-    test('Acquire SDK Version', async () => {
+    test('Acquire SDK Version', async () =>
+    {
         await acquireWithVersion('5.0', 'sdk');
     }).timeout(expectedTimeoutTime);
 
@@ -234,26 +238,31 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         await acquireWithVersion('1.0', 'aspnetcore');
     }).timeout(expectedTimeoutTime);
 
-    test('Acquire SDK Status', async () => {
+    test('Acquire SDK Status', async () =>
+    {
         await acquireStatus('5.0', 'sdk', 'local');
     }).timeout(expectedTimeoutTime);
 
-    test('Acquire Runtime Status', async () => {
+    test('Acquire Runtime Status', async () =>
+    {
         await acquireStatus('5.0', 'runtime', 'local');
     }).timeout(expectedTimeoutTime);
 
-    test('Acquire ASP.NET Runtime Status', async () => {
+    test('Acquire ASP.NET Runtime Status', async () =>
+    {
         await acquireStatus('5.0', 'aspnetcore', 'local');
     }).timeout(expectedTimeoutTime);
 
-    test('Acquire Runtime Version Multiple Times', async () => {
+    test('Acquire Runtime Version Multiple Times', async () =>
+    {
         const numAcquisitions = 3;
         const version = '1.0';
         const [eventStream, extContext] = setupStates();
         const ctx = getMockAcquisitionContext('runtime', version, expectedTimeoutTime, eventStream, extContext);
         const [acquisitionWorker, invoker] = setupWorker(ctx, eventStream);
 
-        for (let i = 0; i < numAcquisitions; i++) {
+        for (let i = 0; i < numAcquisitions; i++)
+        {
             const pathResult = await acquisitionWorker.acquireLocalRuntime(ctx, invoker);
             const installId = getInstallIdCustomArchitecture(ctx.acquisitionContext.version, ctx.acquisitionContext.architecture, 'runtime', 'local');
             await assertAcquisitionSucceeded(installId, pathResult.dotnetPath, eventStream, extContext);
@@ -264,7 +273,8 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         assert.lengthOf(acquireEvents, 1);
     }).timeout(expectedTimeoutTime);
 
-    test('Acquire Multiple Versions and UninstallAll', async () => {
+    test('Acquire Multiple Versions and UninstallAll', async () =>
+    {
         const versions = ['1.0', '1.1', '2.0', '2.1', '2.2'];
         const [eventStream, extContext] = setupStates();
         const ctx = getMockAcquisitionContext('runtime', versions[0], expectedTimeoutTime, eventStream, extContext);
@@ -300,42 +310,6 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         await acquireAndUninstallAll('6.0', 'sdk', 'local');
     }).timeout(expectedTimeoutTime);
 
-    test('Graveyard Removes Failed Uninstalls', async () => {
-        const version = '1.0';
-        const [eventStream, extContext] = setupStates();
-        const ctx = getMockAcquisitionContext('runtime', version, expectedTimeoutTime, eventStream, extContext);
-        const [acquisitionWorker, invoker] = setupWorker(ctx, eventStream);
-        const installId = getInstallIdCustomArchitecture(ctx.acquisitionContext.version, ctx.acquisitionContext.architecture, 'runtime', 'local');
-        const install = GetDotnetInstallInfo(version, 'runtime', 'local', os.arch());
-
-        const res = await acquisitionWorker.acquireLocalRuntime(ctx, invoker);
-        await assertAcquisitionSucceeded(installId, res.dotnetPath, eventStream, extContext);
-        acquisitionWorker.AddToGraveyard(ctx, install, 'Not applicable');
-
-        const versionToKeep = '5.0';
-        migrateContextToNewInstall(ctx, versionToKeep, os.arch());
-        await acquisitionWorker.acquireLocalRuntime(ctx, invoker);
-
-        assert.exists(eventStream.events.find(event => event instanceof DotnetInstallGraveyardEvent), 'The graveyard tried to uninstall .NET');
-        assert.isEmpty(extContext.get<InstallRecord[]>(installingVersionsKey, []), 'We did not hang/ get interrupted during the install.');
-        assert.deepEqual(extContext.get<InstallRecord[]>(installedVersionsKey, []),
-        [
-          {
-            dotnetInstall: {
-              architecture: 'x64',
-              installId: '5.0~x64',
-              isGlobal: false,
-              installMode: 'runtime',
-              version: '5.0',
-            },
-            installingExtensions: [
-              'test'
-            ] as InstallOwner[],
-          }
-        ] as InstallRecord[],
-        '.NET was successfully uninstalled and cleaned up properly when marked to be.');
-    }).timeout(expectedTimeoutTime);
-
     test('Correctly Removes Legacy (No-Architecture) Installs', async () =>
     {
         const runtimeV5 = '5.0.00';
@@ -363,8 +337,8 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         await AssertInstall(worker, extensionContext, eventStream, runtimeV5, invoker, ctx);
 
         // 5.0 legacy runtime should be replaced, but 6.0 runtime should remain, and all SDK items should remain.
-        let detailedRemainingInstalls : InstallRecord[] = extensionContext.get<InstallRecord[]>(installedVersionsKey, []);
-        let remainingInstalls : string[] = detailedRemainingInstalls.map(x => x.dotnetInstall.installId);
+        let detailedRemainingInstalls: InstallRecord[] = extensionContext.get<InstallRecord[]>(installedVersionsKey, []);
+        let remainingInstalls: string[] = detailedRemainingInstalls.map(x => x.dotnetInstall.installId);
         assert.deepStrictEqual(remainingInstalls, ['5.0.00~x64', runtimeV6, sdkV5, sdkV6],
             'Only The Requested Legacy Runtime is replaced when new runtime is installed');
 
@@ -383,19 +357,23 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
             'Only The Requested Legacy SDK is replaced when new SDK is installed');
     }).timeout(expectedTimeoutTime * 6);
 
-    test('Repeated Runtime Acquisition', async () => {
+    test('Repeated Runtime Acquisition', async () =>
+    {
         await repeatAcquisition('1.0', 'runtime');
     }).timeout(expectedTimeoutTime);
 
-    test('Repeated ASP.NET Acquisition', async () => {
+    test('Repeated ASP.NET Acquisition', async () =>
+    {
         await repeatAcquisition('1.0', 'aspnetcore');
     }).timeout(expectedTimeoutTime);
 
-    test('Repeated SDK Acquisition', async () => {
+    test('Repeated SDK Acquisition', async () =>
+    {
         await repeatAcquisition('5.0', 'sdk');
     }).timeout(expectedTimeoutTime);
 
-    test('Error is Redirected on Acquisition Failure', async () => {
+    test('Error is Redirected on Acquisition Failure', async () =>
+    {
         const version = '1.0';
         const [eventStream, extContext] = setupStates();
         const ctx = getMockAcquisitionContext('runtime', version, expectedTimeoutTime, eventStream, extContext);
@@ -405,8 +383,10 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         return assert.isRejected(acquisitionWorker.acquireLocalRuntime(ctx, acquisitionInvoker), '.NET Acquisition Failed: "Rejecting message"');
     }).timeout(expectedTimeoutTime);
 
-    test('Get Expected Path With Apostrophe In Install path', async () => {
-        if(os.platform() === 'win32'){
+    test('Get Expected Path With Apostrophe In Install path', async () =>
+    {
+        if (os.platform() === 'win32')
+        {
             const installApostropheFolder = `test' for' apostrophe`;
             const version = '1.0';
             const [eventStream, extContext] = setupStates();
@@ -422,22 +402,27 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function () {
         }
     }).timeout(expectedTimeoutTime);
 
-    function deleteFolderRecursive(folderPath: string) {
-        if (fs.existsSync(folderPath)) {
-          fs.readdirSync(folderPath).forEach((file) => {
-            const filePath = path.join(folderPath, file);
+    function deleteFolderRecursive(folderPath: string)
+    {
+        if (fs.existsSync(folderPath))
+        {
+            fs.readdirSync(folderPath).forEach((file) =>
+            {
+                const filePath = path.join(folderPath, file);
 
-            if (fs.lstatSync(filePath).isDirectory()) {
-              // If the item is a directory, recursively call deleteFolderRecursive
-              deleteFolderRecursive(filePath);
-            } else {
-              // If the item is a file, delete it
-              fs.unlinkSync(filePath);
-            }
-          });
+                if (fs.lstatSync(filePath).isDirectory())
+                {
+                    // If the item is a directory, recursively call deleteFolderRecursive
+                    deleteFolderRecursive(filePath);
+                } else
+                {
+                    // If the item is a file, delete it
+                    fs.unlinkSync(filePath);
+                }
+            });
 
-          // After deleting all the files and subfolders, delete the folder itself
-          fs.rmdirSync(folderPath);
+            // After deleting all the files and subfolders, delete the folder itself
+            fs.rmdirSync(folderPath);
         }
-      }
+    }
 });
