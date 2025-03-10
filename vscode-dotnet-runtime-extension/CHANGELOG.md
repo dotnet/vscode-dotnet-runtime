@@ -13,7 +13,6 @@ and this project adheres to [Semantic Versioning].
 - Fixes an issue with install scripts on validating the dotnet install.
 - Fixes an issue with the Uninstall command.
 - Improvements to how installations are managed and tracked.
-- Fixed auditing of internal CDN performance metrics.
 
 ## [2.2.9] - 2025-3-12
 
@@ -25,6 +24,7 @@ and this project adheres to [Semantic Versioning].
 - Reduce amount of data to be collected.
 - Refactoring of code to better handle web requests and other potential bugs or failure points.
 - Performance improvements by reducing network activity requirements.
+- Fixed auditing of internal CDN performance metrics.
 
 ## [2.2.8] - 2025-2-11
 
