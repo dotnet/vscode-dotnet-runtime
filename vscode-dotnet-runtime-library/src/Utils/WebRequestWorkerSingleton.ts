@@ -26,6 +26,7 @@ import * as fs from 'fs';
 import { promisify } from 'util';
 import stream = require('stream');
 
+import { WEB_CACHE_DURATION_MS } from '../Acquisition/CacheTimeConstants';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { IEventStream } from '../EventStream/EventStream';
 import
@@ -37,6 +38,7 @@ import
     EventCancellationError,
     OfflineDetectionLogicTriggered,
     SuppressedAcquisitionError,
+    WebCacheClearEvent,
     WebRequestCachedTime,
     WebRequestError,
     WebRequestSent,
@@ -45,6 +47,7 @@ import
 } from '../EventStream/EventStreamEvents';
 import { FileUtilities } from './FileUtilities';
 import { getInstallFromContext } from './InstallIdUtilities';
+import { loopWithTimeoutOnCond } from './TypescriptUtilities';
 
 export class WebRequestWorkerSingleton
 {
@@ -55,9 +58,11 @@ export class WebRequestWorkerSingleton
      */
     private client: AxiosCacheInstance;
     protected static instance: WebRequestWorkerSingleton;
-    private proxy: string | undefined;
-
     private proxyAgent: HttpsProxyAgent<string> | null = null;
+    private cacheTtl: number = WEB_CACHE_DURATION_MS;
+    private stopCacheCleanup: Boolean = Boolean(false); // must be object and not primitive so we can hold a reference to it
+    private lastCacheCleanTime = process.hrtime.bigint();
+    cacheCleanupRunner: () => boolean;
 
     protected constructor()
     {
@@ -105,10 +110,45 @@ export class WebRequestWorkerSingleton
             {
                 storage: buildMemoryStorage(
                     false,
-                    1000 * 60 * 1 // Reset the cache every 1 minute
                 ),
             }
         );
+
+        // This function must be a member of 'this' so it correctly 'binds' to the instance of the class and has access to class members in a different scope environment
+        this.cacheCleanupRunner = function ()
+        {
+            if (this?.client?.storage !== null && this?.client?.storage !== undefined)
+            {
+                try
+                {
+                    if ((process.hrtime.bigint() - this.lastCacheCleanTime) >= this.cacheTtl)
+                    {
+                        (this.client.storage as any)?.clear();
+                        this.lastCacheCleanTime = process.hrtime.bigint();
+                    }
+                }
+                catch (err)
+                {
+                    // clear returns a maybe promise which is a fake type where .catch does not work on it.
+                }
+            }
+            else
+            {
+                return true; // the class object was deleted externally (close tab / pkill from vscode ext service), so we should stop the cleanup.
+            }
+            return this.stopCacheCleanup.valueOf();
+        }
+
+        loopWithTimeoutOnCond(500, Number.POSITIVE_INFINITY,
+            this.cacheCleanupRunner,
+            function stopCleaning(): void {},
+            null,
+            new WebCacheClearEvent(`Clearing the web cache.`)
+        )
+            .catch(error =>
+            {
+                // Let the rejected promise get handled below
+            });
     }
 
     public static getInstance(): WebRequestWorkerSingleton
@@ -120,6 +160,17 @@ export class WebRequestWorkerSingleton
 
         return WebRequestWorkerSingleton.instance;
     }
+
+    /*
+    Call this for when a web worker singleton is used but no one kills the instance of it (e.g. vscode being closed kills it.)
+    The Cleanup interval function from axios-cache-interceptor hangs around eternally until it is killed which means this will cause tests and other code to hang forever and never exit.
+    We need something which we can hook into to destroy it manually.
+    */
+    public destroy()
+    {
+        this.stopCacheCleanup = Boolean(true);
+    }
+
     /**
      *
      * @param url The URL of the website to send a get request to.
@@ -261,7 +312,7 @@ export class WebRequestWorkerSingleton
 
     private async GetProxyAgentIfNeeded(ctx: IAcquisitionWorkerContext): Promise<HttpsProxyAgent<string> | null>
     {
-        const discoveredProxy = '';
+        let discoveredProxy = '';
         if (!this.proxySettingConfiguredManually(ctx))
         {
             try
@@ -269,11 +320,11 @@ export class WebRequestWorkerSingleton
                 const autoDetectProxies = await getProxySettings();
                 if (autoDetectProxies?.https)
                 {
-                    this.proxy = autoDetectProxies.https.toString();
+                    discoveredProxy = autoDetectProxies.https.toString();
                 }
                 else if (autoDetectProxies?.http)
                 {
-                    this.proxy = autoDetectProxies.http.toString();
+                    discoveredProxy = autoDetectProxies.http.toString();
                 }
             }
             catch (error: any)

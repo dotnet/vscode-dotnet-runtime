@@ -6,6 +6,8 @@
 import * as chai from 'chai';
 import * as os from 'os';
 import { GlobalInstallerResolver } from '../../Acquisition/GlobalInstallerResolver';
+import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
+import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
 import { FileWebRequestWorker, MockEventStream, MockExtensionContext } from '../mocks/MockObjects';
 import { getMockAcquisitionContext } from './TestUtility';
 import path = require('path');
@@ -23,8 +25,16 @@ const filePath = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-
 const otherUrlFilePath = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-channel-6-index.json');
 const timeoutTime = 10000;
 
-suite('Global Installer Resolver Tests', () =>
+suite('Global Installer Resolver Tests', function ()
 {
+
+    this.afterEach(async () =>
+    {
+        // Tear down tmp storage for fresh run
+        WebRequestWorkerSingleton.getInstance().destroy();
+        LocalMemoryCacheSingleton.getInstance().invalidate();
+    });
+
     test('It finds the newest patch version given a feature band', async () =>
     {
         const acquisitionContext = getMockAcquisitionContext('runtime', featureBandVersion);

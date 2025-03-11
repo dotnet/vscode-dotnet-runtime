@@ -13,7 +13,7 @@ import { CommandExecutor } from './CommandExecutor';
 import { ICommandExecutor } from './ICommandExecutor';
 
 export async function loopWithTimeoutOnCond(sampleRatePerMs: number, durationToWaitBeforeTimeoutMs: number, conditionToStop: () => boolean, doAfterStop: () => void,
-    eventStream: IEventStream, waitEvent: IEvent)
+    eventStream: IEventStream | null, waitEvent: IEvent)
 {
     return new Promise(async (resolve, reject) =>
     {
@@ -24,7 +24,7 @@ export async function loopWithTimeoutOnCond(sampleRatePerMs: number, durationToW
                 doAfterStop();
                 return resolve('The promise succeeded.');
             }
-            eventStream.post(waitEvent);
+            eventStream?.post(waitEvent);
             await new Promise(waitAndResolve => setTimeout(waitAndResolve, sampleRatePerMs));
         }
 

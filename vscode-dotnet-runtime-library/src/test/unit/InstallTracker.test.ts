@@ -3,17 +3,19 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
-import { MockEventStream, MockExtensionContext, MockInstallTracker } from '../mocks/MockObjects';
 import * as os from 'os';
 import { DotnetInstall } from '../../Acquisition/DotnetInstall';
-import { getMockAcquisitionContext } from './TestUtility';
 import { InstallRecord } from '../../Acquisition/InstallRecord';
+import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
+import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
+import { MockEventStream, MockExtensionContext, MockInstallTracker } from '../mocks/MockObjects';
+import { getMockAcquisitionContext } from './TestUtility';
 
 const assert = chai.assert;
 const defaultVersion = '7.0';
 const secondVersion = '8.0';
 const defaultMode = 'runtime';
-const defaultInstall : DotnetInstall = {
+const defaultInstall: DotnetInstall = {
     version: defaultVersion,
     isGlobal: false,
     architecture: os.arch(),
@@ -21,7 +23,7 @@ const defaultInstall : DotnetInstall = {
     installMode: defaultMode
 }
 
-const secondInstall : DotnetInstall = {
+const secondInstall: DotnetInstall = {
     version: secondVersion,
     isGlobal: false,
     architecture: os.arch(),
@@ -42,34 +44,44 @@ function resetExtensionState()
 
 }
 
-suite('InstallTracker Unit Tests', () => {
+suite('InstallTracker Unit Tests', function ()
+{
 
-    test('It Creates a New Record for a New Install', async () => {
+    this.afterEach(async () =>
+    {
+        // Tear down tmp storage for fresh run
+        WebRequestWorkerSingleton.getInstance().destroy();
+        LocalMemoryCacheSingleton.getInstance().invalidate();
+    });
+
+    test('It Creates a New Record for a New Install', async () =>
+    {
         resetExtensionState();
 
         const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
         await validator.trackInstallingVersion(mockContext, defaultInstall);
 
-        const expected : InstallRecord[] = [
+        const expected: InstallRecord[] = [
             {
-                dotnetInstall : defaultInstall,
-                installingExtensions : ['test']
+                dotnetInstall: defaultInstall,
+                installingExtensions: ['test']
             } as InstallRecord,
         ]
         assert.deepStrictEqual(await validator.getExistingInstalls(false), expected, 'It created a new record for the install');
     }).timeout(defaultTimeoutTime);
 
-    test('Re-Tracking is a No-Op', async () => {
+    test('Re-Tracking is a No-Op', async () =>
+    {
         resetExtensionState();
 
         const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
         await validator.trackInstallingVersion(mockContext, defaultInstall);
         await validator.trackInstallingVersion(mockContext, defaultInstall);
 
-        const expected : InstallRecord[] = [
+        const expected: InstallRecord[] = [
             {
-                dotnetInstall : defaultInstall,
-                installingExtensions : ['test']
+                dotnetInstall: defaultInstall,
+                installingExtensions: ['test']
             } as InstallRecord,
         ]
         assert.deepStrictEqual(await validator.getExistingInstalls(false), expected, 'It did not create a 2nd record for the same installing install');
@@ -81,7 +93,8 @@ suite('InstallTracker Unit Tests', () => {
 
     }).timeout(defaultTimeoutTime);
 
-    test('It Only Adds the Extension Id to an Existing Install Copy', async () => {
+    test('It Only Adds the Extension Id to an Existing Install Copy', async () =>
+    {
         resetExtensionState();
 
         const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
@@ -92,10 +105,10 @@ suite('InstallTracker Unit Tests', () => {
         otherRequesterValidator.setExtensionState(validator.getExtensionState());
         await otherRequesterValidator.trackInstalledVersion(mockContextFromOtherExtension, defaultInstall);
 
-        const expected : InstallRecord[] = [
+        const expected: InstallRecord[] = [
             {
-                dotnetInstall : defaultInstall,
-                installingExtensions : ['test', 'testOther']
+                dotnetInstall: defaultInstall,
+                installingExtensions: ['test', 'testOther']
             } as InstallRecord,
         ]
 
@@ -103,7 +116,8 @@ suite('InstallTracker Unit Tests', () => {
 
     }).timeout(defaultTimeoutTime);
 
-    test('It Works With Different Installs From Multiple or Same Requesters', async () => {
+    test('It Works With Different Installs From Multiple or Same Requesters', async () =>
+    {
         resetExtensionState();
 
         const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
@@ -114,14 +128,14 @@ suite('InstallTracker Unit Tests', () => {
         otherRequesterValidator.setExtensionState(validator.getExtensionState());
         await otherRequesterValidator.trackInstalledVersion(mockContextFromOtherExtension, secondInstall);
 
-        const expected : InstallRecord[] = [
+        const expected: InstallRecord[] = [
             {
-                dotnetInstall : defaultInstall,
-                installingExtensions : ['test'],
+                dotnetInstall: defaultInstall,
+                installingExtensions: ['test'],
             } as InstallRecord,
             {
-                dotnetInstall : secondInstall,
-                installingExtensions : ['testOther'],
+                dotnetInstall: secondInstall,
+                installingExtensions: ['testOther'],
             } as InstallRecord,
         ]
 
@@ -129,7 +143,8 @@ suite('InstallTracker Unit Tests', () => {
 
     }).timeout(defaultTimeoutTime);
 
-    test('It Removes the Record if No Other Owners Exist', async () => {
+    test('It Removes the Record if No Other Owners Exist', async () =>
+    {
         resetExtensionState();
 
         const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
@@ -142,7 +157,8 @@ suite('InstallTracker Unit Tests', () => {
         assert.deepStrictEqual(await validator.getExistingInstalls(true), [], 'Installed version gets removed with no further owners (installing must be ok)');
     }).timeout(defaultTimeoutTime);
 
-    test('It Only Removes the Extension Id if Other Owners Exist', async () => {
+    test('It Only Removes the Extension Id if Other Owners Exist', async () =>
+    {
         resetExtensionState();
 
         const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
@@ -156,10 +172,10 @@ suite('InstallTracker Unit Tests', () => {
         validator.setExtensionState(otherRequesterValidator.getExtensionState());
         await validator.untrackInstalledVersion(mockContext, defaultInstall);
 
-        const expected : InstallRecord[] = [
+        const expected: InstallRecord[] = [
             {
-                dotnetInstall : defaultInstall,
-                installingExtensions : ['testOther']
+                dotnetInstall: defaultInstall,
+                installingExtensions: ['testOther']
             } as InstallRecord,
         ]
 
@@ -167,7 +183,8 @@ suite('InstallTracker Unit Tests', () => {
 
     }).timeout(defaultTimeoutTime);
 
-    test('It Converts Legacy Install Id String to New Type with Null Owner', async () => {
+    test('It Converts Legacy Install Id String to New Type with Null Owner', async () =>
+    {
         resetExtensionState();
 
         const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
@@ -176,14 +193,14 @@ suite('InstallTracker Unit Tests', () => {
         extensionStateWithLegacyStrings.update('installed', [defaultInstall.installId, secondInstall.installId]);
         validator.setExtensionState(extensionStateWithLegacyStrings);
 
-        const expected : InstallRecord[] = [
+        const expected: InstallRecord[] = [
             {
-                dotnetInstall : defaultInstall,
-                installingExtensions : [null]
+                dotnetInstall: defaultInstall,
+                installingExtensions: [null]
             } as InstallRecord,
             {
                 dotnetInstall: secondInstall,
-                installingExtensions : [null]
+                installingExtensions: [null]
             }
         ]
 
@@ -191,7 +208,8 @@ suite('InstallTracker Unit Tests', () => {
 
     }).timeout(defaultTimeoutTime);
 
-    test('It Handles Null Owner Gracefully on Duplicate Install and Removal', async () => {
+    test('It Handles Null Owner Gracefully on Duplicate Install and Removal', async () =>
+    {
         resetExtensionState();
 
         const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
@@ -200,14 +218,14 @@ suite('InstallTracker Unit Tests', () => {
         extensionStateWithLegacyStrings.update('installed', [defaultInstall.installId, secondInstall.installId]);
         validator.setExtensionState(extensionStateWithLegacyStrings);
 
-        const expected : InstallRecord[] = [
+        const expected: InstallRecord[] = [
             {
-                dotnetInstall : defaultInstall,
-                installingExtensions : [null, 'test']
+                dotnetInstall: defaultInstall,
+                installingExtensions: [null, 'test']
             } as InstallRecord,
             {
                 dotnetInstall: secondInstall,
-                installingExtensions : [null]
+                installingExtensions: [null]
             }
         ]
 
@@ -218,14 +236,14 @@ suite('InstallTracker Unit Tests', () => {
         await validator.untrackInstalledVersion(mockContext, defaultInstall);
         await validator.untrackInstalledVersion(mockContext, secondInstall);
 
-        const expectedTwo : InstallRecord[] = [
+        const expectedTwo: InstallRecord[] = [
             {
-                dotnetInstall : defaultInstall,
-                installingExtensions : [null]
+                dotnetInstall: defaultInstall,
+                installingExtensions: [null]
             } as InstallRecord,
             {
                 dotnetInstall: secondInstall,
-                installingExtensions : [null]
+                installingExtensions: [null]
             }
         ]
 
@@ -233,7 +251,8 @@ suite('InstallTracker Unit Tests', () => {
     }).timeout(defaultTimeoutTime);
 
 
-    test('It Can Reclassify an Install from Installing to Installed', async () => {
+    test('It Can Reclassify an Install from Installing to Installed', async () =>
+    {
         resetExtensionState();
 
         const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
@@ -246,17 +265,17 @@ suite('InstallTracker Unit Tests', () => {
         await otherRequesterValidator.trackInstallingVersion(mockContextFromOtherExtension, secondInstall);
         await otherRequesterValidator.reclassifyInstallingVersionToInstalled(mockContextFromOtherExtension, secondInstall);
 
-        let expectedInstalling : InstallRecord[] = [
+        let expectedInstalling: InstallRecord[] = [
             {
-                dotnetInstall : defaultInstall,
-                installingExtensions : ['test', 'testOther']
+                dotnetInstall: defaultInstall,
+                installingExtensions: ['test', 'testOther']
             } as InstallRecord,
         ]
 
-        let expectedInstalled : InstallRecord[] = [
+        let expectedInstalled: InstallRecord[] = [
             {
-                dotnetInstall : secondInstall,
-                installingExtensions : ['testOther']
+                dotnetInstall: secondInstall,
+                installingExtensions: ['testOther']
             } as InstallRecord,
         ]
 
@@ -267,12 +286,12 @@ suite('InstallTracker Unit Tests', () => {
 
         expectedInstalled = [
             {
-                dotnetInstall : secondInstall,
-                installingExtensions : ['testOther']
+                dotnetInstall: secondInstall,
+                installingExtensions: ['testOther']
             } as InstallRecord,
             {
-                dotnetInstall : defaultInstall,
-                installingExtensions : ['testOther']
+                dotnetInstall: defaultInstall,
+                installingExtensions: ['testOther']
             } as InstallRecord,
         ]
 
@@ -285,8 +304,8 @@ was moved from installing to installed`);
 
         expectedInstalling = [
             {
-                dotnetInstall : defaultInstall,
-                installingExtensions : ['test']
+                dotnetInstall: defaultInstall,
+                installingExtensions: ['test']
             } as InstallRecord,
         ]
 

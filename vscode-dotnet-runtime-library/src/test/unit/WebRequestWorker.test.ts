@@ -23,10 +23,12 @@ import
     MockVSCodeExtensionContext,
 } from '../mocks/MockObjects';
 
+import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
 import
 {
     Debugging
 } from '../../Utils/Debugging';
+import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
 import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 
 const assert = chai.assert;
@@ -36,8 +38,15 @@ const maxTimeoutTime = 10000;
 // Website used for the sake of it returning the same response always (tm)
 const staticWebsiteUrl = 'https://builds.dotnet.microsoft.com/dotnet/release-metadata/2.1/releases.json';
 
-suite('WebRequestWorker Unit Tests', () =>
+suite('WebRequestWorker Unit Tests', function ()
 {
+    this.afterEach(async () =>
+    {
+        // Tear down tmp storage for fresh run
+        WebRequestWorkerSingleton.getInstance().destroy();
+        LocalMemoryCacheSingleton.getInstance().invalidate();
+    });
+
     test('Acquire Version Network Failure', async () =>
     {
         const eventStream = new MockEventStream();
