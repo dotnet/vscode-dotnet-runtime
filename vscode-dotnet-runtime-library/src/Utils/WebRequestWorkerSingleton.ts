@@ -172,10 +172,12 @@ export class WebRequestWorkerSingleton
         return this.makeWebRequest(url, ctx, true, retriesCount);
     }
 
-    private async reportTimeAnalytics(response: any, options: any, url: string, ctx: IAcquisitionWorkerContext, manualFinalTime: bigint | null = null): Promise<void>
+    private reportTimeAnalytics(response: any, options: any, url: string, ctx: IAcquisitionWorkerContext, manualFinalTime: bigint | null = null): void
     {
         // Streamed responses return out bits of data to be piped, so this would record the end time as if only the first few bytes finished.
         // Instead we can manually report this when the stream is finished.
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if (!manualFinalTime && options?.responseType === 'stream')
         {
             return;
@@ -196,15 +198,19 @@ export class WebRequestWorkerSingleton
         }
         else
         {
-            ctx.eventStream.post(new WebRequestTimeUnknown(`Timer for request failed. Start time: ${startTimeNs}, end time: ${finalTimeNs}`, durationMs, 'true', url, String(response.status)));
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            ctx.eventStream.post(new WebRequestTimeUnknown(`Timer for request failed. Start time: ${startTimeNs}, end time: ${finalTimeNs}`, durationMs, 'true', url, String(response?.status)));
         }
-        if (!response.cached)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        if (!(response?.cached))
         {
-            ctx.eventStream.post(new WebRequestTime(`Timer for request:`, durationMs, 'true', url, String(response.status)));
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            ctx.eventStream.post(new WebRequestTime(`Timer for request:`, durationMs, 'true', url, String(response?.status)));
         }
         else
         {
-            ctx.eventStream.post(new WebRequestCachedTime(`Cached Timer for request:`, durationMs, 'true', url, String(response.status)));
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            ctx.eventStream.post(new WebRequestCachedTime(`Cached Timer for request:`, durationMs, 'true', url, String(response?.status)));
         }
     }
 
@@ -255,7 +261,7 @@ export class WebRequestWorkerSingleton
 
     private async GetProxyAgentIfNeeded(ctx: IAcquisitionWorkerContext): Promise<HttpsProxyAgent<string> | null>
     {
-        let discoveredProxy = '';
+        const discoveredProxy = '';
         if (!this.proxySettingConfiguredManually(ctx))
         {
             try

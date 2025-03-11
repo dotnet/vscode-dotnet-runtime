@@ -735,7 +735,7 @@ ${JSON.stringify(commandContext)}`));
                 version: 'notAnAcquisitionRequest',
                 errorConfiguration: errorsConfiguration,
                 architecture: DotnetCoreAcquisitionWorker.defaultArchitecture(),
-                mode: mode
+                mode
             } as IDotnetAcquireContext
         )
     }
