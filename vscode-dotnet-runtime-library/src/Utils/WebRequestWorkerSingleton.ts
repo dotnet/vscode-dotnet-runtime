@@ -59,7 +59,7 @@ export class WebRequestWorkerSingleton
     private client: AxiosCacheInstance;
     protected static instance: WebRequestWorkerSingleton;
     private proxyAgent: HttpsProxyAgent<string> | null = null;
-    private cacheTtl: number = WEB_CACHE_DURATION_MS;
+    private cacheTtlMs: number = WEB_CACHE_DURATION_MS;
     private stopCacheCleanup = false;
     private lastCacheCleanTimeNs = process.hrtime.bigint();
     cacheCleanupRunner: () => boolean;
@@ -121,7 +121,7 @@ export class WebRequestWorkerSingleton
             {
                 try
                 {
-                    if ((process.hrtime.bigint() - this.lastCacheCleanTimeNs) >= this.cacheTtl * 1e6)
+                    if ((process.hrtime.bigint() - this.lastCacheCleanTimeNs) >= this.cacheTtlMs * 1e6)
                     {
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                         (this.client.storage as any)?.clear();
