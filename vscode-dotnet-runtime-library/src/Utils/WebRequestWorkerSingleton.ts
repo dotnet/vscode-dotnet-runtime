@@ -60,7 +60,7 @@ export class WebRequestWorkerSingleton
     protected static instance: WebRequestWorkerSingleton;
     private proxyAgent: HttpsProxyAgent<string> | null = null;
     private cacheTtl: number = WEB_CACHE_DURATION_MS;
-    private stopCacheCleanup: Boolean = Boolean(false); // must be object and not primitive so we can hold a reference to it
+    private stopCacheCleanup = Boolean(false); // must be object and not primitive so we can hold a reference to it
     private lastCacheCleanTime = process.hrtime.bigint();
     cacheCleanupRunner: () => boolean;
 
@@ -123,6 +123,7 @@ export class WebRequestWorkerSingleton
                 {
                     if ((process.hrtime.bigint() - this.lastCacheCleanTime) >= this.cacheTtl)
                     {
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                         (this.client.storage as any)?.clear();
                         this.lastCacheCleanTime = process.hrtime.bigint();
                     }
