@@ -16,7 +16,8 @@ and this project adheres to [Semantic Versioning].
 
 ## [2.2.9] - 2025-3-12
 
-- Wide-scale performance improvements throughout the entire extension. Better asynchronicity, efficient utilization of shells, eliminating process calls, improving file system / io.
+- Wide-scale performance improvements throughout the entire extension. Better asynchronicity, efficient utilization of shells, eliminating process calls, improving file system I/O.
+
 - Removes code that may slow down other extensions while this extension is operating.
 - Fixes a bug with dotnet lookup where SDKs that include runtimes may be used from the PATH even though their runtime may be out of date compared to the actual SDK version. Thank you @JoeRobich.
 - Adds support for many global.json rollForward options in the `findPath` API to ask for minimum patch versions without accepting later major versions.
