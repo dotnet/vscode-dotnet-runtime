@@ -44,7 +44,7 @@ suite('WebRequestWorker Unit Tests', () =>
         const mockContext = getMockAcquisitionContext('runtime', '1.0', undefined, eventStream);
         const acquisitionWorker = new DotnetCoreAcquisitionWorker(getMockUtilityContext(), new MockVSCodeExtensionContext());
         const invoker = new ErrorAcquisitionInvoker(eventStream);
-        return assert.isRejected(acquisitionWorker.acquireLocalRuntime(mockContext, invoker), Error, '.NET Acquisition Failed');
+        assert.isRejected(acquisitionWorker.acquireLocalRuntime(mockContext, invoker), Error, '.NET Acquisition Failed');
     }).timeout(maxTimeoutTime);
 
     test('Install Script Request Failure', async () =>
