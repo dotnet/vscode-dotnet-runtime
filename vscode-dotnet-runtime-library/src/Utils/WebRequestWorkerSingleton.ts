@@ -60,8 +60,8 @@ export class WebRequestWorkerSingleton
     protected static instance: WebRequestWorkerSingleton;
     private proxyAgent: HttpsProxyAgent<string> | null = null;
     private cacheTtl: number = WEB_CACHE_DURATION_MS;
-    private stopCacheCleanup = Boolean(false); // must be object and not primitive so we can hold a reference to it
-    private lastCacheCleanTime = process.hrtime.bigint();
+    private stopCacheCleanup = false;
+    private lastCacheCleanTimeNs = process.hrtime.bigint();
     cacheCleanupRunner: () => boolean;
 
     protected constructor()
@@ -121,11 +121,11 @@ export class WebRequestWorkerSingleton
             {
                 try
                 {
-                    if ((process.hrtime.bigint() - this.lastCacheCleanTime) >= this.cacheTtl)
+                    if ((process.hrtime.bigint() - this.lastCacheCleanTimeNs) >= this.cacheTtl * 1e6)
                     {
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                         (this.client.storage as any)?.clear();
-                        this.lastCacheCleanTime = process.hrtime.bigint();
+                        this.lastCacheCleanTimeNs = process.hrtime.bigint();
                     }
                 }
                 catch (err)
@@ -137,7 +137,7 @@ export class WebRequestWorkerSingleton
             {
                 return true; // the class object was deleted externally (close tab / pkill from vscode ext service), so we should stop the cleanup.
             }
-            return this.stopCacheCleanup.valueOf();
+            return this.stopCacheCleanup;
         }
 
         loopWithTimeoutOnCond(500, Number.POSITIVE_INFINITY,
@@ -169,7 +169,7 @@ export class WebRequestWorkerSingleton
     */
     public destroy()
     {
-        this.stopCacheCleanup = Boolean(true);
+        this.stopCacheCleanup = true;
     }
 
     /**
