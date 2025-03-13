@@ -14,7 +14,6 @@ import
     DotnetFileIntegrityCheckEvent,
     DotnetFileIntegrityFailureEvent,
     DotnetInstallCancelledByUserError,
-    DotnetLockErrorEvent,
     DotnetNoInstallerResponseError,
     DotnetUnexpectedInstallerOSError,
     EventBasedError,
@@ -22,7 +21,7 @@ import
     NetInstallerBeginExecutionEvent,
     NetInstallerEndExecutionEvent,
     OSXOpenNotAvailableError,
-    SuppressedAcquisitionError,
+    SuppressedAcquisitionError
 } from '../EventStream/EventStreamEvents';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { FileUtilities } from '../Utils/FileUtilities';
@@ -165,16 +164,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
                 const installerResult: string = await this.executeInstall(installerFile);
 
                 return this.handleStatus(installerResult, installerFile, install);
-            }, installation)
-            .catch((err) =>
-            {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                if (err?.eventType === DotnetLockErrorEvent.name)
-                {
-                    return UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR; // Arbirtrary unused exit code for when the lock cannot be held
-                }
-                throw err; // throw up anything that the installer itself raised
-            });
+            }, installation);
     }
 
     private async handleStatus(installerResult: string, installerFile: string, install: DotnetInstall, allowRetry = true): Promise<string>
@@ -202,10 +192,6 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         {
             const retryWithElevationResult = await this.executeInstall(installerFile, true);
             return this.handleStatus(retryWithElevationResult, installerFile, install, false);
-        }
-        else if (installerResult === UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR)
-        {
-            throw new DotnetLockErrorEvent(new Error(), `Unable to acquire global machine state lock`, new Date().toISOString(), GLOBAL_INSTALL_STATE_MODIFIER_LOCK(this.acquisitionContext.installDirectoryProvider, install), 'same');
         }
         else
         {
@@ -248,16 +234,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
 
                     return commandResult.status;
                 }
-            }, installation)
-            .catch((err) =>
-            {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                if (err?.eventType === DotnetLockErrorEvent.name)
-                {
-                    return UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR; // Arbirtrary unused exit code for when the lock cannot be held
-                }
-                throw err; // throw up anything that the installer itself raised
-            });
+            }, installation);
     }
 
     /**

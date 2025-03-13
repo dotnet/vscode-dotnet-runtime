@@ -72,6 +72,9 @@ export async function isRunningUnderWSL(acquisitionContext: IAcquisitionWorkerCo
 */
 export async function executeWithLock<A extends any[], R>(eventStream: IEventStream, alreadyHoldingLock: boolean, lockPath: string, retryTimeMs: number, timeoutTimeMs: number, f: (...args: A) => R, ...args: A): Promise<R>
 {
+    retryTimeMs = retryTimeMs > 0 ? retryTimeMs : 100;
+    const retryCountToEndRoughlyAtTimeoutMs = timeoutTimeMs / retryTimeMs;
+
     try
     {
         fs.mkdirSync(path.dirname(lockPath), { recursive: true });
@@ -94,7 +97,7 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
         else
         {
             eventStream?.post(new DotnetLockAttemptingAcquireEvent(`Lock Acquisition request to begin.`, new Date().toISOString(), lockPath, lockPath));
-            await lockfile.lock(lockPath, { retries: { retries: 10, minTimeout: retryTimeMs, maxTimeout: timeoutTimeMs } })
+            await lockfile.lock(lockPath, { stale: timeoutTimeMs /*if a proc holding the lock hasnt returned in the stale time it will auto fail*/, retries: { retries: retryCountToEndRoughlyAtTimeoutMs, minTimeout: retryTimeMs, maxTimeout: retryTimeMs } })
                 .then(async (release) =>
                 {
                     // eslint-disable-next-line @typescript-eslint/await-thenable
@@ -102,20 +105,15 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
                     eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), lockPath, lockPath));
                     return release();
                 })
-                .catch((e: Error) =>
-                {
-                    // Either the lock could not be acquired or releasing it failed
-                    eventStream?.post(new DotnetLockErrorEvent(e, e.message, new Date().toISOString(), lockPath, lockPath));
-                });
         }
     }
     catch (e: any) // Either the lock could not be acquired or releasing it failed
     {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        eventStream.post(new DotnetLockErrorEvent(e, e?.message ?? 'Unable to acquire lock to update installation state', new Date().toISOString(), lockPath, lockPath));
+        eventStream.post(new DotnetLockErrorEvent(e, e?.message ?? 'Unable to acquire lock', new Date().toISOString(), lockPath, lockPath));
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        throw new EventBasedError('DotnetLockErrorEvent', e?.message, e?.stack);
+        return Promise.reject(new EventBasedError('DotnetLockErrorEvent', e?.message, e?.stack));
     }
 
     return returnResult;
