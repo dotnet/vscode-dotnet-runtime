@@ -9,10 +9,9 @@ import { DotnetDistroSupportStatus, LinuxVersionResolver } from './LinuxVersionR
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import * as os from 'os';
-import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
 import { executeWithLock } from '../Utils/TypescriptUtilities';
 import { GLOBAL_INSTALL_STATE_MODIFIER_LOCK } from './StringConstants';
-import { GetDotnetInstallInfo } from '..';
+import { GetDotnetInstallInfo } from './DotnetInstall';
 
 export class LinuxGlobalInstaller extends IGlobalInstaller
 {
