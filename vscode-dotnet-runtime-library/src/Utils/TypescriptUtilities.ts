@@ -74,7 +74,25 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
 {
     retryTimeMs = retryTimeMs > 0 ? retryTimeMs : 100;
     const retryCountToEndRoughlyAtTimeoutMs = timeoutTimeMs / retryTimeMs;
+    let returnResult: any;
+    let codeFailureAndNotLockFailure = null;
 
+    // Are we in a mutex-relevant inner function call, that is called by a parent function that already holds the lock?
+    // If so, we don't need to acquire the lock again and we also shouldn't release it as the parent function will do that.
+    try
+    {
+        if (alreadyHoldingLock)
+        {
+            // eslint-disable-next-line @typescript-eslint/await-thenable
+            return await f(...(args));
+        }
+    }
+    catch (e: any)
+    {
+        return Promise.reject(e);
+    }
+
+    // Make the directory and file to hold a lock over if it DNE. If it exists, thats OK.
     try
     {
         fs.mkdirSync(path.dirname(lockPath), { recursive: true });
@@ -83,41 +101,43 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
     {
         // The file owning directory already exists
     }
-
     fs.writeFileSync(lockPath, '', { encoding: 'utf-8' });
-    let returnResult: any;
 
-    try
-    {
-        if (alreadyHoldingLock)
+
+    eventStream?.post(new DotnetLockAttemptingAcquireEvent(`Lock Acquisition request to begin.`, new Date().toISOString(), lockPath, lockPath));
+    await lockfile.lock(lockPath, { stale: timeoutTimeMs /*if a proc holding the lock has not returned in the stale time it will auto fail*/, retries: { retries: retryCountToEndRoughlyAtTimeoutMs, minTimeout: retryTimeMs, maxTimeout: retryTimeMs } })
+        .then(async (release) =>
         {
-            // eslint-disable-next-line @typescript-eslint/await-thenable
-            return await f(...(args));
-        }
-        else
+            try
+            {
+                // eslint-disable-next-line @typescript-eslint/await-thenable
+                returnResult = await f(...(args));
+            }
+            catch (e: any)
+            {
+                codeFailureAndNotLockFailure = e;
+            }
+            eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), lockPath, lockPath));
+            return release();
+        })
+        .catch((e: Error) =>
         {
-            eventStream?.post(new DotnetLockAttemptingAcquireEvent(`Lock Acquisition request to begin.`, new Date().toISOString(), lockPath, lockPath));
-            await lockfile.lock(lockPath, { stale: timeoutTimeMs /*if a proc holding the lock hasnt returned in the stale time it will auto fail*/, retries: { retries: retryCountToEndRoughlyAtTimeoutMs, minTimeout: retryTimeMs, maxTimeout: retryTimeMs } })
-                .then(async (release) =>
-                {
-                    // eslint-disable-next-line @typescript-eslint/await-thenable
-                    returnResult = await f(...(args));
-                    eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), lockPath, lockPath));
-                    return release();
-                })
-                .catch((e: Error) =>
-                {
-                    // If we don't catch here, the lock will never be released.
-                    eventStream?.post(new DotnetLockErrorEvent(e, e.message, new Date().toISOString(), lockPath, lockPath));
-                });
-        }
-    }
-    catch (e: any) // Either the lock could not be acquired or releasing it failed
+            // If we don't catch here, the lock will never be released.
+            try
+            {
+                eventStream.post(new DotnetLockErrorEvent(e, e?.message ?? 'Unable to acquire lock or unlock lock. Trying to unlock.', new Date().toISOString(), lockPath, lockPath));
+                lockfile.unlock(lockPath);
+            }
+            catch (e: any)
+            {
+                eventStream.post(new DotnetLockErrorEvent(e, e?.message ?? 'Unable to unlock lock after retry.', new Date().toISOString(), lockPath, lockPath));
+            }
+            return Promise.reject(new EventBasedError('DotnetLockErrorEvent', e?.message, e?.stack));
+        });
+
+    if (codeFailureAndNotLockFailure)
     {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        eventStream.post(new DotnetLockErrorEvent(e, e?.message ?? 'Unable to acquire lock', new Date().toISOString(), lockPath, lockPath));
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        return Promise.reject(new EventBasedError('DotnetLockErrorEvent', e?.message, e?.stack));
+        return Promise.reject(codeFailureAndNotLockFailure);
     }
 
     return returnResult;
