@@ -39,6 +39,7 @@ export class LinuxGlobalInstaller extends IGlobalInstaller
             },)
             .catch((err) =>
             {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 if (err?.eventType === DotnetLockErrorEvent.name)
                 {
                     return UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR; // Arbirtrary unused exit code for when the lock cannot be held
@@ -58,6 +59,7 @@ export class LinuxGlobalInstaller extends IGlobalInstaller
             },)
             .catch((err) =>
             {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 if (err?.eventType === DotnetLockErrorEvent.name)
                 {
                     return UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR; // Arbirtrary unused exit code for when the lock cannot be held

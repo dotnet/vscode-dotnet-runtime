@@ -168,6 +168,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             }, installation)
             .catch((err) =>
             {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 if (err?.eventType === DotnetLockErrorEvent.name)
                 {
                     return UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR; // Arbirtrary unused exit code for when the lock cannot be held
@@ -250,6 +251,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             }, installation)
             .catch((err) =>
             {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 if (err?.eventType === DotnetLockErrorEvent.name)
                 {
                     return UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR; // Arbirtrary unused exit code for when the lock cannot be held
