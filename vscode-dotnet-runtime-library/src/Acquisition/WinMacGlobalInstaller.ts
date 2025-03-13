@@ -14,6 +14,7 @@ import
     DotnetFileIntegrityCheckEvent,
     DotnetFileIntegrityFailureEvent,
     DotnetInstallCancelledByUserError,
+    DotnetLockErrorEvent,
     DotnetNoInstallerResponseError,
     DotnetUnexpectedInstallerOSError,
     EventBasedError,
@@ -41,7 +42,7 @@ import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { IRegistryReader } from './IRegistryReader';
 import { RegistryReader } from './RegistryReader';
-import { GLOBAL_INSTALL_STATE_MODIFIER_LOCK } from './StringConstants';
+import { GLOBAL_INSTALL_STATE_MODIFIER_LOCK, UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR } from './StringConstants';
 
 namespace validationPromptConstants
 {
@@ -117,6 +118,8 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
                 return `An unspecified error occurred. ${reportLogMessage}`;
             case '2147942405':
                 return `Insufficient permissions are available to install .NET. Please try again as an administrator.`;
+            case UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR:
+                return `Could not acquire global lock to edit machine state. Was another operation in progress? Try restarting VS Code.`
         }
         return '';
     }
@@ -163,6 +166,14 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
 
                 return this.handleStatus(installerResult, installerFile, install);
             }, installation)
+            .catch((err) =>
+            {
+                if (err?.eventType === DotnetLockErrorEvent.name)
+                {
+                    return UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR; // Arbirtrary unused exit code for when the lock cannot be held
+                }
+                throw err; // throw up anything that the installer itself raised
+            });
     }
 
     private async handleStatus(installerResult: string, installerFile: string, install: DotnetInstall, allowRetry = true): Promise<string>
@@ -190,6 +201,10 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         {
             const retryWithElevationResult = await this.executeInstall(installerFile, true);
             return this.handleStatus(retryWithElevationResult, installerFile, install, false);
+        }
+        else if (installerResult === UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR)
+        {
+            throw new DotnetLockErrorEvent(new Error(), `Unable to acquire global machine state lock`, new Date().toISOString(), GLOBAL_INSTALL_STATE_MODIFIER_LOCK(this.acquisitionContext.installDirectoryProvider, install), 'same');
         }
         else
         {
@@ -232,7 +247,15 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
 
                     return commandResult.status;
                 }
-            }, installation);
+            }, installation)
+            .catch((err) =>
+            {
+                if (err?.eventType === DotnetLockErrorEvent.name)
+                {
+                    return UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR; // Arbirtrary unused exit code for when the lock cannot be held
+                }
+                throw err; // throw up anything that the installer itself raised
+            });
     }
 
     /**

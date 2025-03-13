@@ -141,7 +141,7 @@ If you cannot change this flag, try setting a custom existingDotnetPath via the 
                     {
                         // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                        const newError = new EventBasedError('DotnetAcquisitionUnexpectedError', error?.message, error?.stack)
+                        const newError = new EventBasedError('DotnetAcquisitionUnexpectedError', error?.message, error?.stack);
                         this.eventStream.post(new DotnetAcquisitionUnexpectedError(newError, install));
                         reject(newError);
                     }

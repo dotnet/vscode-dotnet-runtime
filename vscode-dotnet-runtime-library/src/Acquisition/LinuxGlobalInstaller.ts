@@ -5,6 +5,7 @@
  * ------------------------------------------------------------------------------------------ */
 
 import * as os from 'os';
+import { DotnetLockErrorEvent } from '../EventStream/EventStreamEvents';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { executeWithLock } from '../Utils/TypescriptUtilities';
 import { GLOBAL_LOCK_PING_DURATION_MS } from './CacheTimeConstants';
@@ -12,7 +13,7 @@ import { GetDotnetInstallInfo } from './DotnetInstall';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { DotnetDistroSupportStatus, LinuxVersionResolver } from './LinuxVersionResolver';
-import { GLOBAL_INSTALL_STATE_MODIFIER_LOCK } from './StringConstants';
+import { GLOBAL_INSTALL_STATE_MODIFIER_LOCK, UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR } from './StringConstants';
 
 export class LinuxGlobalInstaller extends IGlobalInstaller
 {
@@ -35,7 +36,15 @@ export class LinuxGlobalInstaller extends IGlobalInstaller
             async () =>
             {
                 return this.linuxSDKResolver.ValidateAndInstallSDK(this.version);
-            },);
+            },)
+            .catch((err) =>
+            {
+                if (err?.eventType === DotnetLockErrorEvent.name)
+                {
+                    return UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR; // Arbirtrary unused exit code for when the lock cannot be held
+                }
+                throw err; // throw up anything that the installer itself raised
+            });
     }
 
     public async uninstallSDK(): Promise<string>
@@ -46,7 +55,15 @@ export class LinuxGlobalInstaller extends IGlobalInstaller
             async () =>
             {
                 return this.linuxSDKResolver.UninstallSDK(this.version);
-            },);
+            },)
+            .catch((err) =>
+            {
+                if (err?.eventType === DotnetLockErrorEvent.name)
+                {
+                    return UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR; // Arbirtrary unused exit code for when the lock cannot be held
+                }
+                throw err; // throw up anything that the installer itself raised
+            });
     }
 
     public async getExpectedGlobalSDKPath(specificSDKVersionInstalled: string, installedArch: string, macPathShouldExist = true): Promise<string>
