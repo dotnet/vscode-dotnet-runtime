@@ -92,7 +92,7 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
         return Promise.reject(e);
     }
 
-    // Make the directory and file to hold a lock over if it DNE. If it exists, thats OK.
+    // Make the directory and file to hold a lock over if it DNE. If it exists, thats OK (.lock is a different file than the lock file)
     try
     {
         fs.mkdirSync(path.dirname(lockPath), { recursive: true });
