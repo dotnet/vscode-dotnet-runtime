@@ -466,7 +466,7 @@ with options ${JSON.stringify(options)}.`));
                 rejected => // Rejected object: error type with stderr : Buffer, stdout : Buffer ... with .code (number) or .signal (string)}
                 { // see https://nodejs.org/api/child_process.html#child_processexeccommand-options-callback
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                    const result = { stdout: rejected?.stdout?.toString() ?? '', stderr: rejected?.stderr?.toString() ?? '', status: rejected?.error?.code?.toString() ?? rejected?.error?.signal.toString() ?? '' };
+                    const result = { stdout: rejected?.stdout?.toString() ?? '', stderr: rejected?.stderr?.toString() ?? '', status: rejected?.code?.toString() ?? rejected?.signal?.toString() ?? '' };
                     if (terminalFailure)
                     {
                         this.logCommandResult(result, fullCommandString);

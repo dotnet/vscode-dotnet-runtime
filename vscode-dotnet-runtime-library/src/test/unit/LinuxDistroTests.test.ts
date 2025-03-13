@@ -5,11 +5,13 @@
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
 import * as os from 'os';
-import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProvider';
-import { MockCommandExecutor, MockEventStream } from '../mocks/MockObjects';
-import { DistroVersionPair, DotnetDistroSupportStatus, LinuxVersionResolver } from '../../Acquisition/LinuxVersionResolver';
-import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
+import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProvider';
+import { DistroVersionPair, DotnetDistroSupportStatus, LinuxVersionResolver } from '../../Acquisition/LinuxVersionResolver';
+import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
+import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
+import { MockCommandExecutor } from '../mocks/MockObjects';
+import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 const assert = chai.assert;
 const standardTimeoutTime = 100000;
 
@@ -30,8 +32,15 @@ Command 'dotnet' not found, but can be installed with:
             See 'snap info dotnet-sdk' for additional versions.
 `
 
-suite('Linux Distro Logic Unit Tests', () =>
+suite('Linux Distro Logic Unit Tests', function ()
 {
+    this.afterEach(async () =>
+    {
+        // Tear down tmp storage for fresh run
+        WebRequestWorkerSingleton.getInstance().destroy();
+        LocalMemoryCacheSingleton.getInstance().invalidate();
+    });
+
     test('Recommends Correct Version', async () =>
     {
         if (shouldRun)

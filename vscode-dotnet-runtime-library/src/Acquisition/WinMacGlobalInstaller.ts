@@ -26,7 +26,7 @@ import
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
-import { WebRequestWorker } from '../Utils/WebRequestWorker';
+import { WebRequestWorkerSingleton } from '../Utils/WebRequestWorkerSingleton';
 import { VersionResolver } from './VersionResolver';
 import * as versionUtils from './VersionUtilities';
 
@@ -67,7 +67,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller
     private completedInstall = false;
     protected versionResolver: VersionResolver;
     public file: IFileUtilities;
-    protected webWorker: WebRequestWorker;
+    protected webWorker: WebRequestWorkerSingleton;
     private invalidIntegrityError = `The integrity of the .NET install file is invalid, or there was no integrity to check and you denied the request to continue with those risks.
 We cannot verify our .NET file host at this time. Please try again later or install the SDK manually.`;
 
@@ -81,7 +81,7 @@ We cannot verify our .NET file host at this time. Please try again later or inst
         this.commandRunner = executor ?? new CommandExecutor(context, utilContext);
         this.versionResolver = new VersionResolver(context);
         this.file = new FileUtilities();
-        this.webWorker = new WebRequestWorker(context, installerUrl);
+        this.webWorker = WebRequestWorkerSingleton.getInstance();
         this.registry = registryReader ?? new RegistryReader(context, utilContext);
     }
 
@@ -235,8 +235,15 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
     private async downloadInstaller(installerUrl: string): Promise<string>
     {
         const ourInstallerDownloadFolder = IGlobalInstaller.getDownloadedInstallFilesFolder(installerUrl);
-        await this.file.wipeDirectory(ourInstallerDownloadFolder, this.acquisitionContext.eventStream);
         const installerPath = path.join(ourInstallerDownloadFolder, `${installerUrl.split('/').slice(-1)}`);
+
+        if (await this.file.exists(installerPath) && await this.installerFileHasValidIntegrity(installerPath))
+        {
+            this.acquisitionContext.eventStream.post(new DotnetFileIntegrityCheckEvent(`The installer file ${installerPath} already exists and is valid.`));
+            return installerPath;
+        }
+
+        await this.file.wipeDirectory(ourInstallerDownloadFolder, this.acquisitionContext.eventStream);
 
         const installerDir = path.dirname(installerPath);
         if (!(await this.file.exists(installerDir)))
@@ -244,7 +251,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             await fs.promises.mkdir(installerDir, { recursive: true });
         }
 
-        await this.webWorker.downloadFile(installerUrl, installerPath);
+        await this.webWorker.downloadFile(installerUrl, installerPath, this.acquisitionContext);
         try
         {
             if (os.platform() === 'win32') // Windows does not have chmod +x ability with nodejs.
@@ -259,7 +266,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             }
             else
             {
-                fs.chmodSync(installerPath, 0o744);
+                await fs.promises.chmod(installerPath, 0o744);
             }
         }
         catch (error: any)
@@ -321,7 +328,7 @@ Please try again, or download the .NET Installer file yourself. You may also rep
             else if (error?.message?.includes('EPERM'))
             {
                 this.acquisitionContext.eventStream.post(new DotnetFileIntegrityFailureEvent(`The file ${installerFile} did not have the correct permissions scope to be assessed.
-Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerFile}"`]), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }))}`));
+Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerFile}"`]), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }, false))}`));
             }
             return this.userChoosesToContinueWithInvalidHash();
         }
@@ -465,7 +472,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
                     // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                     error.message = `The installer does not have permission to execute. Please try running as an administrator. ${error?.message}.
-Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerPath}"`]), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }))}`;
+Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerPath}"`]), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }, false))}`;
                 }
                 // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access

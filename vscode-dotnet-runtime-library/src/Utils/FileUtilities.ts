@@ -111,13 +111,14 @@ export class FileUtilities extends IFileUtilities
      */
     public async wipeDirectory(directoryToWipe: string, eventStream?: IEventStream, fileExtensionsToDelete?: string[])
     {
-        if (!await this.exists(directoryToWipe))
+        if (!(await this.exists(directoryToWipe)))
         {
             eventStream?.post(new EmptyDirectoryToWipe(`The directory ${directoryToWipe} did not exist, so it was not wiped.`))
             return;
         }
 
-        (await fs.promises.readdir(directoryToWipe)).forEach(async f =>
+        const directoryFiles: string[] = await fs.promises.readdir(directoryToWipe);
+        for (const f of directoryFiles)
         {
             try
             {
@@ -132,7 +133,7 @@ export class FileUtilities extends IFileUtilities
             {
                 eventStream?.post(new SuppressedAcquisitionError(error, `Failed to delete ${f} when marked for deletion.`));
             }
-        });
+        };
     }
 
     public async read(filePath: string): Promise<string>

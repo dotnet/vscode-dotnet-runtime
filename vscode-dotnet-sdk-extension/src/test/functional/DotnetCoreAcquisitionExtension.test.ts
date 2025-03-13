@@ -6,39 +6,38 @@
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as cp from 'child_process';
+import { warn } from 'console';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import rimraf = require('rimraf');
+import { promisify } from 'util';
 import * as vscode from 'vscode';
 import
 {
   DotnetAcquisitionAlreadyInstalled,
-  DotnetCoreAcquisitionWorker,
   DotnetPreinstallDetected,
+  getInstallIdCustomArchitecture,
+  getMockAcquisitionContext,
+  getMockAcquisitionWorker,
+  GlobalInstallerResolver,
   IDotnetAcquireContext,
   IDotnetAcquireResult,
-  GlobalInstallerResolver,
+  IExistingPaths,
   MockEnvironmentVariableCollection,
   MockEventStream,
   MockExtensionConfiguration,
   MockExtensionContext,
+  MockIndexWebRequestWorker,
+  MockInstallTracker,
   MockTelemetryReporter,
   MockWindowDisplayWorker,
   NoInstallAcquisitionInvoker,
-  SdkInstallationDirectoryProvider,
-  MockIndexWebRequestWorker,
-  getInstallIdCustomArchitecture,
-  IExistingPaths,
-  getMockAcquisitionContext,
-  getMockAcquisitionWorker,
-  MockInstallTracker,
+  SdkInstallationDirectoryProvider
 } from 'vscode-dotnet-runtime-library';
+import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
 import * as extension from '../../extension';
 import { uninstallSDKExtension } from '../../ExtensionUninstall';
-import { warn } from 'console';
-import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
-import { promisify } from 'util';
+import rimraf = require('rimraf');
 
 const standardTimeoutTime = 100000;
 const assert = chai.assert;
@@ -209,7 +208,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
       const mockAcquisitionContext = getMockAcquisitionContext('sdk', '');
 
       const url = 'https://builds.dotnet.microsoft.com/dotnet/release-metadata/6.0/releases.json'
-      const webWorker = new MockIndexWebRequestWorker(mockAcquisitionContext, url);
+      const webWorker = new MockIndexWebRequestWorker();
       webWorker.knownUrls.push(url);
       // Note that ZIPS in the data below come before EXEs to make sure the file extension check works.
       const mockJsonFile = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-releases.json');

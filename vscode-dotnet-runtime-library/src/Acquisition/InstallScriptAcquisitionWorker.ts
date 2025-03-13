@@ -14,25 +14,26 @@ import
 import { Debugging } from '../Utils/Debugging';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
-import { WebRequestWorker } from '../Utils/WebRequestWorker';
+import { WebRequestWorkerSingleton } from '../Utils/WebRequestWorkerSingleton';
 
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
 
 export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisitionWorker
 {
-    protected webWorker: WebRequestWorker;
+    protected webWorker: WebRequestWorkerSingleton;
     private readonly scriptAcquisitionUrl: string = 'https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.';
     protected readonly scriptFilePath: string;
     private readonly fileUtilities: FileUtilities;
+    private readonly scriptFileEnding = os.platform() === 'win32' ? 'ps1' : 'sh';
+
 
 
     constructor(private readonly context: IAcquisitionWorkerContext)
     {
-        const scriptFileEnding = os.platform() === 'win32' ? 'ps1' : 'sh';
         const scriptFileName = 'dotnet-install';
-        this.scriptFilePath = path.join(__dirname, 'install scripts', `${scriptFileName}.${scriptFileEnding}`);
-        this.webWorker = new WebRequestWorker(context, this.scriptAcquisitionUrl + scriptFileEnding);
+        this.scriptFilePath = path.join(__dirname, 'install scripts', `${scriptFileName}.${this.scriptFileEnding}`);
+        this.webWorker = WebRequestWorkerSingleton.getInstance();
         this.fileUtilities = new FileUtilities();
     }
 
@@ -41,7 +42,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
         try
         {
             Debugging.log('getDotnetInstallScriptPath() invoked.');
-            const script = await this.webWorker.getCachedData();
+            const script = await this.webWorker.getCachedData(this.scriptAcquisitionUrl + this.scriptFileEnding, this.context);
             if (!script)
             {
                 Debugging.log('The request to acquire the script failed.');
