@@ -22,6 +22,7 @@ import
 } from '../EventStream/EventStreamEvents';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { IUtilityContext } from './IUtilityContext';
+import { FileUtilities } from './FileUtilities';
 
 export async function loopWithTimeoutOnCond(sampleRatePerMs: number, durationToWaitBeforeTimeoutMs: number, conditionToStop: () => boolean, doAfterStop: () => void,
     eventStream: IEventStream | null, waitEvent: IEvent)
@@ -74,7 +75,16 @@ export async function isRunningUnderWSL(acquisitionContext: IAcquisitionWorkerCo
 */
 export async function executeWithLock<A extends any[], R>(eventStream: IEventStream, alreadyHoldingLock: boolean, lockPath: string, f: (...args: A) => R, ...args: A): Promise<R>
 {
-    fs.writeFileSync(lockPath, '', 'utf-8');
+    try
+    {
+        fs.mkdirSync(path.dirname(lockPath), { recursive: true });
+    }
+    catch (err)
+    {
+        // The file owning directory already exists
+    }
+
+    fs.writeFileSync(lockPath, '', { encoding: 'utf-8' });
     let returnResult: any;
 
     try
