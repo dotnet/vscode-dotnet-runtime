@@ -69,12 +69,12 @@ export async function isRunningUnderWSL(acquisitionContext: IAcquisitionWorkerCo
     return true;
 }
 
-export async function executeWithLock<A extends any[], R>(eventStream: IEventStream, alreadyHoldingLock: boolean, dataKey: string, f: (...args: A) => R, ...args: A): Promise<R>
+/*
+@remarks lockPath should be a full path to a shared lock file ending in .lock (that may or may not exist on disk) and the file content does not matter
+*/
+export async function executeWithLock<A extends any[], R>(eventStream: IEventStream, alreadyHoldingLock: boolean, lockPath: string, f: (...args: A) => R, ...args: A): Promise<R>
 {
-    const trackingLock = `${dataKey}.lock`;
-    const lockPath = path.join(__dirname, trackingLock);
     fs.writeFileSync(lockPath, '', 'utf-8');
-
     let returnResult: any;
 
     try
@@ -102,10 +102,8 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
                 });
         }
     }
-    catch (e: any)
+    catch (e: any) // Either the lock could not be acquired or releasing it failed
     {
-        // Either the lock could not be acquired or releasing it failed
-
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         eventStream.post(new DotnetLockErrorEvent(e, e?.message ?? 'Unable to acquire lock to update installation state', new Date().toISOString(), lockPath, lockPath));
 
