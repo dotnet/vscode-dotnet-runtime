@@ -7,12 +7,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
-import * as versionUtils from './VersionUtilities'
-import { FileUtilities } from '../Utils/FileUtilities';
-import { VersionResolver } from './VersionResolver';
-import { WebRequestWorker } from '../Utils/WebRequestWorker';
-import { getInstallFromContext } from '../Utils/InstallIdUtilities';
-import { CommandExecutor } from '../Utils/CommandExecutor';
+
 import
 {
     DotnetAcquisitionAlreadyInstalled,
@@ -29,19 +24,24 @@ import
     OSXOpenNotAvailableError,
     SuppressedAcquisitionError,
 } from '../EventStream/EventStreamEvents';
+import { CommandExecutor } from '../Utils/CommandExecutor';
+import { FileUtilities } from '../Utils/FileUtilities';
+import { getInstallFromContext } from '../Utils/InstallIdUtilities';
+import { WebRequestWorkerSingleton } from '../Utils/WebRequestWorkerSingleton';
+import { VersionResolver } from './VersionResolver';
+import * as versionUtils from './VersionUtilities';
 
-import { IGlobalInstaller } from './IGlobalInstaller';
+import { CommandExecutorResult } from '../Utils/CommandExecutorResult';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IFileUtilities } from '../Utils/IFileUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
-import { DotnetInstall } from './DotnetInstall';
-import { CommandExecutorResult } from '../Utils/CommandExecutorResult';
 import { getOSArch } from '../Utils/TypescriptUtilities';
-import { RegistryReader } from './RegistryReader';
-import { IRegistryReader } from './IRegistryReader';
-import { util } from 'chai';
 import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
+import { DotnetInstall } from './DotnetInstall';
+import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { IGlobalInstaller } from './IGlobalInstaller';
+import { IRegistryReader } from './IRegistryReader';
+import { RegistryReader } from './RegistryReader';
 
 namespace validationPromptConstants
 {
@@ -68,7 +68,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller
     private completedInstall = false;
     protected versionResolver: VersionResolver;
     public file: IFileUtilities;
-    protected webWorker: WebRequestWorker;
+    protected webWorker: WebRequestWorkerSingleton;
     private invalidIntegrityError = `The integrity of the .NET install file is invalid, or there was no integrity to check and you denied the request to continue with those risks.
 We cannot verify our .NET file host at this time. Please try again later or install the SDK manually.`;
 
@@ -82,7 +82,7 @@ We cannot verify our .NET file host at this time. Please try again later or inst
         this.commandRunner = executor ?? new CommandExecutor(context, utilContext);
         this.versionResolver = new VersionResolver(context);
         this.file = new FileUtilities();
-        this.webWorker = new WebRequestWorker(context, installerUrl);
+        this.webWorker = WebRequestWorkerSingleton.getInstance();
         this.registry = registryReader ?? new RegistryReader(context, utilContext);
     }
 
@@ -236,8 +236,15 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
     private async downloadInstaller(installerUrl: string): Promise<string>
     {
         const ourInstallerDownloadFolder = IGlobalInstaller.getDownloadedInstallFilesFolder(installerUrl);
-        this.file.wipeDirectory(ourInstallerDownloadFolder, this.acquisitionContext.eventStream);
         const installerPath = path.join(ourInstallerDownloadFolder, `${installerUrl.split('/').slice(-1)}`);
+
+        if (fs.existsSync(installerPath) && await this.installerFileHasValidIntegrity(installerPath))
+        {
+            this.acquisitionContext.eventStream.post(new DotnetFileIntegrityCheckEvent(`The installer file ${installerPath} already exists and is valid.`));
+            return installerPath;
+        }
+
+        this.file.wipeDirectory(ourInstallerDownloadFolder, this.acquisitionContext.eventStream);
 
         const installerDir = path.dirname(installerPath);
         if (!fs.existsSync(installerDir))
@@ -245,7 +252,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             fs.mkdirSync(installerDir, { recursive: true });
         }
 
-        await this.webWorker.downloadFile(installerUrl, installerPath);
+        await this.webWorker.downloadFile(installerUrl, installerPath, this.acquisitionContext);
         try
         {
             if (os.platform() === 'win32') // Windows does not have chmod +x ability with nodejs.
@@ -260,7 +267,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             }
             else
             {
-                fs.chmodSync(installerPath, 0o744);
+                await fs.promises.chmod(installerPath, 0o744);
             }
         }
         catch (error: any)
@@ -322,7 +329,7 @@ Please try again, or download the .NET Installer file yourself. You may also rep
             else if (error?.message?.includes('EPERM'))
             {
                 this.acquisitionContext.eventStream.post(new DotnetFileIntegrityFailureEvent(`The file ${installerFile} did not have the correct permissions scope to be assessed.
-Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerFile}"`]), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }))}`));
+Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerFile}"`]), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }, false))}`));
             }
             return this.userChoosesToContinueWithInvalidHash();
         }
@@ -466,7 +473,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
                     // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                     error.message = `The installer does not have permission to execute. Please try running as an administrator. ${error?.message}.
-Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerPath}"`]), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }))}`;
+Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerPath}"`]), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }, false))}`;
                 }
                 // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access

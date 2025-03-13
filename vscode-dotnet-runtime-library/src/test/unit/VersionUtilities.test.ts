@@ -4,8 +4,10 @@
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
 import * as resolver from '../../Acquisition/VersionUtilities';
+import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
+import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
 import { MockEventStream } from '../mocks/MockObjects';
-import { getMockAcquisitionContext, getMockAcquisitionWorker } from './TestUtility';
+import { getMockAcquisitionContext } from './TestUtility';
 
 const assert = chai.assert;
 const fullySpecifiedVersion = '7.0.201';
@@ -20,46 +22,58 @@ const badSDKVersionPeriods = '10.10';
 const badSDKVersionPatch = '7.1.10';
 const badSDKVersionLongPatch = '7.0.1999';
 
-suite('Version Utilities Unit Tests', () => {
+suite('Version Utilities Unit Tests', function ()
+{
+    this.afterEach(async () =>
+    {
+        LocalMemoryCacheSingleton.getInstance().invalidate();
+        WebRequestWorkerSingleton.getInstance().destroy();
+    });
 
     const mockEventStream = new MockEventStream();
     const mockCtx = getMockAcquisitionContext('runtime', '7.0');
 
-    test('Get Major from SDK Version', async () => {
+    test('Get Major from SDK Version', async () =>
+    {
         assert.equal(resolver.getMajor(fullySpecifiedVersion, mockEventStream, mockCtx), '7');
         assert.equal(resolver.getMajor(featureBandVersion, mockEventStream, mockCtx), '7');
         assert.equal(resolver.getMajor(uniqueMajorMinorVersion, mockEventStream, mockCtx), '7');
         assert.equal(resolver.getMajor(twoDigitMajorVersion, mockEventStream, mockCtx), '10');
     });
 
-    test('Get Minor from SDK Version', async () => {
+    test('Get Minor from SDK Version', async () =>
+    {
         assert.equal(resolver.getMinor(fullySpecifiedVersion, mockEventStream, mockCtx), '0');
         assert.equal(resolver.getMinor(uniqueMajorMinorVersion, mockEventStream, mockCtx), '1');
         assert.equal(resolver.getMinor(twoDigitMajorVersion, mockEventStream, mockCtx), '0');
     });
 
-    test('Get Major.Minor from SDK Version', async () => {
+    test('Get Major.Minor from SDK Version', async () =>
+    {
         assert.equal(resolver.getMajorMinor(fullySpecifiedVersion, mockEventStream, mockCtx), '7.0');
         assert.equal(resolver.getMajorMinor(featureBandVersion, mockEventStream, mockCtx), '7.0');
         assert.equal(resolver.getMajorMinor(uniqueMajorMinorVersion, mockEventStream, mockCtx), '7.1');
         assert.equal(resolver.getMajorMinor(twoDigitMajorVersion, mockEventStream, mockCtx), '10.0');
     });
 
-    test('Get Feature Band from SDK Version', async () => {
+    test('Get Feature Band from SDK Version', async () =>
+    {
         assert.equal(resolver.getFeatureBandFromVersion(fullySpecifiedVersion, mockEventStream, mockCtx), '2');
         assert.equal(resolver.getFeatureBandFromVersion(featureBandVersion, mockEventStream, mockCtx), '2');
         assert.equal(resolver.getFeatureBandFromVersion(uniqueMajorMinorVersion, mockEventStream, mockCtx), '3');
         assert.equal(resolver.getFeatureBandFromVersion(twoDigitMajorVersion, mockEventStream, mockCtx), '1');
     });
 
-    test('Get Patch from SDK Version', async () => {
+    test('Get Patch from SDK Version', async () =>
+    {
         assert.equal(resolver.getFeatureBandPatchVersion(fullySpecifiedVersion, mockEventStream, mockCtx), '1');
         assert.equal(resolver.getFeatureBandPatchVersion(uniqueMajorMinorVersion, mockEventStream, mockCtx), '0');
         assert.equal(resolver.getFeatureBandPatchVersion(twoDigitMajorVersion, mockEventStream, mockCtx), '2');
         assert.equal(resolver.getFeatureBandPatchVersion(twoDigitPatchVersion, mockEventStream, mockCtx), '21');
     });
 
-    test('Get Band+Patch from SDK Version', async () => {
+    test('Get Band+Patch from SDK Version', async () =>
+    {
         assert.equal(resolver.getSDKCompleteBandAndPatchVersionString(fullySpecifiedVersion, mockEventStream, mockCtx), '201');
         assert.equal(resolver.getSDKCompleteBandAndPatchVersionString(uniqueMajorMinorVersion, mockEventStream, mockCtx), '300');
         assert.equal(resolver.getSDKCompleteBandAndPatchVersionString(twoDigitMajorVersion, mockEventStream, mockCtx), '102');
@@ -67,17 +81,20 @@ suite('Version Utilities Unit Tests', () => {
         assert.equal(resolver.getSDKPatchVersionString('8.0', mockEventStream, mockCtx, false), '', 'It does not error if no feature band in version if no error bool set');
     });
 
-    test('Get Patch from Runtime Version', async () => {
+    test('Get Patch from Runtime Version', async () =>
+    {
         assert.equal(resolver.getRuntimePatchVersionString(majorMinorOnly, mockEventStream, mockCtx), null);
         assert.equal(resolver.getRuntimePatchVersionString('8.0.10', mockEventStream, mockCtx), '10');
         assert.equal(resolver.getRuntimePatchVersionString('8.0.9-rc.2.24502.A', mockEventStream, mockCtx), '9');
     });
 
-    test('Get Patch from SDK Preview Version', async () => {
+    test('Get Patch from SDK Preview Version', async () =>
+    {
         assert.equal(resolver.getFeatureBandPatchVersion('8.0.400-preview.0.24324.5', mockEventStream, mockCtx), '0');
     });
 
-    test('Detects IsPreview Version', async () => {
+    test('Detects IsPreview Version', async () =>
+    {
         assert.equal(resolver.isPreviewVersion('8.0.400-preview.0.24324.5', mockEventStream, mockCtx), true);
         assert.equal(resolver.isPreviewVersion('9.0.0-rc.2', mockEventStream, mockCtx), true);
         assert.equal(resolver.isPreviewVersion('9.0.0-rc.2.24473.5', mockEventStream, mockCtx), true);
@@ -89,13 +106,15 @@ suite('Version Utilities Unit Tests', () => {
         assert.equal(resolver.isPreviewVersion(badSDKVersionPatch, mockEventStream, mockCtx), false);
     });
 
-    test('Detects Unspecified Patch Version', async () => {
+    test('Detects Unspecified Patch Version', async () =>
+    {
         assert.equal(resolver.isNonSpecificFeatureBandedVersion(fullySpecifiedVersion), false, 'It detects versions with patches');
         assert.equal(resolver.isNonSpecificFeatureBandedVersion(featureBandVersion), true, 'It detects versions with xx');
         assert.equal(resolver.isNonSpecificFeatureBandedVersion(twoDigitMajorVersion), false, 'It does not error for non xx containing version');
     });
 
-    test('Detects if Fully Specified Version', async () => {
+    test('Detects if Fully Specified Version', async () =>
+    {
         assert.equal(resolver.isFullySpecifiedVersion(fullySpecifiedVersion, mockEventStream, mockCtx), true, 'It passes basic fully specified version');
         assert.equal(resolver.isFullySpecifiedVersion(uniqueMajorMinorVersion, mockEventStream, mockCtx), true);
         assert.equal(resolver.isFullySpecifiedVersion(twoDigitMajorVersion, mockEventStream, mockCtx), true, 'It works for 2+ digit major versions');
@@ -104,7 +123,8 @@ suite('Version Utilities Unit Tests', () => {
         assert.equal(resolver.isFullySpecifiedVersion(majorMinorOnly, mockEventStream, mockCtx), false, 'It detects major.minor as not fully specified');
     });
 
-    test('Detects if Only Major or Minor Given', async () => {
+    test('Detects if Only Major or Minor Given', async () =>
+    {
         assert.equal(resolver.isNonSpecificMajorOrMajorMinorVersion(fullySpecifiedVersion), false, 'It does not think a fully specified version is major.minor only');
         assert.equal(resolver.isNonSpecificMajorOrMajorMinorVersion(uniqueMajorMinorVersion), false);
         assert.equal(resolver.isNonSpecificMajorOrMajorMinorVersion(twoDigitMajorVersion), false);
@@ -113,7 +133,8 @@ suite('Version Utilities Unit Tests', () => {
         assert.equal(resolver.isNonSpecificMajorOrMajorMinorVersion(majorMinorOnly), true, 'It can determine if the version is only major.minor');
     });
 
-    test('Detects if Version is Valid', async () => {
+    test('Detects if Version is Valid', async () =>
+    {
         assert.equal(resolver.isValidLongFormVersionFormat(fullySpecifiedVersion, mockEventStream, mockCtx), true, 'It detects a full version as valid');
         assert.equal(resolver.isValidLongFormVersionFormat(uniqueMajorMinorVersion, mockEventStream, mockCtx), true);
         assert.equal(resolver.isValidLongFormVersionFormat(twoDigitMajorVersion, mockEventStream, mockCtx), true);

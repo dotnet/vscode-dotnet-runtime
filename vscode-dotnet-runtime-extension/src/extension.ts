@@ -76,8 +76,8 @@ import
     VersionResolver,
     VSCodeEnvironment,
     VSCodeExtensionContext,
-    WebRequestWorker,
-    WindowDisplayWorker,
+    WebRequestWorkerSingleton,
+    WindowDisplayWorker
 } from 'vscode-dotnet-runtime-library';
 import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
@@ -304,13 +304,13 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     });
 
     const dotnetListVersionsRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listVersions}`,
-        async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined): Promise<IDotnetListVersionsResult | undefined> =>
+        async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorkerSingleton | undefined): Promise<IDotnetListVersionsResult | undefined> =>
         {
             return getAvailableVersions(commandContext, customWebWorker, false);
         });
 
     const dotnetRecommendedVersionRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.recommendedVersion}`,
-        async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined): Promise<IDotnetListVersionsResult> =>
+        async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorkerSingleton | undefined): Promise<IDotnetListVersionsResult> =>
         {
             const availableVersions = await getAvailableVersions(commandContext, customWebWorker, true);
             const activeSupportVersions = availableVersions?.filter((version: IDotnetVersion) => version.supportPhase === 'active');
@@ -688,7 +688,7 @@ ${JSON.stringify(commandContext)}`));
     }
 
     const getAvailableVersions = async (commandContext: IDotnetListVersionsContext | undefined,
-        customWebWorker: WebRequestWorker | undefined, onRecommendationMode: boolean): Promise<IDotnetListVersionsResult | undefined> =>
+        customWebWorker: WebRequestWorkerSingleton | undefined, onRecommendationMode: boolean): Promise<IDotnetListVersionsResult | undefined> =>
     {
         const mode = 'sdk' as DotnetInstallMode;
         const workerContext = getVersionResolverContext(mode, 'global', commandContext?.errorConfiguration);
@@ -744,7 +744,8 @@ ${JSON.stringify(commandContext)}`));
                 installType: typeOfInstall,
                 version: 'notAnAcquisitionRequest',
                 errorConfiguration: errorsConfiguration,
-                architecture: DotnetCoreAcquisitionWorker.defaultArchitecture()
+                architecture: DotnetCoreAcquisitionWorker.defaultArchitecture(),
+                mode
             } as IDotnetAcquireContext
         )
     }
@@ -790,7 +791,7 @@ ${JSON.stringify(commandContext)}`));
 
     async function getExistingInstallIfOffline(worker: DotnetCoreAcquisitionWorker, workerContext: IAcquisitionWorkerContext): Promise<IDotnetAcquireResult | null>
     {
-        if (!(await WebRequestWorker.isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream)))
+        if (!(await WebRequestWorkerSingleton.getInstance().isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream)))
         {
             workerContext.acquisitionContext.architecture ??= DotnetCoreAcquisitionWorker.defaultArchitecture();
             const existingOfflinePath = await worker.getSimilarExistingInstall(workerContext);

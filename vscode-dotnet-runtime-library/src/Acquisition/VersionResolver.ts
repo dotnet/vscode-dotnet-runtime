@@ -15,7 +15,7 @@ import
 } from '../EventStream/EventStreamEvents';
 import { Debugging } from '../Utils/Debugging';
 import { getAssumedInstallInfo, getInstallFromContext } from '../Utils/InstallIdUtilities';
-import { WebRequestWorker } from '../Utils/WebRequestWorker';
+import { WebRequestWorkerSingleton } from '../Utils/WebRequestWorkerSingleton';
 
 import
 {
@@ -31,15 +31,15 @@ import { IVersionResolver } from './IVersionResolver';
 
 export class VersionResolver implements IVersionResolver
 {
-    protected webWorker: WebRequestWorker;
+    protected webWorker: WebRequestWorkerSingleton;
     private readonly releasesUrl = 'https://builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json';
 
     constructor(
         private readonly context: IAcquisitionWorkerContext,
-        webWorker?: WebRequestWorker
+        webWorker?: WebRequestWorkerSingleton
     )
     {
-        this.webWorker = webWorker ?? new WebRequestWorker(context, this.releasesUrl);
+        this.webWorker = webWorker ?? WebRequestWorkerSingleton.getInstance();
     }
 
     /**
@@ -61,7 +61,7 @@ export class VersionResolver implements IVersionResolver
         const getSdkVersions = !commandContext?.listRuntimes;
         const availableVersions: IDotnetListVersionsResult = [];
 
-        const response: any = await this.webWorker.getCachedData();
+        const response: any = await this.webWorker.getCachedData(this.releasesUrl, this.context);
 
         return new Promise<IDotnetListVersionsResult>((resolve, reject) =>
         {

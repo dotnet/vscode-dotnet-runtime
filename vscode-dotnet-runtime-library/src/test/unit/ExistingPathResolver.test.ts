@@ -4,16 +4,17 @@
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
 import * as os from 'os';
-import { MockCommandExecutor, MockExtensionConfiguration, MockExtensionContext } from '../mocks/MockObjects';
-import { IExistingPaths } from '../../IExtensionContext';
-import { ExistingPathResolver } from '../../Acquisition/ExistingPathResolver';
-import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
-import { MockExtensionConfigurationWorker } from '../mocks/MockExtensionConfigurationWorker';
-import { IDotnetAcquireContext } from '../../IDotnetAcquireContext';
-import { getMockAcquisitionContext, getMockAcquisitionWorkerContext, getMockUtilityContext } from './TestUtility';
-import { CommandExecutorResult } from '../../Utils/CommandExecutorResult';
 import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
-import { mock } from 'node:test';
+import { ExistingPathResolver } from '../../Acquisition/ExistingPathResolver';
+import { IDotnetAcquireContext } from '../../IDotnetAcquireContext';
+import { IExistingPaths } from '../../IExtensionContext';
+import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
+import { CommandExecutorResult } from '../../Utils/CommandExecutorResult';
+import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
+import { MockExtensionConfigurationWorker } from '../mocks/MockExtensionConfigurationWorker';
+import { MockCommandExecutor, MockExtensionConfiguration, MockExtensionContext } from '../mocks/MockObjects';
+import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
+import { getMockAcquisitionContext, getMockAcquisitionWorkerContext, getMockUtilityContext } from './TestUtility';
 const assert = chai.assert;
 
 const individualPath = 'foo';
@@ -63,8 +64,14 @@ function getExistingPathResolverWithVersionAndCommandResult(version: string, req
   return existingPathResolver;
 }
 
-suite('ExistingPathResolver Unit Tests', () =>
+suite('ExistingPathResolver Unit Tests', function ()
 {
+  this.afterEach(async () =>
+  {
+    // Tear down tmp storage for fresh run
+    WebRequestWorkerSingleton.getInstance().destroy();
+    LocalMemoryCacheSingleton.getInstance().invalidate();
+  });
 
   test('Use Shared Existing Path Setting over Individual Setting when no Extension Id is Provided', async () =>
   {
