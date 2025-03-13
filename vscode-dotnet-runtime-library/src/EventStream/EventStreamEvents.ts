@@ -1086,6 +1086,11 @@ export class DotnetFindPathCommandInvoked extends DotnetCustomMessageEvent
     };
 }
 
+export class WebCacheClearEvent extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'WebCacheClearEvent';
+}
+
 export class CacheClearEvent extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'CacheClearEvent';

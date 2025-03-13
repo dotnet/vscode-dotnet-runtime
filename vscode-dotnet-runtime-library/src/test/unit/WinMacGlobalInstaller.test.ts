@@ -10,14 +10,16 @@ import * as path from 'path';
 import { GetDotnetInstallInfo } from '../../Acquisition/DotnetInstall';
 import { RegistryReader } from '../../Acquisition/RegistryReader';
 import { WinMacGlobalInstaller } from '../../Acquisition/WinMacGlobalInstaller';
+import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
 import { FileUtilities } from '../../Utils/FileUtilities';
+import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
 import { MockCommandExecutor, MockFileUtilities } from '../mocks/MockObjects';
 import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 const assert = chai.assert;
 const standardTimeoutTime = 100000;
 
 
-suite('Windows & Mac Global Installer Tests', () =>
+suite('Windows & Mac Global Installer Tests', function ()
 {
     const mockVersion = '7.0.306';
     const mockUrl = 'https://download.visualstudio.microsoft.com/download/pr/4c0aaf08-3fa1-4fa0-8435-73b85eee4b32/e8264b3530b03b74b04ecfcf1666fe93/dotnet-sdk-7.0.306-win-x64.exe';
@@ -29,6 +31,13 @@ suite('Windows & Mac Global Installer Tests', () =>
     const reader: RegistryReader = new RegistryReader(mockSdkContext, utilContext, mockExecutor);
     const installer: WinMacGlobalInstaller = new WinMacGlobalInstaller(getMockAcquisitionContext('sdk', mockVersion), getMockUtilityContext(), mockVersion, mockUrl, mockHash, mockExecutor, reader);
     installer.file = mockFileUtils;
+
+    this.afterEach(async () =>
+    {
+        // Tear down tmp storage for fresh run
+        WebRequestWorkerSingleton.getInstance().destroy();
+        LocalMemoryCacheSingleton.getInstance().invalidate();
+    });
 
     test('It detects if a conflicting SDK version exists for windows', async () =>
     {

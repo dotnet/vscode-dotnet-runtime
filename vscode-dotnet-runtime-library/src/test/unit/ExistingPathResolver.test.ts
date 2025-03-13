@@ -8,7 +8,9 @@ import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 import { ExistingPathResolver } from '../../Acquisition/ExistingPathResolver';
 import { IDotnetAcquireContext } from '../../IDotnetAcquireContext';
 import { IExistingPaths } from '../../IExtensionContext';
+import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
 import { CommandExecutorResult } from '../../Utils/CommandExecutorResult';
+import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
 import { MockExtensionConfigurationWorker } from '../mocks/MockExtensionConfigurationWorker';
 import { MockCommandExecutor, MockExtensionConfiguration, MockExtensionContext } from '../mocks/MockObjects';
 import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
@@ -62,8 +64,14 @@ function getExistingPathResolverWithVersionAndCommandResult(version: string, req
   return existingPathResolver;
 }
 
-suite('ExistingPathResolver Unit Tests', () =>
+suite('ExistingPathResolver Unit Tests', function ()
 {
+  this.afterEach(async () =>
+  {
+    // Tear down tmp storage for fresh run
+    WebRequestWorkerSingleton.getInstance().destroy();
+    LocalMemoryCacheSingleton.getInstance().invalidate();
+  });
 
   test('Use Shared Existing Path Setting over Individual Setting when no Extension Id is Provided', async () =>
   {
