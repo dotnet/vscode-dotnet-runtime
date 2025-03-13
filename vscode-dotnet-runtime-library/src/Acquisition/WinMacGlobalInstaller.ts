@@ -34,13 +34,14 @@ import { CommandExecutorResult } from '../Utils/CommandExecutorResult';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IFileUtilities } from '../Utils/IFileUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { getOSArch } from '../Utils/TypescriptUtilities';
+import { executeWithLock, getOSArch } from '../Utils/TypescriptUtilities';
 import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
 import { DotnetInstall } from './DotnetInstall';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { IRegistryReader } from './IRegistryReader';
 import { RegistryReader } from './RegistryReader';
+import { GLOBAL_INSTALL_STATE_MODIFIER_LOCK } from './StringConstants';
 
 namespace validationPromptConstants
 {
@@ -64,7 +65,6 @@ export class WinMacGlobalInstaller extends IGlobalInstaller
     protected commandRunner: ICommandExecutor;
     protected registry: IRegistryReader;
     public cleanupInstallFiles = true;
-    private completedInstall = false;
     protected versionResolver: VersionResolver;
     public file: IFileUtilities;
     protected webWorker: WebRequestWorker;
@@ -121,44 +121,48 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         return '';
     }
 
-    public async installSDK(install: DotnetInstall): Promise<string>
+    public async installSDK(installation: DotnetInstall): Promise<string>
     {
-        // Check for conflicting windows installs
-        if (os.platform() === 'win32')
-        {
-            const conflictingVersion = await this.GlobalWindowsInstallWithConflictingVersionAlreadyExists(this.installingVersion);
-            if (conflictingVersion !== '')
+        return executeWithLock(this.acquisitionContext.eventStream, false, GLOBAL_INSTALL_STATE_MODIFIER_LOCK(this.acquisitionContext.installDirectoryProvider, installation),
+            async (install: DotnetInstall) =>
             {
-                if (conflictingVersion === this.installingVersion)
+                // Check for conflicting windows installs
+                if (os.platform() === 'win32')
                 {
-                    // The install already exists, we can just exit with Ok.
-                    this.acquisitionContext.eventStream.post(new DotnetAcquisitionAlreadyInstalled(install,
-                        (this.acquisitionContext.acquisitionContext && this.acquisitionContext.acquisitionContext.requestingExtensionId)
-                            ? this.acquisitionContext.acquisitionContext.requestingExtensionId : null));
-                    return '0';
-                }
-                const err = new DotnetConflictingGlobalWindowsInstallError(new EventCancellationError(
-                    'DotnetConflictingGlobalWindowsInstallError',
-                    `A global install is already on the machine: version ${conflictingVersion}, that conflicts with the requested version.
+                    const conflictingVersion = await this.GlobalWindowsInstallWithConflictingVersionAlreadyExists(this.installingVersion);
+                    if (conflictingVersion !== '')
+                    {
+                        if (conflictingVersion === this.installingVersion)
+                        {
+                            // The install already exists, we can just exit with Ok.
+                            this.acquisitionContext.eventStream.post(new DotnetAcquisitionAlreadyInstalled(install,
+                                (this.acquisitionContext.acquisitionContext && this.acquisitionContext.acquisitionContext.requestingExtensionId)
+                                    ? this.acquisitionContext.acquisitionContext.requestingExtensionId : null));
+                            return '0';
+                        }
+                        const err = new DotnetConflictingGlobalWindowsInstallError(new EventCancellationError(
+                            'DotnetConflictingGlobalWindowsInstallError',
+                            `A global install is already on the machine: version ${conflictingVersion}, that conflicts with the requested version.
                     Please uninstall this version first if you would like to continue.
                     If Visual Studio is installed, you may need to use the VS Setup Window to uninstall the SDK component.`), install);
-                this.acquisitionContext.eventStream.post(err);
-                throw err.error;
-            }
-        }
+                        this.acquisitionContext.eventStream.post(err);
+                        throw err.error;
+                    }
+                }
 
-        const installerFile: string = await this.downloadInstaller(this.installerUrl);
-        const canContinue = await this.installerFileHasValidIntegrity(installerFile);
-        if (!canContinue)
-        {
-            const err = new DotnetConflictingGlobalWindowsInstallError(new EventCancellationError('DotnetConflictingGlobalWindowsInstallError',
-                this.invalidIntegrityError), install);
-            this.acquisitionContext.eventStream.post(err);
-            throw err.error;
-        }
-        const installerResult: string = await this.executeInstall(installerFile);
+                const installerFile: string = await this.downloadInstaller(this.installerUrl);
+                const canContinue = await this.installerFileHasValidIntegrity(installerFile);
+                if (!canContinue)
+                {
+                    const err = new DotnetConflictingGlobalWindowsInstallError(new EventCancellationError('DotnetConflictingGlobalWindowsInstallError',
+                        this.invalidIntegrityError), install);
+                    this.acquisitionContext.eventStream.post(err);
+                    throw err.error;
+                }
+                const installerResult: string = await this.executeInstall(installerFile);
 
-        return this.handleStatus(installerResult, installerFile, install);
+                return this.handleStatus(installerResult, installerFile, install);
+            }, installation)
     }
 
     private async handleStatus(installerResult: string, installerFile: string, install: DotnetInstall, allowRetry = true): Promise<string>
@@ -193,38 +197,42 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         }
     }
 
-    public async uninstallSDK(install: DotnetInstall): Promise<string>
+    public async uninstallSDK(installation: DotnetInstall): Promise<string>
     {
-        if (os.platform() === 'win32')
-        {
-            const installerFile: string = await this.downloadInstaller(this.installerUrl);
-            const canContinue = await this.installerFileHasValidIntegrity(installerFile);
-            if (!canContinue)
+        return executeWithLock(this.acquisitionContext.eventStream, false, GLOBAL_INSTALL_STATE_MODIFIER_LOCK(this.acquisitionContext.installDirectoryProvider, installation),
+            async (install: DotnetInstall) =>
             {
-                const err = new DotnetConflictingGlobalWindowsInstallError(new EventCancellationError('DotnetConflictingGlobalWindowsInstallError',
-                    this.invalidIntegrityError), install);
-                this.acquisitionContext.eventStream.post(err);
-                throw err.error;
-            }
+                if (os.platform() === 'win32')
+                {
+                    const installerFile: string = await this.downloadInstaller(this.installerUrl);
+                    const canContinue = await this.installerFileHasValidIntegrity(installerFile);
+                    if (!canContinue)
+                    {
+                        const err = new DotnetConflictingGlobalWindowsInstallError(new EventCancellationError('DotnetConflictingGlobalWindowsInstallError',
+                            this.invalidIntegrityError), install);
+                        this.acquisitionContext.eventStream.post(err);
+                        throw err.error;
+                    }
 
-            const command = `${path.resolve(installerFile)}`;
-            const uninstallArgs = ['/uninstall', '/passive', '/norestart'];
-            const commandResult = await this.commandRunner.execute(CommandExecutor.makeCommand(command, uninstallArgs), { timeout: this.acquisitionContext.timeoutSeconds * 1000 }, false);
-            this.handleTimeout(commandResult);
+                    const command = `${path.resolve(installerFile)}`;
+                    const uninstallArgs = ['/uninstall', '/passive', '/norestart'];
+                    const commandResult = await this.commandRunner.execute(CommandExecutor.makeCommand(command, uninstallArgs), { timeout: this.acquisitionContext.timeoutSeconds * 1000 }, false);
+                    this.handleTimeout(commandResult);
 
-            return commandResult.status;
-        }
-        else
-        {
-            const macPath = await this.getMacPath();
-            const command = CommandExecutor.makeCommand(`rm`, [`-rf`, `${path.join(path.dirname(macPath), 'sdk', install.version)}`, `&&`,
-                `rm`, `-rf`, `${path.join(path.dirname(macPath), 'sdk-manifests', install.version)}`], true);
+                    return commandResult.status;
+                }
+                else
+                {
+                    const macPath = await this.getMacPath();
+                    const command = CommandExecutor.makeCommand(`rm`, [`-rf`, `${path.join(path.dirname(macPath), 'sdk', install.version)}`, `&&`,
+                        `rm`, `-rf`, `${path.join(path.dirname(macPath), 'sdk-manifests', install.version)}`], true);
 
-            const commandResult = await this.commandRunner.execute(command, { timeout: this.acquisitionContext.timeoutSeconds * 1000 }, false);
-            this.handleTimeout(commandResult);
+                    const commandResult = await this.commandRunner.execute(command, { timeout: this.acquisitionContext.timeoutSeconds * 1000 }, false);
+                    this.handleTimeout(commandResult);
 
-            return commandResult.status;
-        }
+                    return commandResult.status;
+                }
+            }, installation);
     }
 
     /**

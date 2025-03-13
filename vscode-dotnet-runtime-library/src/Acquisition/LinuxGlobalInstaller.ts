@@ -8,13 +8,18 @@ import { IGlobalInstaller } from './IGlobalInstaller';
 import { DotnetDistroSupportStatus, LinuxVersionResolver } from './LinuxVersionResolver';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IUtilityContext } from '../Utils/IUtilityContext';
+import * as os from 'os';
 import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
+import { executeWithLock } from '../Utils/TypescriptUtilities';
+import { GLOBAL_INSTALL_STATE_MODIFIER_LOCK } from './StringConstants';
+import { GetDotnetInstallInfo } from '..';
 
-export class LinuxGlobalInstaller extends IGlobalInstaller {
-    private version : string;
-    private linuxSDKResolver : LinuxVersionResolver;
+export class LinuxGlobalInstaller extends IGlobalInstaller
+{
+    private version: string;
+    private linuxSDKResolver: LinuxVersionResolver;
 
-    constructor(acquisitionContext : IAcquisitionWorkerContext, utilContext : IUtilityContext, fullySpecifiedDotnetVersion : string)
+    constructor(acquisitionContext: IAcquisitionWorkerContext, utilContext: IUtilityContext, fullySpecifiedDotnetVersion: string)
     {
         super(acquisitionContext, utilContext);
         this.linuxSDKResolver = new LinuxVersionResolver(acquisitionContext, utilContext);
@@ -25,17 +30,26 @@ export class LinuxGlobalInstaller extends IGlobalInstaller {
     {
         await this.linuxSDKResolver.Initialize();
 
-        return this.linuxSDKResolver.ValidateAndInstallSDK(this.version);
+        return executeWithLock(this.acquisitionContext.eventStream, false, GLOBAL_INSTALL_STATE_MODIFIER_LOCK(this.acquisitionContext.installDirectoryProvider,
+            GetDotnetInstallInfo(this.version, 'sdk', 'global', os.arch())),
+            async () =>
+            {
+                return this.linuxSDKResolver.ValidateAndInstallSDK(this.version);
+            },);
     }
 
-    public async uninstallSDK() : Promise<string>
+    public async uninstallSDK(): Promise<string>
     {
         await this.linuxSDKResolver.Initialize();
-
-        return this.linuxSDKResolver.UninstallSDK(this.version);
+        return executeWithLock(this.acquisitionContext.eventStream, false, GLOBAL_INSTALL_STATE_MODIFIER_LOCK(this.acquisitionContext.installDirectoryProvider,
+            GetDotnetInstallInfo(this.version, 'sdk', 'global', os.arch())),
+            async () =>
+            {
+                return this.linuxSDKResolver.UninstallSDK(this.version);
+            },);
     }
 
-    public async getExpectedGlobalSDKPath(specificSDKVersionInstalled : string, installedArch : string, macPathShouldExist = true) : Promise<string>
+    public async getExpectedGlobalSDKPath(specificSDKVersionInstalled: string, installedArch: string, macPathShouldExist = true): Promise<string>
     {
         await this.linuxSDKResolver.Initialize();
 
