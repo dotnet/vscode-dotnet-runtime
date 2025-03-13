@@ -29,14 +29,15 @@ import { FileUtilities } from '../Utils/FileUtilities';
 import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker';
 
 import { IUtilityContext } from '../Utils/IUtilityContext';
+import { executeWithLock } from '../Utils/TypescriptUtilities';
 import { WebRequestWorker } from '../Utils/WebRequestWorker';
+import { LOCAL_LOCK_PING_DURATION_MS } from './CacheTimeConstants';
 import { DotnetInstall } from './DotnetInstall';
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 import { IInstallScriptAcquisitionWorker } from './IInstallScriptAcquisitionWorker';
-import { executeWithLock } from '../Utils/TypescriptUtilities';
 
 export class AcquisitionInvoker extends IAcquisitionInvoker
 {
@@ -57,6 +58,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
     public async installDotnet(installationContext: IDotnetInstallationContext, installObj: DotnetInstall): Promise<void>
     {
         return executeWithLock(this.eventStream, false, `${path.resolve(installationContext.installDir)}.lock`,
+            LOCAL_LOCK_PING_DURATION_MS, installationContext.timeoutSeconds * 1000,
             async (installContext: IDotnetInstallationContext, install: DotnetInstall) =>
             {
                 const winOS = os.platform() === 'win32';

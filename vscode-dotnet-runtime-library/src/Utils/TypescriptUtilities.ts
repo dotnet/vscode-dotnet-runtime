@@ -4,25 +4,22 @@
 *--------------------------------------------------------------------------------------------*/
 import * as os from 'os';
 
-import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from '../Acquisition/CacheTimeConstants';
-import { DotnetWSLCheckEvent } from '../EventStream/EventStreamEvents';
-import { IEvent } from '../EventStream/IEvent';
-import { CommandExecutor } from './CommandExecutor';
-import { ICommandExecutor } from './ICommandExecutor';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as lockfile from 'proper-lockfile';
+import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from '../Acquisition/CacheTimeConstants';
+import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { IEventStream } from '../EventStream/EventStream';
 import
 {
     DotnetLockAttemptingAcquireEvent,
     DotnetLockErrorEvent,
-    DotnetLockReleasedEvent,
-    EventBasedError,
+    DotnetLockReleasedEvent, DotnetWSLCheckEvent, EventBasedError
 } from '../EventStream/EventStreamEvents';
-import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
+import { IEvent } from '../EventStream/IEvent';
+import { CommandExecutor } from './CommandExecutor';
+import { ICommandExecutor } from './ICommandExecutor';
 import { IUtilityContext } from './IUtilityContext';
-import { FileUtilities } from './FileUtilities';
 
 export async function loopWithTimeoutOnCond(sampleRatePerMs: number, durationToWaitBeforeTimeoutMs: number, conditionToStop: () => boolean, doAfterStop: () => void,
     eventStream: IEventStream | null, waitEvent: IEvent)
@@ -73,7 +70,7 @@ export async function isRunningUnderWSL(acquisitionContext: IAcquisitionWorkerCo
 /*
 @remarks lockPath should be a full path to a shared lock file ending in .lock (that may or may not exist on disk) and the file content does not matter
 */
-export async function executeWithLock<A extends any[], R>(eventStream: IEventStream, alreadyHoldingLock: boolean, lockPath: string, f: (...args: A) => R, ...args: A): Promise<R>
+export async function executeWithLock<A extends any[], R>(eventStream: IEventStream, alreadyHoldingLock: boolean, lockPath: string, retryTimeMs: number, timeoutTimeMs: number, f: (...args: A) => R, ...args: A): Promise<R>
 {
     try
     {
@@ -97,7 +94,7 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
         else
         {
             eventStream?.post(new DotnetLockAttemptingAcquireEvent(`Lock Acquisition request to begin.`, new Date().toISOString(), lockPath, lockPath));
-            await lockfile.lock(lockPath, { retries: { retries: 10, minTimeout: 5, maxTimeout: 10000 } })
+            await lockfile.lock(lockPath, { retries: { retries: 10, minTimeout: retryTimeMs, maxTimeout: timeoutTimeMs } })
                 .then(async (release) =>
                 {
                     // eslint-disable-next-line @typescript-eslint/await-thenable

@@ -35,7 +35,7 @@ import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IFileUtilities } from '../Utils/IFileUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { executeWithLock, getOSArch } from '../Utils/TypescriptUtilities';
-import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
+import { GLOBAL_LOCK_PING_DURATION_MS, SYSTEM_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
 import { DotnetInstall } from './DotnetInstall';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IGlobalInstaller } from './IGlobalInstaller';
@@ -123,7 +123,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
 
     public async installSDK(installation: DotnetInstall): Promise<string>
     {
-        return executeWithLock(this.acquisitionContext.eventStream, false, GLOBAL_INSTALL_STATE_MODIFIER_LOCK(this.acquisitionContext.installDirectoryProvider, installation),
+        return executeWithLock(this.acquisitionContext.eventStream, false, GLOBAL_INSTALL_STATE_MODIFIER_LOCK(this.acquisitionContext.installDirectoryProvider, installation), GLOBAL_LOCK_PING_DURATION_MS, this.acquisitionContext.timeoutSeconds * 1000,
             async (install: DotnetInstall) =>
             {
                 // Check for conflicting windows installs
@@ -199,7 +199,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
 
     public async uninstallSDK(installation: DotnetInstall): Promise<string>
     {
-        return executeWithLock(this.acquisitionContext.eventStream, false, GLOBAL_INSTALL_STATE_MODIFIER_LOCK(this.acquisitionContext.installDirectoryProvider, installation),
+        return executeWithLock(this.acquisitionContext.eventStream, false, GLOBAL_INSTALL_STATE_MODIFIER_LOCK(this.acquisitionContext.installDirectoryProvider, installation), GLOBAL_LOCK_PING_DURATION_MS, this.acquisitionContext.timeoutSeconds * 1000,
             async (install: DotnetInstall) =>
             {
                 if (os.platform() === 'win32')
