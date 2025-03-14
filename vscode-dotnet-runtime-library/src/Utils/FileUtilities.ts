@@ -36,6 +36,11 @@ export class FileUtilities extends IFileUtilities
             await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
         }
 
+        if (!fs.existsSync(filePath))
+        {
+            fs.writeFileSync(filePath, '');
+        }
+
         await this.innerWriteFile(scriptContent, filePath, eventStream);
     }
 

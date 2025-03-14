@@ -140,7 +140,7 @@ ${stdout}`));
             this.context?.eventStream.post(new CommandExecutionStdError(`The process spawn: ${fullCommandString} encountered stderr, continuing
 ${stderr}`));
 
-            if (error)
+            if (error !== null && error !== undefined)
             {
                 this.context?.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The process spawn: ${fullCommandString} failed to run under sudo.`));
                 if (terminalFailure)
