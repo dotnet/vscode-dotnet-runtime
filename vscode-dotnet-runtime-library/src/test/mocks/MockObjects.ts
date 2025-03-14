@@ -448,9 +448,9 @@ export class MockFileUtilities extends IFileUtilities
     public filePathsAndExistValues: { [filePath: string]: boolean; } = {};
     public filePathsAndReadValues: { [filePath: string]: string; } = {};
 
-    public writeFileOntoDisk(content: string, filePath: string, alreadyHoldingLock = false)
+    public writeFileOntoDisk(content: string, filePath: string)
     {
-        return this.trueUtilities.writeFileOntoDisk(content, filePath, alreadyHoldingLock, new MockEventStream());
+        return this.trueUtilities.writeFileOntoDisk(content, filePath, new MockEventStream());
     }
 
     public wipeDirectory(directoryToWipe: string, eventSteam: IEventStream, fileExtensionsToDelete?: string[])
