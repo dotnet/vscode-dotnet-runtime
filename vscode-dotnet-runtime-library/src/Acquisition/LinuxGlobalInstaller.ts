@@ -5,14 +5,16 @@
  * ------------------------------------------------------------------------------------------ */
 
 import * as os from 'os';
+import * as path from 'path';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { executeWithLock } from '../Utils/TypescriptUtilities';
+import { executeWithLock, getDotnetExecutable } from '../Utils/TypescriptUtilities';
 import { GLOBAL_LOCK_PING_DURATION_MS } from './CacheTimeConstants';
 import { GetDotnetInstallInfo } from './DotnetInstall';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { DotnetDistroSupportStatus, LinuxVersionResolver } from './LinuxVersionResolver';
 import { GLOBAL_INSTALL_STATE_MODIFIER_LOCK } from './StringConstants';
+
 
 export class LinuxGlobalInstaller extends IGlobalInstaller
 {
@@ -56,7 +58,7 @@ export class LinuxGlobalInstaller extends IGlobalInstaller
         const dotnetFolder = await (await this.linuxSDKResolver.distroCall()).getDotnetVersionSupportStatus(specificSDKVersionInstalled, 'sdk') === DotnetDistroSupportStatus.Distro ?
             (await this.linuxSDKResolver.distroCall()).getExpectedDotnetDistroFeedInstallationDirectory() :
             (await this.linuxSDKResolver.distroCall()).getExpectedDotnetMicrosoftFeedInstallationDirectory();
-        return dotnetFolder;
+        return path.join(dotnetFolder, getDotnetExecutable());
     }
 
     public async getGlobalSdkVersionsInstalledOnMachine(): Promise<string[]>
