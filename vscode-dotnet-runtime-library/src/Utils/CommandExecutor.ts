@@ -202,7 +202,7 @@ ${stderr}`));
         {
             const err = new TimeoutSudoProcessSpawnerError(new EventCancellationError('TimeoutSudoProcessSpawnerError', `We are unable to spawn the process to run commands under sudo for installing .NET.
 Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: ${errorIfDead}.
-It had previously spawned: ${LockUsedByThisInstanceSingleton.getInstance().hasThisVsCodeInstanceLaunchedSudoFork()}.`), getInstallFromContext(this.context));
+It had previously spawned: ${LockUsedByThisInstanceSingleton.getInstance().hasVsCodeInstanceInteractedWithLock(RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir))}.`), getInstallFromContext(this.context));
             this.context?.eventStream.post(err);
             throw err.error;
         }
@@ -266,7 +266,7 @@ It had previously spawned: ${LockUsedByThisInstanceSingleton.getInstance().hasTh
             const err = new TimeoutSudoCommandExecutionError(new EventCancellationError('TimeoutSudoCommandExecutionError',
                 `Timeout: The master process with command ${commandToExecuteString} never finished executing.
 Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: ${terminalFailure}.
-It had previously spawned: ${LockUsedByThisInstanceSingleton.getInstance().hasThisVsCodeInstanceLaunchedSudoFork()}.`), getInstallFromContext(this.context));
+It had previously spawned: ${LockUsedByThisInstanceSingleton.getInstance().hasVsCodeInstanceInteractedWithLock(RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir))}.`), getInstallFromContext(this.context));
             this.context?.eventStream.post(err);
             throw err.error;
         }
