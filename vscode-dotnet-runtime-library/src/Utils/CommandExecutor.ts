@@ -176,15 +176,11 @@ ${stderr}`));
 
                 const waitTime = this.context?.timeoutSeconds ? ((this.context?.timeoutSeconds / 3) * 1000) : 180000;
                 await loopWithTimeoutOnCond(100, waitTime,
-                    function processRespondedByDeletingOkFile(): boolean { return !fs.existsSync(processAliveOkSentinelFile) },
+                    function processRespondedByDeletingOkFile(): boolean { return !(fs.existsSync(processAliveOkSentinelFile)) },
                     function setProcessIsAlive(): void { isLive = true; },
                     this.context.eventStream,
                     new SudoProcCommandExchangePing(`Ping : Waiting. ${new Date().toISOString()}`)
-                )
-                    .catch(error =>
-                    {
-                        // Let the rejected promise get handled below
-                    });
+                );
             },);
 
         this.context?.eventStream.post(new SudoProcAliveCheckEnd(`Finished Sudo Process Master: Is Alive? ${isLive}. ${new Date().toISOString()}`));
@@ -236,11 +232,7 @@ It had previously spawned: ${LockUsedByThisInstanceSingleton.getInstance().hasVs
                     function doNothing(): void { ; },
                     this.context.eventStream,
                     new SudoProcCommandExchangePing(`Ping : Waiting. ${new Date().toISOString()}`)
-                )
-                    .catch(error =>
-                    {
-                        // Let the rejected promise get handled below
-                    });
+                );
 
                 commandOutputJson = {
                     stdout: (fs.readFileSync(stdoutFile, 'utf8')).trim(),
