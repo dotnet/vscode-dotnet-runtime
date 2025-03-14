@@ -20,6 +20,7 @@ import { IEvent } from '../EventStream/IEvent';
 import { CommandExecutor } from './CommandExecutor';
 import { ICommandExecutor } from './ICommandExecutor';
 import { IUtilityContext } from './IUtilityContext';
+import { LockUsedByThisInstanceSingleton } from './LockUsedByThisInstanceSingleton';
 
 export async function loopWithTimeoutOnCond(sampleRatePerMs: number, durationToWaitBeforeTimeoutMs: number, conditionToStop: () => boolean, doAfterStop: () => void,
     eventStream: IEventStream | null, waitEvent: IEvent)
@@ -92,6 +93,12 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
         return Promise.reject(e);
     }
 
+    // Someone PKilled Vscode while we held the lock previously. Need to clean up the lock created by the lib (lib adds .lock unless you use LockFilePath option)
+    if (fs.existsSync(`${lockPath}.lock`) && !(LockUsedByThisInstanceSingleton.getInstance().hasVsCodeInstanceInteractedWithLock(lockPath)))
+    {
+        await fs.promises.rm(`${lockPath}.lock`);
+    }
+
     // Make the directory and file to hold a lock over if it DNE. If it exists, thats OK (.lock is a different file than the lock file)
     try
     {
@@ -102,7 +109,6 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
         // The file owning directory already exists
     }
     fs.writeFileSync(lockPath, '', { encoding: 'utf-8' });
-
 
     eventStream?.post(new DotnetLockAttemptingAcquireEvent(`Lock Acquisition request to begin.`, new Date().toISOString(), lockPath, lockPath));
     await lockfile.lock(lockPath, { stale: timeoutTimeMs /*if a proc holding the lock has not returned in the stale time it will auto fail*/, retries: { retries: retryCountToEndRoughlyAtTimeoutMs, minTimeout: retryTimeMs, maxTimeout: retryTimeMs } })

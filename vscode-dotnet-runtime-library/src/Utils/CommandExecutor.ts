@@ -56,7 +56,7 @@ import { FileUtilities } from './FileUtilities';
 import { ICommandExecutor } from './ICommandExecutor';
 import { IFileUtilities } from './IFileUtilities';
 import { IUtilityContext } from './IUtilityContext';
-import { SudoSpawnCheckSingleton } from './SudoSpawnCheckSingleton';
+import { LockUsedByThisInstanceSingleton } from './LockUsedByThisInstanceSingleton';
 import { executeWithLock, isRunningUnderWSL, loopWithTimeoutOnCond } from './TypescriptUtilities';
 
 export class CommandExecutor extends ICommandExecutor
@@ -117,7 +117,7 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
      */
     private async startupSudoProc(fullCommandString: string, shellScriptPath: string, terminalFailure: boolean): Promise<string>
     {
-        if (SudoSpawnCheckSingleton.getInstance().hasThisVsCodeInstanceLaunchedSudoFork())
+        if (LockUsedByThisInstanceSingleton.getInstance().hasVsCodeInstanceInteractedWithLock(RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir)))
         {
             if (await this.sudoProcIsLive(false))
             {
@@ -156,13 +156,11 @@ ${stderr}`));
             else
             {
                 this.context?.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The process spawn: ${fullCommandString} successfully ran under sudo.`));
-                SudoSpawnCheckSingleton.getInstance().notifyOfSudoFork();
                 return Promise.resolve('0');
             }
         });
 
         // This is here for the compiler
-        SudoSpawnCheckSingleton.getInstance().notifyOfSudoFork();
         return Promise.resolve('0');
     }
 
@@ -204,7 +202,7 @@ ${stderr}`));
         {
             const err = new TimeoutSudoProcessSpawnerError(new EventCancellationError('TimeoutSudoProcessSpawnerError', `We are unable to spawn the process to run commands under sudo for installing .NET.
 Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: ${errorIfDead}.
-It had previously spawned: ${SudoSpawnCheckSingleton.getInstance().hasThisVsCodeInstanceLaunchedSudoFork()}.`), getInstallFromContext(this.context));
+It had previously spawned: ${LockUsedByThisInstanceSingleton.getInstance().hasThisVsCodeInstanceLaunchedSudoFork()}.`), getInstallFromContext(this.context));
             this.context?.eventStream.post(err);
             throw err.error;
         }
@@ -268,7 +266,7 @@ It had previously spawned: ${SudoSpawnCheckSingleton.getInstance().hasThisVsCode
             const err = new TimeoutSudoCommandExecutionError(new EventCancellationError('TimeoutSudoCommandExecutionError',
                 `Timeout: The master process with command ${commandToExecuteString} never finished executing.
 Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: ${terminalFailure}.
-It had previously spawned: ${SudoSpawnCheckSingleton.getInstance().hasThisVsCodeInstanceLaunchedSudoFork()}.`), getInstallFromContext(this.context));
+It had previously spawned: ${LockUsedByThisInstanceSingleton.getInstance().hasThisVsCodeInstanceLaunchedSudoFork()}.`), getInstallFromContext(this.context));
             this.context?.eventStream.post(err);
             throw err.error;
         }
