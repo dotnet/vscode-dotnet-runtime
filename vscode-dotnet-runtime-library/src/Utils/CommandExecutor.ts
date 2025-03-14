@@ -143,15 +143,8 @@ ${stderr}`));
             if (error !== null && error !== undefined)
             {
                 this.context?.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The process spawn: ${fullCommandString} failed to run under sudo.`));
-                if (terminalFailure)
-                {
-                    this.parseVSCodeSudoExecError(error, fullCommandString);
-                    return Promise.reject(error);
-                }
-                else
-                {
-                    return Promise.resolve('1');
-                }
+                error = this.parseVSCodeSudoExecError(error, fullCommandString);
+                return Promise.reject(error);
             }
             else
             {
@@ -160,7 +153,7 @@ ${stderr}`));
             }
         });
 
-        // This is here for the compiler
+        // Exit from here so we can communicate with the process spawning above
         return Promise.resolve('0');
     }
 
