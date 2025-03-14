@@ -146,7 +146,7 @@ ${stderr}`));
                 {
                     this.context?.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The process spawn: ${fullCommandString} failed to run under sudo.`));
                     this.parseVSCodeSudoExecError(error, fullCommandString);
-                    return Promise.reject(error);
+                    throw error;
                 }
 
                 this.context?.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The process spawn: ${fullCommandString} successfully ran under sudo.`));
