@@ -18,9 +18,9 @@ export function GLOBAL_INSTALL_STATE_MODIFIER_LOCK(directoryProvider: IInstallat
     return path.join(path.resolve(directoryProvider.getInstallDir(install.installId)), 'modifyingGlobalState.lock');
 }
 
-export function RUN_UNDER_SUDO_LOCK(): string
+export function RUN_UNDER_SUDO_LOCK(sudoDirectory: string): string
 {
-    return 'runUnderSudo.lock';
+    return path.join(sudoDirectory, 'runUnderSudo.lock');
 }
 
 export const UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR = '898998';

@@ -56,6 +56,7 @@ import { FileUtilities } from './FileUtilities';
 import { ICommandExecutor } from './ICommandExecutor';
 import { IFileUtilities } from './IFileUtilities';
 import { IUtilityContext } from './IUtilityContext';
+import { SudoSpawnCheckSingleton } from './SudoSpawnCheckSingleton';
 import { executeWithLock, isRunningUnderWSL, loopWithTimeoutOnCond } from './TypescriptUtilities';
 
 export class CommandExecutor extends ICommandExecutor
@@ -69,7 +70,6 @@ export class CommandExecutor extends ICommandExecutor
     }; // Not all systems have english installed -- not sure if it's safe to use this.
     private sudoProcessCommunicationDir = path.join(__dirname, 'install scripts');
     private fileUtil: IFileUtilities;
-    private hasEverLaunchedSudoFork = false;
 
     constructor(context: IAcquisitionWorkerContext, utilContext: IUtilityContext, protected readonly validSudoCommands?: string[])
     {
@@ -117,14 +117,13 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
      */
     private async startupSudoProc(fullCommandString: string, shellScriptPath: string, terminalFailure: boolean): Promise<string>
     {
-        if (this.hasEverLaunchedSudoFork)
+        if (SudoSpawnCheckSingleton.getInstance().hasThisVsCodeInstanceLaunchedSudoFork())
         {
             if (await this.sudoProcIsLive(false))
             {
                 return Promise.resolve('0');
             }
         }
-        this.hasEverLaunchedSudoFork = true;
 
         // Launch the process under sudo
         this.context?.eventStream.post(new CommandExecutionUserAskDialogueEvent(`Prompting user for command ${fullCommandString} under sudo.`));
@@ -157,10 +156,13 @@ ${stderr}`));
             else
             {
                 this.context?.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The process spawn: ${fullCommandString} successfully ran under sudo.`));
+                SudoSpawnCheckSingleton.getInstance().notifyOfSudoFork();
                 return Promise.resolve('0');
             }
         });
 
+        // This is here for the compiler
+        SudoSpawnCheckSingleton.getInstance().notifyOfSudoFork();
         return Promise.resolve('0');
     }
 
@@ -175,7 +177,7 @@ ${stderr}`));
 
         const processAliveOkSentinelFile = path.join(this.sudoProcessCommunicationDir, 'ok.txt');
 
-        await executeWithLock(this.context.eventStream, false, RUN_UNDER_SUDO_LOCK(), SUDO_LOCK_PING_DURATION_MS, this.context.timeoutSeconds * 1000,
+        await executeWithLock(this.context.eventStream, false, RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir), SUDO_LOCK_PING_DURATION_MS, this.context.timeoutSeconds * 1000,
             async () =>
             {
                 await (this.fileUtil as FileUtilities).wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt']);
@@ -202,7 +204,7 @@ ${stderr}`));
         {
             const err = new TimeoutSudoProcessSpawnerError(new EventCancellationError('TimeoutSudoProcessSpawnerError', `We are unable to spawn the process to run commands under sudo for installing .NET.
 Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: ${errorIfDead}.
-It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallFromContext(this.context));
+It had previously spawned: ${SudoSpawnCheckSingleton.getInstance().hasThisVsCodeInstanceLaunchedSudoFork()}.`), getInstallFromContext(this.context));
             this.context?.eventStream.post(err);
             throw err.error;
         }
@@ -229,7 +231,7 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallFromCon
 
         const outputFile = path.join(this.sudoProcessCommunicationDir, 'output.txt');
 
-        await executeWithLock(this.context.eventStream, false, RUN_UNDER_SUDO_LOCK(), SUDO_LOCK_PING_DURATION_MS, this.context.timeoutSeconds * 1000,
+        await executeWithLock(this.context.eventStream, false, RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir), SUDO_LOCK_PING_DURATION_MS, this.context.timeoutSeconds * 1000,
             async () =>
             {
                 await (this.fileUtil as FileUtilities).wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt', '.json']);
@@ -266,7 +268,7 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallFromCon
             const err = new TimeoutSudoCommandExecutionError(new EventCancellationError('TimeoutSudoCommandExecutionError',
                 `Timeout: The master process with command ${commandToExecuteString} never finished executing.
 Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: ${terminalFailure}.
-It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallFromContext(this.context));
+It had previously spawned: ${SudoSpawnCheckSingleton.getInstance().hasThisVsCodeInstanceLaunchedSudoFork()}.`), getInstallFromContext(this.context));
             this.context?.eventStream.post(err);
             throw err.error;
         }
@@ -309,7 +311,7 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
         }
 
         let didDelete = 1;
-        await executeWithLock(this.context.eventStream, false, RUN_UNDER_SUDO_LOCK(), SUDO_LOCK_PING_DURATION_MS, this.context.timeoutSeconds * 1000,
+        await executeWithLock(this.context.eventStream, false, RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir), SUDO_LOCK_PING_DURATION_MS, this.context.timeoutSeconds * 1000,
             async () =>
             {
                 const processExitFile = path.join(this.sudoProcessCommunicationDir, 'exit.txt');
