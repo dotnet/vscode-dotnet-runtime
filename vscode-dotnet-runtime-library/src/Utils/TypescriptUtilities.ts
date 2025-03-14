@@ -80,17 +80,10 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
 
     // Are we in a mutex-relevant inner function call, that is called by a parent function that already holds the lock?
     // If so, we don't need to acquire the lock again and we also shouldn't release it as the parent function will do that.
-    try
+    if (alreadyHoldingLock)
     {
-        if (alreadyHoldingLock)
-        {
-            // eslint-disable-next-line @typescript-eslint/await-thenable
-            return await f(...(args));
-        }
-    }
-    catch (e: any)
-    {
-        return Promise.reject(e);
+        // eslint-disable-next-line @typescript-eslint/await-thenable
+        return await f(...(args));
     }
 
     // Someone PKilled Vscode while we held the lock previously. Need to clean up the lock created by the lib (lib adds .lock unless you use LockFilePath option)
@@ -108,6 +101,7 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
     {
         // The file owning directory already exists
     }
+
     fs.writeFileSync(lockPath, '', { encoding: 'utf-8' });
 
     eventStream?.post(new DotnetLockAttemptingAcquireEvent(`Lock Acquisition request to begin.`, new Date().toISOString(), lockPath, lockPath));
@@ -119,33 +113,33 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
                 // eslint-disable-next-line @typescript-eslint/await-thenable
                 returnResult = await f(...(args));
             }
-            catch (e: any)
+            catch (errorFromF: any)
             {
-                codeFailureAndNotLockFailure = e;
+                codeFailureAndNotLockFailure = errorFromF;
             }
             eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), lockPath, lockPath));
             return release();
         })
-        .catch(async (e: Error) =>
+        .catch((lockingError: Error) =>
         {
             // If we don't catch here, the lock will never be released.
             try
             {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                eventStream.post(new DotnetLockErrorEvent(e, e?.message ?? 'Unable to acquire lock or unlock lock. Trying to unlock.', new Date().toISOString(), lockPath, lockPath));
-                await lockfile.unlock(lockPath);
+                eventStream.post(new DotnetLockErrorEvent(lockingError, lockingError?.message ?? 'Unable to acquire lock or unlock lock. Trying to unlock.', new Date().toISOString(), lockPath, lockPath));
+                lockfile.unlock(lockPath);
             }
             catch (eWhenUnlocking: any)
             {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 eventStream.post(new DotnetLockErrorEvent(eWhenUnlocking, eWhenUnlocking?.message ?? 'Unable to unlock lock after retry.', new Date().toISOString(), lockPath, lockPath));
             }
-            return Promise.reject(new EventBasedError('DotnetLockErrorEvent', e?.message, e?.stack));
+            throw new EventBasedError('DotnetLockErrorEvent', lockingError?.message, lockingError?.stack);
         });
 
     if (codeFailureAndNotLockFailure)
     {
-        return Promise.reject(codeFailureAndNotLockFailure);
+        throw codeFailureAndNotLockFailure;
     }
 
     return returnResult;
