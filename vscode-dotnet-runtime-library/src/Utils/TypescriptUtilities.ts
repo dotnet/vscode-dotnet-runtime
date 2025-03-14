@@ -96,7 +96,7 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
     // Someone PKilled Vscode while we held the lock previously. Need to clean up the lock created by the lib (lib adds .lock unless you use LockFilePath option)
     if (fs.existsSync(`${lockPath}.lock`) && !(LockUsedByThisInstanceSingleton.getInstance().hasVsCodeInstanceInteractedWithLock(lockPath)))
     {
-        await fs.promises.rm(`${lockPath}.lock`);
+        await lockfile.unlock(lockPath);
     }
 
     // Make the directory and file to hold a lock over if it DNE. If it exists, thats OK (.lock is a different file than the lock file)
