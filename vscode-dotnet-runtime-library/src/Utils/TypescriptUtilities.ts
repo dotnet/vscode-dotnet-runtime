@@ -120,16 +120,18 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
             eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), lockPath, lockPath));
             return release();
         })
-        .catch((e: Error) =>
+        .catch(async (e: Error) =>
         {
             // If we don't catch here, the lock will never be released.
             try
             {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 eventStream.post(new DotnetLockErrorEvent(e, e?.message ?? 'Unable to acquire lock or unlock lock. Trying to unlock.', new Date().toISOString(), lockPath, lockPath));
-                lockfile.unlock(lockPath);
+                await lockfile.unlock(lockPath);
             }
             catch (e: any)
             {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 eventStream.post(new DotnetLockErrorEvent(e, e?.message ?? 'Unable to unlock lock after retry.', new Date().toISOString(), lockPath, lockPath));
             }
             return Promise.reject(new EventBasedError('DotnetLockErrorEvent', e?.message, e?.stack));
