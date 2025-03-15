@@ -132,7 +132,7 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
 
         fs.chmodSync(shellScriptPath, 0o500);
         const timeoutSeconds = Math.max(100, this.context.timeoutSeconds);
-        return new Promise(resolve =>
+        return new Promise((resolve, reject) =>
         {
             execElevated((`"${shellScriptPath}" "${this.sudoProcessCommunicationDir}" "${timeoutSeconds}" ${this.validSudoCommands?.join(' ')} &`), options, (error?: any, stdout?: any, stderr?: any) =>
             {
@@ -146,11 +146,11 @@ ${stderr}`));
                 {
                     this.context?.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The process spawn: ${fullCommandString} failed to run under sudo.`));
                     this.parseVSCodeSudoExecError(error, fullCommandString);
-                    throw error;
+                    return reject(error);
                 }
 
                 this.context?.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The process spawn: ${fullCommandString} successfully ran under sudo.`));
-                resolve('0');
+                return resolve('0');
             });
         });
     }
