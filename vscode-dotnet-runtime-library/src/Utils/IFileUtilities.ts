@@ -9,7 +9,7 @@ import { IUtilityContext } from './IUtilityContext';
 
 export abstract class IFileUtilities
 {
-    public abstract writeFileOntoDisk(scriptContent: string, filePath: string, alreadyHoldingLock: boolean, eventStream?: IEventStream): Promise<void>;
+    public abstract writeFileOntoDisk(scriptContent: string, filePath: string, eventStream?: IEventStream): Promise<void>;
 
     /**
      * @param directoryToWipe the directory to delete all of the files in if privilege to do so exists.

@@ -11,7 +11,6 @@ import open = require('open');
 import path = require('path');
 
 import { exec as execElevated } from '@vscode/sudo-prompt';
-import * as lockfile from 'proper-lockfile';
 import
 {
     CommandExecutionEvent,
@@ -29,8 +28,6 @@ import
     CommandProcessorExecutionEnd,
     DotnetAlternativeCommandFoundEvent,
     DotnetCommandNotFoundEvent,
-    DotnetLockAcquiredEvent,
-    DotnetLockReleasedEvent,
     DotnetWSLSecurityError,
     EventBasedError,
     EventCancellationError,
@@ -47,7 +44,9 @@ import { CommandExecutorCommand } from './CommandExecutorCommand';
 import { getInstallFromContext } from './InstallIdUtilities';
 
 
+import { SUDO_LOCK_PING_DURATION_MS } from '../Acquisition/CacheTimeConstants';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
+import { RUN_UNDER_SUDO_LOCK } from '../Acquisition/StringConstants';
 import { IEventStream } from '../EventStream/EventStream';
 import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
 import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
@@ -57,7 +56,8 @@ import { FileUtilities } from './FileUtilities';
 import { ICommandExecutor } from './ICommandExecutor';
 import { IFileUtilities } from './IFileUtilities';
 import { IUtilityContext } from './IUtilityContext';
-import { isRunningUnderWSL, loopWithTimeoutOnCond } from './TypescriptUtilities';
+import { LockUsedByThisInstanceSingleton } from './LockUsedByThisInstanceSingleton';
+import { executeWithLock, isRunningUnderWSL, loopWithTimeoutOnCond } from './TypescriptUtilities';
 
 export class CommandExecutor extends ICommandExecutor
 {
@@ -70,7 +70,6 @@ export class CommandExecutor extends ICommandExecutor
     }; // Not all systems have english installed -- not sure if it's safe to use this.
     private sudoProcessCommunicationDir = path.join(__dirname, 'install scripts');
     private fileUtil: IFileUtilities;
-    private hasEverLaunchedSudoFork = false;
 
     constructor(context: IAcquisitionWorkerContext, utilContext: IUtilityContext, protected readonly validSudoCommands?: string[])
     {
@@ -103,7 +102,7 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
             throw err.error;
         }
 
-        const masterSudoProcessSpawnResult = this.startupSudoProc(fullCommandString, shellScript, terminalFailure);
+        const masterSudoProcessSpawnResult = await this.startupSudoProc(fullCommandString, shellScript, terminalFailure);
 
         await this.sudoProcIsLive(terminalFailure);
         return this.executeSudoViaProcessCommunication(fullCommandString, terminalFailure);
@@ -118,14 +117,13 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
      */
     private async startupSudoProc(fullCommandString: string, shellScriptPath: string, terminalFailure: boolean): Promise<string>
     {
-        if (this.hasEverLaunchedSudoFork)
+        if (LockUsedByThisInstanceSingleton.getInstance().hasVsCodeInstanceInteractedWithLock(RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir)))
         {
             if (await this.sudoProcIsLive(false))
             {
                 return Promise.resolve('0');
             }
         }
-        this.hasEverLaunchedSudoFork = true;
 
         // Launch the process under sudo
         this.context?.eventStream.post(new CommandExecutionUserAskDialogueEvent(`Prompting user for command ${fullCommandString} under sudo.`));
@@ -134,35 +132,27 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
 
         fs.chmodSync(shellScriptPath, 0o500);
         const timeoutSeconds = Math.max(100, this.context.timeoutSeconds);
-        execElevated((`"${shellScriptPath}" "${this.sudoProcessCommunicationDir}" "${timeoutSeconds}" ${this.validSudoCommands?.join(' ')} &`), options, (error?: any, stdout?: any, stderr?: any) =>
+        return new Promise((resolve, reject) =>
         {
-            this.context?.eventStream.post(new CommandExecutionStdOut(`The process spawn: ${fullCommandString} encountered stdout, continuing
+            execElevated((`"${shellScriptPath}" "${this.sudoProcessCommunicationDir}" "${timeoutSeconds}" ${this.validSudoCommands?.join(' ')} &`), options, (error?: any, stdout?: any, stderr?: any) =>
+            {
+                this.context?.eventStream.post(new CommandExecutionStdOut(`The process spawn: ${fullCommandString} encountered stdout, continuing
 ${stdout}`));
 
-            this.context?.eventStream.post(new CommandExecutionStdError(`The process spawn: ${fullCommandString} encountered stderr, continuing
+                this.context?.eventStream.post(new CommandExecutionStdError(`The process spawn: ${fullCommandString} encountered stderr, continuing
 ${stderr}`));
 
-            if (error)
-            {
-                this.context?.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The process spawn: ${fullCommandString} failed to run under sudo.`));
-                if (terminalFailure)
+                if (error !== null && error !== undefined)
                 {
+                    this.context?.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The process spawn: ${fullCommandString} failed to run under sudo.`));
                     this.parseVSCodeSudoExecError(error, fullCommandString);
-                    return Promise.reject(error);
+                    return reject(error);
                 }
-                else
-                {
-                    return Promise.resolve('1');
-                }
-            }
-            else
-            {
-                this.context?.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The process spawn: ${fullCommandString} successfully ran under sudo.`));
-                return Promise.resolve('0');
-            }
-        });
 
-        return Promise.resolve('0');
+                this.context?.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The process spawn: ${fullCommandString} successfully ran under sudo.`));
+                return resolve('0');
+            });
+        });
     }
 
     /**
@@ -175,42 +165,27 @@ ${stderr}`));
         let isLive = false;
 
         const processAliveOkSentinelFile = path.join(this.sudoProcessCommunicationDir, 'ok.txt');
-        const fakeLockFile = path.join(this.sudoProcessCommunicationDir, 'fakeLockFile'); // We need a file to lock the directory in the API besides the dir lock file
 
-        await (this.fileUtil as FileUtilities).writeFileOntoDisk('', fakeLockFile, false, this.context?.eventStream);
-
-        // Prepare to lock directory
-        const directoryLock = 'dir.lock';
-        const directoryLockPath = path.join(path.dirname(processAliveOkSentinelFile), directoryLock);
-
-        // Lock the directory -- this is not a system wide lock, only a library lock we must respect in the code.
-        // This will allow the process to still edit the directory, but not our extension API calls from overlapping with one another.
-        await lockfile.lock(fakeLockFile, { lockfilePath: directoryLockPath, retries: { retries: 10, minTimeout: 5, maxTimeout: 10000 } })
-            .then(async (release: () => void) =>
+        await executeWithLock(this.context.eventStream, false, RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir), SUDO_LOCK_PING_DURATION_MS, (this.context.timeoutSeconds * 1000) / 5,
+            async () =>
             {
-                this.context?.eventStream.post(new DotnetLockAcquiredEvent(`Lock Acquired.`, new Date().toISOString(), directoryLockPath, fakeLockFile));
-
                 await (this.fileUtil as FileUtilities).wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt']);
 
-                await (this.fileUtil as FileUtilities).writeFileOntoDisk('', processAliveOkSentinelFile, true, this.context?.eventStream);
+                await (this.fileUtil as FileUtilities).writeFileOntoDisk('', processAliveOkSentinelFile, this.context?.eventStream);
                 this.context?.eventStream.post(new SudoProcAliveCheckBegin(`Looking for Sudo Process Master, wrote OK file. ${new Date().toISOString()}`));
 
-                const waitTime = this.context?.timeoutSeconds ? ((this.context?.timeoutSeconds / 3) * 1000) : 180000;
+                const waitTime = this.context?.timeoutSeconds ? (this.context?.timeoutSeconds) : 180000;
                 await loopWithTimeoutOnCond(100, waitTime,
-                    function processRespondedByDeletingOkFile(): boolean { return !fs.existsSync(processAliveOkSentinelFile) },
+                    function processRespondedByDeletingOkFile(): boolean { return !(fs.existsSync(processAliveOkSentinelFile)) },
                     function setProcessIsAlive(): void { isLive = true; },
                     this.context.eventStream,
                     new SudoProcCommandExchangePing(`Ping : Waiting. ${new Date().toISOString()}`)
                 )
                     .catch(error =>
                     {
-                        // Let the rejected promise get handled below
+                        // Let the rejected promise get handled below. This is required to not make an error from the checking if this promise is alive
                     });
-
-
-                this.context?.eventStream.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), directoryLockPath, fakeLockFile));
-                return release();
-            });
+            },);
 
         this.context?.eventStream.post(new SudoProcAliveCheckEnd(`Finished Sudo Process Master: Is Alive? ${isLive}. ${new Date().toISOString()}`));
 
@@ -218,7 +193,7 @@ ${stderr}`));
         {
             const err = new TimeoutSudoProcessSpawnerError(new EventCancellationError('TimeoutSudoProcessSpawnerError', `We are unable to spawn the process to run commands under sudo for installing .NET.
 Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: ${errorIfDead}.
-It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallFromContext(this.context));
+It had previously spawned: ${LockUsedByThisInstanceSingleton.getInstance().hasVsCodeInstanceInteractedWithLock(RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir))}.`), getInstallFromContext(this.context));
             this.context?.eventStream.post(err);
             throw err.error;
         }
@@ -244,25 +219,13 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallFromCon
         const statusFile = path.join(this.sudoProcessCommunicationDir, 'status.txt');
 
         const outputFile = path.join(this.sudoProcessCommunicationDir, 'output.txt');
-        const fakeLockFile = path.join(this.sudoProcessCommunicationDir, 'fakeLockFile'); // We need a file to lock the directory in the API besides the dir lock file
 
-        await (this.fileUtil as FileUtilities).writeFileOntoDisk('', fakeLockFile, false, this.context?.eventStream);
-
-        // Prepare to lock directory
-        const directoryLock = 'dir.lock';
-        const directoryLockPath = path.join(path.dirname(commandFile), directoryLock);
-
-        // Lock the directory -- this is not a system wide lock, only a library lock we must respect in the code.
-        // This will allow the process to still edit the directory, but not our extension API calls from overlapping with one another.
-
-
-        await lockfile.lock(fakeLockFile, { lockfilePath: directoryLockPath, retries: { retries: 10, minTimeout: 5, maxTimeout: 10000 } })
-            .then(async (release: () => any) =>
+        await executeWithLock(this.context.eventStream, false, RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir), SUDO_LOCK_PING_DURATION_MS, this.context.timeoutSeconds * 1000 / 3,
+            async () =>
             {
-                this.context?.eventStream.post(new DotnetLockAcquiredEvent(`Lock Acquired.`, new Date().toISOString(), directoryLockPath, fakeLockFile));
                 await (this.fileUtil as FileUtilities).wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt', '.json']);
 
-                await (this.fileUtil as FileUtilities).writeFileOntoDisk(`${commandToExecuteString}`, commandFile, true, this.context?.eventStream);
+                await (this.fileUtil as FileUtilities).writeFileOntoDisk(`${commandToExecuteString}`, commandFile, this.context?.eventStream);
                 this.context?.eventStream.post(new SudoProcCommandExchangeBegin(`Handing command off to master process. ${new Date().toISOString()}`));
                 this.context?.eventStream.post(new CommandProcessorExecutionBegin(`The command ${commandToExecuteString} was forwarded to the master process to run.`));
 
@@ -276,7 +239,7 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallFromCon
                 )
                     .catch(error =>
                     {
-                        // Let the rejected promise get handled below
+                        // Let the rejected promise get handled below. This is required to not make an error from the checking if this promise is alive
                     });
 
                 commandOutputJson = {
@@ -284,10 +247,7 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallFromCon
                     stderr: (fs.readFileSync(stderrFile, 'utf8')).trim(),
                     status: (fs.readFileSync(statusFile, 'utf8')).trim()
                 } as CommandExecutorResult;
-                this.context?.eventStream.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), directoryLockPath, fakeLockFile));
                 await (this.fileUtil as FileUtilities).wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt']);
-
-                return release();
             });
 
         this.context?.eventStream.post(new SudoProcCommandExchangeEnd(`Finished or timed out with master process. ${new Date().toISOString()}`));
@@ -297,7 +257,7 @@ It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallFromCon
             const err = new TimeoutSudoCommandExecutionError(new EventCancellationError('TimeoutSudoCommandExecutionError',
                 `Timeout: The master process with command ${commandToExecuteString} never finished executing.
 Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: ${terminalFailure}.
-It had previously spawned: ${this.hasEverLaunchedSudoFork}.`), getInstallFromContext(this.context));
+It had previously spawned: ${LockUsedByThisInstanceSingleton.getInstance().hasVsCodeInstanceInteractedWithLock(RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir))}.`), getInstallFromContext(this.context));
             this.context?.eventStream.post(err);
             throw err.error;
         }
@@ -340,27 +300,30 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
         }
 
         let didDelete = 1;
-        const processExitFile = path.join(this.sudoProcessCommunicationDir, 'exit.txt');
-        await (this.fileUtil as FileUtilities).writeFileOntoDisk('', processExitFile, true, this.context?.eventStream);
+        await executeWithLock(this.context.eventStream, false, RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir), SUDO_LOCK_PING_DURATION_MS, this.context.timeoutSeconds * 1000 / 5,
+            async () =>
+            {
+                const processExitFile = path.join(this.sudoProcessCommunicationDir, 'exit.txt');
+                await (this.fileUtil as FileUtilities).writeFileOntoDisk('', processExitFile, this.context?.eventStream);
 
-        const waitTime = this.context?.timeoutSeconds ? (this.context?.timeoutSeconds * 1000) : 600000;
+                const waitTime = this.context?.timeoutSeconds ? (this.context?.timeoutSeconds * 1000) : 600000;
 
-        try
-        {
-            await loopWithTimeoutOnCond(100, waitTime,
-                function processRespondedByDeletingExitFile(): boolean { return !fs.existsSync(processExitFile) },
-                function returnZeroOnExit(): void { didDelete = 0; },
-                this.context.eventStream,
-                new SudoProcCommandExchangePing(`Ping : Waiting to exit sudo process master. ${new Date().toISOString()}`)
-            );
-        }
-        catch (error: any)
-        {
-            eventStream.post(new TriedToExitMasterSudoProcess(`Tried to exit sudo master process: FAILED. ${error ? JSON.stringify(error) : ''}`));
-        }
+                try
+                {
+                    await loopWithTimeoutOnCond(100, waitTime,
+                        function processRespondedByDeletingExitFile(): boolean { return !fs.existsSync(processExitFile) },
+                        function returnZeroOnExit(): void { didDelete = 0; },
+                        this.context.eventStream,
+                        new SudoProcCommandExchangePing(`Ping : Waiting to exit sudo process master. ${new Date().toISOString()}`)
+                    );
+                }
+                catch (error: any)
+                {
+                    eventStream.post(new TriedToExitMasterSudoProcess(`Tried to exit sudo master process: FAILED. ${error ? JSON.stringify(error) : ''}`));
+                }
 
-        eventStream.post(new TriedToExitMasterSudoProcess(`Tried to exit sudo master process: exit code ${didDelete}`));
-
+                eventStream.post(new TriedToExitMasterSudoProcess(`Tried to exit sudo master process: exit code ${didDelete}`));
+            });
         return didDelete;
     }
 

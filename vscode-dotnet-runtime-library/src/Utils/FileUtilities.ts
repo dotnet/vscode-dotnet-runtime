@@ -8,7 +8,6 @@ import * as eol from 'eol';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import * as lockfile from 'proper-lockfile';
 import { promisify } from 'util';
 import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from '../Acquisition/CacheTimeConstants';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
@@ -18,10 +17,6 @@ import
     DotnetCommandFallbackArchitectureEvent,
     DotnetCommandFallbackOSEvent,
     DotnetFileWriteRequestEvent,
-    DotnetLockAcquiredEvent,
-    DotnetLockAttemptingAcquireEvent,
-    DotnetLockErrorEvent,
-    DotnetLockReleasedEvent,
     EmptyDirectoryToWipe,
     FileToWipe,
     SuppressedAcquisitionError
@@ -32,58 +27,21 @@ import { IUtilityContext } from './IUtilityContext';
 
 export class FileUtilities extends IFileUtilities
 {
-    public async writeFileOntoDisk(scriptContent: string, filePath: string, alreadyHoldingLock = false, eventStream?: IEventStream)
+    public async writeFileOntoDisk(scriptContent: string, filePath: string, eventStream?: IEventStream)
     {
-        eventStream?.post(new DotnetFileWriteRequestEvent(`Request to write`, new Date().toISOString(), filePath));
+        eventStream?.post(new DotnetFileWriteRequestEvent(`Request to write ${filePath}`, new Date().toISOString(), filePath));
 
         if (!(await this.exists(path.dirname(filePath))))
         {
             await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
         }
-        // Prepare to lock directory so we can check file exists atomically
-        const directoryLock = 'dir.lock';
-        const directoryLockPath = path.join(path.dirname(filePath), directoryLock);
 
-        // Begin Critical Section
-        // This check is part of a RACE CONDITION, it is technically part of the critical section as you will fail if the file DNE,
-        // but you cant lock the file until it exists. Since existsSync blocks the entire node thread, theoretically, this ok.
-        if (!fs.existsSync(filePath))
+        if (!(fs.existsSync(filePath)))
         {
-            // Create an empty file, as proper-lockfile fails to lock a file if file dne
-            eventStream?.post(new DotnetFileWriteRequestEvent(`File did not exist upon write request.`, new Date().toISOString(), filePath));
             fs.writeFileSync(filePath, '');
         }
 
-        if (!alreadyHoldingLock)
-        {
-            eventStream?.post(new DotnetLockAttemptingAcquireEvent(`Lock Acquisition request to begin.`, new Date().toISOString(), directoryLockPath, filePath));
-            await lockfile.lock(filePath, { lockfilePath: directoryLockPath, retries: { retries: 10, minTimeout: 5, maxTimeout: 10000 } })
-                .then(async (release) =>
-                {
-                    eventStream?.post(new DotnetLockAcquiredEvent(`Lock Acquired.`, new Date().toISOString(), directoryLockPath, filePath));
-
-                    // We would like to unlock the directory, but we can't grab a lock on the file if the directory is locked.
-                    // Theoretically you could: add a new file-writer lock as a 3rd party lock ...
-                    // Then, lock the file-writer, unlock the directory, then lock the file, then unlock file-writer, ...
-                    // operate, then unlock file once the operation is done.
-                    // For now, keep the entire directory locked.
-
-                    await this.innerWriteFile(scriptContent, filePath, eventStream);
-
-                    eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), directoryLockPath, filePath));
-                    return release();
-                })
-                .catch((e: Error) =>
-                {
-                    // Either the lock could not be acquired or releasing it failed
-                    eventStream?.post(new DotnetLockErrorEvent(e, e.message, new Date().toISOString(), directoryLockPath, filePath));
-                });
-        }
-        else
-        {
-            await this.innerWriteFile(scriptContent, filePath, eventStream);
-        }
-        // End Critical Section
+        await this.innerWriteFile(scriptContent, filePath, eventStream);
     }
 
     private async innerWriteFile(scriptContent: string, filePath: string, eventStream?: IEventStream)

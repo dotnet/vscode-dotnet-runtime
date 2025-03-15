@@ -3,8 +3,8 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
-import path = require('path');
-
+import * as os from 'os';
+import * as path from 'path';
 import
 {
     DotnetAcquisitionDistroUnknownError,
@@ -26,10 +26,13 @@ import { FileUtilities } from '../Utils/FileUtilities';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
+import { executeWithLock } from '../Utils/TypescriptUtilities';
+import { GLOBAL_LOCK_PING_DURATION_MS, SYSTEM_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
+import { GetDotnetInstallInfo } from './DotnetInstall';
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
+import { GLOBAL_INSTALL_STATE_MODIFIER_LOCK } from './StringConstants';
 
 /**
  * An enumeration type representing all distros with their versions that we recognize.
@@ -321,7 +324,12 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
                             `Updating .NET: Current Version: ${existingGlobalInstallSDKVersion} to ${fullySpecifiedDotnetVersion}.`
                             :
                             `Repairing .NET Packages for ${existingGlobalInstallSDKVersion}.`));
-                    return (await this.distroSDKProvider!.upgradeDotnet(existingGlobalInstallSDKVersion, 'sdk')) === '0' ? String(this.okUpdateExitCode) : '1';
+                    return executeWithLock(this.workerContext.eventStream, false, GLOBAL_INSTALL_STATE_MODIFIER_LOCK(this.workerContext.installDirectoryProvider,
+                        GetDotnetInstallInfo(fullySpecifiedDotnetVersion, 'sdk', 'global', os.arch())), GLOBAL_LOCK_PING_DURATION_MS, this.workerContext.timeoutSeconds * 1000,
+                        async () =>
+                        {
+                            return (await this.distroSDKProvider!.upgradeDotnet(existingGlobalInstallSDKVersion, 'sdk')) === '0' ? String(this.okUpdateExitCode) : '1';
+                        });
                 }
                 else
                 {
