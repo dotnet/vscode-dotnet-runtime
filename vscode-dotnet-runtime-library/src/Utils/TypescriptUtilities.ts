@@ -73,11 +73,6 @@ export async function isRunningUnderWSL(acquisitionContext: IAcquisitionWorkerCo
 */
 export async function executeWithLock<A extends any[], R>(eventStream: IEventStream, alreadyHoldingLock: boolean, lockPath: string, retryTimeMs: number, timeoutTimeMs: number, f: (...args: A) => R, ...args: A): Promise<R>
 {
-    retryTimeMs = retryTimeMs > 0 ? retryTimeMs : 100;
-    const retryCountToEndRoughlyAtTimeoutMs = timeoutTimeMs / retryTimeMs;
-    let returnResult: any;
-    let codeFailureAndNotLockFailure = null;
-
     // Are we in a mutex-relevant inner function call, that is called by a parent function that already holds the lock?
     // If so, we don't need to acquire the lock again and we also shouldn't release it as the parent function will do that.
     if (alreadyHoldingLock)
@@ -91,6 +86,11 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
     {
         await lockfile.unlock(lockPath);
     }
+
+    retryTimeMs = retryTimeMs > 0 ? retryTimeMs : 100;
+    const retryCountToEndRoughlyAtTimeoutMs = timeoutTimeMs / retryTimeMs;
+    let returnResult: any;
+    let codeFailureAndNotLockFailure = null;
 
     // Make the directory and file to hold a lock over if it DNE. If it exists, thats OK (.lock is a different file than the lock file)
     try
