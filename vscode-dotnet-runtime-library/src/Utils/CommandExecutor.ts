@@ -174,8 +174,8 @@ ${stderr}`));
                 await (this.fileUtil as FileUtilities).writeFileOntoDisk('', processAliveOkSentinelFile, this.context?.eventStream);
                 this.context?.eventStream.post(new SudoProcAliveCheckBegin(`Looking for Sudo Process Master, wrote OK file. ${new Date().toISOString()}`));
 
-                const waitTime = this.context?.timeoutSeconds ? (this.context?.timeoutSeconds) : 180000;
-                await loopWithTimeoutOnCond(100, waitTime,
+                const waitTimeMs = this.context?.timeoutSeconds ? (this.context?.timeoutSeconds * 1000 / 5) : 180000;
+                await loopWithTimeoutOnCond(100, waitTimeMs,
                     function processRespondedByDeletingOkFile(): boolean { return !(fs.existsSync(processAliveOkSentinelFile)) },
                     function setProcessIsAlive(): void { isLive = true; },
                     this.context.eventStream,
