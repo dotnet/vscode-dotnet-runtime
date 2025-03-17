@@ -306,11 +306,11 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
                 const processExitFile = path.join(this.sudoProcessCommunicationDir, 'exit.txt');
                 await (this.fileUtil as FileUtilities).writeFileOntoDisk('', processExitFile, this.context?.eventStream);
 
-                const waitTime = this.context?.timeoutSeconds ? (this.context?.timeoutSeconds * 1000) : 600000;
+                const waitTimeMs = this.context?.timeoutSeconds ? (this.context?.timeoutSeconds * 1000 / 5) : 600000;
 
                 try
                 {
-                    await loopWithTimeoutOnCond(100, waitTime,
+                    await loopWithTimeoutOnCond(100, waitTimeMs,
                         function processRespondedByDeletingExitFile(): boolean { return !fs.existsSync(processExitFile) },
                         function returnZeroOnExit(): void { didDelete = 0; },
                         this.context.eventStream,
