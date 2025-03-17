@@ -25,7 +25,7 @@ export class LockUsedByThisInstanceSingleton
     public hasVsCodeInstanceInteractedWithLock(lockKey: string): boolean
     {
         const hasInteracted = this.lockStringAndThisVsCodeInstanceOwnsIt[lockKey] === true;
-        this.lockStringAndThisVsCodeInstanceOwnsIt[lockKey] = true; // This could be a set but this is also fine;
+        this.lockStringAndThisVsCodeInstanceOwnsIt[lockKey] = true; // This could be a set but this is also fine
         return hasInteracted;
     }
 }

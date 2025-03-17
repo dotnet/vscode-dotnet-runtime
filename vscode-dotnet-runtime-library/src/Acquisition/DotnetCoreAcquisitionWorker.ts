@@ -281,6 +281,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
                 acquisitionPromise = this.acquireGlobalCore(context, globalInstallerResolver, install).catch(async (error: any) =>
                 {
                     await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstallingVersion(context, install);
+                    new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream).catch(() => {});
                     const err = this.getErrorOrStringAsEventError(error);
                     throw err;
                 });
