@@ -7,6 +7,8 @@ export class LockUsedByThisInstanceSingleton
 {
     protected static instance: LockUsedByThisInstanceSingleton;
 
+    private everSpawnedSudoSuccessfully = false;
+
     protected constructor(protected lockStringAndThisVsCodeInstanceOwnsIt: { [lockString: string]: boolean } = {})
     {
 
@@ -28,4 +30,15 @@ export class LockUsedByThisInstanceSingleton
         this.lockStringAndThisVsCodeInstanceOwnsIt[lockKey] = true; // This could be a set but this is also fine
         return hasInteracted;
     }
+
+    public notifySudoSpawnedSuccessfully(): void
+    {
+        this.everSpawnedSudoSuccessfully = true;
+    }
+
+    public hasEverSpawnedSudoSuccessfully(): boolean
+    {
+        return this.everSpawnedSudoSuccessfully;
+    }
+
 }

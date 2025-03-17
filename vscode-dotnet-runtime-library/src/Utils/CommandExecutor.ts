@@ -150,6 +150,7 @@ ${stderr}`));
                 }
 
                 this.context?.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The process spawn: ${fullCommandString} successfully ran under sudo.`));
+                LockUsedByThisInstanceSingleton.getInstance().notifySudoSpawnedSuccessfully();
                 return resolve('0');
             });
         });
@@ -294,7 +295,7 @@ ${(commandOutputJson as CommandExecutorResult).stderr}.`),
      */
     public async endSudoProcessMaster(eventStream: IEventStream): Promise<number>
     {
-        if (os.platform() !== 'linux')
+        if (os.platform() !== 'linux' || LockUsedByThisInstanceSingleton.getInstance().hasEverSpawnedSudoSuccessfully() === false)
         {
             return 0;
         }
