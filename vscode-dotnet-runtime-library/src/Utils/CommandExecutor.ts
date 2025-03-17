@@ -102,7 +102,8 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
             throw err.error;
         }
 
-        const masterSudoProcessSpawnResult = await this.startupSudoProc(fullCommandString, shellScript, terminalFailure);
+        const masterSudoProcessSpawnResult = this.startupSudoProc(fullCommandString, shellScript, terminalFailure);
+        await this.sudoProcIsLive(terminalFailure);
         return this.executeSudoViaProcessCommunication(fullCommandString, terminalFailure);
     }
 
@@ -164,7 +165,6 @@ ${stderr}`));
                 }
 
                 this.context?.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The process spawn: ${fullCommandString} successfully ran under sudo.`));
-                LockUsedByThisInstanceSingleton.getInstance().notifySudoSpawnedSuccessfully();
                 clearTimeout(timeout);
                 return resolve('0');
             });
@@ -216,6 +216,10 @@ It had previously spawned: ${LockUsedByThisInstanceSingleton.getInstance().hasVs
             throw err.error;
         }
 
+        if (isLive)
+        {
+            LockUsedByThisInstanceSingleton.getInstance().notifySudoSpawnedSuccessfully();
+        }
         return isLive;
     }
 
