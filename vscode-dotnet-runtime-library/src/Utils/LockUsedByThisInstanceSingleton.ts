@@ -33,9 +33,14 @@ export class LockUsedByThisInstanceSingleton
         return hasInteracted;
     }
 
-    public hasEverSpawnedSudoSuccessfully(): boolean
+    public hasSpawnedSudoSuccessfullyWithoutDeath(): boolean
     {
         return this.everSpawnedSudoSuccessfully;
+    }
+
+    public killingSudoProc(): void
+    {
+        this.everSpawnedSudoSuccessfully = false;
     }
 
     public isCurrentSudoProcCheckAlive(): boolean
