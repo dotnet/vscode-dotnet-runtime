@@ -115,11 +115,11 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
      */
     private async startupSudoProc(fullCommandString: string, shellScriptPath: string, terminalFailure: boolean): Promise<string>
     {
-        if (LockUsedByThisInstanceSingleton.getInstance().hasEverSpawnedSudoSuccessfully() === false)
+        if (LockUsedByThisInstanceSingleton.getInstance().hasEverSpawnedSudoSuccessfully())
         {
             if (await this.sudoProcIsLive(false))
             {
-                return Promise.resolve('0');
+                return '0';
             }
         }
         else
@@ -127,7 +127,7 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
             if (await this.sudoProcIsLive(false, 250)) // If the sudo process was spawned by another instance of code, we do not want to have 2 at once but also do not waste a lot of time checking
             // As it should not be in the middle of an operation which may cause it to take a while.
             {
-                return Promise.resolve('0');
+                return '0';
             }
         }
 
