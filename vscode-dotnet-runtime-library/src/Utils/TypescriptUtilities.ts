@@ -126,7 +126,6 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
             {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 eventStream.post(new DotnetLockErrorEvent(lockingError, lockingError?.message ?? 'Unable to acquire lock or unlock lock. Trying to unlock.', new Date().toISOString(), lockPath, lockPath));
-                await lockfile.unlock(lockPath);
             }
             catch (eWhenUnlocking: any)
             {
