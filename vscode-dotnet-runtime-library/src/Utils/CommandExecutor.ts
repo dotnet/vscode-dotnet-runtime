@@ -140,6 +140,13 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
         const timeoutSeconds = Math.max(100, this.context.timeoutSeconds);
         return new Promise((resolve, reject) =>
         {
+            const timeout = setTimeout(() =>
+            {
+                const timeOutEvent = new CommandExecutionUserCompletedDialogueEvent(`The process spawn: ${fullCommandString} failed to run under sudo.`);
+                this.context?.eventStream.post(timeOutEvent);
+                return reject(new Error(timeOutEvent.eventMessage));
+            }, timeoutSeconds * 1000);
+
             execElevated((`"${shellScriptPath}" "${this.sudoProcessCommunicationDir}" "${timeoutSeconds}" ${this.validSudoCommands?.join(' ')} &`), options, (error?: any, stdout?: any, stderr?: any) =>
             {
                 this.context?.eventStream.post(new CommandExecutionStdOut(`The process spawn: ${fullCommandString} encountered stdout, continuing
@@ -152,11 +159,13 @@ ${stderr}`));
                 {
                     this.context?.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The process spawn: ${fullCommandString} failed to run under sudo.`));
                     this.parseVSCodeSudoExecError(error, fullCommandString);
+                    clearTimeout(timeout);
                     return reject(error);
                 }
 
                 this.context?.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The process spawn: ${fullCommandString} successfully ran under sudo.`));
                 LockUsedByThisInstanceSingleton.getInstance().notifySudoSpawnedSuccessfully();
+                clearTimeout(timeout);
                 return resolve('0');
             });
         });
