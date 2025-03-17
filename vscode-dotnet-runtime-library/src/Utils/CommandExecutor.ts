@@ -102,8 +102,8 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
             throw err.error;
         }
 
-        const masterSudoProcessSpawnResult = this.startupSudoProc(fullCommandString, shellScript, terminalFailure);
-        await this.sudoProcIsLive(terminalFailure);
+        this.startupSudoProc(fullCommandString, shellScript, terminalFailure).catch(() => {});
+        await this.sudoProcIsLive(terminalFailure, fullCommandString);
         return this.executeSudoViaProcessCommunication(fullCommandString, terminalFailure);
     }
 
@@ -118,14 +118,14 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
     {
         if (LockUsedByThisInstanceSingleton.getInstance().hasEverSpawnedSudoSuccessfully())
         {
-            if (await this.sudoProcIsLive(false))
+            if (await this.sudoProcIsLive(false, fullCommandString))
             {
                 return '0';
             }
         }
         else
         {
-            if (await this.sudoProcIsLive(false, 250)) // If the sudo process was spawned by another instance of code, we do not want to have 2 at once but also do not waste a lot of time checking
+            if (await this.sudoProcIsLive(false, fullCommandString, 250)) // If the sudo process was spawned by another instance of code, we do not want to have 2 at once but also do not waste a lot of time checking
             // As it should not be in the middle of an operation which may cause it to take a while.
             {
                 return '0';
@@ -145,7 +145,9 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
             {
                 const timeOutEvent = new CommandExecutionUserCompletedDialogueEvent(`The process spawn: ${fullCommandString} failed to run under sudo.`);
                 this.context?.eventStream.post(timeOutEvent);
-                return reject(new Error(timeOutEvent.eventMessage));
+                const finalTimeoutErr = new Error(timeOutEvent.eventMessage);
+                LockUsedByThisInstanceSingleton.getInstance().setSudoProcError(finalTimeoutErr);
+                return reject();
             }, timeoutSeconds * 1000);
 
             execElevated((`"${shellScriptPath}" "${this.sudoProcessCommunicationDir}" "${timeoutSeconds}" ${this.validSudoCommands?.join(' ')} &`), options, (error?: any, stdout?: any, stderr?: any) =>
@@ -159,8 +161,8 @@ ${stderr}`));
                 if (error !== null && error !== undefined)
                 {
                     this.context?.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The process spawn: ${fullCommandString} failed to run under sudo.`));
-                    this.parseVSCodeSudoExecError(error, fullCommandString);
                     clearTimeout(timeout);
+                    LockUsedByThisInstanceSingleton.getInstance().setSudoProcError(error);
                     return reject(error);
                 }
 
@@ -176,10 +178,8 @@ ${stderr}`));
      * @param errorIfDead set this to true if we should terminally fail if the master process is not yet alive
      * @returns a boolean, true if the master process is live, false otherwise
      */
-    private async sudoProcIsLive(errorIfDead: boolean, maxTimeoutTimeMs?: number): Promise<boolean>
+    private async sudoProcIsLive(errorIfDead: boolean, fullCommandString: string, maxTimeoutTimeMs?: number): Promise<boolean>
     {
-        let isLive = false;
-
         const processAliveOkSentinelFile = path.join(this.sudoProcessCommunicationDir, 'ok.txt');
         const waitForLockTimeMs = maxTimeoutTimeMs ? maxTimeoutTimeMs : this.context?.timeoutSeconds ? (this.context?.timeoutSeconds * 1000 / 5) : 180000;
         const waitForSudoResponseTimeMs = waitForLockTimeMs * 0.75; // Arbitrary, but this should be less than the time to get the lock.
@@ -193,8 +193,19 @@ ${stderr}`));
                 this.context?.eventStream.post(new SudoProcAliveCheckBegin(`Looking for Sudo Process Master, wrote OK file. ${new Date().toISOString()}`));
 
                 await loopWithTimeoutOnCond(100, waitForSudoResponseTimeMs,
-                    function processRespondedByDeletingOkFile(): boolean { return !(fs.existsSync(processAliveOkSentinelFile)) },
-                    function setProcessIsAlive(): void { isLive = true; },
+                    function processRespondedByDeletingOkFile(): boolean
+                    {
+                        if (LockUsedByThisInstanceSingleton.getInstance().sudoProcError() !== null)
+                        {
+                            return true;
+                        }
+                        return !(fs.existsSync(processAliveOkSentinelFile))
+                    },
+                    function setProcessIsAlive(): void
+                    {
+                        if (LockUsedByThisInstanceSingleton.getInstance().sudoProcError() === null)
+                        { LockUsedByThisInstanceSingleton.getInstance().setCurrentSudoCheckAsAlive(true); }
+                    },
                     this.context.eventStream,
                     new SudoProcCommandExchangePing(`Ping : Waiting. ${new Date().toISOString()}`)
                 )
@@ -202,25 +213,33 @@ ${stderr}`));
                     {
                         // Let the rejected promise get handled below. This is required to not make an error from the checking if this promise is alive
                     });
+
+                const isLive = LockUsedByThisInstanceSingleton.getInstance().isCurrentSudoProcCheckAlive();
+                this.context?.eventStream.post(new SudoProcAliveCheckEnd(`Finished Sudo Process Master: Is Alive? ${isLive}. ${new Date().toISOString()}
+                    maxTimeoutTimeMs: ${maxTimeoutTimeMs} with lockTime ${waitForLockTimeMs} and responseTime ${waitForSudoResponseTimeMs}`));
+
+                // The sudo process spawned by vscode does not exit unless it fails or times out after an hour. We can't await it as we need it to persist.
+                // If someone cancels the install, we store that error here since this gets awaited to prevent further code statement control flow from executing.
+                const errThrownBySudoLib = LockUsedByThisInstanceSingleton.getInstance().sudoProcError();
+                if (errThrownBySudoLib !== null)
+                {
+                    LockUsedByThisInstanceSingleton.getInstance().setSudoProcError(null); // if someone rejects pw prompt once, we do not want to be in an err state forever.
+                    const parsedErr = this.parseVSCodeSudoExecError(errThrownBySudoLib, fullCommandString);
+                    throw parsedErr;
+                }
+
+                if (!LockUsedByThisInstanceSingleton.getInstance().isCurrentSudoProcCheckAlive() && errorIfDead)
+                {
+                    const err = new TimeoutSudoProcessSpawnerError(new EventCancellationError('TimeoutSudoProcessSpawnerError', `We are unable to spawn the process to run commands under sudo for installing .NET.
+            Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: ${errorIfDead}.
+            It had previously spawned: ${LockUsedByThisInstanceSingleton.getInstance().hasVsCodeInstanceInteractedWithLock(RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir))}.`), getInstallFromContext(this.context));
+                    this.context?.eventStream.post(err);
+                    throw err.error;
+                }
+
+                LockUsedByThisInstanceSingleton.getInstance().setCurrentSudoCheckAsAlive(false);
+                return isLive;
             },);
-
-        this.context?.eventStream.post(new SudoProcAliveCheckEnd(`Finished Sudo Process Master: Is Alive? ${isLive}. ${new Date().toISOString()}
-        maxTimeoutTimeMs: ${maxTimeoutTimeMs} with lockTime ${waitForLockTimeMs} and responseTime ${waitForSudoResponseTimeMs}`));
-
-        if (!isLive && errorIfDead)
-        {
-            const err = new TimeoutSudoProcessSpawnerError(new EventCancellationError('TimeoutSudoProcessSpawnerError', `We are unable to spawn the process to run commands under sudo for installing .NET.
-Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: ${errorIfDead}.
-It had previously spawned: ${LockUsedByThisInstanceSingleton.getInstance().hasVsCodeInstanceInteractedWithLock(RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir))}.`), getInstallFromContext(this.context));
-            this.context?.eventStream.post(err);
-            throw err.error;
-        }
-
-        if (isLive)
-        {
-            LockUsedByThisInstanceSingleton.getInstance().notifySudoSpawnedSuccessfully();
-        }
-        return isLive;
     }
 
     /**
@@ -269,46 +288,48 @@ It had previously spawned: ${LockUsedByThisInstanceSingleton.getInstance().hasVs
                     stderr: (fs.readFileSync(stderrFile, 'utf8')).trim(),
                     status: (fs.readFileSync(statusFile, 'utf8')).trim()
                 } as CommandExecutorResult;
+
+                this.context?.eventStream.post(new SudoProcCommandExchangeEnd(`Finished or timed out with master process. ${new Date().toISOString()}`));
+
+                if (!commandOutputJson && terminalFailure)
+                {
+                    const err = new TimeoutSudoCommandExecutionError(new EventCancellationError('TimeoutSudoCommandExecutionError',
+                        `Timeout: The master process with command ${commandToExecuteString} never finished executing.
+        Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: ${terminalFailure}.
+        It had previously spawned: ${LockUsedByThisInstanceSingleton.getInstance().hasVsCodeInstanceInteractedWithLock(RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir))}.`), getInstallFromContext(this.context));
+                    this.context?.eventStream.post(err);
+                    throw err.error;
+                }
+                else if (!commandOutputJson)
+                {
+                    this.context?.eventStream.post(new CommandProcessesExecutionFailureNonTerminal(`The command ${commandToExecuteString} never finished under the process, but it was marked non terminal.`));
+                }
+                else
+                {
+                    this.context?.eventStream.post(new CommandProcessorExecutionEnd(`The command ${commandToExecuteString} was finished by the master process, as ${outputFile} was found.`));
+
+                    this.context?.eventStream.post(new CommandExecutionStdOut(`The command ${commandToExecuteString} encountered stdout, continuing
+        ${(commandOutputJson as CommandExecutorResult).stdout}`));
+
+                    this.context?.eventStream.post(new CommandExecutionStdError(`The command ${commandToExecuteString} encountered stderr, continuing
+        ${(commandOutputJson as CommandExecutorResult).stderr}`));
+
+                    if ((commandOutputJson as CommandExecutorResult).status !== '0' && failOnNonZeroExit)
+                    {
+                        const err = new CommandExecutionNonZeroExitFailure(new EventBasedError('CommandExecutionNonZeroExitFailure',
+                            `Cancelling .NET Install, as command ${commandToExecuteString} returned with status ${(commandOutputJson as CommandExecutorResult).status}.
+        ${(commandOutputJson as CommandExecutorResult).stderr}.`),
+                            getInstallFromContext(this.context));
+                        this.context?.eventStream.post(err);
+                        throw err.error;
+                    }
+                }
+
                 await (this.fileUtil as FileUtilities).wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt']);
+                return commandOutputJson ?? { stdout: '', stderr: '', status: noStatusCodeErrorCode };
             });
 
-        this.context?.eventStream.post(new SudoProcCommandExchangeEnd(`Finished or timed out with master process. ${new Date().toISOString()}`));
 
-        if (!commandOutputJson && terminalFailure)
-        {
-            const err = new TimeoutSudoCommandExecutionError(new EventCancellationError('TimeoutSudoCommandExecutionError',
-                `Timeout: The master process with command ${commandToExecuteString} never finished executing.
-Process Directory: ${this.sudoProcessCommunicationDir} failed with error mode: ${terminalFailure}.
-It had previously spawned: ${LockUsedByThisInstanceSingleton.getInstance().hasVsCodeInstanceInteractedWithLock(RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir))}.`), getInstallFromContext(this.context));
-            this.context?.eventStream.post(err);
-            throw err.error;
-        }
-        else if (!commandOutputJson)
-        {
-            this.context?.eventStream.post(new CommandProcessesExecutionFailureNonTerminal(`The command ${commandToExecuteString} never finished under the process, but it was marked non terminal.`));
-        }
-        else
-        {
-            this.context?.eventStream.post(new CommandProcessorExecutionEnd(`The command ${commandToExecuteString} was finished by the master process, as ${outputFile} was found.`));
-
-            this.context?.eventStream.post(new CommandExecutionStdOut(`The command ${commandToExecuteString} encountered stdout, continuing
-${(commandOutputJson as CommandExecutorResult).stdout}`));
-
-            this.context?.eventStream.post(new CommandExecutionStdError(`The command ${commandToExecuteString} encountered stderr, continuing
-${(commandOutputJson as CommandExecutorResult).stderr}`));
-
-            if ((commandOutputJson as CommandExecutorResult).status !== '0' && failOnNonZeroExit)
-            {
-                const err = new CommandExecutionNonZeroExitFailure(new EventBasedError('CommandExecutionNonZeroExitFailure',
-                    `Cancelling .NET Install, as command ${commandToExecuteString} returned with status ${(commandOutputJson as CommandExecutorResult).status}.
-${(commandOutputJson as CommandExecutorResult).stderr}.`),
-                    getInstallFromContext(this.context));
-                this.context?.eventStream.post(err);
-                throw err.error;
-            }
-        }
-
-        return commandOutputJson ?? { stdout: '', stderr: '', status: noStatusCodeErrorCode };
     }
 
     /**

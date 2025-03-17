@@ -8,6 +8,8 @@ export class LockUsedByThisInstanceSingleton
     protected static instance: LockUsedByThisInstanceSingleton;
 
     private everSpawnedSudoSuccessfully = false;
+    private currentAliveStatus = false;
+    private sudoError: any = null;
 
     protected constructor(protected lockStringAndThisVsCodeInstanceOwnsIt: { [lockString: string]: boolean } = {})
     {
@@ -31,14 +33,37 @@ export class LockUsedByThisInstanceSingleton
         return hasInteracted;
     }
 
-    public notifySudoSpawnedSuccessfully(): void
-    {
-        this.everSpawnedSudoSuccessfully = true;
-    }
-
     public hasEverSpawnedSudoSuccessfully(): boolean
     {
         return this.everSpawnedSudoSuccessfully;
     }
+
+    public isCurrentSudoProcCheckAlive(): boolean
+    {
+        return this.currentAliveStatus;
+    }
+
+    /*
+    You must set it back to false when the check is done.
+    */
+    public setCurrentSudoCheckAsAlive(alive: boolean): void
+    {
+        if (alive)
+        {
+            this.everSpawnedSudoSuccessfully = true;
+        }
+        this.currentAliveStatus = alive;
+    }
+
+    public sudoProcError(): any
+    {
+        return this.sudoError;
+    }
+
+    public setSudoProcError(err: any): void
+    {
+        this.sudoError = err;
+    }
+
 
 }
