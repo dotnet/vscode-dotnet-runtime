@@ -230,8 +230,8 @@ It had previously spawned: ${LockUsedByThisInstanceSingleton.getInstance().hasVs
                 this.context?.eventStream.post(new CommandProcessorExecutionBegin(`The command ${commandToExecuteString} was forwarded to the master process to run.`));
 
 
-                const waitTime = this.context?.timeoutSeconds ? (this.context?.timeoutSeconds * 1000) : 600000;
-                await loopWithTimeoutOnCond(100, waitTime,
+                const waitTimeMs = this.context?.timeoutSeconds ? (this.context?.timeoutSeconds * 1000) : 600000;
+                await loopWithTimeoutOnCond(100, waitTimeMs,
                     function ProcessFinishedExecutingAndWroteOutput(): boolean { return fs.existsSync(outputFile) },
                     function doNothing(): void { ; },
                     this.context.eventStream,
