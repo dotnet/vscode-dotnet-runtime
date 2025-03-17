@@ -103,8 +103,6 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
         }
 
         const masterSudoProcessSpawnResult = await this.startupSudoProc(fullCommandString, shellScript, terminalFailure);
-
-        await this.sudoProcIsLive(terminalFailure);
         return this.executeSudoViaProcessCommunication(fullCommandString, terminalFailure);
     }
 
@@ -117,7 +115,7 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
      */
     private async startupSudoProc(fullCommandString: string, shellScriptPath: string, terminalFailure: boolean): Promise<string>
     {
-        if (LockUsedByThisInstanceSingleton.getInstance().hasVsCodeInstanceInteractedWithLock(RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir)))
+        if (LockUsedByThisInstanceSingleton.getInstance().hasEverSpawnedSudoSuccessfully() === false)
         {
             if (await this.sudoProcIsLive(false))
             {
@@ -175,7 +173,7 @@ ${stderr}`));
 
         const processAliveOkSentinelFile = path.join(this.sudoProcessCommunicationDir, 'ok.txt');
         const waitForLockTimeMs = maxTimeoutTimeMs ?? this.context?.timeoutSeconds ? (this.context?.timeoutSeconds * 1000 / 5) : 180000;
-        const waitForSudoResponseTimeMs = waitForLockTimeMs;
+        const waitForSudoResponseTimeMs = waitForLockTimeMs * 0.75; // Arbitrary, but this should be less than the time to get the lock.
 
         await executeWithLock(this.context.eventStream, false, RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir), SUDO_LOCK_PING_DURATION_MS, waitForLockTimeMs,
             async () =>
