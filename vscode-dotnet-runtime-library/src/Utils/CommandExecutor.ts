@@ -204,7 +204,8 @@ ${stderr}`));
                     });
             },);
 
-        this.context?.eventStream.post(new SudoProcAliveCheckEnd(`Finished Sudo Process Master: Is Alive? ${isLive}. ${new Date().toISOString()}`));
+        this.context?.eventStream.post(new SudoProcAliveCheckEnd(`Finished Sudo Process Master: Is Alive? ${isLive}. ${new Date().toISOString()}
+        maxTimeoutTimeMs: ${maxTimeoutTimeMs} with lockTime ${waitForLockTimeMs} and responseTime ${waitForSudoResponseTimeMs}`));
 
         if (!isLive && errorIfDead)
         {
