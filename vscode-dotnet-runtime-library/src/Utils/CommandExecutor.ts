@@ -174,8 +174,10 @@ ${stderr}`));
         let isLive = false;
 
         const processAliveOkSentinelFile = path.join(this.sudoProcessCommunicationDir, 'ok.txt');
+        const waitForLockTimeMs = maxTimeoutTimeMs ?? this.context?.timeoutSeconds ? (this.context?.timeoutSeconds * 1000 / 5) : 180000;
+        const waitForSudoResponseTimeMs = waitForLockTimeMs;
 
-        await executeWithLock(this.context.eventStream, false, RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir), SUDO_LOCK_PING_DURATION_MS, (this.context.timeoutSeconds * 1000) / 5,
+        await executeWithLock(this.context.eventStream, false, RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir), SUDO_LOCK_PING_DURATION_MS, waitForLockTimeMs,
             async () =>
             {
                 await (this.fileUtil as FileUtilities).wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt']);
@@ -183,8 +185,7 @@ ${stderr}`));
                 await (this.fileUtil as FileUtilities).writeFileOntoDisk('', processAliveOkSentinelFile, this.context?.eventStream);
                 this.context?.eventStream.post(new SudoProcAliveCheckBegin(`Looking for Sudo Process Master, wrote OK file. ${new Date().toISOString()}`));
 
-                const waitTimeMs = maxTimeoutTimeMs ?? this.context?.timeoutSeconds ? (this.context?.timeoutSeconds * 1000 / 5) : 180000;
-                await loopWithTimeoutOnCond(100, waitTimeMs,
+                await loopWithTimeoutOnCond(100, waitForSudoResponseTimeMs,
                     function processRespondedByDeletingOkFile(): boolean { return !(fs.existsSync(processAliveOkSentinelFile)) },
                     function setProcessIsAlive(): void { isLive = true; },
                     this.context.eventStream,
