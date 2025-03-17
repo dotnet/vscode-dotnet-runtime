@@ -124,6 +124,14 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
                 return Promise.resolve('0');
             }
         }
+        else
+        {
+            if (await this.sudoProcIsLive(false, 250)) // If the sudo process was spawned by another instance of code, we do not want to have 2 at once but also do not waste a lot of time checking
+            // As it should not be in the middle of an operation which may cause it to take a while.
+            {
+                return Promise.resolve('0');
+            }
+        }
 
         // Launch the process under sudo
         this.context?.eventStream.post(new CommandExecutionUserAskDialogueEvent(`Prompting user for command ${fullCommandString} under sudo.`));
@@ -161,7 +169,7 @@ ${stderr}`));
      * @param errorIfDead set this to true if we should terminally fail if the master process is not yet alive
      * @returns a boolean, true if the master process is live, false otherwise
      */
-    private async sudoProcIsLive(errorIfDead: boolean): Promise<boolean>
+    private async sudoProcIsLive(errorIfDead: boolean, maxTimeoutTimeMs?: number): Promise<boolean>
     {
         let isLive = false;
 
@@ -175,7 +183,7 @@ ${stderr}`));
                 await (this.fileUtil as FileUtilities).writeFileOntoDisk('', processAliveOkSentinelFile, this.context?.eventStream);
                 this.context?.eventStream.post(new SudoProcAliveCheckBegin(`Looking for Sudo Process Master, wrote OK file. ${new Date().toISOString()}`));
 
-                const waitTimeMs = this.context?.timeoutSeconds ? (this.context?.timeoutSeconds * 1000 / 5) : 180000;
+                const waitTimeMs = maxTimeoutTimeMs ?? this.context?.timeoutSeconds ? (this.context?.timeoutSeconds * 1000 / 5) : 180000;
                 await loopWithTimeoutOnCond(100, waitTimeMs,
                     function processRespondedByDeletingOkFile(): boolean { return !(fs.existsSync(processAliveOkSentinelFile)) },
                     function setProcessIsAlive(): void { isLive = true; },
