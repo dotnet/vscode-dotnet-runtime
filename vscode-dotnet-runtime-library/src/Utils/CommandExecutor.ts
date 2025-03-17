@@ -184,7 +184,7 @@ ${stderr}`));
         const waitForLockTimeMs = maxTimeoutTimeMs ? maxTimeoutTimeMs : this.context?.timeoutSeconds ? (this.context?.timeoutSeconds * 1000 / 5) : 180000;
         const waitForSudoResponseTimeMs = waitForLockTimeMs * 0.75; // Arbitrary, but this should be less than the time to get the lock.
 
-        await executeWithLock(this.context.eventStream, false, RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir), SUDO_LOCK_PING_DURATION_MS, waitForLockTimeMs,
+        return executeWithLock(this.context.eventStream, false, RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir), SUDO_LOCK_PING_DURATION_MS, waitForLockTimeMs,
             async () =>
             {
                 await (this.fileUtil as FileUtilities).wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt']);
@@ -261,7 +261,7 @@ ${stderr}`));
 
         const outputFile = path.join(this.sudoProcessCommunicationDir, 'output.txt');
 
-        await executeWithLock(this.context.eventStream, false, RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir), SUDO_LOCK_PING_DURATION_MS, this.context.timeoutSeconds * 1000 / 3,
+        return executeWithLock(this.context.eventStream, false, RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir), SUDO_LOCK_PING_DURATION_MS, this.context.timeoutSeconds * 1000 / 3,
             async () =>
             {
                 await (this.fileUtil as FileUtilities).wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt', '.json']);
