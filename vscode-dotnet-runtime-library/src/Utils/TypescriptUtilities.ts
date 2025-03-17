@@ -102,10 +102,9 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
         // The file owning directory already exists
     }
 
-    fs.writeFileSync(lockPath, '', { encoding: 'utf-8' });
-
     eventStream?.post(new DotnetLockAttemptingAcquireEvent(`Lock Acquisition request to begin.`, new Date().toISOString(), lockPath, lockPath));
-    await lockfile.lock(lockPath, { stale: timeoutTimeMs /*if a proc holding the lock has not returned in the stale time it will auto fail*/, retries: { retries: retryCountToEndRoughlyAtTimeoutMs, minTimeout: retryTimeMs, maxTimeout: retryTimeMs } })
+    fs.writeFileSync(lockPath, '', { encoding: 'utf-8' });
+    await lockfile.lock(lockPath, { stale: (timeoutTimeMs - (retryTimeMs * 2)) /*if a proc holding the lock has not returned in the stale time it will auto fail*/, retries: { retries: retryCountToEndRoughlyAtTimeoutMs, minTimeout: retryTimeMs, maxTimeout: retryTimeMs } })
         .then(async (release) =>
         {
             try
