@@ -83,7 +83,7 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
     if (alreadyHoldingLock)
     {
         // eslint-disable-next-line @typescript-eslint/await-thenable
-        return await f(...(args));
+        return f(...(args));
     }
 
     // Someone PKilled Vscode while we held the lock previously. Need to clean up the lock created by the lib (lib adds .lock unless you use LockFilePath option)
@@ -120,14 +120,14 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
             eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), lockPath, lockPath));
             return release();
         })
-        .catch((lockingError: Error) =>
+        .catch(async (lockingError: Error) =>
         {
             // If we don't catch here, the lock will never be released.
             try
             {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 eventStream.post(new DotnetLockErrorEvent(lockingError, lockingError?.message ?? 'Unable to acquire lock or unlock lock. Trying to unlock.', new Date().toISOString(), lockPath, lockPath));
-                lockfile.unlock(lockPath);
+                await lockfile.unlock(lockPath);
             }
             catch (eWhenUnlocking: any)
             {
