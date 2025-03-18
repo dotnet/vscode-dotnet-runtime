@@ -12,6 +12,7 @@ import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerCont
 import { IEventStream } from '../EventStream/EventStream';
 import
 {
+    DotnetLockAcquiredEvent,
     DotnetLockAttemptingAcquireEvent,
     DotnetLockErrorEvent,
     DotnetLockReleasedEvent, DotnetWSLCheckEvent, EventBasedError
@@ -80,7 +81,8 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
     // Someone PKilled Vscode while we held the lock previously. Need to clean up the lock created by the lib (lib adds .lock unless you use LockFilePath option)
     if (fs.existsSync(`${lockPath}.lock`) && !(LockUsedByThisInstanceSingleton.getInstance().hasVsCodeInstanceInteractedWithLock(lockPath)))
     {
-        await lockfile.unlock(lockPath);
+        eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released, But we never touched it (pkilled vscode?)`, new Date().toISOString(), lockPath, lockPath));
+        await lockfile.unlock(lockPath, { lockfile.});
     }
 
     retryTimeMs = retryTimeMs > 0 ? retryTimeMs : 100;
@@ -103,6 +105,7 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
     await lockfile.lock(lockPath, { stale: (timeoutTimeMs - (retryTimeMs * 2)) /*if a proc holding the lock has not returned in the stale time it will auto fail*/, retries: { retries: retryCountToEndRoughlyAtTimeoutMs, minTimeout: retryTimeMs, maxTimeout: retryTimeMs } })
         .then(async (release) =>
         {
+            eventStream?.post(new DotnetLockAcquiredEvent(`Lock Acquired.`, new Date().toISOString(), lockPath, lockPath));
             try
             {
                 // eslint-disable-next-line @typescript-eslint/await-thenable
@@ -124,13 +127,14 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
                 eventStream.post(new DotnetLockErrorEvent(lockingError, lockingError?.message ?? 'Unable to acquire lock or unlock lock. Trying to unlock.', new Date().toISOString(), lockPath, lockPath));
                 if (lockfile.checkSync(lockPath))
                 {
+                    eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released after checkSync due to lockError Event`, new Date().toISOString(), lockPath, lockPath));
                     lockfile.unlockSync(lockPath);
                 }
             }
             catch (eWhenUnlocking: any)
             {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                eventStream.post(new DotnetLockErrorEvent(eWhenUnlocking, eWhenUnlocking?.message ?? 'Unable to unlock lock after retry.', new Date().toISOString(), lockPath, lockPath));
+                eventStream.post(new DotnetLockErrorEvent(eWhenUnlocking, eWhenUnlocking?.message ?? `Unable to acquire lock ${lockPath}`, new Date().toISOString(), lockPath, lockPath));
             }
             throw new EventBasedError('DotnetLockErrorEvent', lockingError?.message, lockingError?.stack);
         });
