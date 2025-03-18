@@ -243,7 +243,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
         if (commandContext.requestingExtensionId === undefined)
         {
-            return Promise.reject('No requesting extension id was provided.');
+            return Promise.reject(new Error('No requesting extension id was provided.'));
         }
 
         let fullyResolvedVersion = '';

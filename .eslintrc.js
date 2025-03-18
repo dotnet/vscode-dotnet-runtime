@@ -71,10 +71,8 @@ module.exports = {
         "@typescript-eslint/no-unsafe-return": "warn",
         "@typescript-eslint/no-unsafe-call": "warn",
         "@typescript-eslint/no-explicit-any": "error",
-        "@typescript-eslint/prefer-promise-reject-errors": "warn",
         "@typescript-eslint/no-inferrable-types": "error",
         "@typescript-eslint/no-misused-new": "error",
-        "@typescript-eslint/no-misused-promises": "warn",
         "@typescript-eslint/no-namespace": "off",
         "@typescript-eslint/no-parameter-properties": "off",
         "@typescript-eslint/no-shadow": [
@@ -188,6 +186,6 @@ module.exports = {
         ]
     },
     "settings": {
-          "typescript": {}
+        "typescript": {}
     }
 };

@@ -23,23 +23,19 @@ import { IUtilityContext } from './IUtilityContext';
 import { LockUsedByThisInstanceSingleton } from './LockUsedByThisInstanceSingleton';
 
 export async function loopWithTimeoutOnCond(sampleRatePerMs: number, durationToWaitBeforeTimeoutMs: number, conditionToStop: () => boolean, doAfterStop: () => void,
-    eventStream: IEventStream | null, waitEvent: IEvent)
+    eventStream: IEventStream | null, waitEvent: IEvent): Promise<void>
 {
-    return new Promise(async (resolve, reject) =>
+    for (let i = 0; i < (durationToWaitBeforeTimeoutMs / sampleRatePerMs); i++)
     {
-        for (let i = 0; i < (durationToWaitBeforeTimeoutMs / sampleRatePerMs); i++)
+        if (conditionToStop())
         {
-            if (conditionToStop())
-            {
-                doAfterStop();
-                return resolve('The promise succeeded.');
-            }
-            eventStream?.post(waitEvent);
-            await new Promise(waitAndResolve => setTimeout(waitAndResolve, sampleRatePerMs));
+            doAfterStop();
+            return;
         }
-
-        return reject('The promise timed out.');
-    });
+        eventStream?.post(waitEvent);
+        await new Promise(waitAndResolve => setTimeout(waitAndResolve, sampleRatePerMs));
+    }
+    throw new Error('The promise timed out.');
 }
 
 /**
@@ -119,13 +115,17 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
             eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), lockPath, lockPath));
             return release();
         })
-        .catch(async (lockingError: Error) =>
+        .catch((lockingError: Error) =>
         {
             // If we don't catch here, the lock will never be released.
             try
             {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 eventStream.post(new DotnetLockErrorEvent(lockingError, lockingError?.message ?? 'Unable to acquire lock or unlock lock. Trying to unlock.', new Date().toISOString(), lockPath, lockPath));
+                if (lockfile.checkSync(lockPath))
+                {
+                    lockfile.unlockSync(lockPath);
+                }
             }
             catch (eWhenUnlocking: any)
             {

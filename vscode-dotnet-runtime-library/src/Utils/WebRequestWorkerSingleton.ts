@@ -188,6 +188,7 @@ export class WebRequestWorkerSingleton
             throw new EventBasedError('AxiosGetFailedWithInvalidURL', `Request to the url ${url} failed, as the URL is invalid.`);
         }
         const timeoutCancelTokenHook = new AbortController();
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         const timeout = setTimeout(async () =>
         {
             timeoutCancelTokenHook.abort();

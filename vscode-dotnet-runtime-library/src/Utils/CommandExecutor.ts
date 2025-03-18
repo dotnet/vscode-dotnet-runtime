@@ -103,7 +103,7 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
         }
 
         this.startupSudoProc(fullCommandString, shellScript, terminalFailure).catch(() => {});
-        // @ts-ignore
+        // @ts-expect-error We want to hold the lock and sometimes return a bool, sometimes a CommandExecutorResult. The bool will never be returned if runCommand is true, so this makes the compiler accept this (its bad ik).
         return this.sudoProcIsLive(terminalFailure, fullCommandString, undefined, true);
     }
 
@@ -147,7 +147,7 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
                 this.context?.eventStream.post(timeOutEvent);
                 const finalTimeoutErr = new Error(timeOutEvent.eventMessage);
                 LockUsedByThisInstanceSingleton.getInstance().setSudoProcError(finalTimeoutErr);
-                return reject();
+                return reject(finalTimeoutErr);
             }, timeoutSeconds * 1000);
 
             execElevated((`"${shellScriptPath}" "${this.sudoProcessCommunicationDir}" "${timeoutSeconds}" ${this.validSudoCommands?.join(' ')} &`), options, (error?: any, stdout?: any, stderr?: any) =>
@@ -163,7 +163,7 @@ ${stderr}`));
                     this.context?.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The process spawn: ${fullCommandString} failed to run under sudo.`));
                     clearTimeout(timeout);
                     LockUsedByThisInstanceSingleton.getInstance().setSudoProcError(error);
-                    return reject(error);
+                    return reject(error as Error);
                 }
 
                 this.context?.eventStream.post(new CommandExecutionUserCompletedDialogueEvent(`The process spawn: ${fullCommandString} successfully ran under sudo.`));

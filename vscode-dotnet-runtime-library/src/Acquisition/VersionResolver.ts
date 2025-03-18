@@ -97,6 +97,7 @@ export class VersionResolver implements IVersionResolver
                 }
             }
 
+
             resolve(availableVersions);
         });
     }
@@ -128,7 +129,7 @@ export class VersionResolver implements IVersionResolver
                 // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 this.context.eventStream.post(new DotnetVersionResolutionError(new EventCancellationError('DotnetVersionResolutionError', error?.message ?? ''), getAssumedInstallInfo(version, mode)));
-                reject(error);
+                reject(error as Error);
             }
         });
     }
