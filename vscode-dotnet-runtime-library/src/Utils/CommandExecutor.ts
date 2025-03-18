@@ -335,6 +335,7 @@ ${stderr}`));
 
     /**
      * @returns 0 if the sudo master process was ended, 1 if it was not.
+     * @remarks holds the sudo lock
      */
     public async endSudoProcessMaster(eventStream: IEventStream): Promise<number>
     {
