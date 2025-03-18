@@ -469,7 +469,7 @@ export class MockFileUtilities extends IFileUtilities
 
     public existsSync(filePath: string)
     {
-        return this.filePathsAndExistValues[filePath] || false;
+        return this.filePathsAndExistValues[filePath] || fs.existsSync(filePath);
     }
 
     public readSync(filePath: string): string

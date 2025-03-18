@@ -34,18 +34,18 @@ const listRuntimesResultWithEightOnly = `
 Microsoft.NETCore.App 8.0.7 [C:\\Program Files\\dotnet\\shared\\Microsoft.AspNetCore.App]
 
 `;
-const executionResultWithEightOnly = { status: '', stdout: listRuntimesResultWithEightOnly, stderr: '' };
+const executionResultWithEightOnly = { status: '0', stdout: listRuntimesResultWithEightOnly, stderr: '' };
 
 const listRuntimesResultWithEightASPOnly = `
 Microsoft.AspNetCore.App 8.0.7 [C:\\Program Files\\dotnet\\shared\\Microsoft.AspNetCore.App]
 
 `;
-const executionResultWithEightAspOnly = { status: '', stdout: listRuntimesResultWithEightASPOnly, stderr: '' };
+const executionResultWithEightAspOnly = { status: '0', stdout: listRuntimesResultWithEightASPOnly, stderr: '' };
 
 const listSDKsResultWithEightOnly = `
 8.0.101 [C:\\Program Files\\dotnet\\sdk]
 `
-const executionResultWithListSDKsResultWithEightOnly = { status: '', stdout: listSDKsResultWithEightOnly, stderr: '' };
+const executionResultWithListSDKsResultWithEightOnly = { status: '0', stdout: listSDKsResultWithEightOnly, stderr: '' };
 
 function getExistingPathResolverWithVersionAndCommandResult(version: string, requestingExtensionId: string | undefined, commandResult: CommandExecutorResult, allowInvalidPaths = false, mode: DotnetInstallMode | undefined = undefined): ExistingPathResolver
 {

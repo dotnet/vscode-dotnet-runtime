@@ -29,22 +29,28 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
     {
         const hostArch = await this.getHostArchitecture(dotnetExecutablePath, requirement);
 
-        if (requirement.acquireContext.mode === 'sdk') {
+        if (requirement.acquireContext.mode === 'sdk')
+        {
             const availableSDKs = await this.getSDKs(dotnetExecutablePath);
-            if (availableSDKs.some((sdk) => {
+            if (availableSDKs.some((sdk) =>
+            {
                 return this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) &&
                     this.stringVersionMeetsRequirement(sdk.version, requirement.acquireContext.version, requirement) && this.allowPreview(sdk.version, requirement);
-            })) {
+            }))
+            {
                 return true;
             }
         }
-        else {
+        else
+        {
             // No need to consider SDKs when looking for runtimes as all the runtimes installed with the SDKs will be included in the runtimes list.
             const availableRuntimes = await this.getRuntimes(dotnetExecutablePath);
-            if (availableRuntimes.some((runtime) => {
+            if (availableRuntimes.some((runtime) =>
+            {
                 return runtime.mode === requirement.acquireContext.mode && this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) &&
                     this.stringVersionMeetsRequirement(runtime.version, requirement.acquireContext.version, requirement) && this.allowPreview(runtime.version, requirement);
-            })) {
+            }))
+            {
                 return true;
             }
         }
@@ -107,6 +113,11 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
 
         const sdkInfo = await (this.executor!).execute(findSDKsCommand, { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false).then((result) =>
         {
+            if (result.status !== '0')
+            {
+                return [];
+            }
+
             const sdks = result.stdout.split('\n').map((line) => line.trim()).filter((line) => (line?.length ?? 0) > 0);
             const sdkInfos: IDotnetListInfo[] = sdks.map((sdk) =>
             {
@@ -259,6 +270,11 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
 
         const runtimeInfo = await (this.executor!).execute(findRuntimesCommand, { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false).then((result) =>
         {
+            if (result.status !== '0')
+            {
+                return [];
+            }
+
             const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => (line?.length ?? 0) > 0);
             const runtimeInfos: IDotnetListInfo[] = runtimes.map((runtime) =>
             {
