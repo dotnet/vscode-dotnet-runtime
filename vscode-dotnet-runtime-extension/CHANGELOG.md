@@ -13,12 +13,11 @@ and this project adheres to [Semantic Versioning].
 - Fixes an issue with install scripts on validating the dotnet install.
 - Fixes an issue with the Uninstall command.
 - Improvements to how installations are managed and tracked.
-
-## [2.2.9] - 2025-3-12
-
+- Removes code that may slow down other extensions while this extension is operating.
 - Wide-scale performance improvements throughout the entire extension. Better asynchronicity, efficient utilization of shells, eliminating process calls, improving file system I/O.
 
-- Removes code that may slow down other extensions while this extension is operating.
+## [2.2.9] - 2025-3-26
+
 - Fixes a bug with dotnet lookup where SDKs that include runtimes may be used from the PATH even though their runtime may be out of date compared to the actual SDK version. Thank you @JoeRobich.
 - Adds support for many global.json rollForward options in the `findPath` API to ask for minimum patch versions without accepting later major versions.
 - WSL users will be able to see the 'Install SDK' command even though it does not work : previously, it was hidden. Now it will give an unsupported error. The check to hide this command caused slowdown on vscode startup for everyone and was decided to not be worth it, even if this is worse UX.
