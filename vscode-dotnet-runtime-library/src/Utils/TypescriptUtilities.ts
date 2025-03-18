@@ -82,7 +82,15 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
     if (fs.existsSync(`${lockPath}.lock`) && !(LockUsedByThisInstanceSingleton.getInstance().hasVsCodeInstanceInteractedWithLock(lockPath)))
     {
         eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released, But we never touched it (pkilled vscode?)`, new Date().toISOString(), lockPath, lockPath));
-        await lockfile.unlock(lockPath, { lockfile.});
+        if (lockfile.checkSync(lockPath))
+        {
+            lockfile.unlockSync(lockPath);
+        }
+        else
+        {
+            eventStream?.post(new DotnetLockReleasedEvent(`Lock is not owned by us, delete it`, new Date().toISOString(), lockPath, lockPath));
+            fs.unlinkSync(`${lockPath}.lock`);
+        }
     }
 
     retryTimeMs = retryTimeMs > 0 ? retryTimeMs : 100;
