@@ -51,8 +51,8 @@ import { FileUtilities } from '../Utils/FileUtilities';
 import { IFileUtilities } from '../Utils/IFileUtilities';
 import { getInstallFromContext, getInstallIdCustomArchitecture } from '../Utils/InstallIdUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { isRunningUnderWSL } from '../Utils/TypescriptUtilities';
-import { DOTNET_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
+import { executeWithLock, isRunningUnderWSL } from '../Utils/TypescriptUtilities';
+import { DOTNET_INFORMATION_CACHE_DURATION_MS, GLOBAL_LOCK_PING_DURATION_MS } from './CacheTimeConstants';
 import
 {
     DotnetInstall,
@@ -74,6 +74,7 @@ import
 } from './InstallRecord';
 import { InstallTrackerSingleton } from './InstallTrackerSingleton';
 import { LinuxGlobalInstaller } from './LinuxGlobalInstaller';
+import { GLOBAL_INSTALL_STATE_MODIFIER_LOCK } from './StringConstants';
 import { WinMacGlobalInstaller } from './WinMacGlobalInstaller';
 
 
@@ -641,39 +642,44 @@ Other dependents remain.`));
 
     public async uninstallGlobal(context: IAcquisitionWorkerContext, install: DotnetInstall, globalInstallerResolver: GlobalInstallerResolver, force = false): Promise<string>
     {
-        try
-        {
-            context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install.installId}.`));
-
-            await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, force);
-            // this is the only place where installed and installing could deal with pre existing installing id
-            await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstallingVersion(context, install, force);
-
-            if (force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).canUninstall(true, install))
+        return executeWithLock(context.eventStream, false, GLOBAL_INSTALL_STATE_MODIFIER_LOCK(context.installDirectoryProvider,
+            install), GLOBAL_LOCK_PING_DURATION_MS, context.timeoutSeconds * 1000,
+            async () =>
             {
-                const installingVersion = await globalInstallerResolver.getFullySpecifiedVersion();
-                const installer: IGlobalInstaller = os.platform() === 'linux' ?
-                    new LinuxGlobalInstaller(context, this.utilityContext, installingVersion) :
-                    new WinMacGlobalInstaller(context, this.utilityContext, installingVersion, await globalInstallerResolver.getInstallerUrl(), await globalInstallerResolver.getInstallerHash());
-
-                const ok = await installer.uninstallSDK(install);
-                await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream);
-                if (ok === '0')
+                try
                 {
-                    context.eventStream.post(new DotnetUninstallCompleted(`Uninstalled .NET ${install.installId}.`));
-                    return '0';
+                    context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install.installId}.`));
+
+                    await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, force);
+                    // this is the only place where installed and installing could deal with pre existing installing id
+                    await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstallingVersion(context, install, force);
+
+                    if (force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).canUninstall(true, install))
+                    {
+                        const installingVersion = await globalInstallerResolver.getFullySpecifiedVersion();
+                        const installer: IGlobalInstaller = os.platform() === 'linux' ?
+                            new LinuxGlobalInstaller(context, this.utilityContext, installingVersion) :
+                            new WinMacGlobalInstaller(context, this.utilityContext, installingVersion, await globalInstallerResolver.getInstallerUrl(), await globalInstallerResolver.getInstallerHash());
+
+                        const ok = await installer.uninstallSDK(install);
+                        await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream);
+                        if (ok === '0')
+                        {
+                            context.eventStream.post(new DotnetUninstallCompleted(`Uninstalled .NET ${install.installId}.`));
+                            return '0';
+                        }
+                    }
+                    context.eventStream.post(new DotnetUninstallFailed(`Failed to uninstall .NET ${install.installId}. Uninstall manually or delete the folder.`));
+                    return '117778'; // arbitrary error code to indicate uninstall failed without error.
                 }
-            }
-            context.eventStream.post(new DotnetUninstallFailed(`Failed to uninstall .NET ${install.installId}. Uninstall manually or delete the folder.`));
-            return '117778'; // arbitrary error code to indicate uninstall failed without error.
-        }
-        catch (error: any)
-        {
-            await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream);
-            context.eventStream.post(new SuppressedAcquisitionError(error, `The attempt to uninstall .NET ${install.installId} failed - was .NET in use?`));
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            return error?.message ?? '1';
-        }
+                catch (error: any)
+                {
+                    await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream);
+                    context.eventStream.post(new SuppressedAcquisitionError(error, `The attempt to uninstall .NET ${install.installId} failed - was .NET in use?`));
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    return error?.message ?? '1';
+                }
+            });
     }
 
     private async removeFolderRecursively(eventStream: IEventStream, folderPath: string)

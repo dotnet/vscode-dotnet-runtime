@@ -316,11 +316,7 @@ ${stderr}`));
         {
             this.context?.eventStream.post(new CommandProcessorExecutionEnd(`The command ${commandToExecuteString} was finished by the master process, as ${outputFile} was found.`));
 
-            this.context?.eventStream.post(new CommandExecutionStdOut(`The command ${commandToExecuteString} encountered stdout, continuing
-        ${(commandOutputJson as CommandExecutorResult).stdout}`));
-
-            this.context?.eventStream.post(new CommandExecutionStdError(`The command ${commandToExecuteString} encountered stderr, continuing
-        ${(commandOutputJson as CommandExecutorResult).stderr}`));
+            this.logCommandResult(commandOutputJson, commandToExecuteString);
 
             if ((commandOutputJson as CommandExecutorResult).status !== '0' && terminalFailure)
             {

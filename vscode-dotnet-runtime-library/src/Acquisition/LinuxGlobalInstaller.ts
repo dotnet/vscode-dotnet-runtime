@@ -43,12 +43,7 @@ export class LinuxGlobalInstaller extends IGlobalInstaller
     public async uninstallSDK(): Promise<string>
     {
         await this.linuxSDKResolver.Initialize();
-        return executeWithLock(this.acquisitionContext.eventStream, false, GLOBAL_INSTALL_STATE_MODIFIER_LOCK(this.acquisitionContext.installDirectoryProvider,
-            GetDotnetInstallInfo(this.version, 'sdk', 'global', os.arch())), GLOBAL_LOCK_PING_DURATION_MS, this.acquisitionContext.timeoutSeconds * 1000,
-            async () =>
-            {
-                return this.linuxSDKResolver.UninstallSDK(this.version);
-            },);
+        return this.linuxSDKResolver.UninstallSDK(this.version);
     }
 
     public async getExpectedGlobalSDKPath(specificSDKVersionInstalled: string, installedArch: string, macPathShouldExist = true): Promise<string>

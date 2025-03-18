@@ -201,40 +201,36 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
 
     public async uninstallSDK(installation: DotnetInstall): Promise<string>
     {
-        return executeWithLock(this.acquisitionContext.eventStream, false, GLOBAL_INSTALL_STATE_MODIFIER_LOCK(this.acquisitionContext.installDirectoryProvider, installation), GLOBAL_LOCK_PING_DURATION_MS, this.acquisitionContext.timeoutSeconds * 1000,
-            async (install: DotnetInstall) =>
+        if (os.platform() === 'win32')
+        {
+            const installerFile: string = await this.downloadInstaller(this.installerUrl);
+            const canContinue = await this.installerFileHasValidIntegrity(installerFile);
+            if (!canContinue)
             {
-                if (os.platform() === 'win32')
-                {
-                    const installerFile: string = await this.downloadInstaller(this.installerUrl);
-                    const canContinue = await this.installerFileHasValidIntegrity(installerFile);
-                    if (!canContinue)
-                    {
-                        const err = new DotnetConflictingGlobalWindowsInstallError(new EventCancellationError('DotnetConflictingGlobalWindowsInstallError',
-                            this.invalidIntegrityError), install);
-                        this.acquisitionContext.eventStream.post(err);
-                        throw err.error;
-                    }
+                const err = new DotnetConflictingGlobalWindowsInstallError(new EventCancellationError('DotnetConflictingGlobalWindowsInstallError',
+                    this.invalidIntegrityError), installation);
+                this.acquisitionContext.eventStream.post(err);
+                throw err.error;
+            }
 
-                    const command = `${path.resolve(installerFile)}`;
-                    const uninstallArgs = ['/uninstall', '/passive', '/norestart'];
-                    const commandResult = await this.commandRunner.execute(CommandExecutor.makeCommand(command, uninstallArgs), { timeout: this.acquisitionContext.timeoutSeconds * 1000 }, false);
-                    this.handleTimeout(commandResult);
+            const command = `${path.resolve(installerFile)}`;
+            const uninstallArgs = ['/uninstall', '/passive', '/norestart'];
+            const commandResult = await this.commandRunner.execute(CommandExecutor.makeCommand(command, uninstallArgs), { timeout: this.acquisitionContext.timeoutSeconds * 1000 }, false);
+            this.handleTimeout(commandResult);
 
-                    return commandResult.status;
-                }
-                else
-                {
-                    const macPath = await this.getMacPath();
-                    const command = CommandExecutor.makeCommand(`rm`, [`-rf`, `${path.join(path.dirname(macPath), 'sdk', install.version)}`, `&&`,
-                        `rm`, `-rf`, `${path.join(path.dirname(macPath), 'sdk-manifests', install.version)}`], true);
+            return commandResult.status;
+        }
+        else
+        {
+            const macPath = await this.getMacPath();
+            const command = CommandExecutor.makeCommand(`rm`, [`-rf`, `${path.join(path.dirname(macPath), 'sdk', installation.version)}`, `&&`,
+                `rm`, `-rf`, `${path.join(path.dirname(macPath), 'sdk-manifests', installation.version)}`], true);
 
-                    const commandResult = await this.commandRunner.execute(command, { timeout: this.acquisitionContext.timeoutSeconds * 1000 }, false);
-                    this.handleTimeout(commandResult);
+            const commandResult = await this.commandRunner.execute(command, { timeout: this.acquisitionContext.timeoutSeconds * 1000 }, false);
+            this.handleTimeout(commandResult);
 
-                    return commandResult.status;
-                }
-            }, installation);
+            return commandResult.status;
+        }
     }
 
     /**
