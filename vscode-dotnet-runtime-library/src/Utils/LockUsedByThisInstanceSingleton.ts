@@ -3,6 +3,8 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
+import * as path from 'path';
+
 export class LockUsedByThisInstanceSingleton
 {
     protected static instance: LockUsedByThisInstanceSingleton;
@@ -28,6 +30,7 @@ export class LockUsedByThisInstanceSingleton
 
     public hasVsCodeInstanceInteractedWithLock(lockKey: string): boolean
     {
+        lockKey = path.resolve(lockKey);
         const hasInteracted = this.lockStringAndThisVsCodeInstanceOwnsIt[lockKey] === true;
         this.lockStringAndThisVsCodeInstanceOwnsIt[lockKey] = true; // This could be a set but this is also fine
         return hasInteracted;
