@@ -103,6 +103,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
                         {
                             open(context.timeoutInfoUrl).catch(() => {});
                         }
+                        return Promise.resolve();
                     }, timeoutConstants.moreInfoOption);
             }
             else if (showMessage)
