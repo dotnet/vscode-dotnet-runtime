@@ -84,12 +84,13 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
         eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released, But we never touched it (pkilled vscode?)`, new Date().toISOString(), lockPath, lockPath));
         if (lockfile.checkSync(lockPath))
         {
+            eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released, and checkSync showed it.`, new Date().toISOString(), lockPath, lockPath));
             lockfile.unlockSync(lockPath);
         }
         else
         {
             eventStream?.post(new DotnetLockReleasedEvent(`Lock is not owned by us, delete it`, new Date().toISOString(), lockPath, lockPath));
-            fs.unlinkSync(`${lockPath}.lock`);
+            fs.rmdirSync(`${lockPath}.lock`, { recursive: true });
         }
     }
 
