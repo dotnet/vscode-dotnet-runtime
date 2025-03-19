@@ -125,7 +125,7 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
                 codeFailureAndNotLockFailure = errorFromF;
             }
             eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), lockPath, lockPath));
-            return release().catch((unlockError: Error) => { if (unlockError.message.includes('already released')) { return; } else { throw unlockError; } }); // sometimes the lib will fail to release even if it never acquired it.
+            return release().catch((unlockError: Error) => { if (unlockError.message.includes('already released') || unlockError.message.includes('by you')) { return; } else { throw unlockError; } }); // sometimes the lib will fail to release even if it never acquired it.
         })
         .catch((lockingError: Error) =>
         {
