@@ -243,7 +243,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         const ourInstallerDownloadFolder = IGlobalInstaller.getDownloadedInstallFilesFolder(installerUrl);
         const installerPath = path.join(ourInstallerDownloadFolder, `${installerUrl.split('/').slice(-1)}`);
 
-        if (await this.file.exists(installerPath) && await this.installerFileHasValidIntegrity(installerPath))
+        if (await this.file.exists(installerPath) && await this.installerFileHasValidIntegrity(installerPath, false))
         {
             this.acquisitionContext.eventStream.post(new DotnetFileIntegrityCheckEvent(`The installer file ${installerPath} already exists and is valid.`));
             return installerPath;
@@ -294,7 +294,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         return userConsentsToContinue;
     }
 
-    private async installerFileHasValidIntegrity(installerFile: string): Promise<boolean>
+    private async installerFileHasValidIntegrity(installerFile: string, ask = false): Promise<boolean>
     {
         try
         {
@@ -306,7 +306,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
 
             if (expectedFileHash === null)
             {
-                return await this.userChoosesToContinueWithInvalidHash();
+                return ask ? await this.userChoosesToContinueWithInvalidHash() : false;
             }
 
             if (realFileHash !== expectedFileHash)
@@ -336,7 +336,7 @@ Please try again, or download the .NET Installer file yourself. You may also rep
                 this.acquisitionContext.eventStream.post(new DotnetFileIntegrityFailureEvent(`The file ${installerFile} did not have the correct permissions scope to be assessed.
 Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerFile}"`]), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }, false))}`));
             }
-            return this.userChoosesToContinueWithInvalidHash();
+            return ask ? this.userChoosesToContinueWithInvalidHash() : false;
         }
     }
 
