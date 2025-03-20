@@ -7,14 +7,14 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-## [2.3.0] - TBD
+## [2.3.1] - TBD
 
 - Adds Automated SDK Installation community support for Debian : thank you @curllog for your help!
 - Fixes an issue with install scripts on validating the dotnet install.
 - Fixes an issue with the Uninstall command.
 - Improvements to how installations are managed and tracked.
 
-## [2.2.9] - 2025-3-12
+## [2.3.0] - 2025-3-25
 
 - Wide-scale performance improvements throughout the entire extension. Better asynchronicity, efficient utilization of shells, eliminating process calls, improving file system I/O.
 
