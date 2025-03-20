@@ -330,7 +330,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         }
 
         const existingInstall = await this.getExistingInstall(context, installedVersions, install, dotnetPath);
-        if (existingInstall)
+        if (existingInstall !== null)
         {
             return existingInstall;
         }
@@ -365,15 +365,16 @@ To keep your .NET version up to date, please reconnect to the internet at your s
 
     private async getExistingInstall(context: IAcquisitionWorkerContext, installedVersions: InstallRecord[], install: DotnetInstall, dotnetPath: string): Promise<string | null>
     {
-        if (installedVersions.some(x => IsEquivalentInstallation(x.dotnetInstall, install) && (fs.existsSync(dotnetPath) || this.usingNoInstallInvoker)))
+        if (installedVersions.some(async x => IsEquivalentInstallation(x.dotnetInstall, install)) && ((await this.file.exists(dotnetPath)) || this.usingNoInstallInvoker))
         {
             // Version requested has already been installed.
             try
             {
-                context.installationValidator.validateDotnetInstall(install, dotnetPath, false, false);
+                context.installationValidator.validateDotnetInstall(install, dotnetPath, false, true);
             }
             catch (error: any)
             {
+                await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install);
                 return null;
             }
 
@@ -405,6 +406,12 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         if (result.status !== '0')
         {
             return false;
+        }
+
+        if (os.platform() === 'linux' && context?.acquisitionContext?.mode === 'sdk' && context.acquisitionContext?.installType === 'global')
+        {
+            // There is a bug where the version marked in the folder / install is not latest if ubuntu is out of date for global installs
+            return result.stdout.includes(versionUtils.getMajorMinor(version, context.eventStream, context));
         }
 
         return result.stdout.includes(version);
