@@ -81,7 +81,8 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
     // Someone PKilled Vscode while we held the lock previously. Need to clean up the lock created by the lib (lib adds .lock unless you use LockFilePath option)
     if (fs.existsSync(`${lockPath}.lock`) && !(LockUsedByThisInstanceSingleton.getInstance().hasVsCodeInstanceInteractedWithLock(lockPath)))
     {
-        eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released, But we never touched it (pkilled vscode?)`, new Date().toISOString(), lockPath, lockPath));
+        eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released, but we never touched it (pkilled vscode?)`, new Date().toISOString(), lockPath, lockPath));
+
         if (lockfile.checkSync(lockPath))
         {
             eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released, and checkSync showed it.`, new Date().toISOString(), lockPath, lockPath));
