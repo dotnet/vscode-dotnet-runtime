@@ -365,7 +365,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
 
     private async getExistingInstall(context: IAcquisitionWorkerContext, installedVersions: InstallRecord[], install: DotnetInstall, dotnetPath: string): Promise<string | null>
     {
-        if ((installedVersions.some(async x => IsEquivalentInstallation(x.dotnetInstall, install))) && ((await this.file.exists(dotnetPath)) || this.usingNoInstallInvoker))
+        if ((installedVersions.some(async x => IsEquivalentInstallation(x.dotnetInstall, install)) && (await this.file.exists(dotnetPath))) || this.usingNoInstallInvoker)
         {
             // Version requested has already been installed.
             try
