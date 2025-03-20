@@ -356,7 +356,8 @@ export class WebRequestWorkerSingleton
         }
 
         const file = fs.createWriteStream(dest, { flags: 'wx' });
-        const options = await this.getAxiosOptions(ctx, 3, { responseType: 'stream', transformResponse: (x: any) => x }, false);
+        // Axios Cache Interceptor Does Not Work with Stream Response Types
+        const options = await this.getAxiosOptions(ctx, 3, { responseType: 'stream', cache: false, transformResponse: (x: any) => x }, false);
         try
         {
             await this.axiosGet(url, ctx, options)
