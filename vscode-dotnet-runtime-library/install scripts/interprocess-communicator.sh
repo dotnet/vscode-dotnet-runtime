@@ -35,7 +35,7 @@ do
                     rm "$COMMANDTORUNFILE"
                     exit 111777 # Special exit code - arbitrarily picked for when the command is not expected
                 fi
-                timeout $TIMEOUT_SEC sudo "${COMMANDARGS[@]}" 2> "$EXECFOLDER/stderr.txt" 1> "$EXECFOLDER/stdout.txt"
+                sudo "${COMMANDARGS[@]}" 2> "$EXECFOLDER/stderr.txt" 1> "$EXECFOLDER/stdout.txt"
                 STATUSCODE=$?
                 echo $STATUSCODE > "$EXECFOLDER/status.txt"
                 rm "$COMMANDTORUNFILE"

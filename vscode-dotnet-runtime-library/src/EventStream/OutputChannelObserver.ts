@@ -108,14 +108,19 @@ export class OutputChannelObserver implements IEventStreamObserver
                         } but that install had already been requested. No downloads or changes were made.\n`);
                 }
                 break;
-            case EventType.DotnetAcquisitionError:
+            case EventType.DotnetAcquisitionError, EventType.DotnetAcquisitionFinalError:
                 const error = event as DotnetAcquisitionError;
-                this.outputChannel.appendLine(`\nError : (${error.eventName ?? ''})`);
-                this.outputChannel.appendLine(`Failed to download .NET ${error.install?.installId}:`);
-                this.outputChannel.appendLine(error?.error?.message);
-                this.outputChannel.appendLine('');
+                this.outputChannel.appendLine(`\nError : (${error?.eventName ?? ''})`);
 
-                this.updateDownloadIndicators(error.install?.installId);
+                if (this.inProgressDownloads.includes(error?.install?.installId ?? ''))
+                {
+                    this.outputChannel.appendLine(`Failed to download .NET ${error?.install?.installId}:`);
+                    this.outputChannel.appendLine(error?.error?.message);
+                    this.outputChannel.appendLine('');
+
+                    this.updateDownloadIndicators(error.install?.installId);
+                }
+
                 break;
             case EventType.DotnetInstallExpectedAbort:
                 const abortEvent = event as DotnetInstallExpectedAbort;

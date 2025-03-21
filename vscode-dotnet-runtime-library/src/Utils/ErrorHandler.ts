@@ -4,7 +4,11 @@
 *--------------------------------------------------------------------------------------------*/
 import * as fs from 'fs';
 import * as open from 'open';
-import {
+import { DotnetCoreAcquisitionWorker } from '../Acquisition/DotnetCoreAcquisitionWorker';
+import { GetDotnetInstallInfo } from '../Acquisition/DotnetInstall';
+import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
+import
+{
     DotnetAcquisitionFinalError,
     DotnetCommandFailed,
     DotnetCommandSucceeded,
@@ -12,31 +16,32 @@ import {
     DotnetNotInstallRelatedCommandFailed,
     EventCancellationError
 } from '../EventStream/EventStreamEvents';
-import { getInstallFromContext } from './InstallIdUtilities';
 import { IIssueContext } from './IIssueContext';
+import { getInstallFromContext } from './InstallIdUtilities';
 import { formatIssueUrl } from './IssueReporter';
-import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
-import { GetDotnetInstallInfo } from '../Acquisition/DotnetInstall';
-import { DotnetCoreAcquisitionWorker } from '../Acquisition/DotnetCoreAcquisitionWorker';
 
-export enum AcquireErrorConfiguration {
+export enum AcquireErrorConfiguration
+{
     DisplayAllErrorPopups = 0,
     DisableErrorPopups = 1,
 }
 
-export enum UninstallErrorConfiguration {
+export enum UninstallErrorConfiguration
+{
     DisplayAllErrorPopups = 0,
     DisableErrorPopups = 1,
 }
 
-export enum EnsureDependenciesErrorConfiguration {
+export enum EnsureDependenciesErrorConfiguration
+{
     DisplayAllErrorPopups = 0,
     DisableErrorPopups = 1,
 }
 
 export type ErrorConfiguration = AcquireErrorConfiguration | UninstallErrorConfiguration | EnsureDependenciesErrorConfiguration;
 
-export namespace errorConstants {
+export namespace errorConstants
+{
     export const errorMessage = 'An error occurred while installing .NET';
     export const reportOption = 'Report an issue';
     export const hideOption = 'Don\'t show again';
@@ -44,7 +49,8 @@ export namespace errorConstants {
     export const configureManuallyOption = 'Configure manually';
 }
 
-export namespace timeoutConstants {
+export namespace timeoutConstants
+{
     export const timeoutMessage = `.NET install timed out.
 You should change the timeout if you have a slow connection. See: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#install-script-timeouts.
 Our CDN may be blocked in China or experience significant slowdown, in which case you should install .NET manually.`;
@@ -53,7 +59,8 @@ Our CDN may be blocked in China or experience significant slowdown, in which cas
 
 let showMessage = true;
 
-export async function callWithErrorHandling<T>(callback: () => T, context: IIssueContext, requestingExtensionId?: string, acquireContext? : IAcquisitionWorkerContext): Promise<T | undefined> {
+export async function callWithErrorHandling<T>(callback: () => T, context: IIssueContext, requestingExtensionId?: string, acquireContext?: IAcquisitionWorkerContext): Promise<T | undefined>
+{
     const isAcquisitionError = acquireContext ? true : false;
     try
     {
@@ -62,10 +69,10 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
         context.eventStream.post(new DotnetCommandSucceeded(context.commandName));
         return result;
     }
-    catch (caughtError : any)
+    catch (caughtError: any)
     {
         const error = caughtError as Error;
-        if(!isCancellationStyleError(error))
+        if (!isCancellationStyleError(error))
         {
             context.eventStream.post(isAcquisitionError ?
                 new DotnetCommandFailed(error, context.commandName, getInstallFromContext(acquireContext!)) :
@@ -74,28 +81,29 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
             );
         }
 
-        if(acquireContext)
+        if (acquireContext)
         {
             // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             context.eventStream.post(new DotnetAcquisitionFinalError(error, (caughtError?.eventType) ?? 'Unknown',
-            GetDotnetInstallInfo(acquireContext.acquisitionContext.version, acquireContext.acquisitionContext.mode!,
-                acquireContext.acquisitionContext.installType ?? 'local', acquireContext.acquisitionContext.architecture ??
+                GetDotnetInstallInfo(acquireContext.acquisitionContext.version, acquireContext.acquisitionContext.mode!,
+                    acquireContext.acquisitionContext.installType ?? 'local', acquireContext.acquisitionContext.architecture ??
                 DotnetCoreAcquisitionWorker.defaultArchitecture()
-            )));
+                )));
         }
 
         if (context.errorConfiguration === AcquireErrorConfiguration.DisplayAllErrorPopups)
         {
             if ((error.message as string).includes(timeoutConstants.timeoutMessage))
             {
-                context.displayWorker.showErrorMessage(`${errorConstants.errorMessage}${ context.version ? ` (${context.version})` : '' }: ${ error.message }`,
-                    (response: string | undefined) =>
+                context.displayWorker.showErrorMessage(`${errorConstants.errorMessage}${context.version ? ` (${context.version})` : ''}: ${error.message}`,
+                    async (response: string | undefined) =>
                     {
                         if (response === timeoutConstants.moreInfoOption)
                         {
                             open(context.timeoutInfoUrl).catch(() => {});
                         }
+                        return Promise.resolve();
                     }, timeoutConstants.moreInfoOption);
             }
             else if (showMessage)
@@ -106,28 +114,28 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
                     errorOptions = errorOptions.concat(errorConstants.configureManuallyOption);
                 }
 
-                context.displayWorker.showErrorMessage(`${errorConstants.errorMessage}${ context.version ? ` (${context.version})` : '' }: ${ error.message }`,
+                context.displayWorker.showErrorMessage(`${errorConstants.errorMessage}${context.version ? ` (${context.version})` : ''}: ${error.message}`,
                     async (response: string | undefined) =>
                     {
-                    if (response === errorConstants.moreInfoOption)
-                    {
-                        open(context.moreInfoUrl).catch(() => {});
-                    }
-                    else if (response === errorConstants.hideOption)
-                    {
-                        showMessage = false;
-                    }
-                    else if (response === errorConstants.reportOption)
-                    {
-                        const [url, issueBody] = formatIssueUrl(error, context);
-                        context.displayWorker.copyToUserClipboard(issueBody).catch(() => {});
-                        open(url).catch(() => {});
-                    }
-                    else if (response === errorConstants.configureManuallyOption && requestingExtensionId)
-                    {
-                        await configureManualInstall(context, requestingExtensionId);
-                    }
-                }, ...errorOptions);
+                        if (response === errorConstants.moreInfoOption)
+                        {
+                            open(context.moreInfoUrl).catch(() => {});
+                        }
+                        else if (response === errorConstants.hideOption)
+                        {
+                            showMessage = false;
+                        }
+                        else if (response === errorConstants.reportOption)
+                        {
+                            const [url, issueBody] = formatIssueUrl(error, context);
+                            context.displayWorker.copyToUserClipboard(issueBody).catch(() => {});
+                            open(url).catch(() => {});
+                        }
+                        else if (response === errorConstants.configureManuallyOption && requestingExtensionId)
+                        {
+                            await configureManualInstall(context, requestingExtensionId);
+                        }
+                    }, ...errorOptions);
             }
         }
         return undefined;
@@ -138,7 +146,8 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
     }
 }
 
-async function configureManualInstall(context: IIssueContext, requestingExtensionId: string): Promise<void> {
+async function configureManualInstall(context: IIssueContext, requestingExtensionId: string): Promise<void>
+{
     const manualPath = await context.displayWorker.displayPathConfigPopUp();
 
     if (manualPath && fs.existsSync(manualPath))
@@ -146,7 +155,7 @@ async function configureManualInstall(context: IIssueContext, requestingExtensio
         try
         {
             await context.extensionConfigWorker.setSharedPathConfigurationValue(manualPath);
-            context.displayWorker.showInformationMessage(`Set .NET path to ${manualPath}. Please reload VSCode to apply settings.`, () => { /* No callback needed */});
+            context.displayWorker.showInformationMessage(`Set .NET path to ${manualPath}. Please reload VSCode to apply settings.`, () => { /* No callback needed */ });
         }
         catch (e)
         {
@@ -159,7 +168,7 @@ async function configureManualInstall(context: IIssueContext, requestingExtensio
     }
 }
 
-function isCancellationStyleError(error : Error)
+function isCancellationStyleError(error: Error)
 {
     // Handle both when the event.error or event itself is posted.
     return error && error.constructor && (error.constructor.name === 'UserCancelledError' || error.constructor.name === 'EventCancellationError') ||

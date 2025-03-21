@@ -188,6 +188,7 @@ export class WebRequestWorkerSingleton
             throw new EventBasedError('AxiosGetFailedWithInvalidURL', `Request to the url ${url} failed, as the URL is invalid.`);
         }
         const timeoutCancelTokenHook = new AbortController();
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         const timeout = setTimeout(async () =>
         {
             timeoutCancelTokenHook.abort();
@@ -355,7 +356,8 @@ export class WebRequestWorkerSingleton
         }
 
         const file = fs.createWriteStream(dest, { flags: 'wx' });
-        const options = await this.getAxiosOptions(ctx, 3, { responseType: 'stream', transformResponse: (x: any) => x }, false);
+        // Axios Cache Interceptor Does Not Work with Stream Response Types
+        const options = await this.getAxiosOptions(ctx, 3, { responseType: 'stream', cache: false, transformResponse: (x: any) => x }, false);
         try
         {
             await this.axiosGet(url, ctx, options)

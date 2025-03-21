@@ -66,7 +66,7 @@ export function InstallToStrings(install: DotnetInstall)
     return {
         installId: install.installId,
         version: install.version,
-        architecture: install.architecture,
+        architecture: install.architecture ?? 'unspecified',
         isGlobal: install.isGlobal.toString(),
         installMode: install.installMode.toString()
     };

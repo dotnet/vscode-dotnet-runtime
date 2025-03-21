@@ -51,8 +51,9 @@ import { FileUtilities } from '../Utils/FileUtilities';
 import { IFileUtilities } from '../Utils/IFileUtilities';
 import { getInstallFromContext, getInstallIdCustomArchitecture } from '../Utils/InstallIdUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { isRunningUnderWSL } from '../Utils/TypescriptUtilities';
-import { DOTNET_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
+import { executeWithLock, isRunningUnderWSL } from '../Utils/TypescriptUtilities';
+import { DOTNET_INFORMATION_CACHE_DURATION_MS, GLOBAL_LOCK_PING_DURATION_MS } from './CacheTimeConstants';
+import { directoryProviderFactory } from './DirectoryProviderFactory';
 import
 {
     DotnetInstall,
@@ -74,6 +75,7 @@ import
 } from './InstallRecord';
 import { InstallTrackerSingleton } from './InstallTrackerSingleton';
 import { LinuxGlobalInstaller } from './LinuxGlobalInstaller';
+import { GLOBAL_INSTALL_STATE_MODIFIER_LOCK } from './StringConstants';
 import { WinMacGlobalInstaller } from './WinMacGlobalInstaller';
 
 
@@ -105,7 +107,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         await this.removeFolderRecursively(eventStream, storagePath);
 
-        await InstallTrackerSingleton.getInstance(eventStream, extensionState).uninstallAllRecords();
+        await InstallTrackerSingleton.getInstance(eventStream, extensionState).uninstallAllRecords(directoryProviderFactory('runtime', storagePath)); // runtime mode is ignored here
 
         eventStream.post(new DotnetUninstallAllCompleted());
     }
@@ -152,7 +154,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     public async getSimilarExistingInstall(context: IAcquisitionWorkerContext): Promise<IDotnetAcquireResult | null>
     {
         const possibleInstallWithSameMajorMinor = getInstallFromContext(context);
-        const installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(true);
+        const installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls('installed', context.installDirectoryProvider);
 
         for (const install of installedVersions)
         {
@@ -206,25 +208,30 @@ To keep your .NET version up to date, please reconnect to the internet at your s
 
         const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
-        const installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(true);
+        const installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls('installed', context.installDirectoryProvider);
+        const installExists = await this.file.exists(dotnetPath) || this.usingNoInstallInvoker;
 
-        if (installedVersions.some(x => IsEquivalentInstallationFile(x.dotnetInstall, install)) && (fs.existsSync(dotnetPath) || this.usingNoInstallInvoker))
+        if (installedVersions.some(x => IsEquivalentInstallationFile(x.dotnetInstall, install)) && installExists)
         {
             // Requested version has already been installed.
             context.eventStream.post(new DotnetAcquisitionStatusResolved(install, version));
             return { dotnetPath };
         }
-        else if ((installedVersions?.length ?? 0) === 0 && await this.file.exists(dotnetPath) && installMode === 'sdk')
+        else if (installMode === 'sdk' && context.acquisitionContext.installType === 'local' && await this.file.exists(dotnetPath))
         {
-            // The education bundle already laid down a local install, add it to our managed installs
-            const preinstalledVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).checkForUnrecordedLocalSDKSuccessfulInstall(
-                context, dotnetInstallDir, installedVersions);
-            if (preinstalledVersions.some(x => IsEquivalentInstallationFile(x.dotnetInstall, install)) &&
-                (await this.file.exists(dotnetPath) || this.usingNoInstallInvoker))
+            const noInstallsInInstalledList = (installedVersions?.length ?? 0) === 0;
+            if (installExists && noInstallsInInstalledList)
             {
-                // Requested version has already been installed.
-                context.eventStream.post(new DotnetAcquisitionStatusResolved(install, version));
-                return { dotnetPath };
+                // The education bundle already laid down a local install, add it to our managed installs
+                const preinstalledVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).checkForUnrecordedLocalSDKSuccessfulInstall(
+                    context, dotnetInstallDir, installedVersions);
+
+                if (preinstalledVersions.some(x => IsEquivalentInstallationFile(x.dotnetInstall, install)))
+                {
+                    // Requested version has already been installed.
+                    context.eventStream.post(new DotnetAcquisitionStatusResolved(install, version));
+                    return { dotnetPath };
+                }
             }
         }
 
@@ -281,6 +288,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
                 acquisitionPromise = this.acquireGlobalCore(context, globalInstallerResolver, install).catch(async (error: any) =>
                 {
                     await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstallingVersion(context, install);
+                    await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream).catch(() => {});
                     const err = this.getErrorOrStringAsEventError(error);
                     throw err;
                 });
@@ -316,19 +324,24 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         const version = context.acquisitionContext.version!;
         this.checkForPartialInstalls(context, install).catch(() => {});
 
-        let installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(true);
+        let installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls('installed', context.installDirectoryProvider);
         const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
 
-        if (await this.file.exists(dotnetPath) && (installedVersions?.length ?? 0) === 0)
+        if (mode === 'sdk')
         {
-            // The education bundle already laid down a local install, add it to our managed installs
-            installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream,
-                context.extensionState).checkForUnrecordedLocalSDKSuccessfulInstall(context, dotnetInstallDir, installedVersions);
+            const installExists = await this.file.exists(dotnetPath);
+            const noInstallsInInstalledList = (installedVersions?.length ?? 0) === 0;
+            if (installExists && noInstallsInInstalledList)
+            {
+                // The education bundle already laid down a local install, add it to our managed installs
+                installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream,
+                    context.extensionState).checkForUnrecordedLocalSDKSuccessfulInstall(context, dotnetInstallDir, installedVersions);
+            }
         }
 
         const existingInstall = await this.getExistingInstall(context, installedVersions, install, dotnetPath);
-        if (existingInstall)
+        if (existingInstall !== null)
         {
             return existingInstall;
         }
@@ -363,15 +376,19 @@ To keep your .NET version up to date, please reconnect to the internet at your s
 
     private async getExistingInstall(context: IAcquisitionWorkerContext, installedVersions: InstallRecord[], install: DotnetInstall, dotnetPath: string): Promise<string | null>
     {
-        if (installedVersions.some(x => IsEquivalentInstallation(x.dotnetInstall, install) && (fs.existsSync(dotnetPath) || this.usingNoInstallInvoker)))
+        const installExists = await this.file.exists(dotnetPath) || this.usingNoInstallInvoker;
+        const installIsInInstalledVersionsList = installedVersions.some(x => IsEquivalentInstallation(x.dotnetInstall, install));
+
+        if (installIsInInstalledVersionsList && installExists)
         {
             // Version requested has already been installed.
             try
             {
-                context.installationValidator.validateDotnetInstall(install, dotnetPath, false, false);
+                context.installationValidator.validateDotnetInstall(install, dotnetPath, false, true);
             }
             catch (error: any)
             {
+                await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install);
                 return null;
             }
 
@@ -405,12 +422,18 @@ To keep your .NET version up to date, please reconnect to the internet at your s
             return false;
         }
 
+        if (os.platform() === 'linux' && context?.acquisitionContext?.mode === 'sdk' && context.acquisitionContext?.installType === 'global')
+        {
+            // There is a bug where the version marked in the folder / install is not latest if ubuntu is out of date for global installs
+            return result.stdout.includes(versionUtils.getMajorMinor(version, context.eventStream, context));
+        }
+
         return result.stdout.includes(version);
     }
 
     private async checkForPartialInstalls(context: IAcquisitionWorkerContext, installId: DotnetInstall)
     {
-        const installingVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(false);
+        const installingVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls('installing', context.installDirectoryProvider);
         const partialInstall = installingVersions?.some(x => x.dotnetInstall.installId === installId.installId);
 
         // Don't count it as partial if the promise is still being resolved.
@@ -487,7 +510,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         context.eventStream.post(new DotnetGlobalVersionResolutionCompletionEvent(`The version we resolved that was requested is: ${installingVersion}.`));
         this.checkForPartialInstalls(context, install).catch(() => {});
 
-        const installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(true);
+        const installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls('installed', context.installDirectoryProvider);
 
         const installer: IGlobalInstaller = os.platform() === 'linux' ?
             new LinuxGlobalInstaller(context, this.utilityContext, installingVersion) :
@@ -530,7 +553,7 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
         dotnetPath = await installer.getExpectedGlobalSDKPath(installingVersion,
             context.acquisitionContext.architecture ?? this.getDefaultInternalArchitecture(context.acquisitionContext.architecture));
 
-        context.installationValidator.validateDotnetInstall(install, dotnetPath, os.platform() !== 'win32', os.platform() !== 'darwin');
+        context.installationValidator.validateDotnetInstall(install, dotnetPath, os.platform() === 'darwin', os.platform() !== 'darwin');
 
         context.eventStream.post(new DotnetAcquisitionCompleted(install, dotnetPath, installingVersion));
 
@@ -614,7 +637,7 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
             // this is the only place where installed and installing could deal with pre existing installing id
             await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstallingVersion(context, install, force);
 
-            if (force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).canUninstall(true, install))
+            if (force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).canUninstall('installed', install, context.installDirectoryProvider))
             {
                 context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install.installId}.`));
                 await this.removeFolderRecursively(context.eventStream, dotnetInstallDir);
@@ -640,39 +663,44 @@ Other dependents remain.`));
 
     public async uninstallGlobal(context: IAcquisitionWorkerContext, install: DotnetInstall, globalInstallerResolver: GlobalInstallerResolver, force = false): Promise<string>
     {
-        try
-        {
-            context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install.installId}.`));
-
-            await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, force);
-            // this is the only place where installed and installing could deal with pre existing installing id
-            await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstallingVersion(context, install, force);
-
-            if (force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).canUninstall(true, install))
+        return executeWithLock(context.eventStream, false, GLOBAL_INSTALL_STATE_MODIFIER_LOCK(context.installDirectoryProvider,
+            install), GLOBAL_LOCK_PING_DURATION_MS, context.timeoutSeconds * 1000,
+            async () =>
             {
-                const installingVersion = await globalInstallerResolver.getFullySpecifiedVersion();
-                const installer: IGlobalInstaller = os.platform() === 'linux' ?
-                    new LinuxGlobalInstaller(context, this.utilityContext, installingVersion) :
-                    new WinMacGlobalInstaller(context, this.utilityContext, installingVersion, await globalInstallerResolver.getInstallerUrl(), await globalInstallerResolver.getInstallerHash());
-
-                const ok = await installer.uninstallSDK(install);
-                await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream);
-                if (ok === '0')
+                try
                 {
-                    context.eventStream.post(new DotnetUninstallCompleted(`Uninstalled .NET ${install.installId}.`));
-                    return '0';
+                    context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install.installId}.`));
+
+                    await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, force);
+                    // this is the only place where installed and installing could deal with pre existing installing id
+                    await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstallingVersion(context, install, force);
+
+                    if (force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).canUninstall('installed', install, context.installDirectoryProvider))
+                    {
+                        const installingVersion = await globalInstallerResolver.getFullySpecifiedVersion();
+                        const installer: IGlobalInstaller = os.platform() === 'linux' ?
+                            new LinuxGlobalInstaller(context, this.utilityContext, installingVersion) :
+                            new WinMacGlobalInstaller(context, this.utilityContext, installingVersion, await globalInstallerResolver.getInstallerUrl(), await globalInstallerResolver.getInstallerHash());
+
+                        const ok = await installer.uninstallSDK(install);
+                        await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream);
+                        if (ok === '0')
+                        {
+                            context.eventStream.post(new DotnetUninstallCompleted(`Uninstalled .NET ${install.installId}.`));
+                            return '0';
+                        }
+                    }
+                    context.eventStream.post(new DotnetUninstallFailed(`Failed to uninstall .NET ${install.installId}. Uninstall manually or delete the folder.`));
+                    return '117778'; // arbitrary error code to indicate uninstall failed without error.
                 }
-            }
-            context.eventStream.post(new DotnetUninstallFailed(`Failed to uninstall .NET ${install.installId}. Uninstall manually or delete the folder.`));
-            return '117778'; // arbitrary error code to indicate uninstall failed without error.
-        }
-        catch (error: any)
-        {
-            await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream);
-            context.eventStream.post(new SuppressedAcquisitionError(error, `The attempt to uninstall .NET ${install.installId} failed - was .NET in use?`));
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            return error?.message ?? '1';
-        }
+                catch (error: any)
+                {
+                    await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream);
+                    context.eventStream.post(new SuppressedAcquisitionError(error, `The attempt to uninstall .NET ${install.installId} failed - was .NET in use?`));
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    return error?.message ?? '1';
+                }
+            });
     }
 
     private async removeFolderRecursively(eventStream: IEventStream, folderPath: string)

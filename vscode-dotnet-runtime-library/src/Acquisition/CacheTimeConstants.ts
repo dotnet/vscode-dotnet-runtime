@@ -2,6 +2,10 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
+export const GLOBAL_LOCK_PING_DURATION_MS = 50;
+export const LOCAL_LOCK_PING_DURATION_MS = 10;
+
+export const SUDO_LOCK_PING_DURATION_MS = 20;
 
 export const DOTNET_INFORMATION_CACHE_DURATION_MS = 3000;
 
