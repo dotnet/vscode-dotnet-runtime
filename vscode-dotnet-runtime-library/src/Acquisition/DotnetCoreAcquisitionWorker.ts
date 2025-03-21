@@ -636,7 +636,7 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
             // this is the only place where installed and installing could deal with pre existing installing id
             await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstallingVersion(context, install, force);
 
-            if (force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).canUninstall(true, install))
+            if (force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).canUninstall('installed', install))
             {
                 context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install.installId}.`));
                 await this.removeFolderRecursively(context.eventStream, dotnetInstallDir);
@@ -674,7 +674,7 @@ Other dependents remain.`));
                     // this is the only place where installed and installing could deal with pre existing installing id
                     await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstallingVersion(context, install, force);
 
-                    if (force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).canUninstall(true, install))
+                    if (force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).canUninstall('installed', install))
                     {
                         const installingVersion = await globalInstallerResolver.getFullySpecifiedVersion();
                         const installer: IGlobalInstaller = os.platform() === 'linux' ?
