@@ -208,24 +208,29 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
         const installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(true);
+        const installExists = await this.file.exists(dotnetPath) || this.usingNoInstallInvoker;
 
-        if (installedVersions.some(x => IsEquivalentInstallationFile(x.dotnetInstall, install)) && (fs.existsSync(dotnetPath) || this.usingNoInstallInvoker))
+        if (installedVersions.some(x => IsEquivalentInstallationFile(x.dotnetInstall, install)) && installExists)
         {
             // Requested version has already been installed.
             context.eventStream.post(new DotnetAcquisitionStatusResolved(install, version));
             return { dotnetPath };
         }
-        else if ((installedVersions?.length ?? 0) === 0 && await this.file.exists(dotnetPath) && installMode === 'sdk')
+        else if (installMode === 'sdk' && context.acquisitionContext.installType === 'local')
         {
-            // The education bundle already laid down a local install, add it to our managed installs
-            const preinstalledVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).checkForUnrecordedLocalSDKSuccessfulInstall(
-                context, dotnetInstallDir, installedVersions);
-            if (preinstalledVersions.some(x => IsEquivalentInstallationFile(x.dotnetInstall, install)) &&
-                (await this.file.exists(dotnetPath) || this.usingNoInstallInvoker))
+            const noInstallsInInstalledList = (installedVersions?.length ?? 0) === 0;
+            if (installExists && noInstallsInInstalledList)
             {
-                // Requested version has already been installed.
-                context.eventStream.post(new DotnetAcquisitionStatusResolved(install, version));
-                return { dotnetPath };
+                // The education bundle already laid down a local install, add it to our managed installs
+                const preinstalledVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).checkForUnrecordedLocalSDKSuccessfulInstall(
+                    context, dotnetInstallDir, installedVersions);
+
+                if (preinstalledVersions.some(x => IsEquivalentInstallationFile(x.dotnetInstall, install)))
+                {
+                    // Requested version has already been installed.
+                    context.eventStream.post(new DotnetAcquisitionStatusResolved(install, version));
+                    return { dotnetPath };
+                }
             }
         }
 
@@ -322,11 +327,16 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
 
-        if (await this.file.exists(dotnetPath) && (installedVersions?.length ?? 0) === 0)
+        if (mode === 'sdk')
         {
-            // The education bundle already laid down a local install, add it to our managed installs
-            installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream,
-                context.extensionState).checkForUnrecordedLocalSDKSuccessfulInstall(context, dotnetInstallDir, installedVersions);
+            const installExists = await this.file.exists(dotnetPath) || this.usingNoInstallInvoker;
+            const noInstallsInInstalledList = (installedVersions?.length ?? 0) === 0;
+            if (installExists && noInstallsInInstalledList)
+            {
+                // The education bundle already laid down a local install, add it to our managed installs
+                installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream,
+                    context.extensionState).checkForUnrecordedLocalSDKSuccessfulInstall(context, dotnetInstallDir, installedVersions);
+            }
         }
 
         const existingInstall = await this.getExistingInstall(context, installedVersions, install, dotnetPath);
@@ -365,10 +375,10 @@ To keep your .NET version up to date, please reconnect to the internet at your s
 
     private async getExistingInstall(context: IAcquisitionWorkerContext, installedVersions: InstallRecord[], install: DotnetInstall, dotnetPath: string): Promise<string | null>
     {
-        const installExists = await this.file.exists(dotnetPath);
+        const installExists = await this.file.exists(dotnetPath) || this.usingNoInstallInvoker;
         const installIsInInstalledVersionsList = installedVersions.some(x => IsEquivalentInstallation(x.dotnetInstall, install));
 
-        if (installIsInInstalledVersionsList && (installExists || this.usingNoInstallInvoker))
+        if (installIsInInstalledVersionsList && installExists)
         {
             // Version requested has already been installed.
             try
