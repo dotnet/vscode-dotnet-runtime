@@ -67,7 +67,7 @@ suite('InstallTracker Unit Tests', function ()
                 installingExtensions: ['test']
             } as InstallRecord,
         ]
-        assert.deepStrictEqual(await validator.getExistingInstalls(false), expected, 'It created a new record for the install');
+        assert.deepStrictEqual(await validator.getExistingInstalls('installing', mockContext.installDirectoryProvider), expected, 'It created a new record for the install');
     }).timeout(defaultTimeoutTime);
 
     test('Re-Tracking is a No-Op', async () =>
@@ -84,12 +84,12 @@ suite('InstallTracker Unit Tests', function ()
                 installingExtensions: ['test']
             } as InstallRecord,
         ]
-        assert.deepStrictEqual(await validator.getExistingInstalls(false), expected, 'It did not create a 2nd record for the same installing install');
+        assert.deepStrictEqual(await validator.getExistingInstalls('installing', mockContext.installDirectoryProvider), expected, 'It did not create a 2nd record for the same installing install');
 
         await validator.trackInstalledVersion(mockContext, defaultInstall);
         await validator.trackInstalledVersion(mockContext, defaultInstall);
 
-        assert.deepStrictEqual(await validator.getExistingInstalls(true), expected, 'It did not create a 2nd record for the same INSTALLED install');
+        assert.deepStrictEqual(await validator.getExistingInstalls('installed', mockContext.installDirectoryProvider), expected, 'It did not create a 2nd record for the same INSTALLED install');
 
     }).timeout(defaultTimeoutTime);
 
@@ -112,7 +112,7 @@ suite('InstallTracker Unit Tests', function ()
             } as InstallRecord,
         ]
 
-        assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls(true), expected, 'The second extension validator added its id to the existing install');
+        assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls('installed', mockContext.installDirectoryProvider), expected, 'The second extension validator added its id to the existing install');
 
     }).timeout(defaultTimeoutTime);
 
@@ -139,7 +139,7 @@ suite('InstallTracker Unit Tests', function ()
             } as InstallRecord,
         ]
 
-        assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls(true), expected, 'Multiple installs are tracked separately');
+        assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls('installed', mockContext.installDirectoryProvider), expected, 'Multiple installs are tracked separately');
 
     }).timeout(defaultTimeoutTime);
 
@@ -152,9 +152,9 @@ suite('InstallTracker Unit Tests', function ()
         await validator.trackInstalledVersion(mockContext, defaultInstall);
 
         await validator.untrackInstallingVersion(mockContext, defaultInstall);
-        assert.deepStrictEqual(await validator.getExistingInstalls(false), [], 'Installing version gets removed with no further owners');
+        assert.deepStrictEqual(await validator.getExistingInstalls('installing', mockContext.installDirectoryProvider), [], 'Installing version gets removed with no further owners');
         await validator.untrackInstalledVersion(mockContext, defaultInstall);
-        assert.deepStrictEqual(await validator.getExistingInstalls(true), [], 'Installed version gets removed with no further owners (installing must be ok)');
+        assert.deepStrictEqual(await validator.getExistingInstalls('installed', mockContext.installDirectoryProvider), [], 'Installed version gets removed with no further owners (installing must be ok)');
     }).timeout(defaultTimeoutTime);
 
     test('It Only Removes the Extension Id if Other Owners Exist', async () =>
@@ -179,7 +179,7 @@ suite('InstallTracker Unit Tests', function ()
             } as InstallRecord,
         ]
 
-        assert.deepStrictEqual(expected, await otherRequesterValidator.getExistingInstalls(true), 'The second extension validator removed its id from the existing install');
+        assert.deepStrictEqual(expected, await otherRequesterValidator.getExistingInstalls('installed', mockContext.installDirectoryProvider), 'The second extension validator removed its id from the existing install');
 
     }).timeout(defaultTimeoutTime);
 
@@ -204,7 +204,7 @@ suite('InstallTracker Unit Tests', function ()
             }
         ]
 
-        assert.deepStrictEqual(await validator.getExistingInstalls(true), expected, 'It converted the legacy strings to the new type');
+        assert.deepStrictEqual(await validator.getExistingInstalls('installed', mockContext.installDirectoryProvider), expected, 'It converted the legacy strings to the new type');
 
     }).timeout(defaultTimeoutTime);
 
@@ -231,7 +231,7 @@ suite('InstallTracker Unit Tests', function ()
 
         await validator.trackInstalledVersion(mockContext, defaultInstall);
 
-        assert.deepStrictEqual(expected, await validator.getExistingInstalls(true), 'It added the new owner to the existing null install');
+        assert.deepStrictEqual(expected, await validator.getExistingInstalls('installed', mockContext.installDirectoryProvider), 'It added the new owner to the existing null install');
 
         await validator.untrackInstalledVersion(mockContext, defaultInstall);
         await validator.untrackInstalledVersion(mockContext, secondInstall);
@@ -247,7 +247,7 @@ suite('InstallTracker Unit Tests', function ()
             }
         ]
 
-        assert.deepStrictEqual(await validator.getExistingInstalls(true), expectedTwo, 'It removed the owner from the existing null install');
+        assert.deepStrictEqual(await validator.getExistingInstalls('installed', mockContext.installDirectoryProvider), expectedTwo, 'It removed the owner from the existing null install');
     }).timeout(defaultTimeoutTime);
 
 
@@ -279,8 +279,8 @@ suite('InstallTracker Unit Tests', function ()
             } as InstallRecord,
         ]
 
-        assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls(true), expectedInstalled, 'The installing version was moved from installing to installed');
-        assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls(false), expectedInstalling, 'The installing version was not erroneously moved');
+        assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls('installed', mockContext.installDirectoryProvider), expectedInstalled, 'The installing version was moved from installing to installed');
+        assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls('installing', mockContext.installDirectoryProvider), expectedInstalling, 'The installing version was not erroneously moved');
 
         await otherRequesterValidator.reclassifyInstallingVersionToInstalled(mockContextFromOtherExtension, defaultInstall);
 
@@ -296,7 +296,7 @@ suite('InstallTracker Unit Tests', function ()
         ]
 
 
-        assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls(true), expectedInstalled, `The installing version with multiple owners
+        assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls('installed', mockContext.installDirectoryProvider), expectedInstalled, `The installing version with multiple owners
 was moved from installing to installed`);
 
         // There is a condition where multiple extensions can be 'installing' the same thing.
@@ -312,11 +312,11 @@ was moved from installing to installed`);
         // This is a rare case, but it can happen. In this case, the reclassification should not move the install to installed for the extensions still in the process of installing.
         // The design could go either way and migrate them all at once, but there is logic that relies on the installing state to be updated on a per extension basis.
         // So this is the safer option.
-        assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls(false), expectedInstalling, 'The installing version from another extension does NOT get moved');
+        assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls('installing', mockContext.installDirectoryProvider), expectedInstalling, 'The installing version from another extension does NOT get moved');
 
         await validator.reclassifyInstallingVersionToInstalled(mockContext, defaultInstall);
 
-        assert.deepStrictEqual(await validator.getExistingInstalls(false), [], 'The installing version gets cleared.');
+        assert.deepStrictEqual(await validator.getExistingInstalls('installing', mockContext.installDirectoryProvider), [], 'The installing version gets cleared.');
 
     }).timeout(defaultTimeoutTime);
 });

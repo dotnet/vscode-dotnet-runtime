@@ -53,6 +53,7 @@ import { getInstallFromContext, getInstallIdCustomArchitecture } from '../Utils/
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { executeWithLock, isRunningUnderWSL } from '../Utils/TypescriptUtilities';
 import { DOTNET_INFORMATION_CACHE_DURATION_MS, GLOBAL_LOCK_PING_DURATION_MS } from './CacheTimeConstants';
+import { directoryProviderFactory } from './DirectoryProviderFactory';
 import
 {
     DotnetInstall,
@@ -106,7 +107,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
         await this.removeFolderRecursively(eventStream, storagePath);
 
-        await InstallTrackerSingleton.getInstance(eventStream, extensionState).uninstallAllRecords();
+        await InstallTrackerSingleton.getInstance(eventStream, extensionState).uninstallAllRecords(directoryProviderFactory('runtime', storagePath)); // runtime mode is ignored here
 
         eventStream.post(new DotnetUninstallAllCompleted());
     }
@@ -153,7 +154,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     public async getSimilarExistingInstall(context: IAcquisitionWorkerContext): Promise<IDotnetAcquireResult | null>
     {
         const possibleInstallWithSameMajorMinor = getInstallFromContext(context);
-        const installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(true);
+        const installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls('installed', context.installDirectoryProvider);
 
         for (const install of installedVersions)
         {
@@ -207,7 +208,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
 
         const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
-        const installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(true);
+        const installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls('installed', context.installDirectoryProvider);
         const installExists = await this.file.exists(dotnetPath) || this.usingNoInstallInvoker;
 
         if (installedVersions.some(x => IsEquivalentInstallationFile(x.dotnetInstall, install)) && installExists)
@@ -323,7 +324,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         const version = context.acquisitionContext.version!;
         this.checkForPartialInstalls(context, install).catch(() => {});
 
-        let installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(true);
+        let installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls('installed', context.installDirectoryProvider);
         const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
 
@@ -432,7 +433,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
 
     private async checkForPartialInstalls(context: IAcquisitionWorkerContext, installId: DotnetInstall)
     {
-        const installingVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(false);
+        const installingVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls('installing', context.installDirectoryProvider);
         const partialInstall = installingVersions?.some(x => x.dotnetInstall.installId === installId.installId);
 
         // Don't count it as partial if the promise is still being resolved.
@@ -509,7 +510,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         context.eventStream.post(new DotnetGlobalVersionResolutionCompletionEvent(`The version we resolved that was requested is: ${installingVersion}.`));
         this.checkForPartialInstalls(context, install).catch(() => {});
 
-        const installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(true);
+        const installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls('installed', context.installDirectoryProvider);
 
         const installer: IGlobalInstaller = os.platform() === 'linux' ?
             new LinuxGlobalInstaller(context, this.utilityContext, installingVersion) :
@@ -636,7 +637,7 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
             // this is the only place where installed and installing could deal with pre existing installing id
             await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstallingVersion(context, install, force);
 
-            if (force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).canUninstall('installed', install))
+            if (force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).canUninstall('installed', install, context.installDirectoryProvider))
             {
                 context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install.installId}.`));
                 await this.removeFolderRecursively(context.eventStream, dotnetInstallDir);
@@ -674,7 +675,7 @@ Other dependents remain.`));
                     // this is the only place where installed and installing could deal with pre existing installing id
                     await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstallingVersion(context, install, force);
 
-                    if (force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).canUninstall('installed', install))
+                    if (force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).canUninstall('installed', install, context.installDirectoryProvider))
                     {
                         const installingVersion = await globalInstallerResolver.getFullySpecifiedVersion();
                         const installer: IGlobalInstaller = os.platform() === 'linux' ?
