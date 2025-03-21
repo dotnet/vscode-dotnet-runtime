@@ -217,7 +217,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
             context.eventStream.post(new DotnetAcquisitionStatusResolved(install, version));
             return { dotnetPath };
         }
-        else if (installMode === 'sdk' && context.acquisitionContext.installType === 'local')
+        else if (installMode === 'sdk' && context.acquisitionContext.installType === 'local' && await this.file.exists(dotnetPath))
         {
             const noInstallsInInstalledList = (installedVersions?.length ?? 0) === 0;
             if (installExists && noInstallsInInstalledList)
@@ -330,7 +330,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
 
         if (mode === 'sdk')
         {
-            const installExists = await this.file.exists(dotnetPath) || this.usingNoInstallInvoker;
+            const installExists = await this.file.exists(dotnetPath);
             const noInstallsInInstalledList = (installedVersions?.length ?? 0) === 0;
             if (installExists && noInstallsInInstalledList)
             {
