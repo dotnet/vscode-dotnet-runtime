@@ -3,9 +3,9 @@
 
 
 "@babel/runtime@^7.15.4":
-  version "7.26.7"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@babel/runtime/-/runtime-7.26.7.tgz"
-  integrity sha1-9Of+UnzXEPjcBhhhC2G0sGDDw0E=
+  version "7.26.10"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@babel/runtime/-/runtime-7.26.10.tgz"
+  integrity sha1-oHtNj6J68TGmM9ezUk24A+tHZMI=
   dependencies:
     regenerator-runtime "^0.14.0"
 
@@ -288,9 +288,9 @@ axios-retry@^3.4.0:
     is-retry-allowed "^2.2.0"
 
 axios@^1, axios@^1.7.4:
-  version "1.7.9"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/axios/-/axios-1.7.9.tgz"
-  integrity sha1-19BxOAwTKiSszaGyz8FTW3nsZQo=
+  version "1.8.4"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/axios/-/axios-1.8.4.tgz"
+  integrity sha1-eJkLtLxj0srgcpUtN0g1lQqC9Ec=
   dependencies:
     follow-redirects "^1.15.6"
     form-data "^4.0.0"
