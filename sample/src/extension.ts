@@ -6,7 +6,7 @@
 import * as cp from 'child_process';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import * as runtimeExtension from 'vscode-dotnet-runtime'; // comment this out when packing the extension
+// import * as runtimeExtension from 'vscode-dotnet-runtime'; // comment this out when packing the extension
 import
 {
     DotnetInstallMode,
@@ -16,7 +16,6 @@ import
     IDotnetFindPathContext,
     IDotnetListVersionsResult,
 } from 'vscode-dotnet-runtime-library';
-import * as sdkExtension from 'vscode-dotnet-sdk'; // comment this out when packing the extension
 
 export function activate(context: vscode.ExtensionContext)
 {
@@ -29,15 +28,13 @@ export function activate(context: vscode.ExtensionContext)
 
     "extensionDependencies": [
         "ms-dotnettools.vscode-dotnet-runtime",
-        "ms-dotnettools.vscode-dotnet-sdk"
     ]
 
     This would enable the sample to require the vscode-dotnet-runtime extension
     */
 
     const requestingExtensionId = 'ms-dotnettools.sample-extension';
-    runtimeExtension.activate(context); // comment this out when packing the extension
-    sdkExtension.activate(context); // comment this out when packing the extension
+    // runtimeExtension.activate(context); // comment this out when packing the extension
 
 
     // --------------------------------------------------------------------------
