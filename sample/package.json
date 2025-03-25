@@ -7,7 +7,7 @@
 		"url": "https://github.com/dotnet/vscode-dotnet-runtime.git"
 	},
 	"license": "MIT",
-	"version": "2.3.0",
+	"version": "2.3.1",
 	"publisher": "ms-dotnettools",
 	"engines": {
 		"vscode": "^1.75.0"
@@ -20,6 +20,9 @@
 	},
 	"connectionString": "InstrumentationKey=02dc18e0-7494-43b2-b2a3-18ada5fcb522;IngestionEndpoint=https://westus2-0.in.applicationinsights.azure.com/;LiveEndpoint=https://westus2.livediagnostics.monitor.azure.com/;ApplicationId=e8e56970-a18a-4101-b7d1-1c5dd7c29eeb",
 	"main": "./out/extension.js",
+	"extensionDependencies": [
+		"ms-dotnettools.vscode-dotnet-runtime"
+	],
 	"contributes": {
 		"commands": [
 			{
