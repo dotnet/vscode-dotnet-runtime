@@ -641,7 +641,7 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
         const webWorker = new MockWebRequestWorker();
         webWorker.response = JSON.parse(mockReleasesData);
 
-        const result = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet.recommendedVersion', null, webWorker);
+        const result = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet.recommendedVersion', {listRuntimes : false } as IDotnetListVersionsContext, mockAcquisitionContext, webWorker);
         assert.exists(result);
         if (os.platform() !== 'linux')
         {

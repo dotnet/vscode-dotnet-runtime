@@ -350,7 +350,7 @@ export class WebRequestWorkerSingleton
      */
     public async downloadFile(url: string, dest: string, ctx: IAcquisitionWorkerContext): Promise<void>
     {
-        if (fs.existsSync(dest))
+        if (await new FileUtilities().exists(dest))
         {
             return;
         }
@@ -435,7 +435,7 @@ export class WebRequestWorkerSingleton
             const response = await this.axiosGet(url, ctx, { transformResponse: (x: any) => x as any, ...options }
             );
 
-            if (response !== null && response?.headers['content-type'] === 'application/json')
+            if (response?.headers?.['content-type'] === 'application/json')
             {
                 try
                 {
