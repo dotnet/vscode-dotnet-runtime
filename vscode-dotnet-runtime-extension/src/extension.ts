@@ -308,27 +308,32 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         });
 
     const dotnetRecommendedVersionRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.recommendedVersion}`,
-        async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorkerSingleton | undefined): Promise<IDotnetListVersionsResult> =>
+        async (commandContext: IDotnetListVersionsContext, customWebWorker: WebRequestWorkerSingleton | undefined): Promise<IDotnetListVersionsResult> =>
         {
-            return callWithErrorHandling(async () =>
+            const recommendation = await callWithErrorHandling(async () =>
             {
-                const availableVersions = await getAvailableVersions(commandContext, customWebWorker, true);
+                const availableVersions = await getAvailableVersions(commandContext, customWebWorker, true) ?? [];
                 const activeSupportVersions = availableVersions?.filter((version: IDotnetVersion) => version.supportPhase === 'active');
 
-                if (!activeSupportVersions || activeSupportVersions.length < 1)
+                if (!activeSupportVersions || (activeSupportVersions?.length ?? 0) < 1)
                 {
                     const err = new EventCancellationError('DotnetVersionResolutionError', `An active-support version of dotnet couldn't be found. Discovered versions: ${JSON.stringify(availableVersions)}`);
                     globalEventStream.post(new DotnetVersionResolutionError(err, null));
-                    if (!availableVersions || availableVersions.length < 1)
+                    if (!availableVersions || (availableVersions?.length ?? 0) < 1)
                     {
                         return [];
                     }
-                    return [availableVersions[0]];
+                    else
+                    {
+                        return [availableVersions[0]];
+                    }
                 }
 
                 // The first item will be the newest version.
                 return [activeSupportVersions[0]];
-            }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, 'acquireStatus')) ?? [];
+            }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, 'acquireStatus'));
+
+            return recommendation ?? [];
         });
 
 
