@@ -12,13 +12,13 @@ import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 
 export interface IDotnetCoreAcquisitionWorker
 {
-    uninstallAll(eventStream : IEventStream, storagePath : string, extensionState : IExtensionState): void;
+    uninstallAll(eventStream: IEventStream, storagePath: string, extensionState: IExtensionState): Promise<void>;
 
-    acquireLocalRuntime(context: IAcquisitionWorkerContext, invoker : IAcquisitionInvoker): Promise<IDotnetAcquireResult>;
+    acquireLocalRuntime(context: IAcquisitionWorkerContext, invoker: IAcquisitionInvoker): Promise<IDotnetAcquireResult>;
 
-    acquireLocalASPNET(context: IAcquisitionWorkerContext, invoker : IAcquisitionInvoker) : Promise<IDotnetAcquireResult>;
+    acquireLocalASPNET(context: IAcquisitionWorkerContext, invoker: IAcquisitionInvoker): Promise<IDotnetAcquireResult>;
 
-    acquireLocalSDK(context: IAcquisitionWorkerContext, invoker : IAcquisitionInvoker): Promise<IDotnetAcquireResult>;
+    acquireLocalSDK(context: IAcquisitionWorkerContext, invoker: IAcquisitionInvoker): Promise<IDotnetAcquireResult>;
 
     acquireGlobalSDK(context: IAcquisitionWorkerContext, installerResolver: GlobalInstallerResolver): Promise<IDotnetAcquireResult>;
 }

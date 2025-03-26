@@ -3,8 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
-import path = require('path');
-
+import * as path from 'path';
 import
 {
     DotnetAcquisitionDistroUnknownError,
@@ -307,6 +306,7 @@ If you experience issues, please reach out on https://github.com/dotnet/vscode-d
      * @param existingInstall a path to the existing dotnet install on the machine.
      * @returns 0 if we can proceed. Will throw if a conflicting install exists. If we can update, it will do the update and return 1.
      * A string is returned in case we want to make this return more info about the update.
+     * @remarks it is expected you are holding the global modifier lock when calling this function.
      */
     private async UpdateOrRejectIfVersionRequestDoesNotRequireInstall(fullySpecifiedDotnetVersion: string, existingInstall: string | null): Promise<string>
     {
@@ -355,6 +355,7 @@ If you experience issues, please reach out on https://github.com/dotnet/vscode-d
         return '0';
     }
 
+    // It is expected you are holding the global modifier lock when calling this function.
     public async ValidateAndInstallSDK(fullySpecifiedDotnetVersion: string): Promise<string>
     {
         await this.Initialize();
@@ -387,10 +388,10 @@ If you experience issues, please reach out on https://github.com/dotnet/vscode-d
         return String(updateOrRejectState);
     }
 
+    // @remarks It is expected you are holding the global modifier lock when calling this function.
     public async UninstallSDK(fullySpecifiedDotnetVersion: string): Promise<string>
     {
         await this.Initialize();
-
         return this.distroSDKProvider!.uninstallDotnet(fullySpecifiedDotnetVersion, 'sdk');
     }
 

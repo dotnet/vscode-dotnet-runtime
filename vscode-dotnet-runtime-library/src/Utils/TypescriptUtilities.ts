@@ -4,32 +4,39 @@
 *--------------------------------------------------------------------------------------------*/
 import * as os from 'os';
 
-import { IAcquisitionWorkerContext, IUtilityContext } from '..';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as lockfile from 'proper-lockfile';
 import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from '../Acquisition/CacheTimeConstants';
+import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { IEventStream } from '../EventStream/EventStream';
-import { DotnetWSLCheckEvent } from '../EventStream/EventStreamEvents';
+import
+{
+    DotnetLockAcquiredEvent,
+    DotnetLockAttemptingAcquireEvent,
+    DotnetLockErrorEvent,
+    DotnetLockReleasedEvent, DotnetWSLCheckEvent, EventBasedError
+} from '../EventStream/EventStreamEvents';
 import { IEvent } from '../EventStream/IEvent';
 import { CommandExecutor } from './CommandExecutor';
 import { ICommandExecutor } from './ICommandExecutor';
+import { IUtilityContext } from './IUtilityContext';
+import { LockUsedByThisInstanceSingleton } from './LockUsedByThisInstanceSingleton';
 
 export async function loopWithTimeoutOnCond(sampleRatePerMs: number, durationToWaitBeforeTimeoutMs: number, conditionToStop: () => boolean, doAfterStop: () => void,
-    eventStream: IEventStream, waitEvent: IEvent)
+    eventStream: IEventStream | null, waitEvent: IEvent): Promise<void>
 {
-    return new Promise(async (resolve, reject) =>
+    for (let i = 0; i < (durationToWaitBeforeTimeoutMs / sampleRatePerMs); i++)
     {
-        for (let i = 0; i < (durationToWaitBeforeTimeoutMs / sampleRatePerMs); i++)
+        if (conditionToStop())
         {
-            if (conditionToStop())
-            {
-                doAfterStop();
-                return resolve('The promise succeeded.');
-            }
-            eventStream.post(waitEvent);
-            await new Promise(waitAndResolve => setTimeout(waitAndResolve, sampleRatePerMs));
+            doAfterStop();
+            return;
         }
-
-        return reject('The promise timed out.');
-    });
+        eventStream?.post(waitEvent);
+        await new Promise(waitAndResolve => setTimeout(waitAndResolve, sampleRatePerMs));
+    }
+    throw new Error('The promise timed out.');
 }
 
 /**
@@ -56,6 +63,98 @@ export async function isRunningUnderWSL(acquisitionContext: IAcquisitionWorkerCo
     }
 
     return true;
+}
+
+/*
+@remarks lockPath should be a full path to a shared lock file ending in .lock (that may or may not exist on disk) and the file content does not matter
+*/
+export async function executeWithLock<A extends any[], R>(eventStream: IEventStream, alreadyHoldingLock: boolean, lockPath: string, retryTimeMs: number, timeoutTimeMs: number, f: (...args: A) => R, ...args: A): Promise<R>
+{
+    // Are we in a mutex-relevant inner function call, that is called by a parent function that already holds the lock?
+    // If so, we don't need to acquire the lock again and we also shouldn't release it as the parent function will do that.
+    if (alreadyHoldingLock)
+    {
+        // eslint-disable-next-line @typescript-eslint/await-thenable
+        return f(...(args));
+    }
+
+    // Someone PKilled Vscode while we held the lock previously. Need to clean up the lock created by the lib (lib adds .lock unless you use LockFilePath option)
+    if (fs.existsSync(`${lockPath}.lock`) && !(LockUsedByThisInstanceSingleton.getInstance().hasVsCodeInstanceInteractedWithLock(lockPath)))
+    {
+        eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released, but we never touched it (pkilled vscode?)`, new Date().toISOString(), lockPath, lockPath));
+
+        if (lockfile.checkSync(lockPath))
+        {
+            eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released, and checkSync showed it.`, new Date().toISOString(), lockPath, lockPath));
+            lockfile.unlockSync(lockPath);
+        }
+        else
+        {
+            eventStream?.post(new DotnetLockReleasedEvent(`Lock is not owned by us, delete it`, new Date().toISOString(), lockPath, lockPath));
+            fs.rmdirSync(`${lockPath}.lock`, { recursive: true });
+        }
+    }
+
+    retryTimeMs = retryTimeMs > 0 ? retryTimeMs : 100;
+    const retryCountToEndRoughlyAtTimeoutMs = timeoutTimeMs / retryTimeMs;
+    let returnResult: any;
+    let codeFailureAndNotLockFailure = null;
+
+    // Make the directory and file to hold a lock over if it DNE. If it exists, thats OK (.lock is a different file than the lock file)
+    try
+    {
+        fs.mkdirSync(path.dirname(lockPath), { recursive: true });
+    }
+    catch (err)
+    {
+        // The file owning directory already exists
+    }
+
+    eventStream?.post(new DotnetLockAttemptingAcquireEvent(`Lock Acquisition request to begin.`, new Date().toISOString(), lockPath, lockPath));
+    fs.writeFileSync(lockPath, '', { encoding: 'utf-8' });
+    await lockfile.lock(lockPath, { stale: (timeoutTimeMs - (retryTimeMs * 2)) /*if a proc holding the lock has not returned in the stale time it will auto fail*/, retries: { retries: retryCountToEndRoughlyAtTimeoutMs, minTimeout: retryTimeMs, maxTimeout: retryTimeMs } })
+        .then(async (release) =>
+        {
+            eventStream?.post(new DotnetLockAcquiredEvent(`Lock Acquired.`, new Date().toISOString(), lockPath, lockPath));
+            try
+            {
+                // eslint-disable-next-line @typescript-eslint/await-thenable
+                returnResult = await f(...(args));
+            }
+            catch (errorFromF: any)
+            {
+                codeFailureAndNotLockFailure = errorFromF;
+            }
+            eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), lockPath, lockPath));
+            return release().catch((unlockError: Error) => { if (unlockError.message.includes('already released') || unlockError.message.includes('by you')) { return; } else { throw unlockError; } }); // sometimes the lib will fail to release even if it never acquired it.
+        })
+        .catch((lockingError: Error) =>
+        {
+            // If we don't catch here, the lock will never be released.
+            try
+            {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                eventStream.post(new DotnetLockErrorEvent(lockingError, lockingError?.message ?? 'Unable to acquire lock or unlock lock. Trying to unlock.', new Date().toISOString(), lockPath, lockPath));
+                if (lockfile.checkSync(lockPath))
+                {
+                    eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released after checkSync due to lockError Event`, new Date().toISOString(), lockPath, lockPath));
+                    lockfile.unlockSync(lockPath);
+                }
+            }
+            catch (eWhenUnlocking: any)
+            {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                eventStream.post(new DotnetLockErrorEvent(eWhenUnlocking, eWhenUnlocking?.message ?? `Unable to acquire lock ${lockPath}`, new Date().toISOString(), lockPath, lockPath));
+            }
+            throw new EventBasedError('DotnetLockErrorEvent', lockingError?.message, lockingError?.stack);
+        });
+
+    if (codeFailureAndNotLockFailure)
+    {
+        throw codeFailureAndNotLockFailure;
+    }
+
+    return returnResult;
 }
 
 export async function getOSArch(executor: ICommandExecutor): Promise<string>

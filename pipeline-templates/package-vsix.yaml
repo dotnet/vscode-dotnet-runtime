@@ -10,9 +10,6 @@ jobs:
     ${{ else }}:
         vmImage: ${{ parameters.pool.vmImage }}
   displayName: '📦 Package and Publish'
-  dependsOn:
-  - ${{ parameters.pool.os }}_Build
-  condition: succeeded()
   strategy:
     matrix:
       Runtime:

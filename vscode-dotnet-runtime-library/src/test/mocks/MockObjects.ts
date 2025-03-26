@@ -36,7 +36,7 @@ import { ICommandExecutor } from '../../Utils/ICommandExecutor';
 import { IFileUtilities } from '../../Utils/IFileUtilities';
 import { IUtilityContext } from '../../Utils/IUtilityContext';
 import { IVSCodeEnvironment } from '../../Utils/IVSCodeEnvironment';
-import { WebRequestWorker } from '../../Utils/WebRequestWorker';
+import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
 import { getMockUtilityContext } from '../unit/TestUtility';
 
 const testDefaultTimeoutTimeMs = 60000;
@@ -143,42 +143,55 @@ export class ErrorAcquisitionInvoker extends IAcquisitionInvoker
 // Major.Minor-> Major.Minor.Patch from mock releases.json
 export const versionPairs = [['1.0', '1.0.16'], ['1.1', '1.1.13'], ['2.0', '2.0.9'], ['2.1', '2.1.14'], ['2.2', '2.2.8']];
 
-export class FileWebRequestWorker extends WebRequestWorker
+export class FileWebRequestWorker extends WebRequestWorkerSingleton
 {
-    constructor(ctx: IAcquisitionWorkerContext, uri: string, private readonly mockFilePath: string)
+    constructor(private readonly mockFilePath: string)
     {
-        super(ctx, uri);
+        super();
+        const _ = WebRequestWorkerSingleton.getInstance(); // cause super to exist
     }
 
-    protected async makeWebRequest(): Promise<string | undefined>
+    protected async makeWebRequest(uri: string, ctx: IAcquisitionWorkerContext): Promise<string | undefined>
     {
         const result = JSON.parse(fs.readFileSync(this.mockFilePath, 'utf8'));
         return result;
     }
 }
 
-export class FailingWebRequestWorker extends WebRequestWorker
+export class FailingWebRequestWorker extends WebRequestWorkerSingleton
 {
-    constructor(ctx: IAcquisitionWorkerContext, uri: string)
+    constructor()
     {
-        super(ctx, '', testDefaultTimeoutTimeMs); // Empty string as uri to cause failure. Uri is required to match the interface even though it's unused.
+        // Use Empty strings as uri to cause failure. Uri is required to match the interface even though it's unused.
+        super();
+        const _ = WebRequestWorkerSingleton.getInstance(); // cause super to exist
     }
 
-    public async getCachedData(): Promise<string | undefined>
+    public async getCachedData(uri: string, ctx: IAcquisitionWorkerContext): Promise<string | undefined>
     {
         throw new Error('Fail!');
     }
+
+    public async makeWebRequest(uri: string, ctx: IAcquisitionWorkerContext): Promise<string | undefined>
+    {
+        return super.makeWebRequest('', ctx, true, 0);
+    }
+
+    public async downloadFile(url: string, dest: string, ctx: IAcquisitionWorkerContext): Promise<void>
+    {
+        return super.downloadFile('', dest, ctx);
+    }
 }
 
-export class MockTrackingWebRequestWorker extends WebRequestWorker
+export class MockTrackingWebRequestWorker extends WebRequestWorkerSingleton
 {
     private requestCount = 0;
     public response = 'Mock Web Request Result';
 
-    constructor(ctx: IAcquisitionWorkerContext, url: string,
-        protected readonly succeed = true, webTimeToLive = testDefaultTimeoutTimeMs, cacheTimeToLive = testDefaultTimeoutTimeMs)
+    constructor(protected readonly succeed = true)
     {
-        super(ctx, url, cacheTimeToLive);
+        super();
+        const _ = WebRequestWorkerSingleton.getInstance(); // cause super to exist
     }
 
     public getRequestCount()
@@ -190,13 +203,13 @@ export class MockTrackingWebRequestWorker extends WebRequestWorker
     {
         this.requestCount++;
     }
-    protected async makeWebRequest(shouldThrow = false, retries = 2): Promise<string | undefined>
+    protected async makeWebRequest(url: string, ctx: IAcquisitionWorkerContext, shouldThrow = false, retries = 2): Promise<string | undefined>
     {
-        if (!(await this.isUrlCached()))
+        if (!(await this.isUrlCached(url, ctx)))
         {
             this.incrementRequestCount();
         }
-        return super.makeWebRequest(shouldThrow, retries);
+        return super.makeWebRequest(url, ctx, shouldThrow, retries);
     }
 }
 
@@ -205,9 +218,10 @@ export class MockWebRequestWorker extends MockTrackingWebRequestWorker
     public readonly errorMessage = 'Web Request Failed';
     public response = 'Mock Web Request Result';
 
-    constructor(ctx: IAcquisitionWorkerContext, url: string)
+    constructor()
     {
-        super(ctx, url);
+        super();
+        const _ = WebRequestWorkerSingleton.getInstance(); // cause super to exist
     }
 
     protected async makeWebRequest(): Promise<string | undefined>
@@ -230,25 +244,25 @@ export class MockWebRequestWorker extends MockTrackingWebRequestWorker
     }
 }
 
-export class MockIndexWebRequestWorker extends WebRequestWorker
+export class MockIndexWebRequestWorker extends WebRequestWorkerSingleton
 {
     public knownUrls = ['Mock Web Request Result'];
     public matchingUrlResponses = [
         ``
     ];
 
-    constructor(ctx: IAcquisitionWorkerContext, url: string,
-        protected readonly succeed = true, webTimeToLive = testDefaultTimeoutTimeMs, cacheTimeToLive = testDefaultTimeoutTimeMs)
+    constructor(protected readonly succeed = true)
     {
-        super(ctx, url, cacheTimeToLive);
+        super();
+        const _ = WebRequestWorkerSingleton.getInstance(); // cause super to exist
     }
 
-    public async getCachedData(retriesCount = 2): Promise<string | undefined>
+    public async getCachedData(url: string, ctx: IAcquisitionWorkerContext, retriesCount = 2): Promise<string | undefined>
     {
-        const urlResponseIndex = this.knownUrls.indexOf(this.url);
+        const urlResponseIndex = this.knownUrls.indexOf(url);
         if (urlResponseIndex === -1)
         {
-            throw Error(`The requested URL ${this.url} was not expected as the mock object did not have a set response for it.`)
+            throw Error(`The requested URL ${url} was not expected as the mock object did not have a set response for it.`)
         }
         return JSON.parse(this.matchingUrlResponses[urlResponseIndex]);
     }
@@ -298,7 +312,7 @@ export class MockVersionResolver extends VersionResolver
     constructor(ctx: IAcquisitionWorkerContext)
     {
         super(ctx);
-        this.webWorker = new FileWebRequestWorker(ctx, 'releases', this.filePath);
+        this.webWorker = new FileWebRequestWorker(this.filePath);
     }
 }
 
@@ -308,8 +322,8 @@ export class MockInstallScriptWorker extends InstallScriptAcquisitionWorker
     {
         super(ctx);
         this.webWorker = failing ?
-            new FailingWebRequestWorker(ctx, '') :
-            new MockWebRequestWorker(ctx, '');
+            new FailingWebRequestWorker() :
+            new MockWebRequestWorker();
     }
 
     protected getFallbackScriptPath(): string
@@ -434,9 +448,9 @@ export class MockFileUtilities extends IFileUtilities
     public filePathsAndExistValues: { [filePath: string]: boolean; } = {};
     public filePathsAndReadValues: { [filePath: string]: string; } = {};
 
-    public writeFileOntoDisk(content: string, filePath: string, alreadyHoldingLock = false)
+    public writeFileOntoDisk(content: string, filePath: string)
     {
-        return this.trueUtilities.writeFileOntoDisk(content, filePath, alreadyHoldingLock, new MockEventStream());
+        return this.trueUtilities.writeFileOntoDisk(content, filePath, new MockEventStream());
     }
 
     public wipeDirectory(directoryToWipe: string, eventSteam: IEventStream, fileExtensionsToDelete?: string[])
@@ -586,7 +600,7 @@ export class FailingInstallScriptWorker extends InstallScriptAcquisitionWorker
     constructor(ctx: IAcquisitionWorkerContext)
     {
         super(ctx);
-        this.webWorker = new MockWebRequestWorker(ctx, '');
+        this.webWorker = new MockWebRequestWorker();
     }
 
     public getDotnetInstallScriptPath(): Promise<string>

@@ -7,6 +7,7 @@ import { DOTNET_INFORMATION_CACHE_DURATION_MS } from '../../Acquisition/CacheTim
 import { DotnetPathFinder } from '../../Acquisition/DotnetPathFinder';
 import { CacheGetEvent, CachePutEvent } from '../../EventStream/EventStreamEvents';
 import { LocalMemoryCacheMetadata, LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
+import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
 import { MockCommandExecutor, MockEventStream, MockFileUtilities } from '../mocks/MockObjects';
 import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 const assert = chai.assert;
@@ -22,6 +23,7 @@ suite('LocalMemoryCacheSingleton Unit Tests', function ()
     this.afterEach(async () =>
     {
         LocalMemoryCacheSingleton.getInstance().invalidate();
+        WebRequestWorkerSingleton.getInstance().destroy();
         eventStream.events = [];
     });
 

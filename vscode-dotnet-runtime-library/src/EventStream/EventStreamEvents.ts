@@ -384,11 +384,11 @@ export abstract class DotnetInstallExpectedAbort extends IEvent
         if (this.install)
         {
             return {
-                ErrorName: this.error.name,
-                ErrorMessage: this.error.message,
-                StackTrace: this.error.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : '',
+                ErrorName: this.error?.name ?? 'GenericError',
+                ErrorMessage: this.error?.message ?? 'ErrorMessage not provided',
+                StackTrace: this.error?.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : '',
                 InstallId: this.install?.installId ?? 'null',
-                ...InstallToStrings(this.install)
+                ...InstallToStrings(this.install) ?? 'No Install Info'
             };
         }
         else
@@ -1084,6 +1084,11 @@ export class DotnetFindPathCommandInvoked extends DotnetCustomMessageEvent
     {
         return { Message: this.eventMessage, Context: JSON.stringify(this.request) };
     };
+}
+
+export class WebCacheClearEvent extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'WebCacheClearEvent';
 }
 
 export class CacheClearEvent extends DotnetCustomMessageEvent
