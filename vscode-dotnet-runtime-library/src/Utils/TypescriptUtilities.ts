@@ -216,7 +216,7 @@ export function minimizeEnvironment(pathEnv: NodeJS.ProcessEnv): string
     {
         if (possiblyUsefulUpperCaseEnvVars.has(key.toUpperCase()))
         {
-            pathEnvString += `${key}: ${pathEnv[key]}\n}`;
+            pathEnvString += `${key}: ${pathEnv[key]}\n`;
         }
     }
     return pathEnvString;
