@@ -435,8 +435,8 @@ ${stderr}`));
         else
         {
             const { env, ...optionsWithoutEnv } = options;
-            this.context?.eventStream.post(new CommandExecutionEvent(`Executing command ${fullCommandString}
-with options ${JSON.stringify(options.env !== null && options.env !== undefined ? { env: minimizeEnvironment(env), ...optionsWithoutEnv } : options)}.`));
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            this.context?.eventStream.post(new CommandExecutionEvent(`Executing command ${fullCommandString} with options ${JSON.stringify(options.env !== null && options.env !== undefined ? { env: minimizeEnvironment(env), ...optionsWithoutEnv } : options)}.`));
 
             if (command.runUnderSudo)
             {
