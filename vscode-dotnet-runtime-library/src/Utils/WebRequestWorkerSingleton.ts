@@ -26,7 +26,6 @@ import * as fs from 'fs';
 import { promisify } from 'util';
 import stream = require('stream');
 
-import { WEB_CACHE_DURATION_MS } from '../Acquisition/CacheTimeConstants';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { IEventStream } from '../EventStream/EventStream';
 import
@@ -38,16 +37,15 @@ import
     EventCancellationError,
     OfflineDetectionLogicTriggered,
     SuppressedAcquisitionError,
-    WebCacheClearEvent,
     WebRequestCachedTime,
     WebRequestError,
+    WebRequestInitiated,
     WebRequestSent,
     WebRequestTime,
     WebRequestTimeUnknown
 } from '../EventStream/EventStreamEvents';
 import { FileUtilities } from './FileUtilities';
 import { getInstallFromContext } from './InstallIdUtilities';
-import { loopWithTimeoutOnCond } from './TypescriptUtilities';
 
 export class WebRequestWorkerSingleton
 {
@@ -58,15 +56,10 @@ export class WebRequestWorkerSingleton
      */
     private client: AxiosCacheInstance;
     protected static instance: WebRequestWorkerSingleton;
-    private proxyAgent: HttpsProxyAgent<string> | null = null;
-    private cacheTtlMs: number = WEB_CACHE_DURATION_MS;
-    private stopCacheCleanup = false;
-    private lastCacheCleanTimeNs = process.hrtime.bigint();
-    cacheCleanupRunner: () => boolean;
 
     protected constructor()
     {
-        const uncachedAxiosClient = Axios.create({});
+        const uncachedAxiosClient = Axios.create();
 
         // Wrap the client with a retry interceptor. We don't need to return a new client, it should be applied automatically.
         axiosRetry(uncachedAxiosClient, {
@@ -106,50 +99,13 @@ export class WebRequestWorkerSingleton
                 return res;
             })
 
+
         this.client = setupCache(uncachedAxiosClient,
             {
-                storage: buildMemoryStorage(
-                    false,
-                ),
+                storage: buildMemoryStorage(),
+                ttl: 120000 // 2 Minute TTL
             }
         );
-
-        // This function must be a member of 'this' so it correctly 'binds' to the instance of the class and has access to class members in a different scope environment
-        this.cacheCleanupRunner = function ()
-        {
-            if (this?.client?.storage !== null && this?.client?.storage !== undefined)
-            {
-                try
-                {
-                    if ((process.hrtime.bigint() - this.lastCacheCleanTimeNs) >= this.cacheTtlMs * 1e6)
-                    {
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                        (this.client.storage as any)?.clear();
-                        this.lastCacheCleanTimeNs = process.hrtime.bigint();
-                    }
-                }
-                catch (err)
-                {
-                    // clear returns a maybe promise which is a fake type where .catch does not work on it.
-                }
-            }
-            else
-            {
-                return true; // the class object was deleted externally (close tab / pkill from vscode ext service), so we should stop the cleanup.
-            }
-            return this.stopCacheCleanup;
-        }
-
-        loopWithTimeoutOnCond(500, Number.POSITIVE_INFINITY,
-            this.cacheCleanupRunner,
-            function stopCleaning(): void {},
-            null,
-            new WebCacheClearEvent(`Clearing the web cache.`)
-        )
-            .catch(error =>
-            {
-                // Let the rejected promise get handled below
-            });
     }
 
     public static getInstance(): WebRequestWorkerSingleton
@@ -162,14 +118,10 @@ export class WebRequestWorkerSingleton
         return WebRequestWorkerSingleton.instance;
     }
 
-    /*
-    Call this for when a web worker singleton is used but no one kills the instance of it (e.g. vscode being closed kills it.)
-    The Cleanup interval function from axios-cache-interceptor hangs around eternally until it is killed which means this will cause tests and other code to hang forever and never exit.
-    We need something which we can hook into to destroy it manually.
-    */
+
+    // In the event we want to do this later, keep this for now. ATM it does nothing.
     public destroy()
     {
-        this.stopCacheCleanup = true;
     }
 
     /**
@@ -269,12 +221,12 @@ export class WebRequestWorkerSingleton
 
     public async isOnline(timeoutSec: number, eventStream: IEventStream): Promise<boolean>
     {
-        const microsoftServer = 'www.microsoft.com';
-        const expectedDNSResolutionTimeMs = Math.max(timeoutSec * 10, 100); // Assumption: DNS resolution should take less than 1/100 of the time it'd take to download .NET.
+        const microsoftServerHostName = 'www.microsoft.com';
+        const expectedDNSResolutionTimeMs = Math.max(timeoutSec * 10 * 2, 100); // Assumption: DNS resolution should take less than 1/50th of the time it'd take to download .NET.
         // ... 100 ms is there as a default to prevent the dns resolver from throwing a runtime error if the user sets timeoutSeconds to 0.
 
         const dnsResolver = new dns.promises.Resolver({ timeout: expectedDNSResolutionTimeMs });
-        const couldConnect = await dnsResolver.resolve(microsoftServer).then(() =>
+        const couldConnect = await dnsResolver.resolve(microsoftServerHostName).then(() =>
         {
             return true;
         }).catch((error: any) =>
@@ -282,6 +234,7 @@ export class WebRequestWorkerSingleton
             eventStream.post(new OfflineDetectionLogicTriggered((error as EventCancellationError), `DNS resolution failed at microsoft.com, ${JSON.stringify(error)}.`));
             return false;
         });
+
         return couldConnect;
     }
     /**
@@ -337,8 +290,8 @@ export class WebRequestWorkerSingleton
 
         if (this.proxySettingConfiguredManually(ctx) || discoveredProxy)
         {
-            this.proxyAgent = new HttpsProxyAgent(ctx.proxyUrl ?? discoveredProxy);
-            return this.proxyAgent;
+            const proxyAgent = new HttpsProxyAgent(ctx.proxyUrl ?? discoveredProxy);
+            return proxyAgent;
         }
 
         return null;
@@ -357,7 +310,7 @@ export class WebRequestWorkerSingleton
 
         const file = fs.createWriteStream(dest, { flags: 'wx' });
         // Axios Cache Interceptor Does Not Work with Stream Response Types
-        const options = await this.getAxiosOptions(ctx, 3, { responseType: 'stream', cache: false, transformResponse: (x: any) => x }, false);
+        const options = await this.getAxiosOptions(ctx, 3, { responseType: 'stream', cache: false }, false);
         try
         {
             await this.axiosGet(url, ctx, options)
@@ -411,7 +364,8 @@ export class WebRequestWorkerSingleton
             timeout: this.timeoutMsFromCtx(ctx),
             'axios-retry': { retries: numRetries },
             ...(keepAlive && { headers: { 'Connection': 'keep-alive' } }),
-            ...(proxyAgent !== null && { proxy: false, httpsAgent: proxyAgent }),
+            ...(proxyAgent !== null && { proxy: false }),
+            ...(proxyAgent !== null && { httpsAgent: proxyAgent }),
             ...furtherOptions
         };
 
@@ -427,31 +381,14 @@ export class WebRequestWorkerSingleton
      */
     protected async makeWebRequest(url: string, ctx: IAcquisitionWorkerContext, throwOnError: boolean, numRetries: number): Promise<string | undefined>
     {
+        ctx.eventStream.post(new WebRequestInitiated(`Making Web Request For ${url}`));
         const options = await this.getAxiosOptions(ctx, numRetries);
 
         try
         {
             ctx.eventStream.post(new WebRequestSent(url));
-            const response = await this.axiosGet(url, ctx, { transformResponse: (x: any) => x as any, ...options }
-            );
-
-            if (response?.headers?.['content-type'] === 'application/json')
-            {
-                try
-                {
-                    // Try to copy logic from https://github.com/axios/axios/blob/2e58825bc7773247ca5d8c2cae2ee041d38a0bb5/lib/defaults/index.js#L100
-                    const jsonData = JSON.parse(response?.data ?? null);
-                    if (jsonData) // JSON.parse(null) => null but JSON.parse(undefined) => SyntaxError. We only want to return undefined and not null based on funct signature.
-                    {
-                        return jsonData;
-                    };
-                }
-                catch (error: any)
-                {
-
-                }
-            }
-            return response?.data;
+            const response = await this.axiosGet(url, ctx, { ...options });
+            return response.data;
         }
         catch (error: any)
         {
@@ -486,11 +423,11 @@ If you're on a proxy and disable registry access, you must set the proxy in our 
 
     private proxySettingConfiguredManually(ctx: IAcquisitionWorkerContext): boolean
     {
-        return ctx.proxyUrl ? true : false;
+        return ctx?.proxyUrl ? true : false;
     }
 
     private timeoutMsFromCtx(ctx: IAcquisitionWorkerContext): number
     {
-        return ctx.timeoutSeconds * 1000;
+        return ctx?.timeoutSeconds * 1000;
     }
 }

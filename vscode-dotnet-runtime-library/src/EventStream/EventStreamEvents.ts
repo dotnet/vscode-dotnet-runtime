@@ -1730,6 +1730,21 @@ export class WebRequestSent extends DotnetAcquisitionMessage
     }
 }
 
+export class WebRequestInitiated extends DotnetAcquisitionMessage
+{
+    public readonly eventName = 'WebRequestInitiated';
+
+    constructor(public readonly url: string)
+    {
+        super();
+    }
+
+    public getProperties()
+    {
+        return { WebRequestUri: this.url };
+    }
+}
+
 export class DotnetPreinstallDetected extends DotnetAcquisitionMessage
 {
     public readonly eventName = 'DotnetPreinstallDetected';
