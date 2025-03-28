@@ -46,3 +46,10 @@ jobs:
     - script: ./test.sh
       displayName: 🔎 Test Mac and Linux
       env: {DISPLAY: ':99.0'}
+  - ${{ if ne(parameters.useOneEngineeringPool, 'true') }}:
+    - task: PublishBuildArtifacts@1
+      displayName: ♻️ Publish Public PR Logs
+      inputs:
+        pathtoPublish: '$(Build.SourcesDirectory)/vscode-dotnet-runtime-extension/dist/test/functional/logs'
+        artifactName: 'logs'
+      condition: always()
