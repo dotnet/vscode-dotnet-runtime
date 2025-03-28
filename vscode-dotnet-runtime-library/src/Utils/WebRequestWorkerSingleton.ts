@@ -145,7 +145,7 @@ export class WebRequestWorkerSingleton
      * @remarks This function is used as a custom axios.get with a timeout because axios does not correctly handle CONNECTION-based timeouts:
      * https://github.com/axios/axios/issues/647 (e.g. bad URL/site down).
      */
-    private async axiosGet(url: string, ctx: IAcquisitionWorkerContext, options = {}, useFetchDownload = false)
+    private async getWithAxiosOrFetch(url: string, ctx: IAcquisitionWorkerContext, options = {}, useFetchDownload = false)
     {
         if (url === '' || !url)
         {
@@ -197,7 +197,7 @@ export class WebRequestWorkerSingleton
             if (url.includes('json'))
             {
                 const responseJson = await response.json();
-                return responseJson
+                return { data: responseJson, ...response }
             }
             else
             {
@@ -207,7 +207,7 @@ export class WebRequestWorkerSingleton
                     return { data: stream.Readable.fromWeb(response.body as ReadableStream<any>), ...response }
                 }
                 const responseText = await response.text();
-                return responseText;
+                return { data: responseText, ...response };
             }
         }
         catch (error: any)
@@ -303,11 +303,10 @@ export class WebRequestWorkerSingleton
         }
         try
         {
-            const requestFunction = this.axiosGet(urlInQuestion, ctx, await this.getAxiosOptions(ctx, 3));
-            const requestResult = await Promise.resolve(requestFunction);
+            const response = await this.getWithAxiosOrFetch(urlInQuestion, ctx, await this.getAxiosOptions(ctx, 3));
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            const cachedState = requestResult.cached;
-            return cachedState;
+            const cachedState = response?.cached;
+            return cachedState ?? false;
         }
         catch (error) // The url was unavailable.
         {
@@ -363,7 +362,7 @@ export class WebRequestWorkerSingleton
         const options = await this.getAxiosOptions(ctx, 3, { responseType: 'stream', cache: false }, false);
         try
         {
-            await this.axiosGet(url, ctx, options, true)
+            await this.getWithAxiosOrFetch(url, ctx, options, true)
                 .then(async response =>
                 {
                     // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
@@ -437,9 +436,9 @@ export class WebRequestWorkerSingleton
         try
         {
             ctx.eventStream.post(new WebRequestSent(url));
-            const response = await this.axiosGet(url, ctx, { ...options });
+            const response = await this.getWithAxiosOrFetch(url, ctx, { ...options });
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            return this.client !== null ? response?.data : response;
+            return response?.data;
         }
         catch (error: any)
         {
