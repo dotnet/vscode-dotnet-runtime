@@ -240,11 +240,11 @@ If you would like to contribute to the list of supported distros, please visit: 
         {
             // PMC is only injected and should only be injected for MSFT feed distros.
             // Our check runs by checking the feature band first, so that needs to be supported for it to fallback to the preinstall command check.
-            const fakeVersionToCheckMicrosoftSupportStatus = '6.0.1xx';
+            const fakeVersionToCheckMicrosoftSupportStatus = '8.0.1xx';
 
             this.context.eventStream.post(new FeedInjection(`Starting feed injection after package version searching as no packages could be found.`));
             await this.injectPMCFeed(fakeVersionToCheckMicrosoftSupportStatus, installType);
-            const packagesAfterFeedInjection = this.myVersionPackages(installType, true);
+            const packagesAfterFeedInjection = await this.myVersionPackages(installType, true);
             this.context.eventStream.post(new FoundDistroVersionDetails(`Caching distro version details after injection: ${JSON.stringify(packagesAfterFeedInjection)}`));
             this.cachedMyVersionPackages = packagesAfterFeedInjection;
         }
