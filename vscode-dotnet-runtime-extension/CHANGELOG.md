@@ -7,12 +7,17 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-## [2.3.1] - TBD
+## [2.3.2] - TBD
 
 - Adds Automated SDK Installation community support for Debian : thank you @curllog for your help!
 - Fixes an issue with install scripts on validating the dotnet install.
 - Fixes an issue with the Uninstall command.
 - Improvements to how installations are managed and tracked.
+
+## [2.3.1] - 2025-4-7
+
+- Update Axios-Cache-Interceptor and Axios to help avoid possibly Invalid Url issues.
+- Adds an alternative fetch request mechanism to rely on the native library without axios if Axios fails.
 
 ## [2.3.0] - 2025-3-25
 
