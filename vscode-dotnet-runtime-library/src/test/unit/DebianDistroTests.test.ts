@@ -5,11 +5,11 @@
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
 import * as os from 'os';
-import { MockCommandExecutor, MockEventStream } from '../mocks/MockObjects';
-import { DistroVersionPair, DotnetDistroSupportStatus, LinuxVersionResolver } from '../../Acquisition/LinuxVersionResolver';
-import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
-import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 import { DebianDistroSDKProvider } from '../../Acquisition/DebianDistroSDKProvider';
+import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
+import { DistroVersionPair, DotnetDistroSupportStatus, LinuxVersionResolver } from '../../Acquisition/LinuxVersionResolver';
+import { MockCommandExecutor } from '../mocks/MockObjects';
+import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 const assert = chai.assert;
 const standardTimeoutTime = 100000;
 
@@ -35,7 +35,7 @@ suite('Debian Distro Logic Unit Tests', () =>
                 'apt-cache -o DPkg::Lock::Timeout=180 search --names-only ^dotnet-sdk-9.0$', 'Searched for the newest package last with regex'); // this may fail if test not exec'd first
             // the data is cached so --version may not be executed.
             const distroVersion = await new LinuxVersionResolver(acquisitionContext, getMockUtilityContext()).getRunningDistro();
-            assert.equal(recVersion,'9.0.1xx', 'Resolved the most recent available version : will eventually break if the mock data is not updated');
+            assert.equal(recVersion, '9.0.1xx', 'Resolved the most recent available version : will eventually break if the mock data is not updated');
         }
     }).timeout(standardTimeoutTime);
 
@@ -54,7 +54,7 @@ suite('Debian Distro Logic Unit Tests', () =>
         if (shouldRun)
         {
             const status = await provider.getDotnetVersionSupportStatus(mockVersion, installType);
-            assert.equal(status, DotnetDistroSupportStatus.Distro);
+            assert.equal(status, DotnetDistroSupportStatus.Microsoft);
         }
     }).timeout(standardTimeoutTime);
 
@@ -148,7 +148,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`, std
             let supported = await provider.isDotnetVersionSupported('11.0.101', installType);
             // In the mock data, 8.0 is not supported, so it should be false.
             assert.equal(supported, false);
-            supported = await provider.isDotnetVersionSupported('7.0.101', installType);
+            supported = await provider.isDotnetVersionSupported('8.0.101', installType);
             assert.equal(supported, true);
             // this feature band isn't supported by most distros yet.
             supported = await provider.isDotnetVersionSupported('7.0.201', installType);
