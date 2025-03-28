@@ -337,11 +337,11 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         });
 
 
-    const acquireGlobalSDKPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.globalAcquireSDKPublic}`, async (commandContext: IDotnetAcquireContext) =>
+    const acquireGlobalSDKPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.globalAcquireSDKPublic}`, async (commandContext: IDotnetAcquireContext | undefined) =>
     {
         globalEventStream.post(new GlobalAcquisitionContextMenuOpened(`The user has opened the global SDK acquisition context menu.`));
 
-        const recommendedVersionResult: IDotnetListVersionsResult = await vscode.commands.executeCommand('dotnet.recommendedVersion', { listRuntimes: false, errorConfiguration: commandContext.errorConfiguration } as IDotnetListVersionsContext);
+        const recommendedVersionResult: IDotnetListVersionsResult = await vscode.commands.executeCommand('dotnet.recommendedVersion', { listRuntimes: false, errorConfiguration: commandContext?.errorConfiguration } as IDotnetListVersionsContext);
         const recommendedVersion: string = recommendedVersionResult ? recommendedVersionResult[0]?.version : '';
 
         const chosenVersion = await vscode.window.showInputBox(
