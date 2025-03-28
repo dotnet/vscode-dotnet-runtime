@@ -308,7 +308,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         });
 
     const dotnetRecommendedVersionRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.recommendedVersion}`,
-        async (commandContext: IDotnetListVersionsContext, customWebWorker: WebRequestWorkerSingleton | undefined): Promise<IDotnetListVersionsResult> =>
+        async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorkerSingleton | undefined): Promise<IDotnetListVersionsResult> =>
         {
             const recommendation = await callWithErrorHandling(async () =>
             {
@@ -331,7 +331,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
                 // The first item will be the newest version.
                 return [activeSupportVersions[0]];
-            }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, 'acquireStatus'));
+            }, getIssueContext(existingPathConfigWorker)(commandContext?.errorConfiguration, 'acquireStatus'));
 
             return recommendation ?? [];
         });
@@ -341,7 +341,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     {
         globalEventStream.post(new GlobalAcquisitionContextMenuOpened(`The user has opened the global SDK acquisition context menu.`));
 
-        const recommendedVersionResult: IDotnetListVersionsResult = await vscode.commands.executeCommand('dotnet.recommendedVersion');
+        const recommendedVersionResult: IDotnetListVersionsResult = await vscode.commands.executeCommand('dotnet.recommendedVersion', { listRuntimes: false, errorConfiguration: commandContext.errorConfiguration } as IDotnetListVersionsContext);
         const recommendedVersion: string = recommendedVersionResult ? recommendedVersionResult[0]?.version : '';
 
         const chosenVersion = await vscode.window.showInputBox(
