@@ -24,6 +24,7 @@ const versionResolver = new LinuxVersionResolver(acquisitionContext, getMockUtil
 let shouldRun = os.platform() === 'linux';
 const installType: DotnetInstallMode = 'sdk';
 const noDotnetString = `
+
 Command 'dotnet' not found, but can be installed with:
 
             snap install dotnet-sdk # version 7.0.304, or
