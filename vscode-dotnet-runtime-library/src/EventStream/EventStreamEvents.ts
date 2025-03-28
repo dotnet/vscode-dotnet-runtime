@@ -1730,6 +1730,22 @@ export class WebRequestSent extends DotnetAcquisitionMessage
     }
 }
 
+export class WebRequestUsingAltClient extends DotnetAcquisitionMessage
+{
+    public readonly eventName = 'WebRequestUsingAltClient';
+
+    constructor(public readonly url: string, public readonly msg: string)
+    {
+        super();
+    }
+
+    public getProperties()
+    {
+        return { WebRequestUri: this.url, Message: this.msg };
+    }
+}
+
+
 export class WebRequestInitiated extends DotnetAcquisitionMessage
 {
     public readonly eventName = 'WebRequestInitiated';

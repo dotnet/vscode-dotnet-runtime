@@ -42,7 +42,8 @@ import
     WebRequestInitiated,
     WebRequestSent,
     WebRequestTime,
-    WebRequestTimeUnknown
+    WebRequestTimeUnknown,
+    WebRequestUsingAltClient
 } from '../EventStream/EventStreamEvents';
 import { FileUtilities } from './FileUtilities';
 import { getInstallFromContext } from './InstallIdUtilities';
@@ -54,58 +55,68 @@ export class WebRequestWorkerSingleton
      * An interface for sending get requests to APIS.
      * The responses from GET requests are cached with a 'time-to-live' of 5 minutes by default.
      */
-    private client: AxiosCacheInstance;
+    private client: AxiosCacheInstance | null;
     protected static instance: WebRequestWorkerSingleton;
+    private clientCreationError: any;
 
     protected constructor()
     {
-        const uncachedAxiosClient = Axios.create();
+        try
+        {
+            const uncachedAxiosClient = Axios.create();
 
-        // Wrap the client with a retry interceptor. We don't need to return a new client, it should be applied automatically.
-        axiosRetry(uncachedAxiosClient, {
-            // Inject a custom retry delay to exponentially increase the time until we retry.
-            retryDelay(retryCount: number)
+            // Wrap the client with a retry interceptor. We don't need to return a new client, it should be applied automatically.
+            axiosRetry(uncachedAxiosClient, {
+                // Inject a custom retry delay to exponentially increase the time until we retry.
+                retryDelay(retryCount: number)
+                {
+                    return Math.pow(2, retryCount); // Takes in the int as (ms) to delay.
+                }
+            });
+
+            // Record when the web requests begin:
+            // Register this so it happens before the cache https://axios-cache-interceptor.js.org/guide/interceptors#explanation
+            uncachedAxiosClient.interceptors.request.use(config =>
             {
-                return Math.pow(2, retryCount); // Takes in the int as (ms) to delay.
-            }
-        });
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                (config as any).startTime = process.hrtime.bigint();
+                return config;
+            });
 
-        // Record when the web requests begin:
-        // Register this so it happens before the cache https://axios-cache-interceptor.js.org/guide/interceptors#explanation
-        uncachedAxiosClient.interceptors.request.use(config =>
-        {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            (config as any).startTime = process.hrtime.bigint();
-            return config;
-        });
-
-        // Record when the server responds:
-        // Register this so it happens after the cache -- this means we need to check if the result is cached before reporting perf data!
-        // ^ the request should not be processed if it is in the cache, it seems nonsensical to check this before the cache is hit even though this is possible
-        uncachedAxiosClient.interceptors.response.use(res =>
-        {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            (res as any).startTime = (res.config as any).startTime;
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            (res as any).finalTime = process.hrtime.bigint();
-            return res;
-        },
-            res => // triggered when status code is not 2XX
+            // Record when the server responds:
+            // Register this so it happens after the cache -- this means we need to check if the result is cached before reporting perf data!
+            // ^ the request should not be processed if it is in the cache, it seems nonsensical to check this before the cache is hit even though this is possible
+            uncachedAxiosClient.interceptors.response.use(res =>
             {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 (res as any).startTime = (res.config as any).startTime;
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 (res as any).finalTime = process.hrtime.bigint();
                 return res;
-            })
+            },
+                res => // triggered when status code is not 2XX
+                {
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    (res as any).startTime = (res.config as any).startTime;
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    (res as any).finalTime = process.hrtime.bigint();
+                    return res;
+                })
 
 
-        this.client = setupCache(uncachedAxiosClient,
-            {
-                storage: buildMemoryStorage(),
-                ttl: 120000 // 2 Minute TTL
-            }
-        );
+            this.client = setupCache(uncachedAxiosClient,
+                {
+                    storage: buildMemoryStorage(),
+                    ttl: 120000 // 2 Minute TTL
+                }
+            );
+        }
+        catch (error: any) // We don't trust the interceptors / client to not break one another. This will cause a total failure and is not eventstream trackable,
+        // Since this is a singleton. Propogate this error so we can report it later when we use the native web mechanism.
+        {
+            this.clientCreationError = error;
+            this.client = null;
+        }
     }
 
     public static getInstance(): WebRequestWorkerSingleton
@@ -158,14 +169,47 @@ export class WebRequestWorkerSingleton
         }, this.timeoutMsFromCtx(ctx));
 
         // Make the web request
-        const response = await this.client.get(url, { signal: timeoutCancelTokenHook.signal, ...options });
-        // Timeout for Web Request -> Not Timer. (Don't want to introduce more CPU time into timer)
-        clearTimeout(timeout);
-
-        this.reportTimeAnalytics(response, options, url, ctx);
+        let response;
+        if (this.client !== null)
+        {
+            response = await this.client.get(url, { signal: timeoutCancelTokenHook.signal, ...options });
+            // Timeout for Web Request -> Not Timer. (Don't want to introduce more CPU time into timer)
+            clearTimeout(timeout);
+            this.reportTimeAnalytics(response, options, url, ctx);
+        }
+        else
+        {
+            response = await this.getFetchResponse(url, ctx)
+            clearTimeout(timeout);
+        }
 
         // Response
         return response;
+    }
+
+    private async getFetchResponse(url: string, ctx: IAcquisitionWorkerContext): Promise<any>
+    {
+        ctx.eventStream.post(new WebRequestUsingAltClient(url, `Using fetch over axios, as axios failed. Axios failure: ${this.clientCreationError ? JSON.stringify(this.clientCreationError) : ''}`));
+        try
+        {
+            let response = await fetch(url, { signal: AbortSignal.timeout(ctx.timeoutSeconds * 1000) });
+            if (url.includes('json'))
+            {
+                let responseJson = await response.json();
+                return responseJson
+            }
+            else
+            {
+                // Wrap it in the same data type interface as axios for piping
+                const responseWithDataToDL = { data: response.body, ...response }
+                return responseWithDataToDL;
+            }
+        }
+        catch (error: any)
+        {
+            ctx.eventStream.post(new WebRequestError(error, getInstallFromContext(ctx)));
+            return null;
+        }
     }
 
     /**
@@ -388,10 +432,16 @@ export class WebRequestWorkerSingleton
         {
             ctx.eventStream.post(new WebRequestSent(url));
             const response = await this.axiosGet(url, ctx, { ...options });
-            return response.data;
+            return this.client !== null ? response.data : response;
         }
         catch (error: any)
         {
+            const altResponse = await this.getFetchResponse(url, ctx);
+            if (altResponse !== null)
+            {
+                return altResponse;
+            }
+
             if (throwOnError)
             {
                 if (isAxiosError(error))
