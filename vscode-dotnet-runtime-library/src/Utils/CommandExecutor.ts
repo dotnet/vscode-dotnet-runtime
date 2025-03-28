@@ -57,7 +57,7 @@ import { ICommandExecutor } from './ICommandExecutor';
 import { IFileUtilities } from './IFileUtilities';
 import { IUtilityContext } from './IUtilityContext';
 import { LockUsedByThisInstanceSingleton } from './LockUsedByThisInstanceSingleton';
-import { executeWithLock, isRunningUnderWSL, loopWithTimeoutOnCond } from './TypescriptUtilities';
+import { executeWithLock, isRunningUnderWSL, loopWithTimeoutOnCond, minimizeEnvironment } from './TypescriptUtilities';
 
 export class CommandExecutor extends ICommandExecutor
 {
@@ -434,8 +434,9 @@ ${stderr}`));
         }
         else
         {
-            this.context?.eventStream.post(new CommandExecutionEvent(`Executing command ${fullCommandString}
-with options ${JSON.stringify(options)}.`));
+            const { env, ...optionsWithoutEnv } = options;
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            this.context?.eventStream.post(new CommandExecutionEvent(`Executing command ${fullCommandString} with options ${JSON.stringify(options.env !== null && options.env !== undefined ? { env: minimizeEnvironment(env), ...optionsWithoutEnv } : options)}.`));
 
             if (command.runUnderSudo)
             {
