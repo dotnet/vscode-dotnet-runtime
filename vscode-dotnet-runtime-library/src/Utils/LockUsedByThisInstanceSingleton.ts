@@ -30,7 +30,7 @@ export class LockUsedByThisInstanceSingleton
 
     public hasVsCodeInstanceInteractedWithLock(lockKey: string): boolean
     {
-        lockKey = path.resolve(lockKey);
+        lockKey = path.basename(lockKey).trim();
         const hasInteracted = this.lockStringAndThisVsCodeInstanceOwnsIt[lockKey] === true;
         this.lockStringAndThisVsCodeInstanceOwnsIt[lockKey] = true; // This could be a set but this is also fine
         return hasInteracted;

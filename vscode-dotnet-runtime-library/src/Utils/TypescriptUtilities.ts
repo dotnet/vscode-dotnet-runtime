@@ -83,15 +83,14 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
     {
         eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released, but we never touched it (pkilled vscode?)`, new Date().toISOString(), lockPath, lockPath));
 
-        if (lockfile.checkSync(lockPath))
+        try
         {
-            eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released, and checkSync showed it.`, new Date().toISOString(), lockPath, lockPath));
-            lockfile.unlockSync(lockPath);
-        }
-        else
-        {
-            eventStream?.post(new DotnetLockReleasedEvent(`Lock is not owned by us, delete it`, new Date().toISOString(), lockPath, lockPath));
             fs.rmdirSync(`${lockPath}.lock`, { recursive: true });
+            eventStream?.post(new DotnetLockReleasedEvent(`Lock is not owned by us, deleted it`, new Date().toISOString(), lockPath, lockPath));
+        }
+        catch (e)
+        {
+            eventStream?.post(new DotnetLockReleasedEvent(`Lock is not owned by us, but deletion failed: ${JSON.stringify(e)}`, new Date().toISOString(), lockPath, lockPath));
         }
     }
 
