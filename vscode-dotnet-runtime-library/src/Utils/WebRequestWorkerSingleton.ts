@@ -23,10 +23,10 @@ import { AxiosCacheInstance, buildMemoryStorage, setupCache } from 'axios-cache-
 import * as axiosRetry from 'axios-retry';
 import * as dns from 'dns';
 import * as fs from 'fs';
+import { ReadableStream } from 'stream/web';
 import { promisify } from 'util';
 import stream = require('stream');
 
-import { WEB_CACHE_DURATION_MS } from '../Acquisition/CacheTimeConstants';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { IEventStream } from '../EventStream/EventStream';
 import
@@ -38,16 +38,16 @@ import
     EventCancellationError,
     OfflineDetectionLogicTriggered,
     SuppressedAcquisitionError,
-    WebCacheClearEvent,
     WebRequestCachedTime,
     WebRequestError,
+    WebRequestInitiated,
     WebRequestSent,
     WebRequestTime,
-    WebRequestTimeUnknown
+    WebRequestTimeUnknown,
+    WebRequestUsingAltClient
 } from '../EventStream/EventStreamEvents';
 import { FileUtilities } from './FileUtilities';
 import { getInstallFromContext } from './InstallIdUtilities';
-import { loopWithTimeoutOnCond } from './TypescriptUtilities';
 
 export class WebRequestWorkerSingleton
 {
@@ -56,100 +56,68 @@ export class WebRequestWorkerSingleton
      * An interface for sending get requests to APIS.
      * The responses from GET requests are cached with a 'time-to-live' of 5 minutes by default.
      */
-    private client: AxiosCacheInstance;
+    private client: AxiosCacheInstance | null;
     protected static instance: WebRequestWorkerSingleton;
-    private proxyAgent: HttpsProxyAgent<string> | null = null;
-    private cacheTtlMs: number = WEB_CACHE_DURATION_MS;
-    private stopCacheCleanup = false;
-    private lastCacheCleanTimeNs = process.hrtime.bigint();
-    cacheCleanupRunner: () => boolean;
+    private clientCreationError: any;
 
     protected constructor()
     {
-        const uncachedAxiosClient = Axios.create({});
+        try
+        {
+            const uncachedAxiosClient = Axios.create();
 
-        // Wrap the client with a retry interceptor. We don't need to return a new client, it should be applied automatically.
-        axiosRetry(uncachedAxiosClient, {
-            // Inject a custom retry delay to exponentially increase the time until we retry.
-            retryDelay(retryCount: number)
+            // Wrap the client with a retry interceptor. We don't need to return a new client, it should be applied automatically.
+            axiosRetry(uncachedAxiosClient, {
+                // Inject a custom retry delay to exponentially increase the time until we retry.
+                retryDelay(retryCount: number)
+                {
+                    return Math.pow(2, retryCount); // Takes in the int as (ms) to delay.
+                }
+            });
+
+            // Record when the web requests begin:
+            // Register this so it happens before the cache https://axios-cache-interceptor.js.org/guide/interceptors#explanation
+            uncachedAxiosClient.interceptors.request.use(config =>
             {
-                return Math.pow(2, retryCount); // Takes in the int as (ms) to delay.
-            }
-        });
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                (config as any).startTime = process.hrtime.bigint();
+                return config;
+            });
 
-        // Record when the web requests begin:
-        // Register this so it happens before the cache https://axios-cache-interceptor.js.org/guide/interceptors#explanation
-        uncachedAxiosClient.interceptors.request.use(config =>
-        {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            (config as any).startTime = process.hrtime.bigint();
-            return config;
-        });
-
-        // Record when the server responds:
-        // Register this so it happens after the cache -- this means we need to check if the result is cached before reporting perf data!
-        // ^ the request should not be processed if it is in the cache, it seems nonsensical to check this before the cache is hit even though this is possible
-        uncachedAxiosClient.interceptors.response.use(res =>
-        {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            (res as any).startTime = (res.config as any).startTime;
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            (res as any).finalTime = process.hrtime.bigint();
-            return res;
-        },
-            res => // triggered when status code is not 2XX
+            // Record when the server responds:
+            // Register this so it happens after the cache -- this means we need to check if the result is cached before reporting perf data!
+            // ^ the request should not be processed if it is in the cache, it seems nonsensical to check this before the cache is hit even though this is possible
+            uncachedAxiosClient.interceptors.response.use(res =>
             {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 (res as any).startTime = (res.config as any).startTime;
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 (res as any).finalTime = process.hrtime.bigint();
                 return res;
-            })
-
-        this.client = setupCache(uncachedAxiosClient,
-            {
-                storage: buildMemoryStorage(
-                    false,
-                ),
-            }
-        );
-
-        // This function must be a member of 'this' so it correctly 'binds' to the instance of the class and has access to class members in a different scope environment
-        this.cacheCleanupRunner = function ()
-        {
-            if (this?.client?.storage !== null && this?.client?.storage !== undefined)
-            {
-                try
+            },
+                res => // triggered when status code is not 2XX
                 {
-                    if ((process.hrtime.bigint() - this.lastCacheCleanTimeNs) >= this.cacheTtlMs * 1e6)
-                    {
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                        (this.client.storage as any)?.clear();
-                        this.lastCacheCleanTimeNs = process.hrtime.bigint();
-                    }
-                }
-                catch (err)
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    (res as any).startTime = (res.config as any).startTime;
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    (res as any).finalTime = process.hrtime.bigint();
+                    return res;
+                })
+
+
+            this.client = setupCache(uncachedAxiosClient,
                 {
-                    // clear returns a maybe promise which is a fake type where .catch does not work on it.
+                    storage: buildMemoryStorage(),
+                    ttl: 120000 // 2 Minute TTL
                 }
-            }
-            else
-            {
-                return true; // the class object was deleted externally (close tab / pkill from vscode ext service), so we should stop the cleanup.
-            }
-            return this.stopCacheCleanup;
+            );
         }
-
-        loopWithTimeoutOnCond(500, Number.POSITIVE_INFINITY,
-            this.cacheCleanupRunner,
-            function stopCleaning(): void {},
-            null,
-            new WebCacheClearEvent(`Clearing the web cache.`)
-        )
-            .catch(error =>
-            {
-                // Let the rejected promise get handled below
-            });
+        catch (error: any) // We don't trust the interceptors / client to not break one another. This will cause a total failure and is not eventstream trackable,
+        // Since this is a singleton. Propogate this error so we can report it later when we use the native web mechanism.
+        {
+            this.clientCreationError = error;
+            this.client = null;
+        }
     }
 
     public static getInstance(): WebRequestWorkerSingleton
@@ -162,14 +130,10 @@ export class WebRequestWorkerSingleton
         return WebRequestWorkerSingleton.instance;
     }
 
-    /*
-    Call this for when a web worker singleton is used but no one kills the instance of it (e.g. vscode being closed kills it.)
-    The Cleanup interval function from axios-cache-interceptor hangs around eternally until it is killed which means this will cause tests and other code to hang forever and never exit.
-    We need something which we can hook into to destroy it manually.
-    */
+
+    // In the event we want to do this later, keep this for now. ATM it does nothing.
     public destroy()
     {
-        this.stopCacheCleanup = true;
     }
 
     /**
@@ -181,7 +145,7 @@ export class WebRequestWorkerSingleton
      * @remarks This function is used as a custom axios.get with a timeout because axios does not correctly handle CONNECTION-based timeouts:
      * https://github.com/axios/axios/issues/647 (e.g. bad URL/site down).
      */
-    private async axiosGet(url: string, ctx: IAcquisitionWorkerContext, options = {})
+    private async getWithAxiosOrFetch(url: string, ctx: IAcquisitionWorkerContext, options = {}, useFetchDownload = false)
     {
         if (url === '' || !url)
         {
@@ -206,14 +170,51 @@ export class WebRequestWorkerSingleton
         }, this.timeoutMsFromCtx(ctx));
 
         // Make the web request
-        const response = await this.client.get(url, { signal: timeoutCancelTokenHook.signal, ...options });
-        // Timeout for Web Request -> Not Timer. (Don't want to introduce more CPU time into timer)
-        clearTimeout(timeout);
-
-        this.reportTimeAnalytics(response, options, url, ctx);
+        let response;
+        if (this.client !== null)
+        {
+            response = await this.client.get(url, { signal: timeoutCancelTokenHook.signal, ...options });
+            // Timeout for Web Request -> Not Timer. (Don't want to introduce more CPU time into timer)
+            clearTimeout(timeout);
+            this.reportTimeAnalytics(response, options, url, ctx);
+        }
+        else
+        {
+            response = await this.getFetchResponse(url, ctx, useFetchDownload);
+            clearTimeout(timeout);
+        }
 
         // Response
         return response;
+    }
+
+    private async getFetchResponse(url: string, ctx: IAcquisitionWorkerContext, returnDownloadStream = false): Promise<any>
+    {
+        ctx.eventStream.post(new WebRequestUsingAltClient(url, `Using fetch over axios, as axios failed. Axios failure: ${this.clientCreationError ? JSON.stringify(this.clientCreationError) : ''}`));
+        try
+        {
+            const response = await fetch(url, { signal: AbortSignal.timeout(ctx.timeoutSeconds * 1000) });
+            if (url.includes('json'))
+            {
+                const responseJson = await response.json();
+                return { data: responseJson, ...response }
+            }
+            else
+            {
+                if (returnDownloadStream && response?.body)
+                {
+                    // Wrap it in the same data type interface as axios for piping
+                    return { data: stream.Readable.fromWeb(response.body as ReadableStream<any>), ...response }
+                }
+                const responseText = await response.text();
+                return { data: responseText, ...response };
+            }
+        }
+        catch (error: any)
+        {
+            ctx.eventStream.post(new WebRequestError(error, getInstallFromContext(ctx)));
+            return null;
+        }
     }
 
     /**
@@ -269,12 +270,12 @@ export class WebRequestWorkerSingleton
 
     public async isOnline(timeoutSec: number, eventStream: IEventStream): Promise<boolean>
     {
-        const microsoftServer = 'www.microsoft.com';
-        const expectedDNSResolutionTimeMs = Math.max(timeoutSec * 10, 100); // Assumption: DNS resolution should take less than 1/100 of the time it'd take to download .NET.
+        const microsoftServerHostName = 'www.microsoft.com';
+        const expectedDNSResolutionTimeMs = Math.max(timeoutSec * 10 * 2, 100); // Assumption: DNS resolution should take less than 1/50th of the time it'd take to download .NET.
         // ... 100 ms is there as a default to prevent the dns resolver from throwing a runtime error if the user sets timeoutSeconds to 0.
 
         const dnsResolver = new dns.promises.Resolver({ timeout: expectedDNSResolutionTimeMs });
-        const couldConnect = await dnsResolver.resolve(microsoftServer).then(() =>
+        const couldConnect = await dnsResolver.resolve(microsoftServerHostName).then(() =>
         {
             return true;
         }).catch((error: any) =>
@@ -282,6 +283,7 @@ export class WebRequestWorkerSingleton
             eventStream.post(new OfflineDetectionLogicTriggered((error as EventCancellationError), `DNS resolution failed at microsoft.com, ${JSON.stringify(error)}.`));
             return false;
         });
+
         return couldConnect;
     }
     /**
@@ -301,10 +303,10 @@ export class WebRequestWorkerSingleton
         }
         try
         {
-            const requestFunction = this.axiosGet(urlInQuestion, ctx, await this.getAxiosOptions(ctx, 3));
-            const requestResult = await Promise.resolve(requestFunction);
-            const cachedState = requestResult.cached;
-            return cachedState;
+            const response = await this.getWithAxiosOrFetch(urlInQuestion, ctx, await this.getAxiosOptions(ctx, 3));
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            const cachedState = response?.cached;
+            return cachedState ?? false;
         }
         catch (error) // The url was unavailable.
         {
@@ -337,8 +339,8 @@ export class WebRequestWorkerSingleton
 
         if (this.proxySettingConfiguredManually(ctx) || discoveredProxy)
         {
-            this.proxyAgent = new HttpsProxyAgent(ctx.proxyUrl ?? discoveredProxy);
-            return this.proxyAgent;
+            const proxyAgent = new HttpsProxyAgent(ctx.proxyUrl ?? discoveredProxy);
+            return proxyAgent;
         }
 
         return null;
@@ -357,10 +359,10 @@ export class WebRequestWorkerSingleton
 
         const file = fs.createWriteStream(dest, { flags: 'wx' });
         // Axios Cache Interceptor Does Not Work with Stream Response Types
-        const options = await this.getAxiosOptions(ctx, 3, { responseType: 'stream', cache: false, transformResponse: (x: any) => x }, false);
+        const options = await this.getAxiosOptions(ctx, 3, { responseType: 'stream', cache: false }, false);
         try
         {
-            await this.axiosGet(url, ctx, options)
+            await this.getWithAxiosOrFetch(url, ctx, options, true)
                 .then(async response =>
                 {
                     // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
@@ -411,7 +413,8 @@ export class WebRequestWorkerSingleton
             timeout: this.timeoutMsFromCtx(ctx),
             'axios-retry': { retries: numRetries },
             ...(keepAlive && { headers: { 'Connection': 'keep-alive' } }),
-            ...(proxyAgent !== null && { proxy: false, httpsAgent: proxyAgent }),
+            ...(proxyAgent !== null && { proxy: false }),
+            ...(proxyAgent !== null && { httpsAgent: proxyAgent }),
             ...furtherOptions
         };
 
@@ -427,34 +430,24 @@ export class WebRequestWorkerSingleton
      */
     protected async makeWebRequest(url: string, ctx: IAcquisitionWorkerContext, throwOnError: boolean, numRetries: number): Promise<string | undefined>
     {
+        ctx.eventStream.post(new WebRequestInitiated(`Making Web Request For ${url}`));
         const options = await this.getAxiosOptions(ctx, numRetries);
 
         try
         {
             ctx.eventStream.post(new WebRequestSent(url));
-            const response = await this.axiosGet(url, ctx, { transformResponse: (x: any) => x as any, ...options }
-            );
-
-            if (response?.headers?.['content-type'] === 'application/json')
-            {
-                try
-                {
-                    // Try to copy logic from https://github.com/axios/axios/blob/2e58825bc7773247ca5d8c2cae2ee041d38a0bb5/lib/defaults/index.js#L100
-                    const jsonData = JSON.parse(response?.data ?? null);
-                    if (jsonData) // JSON.parse(null) => null but JSON.parse(undefined) => SyntaxError. We only want to return undefined and not null based on funct signature.
-                    {
-                        return jsonData;
-                    };
-                }
-                catch (error: any)
-                {
-
-                }
-            }
+            const response = await this.getWithAxiosOrFetch(url, ctx, { ...options });
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             return response?.data;
         }
         catch (error: any)
         {
+            const altResponse = await this.getFetchResponse(url, ctx);
+            if (altResponse !== null)
+            {
+                return altResponse;
+            }
+
             if (throwOnError)
             {
                 if (isAxiosError(error))
@@ -486,11 +479,11 @@ If you're on a proxy and disable registry access, you must set the proxy in our 
 
     private proxySettingConfiguredManually(ctx: IAcquisitionWorkerContext): boolean
     {
-        return ctx.proxyUrl ? true : false;
+        return ctx?.proxyUrl ? true : false;
     }
 
     private timeoutMsFromCtx(ctx: IAcquisitionWorkerContext): number
     {
-        return ctx.timeoutSeconds * 1000;
+        return ctx?.timeoutSeconds * 1000;
     }
 }

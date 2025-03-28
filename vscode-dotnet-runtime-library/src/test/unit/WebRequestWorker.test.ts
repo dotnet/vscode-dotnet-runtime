@@ -109,18 +109,17 @@ suite('WebRequestWorker Unit Tests', function ()
 
     test('Web Requests Cached Does Not Live Forever', async () =>
     {
-        const cacheTimeoutTime = 1;
         const ctx = getMockAcquisitionContext('runtime', '');
         const uri = 'https://microsoft.com';
 
         const webWorker = new MockTrackingWebRequestWorker(true);
         const uncachedResult = await webWorker.getCachedData(uri, ctx);
-        await new Promise(resolve => setTimeout(resolve, cacheTimeoutTime));
+        await new Promise(resolve => setTimeout(resolve, 120000));
         const cachedResult = await webWorker.getCachedData(uri, ctx);
         assert.exists(uncachedResult);
         const requestCount = webWorker.getRequestCount();
         assert.isAtLeast(requestCount, 2);
-    }).timeout((maxTimeoutTime * 7) + 2000);
+    }).timeout((maxTimeoutTime * 7) + 120000);
 
     test('It actually times requests', async () =>
     {

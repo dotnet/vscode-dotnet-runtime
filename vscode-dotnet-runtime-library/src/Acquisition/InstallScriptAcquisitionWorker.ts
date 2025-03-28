@@ -42,7 +42,7 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
         try
         {
             Debugging.log('getDotnetInstallScriptPath() invoked.');
-            const script = await this.webWorker.getCachedData(this.scriptAcquisitionUrl + this.scriptFileEnding, this.context);
+            const script = await this.webWorker.getCachedData(`${this.scriptAcquisitionUrl}${this.scriptFileEnding}`, this.context);
             if (!script)
             {
                 Debugging.log('The request to acquire the script failed.');
