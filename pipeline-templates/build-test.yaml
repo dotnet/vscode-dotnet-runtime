@@ -25,9 +25,9 @@ jobs:
   steps:
   - template: install-node.yaml
   - pwsh: |
-    $date=$(Get-Date -format yyyyMMdd-Hmmss)
-    Write-Host "##vso[task.setvariable variable=currentTimeStamp]$date"
-  displayName: '🕦 Getting timestamp for unique artifact names'
+      $date=$(Get-Date -format yyyyMMdd-Hmmss)
+      Write-Host "##vso[task.setvariable variable=currentTimeStamp]$date"
+    displayName: '🕦 Getting timestamp for unique artifact names'
   - ${{ if eq(parameters.pool.os, 'windows') }}:
     - script: build.cmd
       displayName: 💻 Build Windows
