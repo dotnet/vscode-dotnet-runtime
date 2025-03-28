@@ -61,7 +61,7 @@ export class WebRequestWorkerSingleton
     private clientCreationError: any;
 
     protected constructor()
-    {
+{
         try
         {
             const uncachedAxiosClient = Axios.create();
