@@ -193,10 +193,10 @@ export class WebRequestWorkerSingleton
         ctx.eventStream.post(new WebRequestUsingAltClient(url, `Using fetch over axios, as axios failed. Axios failure: ${this.clientCreationError ? JSON.stringify(this.clientCreationError) : ''}`));
         try
         {
-            let response = await fetch(url, { signal: AbortSignal.timeout(ctx.timeoutSeconds * 1000) });
+            const response = await fetch(url, { signal: AbortSignal.timeout(ctx.timeoutSeconds * 1000) });
             if (url.includes('json'))
             {
-                let responseJson = await response.json();
+                const responseJson = await response.json();
                 return responseJson
             }
             else
@@ -305,6 +305,7 @@ export class WebRequestWorkerSingleton
         {
             const requestFunction = this.axiosGet(urlInQuestion, ctx, await this.getAxiosOptions(ctx, 3));
             const requestResult = await Promise.resolve(requestFunction);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             const cachedState = requestResult.cached;
             return cachedState;
         }
@@ -437,7 +438,8 @@ export class WebRequestWorkerSingleton
         {
             ctx.eventStream.post(new WebRequestSent(url));
             const response = await this.axiosGet(url, ctx, { ...options });
-            return this.client !== null ? response.data : response;
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            return this.client !== null ? response?.data : response;
         }
         catch (error: any)
         {
