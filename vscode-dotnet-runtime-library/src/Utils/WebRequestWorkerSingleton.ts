@@ -23,6 +23,7 @@ import { AxiosCacheInstance, buildMemoryStorage, setupCache } from 'axios-cache-
 import * as axiosRetry from 'axios-retry';
 import * as dns from 'dns';
 import * as fs from 'fs';
+import { ReadableStream } from 'stream/web';
 import { promisify } from 'util';
 import stream = require('stream');
 
@@ -144,7 +145,7 @@ export class WebRequestWorkerSingleton
      * @remarks This function is used as a custom axios.get with a timeout because axios does not correctly handle CONNECTION-based timeouts:
      * https://github.com/axios/axios/issues/647 (e.g. bad URL/site down).
      */
-    private async axiosGet(url: string, ctx: IAcquisitionWorkerContext, options = {})
+    private async axiosGet(url: string, ctx: IAcquisitionWorkerContext, options = {}, useFetchDownload = false)
     {
         if (url === '' || !url)
         {
@@ -179,7 +180,7 @@ export class WebRequestWorkerSingleton
         }
         else
         {
-            response = await this.getFetchResponse(url, ctx)
+            response = await this.getFetchResponse(url, ctx, useFetchDownload);
             clearTimeout(timeout);
         }
 
@@ -187,7 +188,7 @@ export class WebRequestWorkerSingleton
         return response;
     }
 
-    private async getFetchResponse(url: string, ctx: IAcquisitionWorkerContext): Promise<any>
+    private async getFetchResponse(url: string, ctx: IAcquisitionWorkerContext, returnDownloadStream = false): Promise<any>
     {
         ctx.eventStream.post(new WebRequestUsingAltClient(url, `Using fetch over axios, as axios failed. Axios failure: ${this.clientCreationError ? JSON.stringify(this.clientCreationError) : ''}`));
         try
@@ -200,9 +201,13 @@ export class WebRequestWorkerSingleton
             }
             else
             {
-                // Wrap it in the same data type interface as axios for piping
-                const responseWithDataToDL = { data: response.body, ...response }
-                return responseWithDataToDL;
+                if (returnDownloadStream && response?.body)
+                {
+                    // Wrap it in the same data type interface as axios for piping
+                    return { data: stream.Readable.fromWeb(response.body as ReadableStream<any>), ...response }
+                }
+                const responseText = await response.text();
+                return responseText;
             }
         }
         catch (error: any)
@@ -357,7 +362,7 @@ export class WebRequestWorkerSingleton
         const options = await this.getAxiosOptions(ctx, 3, { responseType: 'stream', cache: false }, false);
         try
         {
-            await this.axiosGet(url, ctx, options)
+            await this.axiosGet(url, ctx, options, true)
                 .then(async response =>
                 {
                     // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
