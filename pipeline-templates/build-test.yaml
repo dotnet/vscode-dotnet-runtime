@@ -16,14 +16,18 @@ jobs:
       displayName: '🌐 Publish Install Tool Logs'
       condition: always()
       targetPath: '$(Build.SourcesDirectory)/vscode-dotnet-runtime-extension/dist/test/functional/logs'
-      artifactName: '${{ parameters.pool.os }} Install Tool logs'
+      artifactName: '${{ parameters.pool.os }} Install Tool logs-$(currentTimeStamp)'
     - output: pipelineArtifact
       displayName: '👜 Publish SDK Logs'
       condition: always()
       targetPath: '$(Build.SourcesDirectory)/vscode-dotnet-sdk-extension/dist/test/functional/logs'
-      artifactName: '${{ parameters.pool.os }} SDK logs'
+      artifactName: '${{ parameters.pool.os }} SDK logs-$(currentTimeStamp)'
   steps:
   - template: install-node.yaml
+  - pwsh: |
+      $date=$(Get-Date -format yyyyMMdd-Hmmss)
+      Write-Host "##vso[task.setvariable variable=currentTimeStamp]$date"
+    displayName: '🕦 Getting timestamp for unique artifact names'
   - ${{ if eq(parameters.pool.os, 'windows') }}:
     - script: build.cmd
       displayName: 💻 Build Windows
@@ -42,3 +46,10 @@ jobs:
     - script: ./test.sh
       displayName: 🔎 Test Mac and Linux
       env: {DISPLAY: ':99.0'}
+  - ${{ if ne(parameters.useOneEngineeringPool, 'true') }}:
+    - task: PublishBuildArtifacts@1
+      displayName: ♻️ Publish Public PR Logs
+      inputs:
+        pathtoPublish: '$(Build.SourcesDirectory)/vscode-dotnet-runtime-extension/dist/test/functional/logs'
+        artifactName: 'logs'
+      condition: always()
