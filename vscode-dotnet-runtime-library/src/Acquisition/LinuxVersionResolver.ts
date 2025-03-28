@@ -14,25 +14,21 @@ import
     EventBasedError,
     EventCancellationError
 } from '../EventStream/EventStreamEvents';
-import { CommandExecutor } from '../Utils/CommandExecutor';
-import { GenericDistroSDKProvider } from './GenericDistroSDKProvider';
-import { RedHatDistroSDKProvider } from './RedHatDistroSDKProvider';
-import { VersionResolver } from './VersionResolver';
-import * as versionUtils from './VersionUtilities';
-
 import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
+import { CommandExecutor } from '../Utils/CommandExecutor';
 import { FileUtilities } from '../Utils/FileUtilities';
-
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
+import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
+import { DebianDistroSDKProvider } from './DebianDistroSDKProvider';
 import { DotnetInstallMode } from './DotnetInstallMode';
+import { GenericDistroSDKProvider } from './GenericDistroSDKProvider';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
-
-import { DebianDistroSDKProvider } from './DebianDistroSDKProvider';
-
-import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
+import { RedHatDistroSDKProvider } from './RedHatDistroSDKProvider';
+import { VersionResolver } from './VersionResolver';
+import * as versionUtils from './VersionUtilities';
 
 
 /**

@@ -5,10 +5,10 @@
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
 import * as os from 'os';
+import { MockCommandExecutor, MockEventStream } from '../mocks/MockObjects';
 import { DebianDistroSDKProvider } from '../../Acquisition/DebianDistroSDKProvider';
 import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 import { DistroVersionPair, DotnetDistroSupportStatus, LinuxVersionResolver } from '../../Acquisition/LinuxVersionResolver';
-import { MockCommandExecutor } from '../mocks/MockObjects';
 import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 const assert = chai.assert;
 const standardTimeoutTime = 100000;
