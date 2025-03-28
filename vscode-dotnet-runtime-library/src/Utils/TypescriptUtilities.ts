@@ -156,6 +156,71 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
     return returnResult;
 }
 
+const possiblyUsefulUpperCaseEnvVars = new Set<string>([ // This is a local variable instead of in the function so it doesn't get recreated every time the function is called. I looked at compiled JS and didn't see it get optimized.
+    'COMMONPROGRAMFILES',
+    'COMMONPROGRAMFILES(x86)',
+    'PATH',
+    'SYSTEMROOT',
+    'PROGRAMFILES',
+    'POWERSHELL_DISTRIBUTION_CHANNEL',
+    'PROCESSOR_IDENTIFIER',
+    'PSMODULEPATH',
+    'PROCESSOR_ARCHITECTURE',
+    'VSCODE_CLI',
+    'VSCODE_CODE_CACHE_PATH',
+    'VSCODE_HANDLES_UNCAUGHT_ERRORS',
+    'RESOLVEDLANGUAGE',
+    'VSCODE_PID',
+    'WINDIR',
+    'DIRCMD',
+    'TERM_PROGRAM_VERSION',
+    'ALLUSERSPROFILE',
+    'COMSPEC',
+    'DOTNET_MULTILEVEL_LOOKUP',
+    'ELECTRON_RUN_AS_NODE',
+    'LANG',
+    'HOME',
+    'PATHEXT',
+    'SHELL',
+    'TERM',
+    'PWD',
+    'BASHOPTS',
+    'SHELLOPTS',
+    'PS1',
+    'PS2',
+    'DOTNET_INSTALL_TOOL_UNDER_TEST',
+    'VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH',
+    'DOTNET_ROOT',
+    'DOTNET_ROOT_X86',
+    'DOTNET_ROOT_X64',
+    'DOTNET_ROOT(x86)',
+    'DOTNET_CLI_UI_LANGUAGE',
+    'CHCP',
+    'DOTNET_NOLOGO',
+    'DOTNET_HOST_PATH',
+    'DOTNET_ROLL_FORWARD',
+    'DOTNET_ROLL_FORWARD_TO_PRERELEASE',
+    'DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX',
+]);
+
+/*
+* @remarks Not intended for telemetry redaction -- PII must be handled correctly elsewhere by a telemetry system.
+* This is intended for logging to the console or a log file where we don't want to write out sensitive information, but we do want information that is useful for debugging weird user situations.
+*/
+export function minimizeEnvironment(pathEnv: NodeJS.ProcessEnv): string
+{
+    let pathEnvString = ``;
+
+    for (const key in pathEnv)
+    {
+        if (possiblyUsefulUpperCaseEnvVars.has(key.toUpperCase()))
+        {
+            pathEnvString += `${key}: ${pathEnv[key]}\n`;
+        }
+    }
+    return pathEnvString;
+}
+
 export async function getOSArch(executor: ICommandExecutor): Promise<string>
 {
     if (os.platform() === 'darwin')
