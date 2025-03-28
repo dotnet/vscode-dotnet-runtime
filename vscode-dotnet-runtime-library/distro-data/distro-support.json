@@ -4,6 +4,14 @@
         "installCommand": [
             {
                 "runUnderSudo": true,
+                "commandRoot": "dpkg",
+                "commandParts": [
+                    "--configure",
+                    "-a"
+                ]
+            },
+            {
+                "runUnderSudo": true,
                 "commandRoot": "apt-get",
                 "commandParts": [
                     "-o",
@@ -26,6 +34,14 @@
         "uninstallCommand": [
             {
                 "runUnderSudo": true,
+                "commandRoot": "dpkg",
+                "commandParts": [
+                    "--configure",
+                    "-a"
+                ]
+            },
+            {
+                "runUnderSudo": true,
                 "commandRoot": "apt-get",
                 "commandParts": [
                     "-o",
@@ -37,6 +53,14 @@
             }
         ],
         "updateCommand": [
+            {
+                "runUnderSudo": true,
+                "commandRoot": "dpkg",
+                "commandParts": [
+                    "--configure",
+                    "-a"
+                ]
+            },
             {
                 "runUnderSudo": true,
                 "commandRoot": "apt-get",
