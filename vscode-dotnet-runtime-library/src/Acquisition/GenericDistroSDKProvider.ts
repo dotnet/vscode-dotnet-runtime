@@ -166,13 +166,6 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
             return Promise.resolve(DotnetDistroSupportStatus.Unsupported);
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        if (this.myVersionDetails().hasOwnProperty(this.preinstallCommandKey))
-        {
-            // If preinstall commands exist ( to add the msft feed ) then it's a microsoft feed.
-            this.context.eventStream.post(new DistroSupport(`Distro: Dotnet Version ${fullySpecifiedVersion} is Microsoft support, because it has preinstallCmdKey.`));
-            return Promise.resolve(DotnetDistroSupportStatus.Microsoft);
-        }
         else
         {
             this.context.eventStream.post(new DistroSupport(`Couldn't find preinstallCmdKey for ${this.distroVersion.distro} ${this.distroVersion.version} with dotnet Version ${fullySpecifiedVersion}.`));
@@ -183,8 +176,18 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
             {
                 if (Number(dotnetPackages.version) === Number(simplifiedVersion))
                 {
-                    this.context.eventStream.post(new DistroSupport(`Version ${fullySpecifiedVersion} is Distro supported, because it has packages already.`));
-                    return Promise.resolve(DotnetDistroSupportStatus.Distro);
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    if (this.myVersionDetails().hasOwnProperty(this.preinstallCommandKey))
+                    {
+                        // If preinstall commands exist ( to add the msft feed ) then it's a microsoft feed.
+                        this.context.eventStream.post(new DistroSupport(`Distro: Dotnet Version ${fullySpecifiedVersion} is Microsoft support, because it has preinstallCmdKey.`));
+                        return Promise.resolve(DotnetDistroSupportStatus.Microsoft);
+                    }
+                    else
+                    {
+                        this.context.eventStream.post(new DistroSupport(`Version ${fullySpecifiedVersion} is Distro supported, because it has packages already.`));
+                        return Promise.resolve(DotnetDistroSupportStatus.Distro);
+                    }
                 }
             }
         }
