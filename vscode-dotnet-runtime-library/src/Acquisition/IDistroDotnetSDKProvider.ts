@@ -266,8 +266,7 @@ If you would like to contribute to the list of supported distros, please visit: 
         }
 
         this.isMidFeedInjection = true;
-        const supportStatus = await this.getDotnetVersionSupportStatus(fullySpecifiedVersion, installType);
-        if (supportStatus === DotnetDistroSupportStatus.Microsoft)
+        if (this.myVersionDetails().hasOwnProperty(this.preinstallCommandKey))
         {
             this.context.eventStream.post(new FeedInjection(`Starting feed injection.`));
             const myVersionDetails = this.myVersionDetails();
