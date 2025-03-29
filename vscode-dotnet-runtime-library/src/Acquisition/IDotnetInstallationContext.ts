@@ -3,7 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-import { DotnetInstallType } from '..';
+import { DotnetInstallType } from '../IDotnetAcquireContext';
 import { DotnetInstallMode } from './DotnetInstallMode';
 
 export interface IDotnetInstallationContext {
