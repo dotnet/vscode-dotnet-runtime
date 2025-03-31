@@ -7,7 +7,7 @@ import * as fs from 'fs';
 
 import path = require('path');
 
-import { DistroPackagesSearch, DotnetAcquisitionDistroUnknownError, DotnetVersionResolutionError, EventBasedError, EventCancellationError, FeedInjection, FoundDistroVersionDetails, SuppressedAcquisitionError } from '../EventStream/EventStreamEvents';
+import { DistroPackagesSearch, DotnetAcquisitionDistroUnknownError, DotnetVersionResolutionError, EventBasedError, EventCancellationError, FeedInjection, FeedInjectionFinished, FeedInjectionStarted, FoundDistroVersionDetails, SuppressedAcquisitionError } from '../EventStream/EventStreamEvents';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { CommandExecutorCommand } from '../Utils/CommandExecutorCommand';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
@@ -268,11 +268,11 @@ If you would like to contribute to the list of supported distros, please visit: 
         this.isMidFeedInjection = true;
         if (this.myVersionDetails().hasOwnProperty(this.preinstallCommandKey))
         {
-            this.context.eventStream.post(new FeedInjection(`Starting feed injection.`));
+            this.context.eventStream.post(new FeedInjectionStarted(`Configuring your system to allow .NET to be installed. Please wait, this may take a few minutes...`))
             const myVersionDetails = this.myVersionDetails();
             const preInstallCommands = myVersionDetails[this.preinstallCommandKey] as CommandExecutorCommand[];
             await this.commandRunner.executeMultipleCommands(preInstallCommands, {}, false);
-            this.context.eventStream.post(new FeedInjection(`Finished injection.`));
+            this.context.eventStream.post(new FeedInjectionFinished(`The Microsoft Package Manager feed has been added. Proceeding to install .NET.`));
         }
         else
         {

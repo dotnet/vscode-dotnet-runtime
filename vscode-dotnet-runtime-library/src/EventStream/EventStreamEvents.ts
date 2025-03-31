@@ -1229,6 +1229,18 @@ export class FeedInjection extends DotnetCustomMessageEvent
     public readonly eventName = 'FeedInjection';
 }
 
+export class FeedInjectionStarted extends DotnetCustomMessageEvent
+{
+    type = EventType.FeedInjectionMessage
+    public readonly eventName = 'FeedInjectionStarted';
+}
+
+export class FeedInjectionFinished extends DotnetCustomMessageEvent
+{
+    type = EventType.FeedInjectionMessage
+    public readonly eventName = 'FeedInjectionFinished';
+}
+
 export class DistroPackagesSearch extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'DistroPackagesSearch';

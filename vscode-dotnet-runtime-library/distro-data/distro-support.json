@@ -295,6 +295,15 @@
                             "-i",
                             "packages-microsoft-prod.deb"
                         ]
+                    },
+                    {
+                        "runUnderSudo": true,
+                        "commandRoot": "apt-get",
+                        "commandParts": [
+                            "-o",
+                            "DPkg::Lock::Timeout=180",
+                            "update"
+                        ]
                     }
                 ]
             },
@@ -334,6 +343,15 @@
                         "commandParts": [
                             "-i",
                             "packages-microsoft-prod.deb"
+                        ]
+                    },
+                    {
+                        "runUnderSudo": true,
+                        "commandRoot": "apt-get",
+                        "commandParts": [
+                            "-o",
+                            "DPkg::Lock::Timeout=180",
+                            "update"
                         ]
                     }
                 ]
@@ -375,6 +393,15 @@
                             "-i",
                             "packages-microsoft-prod.deb"
                         ]
+                    },
+                    {
+                        "runUnderSudo": true,
+                        "commandRoot": "apt-get",
+                        "commandParts": [
+                            "-o",
+                            "DPkg::Lock::Timeout=180",
+                            "update"
+                        ]
                     }
                 ]
             },
@@ -414,6 +441,15 @@
                         "commandParts": [
                             "-i",
                             "packages-microsoft-prod.deb"
+                        ]
+                    },
+                    {
+                        "runUnderSudo": true,
+                        "commandRoot": "apt-get",
+                        "commandParts": [
+                            "-o",
+                            "DPkg::Lock::Timeout=180",
+                            "update"
                         ]
                     }
                 ]
