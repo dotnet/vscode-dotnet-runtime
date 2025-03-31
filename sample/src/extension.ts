@@ -375,7 +375,7 @@ ${JSON.stringify(result) ?? 'undefined'}`);
         try
         {
             const result: IDotnetListVersionsResult | undefined = await vscode.commands.executeCommand('dotnet.recommendedVersion', { listRuntimes: getRuntimes });
-            vscode.window.showInformationMessage(`Recommended SDK Version to Install: ${result?.at(0)?.version}`);
+            vscode.window.showInformationMessage(`Recommended SDK Version to Install: ${result?.[0]?.version}`);
         }
         catch (error)
         {
