@@ -148,7 +148,7 @@ export class DotnetPathFinder implements IDotnetPathFinder
                     {
                         this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Execution Path (Unix Bash): ${result?.stdout}`));
                     })
-                    .catch(() => {});;
+                    .catch(() => {});
             }
         }
 
