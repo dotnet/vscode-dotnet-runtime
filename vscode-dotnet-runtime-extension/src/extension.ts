@@ -32,6 +32,7 @@ import
     DotnetInstallType,
     DotnetOfflineWarning,
     DotnetPathFinder,
+    DotnetVersionCategorizedEvent,
     DotnetVersionResolutionError,
     DotnetVersionSpecRequirement,
     enableExtensionTelemetry,
@@ -333,6 +334,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         globalEventStream.post(new GlobalAcquisitionContextMenuOpened(`The user has opened the global SDK acquisition context menu.`));
 
         const recommendedVersionResult: IDotnetListVersionsResult = await vscode.commands.executeCommand('dotnet.recommendedVersion');
+        globalEventStream.post(new DotnetVersionCategorizedEvent(`Recommended versions: ${JSON.stringify(recommendedVersionResult ?? '')}.`));
+
         const recommendedVersion: string = recommendedVersionResult ? recommendedVersionResult[0]?.version : '';
 
         const chosenVersion = await vscode.window.showInputBox(
