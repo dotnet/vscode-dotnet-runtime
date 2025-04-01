@@ -123,21 +123,32 @@ export class DotnetPathFinder implements IDotnetPathFinder
         this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Looking up .NET on the path. Process.env.path: ${process.env.PATH}`));
         if (os.platform() === 'win32')
         {
-            const winPath = await this.executor?.execute(CommandExecutor.makeCommand('echo', ['%PATH%']), { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS },
-                false);
-            this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Execution Path (Win): ${winPath?.stdout}`));
+            this.executor?.execute(CommandExecutor.makeCommand('echo', ['%PATH%']), { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false)
+                .then((result) =>
+                {
+                    this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Execution Path (Win): ${result?.stdout}`));
+                })
+                .catch(() => {});
         }
+
         else
         {
-            const unixPath = await this.executor?.execute(CommandExecutor.makeCommand('env', []), { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS },
-                false);
-            // Log the default shell state
-            this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Execution Path (Unix-Default-Shell): ${unixPath?.stdout}`));
+            this.executor?.execute(CommandExecutor.makeCommand('env', []), { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false)
+                .then((result) =>
+                {
+                    // Log the default shell state
+                    this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Execution Path (Unix-Default-Shell): ${result?.stdout}`));
+                })
+                .catch(() => {});
 
             if (!(options.shell === '/bin/bash'))
             {
-                const bashPath = await this.executor?.execute(CommandExecutor.makeCommand('env', []), { shell: 'bin/bash', dotnetInstallToolCacheTtlMs: SYS_CMD_SEARCH_CACHE_DURATION_MS }, false);
-                this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Execution Path (Unix Bash): ${bashPath?.stdout}`));
+                this.executor?.execute(CommandExecutor.makeCommand('env', []), { shell: 'bin/bash', dotnetInstallToolCacheTtlMs: SYS_CMD_SEARCH_CACHE_DURATION_MS }, false)
+                    .then((result) =>
+                    {
+                        this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Execution Path (Unix Bash): ${result?.stdout}`));
+                    })
+                    .catch(() => {});
             }
         }
 
