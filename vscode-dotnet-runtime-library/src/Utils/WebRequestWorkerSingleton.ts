@@ -37,6 +37,7 @@ import
     EventBasedError,
     EventCancellationError,
     OfflineDetectionLogicTriggered,
+    ProxyUsed,
     SuppressedAcquisitionError,
     WebRequestCachedTime,
     WebRequestError,
@@ -316,10 +317,10 @@ export class WebRequestWorkerSingleton
 
     private async GetProxyAgentIfNeeded(ctx: IAcquisitionWorkerContext): Promise<HttpsProxyAgent<string> | null>
     {
-        let discoveredProxy = '';
-        if (!this.proxySettingConfiguredManually(ctx))
+        try
         {
-            try
+            let discoveredProxy = '';
+            if (!this.proxySettingConfiguredManually(ctx))
             {
                 const autoDetectProxies = await getProxySettings();
                 if (autoDetectProxies?.https)
@@ -331,16 +332,18 @@ export class WebRequestWorkerSingleton
                     discoveredProxy = autoDetectProxies.http.toString();
                 }
             }
-            catch (error: any)
+
+            if (this.proxySettingConfiguredManually(ctx) || discoveredProxy)
             {
-                ctx.eventStream.post(new SuppressedAcquisitionError(error, `The proxy lookup failed, most likely due to limited registry access. Skipping automatic proxy lookup.`));
+                const finalProxy = ctx?.proxyUrl && ctx?.proxyUrl !== '""' && ctx?.proxyUrl !== '' ? ctx.proxyUrl : discoveredProxy;
+                ctx.eventStream.post(new ProxyUsed(`Utilizing the Proxy : Manual ? ${ctx?.proxyUrl}, Automatic: ${discoveredProxy}, Decision : ${finalProxy}`))
+                const proxyAgent = new HttpsProxyAgent(finalProxy);
+                return proxyAgent;
             }
         }
-
-        if (this.proxySettingConfiguredManually(ctx) || discoveredProxy)
+        catch (error: any)
         {
-            const proxyAgent = new HttpsProxyAgent(ctx.proxyUrl ?? discoveredProxy);
-            return proxyAgent;
+            ctx.eventStream.post(new SuppressedAcquisitionError(error, `The proxy lookup failed, most likely due to limited registry access. Skipping automatic proxy lookup.`));
         }
 
         return null;
@@ -479,7 +482,7 @@ If you're on a proxy and disable registry access, you must set the proxy in our 
 
     private proxySettingConfiguredManually(ctx: IAcquisitionWorkerContext): boolean
     {
-        return ctx?.proxyUrl ? true : false;
+        return ctx?.proxyUrl ? ctx?.proxyUrl !== '""' : false;
     }
 
     private timeoutMsFromCtx(ctx: IAcquisitionWorkerContext): number

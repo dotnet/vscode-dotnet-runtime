@@ -436,7 +436,7 @@ ${stderr}`));
         {
             const { env, ...optionsWithoutEnv } = options;
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            this.context?.eventStream.post(new CommandExecutionEvent(`Executing command ${fullCommandString} with options ${JSON.stringify(options.env !== null && options.env !== undefined ? { env: minimizeEnvironment(env), ...optionsWithoutEnv } : options)}.`));
+            this.context?.eventStream.post(new CommandExecutionEvent(`Executing command ${fullCommandString} with options ${JSON.stringify(options?.env !== null && options?.env !== undefined ? { env: minimizeEnvironment(env), ...optionsWithoutEnv } : options)}.`));
 
             if (command.runUnderSudo)
             {
@@ -561,7 +561,7 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
             try
             {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                const cmdFoundOutput = (await this.execute(command, options?.at(optIdx) ?? options, false)).status;
+                const cmdFoundOutput = (await this.execute(command, options?.[optIdx] ?? options, false)).status;
                 if (cmdFoundOutput === '0')
                 {
                     workingCommand = command;
