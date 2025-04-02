@@ -311,30 +311,40 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     const dotnetRecommendedVersionRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.recommendedVersion}`,
         async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorkerSingleton | undefined): Promise<IDotnetListVersionsResult> =>
         {
-            const availableVersions = await getAvailableVersions(commandContext, customWebWorker, true);
-            const activeSupportVersions = availableVersions?.filter((version: IDotnetVersion) => version.supportPhase === 'active');
-
-            if (!activeSupportVersions || activeSupportVersions.length < 1)
+            const recommendation = await callWithErrorHandling(async () =>
             {
-                const err = new EventCancellationError('DotnetVersionResolutionError', `An active-support version of dotnet couldn't be found. Discovered versions: ${JSON.stringify(availableVersions)}`);
-                globalEventStream.post(new DotnetVersionResolutionError(err, null));
-                if (!availableVersions || availableVersions.length < 1)
-                {
-                    return [];
-                }
-                return [availableVersions[0]];
-            }
+                const availableVersions = await getAvailableVersions(commandContext, customWebWorker, true) ?? [];
+                const activeSupportVersions = availableVersions?.filter((version: IDotnetVersion) => version.supportPhase === 'active');
 
-            // The first item will be the newest version.
-            return [activeSupportVersions[0]];
+                if (!activeSupportVersions || (activeSupportVersions?.length ?? 0) < 1)
+                {
+                    const err = new EventCancellationError('DotnetVersionResolutionError', `An active-support version of dotnet couldn't be found. Discovered versions: ${JSON.stringify(availableVersions)}`);
+                    globalEventStream.post(new DotnetVersionResolutionError(err, null));
+                    if (!availableVersions || (availableVersions?.length ?? 0) < 1)
+                    {
+                        return [];
+                    }
+                    else
+                    {
+                        return [availableVersions[0]];
+                    }
+                }
+
+                // The first item will be the newest version.
+                return [activeSupportVersions[0]];
+            }, getIssueContext(existingPathConfigWorker)(commandContext?.errorConfiguration, 'acquireStatus'));
+
+            return recommendation ?? [];
         });
 
-    const acquireGlobalSDKPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.globalAcquireSDKPublic}`, async (commandContext: IDotnetAcquireContext) =>
+
+    const acquireGlobalSDKPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.globalAcquireSDKPublic}`, async (commandContext: IDotnetAcquireContext | undefined) =>
     {
         globalEventStream.post(new GlobalAcquisitionContextMenuOpened(`The user has opened the global SDK acquisition context menu.`));
 
-        const recommendedVersionResult: IDotnetListVersionsResult = await vscode.commands.executeCommand('dotnet.recommendedVersion');
+        const recommendedVersionResult: IDotnetListVersionsResult = await vscode.commands.executeCommand('dotnet.recommendedVersion', { listRuntimes: false, errorConfiguration: commandContext?.errorConfiguration } as IDotnetListVersionsContext);
         globalEventStream.post(new DotnetVersionCategorizedEvent(`Recommended versions: ${JSON.stringify(recommendedVersionResult ?? '')}.`));
+
 
         const recommendedVersion: string = recommendedVersionResult ? recommendedVersionResult[0]?.version : '';
         globalEventStream.post(new DotnetVersionCategorizedEvent(`Recommending version: ${recommendedVersion}.`));

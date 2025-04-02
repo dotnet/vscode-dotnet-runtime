@@ -146,6 +146,9 @@ export class OutputChannelObserver implements IEventStreamObserver
             case EventType.DotnetUninstallMessage:
                 const uninstallMessage = event as DotnetCustomMessageEvent;
                 this.outputChannel.appendLine(uninstallMessage.eventMessage);
+            case EventType.FeedInjectionMessage:
+                const feedMessage = event as DotnetCustomMessageEvent;
+                this.outputChannel.appendLine(feedMessage.eventMessage);
         }
     }
 

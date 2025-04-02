@@ -3,7 +3,8 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-export enum EventType {
+export enum EventType
+{
     DotnetAcquisitionStart,
     DotnetSDKAcquisitionStart,
     DotnetRuntimeAcquisitionStart,
@@ -27,4 +28,5 @@ export enum EventType {
     DotnetInstallExpectedAbort,
     DotnetModalChildEvent, // For sub-events that are published as a more specific version of an existing published generic event.
     // Example: DotnetAcquisitionStarted -> Children events are RuntimeStarted, SDKStarted, etc.
+    FeedInjectionMessage,
 }

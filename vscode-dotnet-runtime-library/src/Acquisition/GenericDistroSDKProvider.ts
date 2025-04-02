@@ -5,7 +5,7 @@
  * ------------------------------------------------------------------------------------------ */
 import * as path from 'path';
 
-import { DotnetVersionResolutionError, EventBasedError } from '../EventStream/EventStreamEvents';
+import { DistroPackagesSearch, DistroSupport, DotnetVersionResolutionError, EventBasedError } from '../EventStream/EventStreamEvents';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { READ_SYMLINK_CACHE_DURATION_MS } from './CacheTimeConstants';
 import { DotnetInstallMode } from './DotnetInstallMode';
@@ -35,7 +35,7 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
     {
         const commandResult = await this.commandRunner.executeMultipleCommands(this.myDistroCommands(this.currentInstallPathCommandKey), null, false);
 
-        if (commandResult[0].status !== '0') // no dotnet error can be returned, dont want to try to parse this as a path
+        if (commandResult[0].status !== '0') // no dotnet error can be returned, do not want to try to parse this as a path
         {
             return null;
         }
@@ -162,17 +162,13 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         if (versionUtils.getFeatureBandFromVersion(fullySpecifiedVersion, this.context.eventStream, this.context) !== '1' ||
             Number(versionUtils.getMajor(fullySpecifiedVersion, this.context.eventStream, this.context)) < 6)
         {
+            this.context.eventStream.post(new DistroSupport(`Distro: Dotnet Version ${fullySpecifiedVersion} is not supported by this extension. It has a non 1 level band or < 6.0.`));
             return Promise.resolve(DotnetDistroSupportStatus.Unsupported);
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        if (this.myVersionDetails().hasOwnProperty(this.preinstallCommandKey))
-        {
-            // If preinstall commands exist ( to add the msft feed ) then it's a microsoft feed.
-            return Promise.resolve(DotnetDistroSupportStatus.Microsoft);
-        }
         else
         {
+            this.context.eventStream.post(new DistroSupport(`Couldn't find preinstallCmdKey for ${this.distroVersion.distro} ${this.distroVersion.version} with dotnet Version ${fullySpecifiedVersion}.`));
             const availableVersions = await this.myVersionPackages(installType, this.isMidFeedInjection);
             const simplifiedVersion = this.JsonDotnetVersion(fullySpecifiedVersion);
 
@@ -180,11 +176,23 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
             {
                 if (Number(dotnetPackages.version) === Number(simplifiedVersion))
                 {
-                    return Promise.resolve(DotnetDistroSupportStatus.Distro);
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    if (this.myVersionDetails().hasOwnProperty(this.preinstallCommandKey))
+                    {
+                        // If preinstall commands exist ( to add the msft feed ) then it's a microsoft feed.
+                        this.context.eventStream.post(new DistroSupport(`Distro: Dotnet Version ${fullySpecifiedVersion} is Microsoft support, because it has preinstallCmdKey.`));
+                        return Promise.resolve(DotnetDistroSupportStatus.Microsoft);
+                    }
+                    else
+                    {
+                        this.context.eventStream.post(new DistroSupport(`Version ${fullySpecifiedVersion} is Distro supported, because it has packages already.`));
+                        return Promise.resolve(DotnetDistroSupportStatus.Distro);
+                    }
                 }
             }
         }
 
+        this.context.eventStream.post(new DistroSupport(`Version ${fullySpecifiedVersion} is unknown for distro ${this.distroVersion.distro} ${this.distroVersion.version} with ${this.myVersionDetails()}`));
         return Promise.resolve(DotnetDistroSupportStatus.Unknown);
     }
 
@@ -196,8 +204,10 @@ export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider
         {
             if (Number(dotnetPackages.version) > Number(maxVersion))
             {
+                this.context.eventStream.post(new DistroPackagesSearch(`Found version ${dotnetPackages.version} for .NET and and picking it, as it is higher than ${maxVersion}.`));
                 maxVersion = dotnetPackages.version;
             }
+            this.context.eventStream.post(new DistroPackagesSearch(`Skipping version ${dotnetPackages.version} for .NET and and picking it, as it is lower than ${maxVersion}.`));
         }
 
         if (maxVersion === '0')
