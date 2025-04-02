@@ -3,8 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
-import path = require('path');
-
+import * as path from 'path';
 import
 {
     DotnetAcquisitionDistroUnknownError,
@@ -15,21 +14,22 @@ import
     EventBasedError,
     EventCancellationError
 } from '../EventStream/EventStreamEvents';
-import { CommandExecutor } from '../Utils/CommandExecutor';
-import { GenericDistroSDKProvider } from './GenericDistroSDKProvider';
-import { RedHatDistroSDKProvider } from './RedHatDistroSDKProvider';
-import { VersionResolver } from './VersionResolver';
-import * as versionUtils from './VersionUtilities';
-
 import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
+import { CommandExecutor } from '../Utils/CommandExecutor';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
+import { DebianDistroSDKProvider } from './DebianDistroSDKProvider';
 import { DotnetInstallMode } from './DotnetInstallMode';
+import { GenericDistroSDKProvider } from './GenericDistroSDKProvider';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
+import { RedHatDistroSDKProvider } from './RedHatDistroSDKProvider';
+import { VersionResolver } from './VersionResolver';
+import * as versionUtils from './VersionUtilities';
+
 
 /**
  * An enumeration type representing all distros with their versions that we recognize.
@@ -94,6 +94,9 @@ If you would like to contribute to the list of supported distros, please visit: 
 Follow the instructions here to download the .NET SDK: https://learn.microsoft.com/en-us/dotnet/core/install/linux-rhel#rhel-7--net-6.
 Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from https://access.redhat.com/downloads/;`
     protected acquireCtx: IDotnetAcquireContext | null | undefined;
+
+    // This includes all distros that we officially support for this tool as a company. If a distro is not in this list, it can still have community member support.
+    public microsoftSupportedDistroIds = ['Red Hat Enterprise Linux', 'Ubuntu'];
 
     constructor(private readonly workerContext: IAcquisitionWorkerContext, private readonly utilityContext: IUtilityContext,
         executor: ICommandExecutor | null = null, distroProvider: IDistroDotnetSDKProvider | null = null)
@@ -184,6 +187,17 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
             this.workerContext.eventStream.post(error);
             throw error.error;
         }
+        else
+        {
+            if (!this.microsoftSupportedDistroIds.includes(this.distro.distro))
+            {
+                // UX: Could eventually add a 'Go away' button via the callback:
+                this.utilityContext.ui.showInformationMessage(`Automated SDK installation for the distro ${this.distro.distro} is not officially supported, except for community implemented and Microsoft approved support.
+If you experience issues, please reach out on https://github.com/dotnet/vscode-dotnet-runtime/issues.`,
+                    () => {/* No Callback */ },
+                );
+            }
+        }
     }
 
     private isRedHatVersion7(rhelVersion: string)
@@ -217,6 +231,8 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
                     throw unsupportedRhelErr.error;
                 }
                 return new RedHatDistroSDKProvider(distroAndVersion, this.workerContext, this.utilityContext);
+            case 'Debian GNU/Linux':
+                return new DebianDistroSDKProvider(distroAndVersion, this.workerContext, this.utilityContext);
             default:
                 return new GenericDistroSDKProvider(distroAndVersion, this.workerContext, this.utilityContext);
         }
@@ -286,6 +302,7 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
      * @param existingInstall a path to the existing dotnet install on the machine.
      * @returns 0 if we can proceed. Will throw if a conflicting install exists. If we can update, it will do the update and return 1.
      * A string is returned in case we want to make this return more info about the update.
+     * @remarks it is expected you are holding the global modifier lock when calling this function.
      */
     private async UpdateOrRejectIfVersionRequestDoesNotRequireInstall(fullySpecifiedDotnetVersion: string, existingInstall: string | null): Promise<string>
     {
@@ -334,6 +351,7 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
         return '0';
     }
 
+    // It is expected you are holding the global modifier lock when calling this function.
     public async ValidateAndInstallSDK(fullySpecifiedDotnetVersion: string): Promise<string>
     {
         await this.Initialize();
@@ -366,10 +384,10 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
         return String(updateOrRejectState);
     }
 
+    // @remarks It is expected you are holding the global modifier lock when calling this function.
     public async UninstallSDK(fullySpecifiedDotnetVersion: string): Promise<string>
     {
         await this.Initialize();
-
         return this.distroSDKProvider!.uninstallDotnet(fullySpecifiedDotnetVersion, 'sdk');
     }
 

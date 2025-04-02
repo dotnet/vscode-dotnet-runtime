@@ -384,11 +384,11 @@ export abstract class DotnetInstallExpectedAbort extends IEvent
         if (this.install)
         {
             return {
-                ErrorName: this.error.name,
-                ErrorMessage: this.error.message,
-                StackTrace: this.error.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : '',
+                ErrorName: this.error?.name ?? 'GenericError',
+                ErrorMessage: this.error?.message ?? 'ErrorMessage not provided',
+                StackTrace: this.error?.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : '',
                 InstallId: this.install?.installId ?? 'null',
-                ...InstallToStrings(this.install)
+                ...InstallToStrings(this.install) ?? 'No Install Info'
             };
         }
         else
@@ -958,6 +958,11 @@ export class EmptyDirectoryToWipe extends DotnetCustomMessageEvent
     public readonly eventName = 'EmptyDirectoryToWipe';
 }
 
+export class ProxyUsed extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'ProxyUsed';
+}
+
 export class FileToWipe extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'FileToWipe';
@@ -1086,6 +1091,11 @@ export class DotnetFindPathCommandInvoked extends DotnetCustomMessageEvent
     };
 }
 
+export class WebCacheClearEvent extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'WebCacheClearEvent';
+}
+
 export class CacheClearEvent extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'CacheClearEvent';
@@ -1211,6 +1221,39 @@ export class DotnetFindPathDidNotMeetCondition extends DotnetCustomMessageEvent
 export class DotnetTelemetrySettingEvent extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'DotnetTelemetrySettingEvent';
+}
+
+
+export class DistroSupport extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'DistroSupport';
+}
+
+export class FeedInjection extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'FeedInjection';
+}
+
+export class FeedInjectionStarted extends DotnetCustomMessageEvent
+{
+    type = EventType.FeedInjectionMessage
+    public readonly eventName = 'FeedInjectionStarted';
+}
+
+export class FeedInjectionFinished extends DotnetCustomMessageEvent
+{
+    type = EventType.FeedInjectionMessage
+    public readonly eventName = 'FeedInjectionFinished';
+}
+
+export class DistroPackagesSearch extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'DistroPackagesSearch';
+}
+
+export class FoundDistroVersionDetails extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'FoundDistroVersionDetails';
 }
 
 export class DotnetVSCodeExtensionFound extends DotnetCustomMessageEvent
@@ -1708,6 +1751,37 @@ export class DotnetAcquisitionStatusResolved extends DotnetAcquisitionMessage
 export class WebRequestSent extends DotnetAcquisitionMessage
 {
     public readonly eventName = 'WebRequestSent';
+
+    constructor(public readonly url: string)
+    {
+        super();
+    }
+
+    public getProperties()
+    {
+        return { WebRequestUri: this.url };
+    }
+}
+
+export class WebRequestUsingAltClient extends DotnetAcquisitionMessage
+{
+    public readonly eventName = 'WebRequestUsingAltClient';
+
+    constructor(public readonly url: string, public readonly msg: string)
+    {
+        super();
+    }
+
+    public getProperties()
+    {
+        return { WebRequestUri: this.url, Message: this.msg };
+    }
+}
+
+
+export class WebRequestInitiated extends DotnetAcquisitionMessage
+{
+    public readonly eventName = 'WebRequestInitiated';
 
     constructor(public readonly url: string)
     {

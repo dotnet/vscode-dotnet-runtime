@@ -615,7 +615,7 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
     test('List Sdks & Runtimes', async () =>
     {
         const mockAcquisitionContext = getMockAcquisitionContext('sdk', '');
-        const webWorker = new MockWebRequestWorker(mockAcquisitionContext, '');
+        const webWorker = new MockWebRequestWorker();
         webWorker.response = JSON.parse(mockReleasesData);
 
         // The API can find the available SDKs and list their versions.
@@ -638,11 +638,12 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
     test('Get Recommended SDK Version', async () =>
     {
         const mockAcquisitionContext = getMockAcquisitionContext('sdk', '');
-        const webWorker = new MockWebRequestWorker(mockAcquisitionContext, '');
+        const webWorker = new MockWebRequestWorker();
         webWorker.response = JSON.parse(mockReleasesData);
 
-        const result = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet.recommendedVersion', null, webWorker);
+        const result = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet.recommendedVersion', { listRuntimes: false } as IDotnetListVersionsContext, webWorker);
         assert.exists(result);
+        assert.exists(result[0]);
         if (os.platform() !== 'linux')
         {
             assert.equal(result[0].version, '7.0.202', 'The SDK did not recommend the version it was supposed to, which should be {7.0.200} from the mock data.');

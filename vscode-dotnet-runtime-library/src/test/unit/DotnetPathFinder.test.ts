@@ -4,13 +4,13 @@
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import * as fs from 'fs';
-import * as path from 'path';
 import * as os from 'os';
+import * as path from 'path';
 import { DotnetPathFinder } from '../../Acquisition/DotnetPathFinder';
-import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
-import { MockCommandExecutor, MockFileUtilities } from '../mocks/MockObjects';
 import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
+import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
+import { MockCommandExecutor, MockFileUtilities } from '../mocks/MockObjects';
+import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 
 const assert = chai.assert;
 chai.use(chaiAsPromised);
@@ -25,8 +25,10 @@ suite('DotnetPathFinder Unit Tests', function ()
     const mockUtility = getMockUtilityContext();
     const mockExecutor = new MockCommandExecutor(mockContext, mockUtility);
 
-    this.afterEach(async () => {
+    this.afterEach(async () =>
+    {
         // Tear down tmp storage for fresh run
+        WebRequestWorkerSingleton.getInstance().destroy();
         LocalMemoryCacheSingleton.getInstance().invalidate();
     });
 
@@ -34,7 +36,7 @@ suite('DotnetPathFinder Unit Tests', function ()
     {
         // Make it look like theres an 8.0 install on the host in case we want to validate it if we ever want to add win32 test like so
         // mockExecutor.fakeReturnValue = { stdout: '8.0.101 [C:\\Program Files\\dotnet\\sdk]', stderr: '', status: '0' };
-        if(os.platform() !== 'win32')
+        if (os.platform() !== 'win32')
         {
             const mockFile = new MockFileUtilities();
             mockFile.filePathsAndExistValues[installRecordPath] = true;
@@ -45,13 +47,13 @@ suite('DotnetPathFinder Unit Tests', function ()
             const result = await finder.findHostInstallPaths(os.arch());
 
             assert.isTrue(result !== undefined, 'The dotnet path finder found a dotnet path');
-            assert.equal(result?.at(0), path.join(fakeDotnetPath, 'dotnet'), 'The correct path is found');
+            assert.equal(result?.[0], path.join(fakeDotnetPath, 'dotnet'), 'The correct path is found');
         } // Windows and other lookup is covered in the registryReader or the runtime extension functional test
     }).timeout(10000 * 2);
 
     test('It can find the hostfxr record on mac/linux without arch', async () =>
     {
-        if(os.platform() !== 'win32')
+        if (os.platform() !== 'win32')
         {
 
             const mockFile = new MockFileUtilities();
@@ -64,7 +66,7 @@ suite('DotnetPathFinder Unit Tests', function ()
             const result = await finder.findHostInstallPaths(os.arch());
 
             assert.isTrue(result !== undefined, 'The dotnet path finder found a dotnet path');
-            assert.equal(result?.at(0), path.join(fakeDotnetPath, 'dotnet'), 'The correct path is found');
+            assert.equal(result?.[0], path.join(fakeDotnetPath, 'dotnet'), 'The correct path is found');
         }
     });
 });

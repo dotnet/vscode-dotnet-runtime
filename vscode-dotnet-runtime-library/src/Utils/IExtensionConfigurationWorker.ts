@@ -3,7 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-import { IExistingPaths, ILocalExistingPath } from '..';
+import { IExistingPaths } from '../IExtensionContext';
 
 export interface IExtensionConfigurationWorker
 {

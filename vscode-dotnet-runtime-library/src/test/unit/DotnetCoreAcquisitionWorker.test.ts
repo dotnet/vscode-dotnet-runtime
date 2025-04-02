@@ -29,6 +29,7 @@ import { DotnetInstallType } from '../../IDotnetAcquireContext';
 import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
 import { getInstallIdCustomArchitecture } from '../../Utils/InstallIdUtilities';
 import { getDotnetExecutable } from '../../Utils/TypescriptUtilities';
+import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
 import
 {
     MockAcquisitionInvoker,
@@ -55,6 +56,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function ()
     {
         // Tear down tmp storage for fresh run
         InstallTrackerSingleton.getInstance(new MockEventStream(), new MockExtensionContext()).clearPromises();
+        WebRequestWorkerSingleton.getInstance().destroy();
         LocalMemoryCacheSingleton.getInstance().invalidate();
     });
 

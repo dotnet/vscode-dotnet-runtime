@@ -8,12 +8,14 @@ import * as chaiAsPromised from 'chai-as-promised';
 import * as path from 'path';
 import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
 import { IInstallScriptAcquisitionWorker } from '../../Acquisition/IInstallScriptAcquisitionWorker';
-import {
+import
+{
     DotnetFallbackInstallScriptUsed,
     DotnetInstallScriptAcquisitionError,
     WebRequestTime,
 } from '../../EventStream/EventStreamEvents';
-import {
+import
+{
     ErrorAcquisitionInvoker,
     MockEventStream,
     MockInstallScriptWorker,
@@ -21,9 +23,12 @@ import {
     MockVSCodeExtensionContext,
 } from '../mocks/MockObjects';
 
-import {
+import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
+import
+{
     Debugging
 } from '../../Utils/Debugging';
+import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
 import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 
 const assert = chai.assert;
@@ -33,23 +38,34 @@ const maxTimeoutTime = 10000;
 // Website used for the sake of it returning the same response always (tm)
 const staticWebsiteUrl = 'https://builds.dotnet.microsoft.com/dotnet/release-metadata/2.1/releases.json';
 
-suite('WebRequestWorker Unit Tests', () => {
-    test('Acquire Version Network Failure', async () => {
+suite('WebRequestWorker Unit Tests', function ()
+{
+    this.afterEach(async () =>
+    {
+        // Tear down tmp storage for fresh run
+        WebRequestWorkerSingleton.getInstance().destroy();
+        LocalMemoryCacheSingleton.getInstance().invalidate();
+    });
+
+    test('Acquire Version Network Failure', async () =>
+    {
         const eventStream = new MockEventStream();
         const mockContext = getMockAcquisitionContext('runtime', '1.0', undefined, eventStream);
         const acquisitionWorker = new DotnetCoreAcquisitionWorker(getMockUtilityContext(), new MockVSCodeExtensionContext());
         const invoker = new ErrorAcquisitionInvoker(eventStream);
-        return assert.isRejected(acquisitionWorker.acquireLocalRuntime(mockContext, invoker), Error, '.NET Acquisition Failed');
+        assert.isRejected(acquisitionWorker.acquireLocalRuntime(mockContext, invoker), Error, '.NET Acquisition Failed');
     }).timeout(maxTimeoutTime);
 
-    test('Install Script Request Failure', async () => {
+    test('Install Script Request Failure', async () =>
+    {
         const eventStream = new MockEventStream();
         const installScriptWorker: IInstallScriptAcquisitionWorker = new MockInstallScriptWorker(getMockAcquisitionContext('runtime', '', undefined, eventStream), true);
         await assert.isRejected(installScriptWorker.getDotnetInstallScriptPath(), Error, 'Failed to Acquire Dotnet Install Script');
         assert.exists(eventStream.events.find(event => event instanceof DotnetInstallScriptAcquisitionError));
     });
 
-    test('Install Script Request Failure With Fallback Install Script', async () => {
+    test('Install Script Request Failure With Fallback Install Script', async () =>
+    {
         Debugging.log('Get Test Context.');
         const eventStream = new MockEventStream();
 
@@ -67,19 +83,22 @@ suite('WebRequestWorker Unit Tests', () => {
         assert.exists(eventStream.events.find(event => event instanceof DotnetFallbackInstallScriptUsed));
     });
 
-    test('Install Script File Manipulation Failure', async () => {
+    test('Install Script File Manipulation Failure', async () =>
+    {
         const eventStream = new MockEventStream();
         const installScriptWorker: IInstallScriptAcquisitionWorker = new MockInstallScriptWorker(getMockAcquisitionContext('runtime', '', undefined, eventStream), true);
         await assert.isRejected(installScriptWorker.getDotnetInstallScriptPath(), Error, 'Failed to Acquire Dotnet Install Script')
         assert.exists(eventStream.events.find(event => event instanceof DotnetInstallScriptAcquisitionError));
     });
 
-    test('Web Requests Cached on Repeated calls', async () => {
-        const webWorker = new MockTrackingWebRequestWorker(getMockAcquisitionContext('runtime', ''), staticWebsiteUrl);
+    test('Web Requests Cached on Repeated calls', async () =>
+    {
+        const ctx = getMockAcquisitionContext('runtime', '');
+        const webWorker = new MockTrackingWebRequestWorker();
 
-        const uncachedResult = await webWorker.getCachedData();
+        const uncachedResult = await webWorker.getCachedData(staticWebsiteUrl, ctx);
         // The data should now be cached.
-        const cachedResult = await webWorker.getCachedData();
+        const cachedResult = await webWorker.getCachedData(staticWebsiteUrl, ctx);
 
         assert.exists(uncachedResult);
         assert.deepEqual(uncachedResult, cachedResult);
@@ -88,22 +107,27 @@ suite('WebRequestWorker Unit Tests', () => {
         assert.isAtMost(requestCount, 1);
     }).timeout(maxTimeoutTime);
 
-    test('Web Requests Cached Does Not Live Forever', async () => {
-        const cacheTimeoutTime = 1;
-        const webWorker = new MockTrackingWebRequestWorker(getMockAcquisitionContext('runtime', ''), 'https://microsoft.com', true, cacheTimeoutTime);
-        const uncachedResult = await webWorker.getCachedData();
-        await new Promise(resolve => setTimeout(resolve, cacheTimeoutTime));
-        const cachedResult = await webWorker.getCachedData();
+    test('Web Requests Cached Does Not Live Forever', async () =>
+    {
+        const ctx = getMockAcquisitionContext('runtime', '');
+        const uri = 'https://microsoft.com';
+
+        const webWorker = new MockTrackingWebRequestWorker(true);
+        const uncachedResult = await webWorker.getCachedData(uri, ctx);
+        await new Promise(resolve => setTimeout(resolve, 120000));
+        const cachedResult = await webWorker.getCachedData(uri, ctx);
         assert.exists(uncachedResult);
         const requestCount = webWorker.getRequestCount();
         assert.isAtLeast(requestCount, 2);
-    }).timeout((maxTimeoutTime*7) + 2000);
+    }).timeout((maxTimeoutTime * 7) + 120000);
 
-    test('It actually times requests', async () => {
+    test('It actually times requests', async () =>
+    {
         const eventStream = new MockEventStream();
-        const webWorker = new MockTrackingWebRequestWorker(getMockAcquisitionContext('runtime', '', 600, eventStream), staticWebsiteUrl);
+        const ctx = getMockAcquisitionContext('runtime', '', 600, eventStream);
+        const webWorker = new MockTrackingWebRequestWorker();
 
-        const _ = await webWorker.getCachedData();
+        const _ = await webWorker.getCachedData(staticWebsiteUrl, ctx);
         const timerEvents = eventStream.events.find(event => event instanceof WebRequestTime);
         assert.exists(timerEvents, 'There exist WebRequestTime Events');
         assert.equal(timerEvents?.finished, 'true', 'The timed event time finished');

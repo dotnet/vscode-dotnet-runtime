@@ -66,7 +66,7 @@ export function InstallToStrings(install: DotnetInstall)
     return {
         installId: install.installId,
         version: install.version,
-        architecture: install.architecture,
+        architecture: install.architecture ?? 'unspecified',
         isGlobal: install.isGlobal.toString(),
         installMode: install.installMode.toString()
     };
@@ -74,7 +74,7 @@ export function InstallToStrings(install: DotnetInstall)
 
 export function looksLikeRuntimeVersion(version: string): boolean
 {
-    const band: string | undefined = version.split('.')?.at(2);
+    const band: string | undefined = version.split('.')?.[2];
     return (band?.length ?? 0) <= 2; // assumption : there exists no runtime version at this point over 99 sub versions
 }
 

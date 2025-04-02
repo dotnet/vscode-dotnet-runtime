@@ -10,17 +10,11 @@ jobs:
     ${{ else }}:
         vmImage: ${{ parameters.pool.vmImage }}
   displayName: '📦 Package and Publish'
-  dependsOn:
-  - ${{ parameters.pool.os }}_Build
-  condition: succeeded()
   strategy:
     matrix:
       Runtime:
         dir-name: 'vscode-dotnet-runtime-extension'
         package-name: 'vscode-dotnet-runtime'
-      SDK:
-        dir-name: 'vscode-dotnet-sdk-extension'
-        package-name: 'vscode-dotnet-sdk'
   templateContext:
     outputs:
     - output: pipelineArtifact

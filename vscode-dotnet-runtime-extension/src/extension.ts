@@ -32,6 +32,7 @@ import
     DotnetInstallType,
     DotnetOfflineWarning,
     DotnetPathFinder,
+    DotnetVersionCategorizedEvent,
     DotnetVersionResolutionError,
     DotnetVersionSpecRequirement,
     enableExtensionTelemetry,
@@ -75,7 +76,7 @@ import
     VersionResolver,
     VSCodeEnvironment,
     VSCodeExtensionContext,
-    WebRequestWorker,
+    WebRequestWorkerSingleton,
     WindowDisplayWorker
 } from 'vscode-dotnet-runtime-library';
 import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
@@ -243,7 +244,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
         if (commandContext.requestingExtensionId === undefined)
         {
-            return Promise.reject('No requesting extension id was provided.');
+            return Promise.reject(new Error('No requesting extension id was provided.'));
         }
 
         let fullyResolvedVersion = '';
@@ -302,45 +303,58 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     });
 
     const dotnetListVersionsRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.listVersions}`,
-        async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined): Promise<IDotnetListVersionsResult | undefined> =>
+        async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorkerSingleton | undefined): Promise<IDotnetListVersionsResult | undefined> =>
         {
             return getAvailableVersions(commandContext, customWebWorker, false);
         });
 
     const dotnetRecommendedVersionRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.recommendedVersion}`,
-        async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorker | undefined): Promise<IDotnetListVersionsResult> =>
+        async (commandContext: IDotnetListVersionsContext | undefined, customWebWorker: WebRequestWorkerSingleton | undefined): Promise<IDotnetListVersionsResult> =>
         {
-            const availableVersions = await getAvailableVersions(commandContext, customWebWorker, true);
-            const activeSupportVersions = availableVersions?.filter((version: IDotnetVersion) => version.supportPhase === 'active');
-
-            if (!activeSupportVersions || activeSupportVersions.length < 1)
+            const recommendation = await callWithErrorHandling(async () =>
             {
-                const err = new EventCancellationError('DotnetVersionResolutionError', `An active-support version of dotnet couldn't be found. Discovered versions: ${JSON.stringify(availableVersions)}`);
-                globalEventStream.post(new DotnetVersionResolutionError(err, null));
-                if (!availableVersions || availableVersions.length < 1)
-                {
-                    return [];
-                }
-                return [availableVersions[0]];
-            }
+                const availableVersions = await getAvailableVersions(commandContext, customWebWorker, true) ?? [];
+                const activeSupportVersions = availableVersions?.filter((version: IDotnetVersion) => version.supportPhase === 'active');
 
-            // The first item will be the newest version.
-            return [activeSupportVersions[0]];
+                if (!activeSupportVersions || (activeSupportVersions?.length ?? 0) < 1)
+                {
+                    const err = new EventCancellationError('DotnetVersionResolutionError', `An active-support version of dotnet couldn't be found. Discovered versions: ${JSON.stringify(availableVersions)}`);
+                    globalEventStream.post(new DotnetVersionResolutionError(err, null));
+                    if (!availableVersions || (availableVersions?.length ?? 0) < 1)
+                    {
+                        return [];
+                    }
+                    else
+                    {
+                        return [availableVersions[0]];
+                    }
+                }
+
+                // The first item will be the newest version.
+                return [activeSupportVersions[0]];
+            }, getIssueContext(existingPathConfigWorker)(commandContext?.errorConfiguration, 'acquireStatus'));
+
+            return recommendation ?? [];
         });
 
-    const acquireGlobalSDKPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.globalAcquireSDKPublic}`, async (commandContext: IDotnetAcquireContext) =>
+
+    const acquireGlobalSDKPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.globalAcquireSDKPublic}`, async (commandContext: IDotnetAcquireContext | undefined) =>
     {
         globalEventStream.post(new GlobalAcquisitionContextMenuOpened(`The user has opened the global SDK acquisition context menu.`));
 
-        const recommendedVersionResult: IDotnetListVersionsResult = await vscode.commands.executeCommand('dotnet.recommendedVersion');
-        const recommendedVersion: string = recommendedVersionResult ? recommendedVersionResult[0]?.version : '';
+        const recommendedVersionResult: IDotnetListVersionsResult = await vscode.commands.executeCommand('dotnet.recommendedVersion', { listRuntimes: false, errorConfiguration: commandContext?.errorConfiguration } as IDotnetListVersionsContext);
+        globalEventStream.post(new DotnetVersionCategorizedEvent(`Recommended versions: ${JSON.stringify(recommendedVersionResult ?? '')}.`));
 
-        const chosenVersion = await vscode.window.showInputBox(
+
+        const recommendedVersion: string = recommendedVersionResult ? recommendedVersionResult[0]?.version : '';
+        globalEventStream.post(new DotnetVersionCategorizedEvent(`Recommending version: ${recommendedVersion}.`));
+
+        const chosenVersion = (await vscode.window.showInputBox(
             {
                 placeHolder: recommendedVersion,
                 value: recommendedVersion,
                 prompt: 'The .NET SDK version. You can use different formats: 5, 3.1, 7.0.3xx, 6.0.201, etc.',
-            }) ?? '';
+            })) ?? recommendedVersion;
 
         globalEventStream.post(new UserManualInstallVersionChosen(`The user has chosen to install the .NET SDK version ${chosenVersion}.`));
 
@@ -383,7 +397,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
     const dotnetUninstallPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallPublic}`, async () =>
     {
-        const existingInstalls = await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).getExistingInstalls(true);
+        const existingInstalls = await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).getExistingInstalls('installed', directoryProviderFactory(
+            'runtime', vsCodeContext.globalStoragePath));
 
         const menuItems = existingInstalls?.sort(
             function (x: InstallRecord, y: InstallRecord): number
@@ -423,7 +438,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             const selectedInstall: DotnetInstall = installRecord.dotnetInstall;
             let canContinue = true;
-            const uninstallWillBreakSomething = !(await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).canUninstall(true, selectedInstall, true));
+            const uninstallWillBreakSomething = !(await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).canUninstall('installed', selectedInstall, directoryProviderFactory(
+                'runtime', vsCodeContext.globalStoragePath), true));
 
             const yes = `Continue`;
             if (uninstallWillBreakSomething)
@@ -678,7 +694,7 @@ ${JSON.stringify(commandContext)}`));
     }
 
     const getAvailableVersions = async (commandContext: IDotnetListVersionsContext | undefined,
-        customWebWorker: WebRequestWorker | undefined, onRecommendationMode: boolean): Promise<IDotnetListVersionsResult | undefined> =>
+        customWebWorker: WebRequestWorkerSingleton | undefined, onRecommendationMode: boolean): Promise<IDotnetListVersionsResult | undefined> =>
     {
         const mode = 'sdk' as DotnetInstallMode;
         const workerContext = getVersionResolverContext(mode, 'global', commandContext?.errorConfiguration);
@@ -735,7 +751,7 @@ ${JSON.stringify(commandContext)}`));
                 version: 'notAnAcquisitionRequest',
                 errorConfiguration: errorsConfiguration,
                 architecture: DotnetCoreAcquisitionWorker.defaultArchitecture(),
-                mode: mode
+                mode
             } as IDotnetAcquireContext
         )
     }
@@ -781,7 +797,7 @@ ${JSON.stringify(commandContext)}`));
 
     async function getExistingInstallIfOffline(worker: DotnetCoreAcquisitionWorker, workerContext: IAcquisitionWorkerContext): Promise<IDotnetAcquireResult | null>
     {
-        if (!(await WebRequestWorker.isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream)))
+        if (!(await WebRequestWorkerSingleton.getInstance().isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream)))
         {
             workerContext.acquisitionContext.architecture ??= DotnetCoreAcquisitionWorker.defaultArchitecture();
             const existingOfflinePath = await worker.getSimilarExistingInstall(workerContext);

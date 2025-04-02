@@ -21,7 +21,7 @@ import
 } from '../EventStream/EventStreamEvents';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
-import { WebRequestWorker } from '../Utils/WebRequestWorker';
+import { WebRequestWorkerSingleton } from '../Utils/WebRequestWorkerSingleton';
 import { VersionResolver } from './VersionResolver';
 import * as versionUtils from './VersionUtilities';
 
@@ -74,7 +74,7 @@ export class GlobalInstallerResolver
      * @remarks Do NOT set this unless you are testing.
      * Written to allow mock data to be given to the resolver.
      */
-    public customWebRequestWorker?: WebRequestWorker | null = null;
+    public customWebRequestWorker?: WebRequestWorkerSingleton | null = null;
 
     constructor
         (
@@ -415,7 +415,7 @@ Available feature bands for this SDK version are ${availableBands}.`), getInstal
      */
     private async fetchJsonObjectFromUrl(url: string)
     {
-        const webWorker = this.customWebRequestWorker ? this.customWebRequestWorker : new WebRequestWorker(this.context, url);
-        return webWorker.getCachedData();
+        const webWorker = this.customWebRequestWorker ? this.customWebRequestWorker : WebRequestWorkerSingleton.getInstance();
+        return webWorker.getCachedData(url, this.context);
     }
 }

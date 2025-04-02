@@ -27,35 +27,36 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
 
     public async dotnetMeetsRequirement(dotnetExecutablePath: string, requirement: IDotnetFindPathContext): Promise<boolean>
     {
-        const availableRuntimes = requirement.acquireContext.mode === 'sdk' ? [] : await this.getRuntimes(dotnetExecutablePath);
         const hostArch = await this.getHostArchitecture(dotnetExecutablePath, requirement);
 
-        if (availableRuntimes.some((runtime) =>
-        {
-            return runtime.mode === requirement.acquireContext.mode && this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) &&
-                this.stringVersionMeetsRequirement(runtime.version, requirement.acquireContext.version, requirement) && this.allowPreview(runtime.version, requirement);
-        }))
-        {
-            return true;
-        }
-        else
+        if (requirement.acquireContext.mode === 'sdk')
         {
             const availableSDKs = await this.getSDKs(dotnetExecutablePath);
             if (availableSDKs.some((sdk) =>
             {
-                // The SDK includes the Runtime, ASP.NET Core Runtime, and Windows Desktop Runtime. So, we don't need to check the mode.
                 return this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) &&
                     this.stringVersionMeetsRequirement(sdk.version, requirement.acquireContext.version, requirement) && this.allowPreview(sdk.version, requirement);
             }))
             {
                 return true;
             }
-            else
+        }
+        else
+        {
+            // No need to consider SDKs when looking for runtimes as all the runtimes installed with the SDKs will be included in the runtimes list.
+            const availableRuntimes = await this.getRuntimes(dotnetExecutablePath);
+            if (availableRuntimes.some((runtime) =>
             {
-                this.workerContext.eventStream.post(new DotnetFindPathDidNotMeetCondition(`${dotnetExecutablePath} did NOT satisfy the conditions: hostArch: ${hostArch}, requiredArch: ${requirement.acquireContext.architecture},
-                    required version: ${requirement.acquireContext.version}, required mode: ${requirement.acquireContext.mode}`));
+                return runtime.mode === requirement.acquireContext.mode && this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) &&
+                    this.stringVersionMeetsRequirement(runtime.version, requirement.acquireContext.version, requirement) && this.allowPreview(runtime.version, requirement);
+            }))
+            {
+                return true;
             }
         }
+
+        this.workerContext.eventStream.post(new DotnetFindPathDidNotMeetCondition(`${dotnetExecutablePath} did NOT satisfy the conditions: hostArch: ${hostArch}, requiredArch: ${requirement.acquireContext.architecture},
+            required version: ${requirement.acquireContext.version}, required mode: ${requirement.acquireContext.mode}`));
 
         return false;
     }
@@ -75,6 +76,11 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
     {
         // dotnet --info is not machine-readable and subject to breaking changes. See https://github.com/dotnet/sdk/issues/33697 and https://github.com/dotnet/runtime/issues/98735/
         // Unfortunately even with a new API, that might not go in until .NET 10 and beyond, so we have to rely on dotnet --info for now.*/
+
+        if (!hostPath || hostPath === '""')
+        {
+            return '';
+        }
 
         const infoCommand = CommandExecutor.makeCommand(`"${hostPath}"`, ['--info']);
         const envWithForceEnglish = process.env;
@@ -107,6 +113,11 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
 
     public async getSDKs(existingPath: string): Promise<IDotnetListInfo[]>
     {
+        if (!existingPath || existingPath === '""')
+        {
+            return [];
+        }
+
         const findSDKsCommand = await this.setCodePage() ? CommandExecutor.makeCommand(`chcp`, [`65001`, `|`, `"${existingPath}"`, '--list-sdks']) :
             CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-sdks']);
 
@@ -259,6 +270,11 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
 
     public async getRuntimes(existingPath: string): Promise<IDotnetListInfo[]>
     {
+        if (!existingPath || existingPath === '""')
+        {
+            return [];
+        }
+
         const findRuntimesCommand = await this.setCodePage() ? CommandExecutor.makeCommand(`chcp`, [`65001`, `|`, `"${existingPath}"`, '--list-runtimes']) :
             CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-runtimes']);
 

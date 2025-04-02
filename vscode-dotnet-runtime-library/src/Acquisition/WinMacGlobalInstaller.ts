@@ -21,12 +21,12 @@ import
     NetInstallerBeginExecutionEvent,
     NetInstallerEndExecutionEvent,
     OSXOpenNotAvailableError,
-    SuppressedAcquisitionError,
+    SuppressedAcquisitionError
 } from '../EventStream/EventStreamEvents';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
-import { WebRequestWorker } from '../Utils/WebRequestWorker';
+import { WebRequestWorkerSingleton } from '../Utils/WebRequestWorkerSingleton';
 import { VersionResolver } from './VersionResolver';
 import * as versionUtils from './VersionUtilities';
 
@@ -34,13 +34,14 @@ import { CommandExecutorResult } from '../Utils/CommandExecutorResult';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IFileUtilities } from '../Utils/IFileUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { getOSArch } from '../Utils/TypescriptUtilities';
-import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
+import { executeWithLock, getOSArch } from '../Utils/TypescriptUtilities';
+import { GLOBAL_LOCK_PING_DURATION_MS, SYSTEM_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
 import { DotnetInstall } from './DotnetInstall';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { IRegistryReader } from './IRegistryReader';
 import { RegistryReader } from './RegistryReader';
+import { GLOBAL_INSTALL_STATE_MODIFIER_LOCK, UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR } from './StringConstants';
 
 namespace validationPromptConstants
 {
@@ -64,10 +65,9 @@ export class WinMacGlobalInstaller extends IGlobalInstaller
     protected commandRunner: ICommandExecutor;
     protected registry: IRegistryReader;
     public cleanupInstallFiles = true;
-    private completedInstall = false;
     protected versionResolver: VersionResolver;
     public file: IFileUtilities;
-    protected webWorker: WebRequestWorker;
+    protected webWorker: WebRequestWorkerSingleton;
     private invalidIntegrityError = `The integrity of the .NET install file is invalid, or there was no integrity to check and you denied the request to continue with those risks.
 We cannot verify our .NET file host at this time. Please try again later or install the SDK manually.`;
 
@@ -81,7 +81,7 @@ We cannot verify our .NET file host at this time. Please try again later or inst
         this.commandRunner = executor ?? new CommandExecutor(context, utilContext);
         this.versionResolver = new VersionResolver(context);
         this.file = new FileUtilities();
-        this.webWorker = new WebRequestWorker(context, installerUrl);
+        this.webWorker = WebRequestWorkerSingleton.getInstance();
         this.registry = registryReader ?? new RegistryReader(context, utilContext);
     }
 
@@ -117,48 +117,54 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
                 return `An unspecified error occurred. ${reportLogMessage}`;
             case '2147942405':
                 return `Insufficient permissions are available to install .NET. Please try again as an administrator.`;
+            case UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR:
+                return `Could not acquire global lock to edit machine state. Was another operation in progress? Try restarting VS Code.`
         }
         return '';
     }
 
-    public async installSDK(install: DotnetInstall): Promise<string>
+    public async installSDK(installation: DotnetInstall): Promise<string>
     {
-        // Check for conflicting windows installs
-        if (os.platform() === 'win32')
-        {
-            const conflictingVersion = await this.GlobalWindowsInstallWithConflictingVersionAlreadyExists(this.installingVersion);
-            if (conflictingVersion !== '')
+        return executeWithLock(this.acquisitionContext.eventStream, false, GLOBAL_INSTALL_STATE_MODIFIER_LOCK(this.acquisitionContext.installDirectoryProvider, installation), GLOBAL_LOCK_PING_DURATION_MS, this.acquisitionContext.timeoutSeconds * 1000,
+            async (install: DotnetInstall) =>
             {
-                if (conflictingVersion === this.installingVersion)
+                // Check for conflicting windows installs
+                if (os.platform() === 'win32')
                 {
-                    // The install already exists, we can just exit with Ok.
-                    this.acquisitionContext.eventStream.post(new DotnetAcquisitionAlreadyInstalled(install,
-                        (this.acquisitionContext.acquisitionContext && this.acquisitionContext.acquisitionContext.requestingExtensionId)
-                            ? this.acquisitionContext.acquisitionContext.requestingExtensionId : null));
-                    return '0';
-                }
-                const err = new DotnetConflictingGlobalWindowsInstallError(new EventCancellationError(
-                    'DotnetConflictingGlobalWindowsInstallError',
-                    `A global install is already on the machine: version ${conflictingVersion}, that conflicts with the requested version.
+                    const conflictingVersion = await this.GlobalWindowsInstallWithConflictingVersionAlreadyExists(this.installingVersion);
+                    if (conflictingVersion !== '')
+                    {
+                        if (conflictingVersion === this.installingVersion)
+                        {
+                            // The install already exists, we can just exit with Ok.
+                            this.acquisitionContext.eventStream.post(new DotnetAcquisitionAlreadyInstalled(install,
+                                (this.acquisitionContext.acquisitionContext && this.acquisitionContext.acquisitionContext.requestingExtensionId)
+                                    ? this.acquisitionContext.acquisitionContext.requestingExtensionId : null));
+                            return '0';
+                        }
+                        const err = new DotnetConflictingGlobalWindowsInstallError(new EventCancellationError(
+                            'DotnetConflictingGlobalWindowsInstallError',
+                            `A global install is already on the machine: version ${conflictingVersion}, that conflicts with the requested version.
                     Please uninstall this version first if you would like to continue.
                     If Visual Studio is installed, you may need to use the VS Setup Window to uninstall the SDK component.`), install);
-                this.acquisitionContext.eventStream.post(err);
-                throw err.error;
-            }
-        }
+                        this.acquisitionContext.eventStream.post(err);
+                        throw err.error;
+                    }
+                }
 
-        const installerFile: string = await this.downloadInstaller(this.installerUrl);
-        const canContinue = await this.installerFileHasValidIntegrity(installerFile);
-        if (!canContinue)
-        {
-            const err = new DotnetConflictingGlobalWindowsInstallError(new EventCancellationError('DotnetConflictingGlobalWindowsInstallError',
-                this.invalidIntegrityError), install);
-            this.acquisitionContext.eventStream.post(err);
-            throw err.error;
-        }
-        const installerResult: string = await this.executeInstall(installerFile);
+                const installerFile: string = await this.downloadInstaller(this.installerUrl);
+                const canContinue = await this.installerFileHasValidIntegrity(installerFile);
+                if (!canContinue)
+                {
+                    const err = new DotnetConflictingGlobalWindowsInstallError(new EventCancellationError('DotnetConflictingGlobalWindowsInstallError',
+                        this.invalidIntegrityError), install);
+                    this.acquisitionContext.eventStream.post(err);
+                    throw err.error;
+                }
+                const installerResult: string = await this.executeInstall(installerFile);
 
-        return this.handleStatus(installerResult, installerFile, install);
+                return this.handleStatus(installerResult, installerFile, install);
+            }, installation);
     }
 
     private async handleStatus(installerResult: string, installerFile: string, install: DotnetInstall, allowRetry = true): Promise<string>
@@ -193,7 +199,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         }
     }
 
-    public async uninstallSDK(install: DotnetInstall): Promise<string>
+    public async uninstallSDK(installation: DotnetInstall): Promise<string>
     {
         if (os.platform() === 'win32')
         {
@@ -202,7 +208,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             if (!canContinue)
             {
                 const err = new DotnetConflictingGlobalWindowsInstallError(new EventCancellationError('DotnetConflictingGlobalWindowsInstallError',
-                    this.invalidIntegrityError), install);
+                    this.invalidIntegrityError), installation);
                 this.acquisitionContext.eventStream.post(err);
                 throw err.error;
             }
@@ -217,8 +223,8 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         else
         {
             const macPath = await this.getMacPath();
-            const command = CommandExecutor.makeCommand(`rm`, [`-rf`, `${path.join(path.dirname(macPath), 'sdk', install.version)}`, `&&`,
-                `rm`, `-rf`, `${path.join(path.dirname(macPath), 'sdk-manifests', install.version)}`], true);
+            const command = CommandExecutor.makeCommand(`rm`, [`-rf`, `${path.join(path.dirname(macPath), 'sdk', installation.version)}`, `&&`,
+                `rm`, `-rf`, `${path.join(path.dirname(macPath), 'sdk-manifests', installation.version)}`], true);
 
             const commandResult = await this.commandRunner.execute(command, { timeout: this.acquisitionContext.timeoutSeconds * 1000 }, false);
             this.handleTimeout(commandResult);
@@ -235,8 +241,15 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
     private async downloadInstaller(installerUrl: string): Promise<string>
     {
         const ourInstallerDownloadFolder = IGlobalInstaller.getDownloadedInstallFilesFolder(installerUrl);
-        await this.file.wipeDirectory(ourInstallerDownloadFolder, this.acquisitionContext.eventStream);
         const installerPath = path.join(ourInstallerDownloadFolder, `${installerUrl.split('/').slice(-1)}`);
+
+        if (await this.file.exists(installerPath) && await this.installerFileHasValidIntegrity(installerPath, false))
+        {
+            this.acquisitionContext.eventStream.post(new DotnetFileIntegrityCheckEvent(`The installer file ${installerPath} already exists and is valid.`));
+            return installerPath;
+        }
+
+        await this.file.wipeDirectory(ourInstallerDownloadFolder, this.acquisitionContext.eventStream);
 
         const installerDir = path.dirname(installerPath);
         if (!(await this.file.exists(installerDir)))
@@ -244,7 +257,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             await fs.promises.mkdir(installerDir, { recursive: true });
         }
 
-        await this.webWorker.downloadFile(installerUrl, installerPath);
+        await this.webWorker.downloadFile(installerUrl, installerPath, this.acquisitionContext);
         try
         {
             if (os.platform() === 'win32') // Windows does not have chmod +x ability with nodejs.
@@ -259,7 +272,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             }
             else
             {
-                fs.chmodSync(installerPath, 0o744);
+                await fs.promises.chmod(installerPath, 0o744);
             }
         }
         catch (error: any)
@@ -281,7 +294,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         return userConsentsToContinue;
     }
 
-    private async installerFileHasValidIntegrity(installerFile: string): Promise<boolean>
+    private async installerFileHasValidIntegrity(installerFile: string, ask = false): Promise<boolean>
     {
         try
         {
@@ -293,7 +306,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
 
             if (expectedFileHash === null)
             {
-                return await this.userChoosesToContinueWithInvalidHash();
+                return ask ? await this.userChoosesToContinueWithInvalidHash() : false;
             }
 
             if (realFileHash !== expectedFileHash)
@@ -321,9 +334,9 @@ Please try again, or download the .NET Installer file yourself. You may also rep
             else if (error?.message?.includes('EPERM'))
             {
                 this.acquisitionContext.eventStream.post(new DotnetFileIntegrityFailureEvent(`The file ${installerFile} did not have the correct permissions scope to be assessed.
-Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerFile}"`]), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }))}`));
+Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerFile}"`]), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }, false))}`));
             }
-            return this.userChoosesToContinueWithInvalidHash();
+            return ask ? this.userChoosesToContinueWithInvalidHash() : false;
         }
     }
 
@@ -465,7 +478,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
                     // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                     error.message = `The installer does not have permission to execute. Please try running as an administrator. ${error?.message}.
-Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerPath}"`]), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }))}`;
+Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerPath}"`]), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }, false))}`;
                 }
                 // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
