@@ -335,7 +335,7 @@ export class WebRequestWorkerSingleton
 
             if (this.proxySettingConfiguredManually(ctx) || discoveredProxy)
             {
-                const finalProxy = ctx?.proxyUrl && ctx?.proxyUrl !== '""' ? ctx.proxyUrl : discoveredProxy;
+                const finalProxy = ctx?.proxyUrl && ctx?.proxyUrl !== '""' && ctx?.proxyUrl !== '' ? ctx.proxyUrl : discoveredProxy;
                 ctx.eventStream.post(new ProxyUsed(`Utilizing the Proxy : Manual ? ${ctx?.proxyUrl}, Automatic: ${discoveredProxy}, Decision : ${finalProxy}`))
                 const proxyAgent = new HttpsProxyAgent(finalProxy);
                 return proxyAgent;
