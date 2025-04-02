@@ -17,7 +17,11 @@ and this project adheres to [Semantic Versioning].
 ## [2.3.1] - 2025-4-7
 
 - Update Axios-Cache-Interceptor and Axios to help avoid possibly Invalid Url issues.
+- Fixes Proxy Lookup to prevent Invalid Url Issues.
 - Adds an alternative fetch request mechanism to rely on the native library without axios if Axios fails.
+- Performance improvements and optimizations.
+- Collects less information in the user log.
+- Fixes installation issues with Linux, especially on Ubuntu 24.04.
 
 ## [2.3.0] - 2025-3-25
 

@@ -958,6 +958,11 @@ export class EmptyDirectoryToWipe extends DotnetCustomMessageEvent
     public readonly eventName = 'EmptyDirectoryToWipe';
 }
 
+export class ProxyUsed extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'ProxyUsed';
+}
+
 export class FileToWipe extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'FileToWipe';

@@ -3,17 +3,17 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
-import { IUtilityContext } from '../Utils/IUtilityContext';
-import { CommandExecutor } from '../Utils/CommandExecutor';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
-import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
-import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
-import { IExistingPaths } from '../IExtensionContext';
-import { ICommandExecutor } from '../Utils/ICommandExecutor';
-import { DotnetConditionValidator } from './DotnetConditionValidator';
-import { IDotnetFindPathContext } from '../IDotnetFindPathContext';
 import { DotnetVersionSpecRequirement } from '../DotnetVersionSpecRequirement';
+import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
+import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
+import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
+import { IDotnetFindPathContext } from '../IDotnetFindPathContext';
+import { IExistingPaths } from '../IExtensionContext';
+import { CommandExecutor } from '../Utils/CommandExecutor';
+import { ICommandExecutor } from '../Utils/ICommandExecutor';
+import { IUtilityContext } from '../Utils/IUtilityContext';
+import { DotnetConditionValidator } from './DotnetConditionValidator';
 import { DotnetPathFinder } from './DotnetPathFinder';
 
 const badExistingPathWarningMessage = `The 'existingDotnetPath' setting was set, but it did not meet the requirements for this extension to run properly.
@@ -36,13 +36,18 @@ export class ExistingPathResolver
         this.lastSeenNonTruePathValue = existingPath;
         if (!this.allowInvalidPath(this.workerContext))
         {
+            if (!existingPath || existingPath === '""')
+            {
+                return undefined;
+            }
+
             // The user path setting may be a symlink but we dont want to resolve it since a snap symlink isnt a real directory, we can find the true path better this way:
             const oldLookup = process.env.DOTNET_MULTILEVEL_LOOKUP;
             process.env.DOTNET_MULTILEVEL_LOOKUP = '0'; // make it so --list-runtimes only finds the runtimes on that path: https://learn.microsoft.com/en-us/dotnet/core/compatibility/deployment/7.0/multilevel-lookup#reason-for-change
 
             const dotnetFinder = new DotnetPathFinder(this.workerContext, this.utilityContext, this.executor);
             const resolvedPaths = await dotnetFinder.returnWithRestoringEnvironment(await dotnetFinder.getTruePath([existingPath ?? '']), 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
-            existingPath = resolvedPaths?.at(0) ?? null;
+            existingPath = resolvedPaths?.[0] ?? null;
         }
         if (existingPath && (await this.providedPathMeetsAPIRequirement(this.workerContext, existingPath, this.workerContext.acquisitionContext, requirement) || this.allowInvalidPath(this.workerContext)))
         {

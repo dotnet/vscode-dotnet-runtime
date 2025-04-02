@@ -5,13 +5,13 @@
 import * as os from 'os';
 import * as path from 'path';
 
-import { IRegistryReader } from "./IRegistryReader";
 import { CommandExecutor } from '../Utils/CommandExecutor';
+import { CommandExecutorResult } from '../Utils/CommandExecutorResult';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
-import { CommandExecutorResult } from '../Utils/CommandExecutorResult';
 import { DOTNET_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
+import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { IRegistryReader } from "./IRegistryReader";
 
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
@@ -63,11 +63,11 @@ export class RegistryReader extends IRegistryReader
             // Output is of the type
             // REGISTRY_KEY
             // Key   REG_SZ    C:\path\to\dotnet
-            let keyRow = result.stdout?.trim()?.split("\n")?.at(1)?.trim(); // Get the line that contains Key REG_SZ Path
+            let keyRow = result.stdout?.trim()?.split("\n")?.[1]?.trim(); // Get the line that contains Key REG_SZ Path
             if (!keyRow)
             {
                 // If there's an extra newline in the output or reg.exe format changes, find the line which contains the key -- slower
-                keyRow = result.stdout?.trim()?.split("\n")?.filter((x) => x.toLowerCase().includes('path') || x.toLowerCase().includes('installlocation'))?.at(0)?.trim();
+                keyRow = result.stdout?.trim()?.split("\n")?.filter((x) => x.toLowerCase().includes('path') || x.toLowerCase().includes('installlocation'))?.[0]?.trim();
             }
             const finalPath = keyRow?.split(' ')?.filter((x: any) => x !== '')?.slice(2)?.join(' '); // remove N (typically 4) spaces between each output, then remove the ''s, then split by space again to remove Key and REG_SZ, and recombine any path with spaces
             return finalPath

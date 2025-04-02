@@ -15,9 +15,6 @@ jobs:
       Runtime:
         dir-name: 'vscode-dotnet-runtime-extension'
         package-name: 'vscode-dotnet-runtime'
-      SDK:
-        dir-name: 'vscode-dotnet-sdk-extension'
-        package-name: 'vscode-dotnet-sdk'
   templateContext:
     outputs:
     - output: pipelineArtifact
