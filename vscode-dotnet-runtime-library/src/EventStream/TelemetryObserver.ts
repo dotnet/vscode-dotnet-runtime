@@ -5,32 +5,34 @@
 import TelemetryReporter from '@vscode/extension-telemetry';
 import * as vscode from 'vscode';
 
+import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
+import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
+import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
+import { IUtilityContext } from '../Utils/IUtilityContext';
 import { IPackageJson } from './EventStreamRegistration';
 import { IEvent } from './IEvent';
 import { IEventStreamObserver } from './IEventStreamObserver';
-import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
-import { IUtilityContext } from '../Utils/IUtilityContext';
 import { TelemetryUtilities } from './TelemetryUtilities';
-import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
-import { IDotnetAcquireContext } from '..';
 
-export interface ITelemetryReporter {
+export interface ITelemetryReporter
+{
     sendTelemetryEvent(eventName: string, properties?: { [key: string]: string }, measures?: { [key: string]: number }): void;
     sendTelemetryErrorEvent(eventName: string, properties?: { [key: string]: string }, measurements?: { [key: string]: number }, errorProps?: string[]): void;
     dispose(): Promise<void>;
 }
 
-export class TelemetryObserver implements IEventStreamObserver {
+export class TelemetryObserver implements IEventStreamObserver
+{
     private readonly telemetryReporter: ITelemetryReporter;
     private isExtensionTelemetryEnabled = false;
-    private acquisitionContext : IAcquisitionWorkerContext | null = null;
+    private acquisitionContext: IAcquisitionWorkerContext | null = null;
 
-    constructor(packageJson: IPackageJson, isExtensionTelemetryEnabled : boolean, private readonly extensionContext : IVSCodeExtensionContext,
-            private readonly utilityContext : IUtilityContext, telemetryReporter?: ITelemetryReporter)
+    constructor(packageJson: IPackageJson, isExtensionTelemetryEnabled: boolean, private readonly extensionContext: IVSCodeExtensionContext,
+        private readonly utilityContext: IUtilityContext, telemetryReporter?: ITelemetryReporter)
     {
         if (telemetryReporter === undefined)
         {
-            const connectionString : string = packageJson.connectionString;
+            const connectionString: string = packageJson.connectionString;
             this.telemetryReporter = new TelemetryReporter(connectionString ?? '');
         }
         else
@@ -47,7 +49,7 @@ export class TelemetryObserver implements IEventStreamObserver {
         });
     }
 
-    public setAcquisitionContext(context : IAcquisitionWorkerContext, underlyingAcquisitionContext : IDotnetAcquireContext)
+    public setAcquisitionContext(context: IAcquisitionWorkerContext, underlyingAcquisitionContext: IDotnetAcquireContext)
     {
         context.acquisitionContext = underlyingAcquisitionContext;
         this.acquisitionContext = context;
@@ -64,22 +66,25 @@ export class TelemetryObserver implements IEventStreamObserver {
      */
     public post(event: IEvent): void
     {
-        if(TelemetryUtilities.isTelemetryEnabled(this.isExtensionTelemetryEnabled, this.utilityContext))
+        if (TelemetryUtilities.isTelemetryEnabled(this.isExtensionTelemetryEnabled, this.utilityContext))
         {
             const properties = event.getSanitizedProperties(); // Get properties that don't contain personally identifiable data
 
             // Certain events get sent way too often (ex: 700 million locks acquired over a few months which is causing problems for the data team) and aren't useful for telemetry.
             // We allow suppressing certain events before even hitting the data ingestion service by doing a check here.
-            if(properties && properties?.suppressTelemetry === 'true')
+            if (properties && properties?.suppressTelemetry === 'true')
             {
                 return;
             }
 
-            if (!properties) {
+            if (!properties)
+            {
                 this.telemetryReporter.sendTelemetryEvent(event.eventName);
-            } else if (event.isError) {
+            } else if (event.isError)
+            {
                 this.telemetryReporter.sendTelemetryErrorEvent(event.eventName, properties);
-            } else {
+            } else
+            {
                 this.telemetryReporter.sendTelemetryEvent(event.eventName, properties);
             }
         }
