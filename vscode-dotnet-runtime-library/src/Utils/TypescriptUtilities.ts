@@ -3,27 +3,18 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as os from 'os';
-
-import * as fs from 'fs';
-import * as path from 'path';
-import * as lockfile from 'proper-lockfile';
 import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from '../Acquisition/CacheTimeConstants';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { IEventStream } from '../EventStream/EventStream';
 import
 {
-    DotnetLockAcquiredEvent,
-    DotnetLockAttemptingAcquireEvent,
-    DotnetLockErrorEvent,
-    DotnetLockEvent,
-    DotnetLockReleasedEvent, DotnetWSLCheckEvent, EventBasedError,
+    DotnetWSLCheckEvent,
     GenericDotnetLockEvent
 } from '../EventStream/EventStreamEvents';
 import { IEvent } from '../EventStream/IEvent';
 import { CommandExecutor } from './CommandExecutor';
 import { ICommandExecutor } from './ICommandExecutor';
 import { IUtilityContext } from './IUtilityContext';
-import { LockUsedByThisInstanceSingleton } from './LockUsedByThisInstanceSingleton';
 import { INodeIPCMutexLogger, NodeIPCMutex } from './NodeIPCMutex';
 
 export async function loopWithTimeoutOnCond(sampleRatePerMs: number, durationToWaitBeforeTimeoutMs: number, conditionToStop: () => boolean, doAfterStop: () => void,

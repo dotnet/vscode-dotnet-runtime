@@ -1566,49 +1566,6 @@ export class GenericDotnetLockEvent extends DotnetLockEvent
     public readonly eventName = 'GenericDotnetLockEvent';
 }
 
-export class DotnetLockAcquiredEvent extends DotnetLockEvent
-{
-    public readonly eventName = 'DotnetLockAcquiredEvent';
-
-    public getProperties()
-    {
-        return { suppressTelemetry: 'true', ...super.getProperties() };
-    }
-}
-
-export class DotnetLockReleasedEvent extends DotnetLockEvent
-{
-    public readonly eventName = 'DotnetLockReleasedEvent';
-
-    public getProperties()
-    {
-        return { suppressTelemetry: 'true', ...super.getProperties() };
-    }
-}
-
-export class DotnetLockErrorEvent extends DotnetLockEvent
-{
-    public readonly eventName = 'DotnetLockErrorEvent';
-    constructor(public readonly error: Error,
-        public readonly eventMessage: string, public readonly time: string, public readonly lock: string, public readonly file: string) { super(eventMessage, time, lock, file); }
-
-    public getProperties()
-    {
-        return { Error: this.error.toString(), Message: this.eventMessage, Time: this.time, Lock: this.lock, File: this.file };
-    }
-
-}
-
-export class DotnetLockAttemptingAcquireEvent extends DotnetLockEvent
-{
-    public readonly eventName = 'DotnetLockAttemptingAcquireEvent';
-
-    public getProperties()
-    {
-        return { suppressTelemetry: 'true', ...super.getProperties() };
-    }
-}
-
 export class DotnetFileWriteRequestEvent extends DotnetFileEvent
 {
     public readonly eventName = 'DotnetFileWriteRequestEvent';
