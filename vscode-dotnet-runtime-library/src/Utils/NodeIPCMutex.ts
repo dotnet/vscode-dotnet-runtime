@@ -35,7 +35,7 @@ export class INodeIPCMutexLogger
  */
 export class NodeIPCMutex
 {
-    private lockPath: string;
+    private readonly lockPath: string;
     private server?: Server;
 
     /**
@@ -62,10 +62,10 @@ export class NodeIPCMutex
             return `\\\\.\\pipe\\vscode-dotnet-install-tool-${id}-sock`;
         }
 
-        if (process.platform !== 'darwin' && process.env['XDG_RUNTIME_DIR'])
+        if (process.platform !== 'darwin' && process.env.XDG_RUNTIME_DIR)
         {
             // The user or system told us to use this as our applications temporary directory, so this this instead of /temp/
-            return path.join(process.env['XDG_RUNTIME_DIR'] as string, `vscode-dotnet-install-tool-${id}.sock`);
+            return path.join(process.env.XDG_RUNTIME_DIR as string, `vscode-dotnet-install-tool-${id}.sock`);
         }
 
         // A file descriptor in /temp/ is a good option to hold this sock.
@@ -86,7 +86,7 @@ export class NodeIPCMutex
      * @param actionId The action ID to use for logging and debugging purposes. This should be a unique identifier for the action being performed.
      * @returns The awaited value returned by the function passed in as fn.
      */
-    public async acquire<T>(fn: () => Promise<T>, retryDelayMs: number = 100, timeoutTimeMs: number = 1000, actionId: string): Promise<T>
+    public async acquire<T>(fn: () => Promise<T>, retryDelayMs = 100, timeoutTimeMs = 1000, actionId: string): Promise<T>
     {
         const maxRetries = timeoutTimeMs / retryDelayMs;
         let retries = 0;
@@ -99,6 +99,7 @@ export class NodeIPCMutex
             }
             catch (error: any)
             {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 if (error?.code === 'EADDRINUSE') //  We couldn't acquire the lock, even though nobody else is using it.
                 {
                     if (retries >= maxRetries)
@@ -131,9 +132,11 @@ export class NodeIPCMutex
             this.server = createServer();
 
             this.server.on('error', reject);
+            // The listeningListener interface is designed to return void, but we need to return the result of running f while holding the handle.
+            // eslint-disable-next-line  @typescript-eslint/no-misused-promises
             this.server.listen(this.lockPath, async () =>
             {
-                this.server!.removeListener('error', reject);
+                this.server?.removeListener('error', reject);
                 try
                 {
                     // Set permissions to allow other processes to access/delete the handle
@@ -141,9 +144,9 @@ export class NodeIPCMutex
                     // https://nodejs.org/api/fs.html#filehandlechmodmode:~:text=Caveats%3A%20on%20Windows%20only%20the%20write%20permission%20can%20be%20changed%2C%20and%20the%20distinction%20among%20the%20permissions%20of%20group%2C%20owner%2C%20or%20others%20is%20not%20implemented.
                     await fs.promises.chmod(this.lockPath, 0o666); // 6 is read/write (not execute) for user, group, and others.
                 }
-                catch (err)
+                catch (err: any)
                 {
-                    this.logger.log(`Failed to set permissions on ${this.lockPath}: ${err}`);
+                    this.logger.log(`Failed to set permissions on ${this.lockPath}: ${JSON.stringify(err ?? '')}`);
                 }
 
                 try
@@ -151,9 +154,10 @@ export class NodeIPCMutex
                     const returnResult = await fn();
                     return resolve(returnResult); // Return out, and let the finally logic close the server before we return.
                 }
-                catch (err)
+                catch (err: any)
                 {
-                    reject(err);
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    return reject(err?.message && err?.name ? err as Error : new Error(`Failed to acquire lock: ${JSON.stringify(err ?? '')}`));
                 }
                 finally
                 {
@@ -167,9 +171,19 @@ export class NodeIPCMutex
     {
         if (this.server)
         {
-            this.server.close();
-            // .close() will delete the fd on Linux and OS X, if the process doesn't die, so we don't need to do that again.
-            this.server = undefined;
+            try
+            {
+                this.server?.close();
+                // .close() will delete the fd on Linux and OS X, if the process doesn't die, so we don't need to do that again.
+            }
+            catch (err: any)
+            {
+                this.logger.log(`Failed to close server: ${err}`);
+            }
+            finally
+            {
+                this.server = undefined;
+            }
         }
     }
 
@@ -195,13 +209,15 @@ export class NodeIPCMutex
             socket.once('error', (err) =>
             {
                 this.logger.log(`Unable to connect to existing lock: ${JSON.stringify(err ?? '')}.`);
-                return resolve(true); // Possible error: ENOENT, if the other process finishes and 'rm's while we wait. It's ok if we consider it stale now, even if it doesnt exist.
+                return resolve(false); // Possible error: ENOENT, if the other process finishes and 'rm's while we wait.
             });
         })
             .catch((error: any) => // Handle synchronous errors from the socket connection.
             {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 if (os.platform() === 'win32' || error?.code !== 'ECONNREFUSED')
                 {
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                     if (error?.code === 'EPERM')
                     {
                         // Another procecss is running as administrator which is blocking us from being able to acquire the lock.
@@ -212,10 +228,11 @@ export class NodeIPCMutex
                     this.logger.log(`Unable to acquire lock: ${JSON.stringify(error ?? '')}.`);
                     return false;
                 }
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 if (error?.code === 'ECONNREFUSED') // The process is dead - it may have been pkilled and did not drop the file handle.
                 {
                     this.logger.log(`Lock is stale, as ECONNREFUSED detected: ${msg}.`);
-                    return (true); // We can acquire the lock, and delete the file handle.
+                    return true; // We can acquire the lock, and delete the file handle.
                 }
 
                 this.logger.log(`Unable to acquire lock: ${JSON.stringify(error ?? '')}.`);
