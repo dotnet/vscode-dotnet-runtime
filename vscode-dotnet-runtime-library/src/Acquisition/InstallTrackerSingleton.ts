@@ -160,13 +160,7 @@ export class InstallTrackerSingleton
 
     private getLockFilePathForKey(provider: IInstallationDirectoryProvider, dataKey: string): string
     {
-        const providerPath = provider.getInstallDir('foo');
-        const hasNumber = /\d/;
-
-        const dir = hasNumber.test(providerPath) ? path.dirname(providerPath) : providerPath; // bad codependency I dont want to untangle atm : sdk local itnstall providers dont create a separate folder, runtime ones do
-        // but installing state should be at the root folder (not trustable from __dirname and can't access vscode storage folder) ... so if the folder is like 8.0 or 8.0~aspnetcore~x64 e go up to root
-
-        return path.join(dir, `${dataKey}.lock`); // install object required but we call the dir of it
+        return `${dataKey}.lock`;
     }
 
     /**

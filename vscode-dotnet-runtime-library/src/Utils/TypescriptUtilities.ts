@@ -59,10 +59,7 @@ export async function isRunningUnderWSL(acquisitionContext: IAcquisitionWorkerCo
     return true;
 }
 
-/*
-@remarks lockPath should be a full path to a shared lock file ending in .lock (that may or may not exist on disk) and the file content does not matter
-*/
-export async function executeWithLock<A extends any[], R>(eventStream: IEventStream, alreadyHoldingLock: boolean, lockPath: string, retryTimeMs: number, timeoutTimeMs: number, f: (...args: A) => R, ...args: A): Promise<R>
+export async function executeWithLock<A extends any[], R>(eventStream: IEventStream, alreadyHoldingLock: boolean, lockId: string, retryTimeMs: number, timeoutTimeMs: number, f: (...args: A) => R, ...args: A): Promise<R>
 {
     // Are we in a mutex-relevant inner function call, that is called by a parent function that already holds the lock?
     // If so, we don't need to acquire the lock again and we also shouldn't release it as the parent function will do that.
@@ -81,19 +78,19 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
             }
             public log(message: string)
             {
-                this.loggerEventStream.post(new GenericDotnetLockEvent(message, new Date().toISOString(), lockPath, lockPath));
+                this.loggerEventStream.post(new GenericDotnetLockEvent(message, new Date().toISOString(), lockId, lockId));
             }
         }
 
         const logger = new NodeIPCMutexLoggerWrapper(eventStream);
-        const mutex = new NodeIPCMutex(lockPath, logger);
+        const mutex = new NodeIPCMutex(lockId, logger);
 
         const result = await mutex.acquire(async () =>
         {
             // await must be used to make the linter allow fn to be async, which it must be.
             // eslint-disable-next-line no-return-await
             return await f(...(args));
-        }, retryTimeMs, timeoutTimeMs, lockPath);
+        }, retryTimeMs, timeoutTimeMs, `${lockId}-${crypto.randomUUID()}`);
         return result;
     }
 }
