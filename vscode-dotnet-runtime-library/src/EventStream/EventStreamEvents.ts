@@ -1561,6 +1561,11 @@ export abstract class DotnetLockEvent extends DotnetFileEvent
     }
 }
 
+export class GenericDotnetLockEvent extends DotnetLockEvent
+{
+    public readonly eventName = 'GenericDotnetLockEvent';
+}
+
 export class DotnetLockAcquiredEvent extends DotnetLockEvent
 {
     public readonly eventName = 'DotnetLockAcquiredEvent';
