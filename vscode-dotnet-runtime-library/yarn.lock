@@ -717,11 +717,6 @@
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/gopd/-/gopd-1.2.0.tgz"
   "version" "1.2.0"
 
-"graceful-fs@^4.2.4":
-  "integrity" "sha1-QYPk6L8Iu24Fu7L30uDI9xLKQOM="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/graceful-fs/-/graceful-fs-4.2.11.tgz"
-  "version" "4.2.11"
-
 "growl@1.10.5":
   "integrity" "sha1-8nNdwig2dPpnR4sQGBBZNVw2nl4="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/growl/-/growl-1.10.5.tgz"
@@ -1145,15 +1140,6 @@
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/process-nextick-args/-/process-nextick-args-2.0.1.tgz"
   "version" "2.0.1"
 
-"proper-lockfile@^4.1.2":
-  "integrity" "sha1-yLneKvay8WAQZ/mOAaxmuqIjFB8="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/proper-lockfile/-/proper-lockfile-4.1.2.tgz"
-  "version" "4.1.2"
-  dependencies:
-    "graceful-fs" "^4.2.4"
-    "retry" "^0.12.0"
-    "signal-exit" "^3.0.2"
-
 "proto-list@~1.2.1":
   "integrity" "sha1-IS1b/hMYMGpCD2QCuOJv85ZHqEk="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/proto-list/-/proto-list-1.2.4.tgz"
@@ -1233,11 +1219,6 @@
   dependencies:
     "onetime" "^5.1.0"
     "signal-exit" "^3.0.2"
-
-"retry@^0.12.0":
-  "integrity" "sha1-G0KmJmoh8HQh0bC1S33BZ7AcATs="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/retry/-/retry-0.12.0.tgz"
-  "version" "0.12.0"
 
 "rimraf@3.0.2":
   "integrity" "sha1-8aVAK6YiCtUswSgrrBrjqkn9Bho="
