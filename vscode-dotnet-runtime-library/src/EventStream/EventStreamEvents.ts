@@ -1557,7 +1557,7 @@ export abstract class DotnetLockEvent extends DotnetFileEvent
 
     public getProperties()
     {
-        return { Message: this.eventMessage, Time: this.time, Lock: this.lock, File: this.file };
+        return { Message: this.eventMessage, Time: this.time, Lock: this.lock, File: this.file, ...getDisabledTelemetryOnChance(1) };
     }
 }
 
