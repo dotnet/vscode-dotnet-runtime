@@ -36,7 +36,7 @@ export class NodeIPCMutex
 {
     private readonly lockPath: string;
     private server?: Server;
-
+    private hasCleanedUpBefore = false;
     /**
      *
      * @param lockId - The ID of the lock. This should be a unique identifier for the lock being created.
@@ -109,11 +109,17 @@ export class NodeIPCMutex
                     if (await this.isLockStale(actionId))
                     {
                         await this.cleanupStaleLock();
+                        if (this.hasCleanedUpBefore)
+                        {
+                            await this.delay(retryDelayMs);
+                        }
+                        this.hasCleanedUpBefore = true;
                     }
                     else
                     {
                         await this.delay(retryDelayMs);
                     }
+
                     ++retries;
                 }
                 else // Another process is using this lock.
