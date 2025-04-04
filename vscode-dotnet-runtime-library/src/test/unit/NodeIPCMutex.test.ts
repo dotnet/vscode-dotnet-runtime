@@ -34,8 +34,10 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
 
         printWithLock(myLock, taskAText, 500, logger);
         await wait(100);
-        assert(logger.logs.includes(`${acquiredText}${taskAText}`), `${logger.logs} A acquires the lock when nobody holds it`);
-        assert(!logger.logs.includes(`${releasedText}${taskAText}`), `${logger.logs} A does not release the lock during the function execution`);
+        assert(logger.logs.includes(`${acquiredText}${taskAText}`), `${logger.logs}
+ A acquires the lock when nobody holds it`);
+        assert(!logger.logs.includes(`${releasedText}${taskAText}`), `${logger.logs}
+ A does not release the lock during the function execution`);
 
         try
         {
@@ -45,14 +47,17 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
         {
             // noop
         }
-        assert(!logger.logs.includes(`${acquiredText}${taskBText}`), `${logger.logs} B does not acquire A when A is still working and B timed out`);
+        assert(!logger.logs.includes(`${acquiredText}${taskBText}`), `${logger.logs}
+ B does not acquire A when A is still working and B timed out`);
 
         await wait(500); // Wait for A to finish and release the lock.
         printWithLock(myLock, taskBText, 100, logger);
         await wait(100); // Wait for B to finish and release the lock.
 
-        assert(logger.logs.includes(`${acquiredText}${taskBText}`), `${logger.logs} B was able to get A after A finished.`);
-        assert(firstComesBeforeSecond(logger.logs, `${acquiredText}${taskAText}`, `${acquiredText}${taskBText}`), `${logger.logs} A acquired before B`);
+        assert(logger.logs.includes(`${acquiredText}${taskBText}`), `${logger.logs}
+ B was able to get A after A finished.`);
+        assert(firstComesBeforeSecond(logger.logs, `${acquiredText}${taskAText}`, `${acquiredText}${taskBText}`), `${logger.logs}
+ A acquired before B`);
     }).timeout(testTimeoutMs);
 
     test('It can communicate with another task while it is active', async () =>
@@ -66,8 +71,10 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
 
         await wait(500);
 
-        assert(logger.logs.includes(`${acquiredText}${taskBText}`), `${logger.logs} B was able to get the lock even if it started while A was running.`);
-        assert(firstComesBeforeSecond(logger.logs, `${acquiredText}${taskAText}`, `${acquiredText}${taskBText}`), `${logger.logs} A acquired before B`);
+        assert(logger.logs.includes(`${acquiredText}${taskBText}`), `${logger.logs}
+ B was able to get the lock even if it started while A was running.`);
+        assert(firstComesBeforeSecond(logger.logs, `${acquiredText}${taskAText}`, `${acquiredText}${taskBText}`), `${logger.logs}
+ A acquired before B`);
     }).timeout(testTimeoutMs);
 
     test('Multiple processes share the mutex correctly', async () =>
@@ -91,9 +98,12 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
 
             await wait(7000);
 
-            assert(loggerForMultiFork.logs.includes(`${acquiredText}${taskBText}`), `${loggerForMultiFork.logs} B was able to get the lock even if it started while A was running.`);
-            assert(firstComesBeforeSecond(loggerForMultiFork.logs, `${acquiredText}${taskAText}`, `${acquiredText}${taskBText}`), `${loggerForMultiFork.logs} A acquired before B`);
-            assert(firstComesBeforeSecond(loggerForMultiFork.logs, `${releasedText}${taskAText}`, `${acquiredText}${taskBText}`), `${loggerForMultiFork.logs} A released before B acquired`);
+            assert(loggerForMultiFork.logs.includes(`${acquiredText}${taskBText}`), `${loggerForMultiFork.logs}
+ B was able to get the lock even if it started while A was running.`);
+            assert(firstComesBeforeSecond(loggerForMultiFork.logs, `${acquiredText}${taskAText}`, `${acquiredText}${taskBText}`), `${loggerForMultiFork.logs}
+ A acquired before B`);
+            assert(firstComesBeforeSecond(loggerForMultiFork.logs, `${releasedText}${taskAText}`, `${acquiredText}${taskBText}`), `${loggerForMultiFork.logs}
+ A released before B acquired`);
         }
         finally
         {
@@ -117,15 +127,19 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
             child.send({ run: true });
             await wait(4000);
 
-            assert(loggerForHoldingDies.logs.includes(`${acquiredText}${taskAText}`), `${loggerForHoldingDies.logs} child process (A) was able to get the lock.`);
+            assert(loggerForHoldingDies.logs.includes(`${acquiredText}${taskAText}`), `${loggerForHoldingDies.logs}
+ child process (A) was able to get the lock.`);
             printWithLock(myLock, taskBText, 5500, loggerForHoldingDies);
             child.kill('SIGKILL');
 
             await wait(7000);
 
-            assert(firstComesBeforeSecond(loggerForHoldingDies.logs, `${acquiredText}${taskAText}`, `${acquiredText}${taskBText}`), `${loggerForHoldingDies.logs} A acquired before B`);
-            assert(loggerForHoldingDies.logs.includes(`${acquiredText}${taskBText}`), `${loggerForHoldingDies.logs} B was able to get the lock even if A died when A had it, and A was first.`);
-            assert(!loggerForHoldingDies.logs.includes(`${releasedText}${taskAText}`), `${loggerForHoldingDies.logs} A was forcefully terminated, so it never properly released the lock.`);
+            assert(firstComesBeforeSecond(loggerForHoldingDies.logs, `${acquiredText}${taskAText}`, `${acquiredText}${taskBText}`), `${loggerForHoldingDies.logs}
+ A acquired before B`);
+            assert(loggerForHoldingDies.logs.includes(`${acquiredText}${taskBText}`), `${loggerForHoldingDies.logs}
+ B was able to get the lock even if A died when A had it, and A was first.`);
+            assert(!loggerForHoldingDies.logs.includes(`${releasedText}${taskAText}`), `${loggerForHoldingDies.logs}
+ A was forcefully terminated, so it never properly released the lock.`);
         }
         finally
         {
@@ -149,15 +163,19 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
             child.send({ run: true }); // Give it the logger so it knows.
             await wait(4000);
 
-            assert(loggerForHoldingDiesAfter.logs.includes(`${acquiredText}${taskAText}`), `${loggerForHoldingDiesAfter.logs} Child process A was able to get the lock`);
+            assert(loggerForHoldingDiesAfter.logs.includes(`${acquiredText}${taskAText}`), `${loggerForHoldingDiesAfter.logs}
+ Child process A was able to get the lock`);
             child.kill('SIGKILL');
             printWithLock(myLock, taskBText, 5200, loggerForHoldingDiesAfter);
 
             await wait(7000); // Wait for A to finish and release the lock.
 
-            assert(firstComesBeforeSecond(loggerForHoldingDiesAfter.logs, `${acquiredText}${taskAText}`, `${acquiredText}${taskBText}`), `${loggerForHoldingDiesAfter.logs} A acquired before B`);
-            assert(loggerForHoldingDiesAfter.logs.includes(`${acquiredText}${taskBText}`), `${loggerForHoldingDiesAfter.logs} B was able to get the lock even if A died when A had it, and B started after A died.`);
-            assert(!loggerForHoldingDiesAfter.logs.includes(`${releasedText}${taskAText}`), `${loggerForHoldingDiesAfter.logs} A was forcefully terminated, so it never properly released the lock.`);
+            assert(firstComesBeforeSecond(loggerForHoldingDiesAfter.logs, `${acquiredText}${taskAText}`, `${acquiredText}${taskBText}`), `${loggerForHoldingDiesAfter.logs}
+ A acquired before B`);
+            assert(loggerForHoldingDiesAfter.logs.includes(`${acquiredText}${taskBText}`), `${loggerForHoldingDiesAfter.logs}
+ B was able to get the lock even if A died when A had it, and B started after A died.`);
+            assert(!loggerForHoldingDiesAfter.logs.includes(`${releasedText}${taskAText}`), `${loggerForHoldingDiesAfter.logs}
+ A was forcefully terminated, so it never properly released the lock.`);
         }
         finally
         {
