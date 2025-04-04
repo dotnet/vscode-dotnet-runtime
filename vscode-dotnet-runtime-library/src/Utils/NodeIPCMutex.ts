@@ -2,11 +2,11 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
+import * as fs from 'fs';
+import { rm } from 'fs/promises';
+import { createConnection, createServer, Server } from 'net';
 import * as os from 'os';
 import * as path from 'path';
-import { createServer, createConnection, Server } from 'net';
-import { rm } from 'fs/promises';
-import * as fs from 'fs';
 
 /**
  * A wrapper you write around your logger so that events from the mutex ownership can be logged.
@@ -196,7 +196,33 @@ export class NodeIPCMutex
      */
     private async isLockStale(msg: string): Promise<boolean>
     {
-        const resolved = await new Promise<boolean>((resolve, reject) =>
+        try
+        {
+            return await this.connectToExistingLock(msg); // Try to connect to the existing lock.
+        }
+        catch (error: any) // Handle synchronous errors from the socket connection.
+        {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            if (error?.code === 'ECONNREFUSED') // The process is dead - it may have been pkilled and did not drop the file handle.
+            {
+                this.logger.log(`Lock is stale, as ECONNREFUSED detected: ${msg}.`);
+                return true; // We can acquire the lock, and delete the file handle.
+            }
+
+            // Expected errors:
+            // - ENOENT: The file descriptor doesn't exist, which means the process holding it has died.
+            // -> Technically, this means it's stale, but the only action to do if it's stale is delete it, but it already is deleted.
+
+            // - EPERM / EACCESS: The file descriptor exists, but we don't have permission to access it. This is expected if the process holding it is still alive and running it under elevated permissions (chmod failed)
+            // - EPIPE: This might be possible, but I haven't seen it happen yet.
+            this.logger.log(`Unable to acquire lock: ${JSON.stringify(error ?? '')}.`);
+            return false; // We don't know what happened, but we can't acquire the lock.
+        }
+    }
+
+    private connectToExistingLock(msg: string): Promise<boolean>
+    {
+        return new Promise<boolean>((resolve, reject) =>
         {
             const socket = createConnection(this.lockPath, () =>
             {
@@ -209,36 +235,9 @@ export class NodeIPCMutex
             socket.once('error', (err) =>
             {
                 this.logger.log(`Unable to connect to existing lock: ${JSON.stringify(err ?? '')}.`);
-                return resolve(false); // Possible error: ENOENT, if the other process finishes and 'rm's while we wait.
+                return reject(err); // Possible error: ENOENT, if the other process finishes and 'rm's while we wait.
             });
         })
-            .catch((error: any) => // Handle synchronous errors from the socket connection.
-            {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                if (os.platform() === 'win32' || error?.code !== 'ECONNREFUSED')
-                {
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                    if (error?.code === 'EPERM')
-                    {
-                        // Another procecss is running as administrator which is blocking us from being able to acquire the lock.
-                        this.logger.log(`Unable to acquire lock: ${msg}. Another process is running as administrator, but we are not.`);
-                        return false; // Let's try again later.
-                    }
-
-                    this.logger.log(`Unable to acquire lock: ${JSON.stringify(error ?? '')}.`);
-                    return false;
-                }
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                if (error?.code === 'ECONNREFUSED') // The process is dead - it may have been pkilled and did not drop the file handle.
-                {
-                    this.logger.log(`Lock is stale, as ECONNREFUSED detected: ${msg}.`);
-                    return true; // We can acquire the lock, and delete the file handle.
-                }
-
-                this.logger.log(`Unable to acquire lock: ${JSON.stringify(error ?? '')}.`);
-                return false; // We don't know what happened, but we can't acquire the lock.
-            });
-        return resolved;
     }
 
     private async cleanupStaleLock(): Promise<void>
