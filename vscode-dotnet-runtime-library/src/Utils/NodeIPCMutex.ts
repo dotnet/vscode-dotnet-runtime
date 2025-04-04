@@ -134,30 +134,32 @@ export class NodeIPCMutex
     {
         return new Promise<T>((resolve, reject) =>
         {
-            this.server = createServer();
-
-            this.server.on('error', reject);
-            // The listeningListener interface is designed to return void, but we need to return the result of running f while holding the handle.
-            // eslint-disable-next-line  @typescript-eslint/no-misused-promises
-            this.server.listen(this.lockPath, async () =>
+            try
             {
-                try
+                this.server = createServer();
+                this.server.on('error', reject);
+                // The listeningListener interface is designed to return void, but we need to return the result of running f while holding the handle.
+                // eslint-disable-next-line  @typescript-eslint/no-misused-promises
+                this.server.listen(this.lockPath, async () =>
                 {
-                    this.server?.removeListener('error', reject);
-                    const returnResult = await fn();
-                    return resolve(returnResult); // Return out, and let the finally logic close the server before we return.
-                }
-                catch (err: any)
-                {
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                    return reject(err?.message && err?.name ? err as Error : new Error(`Failed to acquire lock: ${JSON.stringify(err ?? '')}`));
-                }
-                finally
-                {
-                    this.release(); // Release the lock when done.
-                }
-            });
-        })
+                    try
+                    {
+                        this.server?.removeListener('error', reject);
+                        const returnResult = await fn();
+                        return resolve(returnResult); // Return out, and let the finally logic close the server before we return.
+                    }
+                    catch (err: any)
+                    {
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                        return reject(err?.message && err?.name ? err as Error : new Error(`Failed to acquire lock: ${JSON.stringify(err ?? '')}`));
+                    }
+                });
+            }
+            finally
+            {
+                this.release();
+            }
+        });
     }
 
     private release(): void
