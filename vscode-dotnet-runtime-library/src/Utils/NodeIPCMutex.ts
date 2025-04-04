@@ -94,7 +94,7 @@ export class NodeIPCMutex
         {
             try
             {
-                return await this.tryAcquire(fn);
+                return await this.tryAcquire(actionId, fn);
             }
             catch (error: any)
             {
@@ -103,15 +103,17 @@ export class NodeIPCMutex
                 {
                     if (retries >= maxRetries)
                     {
-                        throw new Error(`Failed to acquire lock after ${maxRetries} retries.`);
+                        throw new Error(`Action: ${actionId} Failed to acquire lock after ${maxRetries} retries.`);
                     }
 
                     if (await this.isLockStale(actionId))
                     {
+                        this.logger.log(`Action: ${actionId} - Stale lock detected, cleaning up.`);
                         await this.cleanupStaleLock();
                         if (this.hasCleanedUpBefore)
                         {
-                            this.release(); // On Mac, the server may fail earlier on and stay around? Make sure it is gone.
+                            this.logger.log(`Action: ${actionId} - Stale lock detected, and we've detected that before. Trying to release the server.`);
+                            this.release(actionId); // On Mac, the server may fail earlier on and stay around? Make sure it is gone.
                             await this.delay(retryDelayMs);
                         }
                         this.hasCleanedUpBefore = true;
@@ -131,7 +133,7 @@ export class NodeIPCMutex
         }
     }
 
-    private async tryAcquire<T>(fn: () => Promise<T>): Promise<T>
+    private async tryAcquire<T>(actionId: string, fn: () => Promise<T>): Promise<T>
     {
         return new Promise<T>((resolve, reject) =>
         {
@@ -151,28 +153,29 @@ export class NodeIPCMutex
                 catch (err: any)
                 {
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                    return reject(err?.message && err?.name ? err as Error : new Error(`Failed to acquire lock: ${JSON.stringify(err ?? '')}`));
+                    return reject(err?.message && err?.name ? err as Error : new Error(`Action: ${actionId} Failed to acquire lock: ${JSON.stringify(err ?? '')}`));
                 }
                 finally
                 {
-                    this.release(); // Release the lock when done.
+                    this.release(actionId); // Release the lock when done.
                 }
             });
         })
     }
 
-    private release(): void
+    private release(actionId: string): void
     {
         if (this.server)
         {
             try
             {
                 this.server?.close();
+                this.logger.log(`Action: ${actionId} Server freed: ${this.lockPath}`);
                 // .close() will delete the fd on Linux and OS X, if the process doesn't die, so we don't need to do that again.
             }
             catch (err: any)
             {
-                this.logger.log(`Failed to close server: ${err}`);
+                this.logger.log(`Action: ${actionId} Failed to close server: ${err}`);
             }
             finally
             {
@@ -185,21 +188,21 @@ export class NodeIPCMutex
      * @remarks A stale lock is a lock that is held by a process that has died or is no longer running.
      * This function checks if the lock is stale by trying to connect to it.
      *
-     * @param msg - The message to log if the lock is stale.
+     * @param actionId - The message to log if the lock is stale.
      * @returns True if the lock is stale, false otherwise.
      */
-    private async isLockStale(msg: string): Promise<boolean>
+    private async isLockStale(actionId: string): Promise<boolean>
     {
         try
         {
-            return await this.connectToExistingLock(msg); // Try to connect to the existing lock.
+            return await this.connectToExistingLock(actionId); // Try to connect to the existing lock.
         }
         catch (error: any) // Handle synchronous errors from the socket connection.
         {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             if (error?.code === 'ECONNREFUSED') // The process is dead - it may have been pkilled and did not drop the file handle.
             {
-                this.logger.log(`Lock is stale, as ECONNREFUSED detected: ${msg}.`);
+                this.logger.log(`Action: ${actionId} found Lock is stale, as ECONNREFUSED detected.`);
                 return true; // We can acquire the lock, and delete the file handle.
             }
 
@@ -209,12 +212,12 @@ export class NodeIPCMutex
 
             // - EPERM / EACCESS: The file descriptor exists, but we don't have permission to access it. This is expected if the process holding it is still alive and running it under elevated permissions (chmod failed)
             // - EPIPE: This might be possible, but I haven't seen it happen yet.
-            this.logger.log(`Unable to acquire lock: ${JSON.stringify(error ?? '')}.`);
+            this.logger.log(`Action: ${actionId} Unable to acquire lock: ${JSON.stringify(error ?? '')}.`);
             return false; // We don't know what happened, but we can't acquire the lock.
         }
     }
 
-    private connectToExistingLock(msg: string): Promise<boolean>
+    private connectToExistingLock(actionId: string): Promise<boolean>
     {
         return new Promise<boolean>((resolve, reject) =>
         {
@@ -223,7 +226,7 @@ export class NodeIPCMutex
                 try
                 {
                     socket.removeListener('error', reject); // Ignore other errors : we were able to connect, that's all that matters.
-                    this.logger.log(`Connected to existing lock: ${msg}`);
+                    this.logger.log(`Action: ${actionId} Connected to existing lock.`);
                     return resolve(false); // Someone else (another PID or other async code in our process) holds the 'lock' or 'server' on the handle and is live. We must wait.
                 }
                 finally
@@ -236,7 +239,7 @@ export class NodeIPCMutex
             {
                 try
                 {
-                    this.logger.log(`Unable to connect to existing lock: ${JSON.stringify(err ?? '')}.`);
+                    this.logger.log(`Action: ${actionId} Unable to connect to existing lock: ${JSON.stringify(err ?? '')}.`);
                     return reject(err); // Possible error: ENOENT, if the other process finishes and 'rm's while we wait.
                 }
                 finally
@@ -252,6 +255,7 @@ export class NodeIPCMutex
         try
         {
             // On Linux and OS X the pipe is left behind when a process holding a pipe dies.
+            this.logger.log(`Cleaning up stale lock: ${this.lockPath}`);
             await rm(this.lockPath, { force: true }); // Remove the lockFile
         }
         catch (error: any)
@@ -262,7 +266,7 @@ export class NodeIPCMutex
 
     private async delay(delayMs: number): Promise<void>
     {
-        // Could implement exponential backoff here if we wanted to.
+        // Could implement exponential back-off here if we wanted to.
         return new Promise(resolve => setTimeout(resolve, delayMs));
     }
 }

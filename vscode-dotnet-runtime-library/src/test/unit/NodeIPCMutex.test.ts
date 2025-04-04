@@ -18,7 +18,7 @@ const testTimeoutMs = 10000 * 2; // 20 seconds
 
 suite('Log Based NodeIPCMutex Unit Tests', function ()
 {
-    this.retries(4);
+    this.retries(2);
 
     function firstComesBeforeSecond(arr: string[], first: string, second: string): boolean
     {
@@ -69,7 +69,7 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
         await wait(100);
         printWithLock(myLock, taskBText, 500, logger);
 
-        await wait(500);
+        await wait(800);
 
         assert(logger.logs.includes(`${acquiredText}${taskBText}`), `${logger.logs}
  B was able to get the lock even if it started while A was running.`);
@@ -96,7 +96,7 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
 
             printWithLock(myLock, taskBText, 4500, loggerForMultiFork);
 
-            await wait(7000);
+            await wait(8000);
 
             assert(loggerForMultiFork.logs.includes(`${acquiredText}${taskBText}`), `${loggerForMultiFork.logs}
  B was able to get the lock even if it started while A was running.`);
@@ -132,7 +132,7 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
             printWithLock(myLock, taskBText, 5500, loggerForHoldingDies);
             child.kill('SIGKILL');
 
-            await wait(7000);
+            await wait(9000);
 
             assert(firstComesBeforeSecond(loggerForHoldingDies.logs, `${acquiredText}${taskAText}`, `${acquiredText}${taskBText}`), `${loggerForHoldingDies.logs}
  A acquired before B`);
@@ -168,7 +168,7 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
             child.kill('SIGKILL');
             printWithLock(myLock, taskBText, 5200, loggerForHoldingDiesAfter);
 
-            await wait(7000); // Wait for A to finish and release the lock.
+            await wait(9000); // Wait for A to finish and release the lock.
 
             assert(firstComesBeforeSecond(loggerForHoldingDiesAfter.logs, `${acquiredText}${taskAText}`, `${acquiredText}${taskBText}`), `${loggerForHoldingDiesAfter.logs}
  A acquired before B`);

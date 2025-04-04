@@ -115,7 +115,7 @@ export async function printWithLock(lock: string, msg: string, timeToLive: numbe
         logger.log(`${releasedText}${msg}`);
         await fn();
         return msg;
-    }, 10, timeToLive, msg);
+    }, 40, timeToLive, msg);
 
     logger.log(`After release, ${msg} returned c: ${c}`);
 }
