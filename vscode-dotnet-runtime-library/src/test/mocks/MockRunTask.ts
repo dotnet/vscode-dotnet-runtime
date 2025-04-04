@@ -3,6 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
+import { exit } from 'process';
 import { INodeIPCTestLogger, printWithLock } from '../unit/TestUtility';
 
 process.on('message', async (msg: any) =>
@@ -15,7 +16,9 @@ process.on('message', async (msg: any) =>
             {
                 console.log(`Send update: ${logger.logs}`);
                 process.send?.({ status: 'update', message: logger.logs });
+                logger.logs = []; // Clear the logs to avoid sending the same message multiple times.
             }
         );
+        exit(0);
     }
 });

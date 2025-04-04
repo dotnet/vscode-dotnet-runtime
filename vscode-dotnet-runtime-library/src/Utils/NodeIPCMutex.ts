@@ -213,10 +213,16 @@ export class NodeIPCMutex
         {
             const socket = createConnection(this.lockPath, () =>
             {
-                socket.removeListener('error', reject); // Ignore other errors : we were able to connect, that's all that matters.
-                socket.destroy();
-                this.logger.log(`Connected to existing lock: ${msg}`);
-                return resolve(false); // Someone else (another PID or other async code in our process) holds the 'lock' or 'server' on the handle and is live. We must wait.
+                try
+                {
+                    socket.removeListener('error', reject); // Ignore other errors : we were able to connect, that's all that matters.
+                    this.logger.log(`Connected to existing lock: ${msg}`);
+                    return resolve(false); // Someone else (another PID or other async code in our process) holds the 'lock' or 'server' on the handle and is live. We must wait.
+                }
+                finally
+                {
+                    socket.destroy(); // Clean up the socket.
+                }
             });
 
             socket.once('error', (err) =>
