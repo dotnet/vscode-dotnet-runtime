@@ -226,15 +226,22 @@ export class NodeIPCMutex
             const socket = createConnection(this.lockPath, () =>
             {
                 socket.removeListener('error', reject); // Ignore other errors : we were able to connect, that's all that matters.
-                this.logger.log(`Connected to existing lock: ${msg}`);
                 socket.destroy();
+                this.logger.log(`Connected to existing lock: ${msg}`);
                 return resolve(false); // Someone else (another PID or other async code in our process) holds the 'lock' or 'server' on the handle and is live. We must wait.
             });
 
             socket.once('error', (err) =>
             {
-                this.logger.log(`Unable to connect to existing lock: ${JSON.stringify(err ?? '')}.`);
-                return reject(err); // Possible error: ENOENT, if the other process finishes and 'rm's while we wait.
+                try
+                {
+                    this.logger.log(`Unable to connect to existing lock: ${JSON.stringify(err ?? '')}.`);
+                    return reject(err); // Possible error: ENOENT, if the other process finishes and 'rm's while we wait.
+                }
+                finally
+                {
+                    socket.destroy(); // Clean up the socket.
+                }
             });
         })
     }
