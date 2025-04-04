@@ -2,7 +2,6 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
-import * as fs from 'fs';
 import { rm } from 'fs/promises';
 import { createConnection, createServer, Server } from 'net';
 import * as os from 'os';
@@ -139,17 +138,6 @@ export class NodeIPCMutex
                 try
                 {
                     this.server?.removeListener('error', reject);
-                    try
-                    {
-                        // Set permissions to allow other processes to access/delete the handle
-                        // On Windows, only write permissions can be changed, but that is OK.
-                        // https://nodejs.org/api/fs.html#filehandlechmodmode:~:text=Caveats%3A%20on%20Windows%20only%20the%20write%20permission%20can%20be%20changed%2C%20and%20the%20distinction%20among%20the%20permissions%20of%20group%2C%20owner%2C%20or%20others%20is%20not%20implemented.
-                        await fs.promises.chmod(this.lockPath, 0o666); // 6 is read/write (not execute) for user, group, and others.
-                    }
-                    catch (err: any)
-                    {
-                        this.logger.log(`Failed to set permissions on ${this.lockPath}: ${JSON.stringify(err ?? '')}`);
-                    }
                     const returnResult = await fn();
                     return resolve(returnResult); // Return out, and let the finally logic close the server before we return.
                 }
