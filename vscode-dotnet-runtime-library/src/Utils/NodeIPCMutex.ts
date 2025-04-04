@@ -249,6 +249,7 @@ export class NodeIPCMutex
         }
         catch (error: any)
         {
+            this.logger.log(`Failed to remove stale lock: ${JSON.stringify(error ?? '')}.`);
             if (os.platform() !== 'win32')
             {
                 throw error; // We don't have permission to remove the lock, and it is owned by a dead process. We can't acquire it, so there's not much else we can do.
