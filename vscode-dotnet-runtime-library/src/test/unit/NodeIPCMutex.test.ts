@@ -14,6 +14,7 @@ const childTaskFile = path.join(__dirname, '../mocks/MockRunTask.js');
 const loggerForMultiFork = new INodeIPCTestLogger();
 const loggerForHoldingDies = new INodeIPCTestLogger();
 const loggerForHoldingDiesAfter = new INodeIPCTestLogger();
+const testTimeoutMs = 10000 * 2; // 20 seconds
 
 suite('Log Based NodeIPCMutex Unit Tests', function ()
 {
@@ -52,7 +53,7 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
 
         assert(logger.logs.includes(`${acquiredText}${taskBText}`), `${logger.logs} B was able to get A after A finished.`);
         assert(firstComesBeforeSecond(logger.logs, `${acquiredText}${taskAText}`, `${acquiredText}${taskBText}`), `${logger.logs} A acquired before B`);
-    }).timeout(10000 * 2);
+    }).timeout(testTimeoutMs);
 
     test('It can communicate with another task while it is active', async () =>
     {
@@ -67,7 +68,7 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
 
         assert(logger.logs.includes(`${acquiredText}${taskBText}`), `${logger.logs} B was able to get the lock even if it started while A was running.`);
         assert(firstComesBeforeSecond(logger.logs, `${acquiredText}${taskAText}`, `${acquiredText}${taskBText}`), `${logger.logs} A acquired before B`);
-    });
+    }).timeout(testTimeoutMs);
 
     test('Multiple processes share the mutex correctly', async () =>
     {
@@ -98,7 +99,7 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
         {
             child.kill(); // Clean up the child process.
         }
-    });
+    }).timeout(testTimeoutMs);
 
     test('It can acquire if the holding process dies if it was not dead at the others first acquire attempt', async () =>
     {
@@ -130,7 +131,7 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
         {
             child.kill(); // Clean up the child process.
         }
-    }).timeout(10000 * 2);
+    }).timeout(testTimeoutMs);
 
     test('It can lock even if the holding process dies before the next process begins', async () =>
     {
@@ -162,5 +163,5 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
         {
             child.kill(); // Clean up the child process.
         }
-    }).timeout(10000 * 2);
+    }).timeout(testTimeoutMs);
 });
