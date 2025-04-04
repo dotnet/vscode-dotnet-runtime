@@ -113,8 +113,8 @@ export class NodeIPCMutex
                     else
                     {
                         await this.delay(retryDelayMs);
-                        retries++;
                     }
+                    ++retries;
                 }
                 else // Another process is using this lock.
                 {
