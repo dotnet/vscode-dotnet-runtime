@@ -111,6 +111,7 @@ export class NodeIPCMutex
                         await this.cleanupStaleLock();
                         if (this.hasCleanedUpBefore)
                         {
+                            this.release(); // On Mac, the server may fail earlier on and stay around? Make sure it is gone.
                             await this.delay(retryDelayMs);
                         }
                         this.hasCleanedUpBefore = true;
