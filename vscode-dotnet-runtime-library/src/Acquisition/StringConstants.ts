@@ -14,12 +14,12 @@ import { IInstallationDirectoryProvider } from './IInstallationDirectoryProvider
 */
 export function GLOBAL_INSTALL_STATE_MODIFIER_LOCK(directoryProvider: IInstallationDirectoryProvider, install: DotnetInstall): string
 {
-    return 'modifyingGlobalState.lock';
+    return 'vscdGlLk';
 }
 
 export function RUN_UNDER_SUDO_LOCK(sudoDirectory: string): string
 {
-    return 'runUnderSudo.lock';
+    return 'vscdSudoLk';
 }
 
 export const UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR = '898998';

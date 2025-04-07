@@ -17,10 +17,13 @@ const loggerForHoldingDiesAfter = new INodeIPCTestLogger();
 const manualDebug = false;
 const delayFactor = 1.2;
 const testTimeoutMs = 10000 * 2 * delayFactor; // 20 seconds
+const randomLockPrefixArr = new Uint16Array(3);
+const randomTextPrefixes = crypto.getRandomValues(randomLockPrefixArr);
+const randomLockPrefix = randomTextPrefixes.join(''); // If the code is wrong and processes don't die, rerunning tests may fail if the old one is not finished yet.
 
 suite('Log Based NodeIPCMutex Unit Tests', function ()
 {
-    this.retries(manualDebug ? 2 : 0);
+    this.retries(0);
 
     function firstComesBeforeSecond(arr: string[], first: string, second: string): boolean
     {
@@ -32,7 +35,7 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
     test('Events queued in order and waits', async () =>
     {
         const logger = new INodeIPCTestLogger();
-        const myLock = `EventQueueTestMutex`;
+        const myLock = `${randomLockPrefix}-EQ`;
 
         printWithLock(myLock, taskAText, 500 * delayFactor, logger);
         await wait(100 * delayFactor);
@@ -65,7 +68,7 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
     test('It can communicate with another task while it is active', async () =>
     {
         const logger = new INodeIPCTestLogger();
-        const myLock = `ItCanCommunicateWithAnotherTaskWhileItIsActiveMutex`;
+        const myLock = `${randomLockPrefix}-IC`;
 
         printWithLock(myLock, taskAText, 500 * delayFactor, logger);
         await wait(100 * delayFactor);
@@ -81,7 +84,7 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
 
     test('Multiple processes share the mutex correctly', async () =>
     {
-        const myLock = `MultipleProcessesShareTheMutexCorrectlyMutex`;
+        const myLock = `${randomLockPrefix}-SM`;
 
         const child = fork(childTaskFile, [taskAText, (5500 * delayFactor).toString(), myLock]);
         child.on('message', (msg) =>
@@ -115,7 +118,7 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
 
     test('It can acquire if the holding process dies if it was not dead at the others first acquire attempt', async () =>
     {
-        const myLock = `HoldingProcessDiesMutex`;
+        const myLock = `${randomLockPrefix}-DN`;
 
         // Child is now Task A
         const child = fork(childTaskFile, [taskAText, (5700 * delayFactor).toString(), myLock]);
@@ -151,7 +154,7 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
 
     test('It can lock even if the holding process dies before the next process begins', async () =>
     {
-        const myLock = `HoldingProcessDiesBeforeNextProcessBeginsMutex`;
+        const myLock = `${randomLockPrefix}-DN`;
 
         // Child is now Task A
         const child = fork(childTaskFile, [taskAText, (5500 * delayFactor).toString(), myLock]);
