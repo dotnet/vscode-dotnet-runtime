@@ -87,7 +87,7 @@ export class NodeIPCMutex
      */
     public async acquire<T>(fn: () => Promise<T>, retryDelayMs = 100, timeoutTimeMs = 1000, actionId: string): Promise<T>
     {
-        const maxRetries = timeoutTimeMs / retryDelayMs;
+        const maxRetryCountToEndAtRoughlyTimeoutTime = Math.ceil(timeoutTimeMs / retryDelayMs) + 1;
         let retries = 0;
 
         while (true)
@@ -101,9 +101,9 @@ export class NodeIPCMutex
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 if (error?.code === 'EADDRINUSE') //  We couldn't acquire the lock, even though nobody else is using it.
                 {
-                    if (retries >= maxRetries)
+                    if (retries >= maxRetryCountToEndAtRoughlyTimeoutTime)
                     {
-                        throw new Error(`Action: ${actionId} Failed to acquire lock after ${maxRetries} retries.`);
+                        throw new Error(`Action: ${actionId} Failed to acquire lock after ${retries} retries out of ${maxRetryCountToEndAtRoughlyTimeoutTime} total available attempts.`);
                     }
 
                     if (await this.isLockStale(actionId))
@@ -113,7 +113,6 @@ export class NodeIPCMutex
                         if (this.hasCleanedUpBefore)
                         {
                             this.logger.log(`Action: ${actionId} - Stale lock detected, and we've detected that before. Trying to release the server.`);
-                            this.release(actionId); // On Mac, the server may fail earlier on and stay around? Make sure it is gone.
                             await this.delay(retryDelayMs);
                         }
                         this.hasCleanedUpBefore = true;
