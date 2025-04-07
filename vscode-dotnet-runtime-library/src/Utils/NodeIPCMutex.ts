@@ -40,6 +40,8 @@ export class NodeIPCMutex
     /**
      *
      * @param lockId - The ID of the lock. This should be a unique identifier for the lock being created.
+     * The lockId must be less than about 90 characters as it will get truncated down to 107 characters -- if it is longer than the temp folder may allow on OS X, it may fail.
+     * // https://nodejs.org/api/net.html#:~:text=other%20operating%20systems.-,Identifying%20paths%20for%20IPC%20connections,-%23
      * @param logger - A custom logger for your own logging events. By default, this will log to the console.
      */
     constructor(lockId: string, readonly logger: INodeIPCMutexLogger = new INodeIPCMutexLogger())
@@ -49,27 +51,27 @@ export class NodeIPCMutex
 
     private getIPCHandlePath(id: string): string
     {
-        // The windows file system default length may cause us to fail to create the handle if we don't truncate it.
-        if (id.length > (256 - `\\\\.\\pipe\\vscode-dotnet-install-tool-`.length))
+        const lengthLimit = os.platform() === 'win32' ? 256 : 107;
+        if (id.length > (lengthLimit - `\\\\.\\pipe\\vscd-`.length))
         {
-            id = id.substring(0, 255);
+            id = id.substring(0, lengthLimit - 1);
         }
 
         if (process.platform === 'win32')
         {
             // Special File System to get a Named Pipe on windows (File Descriptors won't work) : https://nodejs.org/docs/latest/api/net.html#ipc-support:~:text=On%20Windows%2C%20the,owning%20process%20exits.
-            return `\\\\.\\pipe\\vscode-dotnet-install-tool-${id}-sock`;
+            return `\\\\.\\pipe\\vscd-${id}-sock`;
         }
 
         if (process.platform !== 'darwin' && process.env.XDG_RUNTIME_DIR)
         {
             // The user or system told us to use this as our applications temporary directory, so this this instead of /temp/
-            return path.join(process.env.XDG_RUNTIME_DIR as string, `vscode-dotnet-install-tool-${id}.sock`);
+            return path.join(process.env.XDG_RUNTIME_DIR as string, `vscd-${id}.sock`);
         }
 
         // A file descriptor in /temp/ is a good option to hold this sock.
         // Access to /tmp/ may be restricted, but all processes must use the same directory, we can't really condition on this.
-        return path.join(os.tmpdir(), `vscode-dotnet-install-tool-${id}.sock`);
+        return path.join(os.tmpdir(), `vscd-${id}.sock`);
     }
 
     /**
