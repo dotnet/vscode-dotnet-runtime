@@ -110,7 +110,14 @@ export class NodeIPCMutex
                 {
                     if (retries >= maxRetryCountToEndAtRoughlyTimeoutTime)
                     {
-                        throw new Error(`Action: ${actionId} Failed to acquire lock after ${retries} retries out of ${maxRetryCountToEndAtRoughlyTimeoutTime} total available attempts.`);
+                        throw new Error(`Action: ${actionId} Failed to acquire lock after ${retries} retries out of ${maxRetryCountToEndAtRoughlyTimeoutTime} total available attempts.
+The lock: ${this.lockPath} may be held by another process or instance of vscode. Try restarting your machine, deleting the lock, and or increasing the timeout time in the extension settings.
+
+Increase your OS path length limit to at least 256 characters.
+On Linux, you can set XDG_RUNTIME_DIR to be a writeable directory by your user.
+
+If you still face issues, set VSCODE_DOTNET_RUNTIME_DISABLE_MUTEX=true in the environment.
+Report this issue to our vscode-dotnet-runtime GitHub for help.`);
                     }
 
                     if (await this.isLockStale(actionId))
@@ -133,14 +140,6 @@ export class NodeIPCMutex
                 }
                 else // Another process is using this lock.
                 {
-                    error.message += `\nAfter ${retries} attempts, we could not acquire the lock ${this.lockPath}.
-It may be held by another process or instance of vscode. Try restarting your machine, deleting the lock, and or increasing the timeout time in the extension settings.
-
-Increase your OS path length limit to at least 256 characters.
-On Linux, you can set XDG_RUNTIME_DIR to be a writeable directory by your user.
-
-If you still face issues, set VSCODE_DOTNET_RUNTIME_DISABLE_MUTEX=true in the environment.
-Report this issue to our vscode-dotnet-runtime GitHub for help.`;
                     throw error;
                 }
             }
