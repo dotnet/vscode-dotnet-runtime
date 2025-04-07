@@ -63,7 +63,7 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
 {
     // Are we in a mutex-relevant inner function call, that is called by a parent function that already holds the lock?
     // If so, we don't need to acquire the lock again and we also shouldn't release it as the parent function will do that.
-    if (alreadyHoldingLock)
+    if (alreadyHoldingLock || process.env.VSCODE_DOTNET_RUNTIME_DISABLE_MUTEX === 'true')
     {
         // eslint-disable-next-line @typescript-eslint/await-thenable
         return f(...(args));

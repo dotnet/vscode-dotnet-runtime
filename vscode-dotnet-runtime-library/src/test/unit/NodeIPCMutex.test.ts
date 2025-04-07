@@ -5,6 +5,8 @@
 import * as chai from 'chai';
 import { fork } from 'child_process';
 import * as path from 'path';
+import { executeWithLock } from '../../Utils/TypescriptUtilities';
+import { MockEventStream } from '../mocks/MockObjects';
 import { acquiredText, INodeIPCTestLogger, printWithLock, releasedText, wait } from './TestUtility';
 const assert = chai.assert;
 
@@ -21,7 +23,7 @@ const randomLockPrefixArr = new Uint16Array(3);
 const randomTextPrefixes = crypto.getRandomValues(randomLockPrefixArr);
 const randomLockPrefix = randomTextPrefixes.join(''); // If the code is wrong and processes don't die, rerunning tests may fail if the old one is not finished yet.
 
-suite('Log Based NodeIPCMutex Unit Tests', function ()
+suite('NodeIPCMutex Unit Tests', function ()
 {
     this.retries(0);
 
@@ -185,6 +187,27 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
         finally
         {
             child.kill(); // Clean up the child process.
+        }
+    }).timeout(testTimeoutMs);
+
+    test('It respects VSCODE_DOTNET_RUNTIME_DISABLE_MUTEX', async () =>
+    {
+        try
+        {
+            process.env.VSCODE_DOTNET_RUNTIME_DISABLE_MUTEX = 'true';
+            const logger = new INodeIPCTestLogger();
+            logger.log = (msg: string) => { throw new Error('Fail the test because we tried to use a lock even though VSCODE_DOTNET_RUNTIME_DISABLE_MUTEX is true'); }
+            const myLock = `${randomLockPrefix}-EV`;
+
+            executeWithLock(new MockEventStream(), false, myLock, 1000 * delayFactor, 5000 * delayFactor, async () =>
+            {
+                { // noop. If it doesn't throw, it means the lock was not used, which means this should pass.
+                }
+            });
+        }
+        finally
+        {
+            delete process.env.VSCODE_DOTNET_RUNTIME_DISABLE_MUTEX;
         }
     }).timeout(testTimeoutMs);
 });

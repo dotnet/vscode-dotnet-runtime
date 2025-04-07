@@ -52,26 +52,31 @@ export class NodeIPCMutex
     private getIPCHandlePath(id: string): string
     {
         const lengthLimit = os.platform() === 'win32' ? 256 : 107;
-        if (id.length > (lengthLimit - `\\\\.\\pipe\\vscd-`.length))
+
+        // On Unix, A file descriptor in /temp/ is a good option to hold this sock.
+        // In Linux, The user or system may set XDG_RUNTIME_DIR to set our applications temporary directory, so this this instead of /temp/
+        // On Unix, Access to /tmp/ may be restricted, but all processes must use the same directory, so we can't condition to use another dir based on the permissions for it.
+
+        // On Windows, '\\\\.\\pipe\\` is a Special File System to get a Named Pipe (File Descriptors won't work)
+        // https://nodejs.org/docs/latest/api/net.html#ipc-support:~:text=On%20Windows%2C%20the,owning%20process%20exits.
+
+        const ipcPathDir = os.platform() === 'win32' ? `\\\\.\\pipe\\` :
+            os.platform() === 'linux' && process.env.XDG_RUNTIME_DIR ? process.env.XDG_RUNTIME_DIR as string : os.tmpdir();
+
+        if (id.length > (lengthLimit - ipcPathDir.length))
         {
-            id = id.substring(0, lengthLimit - 1);
+            this.logger.log(`Lock ID is too long, truncating to ${lengthLimit - ipcPathDir.length} characters, due to dir: ${ipcPathDir}`);
+            id = id.substring(0, Math.max(lengthLimit - 1, 6)); // Prevent setting the environment variable to make the application fail. the vscd prefix + 2 should uniquely identify most locks.
         }
 
         if (process.platform === 'win32')
         {
-            // Special File System to get a Named Pipe on windows (File Descriptors won't work) : https://nodejs.org/docs/latest/api/net.html#ipc-support:~:text=On%20Windows%2C%20the,owning%20process%20exits.
-            return `\\\\.\\pipe\\vscd-${id}-sock`;
+            return `${ipcPathDir}vscd-${id}-sock`;
         }
-
-        if (process.platform !== 'darwin' && process.env.XDG_RUNTIME_DIR)
+        else
         {
-            // The user or system told us to use this as our applications temporary directory, so this this instead of /temp/
-            return path.join(process.env.XDG_RUNTIME_DIR as string, `vscd-${id}.sock`);
+            return path.join(ipcPathDir, `vscd-${id}.sock`);
         }
-
-        // A file descriptor in /temp/ is a good option to hold this sock.
-        // Access to /tmp/ may be restricted, but all processes must use the same directory, we can't really condition on this.
-        return path.join(os.tmpdir(), `vscd-${id}.sock`);
     }
 
     /**
@@ -128,6 +133,14 @@ export class NodeIPCMutex
                 }
                 else // Another process is using this lock.
                 {
+                    error.message += `\nAfter ${retries} attempts, we could not acquire the lock ${this.lockPath}.
+It may be held by another process or instance of vscode. Try restarting your machine, deleting the lock, and or increasing the timeout time in the extension settings.
+
+Increase your OS path length limit to at least 256 characters.
+On Linux, you can set XDG_RUNTIME_DIR to be a writeable directory by your user.
+
+If you still face issues, set VSCODE_DOTNET_RUNTIME_DISABLE_MUTEX=true in the environment.
+Report this issue to our vscode-dotnet-runtime GitHub for help.`;
                     throw error;
                 }
             }
