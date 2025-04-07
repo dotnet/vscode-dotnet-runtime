@@ -14,11 +14,13 @@ const childTaskFile = path.join(__dirname, '../mocks/MockRunTask.js');
 const loggerForMultiFork = new INodeIPCTestLogger();
 const loggerForHoldingDies = new INodeIPCTestLogger();
 const loggerForHoldingDiesAfter = new INodeIPCTestLogger();
-const testTimeoutMs = 10000 * 2; // 20 seconds
+const manualDebug = false;
+const delayFactor = 1.2;
+const testTimeoutMs = 10000 * 2 * delayFactor; // 20 seconds
 
 suite('Log Based NodeIPCMutex Unit Tests', function ()
 {
-    this.retries(2);
+    this.retries(manualDebug ? 2 : 0);
 
     function firstComesBeforeSecond(arr: string[], first: string, second: string): boolean
     {
@@ -32,8 +34,8 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
         const logger = new INodeIPCTestLogger();
         const myLock = `EventQueueTestMutex`;
 
-        printWithLock(myLock, taskAText, 500, logger);
-        await wait(100);
+        printWithLock(myLock, taskAText, 500 * delayFactor, logger);
+        await wait(100 * delayFactor);
         assert(logger.logs.includes(`${acquiredText}${taskAText}`), `${logger.logs}
  A acquires the lock when nobody holds it`);
         assert(!logger.logs.includes(`${releasedText}${taskAText}`), `${logger.logs}
@@ -41,7 +43,7 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
 
         try
         {
-            printWithLock(myLock, taskBText, 100, logger);
+            printWithLock(myLock, taskBText, 100 * delayFactor, logger);
         }
         catch (e: any)
         {
@@ -50,9 +52,9 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
         assert(!logger.logs.includes(`${acquiredText}${taskBText}`), `${logger.logs}
  B does not acquire A when A is still working and B timed out`);
 
-        await wait(500); // Wait for A to finish and release the lock.
-        printWithLock(myLock, taskBText, 100, logger);
-        await wait(100); // Wait for B to finish and release the lock.
+        await wait(500 * delayFactor); // Wait for A to finish and release the lock.
+        printWithLock(myLock, taskBText, 100 * delayFactor, logger);
+        await wait(100 * delayFactor); // Wait for B to finish and release the lock.
 
         assert(logger.logs.includes(`${acquiredText}${taskBText}`), `${logger.logs}
  B was able to get A after A finished.`);
@@ -65,11 +67,11 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
         const logger = new INodeIPCTestLogger();
         const myLock = `ItCanCommunicateWithAnotherTaskWhileItIsActiveMutex`;
 
-        printWithLock(myLock, taskAText, 500, logger);
-        await wait(100);
-        printWithLock(myLock, taskBText, 500, logger);
+        printWithLock(myLock, taskAText, 500 * delayFactor, logger);
+        await wait(100 * delayFactor);
+        printWithLock(myLock, taskBText, 500 * delayFactor, logger);
 
-        await wait(800);
+        await wait(800 * delayFactor);
 
         assert(logger.logs.includes(`${acquiredText}${taskBText}`), `${logger.logs}
  B was able to get the lock even if it started while A was running.`);
@@ -81,7 +83,7 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
     {
         const myLock = `MultipleProcessesShareTheMutexCorrectlyMutex`;
 
-        const child = fork(childTaskFile, [taskAText, '5500', myLock]);
+        const child = fork(childTaskFile, [taskAText, (5500 * delayFactor).toString(), myLock]);
         child.on('message', (msg) =>
         {
             loggerForMultiFork.logs = loggerForMultiFork.logs.concat((msg as any).message);
@@ -92,11 +94,11 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
         {
             // Fork a child process to simulate "Process B" with the default timeout
             child.send({ run: true }); // Give it the logger so it logs to our memory, and tell it to printWithLock
-            await wait(4000);
+            await wait(4000 * delayFactor);
 
-            printWithLock(myLock, taskBText, 4500, loggerForMultiFork);
+            printWithLock(myLock, taskBText, 4500 * delayFactor, loggerForMultiFork);
 
-            await wait(8000);
+            await wait(8000 * delayFactor);
 
             assert(loggerForMultiFork.logs.includes(`${acquiredText}${taskBText}`), `${loggerForMultiFork.logs}
  B was able to get the lock even if it started while A was running.`);
@@ -116,7 +118,7 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
         const myLock = `HoldingProcessDiesMutex`;
 
         // Child is now Task A
-        const child = fork(childTaskFile, [taskAText, '5700', myLock]);
+        const child = fork(childTaskFile, [taskAText, (5700 * delayFactor).toString(), myLock]);
         child.on('message', (msg) =>
         {
             loggerForHoldingDies.logs = loggerForHoldingDies.logs.concat((msg as any).message);
@@ -125,14 +127,14 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
         try
         {
             child.send({ run: true });
-            await wait(4000);
+            await wait(4000 * delayFactor);
 
             assert(loggerForHoldingDies.logs.includes(`${acquiredText}${taskAText}`), `${loggerForHoldingDies.logs}
  child process (A) was able to get the lock.`);
-            printWithLock(myLock, taskBText, 5500, loggerForHoldingDies);
+            printWithLock(myLock, taskBText, 5500 * delayFactor, loggerForHoldingDies);
             child.kill('SIGKILL');
 
-            await wait(9000);
+            await wait(9000 * delayFactor);
 
             assert(firstComesBeforeSecond(loggerForHoldingDies.logs, `${acquiredText}${taskAText}`, `${acquiredText}${taskBText}`), `${loggerForHoldingDies.logs}
  A acquired before B`);
@@ -152,7 +154,7 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
         const myLock = `HoldingProcessDiesBeforeNextProcessBeginsMutex`;
 
         // Child is now Task A
-        const child = fork(childTaskFile, [taskAText, '5500', myLock]);
+        const child = fork(childTaskFile, [taskAText, (5500 * delayFactor).toString(), myLock]);
         child.on('message', (msg) =>
         {
             loggerForHoldingDiesAfter.logs = loggerForHoldingDiesAfter.logs.concat((msg as any).message);
@@ -161,14 +163,14 @@ suite('Log Based NodeIPCMutex Unit Tests', function ()
         try
         {
             child.send({ run: true }); // Give it the logger so it knows.
-            await wait(4000);
+            await wait(4000 * delayFactor);
 
             assert(loggerForHoldingDiesAfter.logs.includes(`${acquiredText}${taskAText}`), `${loggerForHoldingDiesAfter.logs}
  Child process A was able to get the lock`);
             child.kill('SIGKILL');
-            printWithLock(myLock, taskBText, 5200, loggerForHoldingDiesAfter);
+            printWithLock(myLock, taskBText, 5200 * delayFactor, loggerForHoldingDiesAfter);
 
-            await wait(9000); // Wait for A to finish and release the lock.
+            await wait(9000 * delayFactor); // Wait for A to finish and release the lock.
 
             assert(firstComesBeforeSecond(loggerForHoldingDiesAfter.logs, `${acquiredText}${taskAText}`, `${acquiredText}${taskBText}`), `${loggerForHoldingDiesAfter.logs}
  A acquired before B`);
