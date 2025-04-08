@@ -51,7 +51,7 @@ export class NodeIPCMutex
 
     private getIPCHandlePath(id: string): string
     {
-        const lengthLimit = os.platform() === 'win32' ? 256 : 107;
+        const lengthLimit = os.platform() === 'win32' ? 256 : 104; // Mac 10.9 and FreeBSD have their own length limit.
 
         // On Unix, A file descriptor in /temp/ is a good option to hold this sock.
         // In Linux, The user or system may set XDG_RUNTIME_DIR to set our applications temporary directory, so this this instead of /temp/
