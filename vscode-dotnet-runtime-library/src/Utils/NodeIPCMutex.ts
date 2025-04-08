@@ -153,7 +153,7 @@ Report this issue to our vscode-dotnet-runtime GitHub for help.`);
             this.server = createServer();
 
             this.server.on('error', reject);
-            // The listeningListener interface is designed to return void, but we need to return the result of running f while holding the handle.
+            // The listeningListener interface is designed to return void, but we need to return the result of running fn while holding the handle.
             // eslint-disable-next-line  @typescript-eslint/no-misused-promises
             this.server.listen(this.lockPath, async () =>
             {
