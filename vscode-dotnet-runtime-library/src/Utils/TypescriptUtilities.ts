@@ -83,7 +83,14 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
         }
 
         const logger = new NodeIPCMutexLoggerWrapper(eventStream);
-        const mutex = new NodeIPCMutex(lockId, logger);
+        const mutex = new NodeIPCMutex(lockId, logger, `The lock may be held by another process or instance of vscode. Try restarting your machine, deleting the lock, and or increasing the timeout time in the extension settings.
+
+Increase your OS path length limit to at least 256 characters.
+On Linux, you can set XDG_RUNTIME_DIR to be a writeable directory by your user.
+
+If you still face issues, set VSCODE_DOTNET_RUNTIME_DISABLE_MUTEX=true in the environment.
+Report this issue to our vscode-dotnet-runtime GitHub for help.`
+        );
 
         const result = await mutex.acquire(async () =>
         {

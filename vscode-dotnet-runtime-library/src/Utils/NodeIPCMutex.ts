@@ -35,6 +35,7 @@ export class INodeIPCMutexLogger
 export class NodeIPCMutex
 {
     private readonly lockPath: string;
+    private readonly supplementalErrorInfo: string;
     private server?: Server;
     private hasCleanedUpBefore = false;
     /**
@@ -44,8 +45,9 @@ export class NodeIPCMutex
      * // https://nodejs.org/api/net.html#:~:text=other%20operating%20systems.-,Identifying%20paths%20for%20IPC%20connections,-%23
      * @param logger - A custom logger for your own logging events. By default, this will log to the console.
      */
-    constructor(lockId: string, readonly logger: INodeIPCMutexLogger = new INodeIPCMutexLogger())
+    constructor(lockId: string, readonly logger: INodeIPCMutexLogger = new INodeIPCMutexLogger(), lockFailureErrorMessage?: string)
     {
+        this.supplementalErrorInfo = lockFailureErrorMessage ?? '';
         this.lockPath = this.getIPCHandlePath(lockId);
     }
 
@@ -110,14 +112,7 @@ export class NodeIPCMutex
                 {
                     if (retries >= maxRetryCountToEndAtRoughlyTimeoutTime)
                     {
-                        throw new Error(`Action: ${actionId} Failed to acquire lock after ${retries} retries out of ${maxRetryCountToEndAtRoughlyTimeoutTime} total available attempts.
-The lock: ${this.lockPath} may be held by another process or instance of vscode. Try restarting your machine, deleting the lock, and or increasing the timeout time in the extension settings.
-
-Increase your OS path length limit to at least 256 characters.
-On Linux, you can set XDG_RUNTIME_DIR to be a writeable directory by your user.
-
-If you still face issues, set VSCODE_DOTNET_RUNTIME_DISABLE_MUTEX=true in the environment.
-Report this issue to our vscode-dotnet-runtime GitHub for help.`);
+                        throw new Error(`Action: ${actionId} Failed to acquire lock ${this.lockPath} after ${retries} retries out of ${maxRetryCountToEndAtRoughlyTimeoutTime} total available attempts.\n${this.supplementalErrorInfo}`);
                     }
 
                     if (await this.isLockStale(actionId))
@@ -160,6 +155,7 @@ Report this issue to our vscode-dotnet-runtime GitHub for help.`);
                 try
                 {
                     this.server?.removeListener('error', reject);
+                    this.logger.log(`Action: ${actionId} Lock acquired: ${this.lockPath}`);
                     const returnResult = await fn();
                     return resolve(returnResult); // Return out, and let the finally logic close the server before we return.
                 }
@@ -183,7 +179,7 @@ Report this issue to our vscode-dotnet-runtime GitHub for help.`);
             try
             {
                 this.server?.close();
-                this.logger.log(`Action: ${actionId} Server freed: ${this.lockPath}`);
+                this.logger.log(`Action: ${actionId} Lock freed: ${this.lockPath}`);
                 // .close() will delete the fd on Linux and OS X, if the process doesn't die, so we don't need to do that again.
             }
             catch (err: any)

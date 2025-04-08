@@ -160,7 +160,7 @@ export class InstallTrackerSingleton
 
     private getLockFilePathForKey(provider: IInstallationDirectoryProvider, dataKey: string): string
     {
-        return `${dataKey}.lock`;
+        return `${dataKey}Lk`;
     }
 
     /**
