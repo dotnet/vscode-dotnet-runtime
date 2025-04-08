@@ -80,7 +80,7 @@ export class NodeIPCMutex
     }
 
     /**
-     * @remarks This function will try to hold a lock to prevent both other processes and other async code in this processes from running simultaneously..
+     * @remarks This function will try to hold a lock to prevent both other processes and other async code in this processes from running simultaneously.
      * It will retry acquiring the lock if it is already held by another process or async code in this process.
      * It will also check if the lock is stale (i.e., if the process holding the lock has died) and clean it up if necessary.
      * It will fail and throw if it cannot acquire the lock after the specified number of retries.
