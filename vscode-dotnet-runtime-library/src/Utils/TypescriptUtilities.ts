@@ -87,7 +87,7 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
 
         const result = await mutex.acquire(async () =>
         {
-            // await must be used to make the linter allow fn to be async, which it must be.
+            // await must be used to make the linter allow f to be async, which it must be.
             // eslint-disable-next-line no-return-await
             return await f(...(args));
         }, retryTimeMs, timeoutTimeMs, `${lockId}-${crypto.randomUUID()}`);
