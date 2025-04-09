@@ -32,6 +32,7 @@ import
     EventBasedError,
     EventCancellationError,
     FailedToRunSudoCommand,
+    SudoDirCreationFailed,
     SudoProcAliveCheckBegin,
     SudoProcAliveCheckEnd,
     SudoProcCommandExchangeBegin,
@@ -69,12 +70,15 @@ export class CommandExecutor extends ICommandExecutor
         LANGUAGE: 'en',
         DOTNET_CLI_UI_LANGUAGE: 'en-US',
     }; // Not all systems have english installed -- not sure if it's safe to use this.
-    private sudoProcessCommunicationDir = path.join(__dirname, 'install scripts');
+    private sudoProcessScript = path.join(__dirname, 'install scripts', 'interprocess-communicator.sh');
+    private sudoProcessCommunicationDir: string;
     private fileUtil: IFileUtilities;
 
     constructor(context: IAcquisitionWorkerContext, utilContext: IUtilityContext, protected readonly validSudoCommands?: string[])
     {
         super(context, utilContext);
+
+        this.sudoProcessCommunicationDir = path.join(__dirname, LockUsedByThisInstanceSingleton.SUDO_SESSION_ID);
         this.fileUtil = new FileUtilities();
     }
 
@@ -86,7 +90,17 @@ export class CommandExecutor extends ICommandExecutor
     {
         const fullCommandString = CommandExecutor.prettifyCommandExecutorCommand(command, false);
         this.context?.eventStream.post(new CommandExecutionUnderSudoEvent(`The command ${fullCommandString} is being ran under sudo.`));
-        const shellScript = path.join(this.sudoProcessCommunicationDir, 'interprocess-communicator.sh');
+        const shellScript = this.sudoProcessScript;
+
+        try
+        {
+            await fs.promises.mkdir(this.sudoProcessCommunicationDir, { recursive: true });
+        }
+        catch (error: any)
+        {
+            error.message = error.message + `\nFailed to create ${this.sudoProcessCommunicationDir}. Please check your permissions or install dotnet manually.`;
+            this.context?.eventStream.post(new SudoDirCreationFailed(`The command ${fullCommandString} failed, as no directory could be made: ${JSON.stringify(error)}`));
+        }
 
         if (await isRunningUnderWSL(this.context, this.utilityContext, this))
         {
@@ -105,7 +119,7 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
 
         const waitForLockTimeMs = this.context?.timeoutSeconds ? (this.context?.timeoutSeconds * 1000 / 3) : 180000;
         // @ts-expect-error We want to hold the lock and sometimes return a bool, sometimes a CommandExecutorResult. The bool will never be returned if runCommand is true, so this makes the compiler accept this (its bad ik).
-        return executeWithLock(this.context.eventStream, false, RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir), SUDO_LOCK_PING_DURATION_MS, waitForLockTimeMs,
+        return executeWithLock(this.context.eventStream, false, RUN_UNDER_SUDO_LOCK(this.sudoProcessScript), SUDO_LOCK_PING_DURATION_MS, waitForLockTimeMs,
             async () =>
             {
                 this.startupSudoProc(fullCommandString, shellScript, terminalFailure).catch(() => {});
@@ -131,8 +145,8 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
         }
         else
         {
-            if (await this.sudoProcIsLive(false, fullCommandString, 1000)) // If the sudo process was spawned by another instance of code, we do not want to have 2 at once but also do not waste a lot of time checking
-            // As it should not be in the middle of an operation which may cause it to take a while.
+            if (await this.sudoProcIsLive(false, fullCommandString, 2000)) // If the sudo process was spawned by another instance of code, we do not want to have 2 at once but also do not waste a lot of time checking
+            // As it should not be in the middle of an operation which may cause it to take a while, unless it was pkilled.
             {
                 return '0';
             }
@@ -220,7 +234,7 @@ ${stderr}`));
 
         const isLive = LockUsedByThisInstanceSingleton.getInstance().isCurrentSudoProcCheckAlive();
         this.context?.eventStream.post(new SudoProcAliveCheckEnd(`Finished Sudo Process Master: Is Alive? ${isLive}. ${new Date().toISOString()}
-                    maxTimeoutTimeMs: ${maxTimeoutTimeMs} with lockTime ${waitForLockTimeMs} and responseTime ${waitForSudoResponseTimeMs}`));
+                    waitForLockTimeMs: ${waitForLockTimeMs} with lockTime ${waitForLockTimeMs} and responseTime ${waitForSudoResponseTimeMs}`));
 
         // The sudo process spawned by vscode does not exit unless it fails or times out after an hour. We can't await it as we need it to persist.
         // If someone cancels the install, we store that error here since this gets awaited to prevent further code statement control flow from executing.
