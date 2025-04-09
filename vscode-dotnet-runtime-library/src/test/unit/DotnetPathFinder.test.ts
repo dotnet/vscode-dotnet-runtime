@@ -26,7 +26,7 @@ suite('DotnetPathFinder Unit Tests', function ()
     const mockExecutor = new MockCommandExecutor(mockContext, mockUtility);
     if (os.platform() !== 'win32')
     {
-        mockExecutor.fakeReturnValue = { stdout: `8.0.101 [${fakeDotnetPath}/dotnet/shared/Microsoft.AspNetCore.App]`, stderr: '', status: '0' };
+        mockExecutor.fakeReturnValue = { stdout: `Microsoft.NETCore.App 8.0.10 [${fakeDotnetPath}/shared/Microsoft.NetCoreApp.App]`, stderr: '', status: '0' };
     }
 
     this.afterEach(async () =>
