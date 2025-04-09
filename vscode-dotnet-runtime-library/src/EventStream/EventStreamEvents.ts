@@ -1535,6 +1535,10 @@ export class NetInstallerEndExecutionEvent extends DotnetCustomMessageEvent
     public readonly eventName = 'NetInstallerEndExecutionEvent';
 }
 
+export class FailedToRunSudoCommand extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'FailedToRunSudoCommand';
+}
 
 export class DotnetInstallLinuxChecks extends DotnetCustomMessageEvent
 {

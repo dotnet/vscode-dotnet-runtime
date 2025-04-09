@@ -96,8 +96,15 @@ export class FileUtilities extends IFileUtilities
 
     public async read(filePath: string): Promise<string>
     {
-        const output = await fs.promises.readFile(filePath, 'utf8');
-        return output;
+        try
+        {
+            const output = await fs.promises.readFile(filePath, 'utf8');
+            return output;
+        }
+        catch (error: any)
+        {
+            return `File ${filePath} does not exist or is not readable : ${error?.message}`;
+        }
     }
 
     public async exists(filePath: string): Promise<boolean>

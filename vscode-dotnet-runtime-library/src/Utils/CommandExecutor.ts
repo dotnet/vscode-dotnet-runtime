@@ -31,6 +31,7 @@ import
     DotnetWSLSecurityError,
     EventBasedError,
     EventCancellationError,
+    FailedToRunSudoCommand,
     SudoProcAliveCheckBegin,
     SudoProcAliveCheckEnd,
     SudoProcCommandExchangeBegin,
@@ -187,7 +188,7 @@ ${stderr}`));
     private async sudoProcIsLive(errorIfDead: boolean, fullCommandString: string, maxTimeoutTimeMs?: number, runCommand = false): Promise<boolean | CommandExecutorResult>
     {
         const processAliveOkSentinelFile = path.join(this.sudoProcessCommunicationDir, 'ok.txt');
-        const waitForLockTimeMs = maxTimeoutTimeMs ? maxTimeoutTimeMs : this.context?.timeoutSeconds ? (this.context?.timeoutSeconds * 1000 / 5) : 180000;
+        const waitForLockTimeMs = maxTimeoutTimeMs ? maxTimeoutTimeMs : (this.context?.timeoutSeconds !== undefined ? (Math.max(this.context.timeoutSeconds * 1000 / 5, 100)) : 180000);
         const waitForSudoResponseTimeMs = waitForLockTimeMs * 0.75; // Arbitrary, but this should be less than the time to get the lock.
 
         await (this.fileUtil as FileUtilities).wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt']);
@@ -279,7 +280,7 @@ ${stderr}`));
         this.context?.eventStream.post(new CommandProcessorExecutionBegin(`The command ${commandToExecuteString} was forwarded to the master process to run.`));
 
 
-        const waitTimeMs = this.context?.timeoutSeconds ? (this.context?.timeoutSeconds * 1000) : 600000;
+        const waitTimeMs = this.context?.timeoutSeconds ? (Math.max(this.context?.timeoutSeconds * 1000, 1000)) : 600000;
         await loopWithTimeoutOnCond(100, waitTimeMs,
             function ProcessFinishedExecutingAndWroteOutput(): boolean { return fs.existsSync(outputFile) },
             function doNothing(): void { ; },
@@ -288,13 +289,14 @@ ${stderr}`));
         )
             .catch(error =>
             {
+                this.context?.eventStream.post(new FailedToRunSudoCommand(`The command ${commandToExecuteString} failed to run: ${JSON.stringify(error ?? '')}.`));
                 // Let the rejected promise get handled below. This is required to not make an error from the checking if this promise is alive
             });
 
         commandOutputJson = {
-            stdout: (fs.readFileSync(stdoutFile, 'utf8')).trim(),
-            stderr: (fs.readFileSync(stderrFile, 'utf8')).trim(),
-            status: (fs.readFileSync(statusFile, 'utf8')).trim()
+            stdout: (await (this.fileUtil as FileUtilities).read(stdoutFile)).trim(),
+            stderr: (await (this.fileUtil as FileUtilities).read(stderrFile)).trim(),
+            status: (await (this.fileUtil as FileUtilities).read(statusFile)).trim()
         } as CommandExecutorResult;
 
         this.context?.eventStream.post(new SudoProcCommandExchangeEnd(`Finished or timed out with master process. ${new Date().toISOString()}`));
@@ -347,6 +349,7 @@ ${stderr}`));
         await executeWithLock(this.context.eventStream, false, RUN_UNDER_SUDO_LOCK(this.sudoProcessCommunicationDir), SUDO_LOCK_PING_DURATION_MS, this.context.timeoutSeconds * 1000 / 5,
             async () =>
             {
+                await (this.fileUtil as FileUtilities).wipeDirectory(this.sudoProcessCommunicationDir, this.context?.eventStream, ['.txt']);
                 const processExitFile = path.join(this.sudoProcessCommunicationDir, 'exit.txt');
                 await (this.fileUtil as FileUtilities).writeFileOntoDisk('', processExitFile, this.context?.eventStream);
 
