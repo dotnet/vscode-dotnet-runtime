@@ -103,6 +103,7 @@ export class FileUtilities extends IFileUtilities
         }
         catch (error: any)
         {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             return `File ${filePath} does not exist or is not readable : ${error?.message}`;
         }
     }
