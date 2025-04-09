@@ -5,30 +5,36 @@
  * ------------------------------------------------------------------------------------------ */
 import * as chai from 'chai';
 import * as os from 'os';
-import { MockCommandExecutor, MockEventStream } from '../mocks/MockObjects';
+import { MockCommandExecutor } from '../mocks/MockObjects';
 import { DebianDistroSDKProvider } from '../../Acquisition/DebianDistroSDKProvider';
 import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 import { DistroVersionPair, DotnetDistroSupportStatus, LinuxVersionResolver } from '../../Acquisition/LinuxVersionResolver';
-import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
+import { getDistroInfo, getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
+import { DEBIAN_DISTRO_INFO_KEY } from '../../Acquisition/StringConstants';
 const assert = chai.assert;
 const standardTimeoutTime = 100000;
 
 const mockVersion = '7.0.103';
 const acquisitionContext = getMockAcquisitionContext('sdk', mockVersion);
 const mockExecutor = new MockCommandExecutor(acquisitionContext, getMockUtilityContext());
-const pair: DistroVersionPair = { distro: 'Debian GNU/Linux', version: '12' };
+const pair: DistroVersionPair = { distro: DEBIAN_DISTRO_INFO_KEY, version: '12' };
 const provider: DebianDistroSDKProvider = new DebianDistroSDKProvider(pair, acquisitionContext, getMockUtilityContext(), mockExecutor);
-const shouldRun = os.platform() === 'linux';
 const installType: DotnetInstallMode = 'sdk';
 const noDotnetString = `
 dotnet: command not found
 `
 
+async function shouldRun()
+{
+    const distroInfo = await getDistroInfo(acquisitionContext);
+    return os.platform() === 'linux' && distroInfo.distro === DEBIAN_DISTRO_INFO_KEY;
+}
+
 suite('Debian Distro Logic Unit Tests', () =>
 {
     test('Recommends Correct Version', async () =>
     {
-        if (shouldRun)
+        if (await shouldRun())
         {
             const recVersion = await provider.getRecommendedDotnetVersion(installType);
             assert.equal(mockExecutor.attemptedCommand,
@@ -41,7 +47,7 @@ suite('Debian Distro Logic Unit Tests', () =>
 
     test('Package Check Succeeds', async () =>
     {
-        if (shouldRun)
+        if (await shouldRun())
         {
             // assert this passes : we don't want the test to be reliant on machine state for whether the package exists or not, so don't check output
             await provider.dotnetPackageExistsOnSystem(mockVersion, installType);
@@ -51,7 +57,7 @@ suite('Debian Distro Logic Unit Tests', () =>
 
     test('Support Status Check', async () =>
     {
-        if (shouldRun)
+        if (await shouldRun())
         {
             const status = await provider.getDotnetVersionSupportStatus(mockVersion, installType);
             assert.equal(status, DotnetDistroSupportStatus.Microsoft);
@@ -60,7 +66,7 @@ suite('Debian Distro Logic Unit Tests', () =>
 
     test('Gets Distro Feed Install Dir', async () =>
     {
-        if (shouldRun)
+        if (await shouldRun())
         {
             const distroFeedDir = await provider.getExpectedDotnetDistroFeedInstallationDirectory();
             assert.equal(distroFeedDir, '/usr/lib/dotnet');
@@ -69,7 +75,7 @@ suite('Debian Distro Logic Unit Tests', () =>
 
     test('Gets Microsoft Feed Install Dir', async () =>
     {
-        if (shouldRun)
+        if (await shouldRun())
         {
             const microsoftFeedDir = await provider.getExpectedDotnetMicrosoftFeedInstallationDirectory();
             assert.equal(microsoftFeedDir, '/usr/share/dotnet');
@@ -78,7 +84,7 @@ suite('Debian Distro Logic Unit Tests', () =>
 
     test('Gets Installed SDKs', async () =>
     {
-        if (shouldRun)
+        if (await shouldRun())
         {
             mockExecutor.fakeReturnValue = {
                 stdout: `
@@ -98,7 +104,7 @@ suite('Debian Distro Logic Unit Tests', () =>
 
     test('Gets Installed Runtimes', async () =>
     {
-        if (shouldRun)
+        if (await shouldRun())
         {
             mockExecutor.fakeReturnValue = {
                 stdout: `
@@ -118,7 +124,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`, std
 
     test('Looks for Global Dotnet Path Correctly', async () =>
     {
-        if (shouldRun)
+        if (await shouldRun())
         {
             await provider.getInstalledGlobalDotnetPathIfExists(installType);
             assert.equal(mockExecutor.attemptedCommand, 'readlink -f /usr/bin/dotnet');
@@ -127,7 +133,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`, std
 
     test('Finds Existing Global Dotnet Version', async () =>
     {
-        if (shouldRun)
+        if (await shouldRun())
         {
             mockExecutor.fakeReturnValue = { stdout: `7.0.105`, stderr: '', status: '0' };
             let currentInfo = await provider.getInstalledGlobalDotnetVersionIfExists();
@@ -143,7 +149,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`, std
 
     test('Gives Correct Version Support Info', async () =>
     {
-        if (shouldRun)
+        if (await shouldRun())
         {
             let supported = await provider.isDotnetVersionSupported('11.0.101', installType);
             // In the mock data, 8.0 is not supported, so it should be false.
@@ -158,7 +164,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`, std
 
     test('Runs Correct Install Command', async () =>
     {
-        if (shouldRun)
+        if (await shouldRun())
         {
             await provider.installDotnet(mockVersion, installType);
             assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get -o DPkg::Lock::Timeout=180 install -y dotnet-sdk-7.0');
@@ -167,7 +173,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`, std
 
     test('Runs Correct Uninstall Command', async () =>
     {
-        if (shouldRun)
+        if (await shouldRun())
         {
             await provider.uninstallDotnet(mockVersion, installType);
             assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get -o DPkg::Lock::Timeout=180 remove -y dotnet-sdk-7.0');
@@ -176,7 +182,7 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`, std
 
     test('Runs Correct Update Command', async () =>
     {
-        if (shouldRun)
+        if (await shouldRun())
         {
             await provider.upgradeDotnet(mockVersion, installType);
             assert.equal(mockExecutor.attemptedCommand, 'sudo apt-get -o DPkg::Lock::Timeout=180 upgrade -y dotnet-sdk-7.0');

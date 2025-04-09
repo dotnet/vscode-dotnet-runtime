@@ -24,6 +24,10 @@ suite('DotnetPathFinder Unit Tests', function ()
     const mockContext = getMockAcquisitionContext('sdk', '8.0');
     const mockUtility = getMockUtilityContext();
     const mockExecutor = new MockCommandExecutor(mockContext, mockUtility);
+    if (os.platform() !== 'win32')
+    {
+        mockExecutor.fakeReturnValue = { stdout: `Microsoft.NETCore.App 8.0.10 [${fakeDotnetPath}/shared/Microsoft.NetCoreApp.App]`, stderr: '', status: '0' };
+    }
 
     this.afterEach(async () =>
     {
@@ -34,8 +38,7 @@ suite('DotnetPathFinder Unit Tests', function ()
 
     test('It can find the hostfxr record on mac/linux', async () =>
     {
-        // Make it look like theres an 8.0 install on the host in case we want to validate it if we ever want to add win32 test like so
-        // mockExecutor.fakeReturnValue = { stdout: '8.0.101 [C:\\Program Files\\dotnet\\sdk]', stderr: '', status: '0' };
+        // Make it look like theres an install on the host in case we want to validate it if we ever want to add win32 test like so
         if (os.platform() !== 'win32')
         {
             const mockFile = new MockFileUtilities();

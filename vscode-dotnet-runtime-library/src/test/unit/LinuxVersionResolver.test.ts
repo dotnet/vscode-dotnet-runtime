@@ -11,6 +11,7 @@ import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton
 import { MockCommandExecutor, MockDistroProvider } from '../mocks/MockObjects';
 import * as util from './TestUtility';
 import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
+import { RED_HAT_DISTRO_INFO_KEY, UBUNTU_DISTRO_INFO_KEY } from '../../Acquisition/StringConstants';
 const assert = chai.assert;
 
 
@@ -21,8 +22,8 @@ suite('Linux Version Resolver Tests', function ()
     const mockVersion = '7.0.103';
     const acquisitionContext = getMockAcquisitionContext('sdk', mockVersion);
     const mockExecutor = new MockCommandExecutor(acquisitionContext, getMockUtilityContext());
-    const pair: DistroVersionPair = { distro: 'Ubuntu', version: '22.04' };
-    const redHatPair: DistroVersionPair = { distro: 'Red Hat Enterprise Linux', version: '7.3' };
+    const pair: DistroVersionPair = { distro: UBUNTU_DISTRO_INFO_KEY, version: '24.04' };
+    const redHatPair: DistroVersionPair = { distro: RED_HAT_DISTRO_INFO_KEY, version: '7.3' };
     const shouldRun = os.platform() === 'linux';
     const context = util.getMockAcquisitionContext('sdk', mockVersion);
     const mockRedHatProvider = new MockDistroProvider(redHatPair, context, getMockUtilityContext(), mockExecutor);
