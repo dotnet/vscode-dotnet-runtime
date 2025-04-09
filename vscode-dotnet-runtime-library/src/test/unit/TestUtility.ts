@@ -4,6 +4,8 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
+import { MockDotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext, MockInstallationValidator, MockVSCodeEnvironment, MockVSCodeExtensionContext } from '../mocks/MockObjects';
+import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
 import { directoryProviderFactory } from '../../Acquisition/DirectoryProviderFactory';
 import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
@@ -13,8 +15,6 @@ import { RED_HAT_DISTRO_INFO_KEY, UBUNTU_DISTRO_INFO_KEY } from '../../Acquisiti
 import { IEventStream } from '../../EventStream/EventStream';
 import { IDotnetAcquireContext } from '../../IDotnetAcquireContext';
 import { IUtilityContext } from '../../Utils/IUtilityContext';
-import { MockDotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext, MockInstallationValidator, MockVSCodeEnvironment, MockVSCodeExtensionContext } from '../mocks/MockObjects';
-import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
 
 const standardTimeoutTime = 100000;
 
