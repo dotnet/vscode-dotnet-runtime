@@ -29,6 +29,7 @@ import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 import { RedHatDistroSDKProvider } from './RedHatDistroSDKProvider';
 import { VersionResolver } from './VersionResolver';
 import * as versionUtils from './VersionUtilities';
+import { DEBIAN_DISTRO_INFO_KEY, RED_HAT_DISTRO_INFO_KEY, UBUNTU_DISTRO_INFO_KEY } from './StringConstants';
 
 
 /**
@@ -96,7 +97,7 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
     protected acquireCtx: IDotnetAcquireContext | null | undefined;
 
     // This includes all distros that we officially support for this tool as a company. If a distro is not in this list, it can still have community member support.
-    public microsoftSupportedDistroIds = ['Red Hat Enterprise Linux', 'Ubuntu'];
+    public microsoftSupportedDistroIds = [RED_HAT_DISTRO_INFO_KEY, UBUNTU_DISTRO_INFO_KEY];
 
     constructor(private readonly workerContext: IAcquisitionWorkerContext, private readonly utilityContext: IUtilityContext,
         executor: ICommandExecutor | null = null, distroProvider: IDistroDotnetSDKProvider | null = null)
@@ -220,7 +221,7 @@ If you experience issues, please reach out on https://github.com/dotnet/vscode-d
                     this.unsupportedDistroErrorMessage), getInstallFromContext(this.workerContext));
                 this.workerContext.eventStream.post(unknownDistroErr);
                 throw unknownDistroErr.error;
-            case 'Red Hat Enterprise Linux':
+            case RED_HAT_DISTRO_INFO_KEY:
                 if (this.isRedHatVersion7(distroAndVersion.version))
                 {
                     const unsupportedRhelErr = new DotnetAcquisitionDistroUnknownError(new EventCancellationError(
@@ -231,7 +232,7 @@ If you experience issues, please reach out on https://github.com/dotnet/vscode-d
                     throw unsupportedRhelErr.error;
                 }
                 return new RedHatDistroSDKProvider(distroAndVersion, this.workerContext, this.utilityContext);
-            case 'Debian GNU/Linux':
+            case DEBIAN_DISTRO_INFO_KEY:
                 return new DebianDistroSDKProvider(distroAndVersion, this.workerContext, this.utilityContext);
             default:
                 return new GenericDistroSDKProvider(distroAndVersion, this.workerContext, this.utilityContext);

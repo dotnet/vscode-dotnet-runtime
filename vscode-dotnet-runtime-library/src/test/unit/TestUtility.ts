@@ -4,14 +4,18 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
+
+import * as os from 'os';
 import { directoryProviderFactory } from '../../Acquisition/DirectoryProviderFactory';
 import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
 import { IInstallationDirectoryProvider } from '../../Acquisition/IInstallationDirectoryProvider';
-import { IEventStream } from '../../EventStream/EventStream';
-import { IDotnetAcquireContext } from '../../IDotnetAcquireContext';
 import { IUtilityContext } from '../../Utils/IUtilityContext';
 import { INodeIPCMutexLogger, NodeIPCMutex } from '../../Utils/NodeIPCMutex';
+import { DistroVersionPair, LinuxVersionResolver } from '../../Acquisition/LinuxVersionResolver';
+import { RED_HAT_DISTRO_INFO_KEY, UBUNTU_DISTRO_INFO_KEY } from '../../Acquisition/StringConstants';
+import { IEventStream } from '../../EventStream/EventStream';
+import { IDotnetAcquireContext } from '../../IDotnetAcquireContext';
 import { MockDotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext, MockInstallationValidator, MockVSCodeEnvironment, MockVSCodeExtensionContext } from '../mocks/MockObjects';
 import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
 
@@ -118,4 +122,57 @@ export async function printWithLock(lock: string, msg: string, timeToLive: numbe
     }, 40, timeToLive, msg);
 
     logger.log(`After release, ${msg} returned c: ${c}`);
+}
+
+export async function getDistroInfo(context: IAcquisitionWorkerContext): Promise<DistroVersionPair>
+{
+    if (os.platform() !== 'linux')
+    {
+        return { distro: '', version: '' };
+    }
+    return new LinuxVersionResolver(context, getMockUtilityContext()).getRunningDistro();
+}
+
+/**
+ *
+ * @param distroInfo The distro and version of the system
+ * @returns The built-in distro supported version of the .NET SDK.
+ * Only maintaining the microsoft supported versions for now.
+ */
+export async function getLinuxSupportedDotnetSDKVersion(context: IAcquisitionWorkerContext, distroInfo?: DistroVersionPair): Promise<string>
+{
+    distroInfo ??= await getDistroInfo(context);
+
+    if (distroInfo.distro === UBUNTU_DISTRO_INFO_KEY)
+    {
+        if (distroInfo.version < '22.04')
+        {
+            return '6.0.100';
+        }
+        if (distroInfo.version < '24.04')
+        {
+            return '8.0.100';
+        }
+        else
+        {
+            return '8.0.100';
+        }
+    }
+    else if (distroInfo.distro === RED_HAT_DISTRO_INFO_KEY)
+    {
+        if (distroInfo.version < '8.0')
+        {
+            return '7.0.100';
+        }
+        else
+        {
+            return '9.0.100';
+        }
+    }
+    return getLatestLinuxDotnet(); // best effort guess for latest 'dotnet' version atm.
+}
+
+export function getLatestLinuxDotnet()
+{
+    return '9.0.100';
 }

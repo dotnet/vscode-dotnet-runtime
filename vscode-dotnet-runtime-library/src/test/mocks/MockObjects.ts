@@ -480,7 +480,7 @@ export class MockFileUtilities extends IFileUtilities
 
     public async realpath(filePath: string): Promise<string | null>
     {
-        return new FileUtilities().realpath(filePath);
+        return this.filePathsAndReadValues[filePath] || new FileUtilities().realpath(filePath);
     }
 
 }
