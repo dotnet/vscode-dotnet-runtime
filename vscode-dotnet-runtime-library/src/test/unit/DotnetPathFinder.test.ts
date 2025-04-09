@@ -21,9 +21,13 @@ suite('DotnetPathFinder Unit Tests', function ()
     const installRecordPathNoArch = `/etc/dotnet/install_location`;
     const fakeDotnetPath = 'fake/dotnet';
 
-    const mockContext = getMockAcquisitionContext('sdk', '11.0');
+    const mockContext = getMockAcquisitionContext('sdk', '8.0');
     const mockUtility = getMockUtilityContext();
     const mockExecutor = new MockCommandExecutor(mockContext, mockUtility);
+    if (os.platform() !== 'win32')
+    {
+        mockExecutor.fakeReturnValue = { stdout: `8.0.101 [${fakeDotnetPath}]`, stderr: '', status: '0' };
+    }
 
     this.afterEach(async () =>
     {
@@ -35,7 +39,6 @@ suite('DotnetPathFinder Unit Tests', function ()
     test('It can find the hostfxr record on mac/linux', async () =>
     {
         // Make it look like theres an install on the host in case we want to validate it if we ever want to add win32 test like so
-        // mockExecutor.fakeReturnValue = { stdout: '8.0.101 [C:\\Program Files\\dotnet\\sdk]', stderr: '', status: '0' };
         if (os.platform() !== 'win32')
         {
             const mockFile = new MockFileUtilities();
