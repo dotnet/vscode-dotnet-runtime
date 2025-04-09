@@ -88,6 +88,10 @@ export function getMockAcquireContext(nextAcquiringVersion: string, arch: string
 
 export async function getDistroInfo(context: IAcquisitionWorkerContext): Promise<DistroVersionPair>
 {
+    if (os.platform() !== 'linux')
+    {
+        return { distro: '', version: '' };
+    }
     return new LinuxVersionResolver(context, getMockUtilityContext()).getRunningDistro();
 }
 
@@ -110,7 +114,6 @@ export async function getLinuxSupportedDotnetSDKVersion(context: IAcquisitionWor
         if (distroInfo.version < '24.04')
         {
             return '9.0.100';
-
         }
         else
         {
