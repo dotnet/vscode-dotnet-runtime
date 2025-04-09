@@ -281,11 +281,12 @@ ${stderr}`));
 
 
         const waitTimeMs = this.context?.timeoutSeconds ? (Math.max(this.context?.timeoutSeconds * 1000, 1000)) : 600000;
-        await loopWithTimeoutOnCond(100, waitTimeMs,
+        const sampleRateMs = 100;
+        await loopWithTimeoutOnCond(sampleRateMs, waitTimeMs,
             function ProcessFinishedExecutingAndWroteOutput(): boolean { return fs.existsSync(outputFile) },
             function doNothing(): void { ; },
             this.context.eventStream,
-            new SudoProcCommandExchangePing(`Ping : Waiting. ${new Date().toISOString()}`)
+            new SudoProcCommandExchangePing(`Ping : Waiting, at rate ${sampleRateMs} with timeout ${waitTimeMs} ${new Date().toISOString()}`)
         )
             .catch(error =>
             {
