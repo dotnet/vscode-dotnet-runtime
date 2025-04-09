@@ -104,6 +104,7 @@ export class FileUtilities extends IFileUtilities
         catch (error: any)
         {
             throw new Error(`Failed to read file ${filePath}: ${error?.message}`);
+        }
     }
 
     public async exists(filePath: string): Promise<boolean>
