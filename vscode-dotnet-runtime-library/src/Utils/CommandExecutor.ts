@@ -145,7 +145,7 @@ Please install the .NET SDK manually by following https://learn.microsoft.com/en
         }
         else
         {
-            if (await this.sudoProcIsLive(false, fullCommandString, 2000)) // If the sudo process was spawned by another instance of code, we do not want to have 2 at once but also do not waste a lot of time checking
+            if (await this.sudoProcIsLive(false, fullCommandString, 500)) // If the sudo process was spawned by another instance of code, we do not want to have 2 at once but also do not waste a lot of time checking
             // As it should not be in the middle of an operation which may cause it to take a while, unless it was pkilled.
             {
                 return '0';
