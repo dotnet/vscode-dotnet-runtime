@@ -14,6 +14,7 @@ import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton
 import { MockCommandExecutor } from '../mocks/MockObjects';
 import { UBUNTU_DISTRO_INFO_KEY } from '../../Acquisition/StringConstants';
 import { getLatestLinuxDotnet, getLinuxSupportedDotnetSDKVersion, getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
+import { getMajor, getMajorMinor } from '../../Acquisition/VersionUtilities';
 const assert = chai.assert;
 const standardTimeoutTime = 100000;
 
@@ -48,10 +49,12 @@ suite('Linux Distro Logic Unit Tests', function ()
         if (shouldRun)
         {
             const recVersion = await provider.getRecommendedDotnetVersion(installType);
+            const correctVersion = await getLinuxSupportedDotnetSDKVersion(acquisitionContext);
+            const correctXXVersion = `${versionUtils.getMajorMinor(correctVersion, acquisitionContext.eventStream, acquisitionContext)}.1xx`;
             assert.equal(mockExecutor.attemptedCommand,
                 `apt-cache -o DPkg::Lock::Timeout=180 search --names-only ^dotnet-sdk-${versionUtils.getMajorMinor(getLatestLinuxDotnet(), acquisitionContext.eventStream, acquisitionContext)}$`, 'Searched for the newest package last with regex'); // this may fail if test not exec'd first
             // the data is cached so --version may not be executed.
-            assert.equal(recVersion, await getLinuxSupportedDotnetSDKVersion(acquisitionContext), 'Resolved the most recent available version : will eventually break if the mock data is not updated');
+            assert.equal(recVersion, correctXXVersion, 'Resolved the most recent available version : will eventually break if the mock data is not updated');
         }
     }).timeout(standardTimeoutTime);
 
@@ -162,13 +165,14 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`, std
     {
         if (shouldRun)
         {
-            let supported = await provider.isDotnetVersionSupported('11.0.101', installType);
-            // In the mock data, 8.0 is not supported, so it should be false.
-            assert.equal(supported, false);
+            const getPlusOneLatest = (Number(getMajor(getLatestLinuxDotnet(), acquisitionContext.eventStream, acquisitionContext)) + 1).toString() + '.0.100';
+            let supported = await provider.isDotnetVersionSupported(getPlusOneLatest, installType);
+            assert.equal(supported, false, '.net x+1 does not exist yet');
             supported = await provider.isDotnetVersionSupported(await getLinuxSupportedDotnetSDKVersion(acquisitionContext), installType);
             assert.equal(supported, true);
+
             // this feature band isn't supported by most distros yet.
-            supported = await provider.isDotnetVersionSupported(await getLinuxSupportedDotnetSDKVersion(acquisitionContext), installType);
+            supported = await provider.isDotnetVersionSupported((await getLinuxSupportedDotnetSDKVersion(acquisitionContext)).replace('1', '2'), installType);
             assert.equal(supported, false);
         }
     }).timeout(standardTimeoutTime);
