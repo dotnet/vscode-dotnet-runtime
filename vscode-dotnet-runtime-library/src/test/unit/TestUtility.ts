@@ -4,16 +4,18 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
+
 import * as os from 'os';
 import { directoryProviderFactory } from '../../Acquisition/DirectoryProviderFactory';
 import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
 import { IInstallationDirectoryProvider } from '../../Acquisition/IInstallationDirectoryProvider';
+import { IUtilityContext } from '../../Utils/IUtilityContext';
+import { INodeIPCMutexLogger, NodeIPCMutex } from '../../Utils/NodeIPCMutex';
 import { DistroVersionPair, LinuxVersionResolver } from '../../Acquisition/LinuxVersionResolver';
 import { RED_HAT_DISTRO_INFO_KEY, UBUNTU_DISTRO_INFO_KEY } from '../../Acquisition/StringConstants';
 import { IEventStream } from '../../EventStream/EventStream';
 import { IDotnetAcquireContext } from '../../IDotnetAcquireContext';
-import { IUtilityContext } from '../../Utils/IUtilityContext';
 import { MockDotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext, MockInstallationValidator, MockVSCodeEnvironment, MockVSCodeExtensionContext } from '../mocks/MockObjects';
 import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
 
@@ -85,6 +87,41 @@ export function getMockAcquireContext(nextAcquiringVersion: string, arch: string
         mode: installMode
     };
     return acquireContext;
+}
+
+export const acquiredText = 'Acquired Lock:';
+export const releasedText = 'Released Lock:';
+
+export async function wait(delayMs: number)
+{
+    return new Promise(resolve => setTimeout(resolve, delayMs));
+}
+
+export class INodeIPCTestLogger extends INodeIPCMutexLogger
+{
+    public logs: string[] = [];
+
+    public log(msg: string): void
+    {
+        this.logs.push(msg);
+    }
+}
+
+export async function printWithLock(lock: string, msg: string, timeToLive: number, logger: INodeIPCTestLogger, fn: () => Promise<void> = () => { return Promise.resolve(); }, retryDelayMs: number = 10)
+{
+    const mutex = new NodeIPCMutex(lock, logger);
+
+    const c = await mutex.acquire(async () =>
+    {
+        logger.log(`${acquiredText}${msg}`);
+        await fn();
+        await wait(timeToLive);
+        logger.log(`${releasedText}${msg}`);
+        await fn();
+        return msg;
+    }, 40, timeToLive, msg);
+
+    logger.log(`After release, ${msg} returned c: ${c}`);
 }
 
 export async function getDistroInfo(context: IAcquisitionWorkerContext): Promise<DistroVersionPair>

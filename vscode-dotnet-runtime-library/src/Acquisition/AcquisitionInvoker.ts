@@ -57,7 +57,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
 
     public async installDotnet(installationContext: IDotnetInstallationContext, installObj: DotnetInstall): Promise<void>
     {
-        return executeWithLock(this.eventStream, false, `${path.resolve(installationContext.installDir)}.lock`,
+        return executeWithLock(this.eventStream, false, installObj.installId,
             LOCAL_LOCK_PING_DURATION_MS, installationContext.timeoutSeconds * 1000,
             async (installContext: IDotnetInstallationContext, install: DotnetInstall) =>
             {

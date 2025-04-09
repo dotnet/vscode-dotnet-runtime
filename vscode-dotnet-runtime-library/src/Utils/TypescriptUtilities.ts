@@ -3,25 +3,19 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as os from 'os';
-
-import * as fs from 'fs';
-import * as path from 'path';
-import * as lockfile from 'proper-lockfile';
 import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from '../Acquisition/CacheTimeConstants';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { IEventStream } from '../EventStream/EventStream';
 import
 {
-    DotnetLockAcquiredEvent,
-    DotnetLockAttemptingAcquireEvent,
-    DotnetLockErrorEvent,
-    DotnetLockReleasedEvent, DotnetWSLCheckEvent, EventBasedError
+    DotnetWSLCheckEvent,
+    GenericDotnetLockEvent
 } from '../EventStream/EventStreamEvents';
 import { IEvent } from '../EventStream/IEvent';
 import { CommandExecutor } from './CommandExecutor';
 import { ICommandExecutor } from './ICommandExecutor';
 import { IUtilityContext } from './IUtilityContext';
-import { LockUsedByThisInstanceSingleton } from './LockUsedByThisInstanceSingleton';
+import { INodeIPCMutexLogger, NodeIPCMutex } from './NodeIPCMutex';
 
 export async function loopWithTimeoutOnCond(sampleRatePerMs: number, durationToWaitBeforeTimeoutMs: number, conditionToStop: () => boolean, doAfterStop: () => void,
     eventStream: IEventStream | null, waitEvent: IEvent): Promise<void>
@@ -65,95 +59,47 @@ export async function isRunningUnderWSL(acquisitionContext: IAcquisitionWorkerCo
     return true;
 }
 
-/*
-@remarks lockPath should be a full path to a shared lock file ending in .lock (that may or may not exist on disk) and the file content does not matter
-*/
-export async function executeWithLock<A extends any[], R>(eventStream: IEventStream, alreadyHoldingLock: boolean, lockPath: string, retryTimeMs: number, timeoutTimeMs: number, f: (...args: A) => R, ...args: A): Promise<R>
+export async function executeWithLock<A extends any[], R>(eventStream: IEventStream, alreadyHoldingLock: boolean, lockId: string, retryTimeMs: number, timeoutTimeMs: number, f: (...args: A) => R, ...args: A): Promise<R>
 {
     // Are we in a mutex-relevant inner function call, that is called by a parent function that already holds the lock?
     // If so, we don't need to acquire the lock again and we also shouldn't release it as the parent function will do that.
-    if (alreadyHoldingLock)
+    if (alreadyHoldingLock || process.env.VSCODE_DOTNET_RUNTIME_DISABLE_MUTEX === 'true')
     {
         // eslint-disable-next-line @typescript-eslint/await-thenable
         return f(...(args));
     }
-
-    // Someone PKilled Vscode while we held the lock previously. Need to clean up the lock created by the lib (lib adds .lock unless you use LockFilePath option)
-    if (fs.existsSync(`${lockPath}.lock`) && !(LockUsedByThisInstanceSingleton.getInstance().hasVsCodeInstanceInteractedWithLock(lockPath)))
+    else
     {
-        eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released, but we never touched it (pkilled vscode?)`, new Date().toISOString(), lockPath, lockPath));
-
-        try
+        class NodeIPCMutexLoggerWrapper extends INodeIPCMutexLogger
         {
-            fs.rmdirSync(`${lockPath}.lock`, { recursive: true });
-            eventStream?.post(new DotnetLockReleasedEvent(`Lock is not owned by us, deleted it`, new Date().toISOString(), lockPath, lockPath));
+            constructor(private readonly loggerEventStream: IEventStream)
+            {
+                super();
+            }
+            public log(message: string)
+            {
+                this.loggerEventStream.post(new GenericDotnetLockEvent(message, new Date().toISOString(), lockId, lockId));
+            }
         }
-        catch (e)
+
+        const logger = new NodeIPCMutexLoggerWrapper(eventStream);
+        const mutex = new NodeIPCMutex(lockId, logger, `The lock may be held by another process or instance of vscode. Try restarting your machine, deleting the lock, and or increasing the timeout time in the extension settings.
+
+Increase your OS path length limit to at least 256 characters.
+On Linux, you can set XDG_RUNTIME_DIR to be a writeable directory by your user.
+
+If you still face issues, set VSCODE_DOTNET_RUNTIME_DISABLE_MUTEX=true in the environment.
+Report this issue to our vscode-dotnet-runtime GitHub for help.`
+        );
+
+        const result = await mutex.acquire(async () =>
         {
-            eventStream?.post(new DotnetLockReleasedEvent(`Lock is not owned by us, but deletion failed: ${JSON.stringify(e)}`, new Date().toISOString(), lockPath, lockPath));
-        }
+            // await must be used to make the linter allow f to be async, which it must be.
+            // eslint-disable-next-line no-return-await
+            return await f(...(args));
+        }, retryTimeMs, timeoutTimeMs, `${lockId}-${crypto.randomUUID()}`);
+        return result;
     }
-
-    retryTimeMs = retryTimeMs > 0 ? retryTimeMs : 100;
-    const retryCountToEndRoughlyAtTimeoutMs = timeoutTimeMs / retryTimeMs;
-    let returnResult: any;
-    let codeFailureAndNotLockFailure = null;
-
-    // Make the directory and file to hold a lock over if it DNE. If it exists, thats OK (.lock is a different file than the lock file)
-    try
-    {
-        fs.mkdirSync(path.dirname(lockPath), { recursive: true });
-    }
-    catch (err)
-    {
-        // The file owning directory already exists
-    }
-
-    eventStream?.post(new DotnetLockAttemptingAcquireEvent(`Lock Acquisition request to begin.`, new Date().toISOString(), lockPath, lockPath));
-    fs.writeFileSync(lockPath, '', { encoding: 'utf-8' });
-    await lockfile.lock(lockPath, { stale: (timeoutTimeMs - (retryTimeMs * 2)) /*if a proc holding the lock has not returned in the stale time it will auto fail*/, retries: { retries: retryCountToEndRoughlyAtTimeoutMs, minTimeout: retryTimeMs, maxTimeout: retryTimeMs } })
-        .then(async (release) =>
-        {
-            eventStream?.post(new DotnetLockAcquiredEvent(`Lock Acquired.`, new Date().toISOString(), lockPath, lockPath));
-            try
-            {
-                // eslint-disable-next-line @typescript-eslint/await-thenable
-                returnResult = await f(...(args));
-            }
-            catch (errorFromF: any)
-            {
-                codeFailureAndNotLockFailure = errorFromF;
-            }
-            eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released.`, new Date().toISOString(), lockPath, lockPath));
-            return release().catch((unlockError: Error) => { if (unlockError.message.includes('already released') || unlockError.message.includes('by you')) { return; } else { throw unlockError; } }); // sometimes the lib will fail to release even if it never acquired it.
-        })
-        .catch((lockingError: Error) =>
-        {
-            // If we don't catch here, the lock will never be released.
-            try
-            {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                eventStream.post(new DotnetLockErrorEvent(lockingError, lockingError?.message ?? 'Unable to acquire lock or unlock lock. Trying to unlock.', new Date().toISOString(), lockPath, lockPath));
-                if (lockfile.checkSync(lockPath))
-                {
-                    eventStream?.post(new DotnetLockReleasedEvent(`Lock about to be released after checkSync due to lockError Event`, new Date().toISOString(), lockPath, lockPath));
-                    lockfile.unlockSync(lockPath);
-                }
-            }
-            catch (eWhenUnlocking: any)
-            {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                eventStream.post(new DotnetLockErrorEvent(eWhenUnlocking, eWhenUnlocking?.message ?? `Unable to acquire lock ${lockPath}`, new Date().toISOString(), lockPath, lockPath));
-            }
-            throw new EventBasedError('DotnetLockErrorEvent', lockingError?.message, lockingError?.stack);
-        });
-
-    if (codeFailureAndNotLockFailure)
-    {
-        throw codeFailureAndNotLockFailure;
-    }
-
-    return returnResult;
 }
 
 const possiblyUsefulUpperCaseEnvVars = new Set<string>([ // This is a local variable instead of in the function so it doesn't get recreated every time the function is called. I looked at compiled JS and didn't see it get optimized.

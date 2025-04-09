@@ -3,7 +3,6 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-import * as path from 'path';
 import { DotnetInstall } from './DotnetInstall';
 import { IInstallationDirectoryProvider } from './IInstallationDirectoryProvider';
 
@@ -15,12 +14,12 @@ import { IInstallationDirectoryProvider } from './IInstallationDirectoryProvider
 */
 export function GLOBAL_INSTALL_STATE_MODIFIER_LOCK(directoryProvider: IInstallationDirectoryProvider, install: DotnetInstall): string
 {
-    return path.join(path.resolve(directoryProvider.getInstallDir(install.installId)), 'modifyingGlobalState.lock');
+    return 'vscdGlLk';
 }
 
 export function RUN_UNDER_SUDO_LOCK(sudoDirectory: string): string
 {
-    return path.join(sudoDirectory, 'runUnderSudo.lock');
+    return 'vscdSudoLk';
 }
 
 export const UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR = '898998';
