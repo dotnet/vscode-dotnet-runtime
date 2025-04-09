@@ -8,13 +8,13 @@ import * as os from 'os';
 import * as path from 'path';
 
 /**
- * A wrapper you write around your logger so that events from the mutex ownership can be logged.
+ * Customize logging events for the mutex using this interface.
  */
 export class INodeIPCMutexLogger
 {
     public log(message: string): void
     {
-        console.log(message); // Replace with your own logging implementation.
+        // no op
     }
 }
 
@@ -56,7 +56,7 @@ export class NodeIPCMutex
         const lengthLimit = os.platform() === 'win32' ? 256 : 104; // Mac 10.9 and FreeBSD have their own length limit.
 
         // On Unix, A file descriptor in /temp/ is a good option to hold this sock.
-        // In Linux, The user or system may set XDG_RUNTIME_DIR to set our applications temporary directory, so this this instead of /temp/
+        // In Linux, The user or system may set XDG_RUNTIME_DIR to set our applications temporary directory, so use this instead of /temp/
         // On Unix, Access to /tmp/ may be restricted, but all processes must use the same directory, so we can't condition to use another dir based on the permissions for it.
 
         // On Windows, '\\\\.\\pipe\\` is a Special File System to get a Named Pipe (File Descriptors won't work)
