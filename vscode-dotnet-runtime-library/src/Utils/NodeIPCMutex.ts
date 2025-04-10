@@ -108,7 +108,7 @@ export class NodeIPCMutex
             catch (error: any)
             {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                if (error?.code === 'EADDRINUSE') //  We couldn't acquire the lock, even though nobody else is using it.
+                if (error?.code === 'EADDRINUSE' || error?.code === 'EEXIST' || error?.code === 'EACCESS')
                 {
                     if (retries >= maxRetryCountToEndAtRoughlyTimeoutTime)
                     {
