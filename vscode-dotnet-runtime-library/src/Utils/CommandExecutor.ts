@@ -99,10 +99,12 @@ export class CommandExecutor extends ICommandExecutor
         catch (error: any)
         {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            error.message = error.message + `\nFailed to create ${this.sudoProcessCommunicationDir}. Please check your permissions or install dotnet manually.`;
+            error.message = error?.message + `\nFailed to create ${this.sudoProcessCommunicationDir}. Please check your permissions or install dotnet manually.`;
             this.context?.eventStream.post(new SudoDirCreationFailed(`The command ${fullCommandString} failed, as no directory could be made: ${JSON.stringify(error)}`));
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             if (error?.code !== 'EEXIST')
             {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 if (error?.code === 'EPERM' || error?.code === 'EACCES')
                 {
                     this.sudoProcessCommunicationDir = path.dirname(this.sudoProcessScript);
