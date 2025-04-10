@@ -1168,6 +1168,16 @@ export class DotnetFindPathNoHostOnRegistry extends DotnetCustomMessageEvent
     public readonly eventName = 'DotnetFindPathNoHostOnRegistry';
 }
 
+export class SudoDirCreationFailed extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'SudoDirCreationFailed';
+}
+
+export class SudoDirDeletionFailed extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'SudoDirDeletionFailed';
+}
+
 export class DotnetFindPathOnFileSystem extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'DotnetFindPathOnFileSystem';
@@ -1535,6 +1545,10 @@ export class NetInstallerEndExecutionEvent extends DotnetCustomMessageEvent
     public readonly eventName = 'NetInstallerEndExecutionEvent';
 }
 
+export class FailedToRunSudoCommand extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'FailedToRunSudoCommand';
+}
 
 export class DotnetInstallLinuxChecks extends DotnetCustomMessageEvent
 {

@@ -11,6 +11,8 @@ export class LockUsedByThisInstanceSingleton
     private currentAliveStatus = false;
     private sudoError: any = null;
 
+    public static readonly SUDO_SESSION_ID = crypto.randomUUID().substring(0, 8);
+
     protected constructor(protected lockStringAndThisVsCodeInstanceOwnsIt: { [lockString: string]: boolean } = {})
     {
 
