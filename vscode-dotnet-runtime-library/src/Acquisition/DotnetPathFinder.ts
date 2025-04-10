@@ -144,7 +144,8 @@ export class DotnetPathFinder implements IDotnetPathFinder
 
             if (!(options.shell === '/bin/bash'))
             {
-                this.executor?.execute(CommandExecutor.makeCommand('echo', ['PATH']), { shell: 'bin/bash', dotnetInstallToolCacheTtlMs: SYS_CMD_SEARCH_CACHE_DURATION_MS }, false)
+                this.executor?.execute(CommandExecutor.makeCommand('echo', ['$PATH']), { shell: 'bin/bash', dotnetInstallToolCacheTtlMs: SYS_CMD_SEARCH_CACHE_DURATION_MS }, false)
+
                     .then((result) =>
                     {
                         this.workerContext.eventStream.post(new DotnetFindPathLookupPATH(`Execution Path (Unix Bash): ${result?.stdout}`));
