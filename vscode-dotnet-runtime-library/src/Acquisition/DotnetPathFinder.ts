@@ -133,7 +133,8 @@ export class DotnetPathFinder implements IDotnetPathFinder
 
         else
         {
-            this.executor?.execute(CommandExecutor.makeCommand('echo', ['PATH']), { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false)
+            this.executor?.execute(CommandExecutor.makeCommand('echo', ['$PATH']), { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false)
+
                 .then((result) =>
                 {
                     // Log the default shell state
