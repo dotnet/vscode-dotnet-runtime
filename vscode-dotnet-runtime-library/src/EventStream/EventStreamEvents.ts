@@ -1173,6 +1173,11 @@ export class SudoDirCreationFailed extends DotnetCustomMessageEvent
     public readonly eventName = 'SudoDirCreationFailed';
 }
 
+export class SudoDirDeletionFailed extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'SudoDirDeletionFailed';
+}
+
 export class DotnetFindPathOnFileSystem extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'DotnetFindPathOnFileSystem';

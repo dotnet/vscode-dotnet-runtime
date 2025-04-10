@@ -393,6 +393,19 @@ ${stderr}`));
                 eventStream.post(new TriedToExitMasterSudoProcess(`Tried to exit sudo master process: exit code ${LockUsedByThisInstanceSingleton.getInstance().hasSpawnedSudoSuccessfullyWithoutDeath()}`));
             });
 
+        try
+        {
+            fs.rmdirSync(this.sudoProcessCommunicationDir, { recursive: true });
+        }
+        catch (error: any)
+        {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            if (error?.code !== 'ENOENT')
+            {
+                eventStream.post(new SudoDirCreationFailed(`The command ${this.sudoProcessCommunicationDir} failed to rm the sudo directory: ${JSON.stringify(error)}`));
+            }
+        }
+
         return LockUsedByThisInstanceSingleton.getInstance().hasSpawnedSudoSuccessfullyWithoutDeath() ? 1 : 0;
     }
 
