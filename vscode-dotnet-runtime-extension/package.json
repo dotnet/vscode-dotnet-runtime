@@ -13,10 +13,10 @@
     "description": "This extension installs and manages different versions of the .NET SDK and Runtime.",
     "connectionString": "InstrumentationKey=02dc18e0-7494-43b2-b2a3-18ada5fcb522;IngestionEndpoint=https://westus2-0.in.applicationinsights.azure.com/;LiveEndpoint=https://westus2.livediagnostics.monitor.azure.com/;ApplicationId=e8e56970-a18a-4101-b7d1-1c5dd7c29eeb",
     "icon": "images/dotnetIcon.png",
-    "version": "2.3.2",
+    "version": "2.3.3",
     "publisher": "ms-dotnettools",
     "engines": {
-        "vscode": "^1.81.1"
+        "vscode": "^1.99.0"
     },
     "categories": [
         "Other"
@@ -141,7 +141,7 @@
     "devDependencies": {
         "@types/chai": "^4.3.5",
         "@types/mocha": "^9.0.0",
-        "@types/node": "^20.0.0",
+        "@types/node": "20.18.3",
         "@types/rimraf": "3.0.2",
         "@types/source-map-support": "^0.5.10",
         "@types/vscode": "1.74.0",
