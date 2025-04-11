@@ -141,7 +141,7 @@
     "devDependencies": {
         "@types/chai": "^4.3.5",
         "@types/mocha": "^9.0.0",
-        "@types/node": "20.18.3",
+        "@types/node": "^20.0.0",
         "@types/rimraf": "3.0.2",
         "@types/source-map-support": "^0.5.10",
         "@types/vscode": "1.74.0",
