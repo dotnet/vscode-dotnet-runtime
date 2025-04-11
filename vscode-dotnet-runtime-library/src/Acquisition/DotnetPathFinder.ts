@@ -93,6 +93,19 @@ export class DotnetPathFinder implements IDotnetPathFinder
     }
 
     /**
+     * @remarks This only checks dotnet --list-runtimes or --list-sdks, so it can be more performant for the base case.
+     * This allows skipping which, where, and also does not rely on --info which is slower because it shells to the SDK instead of just being the host.
+     * @returns The path to the dotnet executable, which may be a symlink to the actual executable.
+     */
+    public async findDotnetFastFromListOnly(): Promise<string[] | undefined>
+    {
+        const oldLookup = process.env.DOTNET_MULTILEVEL_LOOKUP;
+        process.env.DOTNET_MULTILEVEL_LOOKUP = '0'; // make it so --list-runtimes only finds the runtimes on that path: https://learn.microsoft.com/en-us/dotnet/core/compatibility/deployment/7.0/multilevel-lookup#reason-for-change
+        const finalPath = await this.getTruePath(['dotnet']);
+        return this.returnWithRestoringEnvironment(finalPath, 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
+    }
+
+    /**
      *
      * @returns A set of the path environment variable(s) for which or where dotnet, which may need to be converted to the actual path if it points to a polymorphic executable.
      * For example, `snap` installs dotnet to snap/bin/dotnet, which you can call --list-runtimes on.
