@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-## [2.3.2] - TBD
+## [2.3.3] - 2025-4
+
+- Performance improvements.
+- Fixes to locking issues, with listen errors.
+
+## [2.3.2] - 2025-4-10
 
 - Adds Automated SDK Installation community support for Debian : thank you @curllog for your help!
 - Fixes an issue with install scripts on validating the dotnet install.
