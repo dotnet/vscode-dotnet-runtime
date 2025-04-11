@@ -248,7 +248,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
 
     private stringArchitectureMeetsRequirement(outputArchitecture: string, requiredArchitecture: string | null | undefined): boolean
     {
-        return !requiredArchitecture || outputArchitecture === '' || FileUtilities.dotnetInfoArchToNodeArch(outputArchitecture, this.workerContext.eventStream) === requiredArchitecture;
+        return !requiredArchitecture || !outputArchitecture || FileUtilities.dotnetInfoArchToNodeArch(outputArchitecture, this.workerContext.eventStream) === requiredArchitecture;
     }
 
     private allowPreview(availableVersion: string, requirement: IDotnetFindPathContext): boolean
