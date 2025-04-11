@@ -132,11 +132,9 @@
   "version" "9.1.1"
 
 "@types/node@*", "@types/node@^20.0.0":
-  "integrity" "sha1-wQQ286PJlvU1kZqbCC4sR/GcQKE="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/node/-/node-20.17.28.tgz"
-  "version" "20.17.28"
-  dependencies:
-    "undici-types" "~6.19.2"
+  "integrity" "sha1-CB2a/ShCG+lWwaR87RyaADS0Z+I="
+  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/node/-/node-20.0.0.tgz"
+  "version" "20.0.0"
 
 "@types/rimraf@3.0.2":
   "integrity" "sha1-pj0XWzMXSOUiCtSMkB17vx9E7vg="
@@ -2030,11 +2028,6 @@
   "integrity" "sha1-gXCzcC90t52y5aliB8FeZYB5meQ="
   "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/typescript/-/typescript-5.8.2.tgz"
   "version" "5.8.2"
-
-"undici-types@~6.19.2":
-  "integrity" "sha1-NREcnRQ3q4OnzcCrri8m2I7aCgI="
-  "resolved" "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/undici-types/-/undici-types-6.19.8.tgz"
-  "version" "6.19.8"
 
 "unit-compare@^1.0.1":
   "integrity" "sha1-DHRZ8OW/U2N+qHPKPO4Y3i7so4Y="
