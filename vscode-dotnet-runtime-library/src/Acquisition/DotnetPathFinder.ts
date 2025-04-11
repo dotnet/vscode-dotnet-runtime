@@ -100,9 +100,13 @@ export class DotnetPathFinder implements IDotnetPathFinder
     public async findDotnetFastFromListOnly(): Promise<string[] | undefined>
     {
         const oldLookup = process.env.DOTNET_MULTILEVEL_LOOKUP;
-        process.env.DOTNET_MULTILEVEL_LOOKUP = '0'; // make it so --list-runtimes only finds the runtimes on that path: https://learn.microsoft.com/en-us/dotnet/core/compatibility/deployment/7.0/multilevel-lookup#reason-for-change
-        const finalPath = await this.getTruePath(['dotnet']);
-        return this.returnWithRestoringEnvironment(finalPath, 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
+        try {
+            process.env.DOTNET_MULTILEVEL_LOOKUP = '0'; // make it so --list-runtimes only finds the runtimes on that path: https://learn.microsoft.com/en-us/dotnet/core/compatibility/deployment/7.0/multilevel-lookup#reason-for-change
+            const finalPath = await this.getTruePath(['dotnet']);
+            return this.returnWithRestoringEnvironment(finalPath, 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
+        } finally {
+            process.env.DOTNET_MULTILEVEL_LOOKUP = oldLookup; // Ensure the environment variable is always restored
+        }
     }
 
     /**
