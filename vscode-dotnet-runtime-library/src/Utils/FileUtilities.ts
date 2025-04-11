@@ -81,7 +81,7 @@ export class FileUtilities extends IFileUtilities
             try
             {
                 eventStream?.post(new FileToWipe(`The file ${f} may be deleted.`))
-                if (!fileExtensionsToDelete || fileExtensionsToDelete?.includes(path.extname(f).toLocaleLowerCase()) && !(f?.includes('lock')))
+                if (!fileExtensionsToDelete || fileExtensionsToDelete?.includes(path.extname(f).toLocaleLowerCase()))
                 {
                     eventStream?.post(new FileToWipe(`The file ${f} is being deleted -- if no error is reported, it should be wiped.`))
                     await fs.promises.rm(path.join(directoryToWipe, f));

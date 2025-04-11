@@ -29,7 +29,7 @@ import { FileUtilities } from '../Utils/FileUtilities';
 import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker';
 
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { executeWithLock } from '../Utils/TypescriptUtilities';
+import { executeWithLock, getDotnetExecutable } from '../Utils/TypescriptUtilities';
 import { WebRequestWorkerSingleton } from '../Utils/WebRequestWorkerSingleton';
 import { LOCAL_LOCK_PING_DURATION_MS } from './CacheTimeConstants';
 import { DotnetInstall } from './DotnetInstall';
@@ -74,6 +74,21 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                         {
                             powershellReference = await this.verifyPowershellCanRun(installContext, install);
                             windowsFullCommand = windowsFullCommand.replace('powershell.exe', powershellReference);
+                        }
+
+                        // The install script can leave behind a directory in an invalid install state. Make sure the executable is present at the very least.
+                        if (await this.fileUtilities.exists(installContext.installDir))
+                        {
+                            const dotnetPath = path.join(installContext.installDir, getDotnetExecutable());
+                            if (await this.fileUtilities.exists(dotnetPath))
+                            {
+                                const dotnetIsFunctional = await new CommandExecutor(this.workerContext, this.utilityContext).execute(CommandExecutor.makeCommand(`"${dotnetPath}"`, ['--list-runtimes']), { shell: true }, false);
+                                if (dotnetIsFunctional.status === '0')
+                                {
+                                    return resolve();
+                                }
+                            }
+                            this.fileUtilities.wipeDirectory(installContext.installDir, this.eventStream);
                         }
 
                         cp.exec(winOS ? windowsFullCommand : installCommand,
