@@ -3,6 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as cp from 'child_process';
+import * as fs from 'fs';
 import * as os from 'os';
 import path = require('path');
 
@@ -20,6 +21,7 @@ import
     EventBasedError,
     PowershellBadExecutionPolicy,
     PowershellBadLanguageMode,
+    SuppressedAcquisitionError,
 } from '../EventStream/EventStreamEvents';
 
 import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
@@ -82,13 +84,22 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                             const dotnetPath = path.join(installContext.installDir, getDotnetExecutable());
                             if (await this.fileUtilities.exists(dotnetPath))
                             {
-                                const dotnetIsFunctional = await new CommandExecutor(this.workerContext, this.utilityContext).execute(CommandExecutor.makeCommand(`"${dotnetPath}"`, ['--list-runtimes']), { shell: true }, false);
+                                const basicCheckCmd = CommandExecutor.makeCommand(`"${dotnetPath}"`, ['--list-runtimes']);
+                                const dotnetIsFunctional = await new CommandExecutor(this.workerContext, this.utilityContext).execute(basicCheckCmd, {}, false);
                                 if (dotnetIsFunctional.status === '0')
                                 {
                                     return resolve();
                                 }
                             }
-                            await this.fileUtilities.wipeDirectory(installContext.installDir, this.eventStream);
+
+                            try
+                            {
+                                await fs.promises.rm(installContext.installDir, { recursive: true, force: true });
+                            }
+                            catch (err: any)
+                            {
+                                this.eventStream.post(new SuppressedAcquisitionError(err, `${installContext.installDir} could not be not removed, and it has a corrupted install. Please remove it manually.`));
+                            }
                         }
 
                         cp.exec(winOS ? windowsFullCommand : installCommand,
