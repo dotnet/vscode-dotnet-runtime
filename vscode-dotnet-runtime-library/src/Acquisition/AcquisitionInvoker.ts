@@ -34,6 +34,7 @@ import { IUtilityContext } from '../Utils/IUtilityContext';
 import { executeWithLock, getDotnetExecutable } from '../Utils/TypescriptUtilities';
 import { WebRequestWorkerSingleton } from '../Utils/WebRequestWorkerSingleton';
 import { LOCAL_LOCK_PING_DURATION_MS } from './CacheTimeConstants';
+import { DotnetConditionValidator } from './DotnetConditionValidator';
 import { DotnetInstall } from './DotnetInstall';
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';
@@ -84,9 +85,9 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                             const dotnetPath = path.join(installContext.installDir, getDotnetExecutable());
                             if (await this.fileUtilities.exists(dotnetPath))
                             {
-                                const basicCheckCmd = CommandExecutor.makeCommand(`"${dotnetPath}"`, ['--list-runtimes']);
-                                const dotnetIsFunctional = await new CommandExecutor(this.workerContext, this.utilityContext).execute(basicCheckCmd, {}, false);
-                                if (dotnetIsFunctional.status === '0')
+                                const validator = new DotnetConditionValidator(this.workerContext, this.utilityContext);
+                                const meetsRequirement = await validator.dotnetMeetsRequirement(dotnetPath, { acquireContext: installContext, versionSpecRequirement: 'equal' });
+                                if (meetsRequirement)
                                 {
                                     return resolve();
                                 }
