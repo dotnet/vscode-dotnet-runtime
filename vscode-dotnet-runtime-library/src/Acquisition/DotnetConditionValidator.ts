@@ -118,8 +118,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
             return [];
         }
 
-        const findSDKsCommand = await this.setCodePage() ? CommandExecutor.makeCommand(`chcp`, [`65001`, `|`, `"${existingPath}"`, '--list-sdks']) :
-            CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-sdks']);
+        const findSDKsCommand = CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-sdks']);
 
         const sdkInfo = await (this.executor!).execute(findSDKsCommand, { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false).then((result) =>
         {
@@ -142,13 +141,6 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
         });
 
         return sdkInfo;
-    }
-
-    private async setCodePage(): Promise<boolean>
-    {
-        // For Windows, we need to change the code page to UTF-8 to handle the output of the command. https://github.com/nodejs/node-v0.x-archive/issues/2190
-        // Only certain builds of windows support UTF 8 so we need to check that we can use it.
-        return os.platform() === 'win32' ? (await this.executor!.tryFindWorkingCommand([CommandExecutor.makeCommand('chcp', ['65001'])], { dotnetInstallToolCacheTtlMs: SYS_CMD_SEARCH_CACHE_DURATION_MS })) !== null : false;
     }
 
     public stringVersionMeetsRequirement(availableVersion: string, requestedVersion: string, requirement: IDotnetFindPathContext): boolean
@@ -256,7 +248,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
 
     private stringArchitectureMeetsRequirement(outputArchitecture: string, requiredArchitecture: string | null | undefined): boolean
     {
-        return !requiredArchitecture || outputArchitecture === '' || FileUtilities.dotnetInfoArchToNodeArch(outputArchitecture, this.workerContext.eventStream) === requiredArchitecture;
+        return !requiredArchitecture || !outputArchitecture || FileUtilities.dotnetInfoArchToNodeArch(outputArchitecture, this.workerContext.eventStream) === requiredArchitecture;
     }
 
     private allowPreview(availableVersion: string, requirement: IDotnetFindPathContext): boolean
@@ -275,8 +267,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
             return [];
         }
 
-        const findRuntimesCommand = await this.setCodePage() ? CommandExecutor.makeCommand(`chcp`, [`65001`, `|`, `"${existingPath}"`, '--list-runtimes']) :
-            CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-runtimes']);
+        const findRuntimesCommand = CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-runtimes']);
 
         const windowsDesktopString = 'Microsoft.WindowsDesktop.App';
         const aspnetCoreString = 'Microsoft.AspNetCore.App';
