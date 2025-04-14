@@ -88,7 +88,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                                     return resolve();
                                 }
                             }
-                            this.fileUtilities.wipeDirectory(installContext.installDir, this.eventStream);
+                            await this.fileUtilities.wipeDirectory(installContext.installDir, this.eventStream);
                         }
 
                         cp.exec(winOS ? windowsFullCommand : installCommand,
