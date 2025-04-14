@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning].
 - Checks dotnet from --list-runtimes before checking the PATH to locate dotnet faster in the common case.
 - Fixes for when the install script leaves behind a corrupt install.
 - Fixes to locking issues on darwin when the temp file system is locked.
+- Bumps minimum VS Code version requirement to ensure running on nodejs 20 -- solves previous crypto errors for older versions of vscode.
 
 ## [2.3.2] - 2025-4-10
 
