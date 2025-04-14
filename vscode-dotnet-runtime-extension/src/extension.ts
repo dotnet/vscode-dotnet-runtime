@@ -515,6 +515,17 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         const validator = new DotnetConditionValidator(workerContext, utilContext);
         const finder = new DotnetPathFinder(workerContext, utilContext);
 
+        const dotnetOnShellSpawn = (await finder.findDotnetFastFromListOnly())?.[0] ?? '';
+        if (dotnetOnShellSpawn)
+        {
+            const validatedShellSpawn = await getPathIfValid(dotnetOnShellSpawn, validator, commandContext);
+            if (validatedShellSpawn)
+            {
+                loggingObserver.dispose();
+                return { dotnetPath: validatedShellSpawn };
+            }
+        }
+
         const dotnetsOnPATH = await finder.findRawPathEnvironmentSetting();
         for (const dotnetPath of dotnetsOnPATH ?? [])
         {
