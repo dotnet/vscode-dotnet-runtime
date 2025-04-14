@@ -3,6 +3,8 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
+import * as crypto from 'crypto';
+
 export class LockUsedByThisInstanceSingleton
 {
     protected static instance: LockUsedByThisInstanceSingleton;
