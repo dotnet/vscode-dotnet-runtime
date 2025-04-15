@@ -326,6 +326,23 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
         await installMultipleVersions(['2.2', '3.0', '3.1'], 'aspnetcore');
     }).timeout(standardTimeoutTime * 2);
 
+    test('Works With Prior Incomplete or Corrupted Install', async () =>
+    {
+        const installPath = await installRuntime('9.0', 'runtime');
+        assert.isTrue(fs.existsSync(installPath), 'The path exists after install');
+        // remove the install executable but not the folder to simulate a corrupt install
+        rimraf.sync(installPath);
+        assert.isFalse(fs.existsSync(installPath), 'The path does not exist after uninstall');
+        // try to acquire again, and it should succeed
+        const _ = await installRuntime('9.0', 'runtime');
+    }).timeout(standardTimeoutTime);
+
+    test('It works if the install exists', async () =>
+    {
+        const installPath = await installRuntime('9.0', 'runtime');
+        const samePath = await installRuntime('9.0', 'runtime');
+    }).timeout(standardTimeoutTime);
+
     test('Find dotnet PATH Command Met Condition', async () =>
     {
         // install 5.0 then look for 5.0 path

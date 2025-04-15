@@ -3,6 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as cp from 'child_process';
+import * as fs from 'fs';
 import * as os from 'os';
 import path = require('path');
 
@@ -20,6 +21,7 @@ import
     EventBasedError,
     PowershellBadExecutionPolicy,
     PowershellBadLanguageMode,
+    SuppressedAcquisitionError,
 } from '../EventStream/EventStreamEvents';
 
 import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
@@ -29,9 +31,10 @@ import { FileUtilities } from '../Utils/FileUtilities';
 import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker';
 
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { executeWithLock } from '../Utils/TypescriptUtilities';
+import { executeWithLock, getDotnetExecutable } from '../Utils/TypescriptUtilities';
 import { WebRequestWorkerSingleton } from '../Utils/WebRequestWorkerSingleton';
 import { LOCAL_LOCK_PING_DURATION_MS } from './CacheTimeConstants';
+import { DotnetConditionValidator } from './DotnetConditionValidator';
 import { DotnetInstall } from './DotnetInstall';
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';
@@ -74,6 +77,30 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                         {
                             powershellReference = await this.verifyPowershellCanRun(installContext, install);
                             windowsFullCommand = windowsFullCommand.replace('powershell.exe', powershellReference);
+                        }
+
+                        // The install script can leave behind a directory in an invalid install state. Make sure the executable is present at the very least.
+                        if (await this.fileUtilities.exists(installContext.installDir))
+                        {
+                            const dotnetPath = path.join(installContext.installDir, getDotnetExecutable());
+                            if (await this.fileUtilities.exists(dotnetPath))
+                            {
+                                const validator = new DotnetConditionValidator(this.workerContext, this.utilityContext);
+                                const meetsRequirement = await validator.dotnetMeetsRequirement(dotnetPath, { acquireContext: installContext, versionSpecRequirement: 'equal' });
+                                if (meetsRequirement)
+                                {
+                                    return resolve();
+                                }
+                            }
+
+                            try
+                            {
+                                await fs.promises.rm(installContext.installDir, { recursive: true, force: true });
+                            }
+                            catch (err: any)
+                            {
+                                this.eventStream.post(new SuppressedAcquisitionError(err, `${installContext.installDir} could not be not removed, and it has a corrupted install. Please remove it manually.`));
+                            }
                         }
 
                         cp.exec(winOS ? windowsFullCommand : installCommand,

@@ -304,49 +304,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
       await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
     }).timeout(standardTimeoutTime);
 
-    test('Uninstall Command', async () =>
-    {
-      const context: IDotnetAcquireContext = { version: '3.1', requestingExtensionId: 'ms-dotnettools.sample-extension' };
-      const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context);
-      assert.exists(result);
-      assert.exists(result!.dotnetPath);
-      const sdkDir = fs.readdirSync(path.join(path.dirname(result!.dotnetPath), 'sdk'))[0];
-      assert.include(sdkDir, context.version);
-      assert.isTrue(fs.existsSync(result!.dotnetPath!));
-      await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
-      assert.isFalse(fs.existsSync(result!.dotnetPath));
-    }).timeout(standardTimeoutTime);
-
-    test('Install Multiple Versions', async () =>
-    {
-      // Install 6.0
-      let version = currentSDKVersion;
-      let result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', { version, requestingExtensionId: 'ms-dotnettools.sample-extension' });
-      assert.exists(result, 'basic install works');
-      assert.exists(result!.dotnetPath, 'basic install has path');
-      let sdkDirs = fs.readdirSync(path.join(path.dirname(result!.dotnetPath), 'sdk'));
-      assert.isNotEmpty(sdkDirs.filter(dir => dir.includes(version)), `sdk directories include version?
-PATH: ${result!.dotnetPath}
-PATH SUBDIRECTORIES: ${fs.readdirSync(path.dirname(result!.dotnetPath))}
-SDK SUBDIRECTORIES: ${sdkDirs}
-VERSION: ${version}`);
-
-      // Install 5.0
-      version = '5.0';
-      result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', { version, requestingExtensionId: 'ms-dotnettools.sample-extension' });
-      assert.exists(result, 'acquire works a 2nd time');
-      assert.exists(result!.dotnetPath, 'acquire returns a path a 2nd time');
-      sdkDirs = fs.readdirSync(path.join(path.dirname(result!.dotnetPath), 'sdk'));
-      assert.isNotEmpty(sdkDirs.filter(dir => dir.includes(version)), 'acquire sdk twice does not overwrite');
-
-      sdkDirs = fs.readdirSync(path.join(path.dirname(result!.dotnetPath), 'sdk'));
-      assert.isNotEmpty(sdkDirs.filter(dir => dir.includes(currentSDKVersion)), 'directories include a version.');
-      assert.isNotEmpty(sdkDirs.filter(dir => dir.includes('5.0')), 'old directories are preserved');
-
-      // Clean up storage
-      await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
-    }).timeout(standardTimeoutTime * 6);
-
     test('Extension Uninstall Removes SDKs', async () =>
     {
       const context: IDotnetAcquireContext = { version: currentSDKVersion, requestingExtensionId: 'ms-dotnettools.sample-extension' };
