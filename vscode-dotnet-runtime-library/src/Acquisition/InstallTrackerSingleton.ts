@@ -133,8 +133,12 @@ export class InstallTrackerSingleton
                 const existingInstalls = await this.getExistingInstalls(installationState, dirProvider, true);
                 const installRecord = existingInstalls.filter(x => IsEquivalentInstallation(x.dotnetInstall, install));
 
-                return (installRecord?.length ?? 0) === 0 || installRecord[0]?.installingExtensions?.length === 0 ||
-                    (allowUninstallUserOnlyInstall && installRecord[0]?.installingExtensions?.length === 1 && installRecord[0]?.installingExtensions?.includes('user'));
+                const zeroInstalledRecordsLeft = (installRecord?.length ?? 0) === 0;
+                const installedRecordsLeftButNoOwnersRemain = installRecord[0]?.installingExtensions?.length === 0;
+                const installWasMadeByUserAndHasNoExtensionDependencies = (allowUninstallUserOnlyInstall &&
+                    installRecord[0]?.installingExtensions?.length === 1 && installRecord[0]?.installingExtensions?.includes('user'));
+
+                return zeroInstalledRecordsLeft || installedRecordsLeftButNoOwnersRemain || installWasMadeByUserAndHasNoExtensionDependencies;
             }, state, dotnetInstall);
     }
 
@@ -293,9 +297,9 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
         return executeWithLock(this.eventStream, alreadyHoldingLock, this.getLockFilePathForKey(context.installDirectoryProvider, installState), 5, 200000,
             async (installationState: InstallState, install: DotnetInstall, ctx: IAcquisitionWorkerContext) =>
             {
-                this.eventStream.post(new RemovingVersionFromExtensionState(`Adding ${JSON.stringify(install)} with id ${installationState} from the state.`));
+                this.eventStream.post(new AddTrackingVersions(`Adding ${JSON.stringify(install)} with id ${id} from the state.`));
 
-                const existingVersions = await this.getExistingInstalls(installationState, ctx.installDirectoryProvider, true);
+                const existingVersions = await this.getExistingInstalls(installState, context.installDirectoryProvider, true);
                 const preExistingInstallIndex = existingVersions.findIndex(x => IsEquivalentInstallation(x.dotnetInstall, install));
 
                 if (preExistingInstallIndex !== -1)

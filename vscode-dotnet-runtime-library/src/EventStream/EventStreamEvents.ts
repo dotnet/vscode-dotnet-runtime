@@ -1375,15 +1375,6 @@ export class DotnetGlobalAcquisitionCompletionEvent extends DotnetCustomMessageE
 {
     public readonly eventName = 'DotnetGlobalAcquisitionCompletionEvent';
 }
-export class DotnetInstallGraveyardEvent extends DotnetCustomMessageEvent
-{
-    public readonly eventName = 'DotnetInstallGraveyardEvent';
-
-    public getProperties()
-    {
-        return { suppressTelemetry: 'true', ...super.getProperties() };
-    }
-}
 
 export class DotnetAlternativeCommandFoundEvent extends DotnetCustomMessageEvent
 {
@@ -1642,6 +1633,10 @@ export class DotnetAcquisitionMissingLinuxDependencies extends DotnetAcquisition
     public readonly eventName = 'DotnetAcquisitionMissingLinuxDependencies';
 }
 
+export class DotnetAcquisitionThoughtInstalledButNot extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'DotnetAcquisitionThoughtInstalledButNot';
+}
 
 export class DotnetAcquisitionScriptOutput extends DotnetAcquisitionMessage
 {

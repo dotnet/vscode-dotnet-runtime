@@ -17,7 +17,6 @@ import { IDotnetInstallationContext } from '../../Acquisition/IDotnetInstallatio
 import { IInstallationValidator } from '../../Acquisition/IInstallationValidator';
 import { InstallScriptAcquisitionWorker } from '../../Acquisition/InstallScriptAcquisitionWorker';
 import { InstallTrackerSingleton } from '../../Acquisition/InstallTrackerSingleton';
-import { InstallationGraveyard } from '../../Acquisition/InstallationGraveyard';
 import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
 import { VersionResolver } from '../../Acquisition/VersionResolver';
 import { IEventStream } from '../../EventStream/EventStream';
@@ -108,11 +107,6 @@ export class MockDotnetCoreAcquisitionWorker extends DotnetCoreAcquisitionWorker
     public constructor(utilityContext: IUtilityContext, extensionContext: IVSCodeExtensionContext)
     {
         super(utilityContext, extensionContext);
-    }
-
-    public AddToGraveyard(context: IAcquisitionWorkerContext, install: DotnetInstall, installPath: string)
-    {
-        new InstallationGraveyard(context).add(install, installPath);
     }
 
     public enableNoInstallInvoker()
