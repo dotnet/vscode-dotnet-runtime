@@ -81,7 +81,7 @@ export class FileUtilities extends IFileUtilities
             try
             {
                 eventStream?.post(new FileToWipe(`The file ${f} may be deleted.`))
-                if (!fileExtensionsToDelete || fileExtensionsToDelete?.includes(path.extname(f).toLocaleLowerCase()) && !(f?.includes('lock')))
+                if (!fileExtensionsToDelete || fileExtensionsToDelete?.includes(path.extname(f).toLocaleLowerCase()))
                 {
                     eventStream?.post(new FileToWipe(`The file ${f} is being deleted -- if no error is reported, it should be wiped.`))
                     await fs.promises.rm(path.join(directoryToWipe, f));
@@ -96,8 +96,16 @@ export class FileUtilities extends IFileUtilities
 
     public async read(filePath: string): Promise<string>
     {
-        const output = await fs.promises.readFile(filePath, 'utf8');
-        return output;
+        try
+        {
+            const output = await fs.promises.readFile(filePath, 'utf8');
+            return output;
+        }
+        catch (error: any)
+        {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            throw new Error(`Failed to read file ${filePath}: ${error?.message}`);
+        }
     }
 
     public async exists(filePath: string): Promise<boolean>

@@ -7,7 +7,19 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-## [2.3.2] - TBD
+## [2.3.4] - 2025-5
+
+
+## [2.3.3] - 2025-4-15
+
+- Performance improvements.
+- No longer utilizes chcp to try to force dotnet --info to output in english for internal parsing (perf)
+- Checks dotnet from --list-runtimes before checking the PATH to locate dotnet faster in the common case.
+- Fixes for when the install script leaves behind a corrupt install.
+- Fixes to locking issues on darwin when the temp file system is locked.
+- Bumps minimum VS Code version requirement to ensure running on nodejs 20 -- solves previous crypto errors for older versions of vscode.
+
+## [2.3.2] - 2025-4-10
 
 - Adds Automated SDK Installation community support for Debian : thank you @curllog for your help!
 - Fixes an issue with install scripts on validating the dotnet install.

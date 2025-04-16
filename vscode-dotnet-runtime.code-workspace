@@ -1,5 +1,5 @@
 {
-	"folders": [
+    "folders": [
         {
             "path": "vscode-dotnet-runtime-extension"
         },
@@ -19,7 +19,8 @@
             "DOTNETINSTALLMODELIST",
             "dotnets",
             "Republisher",
-            "unlocalized"
+            "unlocalized",
+            "vscd"
         ]
     }
 }

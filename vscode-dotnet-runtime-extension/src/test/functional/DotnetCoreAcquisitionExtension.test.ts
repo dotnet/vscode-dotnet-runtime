@@ -24,7 +24,6 @@ import
     IDotnetListVersionsResult,
     IExistingPaths,
     ITelemetryEvent,
-    LinuxVersionResolver,
     LocalMemoryCacheSingleton,
     MockEnvironmentVariableCollection,
     MockEventStream,
@@ -33,8 +32,11 @@ import
     MockTelemetryReporter,
     MockWebRequestWorker,
     MockWindowDisplayWorker,
+    getDistroInfo,
     getDotnetExecutable,
     getInstallIdCustomArchitecture,
+    getLinuxSupportedDotnetSDKVersion,
+    getMajorMinor,
     getMockAcquisitionContext,
     getMockAcquisitionWorkerContext,
     getMockUtilityContext,
@@ -323,6 +325,23 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
     {
         await installMultipleVersions(['2.2', '3.0', '3.1'], 'aspnetcore');
     }).timeout(standardTimeoutTime * 2);
+
+    test('Works With Prior Incomplete or Corrupted Install', async () =>
+    {
+        const installPath = await installRuntime('9.0', 'runtime');
+        assert.isTrue(fs.existsSync(installPath), 'The path exists after install');
+        // remove the install executable but not the folder to simulate a corrupt install
+        rimraf.sync(installPath);
+        assert.isFalse(fs.existsSync(installPath), 'The path does not exist after uninstall');
+        // try to acquire again, and it should succeed
+        const _ = await installRuntime('9.0', 'runtime');
+    }).timeout(standardTimeoutTime);
+
+    test('It works if the install exists', async () =>
+    {
+        const installPath = await installRuntime('9.0', 'runtime');
+        const samePath = await installRuntime('9.0', 'runtime');
+    }).timeout(standardTimeoutTime);
 
     test('Find dotnet PATH Command Met Condition', async () =>
     {
@@ -650,8 +669,8 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
         }
         else
         {
-            const distroVersion = await new LinuxVersionResolver(mockAcquisitionContext, getMockUtilityContext()).getRunningDistro();
-            assert.equal(result[0].version, Number(distroVersion.version) >= 22.04 ? '9.0.1xx' : '8.0.1xx', `The SDK did not recommend the version (it said ${result[0].version}) it was supposed to, which should be N.0.1xx based on surface level distro knowledge, version ${distroVersion.version}. If a new version is available, this test may need to be updated to the newest version.`);
+            const recLinuxVersionFull = getMajorMinor(await getLinuxSupportedDotnetSDKVersion(mockAcquisitionContext), mockAcquisitionContext.eventStream, mockAcquisitionContext)
+            assert.equal(result[0].version, `${recLinuxVersionFull}.1xx`, `The SDK did not recommend the version (it said ${result[0].version}) it was supposed to, which should be N.0.1xx based on surface level distro knowledge, version ${JSON.stringify(await getDistroInfo(mockAcquisitionContext))}. If a new version is available, this test may need to be updated to the newest version.`);
         }
     }).timeout(standardTimeoutTime);
 

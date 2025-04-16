@@ -19,7 +19,8 @@
         "pkexec",
         "REGHEXVALUE",
         "REGTYPE",
-        "setx"
+        "setx",
+        "vscd"
     ],
     // Formatting on save
     "editor.formatOnSave": true,

@@ -12,13 +12,14 @@ import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
 import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
 import { MockCommandExecutor } from '../mocks/MockObjects';
 import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
+import { RED_HAT_DISTRO_INFO_KEY } from '../../Acquisition/StringConstants';
 const assert = chai.assert;
 const standardTimeoutTime = 100000;
 
 const mockVersion = '7.0.103';
 const acquisitionContext = getMockAcquisitionContext('sdk', mockVersion);
 const mockExecutor = new MockCommandExecutor(acquisitionContext, getMockUtilityContext());
-const pair: DistroVersionPair = { distro: 'Red Hat Enterprise Linux', version: '9.0' };
+const pair: DistroVersionPair = { distro: RED_HAT_DISTRO_INFO_KEY, version: '9.0' };
 const provider: RedHatDistroSDKProvider = new RedHatDistroSDKProvider(pair, acquisitionContext, getMockUtilityContext(), mockExecutor);
 const versionResolver = new LinuxVersionResolver(acquisitionContext, getMockUtilityContext(), mockExecutor);
 let shouldRun = os.platform() === 'linux';
@@ -45,7 +46,7 @@ suite('Red Hat For Linux Distro Logic Unit Tests', function ()
 
     test('Package Check Succeeds', async () =>
     {
-        shouldRun = os.platform() === 'linux' && (await versionResolver.getRunningDistro()).distro === 'Red Hat Enterprise Linux';
+        shouldRun = os.platform() === 'linux' && (await versionResolver.getRunningDistro()).distro === RED_HAT_DISTRO_INFO_KEY;
 
         if (shouldRun)
         {

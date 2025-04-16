@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-import * as path from 'path';
+import * as crypto from 'crypto';
 
 export class LockUsedByThisInstanceSingleton
 {
@@ -12,6 +12,8 @@ export class LockUsedByThisInstanceSingleton
     private everSpawnedSudoSuccessfully = false;
     private currentAliveStatus = false;
     private sudoError: any = null;
+
+    public static readonly SUDO_SESSION_ID = crypto.randomUUID().substring(0, 8);
 
     protected constructor(protected lockStringAndThisVsCodeInstanceOwnsIt: { [lockString: string]: boolean } = {})
     {
@@ -26,14 +28,6 @@ export class LockUsedByThisInstanceSingleton
         }
 
         return LockUsedByThisInstanceSingleton.instance;
-    }
-
-    public hasVsCodeInstanceInteractedWithLock(lockKey: string): boolean
-    {
-        lockKey = path.basename(lockKey).trim();
-        const hasInteracted = this.lockStringAndThisVsCodeInstanceOwnsIt[lockKey] === true;
-        this.lockStringAndThisVsCodeInstanceOwnsIt[lockKey] = true; // This could be a set but this is also fine
-        return hasInteracted;
     }
 
     public hasSpawnedSudoSuccessfullyWithoutDeath(): boolean
@@ -72,6 +66,4 @@ export class LockUsedByThisInstanceSingleton
     {
         this.sudoError = err;
     }
-
-
 }
