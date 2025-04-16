@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-## [2.3.3] - 2025-4-13
+## [2.3.4] - 2025-5
+
+
+## [2.3.3] - 2025-4-15
 
 - Performance improvements.
 - No longer utilizes chcp to try to force dotnet --info to output in english for internal parsing (perf)
