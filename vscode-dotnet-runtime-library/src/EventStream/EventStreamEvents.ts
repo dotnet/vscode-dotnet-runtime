@@ -903,6 +903,11 @@ export class DotnetUnableToCheckPATHArchitecture extends DotnetVisibleWarningEve
     public readonly eventName = 'DotnetUnableToCheckPATHArchitecture';
 }
 
+export class UtilizingExistingInstallPromise extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'UtilizingExistingInstallPromise';
+}
+
 export class DotnetVersionCategorizedEvent extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'DotnetVersionCategorizedEvent';
@@ -1151,6 +1156,11 @@ export class DotnetFindPathLookupRealPATH extends DotnetCustomMessageEvent
 export class DotnetFindPathRealPATHFound extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'DotnetFindPathRealPATHFound';
+}
+
+export class DotnetConditionsValidated extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'DotnetConditionsValidated';
 }
 
 export class DotnetFindPathHostFxrResolutionLookup extends DotnetCustomMessageEvent

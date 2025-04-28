@@ -123,7 +123,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
       const _ = new MockInstallTracker(eventStream, mockContext.extensionState);
 
       // Assert preinstalled SDKs are detected
-      const acquisitionInvoker = new NoInstallAcquisitionInvoker(eventStream, acquisitionWorker);
+      const acquisitionInvoker = new NoInstallAcquisitionInvoker(eventStream, acquisitionWorker, mockContext, path.dirname(sdkDirCurrent));
       const result = await acquisitionWorker.acquireLocalSDK(mockContext, acquisitionInvoker);
       assert.equal(path.dirname(result.dotnetPath), dotnetDir, 'preinstalled sdk path is the same as installed sdk path on api call');
       const preinstallEvents = eventStream.events

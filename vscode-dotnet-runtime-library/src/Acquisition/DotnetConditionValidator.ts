@@ -2,14 +2,13 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
-import * as os from 'os';
-import { DotnetFindPathDidNotMeetCondition, DotnetUnableToCheckPATHArchitecture } from '../EventStream/EventStreamEvents';
+import { DotnetConditionsValidated, DotnetFindPathDidNotMeetCondition, DotnetUnableToCheckPATHArchitecture } from '../EventStream/EventStreamEvents';
 import { IDotnetFindPathContext } from '../IDotnetFindPathContext';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { DOTNET_INFORMATION_CACHE_DURATION_MS, SYS_CMD_SEARCH_CACHE_DURATION_MS } from './CacheTimeConstants';
+import { DOTNET_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetConditionValidator } from './IDotnetConditionValidator';
 import { IDotnetListInfo } from './IDotnetListInfo';
@@ -38,6 +37,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
                     this.stringVersionMeetsRequirement(sdk.version, requirement.acquireContext.version, requirement) && this.allowPreview(sdk.version, requirement);
             }))
             {
+                this.workerContext.eventStream.post(new DotnetConditionsValidated(`${dotnetExecutablePath} satisfies the conditions.`));
                 return true;
             }
         }
@@ -51,6 +51,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
                     this.stringVersionMeetsRequirement(runtime.version, requirement.acquireContext.version, requirement) && this.allowPreview(runtime.version, requirement);
             }))
             {
+                this.workerContext.eventStream.post(new DotnetConditionsValidated(`${dotnetExecutablePath} satisfies the conditions.`));
                 return true;
             }
         }

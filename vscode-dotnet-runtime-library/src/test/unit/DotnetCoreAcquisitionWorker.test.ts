@@ -21,15 +21,18 @@ import
     DotnetAcquisitionStarted,
     DotnetAcquisitionStatusResolved,
     DotnetAcquisitionStatusUndefined,
+    DotnetConditionsValidated,
     DotnetInstallGraveyardEvent,
+    DotnetLockEvent,
     DotnetUninstallAllCompleted,
     DotnetUninstallAllStarted,
-    TestAcquireCalled
+    TestAcquireCalled,
+    UtilizingExistingInstallPromise
 } from '../../EventStream/EventStreamEvents';
 import { EventType } from '../../EventStream/EventType';
 import { DotnetInstallType } from '../../IDotnetAcquireContext';
 import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
-import { getInstallIdCustomArchitecture } from '../../Utils/InstallIdUtilities';
+import { getInstallFromContext, getInstallIdCustomArchitecture } from '../../Utils/InstallIdUtilities';
 import { getDotnetExecutable } from '../../Utils/TypescriptUtilities';
 import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
 import
@@ -73,7 +76,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function ()
     function setupWorker(workerContext: IAcquisitionWorkerContext, eventStream: IEventStream): [MockDotnetCoreAcquisitionWorker, IAcquisitionInvoker]
     {
         const acquisitionWorker = getMockAcquisitionWorker(workerContext);
-        const invoker = new NoInstallAcquisitionInvoker(eventStream, acquisitionWorker);
+        const invoker = new NoInstallAcquisitionInvoker(eventStream, acquisitionWorker, workerContext, path.dirname(getExpectedPath(getInstallFromContext(workerContext).installId, workerContext.acquisitionContext.mode ?? 'runtime')));
 
         return [acquisitionWorker, invoker];
     }
@@ -109,6 +112,12 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function ()
         return 'There is a mode without a designated return path';
     }
 
+    function firstComesBeforeSecond(arr: string[], first: string, second: string): boolean
+    {
+        const firstIndex = arr.indexOf(first);
+        const secondIndex = arr.indexOf(second);
+        return firstIndex < secondIndex && firstIndex !== -1 && secondIndex !== -1;
+    }
     async function assertAcquisitionSucceeded(installId: string,
         exePath: string,
         eventStream: MockEventStream,
@@ -143,10 +152,16 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function ()
             === installId
         ) as TestAcquireCalled;
 
+        const lockEvent = eventStream.events.find(event =>
+            event instanceof DotnetLockEvent
+        ) as DotnetLockEvent;
+
         assert.exists(acquireEvent, `The acquisition acquire event appears. Events: ${eventStream.events.filter(event =>
             event instanceof TestAcquireCalled).map((e) => e.eventName).join(', ')};`);
         assert.equal(acquireEvent!.context.dotnetPath, expectedPath, 'The acquisition went to the expected dotnetPath');
         assert.equal(acquireEvent!.context.installDir, path.dirname(expectedPath), 'The acquisition went to the expected installation directory');
+
+        assert(firstComesBeforeSecond(eventStream.events.map(x => x.eventName), lockEvent.eventName, acquireEvent.eventName), 'acquire holds a lock');
     }
 
     this.beforeAll(async () =>
@@ -267,14 +282,19 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function ()
 
         for (let i = 0; i < numAcquisitions; i++)
         {
-            const pathResult = await acquisitionWorker.acquireLocalRuntime(ctx, invoker);
+            const pathResult = acquisitionWorker.acquireLocalRuntime(ctx, invoker);
             const installId = getInstallIdCustomArchitecture(ctx.acquisitionContext.version, ctx.acquisitionContext.architecture, 'runtime', 'local');
-            await assertAcquisitionSucceeded(installId, pathResult.dotnetPath, eventStream, extContext);
+            await assertAcquisitionSucceeded(installId, (await pathResult).dotnetPath, eventStream, extContext);
         }
 
         // AcquisitionInvoker was only called once
         const acquireEvents = eventStream.events.filter(event => event instanceof TestAcquireCalled);
         assert.lengthOf(acquireEvents, 1);
+
+        const validatedEvent = eventStream.events.find(event => event instanceof DotnetConditionsValidated);
+        const existingPromiseEvent = eventStream.events.find(event => event instanceof UtilizingExistingInstallPromise);
+        assert.isTrue(validatedEvent !== undefined && existingPromiseEvent === undefined, 'Either the lock was held and then the invoker realized the existing install was correct, or the promise existed beforehand and it awaited the existing promise');
+
     }).timeout(expectedTimeoutTime);
 
     test('Acquire Multiple Versions and UninstallAll', async () =>
@@ -421,7 +441,7 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function ()
         const [acquisitionWorker, _] = setupWorker(ctx, eventStream);
         const acquisitionInvoker = new RejectingAcquisitionInvoker(eventStream);
 
-        return assert.isRejected(acquisitionWorker.acquireLocalRuntime(ctx, acquisitionInvoker), '.NET Acquisition Failed: "Rejecting message"');
+        return assert.isRejected(acquisitionWorker.acquireLocalRuntime(ctx, acquisitionInvoker));
     }).timeout(expectedTimeoutTime);
 
     test('Get Expected Path With Apostrophe In Install path', async () =>
