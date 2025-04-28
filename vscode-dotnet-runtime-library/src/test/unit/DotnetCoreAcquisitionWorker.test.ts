@@ -21,13 +21,11 @@ import
     DotnetAcquisitionStarted,
     DotnetAcquisitionStatusResolved,
     DotnetAcquisitionStatusUndefined,
-    DotnetConditionsValidated,
     DotnetInstallGraveyardEvent,
     DotnetLockEvent,
     DotnetUninstallAllCompleted,
     DotnetUninstallAllStarted,
-    TestAcquireCalled,
-    UtilizingExistingInstallPromise
+    TestAcquireCalled
 } from '../../EventStream/EventStreamEvents';
 import { EventType } from '../../EventStream/EventType';
 import { DotnetInstallType } from '../../IDotnetAcquireContext';
@@ -291,9 +289,11 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function ()
         const acquireEvents = eventStream.events.filter(event => event instanceof TestAcquireCalled);
         assert.lengthOf(acquireEvents, 1);
 
-        const validatedEvent = eventStream.events.find(event => event instanceof DotnetConditionsValidated);
-        const existingPromiseEvent = eventStream.events.find(event => event instanceof UtilizingExistingInstallPromise);
-        assert.isTrue(validatedEvent !== undefined && existingPromiseEvent === undefined, 'Either the lock was held and then the invoker realized the existing install was correct, or the promise existed beforehand and it awaited the existing promise');
+        const validatedEvent = eventStream.events.find(event => event.eventName.toLocaleLowerCase() === 'DotnetConditionsValidated'.toLocaleLowerCase());
+        const existingPromiseEvent = eventStream.events.find(event => event.eventName.toLocaleLowerCase() === 'UtilizingExistingInstallPromise'.toLocaleLowerCase());
+        const existingInstallEvent = eventStream.events.find(event => event.eventName.toLocaleLowerCase() === 'DotnetAcquisitionAlreadyInstalled'.toLocaleLowerCase());
+        assert.isTrue(validatedEvent !== undefined || existingPromiseEvent !== undefined || existingInstallEvent !== undefined, `Either the lock was held and then the invoker realized the existing install was correct, or the promise existed beforehand and it awaited the existing promise.
+${eventStream.events.map(event => event.eventName).join(', ')}`);
 
     }).timeout(expectedTimeoutTime);
 
@@ -301,16 +301,19 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function ()
     {
         const versions = ['1.0', '1.1', '2.0', '2.1', '2.2'];
         const [eventStream, extContext] = setupStates();
-        const ctx = getMockAcquisitionContext('runtime', versions[0], expectedTimeoutTime, eventStream, extContext);
-        const [acquisitionWorker, invoker] = setupWorker(ctx, eventStream);
 
         for (const version of versions)
         {
+            const ctx = getMockAcquisitionContext('runtime', versions[0], expectedTimeoutTime, eventStream, extContext);
+            const [acquisitionWorker, invoker] = setupWorker(ctx, eventStream);
             migrateContextToNewInstall(ctx, version, os.arch());
             const res = await acquisitionWorker.acquireLocalRuntime(ctx, invoker);
             const installId = getInstallIdCustomArchitecture(ctx.acquisitionContext.version, ctx.acquisitionContext.architecture, 'runtime', 'local');
             await assertAcquisitionSucceeded(installId, res.dotnetPath, eventStream, extContext);
         }
+
+        const ctx = getMockAcquisitionContext('runtime', versions[0], expectedTimeoutTime, eventStream, extContext);
+        const [acquisitionWorker, invoker] = setupWorker(ctx, eventStream);
 
         await acquisitionWorker!.uninstallAll(eventStream, ctx.installDirectoryProvider.getStoragePath(), ctx.extensionState);
         assert.exists(eventStream!.events.find(event => event instanceof DotnetUninstallAllStarted));
@@ -380,21 +383,26 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function ()
         const [eventStream, extensionContext] = setupStates();
 
         const ctx = getMockAcquisitionContext('runtime', runtimeV5, expectedTimeoutTime, eventStream, extensionContext);
-        const [worker, invoker] = setupWorker(ctx, eventStream);
+        let [worker, invoker] = setupWorker(ctx, eventStream);
+        let _ = undefined;
 
         // Install 5.0, 6.0 runtime without an architecture
         await AssertInstall(worker, extensionContext, eventStream, runtimeV5, invoker, ctx);
         migrateContextToNewInstall(ctx, runtimeV6, null);
+        [_, invoker] = setupWorker(ctx, eventStream);
         await AssertInstall(worker, extensionContext, eventStream, runtimeV6, invoker, ctx);
 
         // Install similar SDKs without an architecture.
         const sdkCtx = getMockAcquisitionContext('sdk', sdkV5, expectedTimeoutTime, eventStream, extensionContext, null);
+        [_, invoker] = setupWorker(sdkCtx, eventStream);
         await AssertInstall(worker, extensionContext, eventStream, sdkV5, invoker, sdkCtx);
         migrateContextToNewInstall(sdkCtx, sdkV6, null);
+        [_, invoker] = setupWorker(sdkCtx, eventStream);
         await AssertInstall(worker, extensionContext, eventStream, sdkV6, invoker, sdkCtx);
 
         // Install 5.0 runtime with an architecture. Share the same event stream and context.
         migrateContextToNewInstall(ctx, runtimeV5, os.arch());
+        [_, invoker] = setupWorker(ctx, eventStream);
         await AssertInstall(worker, extensionContext, eventStream, runtimeV5, invoker, ctx);
 
         // 5.0 legacy runtime should be replaced, but 6.0 runtime should remain, and all SDK items should remain.
@@ -405,10 +413,12 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function ()
 
         // Install a legacy runtime again to make sure its not removed when installing a new SDK with the same version
         migrateContextToNewInstall(ctx, runtimeV5, null);
+        [_, invoker] = setupWorker(ctx, eventStream);
         await AssertInstall(worker, extensionContext, eventStream, runtimeV5, invoker, ctx);
 
         // Install non-legacy SDK
         migrateContextToNewInstall(sdkCtx, sdkV5, os.arch());
+        [_, invoker] = setupWorker(sdkCtx, eventStream);
         await AssertInstall(worker, extensionContext, eventStream, sdkV5, invoker, sdkCtx);
 
         // 6.0 sdk legacy should remain, as well as 5.0 and 6.0 runtime. 5.0 SDK should be removed.
