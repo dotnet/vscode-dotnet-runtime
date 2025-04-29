@@ -304,7 +304,7 @@ ${eventStream.events.map(event => event.eventName).join(', ')}`);
 
         for (const version of versions)
         {
-            const ctx = getMockAcquisitionContext('runtime', versions[0], expectedTimeoutTime, eventStream, extContext);
+            const ctx = getMockAcquisitionContext('runtime', version, expectedTimeoutTime, eventStream, extContext);
             const [acquisitionWorker, invoker] = setupWorker(ctx, eventStream);
             migrateContextToNewInstall(ctx, version, os.arch());
             const res = await acquisitionWorker.acquireLocalRuntime(ctx, invoker);

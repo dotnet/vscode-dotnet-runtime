@@ -108,7 +108,6 @@ export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker
             this.eventStream.post(new DotnetAcquisitionCompleted(
                 install, testInstallContext.dotnetPath, testInstallContext.version));
             resolve();
-
         });
     }
 }
