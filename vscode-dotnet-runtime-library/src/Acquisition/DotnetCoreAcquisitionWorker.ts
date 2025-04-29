@@ -323,11 +323,11 @@ To keep your .NET version up to date, please reconnect to the internet at your s
     private async acquireLocalCore(context: IAcquisitionWorkerContext, mode: DotnetInstallMode, install: DotnetInstall, acquisitionInvoker: IAcquisitionInvoker): Promise<string>
     {
         const version = context.acquisitionContext.version!;
-        await this.checkForPartialInstalls(context, install).catch(() => {});
-
         return executeWithLock(context.eventStream, false, install.installId, LOCAL_LOCK_PING_DURATION_MS, context.timeoutSeconds * 1000,
             async () =>
             {
+                await this.checkForPartialInstalls(context, install, true).catch(() => {});
+
                 let installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls('installed', context.installDirectoryProvider);
                 const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
                 const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
@@ -356,7 +356,6 @@ To keep your .NET version up to date, please reconnect to the internet at your s
                 // We update the extension state to indicate we're starting a .NET Core installation.
                 await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).trackInstallingVersion(context, install);
                 context.eventStream.post(new DotnetAcquisitionStarted(install, version, context.acquisitionContext.requestingExtensionId));
-
 
                 await acquisitionInvoker.installDotnet(install).catch((reason) =>
                 {
@@ -431,25 +430,25 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         return result.stdout.includes(version);
     }
 
-    private async checkForPartialInstalls(context: IAcquisitionWorkerContext, installId: DotnetInstall)
+    private async checkForPartialInstalls(context: IAcquisitionWorkerContext, install: DotnetInstall, alreadyHoldingLock = false)
     {
-        await executeWithLock(context.eventStream, false, installId.installId,
+        await executeWithLock(context.eventStream, alreadyHoldingLock, install.isGlobal ? GLOBAL_INSTALL_STATE_MODIFIER_LOCK(context.installDirectoryProvider, install) : install.installId,
             LOCAL_LOCK_PING_DURATION_MS, context.timeoutSeconds * 1000,
             async () =>
             {
 
                 const installingVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls('installing', context.installDirectoryProvider);
-                const partialInstall = installingVersions?.some(x => x.dotnetInstall.installId === installId.installId);
+                const partialInstall = installingVersions?.some(x => x.dotnetInstall.installId === install.installId);
 
                 // Don't count it as partial if the promise is still being resolved.
                 // The promises get wiped out upon reload, so we can check this.
-                if (partialInstall && await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getPromise(installId, context.acquisitionContext, true) === null)
+                if (partialInstall && await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getPromise(install, context.acquisitionContext, true) === null)
                 {
                     // Partial install, we never updated our extension to no longer be 'installing'. Maybe someone killed the vscode process or we failed in an unexpected way.
-                    context.eventStream.post(new DotnetAcquisitionPartialInstallation(installId));
+                    context.eventStream.post(new DotnetAcquisitionPartialInstallation(install));
 
                     // Delete the existing local files so we can re-install. For global installs, let the installer handle it.
-                    await this.uninstallLocal(context, installId);
+                    await this.uninstallLocal(context, install);
                 }
             }
         );
