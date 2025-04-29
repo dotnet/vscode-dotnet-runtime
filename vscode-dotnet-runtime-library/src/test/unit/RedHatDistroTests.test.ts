@@ -52,7 +52,7 @@ suite('Red Hat For Linux Distro Logic Unit Tests', function ()
         {
             // assert this passes : we don't want the test to be reliant on machine state for whether the package exists or not, so don't check output
             await provider.dotnetPackageExistsOnSystem(mockVersion, installType);
-            assert.equal(mockExecutor.attemptedCommand, 'yum list install dotnet-sdk-9.0 -q');
+            assert.equal(mockExecutor.attemptedCommand, 'dnf list install dotnet-sdk-9.0 -q');
         }
     }).timeout(standardTimeoutTime);
 
