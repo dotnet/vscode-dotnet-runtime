@@ -93,7 +93,7 @@ export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker
         const testInstallContext = {
             version: install.version,
             installMode: install.installMode,
-            architecture: install.architecture,
+            architecture: install.architecture ?? 'null',
             dotnetPath: path.join(this.path, getDotnetExecutable()) ?? path.join(this.workerContext.installDirectoryProvider.getInstallDir(install.installId), getDotnetExecutable()),
             installDir: this.path ?? this.workerContext.installDirectoryProvider.getInstallDir(install.installId),
             installType: install.isGlobal ? 'global' : 'local',
@@ -104,7 +104,7 @@ export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker
         {
 
             this.eventStream.post(new TestAcquireCalled(testInstallContext));
-            const install = GetDotnetInstallInfo(testInstallContext.version, testInstallContext.installMode, 'local', testInstallContext.architecture)
+            const install = GetDotnetInstallInfo(testInstallContext.version, testInstallContext.installMode, 'local', testInstallContext.architecture ?? 'null')
             this.eventStream.post(new DotnetAcquisitionCompleted(
                 install, testInstallContext.dotnetPath, testInstallContext.version));
             resolve();
