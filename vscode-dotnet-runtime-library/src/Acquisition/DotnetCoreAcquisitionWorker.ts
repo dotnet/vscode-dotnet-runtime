@@ -254,7 +254,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         }
         else
         {
-            acquisitionPromise = this.acquireLocalCore(context, mode, install, localInvoker!).catch(async (error: any) =>
+            acquisitionPromise = this.acquireLocalCore(context, mode, install, localInvoker!).catch((error: any) =>
             {
                 const err = this.getErrorOrStringAsEventError(error);
                 throw err;
@@ -279,7 +279,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         return executeWithLock(context.eventStream, false, install.installId, LOCAL_LOCK_PING_DURATION_MS, context.timeoutSeconds * 1000,
             async () =>
             {
-                let installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(context.installDirectoryProvider);
+                const installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(context.installDirectoryProvider);
                 const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
                 const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
 
