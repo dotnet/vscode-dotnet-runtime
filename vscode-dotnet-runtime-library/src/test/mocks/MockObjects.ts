@@ -35,6 +35,7 @@ import { ICommandExecutor } from '../../Utils/ICommandExecutor';
 import { IFileUtilities } from '../../Utils/IFileUtilities';
 import { IUtilityContext } from '../../Utils/IUtilityContext';
 import { IVSCodeEnvironment } from '../../Utils/IVSCodeEnvironment';
+import { getDotnetExecutable } from '../../Utils/TypescriptUtilities';
 import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
 import { getMockUtilityContext } from '../unit/TestUtility';
 
@@ -80,25 +81,34 @@ export class MockEventStream implements IEventStream
 
 export class NoInstallAcquisitionInvoker extends IAcquisitionInvoker
 {
-    public installDotnet(installContext: IDotnetInstallationContext): Promise<void>
-    {
-        return new Promise<void>((resolve, reject) =>
-        {
-            this.eventStream.post(new TestAcquireCalled(installContext));
-            const install = GetDotnetInstallInfo(installContext.version, installContext.installMode, 'local', installContext.architecture)
-            this.eventStream.post(new DotnetAcquisitionCompleted(
-                install, installContext.dotnetPath, installContext.version));
-            resolve();
-
-        });
-    }
-
-    constructor(eventStream: IEventStream, worker: MockDotnetCoreAcquisitionWorker)
+    constructor(eventStream: IEventStream, worker: MockDotnetCoreAcquisitionWorker, private readonly workerContext: IAcquisitionWorkerContext, private readonly path: string)
     {
         super(eventStream);
         worker.enableNoInstallInvoker();
     }
 
+    public installDotnet(install: DotnetInstall): Promise<void>
+    {
+        const testInstallContext = {
+            version: install.version,
+            installMode: install.installMode,
+            architecture: install.architecture ?? 'null',
+            dotnetPath: path.join(this.path, getDotnetExecutable()) ?? path.join(this.workerContext.installDirectoryProvider.getInstallDir(install.installId), getDotnetExecutable()),
+            installDir: this.path ?? this.workerContext.installDirectoryProvider.getInstallDir(install.installId),
+            installType: install.isGlobal ? 'global' : 'local',
+            timeoutSeconds: testDefaultTimeoutTimeMs,
+        } as IDotnetInstallationContext
+
+        return new Promise<void>((resolve, reject) =>
+        {
+
+            this.eventStream.post(new TestAcquireCalled(testInstallContext));
+            const install = GetDotnetInstallInfo(testInstallContext.version, testInstallContext.installMode, 'local', testInstallContext.architecture ?? 'null')
+            this.eventStream.post(new DotnetAcquisitionCompleted(
+                install, testInstallContext.dotnetPath, testInstallContext.version));
+            resolve();
+        });
+    }
 }
 
 export class MockDotnetCoreAcquisitionWorker extends DotnetCoreAcquisitionWorker
@@ -117,7 +127,7 @@ export class MockDotnetCoreAcquisitionWorker extends DotnetCoreAcquisitionWorker
 
 export class RejectingAcquisitionInvoker extends IAcquisitionInvoker
 {
-    public installDotnet(installContext: IDotnetInstallationContext): Promise<void>
+    public installDotnet(install: DotnetInstall): Promise<void>
     {
         return new Promise<void>((resolve, reject) =>
         {
@@ -128,7 +138,7 @@ export class RejectingAcquisitionInvoker extends IAcquisitionInvoker
 
 export class ErrorAcquisitionInvoker extends IAcquisitionInvoker
 {
-    public installDotnet(installContext: IDotnetInstallationContext): Promise<void>
+    public installDotnet(install: DotnetInstall): Promise<void>
     {
         throw new EventBasedError('MockErrorAcquisitionInvokerFailure', 'Command Failed');
     }
