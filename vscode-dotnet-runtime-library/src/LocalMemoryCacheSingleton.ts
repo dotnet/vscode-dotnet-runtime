@@ -114,8 +114,7 @@ export class LocalMemoryCacheSingleton
             }
             else if (k === 'env')
             {
-                return `${minimizeEnvironment(v)}-${TelemetryUtilities.HashData(JSON.stringify(v))}`; // Each command with a unique env must be cached uniquely -- it's helpful to see what the important vars are in the log.
-                // But we don't want to store the entire env/log it.
+                return `${minimizeEnvironment(v)}`;
             }
             return v;
         })}`;
