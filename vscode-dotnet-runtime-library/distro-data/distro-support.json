@@ -799,7 +799,7 @@
         "searchCommand": [
             {
                 "runUnderSudo": false,
-                "commandRoot": "yum",
+                "commandRoot": "dnf",
                 "commandParts": [
                     "search",
                     "{packageName}",
@@ -822,7 +822,7 @@
         "packageLookupCommand": [
             {
                 "runUnderSudo": false,
-                "commandRoot": "yum",
+                "commandRoot": "dnf",
                 "commandParts": [
                     "list",
                     "install",
