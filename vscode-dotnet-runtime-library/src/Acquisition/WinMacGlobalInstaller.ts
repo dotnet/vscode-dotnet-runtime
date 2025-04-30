@@ -263,7 +263,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             if (os.platform() === 'win32') // Windows does not have chmod +x ability with nodejs.
             {
                 const permissionsCommand = CommandExecutor.makeCommand('icacls', [`"${installerPath}"`, '/grant:r', `"%username%":F`, '/t', '/c']);
-                const commandRes = await this.commandRunner.execute(permissionsCommand, { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }, false);
+                const commandRes = await this.commandRunner.execute(permissionsCommand, {}, false);
                 if (commandRes.stderr !== '')
                 {
                     const error = new EventBasedError('FailedToSetInstallerPermissions', `Failed to set icacls permissions on the installer file ${installerPath}. ${commandRes.stderr}`);
