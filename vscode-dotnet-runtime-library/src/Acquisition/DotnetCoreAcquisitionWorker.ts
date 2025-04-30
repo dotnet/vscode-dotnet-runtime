@@ -317,7 +317,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         {
             try
             {
-                if (!!this.usingNoInstallInvoker)
+                if (!this.usingNoInstallInvoker)
                 {
                     context.installationValidator.validateDotnetInstall(install, dotnetPath, false, true);
                     const meetsRequirement = await new DotnetConditionValidator(context, this.utilityContext).dotnetMeetsRequirement(dotnetPath, { acquireContext: context.acquisitionContext, versionSpecRequirement: 'equal' });
