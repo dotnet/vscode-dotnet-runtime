@@ -26,7 +26,6 @@ import
     ITelemetryEvent,
     LocalMemoryCacheSingleton,
     MockEnvironmentVariableCollection,
-    MockEventStream,
     MockExtensionConfiguration,
     MockExtensionContext,
     MockTelemetryReporter,
@@ -42,7 +41,6 @@ import
     getMockUtilityContext,
     getPathSeparator
 } from 'vscode-dotnet-runtime-library';
-import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
 import * as extension from '../../extension';
 
 const assert: any = chai.assert;
@@ -121,7 +119,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
         mockState.clear();
         MockTelemetryReporter.telemetryEvents = [];
         await new FileUtilities().wipeDirectory(storagePath);
-        InstallTrackerSingleton.getInstance(new MockEventStream(), new MockExtensionContext()).clearPromises();
         // Do not want cached results from prior tests to interfere
         LocalMemoryCacheSingleton.getInstance().invalidate();
     }).timeout(standardTimeoutTime);

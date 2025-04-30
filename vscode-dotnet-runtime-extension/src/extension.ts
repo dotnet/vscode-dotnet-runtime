@@ -397,7 +397,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
     const dotnetUninstallPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallPublic}`, async () =>
     {
-        const existingInstalls = await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).getExistingInstalls('installed', directoryProviderFactory(
+        const existingInstalls = await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).getExistingInstalls(directoryProviderFactory(
             'runtime', vsCodeContext.globalStoragePath));
 
         const menuItems = existingInstalls?.sort(
@@ -438,7 +438,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             const selectedInstall: DotnetInstall = installRecord.dotnetInstall;
             let canContinue = true;
-            const uninstallWillBreakSomething = !(await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).canUninstall('installed', selectedInstall, directoryProviderFactory(
+            const uninstallWillBreakSomething = !(await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).canUninstall(selectedInstall, directoryProviderFactory(
                 'runtime', vsCodeContext.globalStoragePath), true));
 
             const yes = `Continue`;

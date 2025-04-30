@@ -12,7 +12,6 @@ import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 import { IAcquisitionInvoker } from '../../Acquisition/IAcquisitionInvoker';
 import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
 import { InstallRecord } from '../../Acquisition/InstallRecord';
-import { InstallTrackerSingleton } from '../../Acquisition/InstallTrackerSingleton';
 import { IEventStream } from '../../EventStream/EventStream';
 import
 {
@@ -56,7 +55,6 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function ()
     this.afterEach(async () =>
     {
         // Tear down tmp storage for fresh run
-        InstallTrackerSingleton.getInstance(new MockEventStream(), new MockExtensionContext()).clearPromises();
         WebRequestWorkerSingleton.getInstance().destroy();
         LocalMemoryCacheSingleton.getInstance().invalidate();
     });

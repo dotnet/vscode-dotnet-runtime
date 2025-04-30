@@ -33,7 +33,6 @@ import
   NoInstallAcquisitionInvoker,
   SdkInstallationDirectoryProvider
 } from 'vscode-dotnet-runtime-library';
-import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
 import * as extension from '../../extension';
 import rimraf = require('rimraf');
 
@@ -81,7 +80,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
       mockState.clear();
       MockTelemetryReporter.telemetryEvents = [];
       await promisify(rimraf)(storagePath);
-      InstallTrackerSingleton.getInstance(new MockEventStream(), new MockExtensionContext()).clearPromises();
     });
 
 
@@ -149,7 +147,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
       const acquisitionWorker = getMockAcquisitionWorker(mockContext);
 
       const currentVersionInstallId = getInstallIdCustomArchitecture(version, os.arch(), 'sdk', 'local');
-      InstallTrackerSingleton.getInstance(mockContext.eventStream, mockContext.extensionState).clearPromises();
       // Ensure nothing is returned when there is no preinstalled SDK
       const noPreinstallResult = await acquisitionWorker.acquireStatus(mockContext, 'sdk');
       assert.isUndefined(noPreinstallResult);
