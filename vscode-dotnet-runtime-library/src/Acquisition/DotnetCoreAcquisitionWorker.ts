@@ -301,7 +301,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
 
                 context.installationValidator.validateDotnetInstall(install, dotnetPath);
                 await this.removeMatchingLegacyInstall(context, installedVersions, version, true);
-                await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).trackInstalledVersion(context, install);
+                await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).trackInstalledVersion(context, install, dotnetPath);
 
                 return dotnetPath;
             }
@@ -317,11 +317,14 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         {
             try
             {
-                context.installationValidator.validateDotnetInstall(install, dotnetPath, false, true);
-                const meetsRequirement = await new DotnetConditionValidator(context, this.utilityContext).dotnetMeetsRequirement(dotnetPath, { acquireContext: context.acquisitionContext, versionSpecRequirement: 'equal' });
-                if (!meetsRequirement)
+                if (!!this.usingNoInstallInvoker)
                 {
-                    return null;
+                    context.installationValidator.validateDotnetInstall(install, dotnetPath, false, true);
+                    const meetsRequirement = await new DotnetConditionValidator(context, this.utilityContext).dotnetMeetsRequirement(dotnetPath, { acquireContext: context.acquisitionContext, versionSpecRequirement: 'equal' });
+                    if (!meetsRequirement)
+                    {
+                        return null;
+                    }
                 }
             }
             catch (error: any)
@@ -345,7 +348,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
                 (context.acquisitionContext && context.acquisitionContext.requestingExtensionId)
                     ? context.acquisitionContext.requestingExtensionId : null));
 
-            await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).trackInstalledVersion(context, install);
+            await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).trackInstalledVersion(context, install, dotnetPath);
             return dotnetPath;
         }
         return null;
@@ -466,7 +469,7 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
 
         context.eventStream.post(new DotnetAcquisitionCompleted(install, dotnetPath, installingVersion));
 
-        await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).trackInstalledVersion(context, install);
+        await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).trackInstalledVersion(context, install, dotnetPath);
 
         await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream);
         context.eventStream.post(new DotnetGlobalAcquisitionCompletionEvent(`The version ${JSON.stringify(install)} completed successfully.`));
