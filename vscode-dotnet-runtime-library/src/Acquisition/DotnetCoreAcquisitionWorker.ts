@@ -200,6 +200,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         const existingInstall = await this.getValidExistingInstall(context, installedVersions, install, dotnetPath);
         if (existingInstall)
         {
+            context.eventStream.post(new DotnetAcquisitionStatusResolved(install, install.version));
             return { dotnetPath: existingInstall };
         }
 

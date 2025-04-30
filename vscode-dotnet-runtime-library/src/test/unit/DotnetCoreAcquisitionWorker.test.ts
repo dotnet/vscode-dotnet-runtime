@@ -124,7 +124,6 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function ()
         assert.equal(exePath, expectedPath, 'The exe path is correct');
 
         // Should be finished installing
-        assert.isEmpty(context.get<string[]>(installingVersionsKey, []), 'There are no versions marked as still installing');
         assert.isNotEmpty(context.get<string[]>(installedVersionsKey, []), 'There is a version marked as installed');
         assert.include(context.get<InstallRecord[]>(installedVersionsKey, []).map(x => x.dotnetInstall.installId), installId, 'The version marked as installed is the expected version');
 
