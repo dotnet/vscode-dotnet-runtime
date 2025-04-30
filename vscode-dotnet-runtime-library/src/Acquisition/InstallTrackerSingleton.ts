@@ -2,15 +2,11 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
-import * as fs from 'fs';
-import * as path from 'path';
 import { IEventStream } from '../EventStream/EventStream';
 import
 {
     AddTrackingVersions,
     ConvertingLegacyInstallRecord,
-    DotnetPreinstallDetected,
-    DotnetPreinstallDetectionError,
     DuplicateInstallDetected,
     FoundTrackingVersions,
     RemovingExtensionFromList,
@@ -19,16 +15,14 @@ import
     SkipAddingInstallEvent
 } from '../EventStream/EventStreamEvents';
 import { IExtensionState } from '../IExtensionState';
-import { getAssumedInstallInfo, getVersionFromLegacyInstallId } from '../Utils/InstallIdUtilities';
+import { getAssumedInstallInfo } from '../Utils/InstallIdUtilities';
 import { executeWithLock } from '../Utils/TypescriptUtilities';
-import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import
 {
     DotnetInstall,
     DotnetInstallWithKey,
-    GetDotnetInstallInfo,
     InstallToStrings,
-    IsEquivalentInstallation,
+    IsEquivalentInstallation
 } from './DotnetInstall';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IInstallationDirectoryProvider } from './IInstallationDirectoryProvider';
@@ -78,7 +72,7 @@ export class InstallTrackerSingleton
             }, 'installed', dotnetInstall);
     }
 
-    public async uninstallAllRecords(provider: IInstallationDirectoryProvider): Promise<void>
+    public async uninstallAllRecords(provider: IInstallationDirectoryProvider, deletionFunction: () => Promise<void>): Promise<void>
     {
         return executeWithLock(this.eventStream, false, this.getLockFilePathForKey(provider, 'installed'), 5, 200000,
             async () =>
@@ -86,6 +80,7 @@ export class InstallTrackerSingleton
                 const installedVersions = await this.getExistingInstalls(provider, true);
                 const remainingInstalledVersions = installedVersions.filter(x => x.dotnetInstall.isGlobal);
                 await this.extensionState.update('installed', remainingInstalledVersions);
+                await deletionFunction();
             },);
     }
 
@@ -196,17 +191,20 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
             }, 'installed', installIdObj, context);
     }
 
-    public async trackInstalledVersion(context: IAcquisitionWorkerContext, install: DotnetInstall)
+    public async trackInstalledVersion(context: IAcquisitionWorkerContext, install: DotnetInstall, pathToValidate: string)
     {
-        await this.addVersionToExtensionState(context, 'installed', install);
+        await this.addVersionToExtensionState(context, install, pathToValidate);
     }
 
-    protected async addVersionToExtensionState(context: IAcquisitionWorkerContext, installState: InstallState, installObj: DotnetInstall, alreadyHoldingLock = false)
+    protected async addVersionToExtensionState(context: IAcquisitionWorkerContext, installObj: DotnetInstall, pathToValidate: string, alreadyHoldingLock = false)
     {
-        return executeWithLock(this.eventStream, alreadyHoldingLock, this.getLockFilePathForKey(context.installDirectoryProvider, installState), 5, 200000,
+        return executeWithLock(this.eventStream, alreadyHoldingLock, this.getLockFilePathForKey(context.installDirectoryProvider, 'installed'), 5, 200000,
             async (installationState: InstallState, install: DotnetInstall, ctx: IAcquisitionWorkerContext) =>
             {
                 this.eventStream.post(new AddTrackingVersions(`Adding ${JSON.stringify(install)} with id ${installObj.installId} from the state.`));
+
+                // We need to validate again ourselves because uninstallAll can blast away the state but holds on to the installed lock when doing so.
+                context.installationValidator.validateDotnetInstall(install, pathToValidate);
 
                 const existingVersions = await this.getExistingInstalls(context.installDirectoryProvider, true);
                 const preExistingInstallIndex = existingVersions.findIndex(x => IsEquivalentInstallation(x.dotnetInstall, install));
@@ -236,36 +234,6 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
                 this.eventStream.post(new AddTrackingVersions(`Updated ${installationState} :
 ${existingVersions.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.installingExtensions.map(owner => owner ?? 'null').join(', ')}\n`)}`));
                 await this.extensionState.update(installationState, existingVersions);
-            }, installState, installObj, context);
-    }
-
-    public async checkForUnrecordedLocalSDKSuccessfulInstall(context: IAcquisitionWorkerContext, dotnetInstallDirectory: string, installedInstallIdsList: InstallRecord[]): Promise<InstallRecord[]>
-    {
-        return executeWithLock(this.eventStream, false, this.getLockFilePathForKey(context.installDirectoryProvider, 'installed'), 5, 200000,
-            async (dotnetInstallDir: string, installedInstallIds: InstallRecord[], ctx: IAcquisitionWorkerContext) =>
-            {
-                let localSDKDirectoryIdIter = '';
-                try
-                {
-                    // Determine installed version(s) of local SDKs for the EDU bundle.
-                    const installIds = fs.readdirSync(path.join(dotnetInstallDir, 'sdk'));
-
-                    // Update extension state
-                    for (const installId of installIds)
-                    {
-                        localSDKDirectoryIdIter = installId;
-                        const installRecord = GetDotnetInstallInfo(getVersionFromLegacyInstallId(installId), 'sdk', 'local', DotnetCoreAcquisitionWorker.defaultArchitecture());
-                        this.eventStream.post(new DotnetPreinstallDetected(installRecord));
-                        await this.addVersionToExtensionState(ctx, 'installed', installRecord, true);
-                        installedInstallIds.push({ dotnetInstall: installRecord, installingExtensions: [null] } as InstallRecord);
-                    }
-                }
-                catch (error)
-                {
-                    this.eventStream.post(new DotnetPreinstallDetectionError(error as Error, GetDotnetInstallInfo(localSDKDirectoryIdIter, 'sdk', 'local',
-                        DotnetCoreAcquisitionWorker.defaultArchitecture())));
-                }
-                return installedInstallIds;
-            }, dotnetInstallDirectory, installedInstallIdsList, context);
+            }, 'installed', installObj, context);
     }
 }

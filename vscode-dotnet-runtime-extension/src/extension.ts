@@ -112,6 +112,7 @@ namespace commandKeys
     export const showAcquisitionLog = 'showAcquisitionLog';
     export const ensureDotnetDependencies = 'ensureDotnetDependencies';
     export const reportIssue = 'reportIssue';
+    export const resetData = 'resetData';
 }
 
 const commandPrefix = 'dotnet';
@@ -395,6 +396,14 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         return pathResult;
     });
 
+    const resetDataPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.resetData}`, async () =>
+    {
+        const uninstallContext: IDotnetUninstallContext = {
+            errorConfiguration: 1
+        };
+        return uninstallAll(uninstallContext);
+    });
+
     const dotnetUninstallPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallPublic}`, async () =>
     {
         const existingInstalls = await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).getExistingInstalls(directoryProviderFactory(
@@ -642,6 +651,11 @@ ${JSON.stringify(commandContext)}`));
 
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallAll}`, async (commandContext: IDotnetUninstallContext | undefined) =>
     {
+        return uninstallAll(commandContext);
+    });
+
+    async function uninstallAll(commandContext: IDotnetUninstallContext | undefined): Promise<void>
+    {
         await callWithErrorHandling(async () =>
         {
             const mode = 'runtime' as DotnetInstallMode;
@@ -652,7 +666,7 @@ ${JSON.stringify(commandContext)}`));
         },
             getIssueContext(existingPathConfigWorker)(commandContext ? commandContext.errorConfiguration : undefined, 'uninstallAll')
         );
-    });
+    }
 
     const showOutputChannelRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.showAcquisitionLog}`, () => outputChannel.show(/* preserveFocus */ false));
 
@@ -843,6 +857,7 @@ We will try to install .NET, but are unlikely to be able to connect to the serve
         dotnetUninstallAllRegistration,
         showOutputChannelRegistration,
         ensureDependenciesRegistration,
+        resetDataPublicRegistration,
         reportIssueRegistration,
         ...eventStreamObservers);
 }

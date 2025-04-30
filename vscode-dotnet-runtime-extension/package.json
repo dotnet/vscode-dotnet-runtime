@@ -55,6 +55,11 @@
                 "command": "dotnet.uninstallPublic",
                 "title": "Uninstall .NET.",
                 "category": ".NET Install Tool"
+            },
+            {
+                "command": "dotnet.resetData",
+                "title": "Reset Extension Data (Uninstalls All Installations, Which May Cause Other Extensions To Fail. Uninstall Dependent Extensions First)",
+                "category": ".NET Install Tool"
             }
         ],
         "configuration": {
