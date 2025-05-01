@@ -727,7 +727,7 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
 
         assert.isFalse(fs.existsSync(dotnetPathRes), 'The dotnet path should not exist after resetData command');
         assert.isFalse(fs.existsSync(path.dirname(dotnetPathRes)), 'The dotnet path should not exist after resetData command');
-    }).timeout(standardTimeoutTime);;
+    }).timeout(standardTimeoutTime);
 
     test('resetData command does not cause invalid state if other extensions use runtime', async () =>
     {
@@ -742,5 +742,5 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
 
         // Installing again after reset when prior file in use, should not throw an error
         dotnetPathRes = await installRuntime('9.0', 'runtime');
-    }).timeout(standardTimeoutTime);;
+    }).timeout(standardTimeoutTime);
 });
