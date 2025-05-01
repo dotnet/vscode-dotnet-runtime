@@ -666,6 +666,8 @@ ${JSON.stringify(commandContext)}`));
         },
             getIssueContext(existingPathConfigWorker)(commandContext ? commandContext.errorConfiguration : undefined, 'uninstallAll')
         );
+
+        return 0;
     }
 
     const showOutputChannelRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.showAcquisitionLog}`, () => outputChannel.show(/* preserveFocus */ false));
