@@ -272,16 +272,10 @@ export class FileUtilities extends IFileUtilities
         {
             try
             {
-                exec(`lsof ${filePath}`, (error, stdout, stderr) =>
-                {
-                    if (error)
+                await promisify(exec)(`lsof ${filePath}`).then(
+                    fulfilled =>
                     {
-                        eventStream?.post(new FileIsBusy(`The file ${filePath} is busy due to a file err: ${JSON.stringify(error)}`));
-                        return false;
-                    }
-                    else
-                    {
-                        const lines = stdout.split('\n');
+                        const lines = fulfilled?.stdout?.toString().split('\n');
                         if (lines.length > 1) // lsof returns a header line and then the lines of open files
                         {
                             eventStream?.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle as lsof shows`));
@@ -292,8 +286,16 @@ export class FileUtilities extends IFileUtilities
                             eventStream?.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle as lsof is empty`));
                             return false;
                         }
-                    }
-                });
+                    },
+                    rejected =>
+                    {
+                        if (rejected?.code?.toString() === 'EACCESS')
+                        {
+                            eventStream?.post(new FileIsBusy(`The file ${filePath} is presumed busy due to EACCESS`));
+                            return true;
+                        }
+                        // ENOENT or others may be thrown if the file DNE, but we only care if its open.
+                    });
             }
             catch (error: any)
             {
