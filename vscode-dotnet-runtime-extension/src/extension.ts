@@ -654,7 +654,7 @@ ${JSON.stringify(commandContext)}`));
         return uninstallAll(commandContext);
     });
 
-    async function uninstallAll(commandContext: IDotnetUninstallContext | undefined): Promise<void>
+    async function uninstallAll(commandContext: IDotnetUninstallContext | undefined): Promise<number>
     {
         await callWithErrorHandling(async () =>
         {
@@ -667,7 +667,7 @@ ${JSON.stringify(commandContext)}`));
             getIssueContext(existingPathConfigWorker)(commandContext ? commandContext.errorConfiguration : undefined, 'uninstallAll')
         );
 
-        return 0;
+        return Promise.resolve(0);
     }
 
     const showOutputChannelRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.showAcquisitionLog}`, () => outputChannel.show(/* preserveFocus */ false));
