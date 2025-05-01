@@ -725,8 +725,8 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
         const uninstallRes = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.resetData');
         assert.exists(uninstallRes, 'The resetData command should return a result');
 
-        assert.false(fs.existsSync(dotnetPathRes), 'The dotnet path should not exist after resetData command');
-        assert.false(fs.existsSync(path.dirname(dotnetPathRes)), 'The dotnet path should not exist after resetData command');
+        assert.isFalse(fs.existsSync(dotnetPathRes), 'The dotnet path should not exist after resetData command');
+        assert.isFalse(fs.existsSync(path.dirname(dotnetPathRes)), 'The dotnet path should not exist after resetData command');
     });
 
     test('resetData command does not cause invalid state if other extensions use runtime', async () =>
@@ -736,8 +736,8 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
         const uninstallRes = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.resetData');
         assert.equal(uninstallRes, 0);
 
-        assert.false(fs.existsSync(dotnetPathRes), 'The dotnet path should not exist after resetData command');
-        assert.false(fs.existsSync(path.dirname(dotnetPathRes)), 'The dotnet path should not exist after resetData command');
+        assert.isFalse(fs.existsSync(dotnetPathRes), 'The dotnet path should not exist after resetData command');
+        assert.isFalse(fs.existsSync(path.dirname(dotnetPathRes)), 'The dotnet path should not exist after resetData command');
         await openFileHandle.close();
 
         // Installing again after reset when prior file in use, should not throw an error

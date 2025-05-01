@@ -69,6 +69,7 @@ import
     LocalMemoryCacheSingleton,
     NoExtensionIdProvided,
     registerEventStream,
+    UninstallErrorConfiguration,
     UserManualInstallFailure,
     UserManualInstallRequested,
     UserManualInstallSuccess,
@@ -399,7 +400,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     const resetDataPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.resetData}`, async () =>
     {
         const uninstallContext: IDotnetUninstallContext = {
-            errorConfiguration: 1
+            errorConfiguration: UninstallErrorConfiguration.DisplayAllErrorPopups,
         };
         return uninstallAll(uninstallContext);
     });
