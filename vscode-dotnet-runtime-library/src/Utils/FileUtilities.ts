@@ -249,11 +249,11 @@ export class FileUtilities extends IFileUtilities
             {
                 if (error.code === 'EBUSY')
                 {
-                    eventStream.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle`, new Date().toISOString(), filePath));
+                    eventStream.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle`));
                     return true;
                 }
             }
-            eventStream.post(new FileIsNotBusy(`The file ${filePath} is not busy due to another file handle`, new Date().toISOString(), filePath));
+            eventStream.post(new FileIsNotBusy(`The file ${filePath} is not busy due to another file handle`));
             return false;
         }
         else
@@ -264,7 +264,7 @@ export class FileUtilities extends IFileUtilities
                 {
                     if (error)
                     {
-                        eventStream.post(new FileIsBusy(`The file ${filePath} is busy due to a file err: ${JSON.stringify(error)}`, new Date().toISOString(), filePath));
+                        eventStream.post(new FileIsBusy(`The file ${filePath} is busy due to a file err: ${JSON.stringify(error)}`));
                         return false;
                     }
                     else
@@ -272,12 +272,12 @@ export class FileUtilities extends IFileUtilities
                         const lines = stdout.split('\n');
                         if (lines.length > 1) // lsof returns a header line and then the lines of open files
                         {
-                            eventStream.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle as lsof shows`, new Date().toISOString(), filePath));
+                            eventStream.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle as lsof shows`));
                             return true;
                         }
                         else
                         {
-                            eventStream.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle as lsof is empty`, new Date().toISOString(), filePath));
+                            eventStream.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle as lsof is empty`));
                             return false;
                         }
                     }
