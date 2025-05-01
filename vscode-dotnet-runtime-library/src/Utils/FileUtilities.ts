@@ -304,6 +304,7 @@ export class FileUtilities extends IFileUtilities
                 return false;
             }
         }
+    }
 
     /**
      *
