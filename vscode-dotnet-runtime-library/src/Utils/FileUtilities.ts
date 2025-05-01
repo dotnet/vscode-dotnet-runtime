@@ -244,7 +244,7 @@ export class FileUtilities extends IFileUtilities
 
     public static async fileIsOpen(filePath: string, eventStream?: IEventStream): Promise<boolean>
     {
-        let fileHandle: fs.FileHandle | null = null;
+        let fileHandle: fs.promises.FileHandle | null = null;
         if (os.platform() === 'win32')
         {
             try
