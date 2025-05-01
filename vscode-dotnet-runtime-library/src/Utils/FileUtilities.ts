@@ -298,7 +298,12 @@ export class FileUtilities extends IFileUtilities
                         // ENOENT or others may be thrown if the file DNE, but we only care if its open.
                     }).finally(() => { return false; });
             }
-    }
+            catch (error: any)
+            {
+                eventStream?.post(new SuppressedAcquisitionError(error, `Failed to check if file ${filePath} is open.`));
+                return false;
+            }
+        }
 
     /**
      *
