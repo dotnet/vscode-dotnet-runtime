@@ -19,6 +19,8 @@ import
     DotnetCommandFallbackOSEvent,
     DotnetFileWriteRequestEvent,
     EmptyDirectoryToWipe,
+    FileIsBusy,
+    FileIsNotBusy,
     FileToWipe,
     SuppressedAcquisitionError
 } from '../EventStream/EventStreamEvents';
