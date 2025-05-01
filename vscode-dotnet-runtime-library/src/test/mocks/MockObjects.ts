@@ -704,6 +704,10 @@ export class MockExtensionConfiguration implements IExtensionConfiguration
         {
             return this.allowInvalidPaths as unknown as T;
         }
+        else if (name === 'showResetDataCommand')
+        {
+            return true as unknown as T;
+        }
         else
         {
             return undefined;

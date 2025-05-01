@@ -59,7 +59,8 @@
             {
                 "command": "dotnet.resetData",
                 "title": "Reset Extension Data (Uninstalls All Installations, Which May Cause Other Extensions To Fail. Uninstall Dependent Extensions First)",
-                "category": ".NET Install Tool"
+                "category": ".NET Install Tool",
+                "enablement": "dotnetAcquisitionExtension.showResetDataCommand"
             }
         ],
         "configuration": {
@@ -111,6 +112,11 @@
                     "type": "number",
                     "default": 1,
                     "description": "To improve performance, the results of checking .NET Installations may be cached. If you're facing issues with an install not being detected, try setting this to 0.5, or 0; or increasing the number to improve performance. Restart to change."
+                },
+                "dotnetAcquisitionExtension.showResetDataCommand": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Show the command to reset extension data in the command palette.."
                 }
             }
         }

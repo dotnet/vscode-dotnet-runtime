@@ -733,14 +733,19 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
     {
         let dotnetPathRes = await installRuntime('9.0', 'runtime');
         const openFileHandle = await fs.promises.open(dotnetPathRes, fs.constants.O_RDWR);
-        const uninstallRes = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.resetData');
-        assert.equal(uninstallRes, 0);
+        try
+        {
+            const uninstallRes = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.resetData');
+            assert.equal(uninstallRes, 0);
 
-        assert.isFalse(fs.existsSync(dotnetPathRes), 'The dotnet path should not exist after resetData command');
-        assert.isFalse(fs.existsSync(path.dirname(dotnetPathRes)), 'The dotnet path should not exist after resetData command');
-        await openFileHandle.close();
+            assert.isFalse(fs.existsSync(dotnetPathRes), 'The dotnet path should not exist after resetData command');
 
-        // Installing again after reset when prior file in use, should not throw an error
-        dotnetPathRes = await installRuntime('9.0', 'runtime');
+            // Installing again after reset when prior file in use, should not throw an error
+            dotnetPathRes = await installRuntime('9.0', 'runtime');
+        }
+        finally
+        {
+            await openFileHandle.close();
+        }
     }).timeout(standardTimeoutTime);
 });

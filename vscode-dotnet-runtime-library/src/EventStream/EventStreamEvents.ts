@@ -1514,7 +1514,6 @@ export class CommandExecutionUserCompletedDialogueEvent extends DotnetCustomMess
 export class CommandExecutionUnderSudoEvent extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'CommandExecutionUnderSudoEvent';
-
     public getProperties()
     {
         return { ...getDisabledTelemetryOnChance(1), ...super.getProperties() };
