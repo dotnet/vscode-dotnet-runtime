@@ -249,11 +249,13 @@ export class FileUtilities extends IFileUtilities
         {
             try
             {
+                // eslint-disable-next-line no-bitwise
                 fileHandle = await fs.promises.open(filePath, fs.constants.O_RDONLY | 0x10000000); // 0x10000000 is the FILE_FLAG_NO_BUFFERING flag to try to hold an exclusive 'lock'
             }
             catch (error: any)
             {
-                if (error.code === 'EBUSY')
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                if (error?.code === 'EBUSY')
                 {
                     eventStream?.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle`));
                     return true;
@@ -261,7 +263,7 @@ export class FileUtilities extends IFileUtilities
             }
             finally
             {
-                fileHandle?.close();
+                await fileHandle?.close();
             }
             eventStream?.post(new FileIsNotBusy(`The file ${filePath} is not busy due to another file handle`));
             return false;
