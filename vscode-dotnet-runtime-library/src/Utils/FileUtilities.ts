@@ -244,11 +244,12 @@ export class FileUtilities extends IFileUtilities
 
     public static async fileIsOpen(filePath: string, eventStream?: IEventStream): Promise<boolean>
     {
+        let fileHandle: fs.FileHandle | null = null;
         if (os.platform() === 'win32')
         {
             try
             {
-                await fs.promises.open(filePath, 'r+');
+                fileHandle = await fs.promises.open(filePath, 'r+');
             }
             catch (error: any)
             {
@@ -257,6 +258,10 @@ export class FileUtilities extends IFileUtilities
                     eventStream?.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle`));
                     return true;
                 }
+            }
+            finally
+            {
+                fileHandle?.close();
             }
             eventStream?.post(new FileIsNotBusy(`The file ${filePath} is not busy due to another file handle`));
             return false;
