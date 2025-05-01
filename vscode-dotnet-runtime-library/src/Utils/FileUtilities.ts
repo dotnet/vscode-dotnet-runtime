@@ -27,6 +27,7 @@ import
 import { CommandExecutor } from './CommandExecutor';
 import { IFileUtilities } from './IFileUtilities';
 import { IUtilityContext } from './IUtilityContext';
+import { getDotnetExecutable } from './TypescriptUtilities';
 
 export class FileUtilities extends IFileUtilities
 {
@@ -70,29 +71,33 @@ export class FileUtilities extends IFileUtilities
      * @param directoryToWipe the directory to delete all of the files in if privilege to do so exists.
      * @param fileExtensionsToDelete - if undefined, delete all files. if not, delete only files with extensions in this array in lower case.
      */
-    public async wipeDirectory(directoryToWipe: string, eventStream?: IEventStream, fileExtensionsToDelete?: string[])
+    public async wipeDirectory(directoryToWipe: string, eventStream?: IEventStream, fileExtensionsToDelete?: string[], verifyDotnetNotInUse = false)
     {
         if (!(await this.exists(directoryToWipe)))
         {
             eventStream?.post(new EmptyDirectoryToWipe(`The directory ${directoryToWipe} did not exist, so it was not wiped.`))
             return;
         }
+        else if (verifyDotnetNotInUse && await FileUtilities.fileIsOpen(path.join(directoryToWipe, getDotnetExecutable()), eventStream))
+        {
+            return;
+        }
 
-        const directoryFiles: string[] = await fs.promises.readdir(directoryToWipe);
-        for (const f of directoryFiles)
+        const directoryEntries: string[] = await fs.promises.readdir(directoryToWipe);
+        for (const entry of directoryEntries)
         {
             try
             {
-                eventStream?.post(new FileToWipe(`The file ${f} may be deleted.`))
-                if (!fileExtensionsToDelete || fileExtensionsToDelete?.includes(path.extname(f).toLocaleLowerCase()))
+                eventStream?.post(new FileToWipe(`Path ${entry} may be deleted.`))
+                if (!fileExtensionsToDelete || fileExtensionsToDelete?.includes(path.extname(entry).toLocaleLowerCase()))
                 {
-                    eventStream?.post(new FileToWipe(`The file ${f} is being deleted -- if no error is reported, it should be wiped.`))
-                    await fs.promises.rm(path.join(directoryToWipe, f));
+                    eventStream?.post(new FileToWipe(`Path  ${entry} is being deleted -- if no error is reported, it should be wiped.`))
+                    await fs.promises.rm(path.join(directoryToWipe, entry), { recursive: true, force: true });
                 }
             }
             catch (error: any)
             {
-                eventStream?.post(new SuppressedAcquisitionError(error, `Failed to delete ${f} when marked for deletion.`));
+                eventStream?.post(new SuppressedAcquisitionError(error, `Failed to delete ${entry} when marked for deletion.`));
             }
         };
     }
@@ -237,7 +242,7 @@ export class FileUtilities extends IFileUtilities
         }
     }
 
-    public static async fileIsOpen(filePath: string, eventStream: IEventStream): Promise<boolean>
+    public static async fileIsOpen(filePath: string, eventStream?: IEventStream): Promise<boolean>
     {
         if (os.platform() === 'win32')
         {
@@ -249,11 +254,11 @@ export class FileUtilities extends IFileUtilities
             {
                 if (error.code === 'EBUSY')
                 {
-                    eventStream.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle`));
+                    eventStream?.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle`));
                     return true;
                 }
             }
-            eventStream.post(new FileIsNotBusy(`The file ${filePath} is not busy due to another file handle`));
+            eventStream?.post(new FileIsNotBusy(`The file ${filePath} is not busy due to another file handle`));
             return false;
         }
         else
@@ -264,7 +269,7 @@ export class FileUtilities extends IFileUtilities
                 {
                     if (error)
                     {
-                        eventStream.post(new FileIsBusy(`The file ${filePath} is busy due to a file err: ${JSON.stringify(error)}`));
+                        eventStream?.post(new FileIsBusy(`The file ${filePath} is busy due to a file err: ${JSON.stringify(error)}`));
                         return false;
                     }
                     else
@@ -272,12 +277,12 @@ export class FileUtilities extends IFileUtilities
                         const lines = stdout.split('\n');
                         if (lines.length > 1) // lsof returns a header line and then the lines of open files
                         {
-                            eventStream.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle as lsof shows`));
+                            eventStream?.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle as lsof shows`));
                             return true;
                         }
                         else
                         {
-                            eventStream.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle as lsof is empty`));
+                            eventStream?.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle as lsof is empty`));
                             return false;
                         }
                     }

@@ -102,7 +102,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     {
         eventStream.post(new DotnetUninstallAllStarted());
         await InstallTrackerSingleton.getInstance(eventStream, extensionState).uninstallAllRecords(directoryProviderFactory('runtime', storagePath),
-            async () => { await this.removeFolderRecursively(eventStream, storagePath); }); // runtime mode is ignored here
+            async () => { await this.deleteUninstalls(eventStream, storagePath); }); // runtime mode is ignored here
         await this.ClearLegacyData(extensionState).catch(() => {});
         eventStream.post(new DotnetUninstallAllCompleted());
     }
@@ -557,7 +557,7 @@ ${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
                     if (force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).canUninstall(install, context.installDirectoryProvider))
                     {
                         context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install.installId}.`));
-                        await this.removeFolderRecursively(context.eventStream, dotnetInstallDir);
+                        await this.file.wipeDirectory(dotnetInstallDir, context.eventStream, undefined, true,);
                         context.eventStream.post(new DotnetUninstallCompleted(`Uninstalled .NET ${install.installId}.`));
                     }
                     else
@@ -616,15 +616,9 @@ Other dependents remain.`));
             });
     }
 
-    private async removeFolderRecursively(eventStream: IEventStream, folderPath: string)
+    private async deleteUninstalls(eventStream: IEventStream, folderPath: string)
     {
         eventStream.post(new DotnetAcquisitionDeletion(folderPath));
-        if (await FileUtilities.fileIsOpen(path.join(folderPath, getDotnetExecutable()), eventStream))
-        {
-            eventStream.post(new DotnetUninstallSkipped(`Not uninstalling .NET, as it's in use, at ${folderPath}.`));
-            return;
-        }
-
         try
         {
             await fs.promises.chmod(folderPath, 0o744);
@@ -636,12 +630,29 @@ Other dependents remain.`));
 
         try
         {
-            await promisify(rimraf)(folderPath);
-            eventStream.post(new DotnetAcquisitionDeletion(`Deleted .NET folder ${folderPath} when marked for deletion.`));
+
+            const subDirectoryPaths = (await fs.promises.readdir(folderPath, { withFileTypes: true })).filter(entry => entry.isDirectory()).map(entry => { return path.join(folderPath, entry.name) });
+            for (const fullSubDirectoryPath of subDirectoryPaths)
+            {
+                if (await FileUtilities.fileIsOpen(path.join(fullSubDirectoryPath, getDotnetExecutable()), eventStream))
+                {
+                    eventStream.post(new DotnetUninstallSkipped(`Not uninstalling .NET, as it's in use, at ${folderPath}.`));
+                    continue;
+                }
+                try
+                {
+                    await promisify(rimraf)(fullSubDirectoryPath);
+                    eventStream.post(new DotnetAcquisitionDeletion(`Deleted .NET folder ${folderPath} when marked for deletion.`));
+                }
+                catch (error: any)
+                {
+                    eventStream.post(new SuppressedAcquisitionError(error, `Failed to delete .NET folder ${folderPath} when marked for deletion.`));
+                }
+            }
         }
         catch (error: any)
         {
-            eventStream.post(new SuppressedAcquisitionError(error, `Failed to delete .NET folder ${folderPath} when marked for deletion.`));
+            eventStream.post(new SuppressedAcquisitionError(error, `Failed to read directory ${folderPath}.`));
         }
     }
 }
