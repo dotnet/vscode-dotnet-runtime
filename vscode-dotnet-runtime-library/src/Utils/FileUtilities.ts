@@ -3,6 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 * Licensed under the MIT License. See License.txt in the project root for license information.
 * ------------------------------------------------------------------------------------------ */
+import { exec } from 'child_process';
 import * as crypto from 'crypto';
 import * as eol from 'eol';
 import * as fs from 'fs';
@@ -234,6 +235,60 @@ export class FileUtilities extends IFileUtilities
         }
     }
 
+    public static async fileIsOpen(filePath: string, eventStream: IEventStream): Promise<boolean>
+    {
+        if (os.platform() === 'win32')
+        {
+            try
+            {
+                await fs.promises.open(filePath, 'r+');
+            }
+            catch (error: any)
+            {
+                if (error.code === 'EBUSY')
+                {
+                    eventStream.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle`, new Date().toISOString(), filePath));
+                    return true;
+                }
+            }
+            eventStream.post(new FileIsNotBusy(`The file ${filePath} is not busy due to another file handle`, new Date().toISOString(), filePath));
+            return false;
+        }
+        else
+        {
+            try
+            {
+                exec(`lsof ${filePath}`, (error, stdout, stderr) =>
+                {
+                    if (error)
+                    {
+                        eventStream.post(new FileIsBusy(`The file ${filePath} is busy due to a file err: ${JSON.stringify(error)}`, new Date().toISOString(), filePath));
+                        return false;
+                    }
+                    else
+                    {
+                        const lines = stdout.split('\n');
+                        if (lines.length > 1) // lsof returns a header line and then the lines of open files
+                        {
+                            eventStream.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle as lsof shows`, new Date().toISOString(), filePath));
+                            return true;
+                        }
+                        else
+                        {
+                            eventStream.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle as lsof is empty`, new Date().toISOString(), filePath));
+                            return false;
+                        }
+                    }
+                });
+            }
+            catch (error: any)
+            {
+                return false;
+            }
+        }
+        return false;
+    }
+
     /**
      *
      * @returns true if the process is running with admin privileges
@@ -286,4 +341,3 @@ export class FileUtilities extends IFileUtilities
         return res;
     }
 }
-
