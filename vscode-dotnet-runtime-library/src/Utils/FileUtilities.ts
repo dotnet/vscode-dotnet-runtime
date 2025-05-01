@@ -289,6 +289,7 @@ export class FileUtilities extends IFileUtilities
                     },
                     rejected =>
                     {
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                         if (rejected?.code?.toString() === 'EACCESS')
                         {
                             eventStream?.post(new FileIsBusy(`The file ${filePath} is presumed busy due to EACCESS`));
