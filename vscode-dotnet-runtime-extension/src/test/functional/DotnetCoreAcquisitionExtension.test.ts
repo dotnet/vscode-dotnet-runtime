@@ -738,8 +738,8 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
             const uninstallRes = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.resetData');
             assert.equal(uninstallRes, 0);
 
-            assert.isTrue(fs.existsSync(dotnetPathRes), 'The dotnet path should exist after resetData command because it was in use');
-            assert.isTrue(fs.existsSync(path.dirname(dotnetPathRes)), 'The dotnet path should exist after resetData command because it was in use');
+            assert.isTrue(fs.existsSync(path.dirname(dotnetPathRes)), 'The dotnet exec should exist after resetData command because it was in use');
+            assert.isTrue(fs.existsSync(dotnetPathRes), 'The dotnet folder should exist after resetData command because it was in use');
 
             // Installing again after reset when prior file in use, should not throw an error
             dotnetPathRes = await installRuntime('9.0', 'runtime');
