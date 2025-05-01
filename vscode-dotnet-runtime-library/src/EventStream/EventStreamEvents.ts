@@ -908,6 +908,26 @@ export class UtilizingExistingInstallPromise extends DotnetCustomMessageEvent
     public readonly eventName = 'UtilizingExistingInstallPromise';
 }
 
+export class FileIsBusy extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'FileIsBusy';
+
+    public getProperties()
+    {
+        return { ...super.getProperties(), ...getDisabledTelemetryOnChance(1) };
+    }
+}
+
+export class FileIsNotBusy extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'FileIsNotBusy';
+
+    public getProperties()
+    {
+        return { ...super.getProperties(), ...getDisabledTelemetryOnChance(1) };
+    }
+}
+
 export class DotnetVersionCategorizedEvent extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'DotnetVersionCategorizedEvent';
@@ -1008,6 +1028,13 @@ export class DotnetUninstallCompleted extends DotnetCustomMessageEvent
 export class DotnetUninstallFailed extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'DotnetUninstallStarted';
+    public type = EventType.DotnetUninstallMessage;
+}
+
+
+export class DotnetUninstallSkipped extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'DotnetUninstallSkipped';
     public type = EventType.DotnetUninstallMessage;
 }
 
