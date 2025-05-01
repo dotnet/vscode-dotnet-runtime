@@ -272,19 +272,19 @@ export class FileUtilities extends IFileUtilities
         {
             try
             {
-                await promisify(exec)(`lsof ${filePath}`).then(
+                return promisify(exec)(`lsof ${filePath}`).then(
                     fulfilled =>
                     {
                         const lines = fulfilled?.stdout?.toString().split('\n');
                         if (lines.length > 1) // lsof returns a header line and then the lines of open files
                         {
                             eventStream?.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle as lsof shows`));
-                            return true;
+                            return Promise.resolve(true);
                         }
                         else
                         {
                             eventStream?.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle as lsof is empty`));
-                            return false;
+                            return Promise.resolve(false);
                         }
                     },
                     rejected =>
@@ -292,17 +292,12 @@ export class FileUtilities extends IFileUtilities
                         if (rejected?.code?.toString() === 'EACCESS')
                         {
                             eventStream?.post(new FileIsBusy(`The file ${filePath} is presumed busy due to EACCESS`));
-                            return true;
+                            return Promise.resolve(true);
                         }
+                        return Promise.resolve(false); // lsof returns a non-zero exit code if the file is not open by any process. EACCESS is thrown if the user does not have permission to run lsof on that file.
                         // ENOENT or others may be thrown if the file DNE, but we only care if its open.
-                    });
+                    }).finally(() => { return false; });
             }
-            catch (error: any)
-            {
-                return false;
-            }
-        }
-        return false;
     }
 
     /**
