@@ -30,6 +30,7 @@ import
     DotnetUninstallAllStarted,
     DotnetUninstallCompleted,
     DotnetUninstallFailed,
+    DotnetUninstallSkipped,
     DotnetUninstallStarted,
     DotnetWSLSecurityError,
     EventBasedError,
@@ -50,7 +51,7 @@ import { FileUtilities } from '../Utils/FileUtilities';
 import { IFileUtilities } from '../Utils/IFileUtilities';
 import { getInstallFromContext, getInstallIdCustomArchitecture } from '../Utils/InstallIdUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { executeWithLock, isRunningUnderWSL } from '../Utils/TypescriptUtilities';
+import { executeWithLock, getDotnetExecutable, isRunningUnderWSL } from '../Utils/TypescriptUtilities';
 import { DOTNET_INFORMATION_CACHE_DURATION_MS, GLOBAL_LOCK_PING_DURATION_MS, LOCAL_LOCK_PING_DURATION_MS } from './CacheTimeConstants';
 import { directoryProviderFactory } from './DirectoryProviderFactory';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
@@ -618,6 +619,12 @@ Other dependents remain.`));
     private async removeFolderRecursively(eventStream: IEventStream, folderPath: string)
     {
         eventStream.post(new DotnetAcquisitionDeletion(folderPath));
+        if (await FileUtilities.fileIsOpen(path.join(folderPath, getDotnetExecutable()), eventStream))
+        {
+            eventStream.post(new DotnetUninstallSkipped(`Not uninstalling .NET, as it's in use, at ${folderPath}.`));
+            return;
+        }
+
         try
         {
             await fs.promises.chmod(folderPath, 0o744);

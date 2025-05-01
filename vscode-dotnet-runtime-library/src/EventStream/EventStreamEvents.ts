@@ -1031,6 +1031,13 @@ export class DotnetUninstallFailed extends DotnetCustomMessageEvent
     public type = EventType.DotnetUninstallMessage;
 }
 
+
+export class DotnetUninstallSkipped extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'DotnetUninstallSkipped';
+    public type = EventType.DotnetUninstallMessage;
+}
+
 export class NoExtensionIdProvided extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'NoExtensionIdProvided';
