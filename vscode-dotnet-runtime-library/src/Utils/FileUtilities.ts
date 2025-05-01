@@ -249,7 +249,7 @@ export class FileUtilities extends IFileUtilities
         {
             try
             {
-                fileHandle = await fs.promises.open(filePath, 'r+');
+                fileHandle = await fs.promises.open(filePath, fs.constants.O_RDONLY | 0x10000000); // 0x10000000 is the FILE_FLAG_NO_BUFFERING flag to try to hold an exclusive 'lock'
             }
             catch (error: any)
             {
