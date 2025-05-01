@@ -719,4 +719,28 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
         assert.equal(undefined, result, 'Acquire Status for no ASP.NET installed when Runtime is installed should not mistake Runtime Install as ASP.NET Install');
     }).timeout(standardTimeoutTime);
 
+    test('resetData command wipes install', async () =>
+    {
+        const dotnetPathRes = await installRuntime('9.0', 'runtime');
+        const uninstallRes = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.resetData');
+        assert.exists(uninstallRes, 'The resetData command should return a result');
+
+        assert.isFalse(fs.existsSync(dotnetPathRes), 'The dotnet path should not exist after resetData command');
+        assert.isFalse(fs.existsSync(path.dirname(dotnetPathRes)), 'The dotnet path should not exist after resetData command');
+    }).timeout(standardTimeoutTime);
+
+    test('resetData command does not cause invalid state if other extensions use runtime', async () =>
+    {
+        let dotnetPathRes = await installRuntime('9.0', 'runtime');
+        const openFileHandle = await fs.promises.open(dotnetPathRes, fs.constants.O_RDWR);
+        const uninstallRes = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.resetData');
+        assert.equal(uninstallRes, 0);
+
+        assert.isFalse(fs.existsSync(dotnetPathRes), 'The dotnet path should not exist after resetData command');
+        assert.isFalse(fs.existsSync(path.dirname(dotnetPathRes)), 'The dotnet path should not exist after resetData command');
+        await openFileHandle.close();
+
+        // Installing again after reset when prior file in use, should not throw an error
+        dotnetPathRes = await installRuntime('9.0', 'runtime');
+    }).timeout(standardTimeoutTime);
 });

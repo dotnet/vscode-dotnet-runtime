@@ -367,7 +367,7 @@ ${eventStream.events.map(event => event.eventName).join(', ')}`);
         let detailedRemainingInstalls: InstallRecord[] = extensionContext.get<InstallRecord[]>(installedVersionsKey, []);
         let remainingInstalls: string[] = detailedRemainingInstalls.map(x => x.dotnetInstall.installId);
         assert.deepStrictEqual(remainingInstalls, ['5.0.00~x64', runtimeV6, sdkV5, sdkV6],
-            'Only The Requested Legacy Runtime is replaced when new runti vscode-dotnet-runtime-library/src/Acquisition/DotnetCoreAcquisitionWorker.tsme is installed');
+            'Only The Requested Legacy Runtime is replaced when a new runtime is installed');
 
         // Install a legacy runtime again to make sure its not removed when installing a new SDK with the same version
         migrateContextToNewInstall(ctx, runtimeV5, null);

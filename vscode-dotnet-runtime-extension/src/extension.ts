@@ -69,6 +69,7 @@ import
     LocalMemoryCacheSingleton,
     NoExtensionIdProvided,
     registerEventStream,
+    UninstallErrorConfiguration,
     UserManualInstallFailure,
     UserManualInstallRequested,
     UserManualInstallSuccess,
@@ -399,7 +400,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     const resetDataPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.resetData}`, async () =>
     {
         const uninstallContext: IDotnetUninstallContext = {
-            errorConfiguration: 1
+            errorConfiguration: UninstallErrorConfiguration.DisplayAllErrorPopups,
         };
         return uninstallAll(uninstallContext);
     });
@@ -654,7 +655,7 @@ ${JSON.stringify(commandContext)}`));
         return uninstallAll(commandContext);
     });
 
-    async function uninstallAll(commandContext: IDotnetUninstallContext | undefined): Promise<void>
+    async function uninstallAll(commandContext: IDotnetUninstallContext | undefined): Promise<number>
     {
         await callWithErrorHandling(async () =>
         {
@@ -666,6 +667,8 @@ ${JSON.stringify(commandContext)}`));
         },
             getIssueContext(existingPathConfigWorker)(commandContext ? commandContext.errorConfiguration : undefined, 'uninstallAll')
         );
+
+        return Promise.resolve(0);
     }
 
     const showOutputChannelRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.showAcquisitionLog}`, () => outputChannel.show(/* preserveFocus */ false));
