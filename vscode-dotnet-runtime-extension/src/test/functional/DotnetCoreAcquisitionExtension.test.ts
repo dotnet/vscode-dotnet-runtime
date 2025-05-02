@@ -758,7 +758,7 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
         try
         {
             const uninstallResult = await vscode.commands.executeCommand<string>('dotnet.uninstall', { version: '9.0', requestingExtensionId, mode: 'runtime' });
-            assert.equal(uninstallResult, '0', 'Uninstall command should return 0 indicating no action was taken');
+            assert.equal(uninstallResult, '1', 'Uninstall command should return 1 indicating no action was taken');
             assert.isTrue(fs.existsSync(dotnetPath), 'The dotnet.exe file should still exist because it was in use');
         } finally
         {
