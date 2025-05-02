@@ -749,4 +749,36 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
             await openFileHandle.close();
         }
     }).timeout(standardTimeoutTime);
+
+    test('Uninstall command does not proceed if dotnet.exe is open', async () =>
+    {
+        const dotnetPath = await installRuntime('9.0', 'runtime');
+        const openFileHandle = await fs.promises.open(dotnetPath, fs.constants.O_RDWR);
+
+        try
+        {
+            const uninstallResult = await vscode.commands.executeCommand<string>('dotnet.uninstall', { version: '9.0', requestingExtensionId, mode: 'runtime' });
+            assert.equal(uninstallResult, '0', 'Uninstall command should return 0 indicating no action was taken');
+            assert.isTrue(fs.existsSync(dotnetPath), 'The dotnet.exe file should still exist because it was in use');
+        } finally
+        {
+            await openFileHandle.close();
+        }
+    }).timeout(standardTimeoutTime);
+
+    test('UninstallAll command does not proceed if dotnet.exe is open', async () =>
+    {
+        const dotnetPath = await installRuntime('9.0', 'runtime');
+        const openFileHandle = await fs.promises.open(dotnetPath, fs.constants.O_RDWR);
+
+        try
+        {
+            const uninstallAllResult = await vscode.commands.executeCommand<string>('dotnet.uninstallAll');
+            assert.equal(uninstallAllResult, '0', 'UninstallAll command should return 0 indicating no action was taken');
+            assert.isTrue(fs.existsSync(dotnetPath), 'The dotnet.exe file should still exist because it was in use');
+        } finally
+        {
+            await openFileHandle.close();
+        }
+    }).timeout(standardTimeoutTime);
 });
