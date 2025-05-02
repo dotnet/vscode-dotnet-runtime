@@ -68,8 +68,8 @@ You will need to restart VS Code after these changes. If PowerShell is still not
         {
             try
             {
-                let windowsFullCommand = `powershell.exe -NoProfile -NonInteractive -NoLogo -ExecutionPolicy bypass -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; & ${installCommand} }"`;
                 let powershellReference = 'powershell.exe';
+                let windowsFullCommand = `${powershellReference} -NoProfile -NonInteractive -NoLogo -ExecutionPolicy bypass -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; & ${installCommand} }"`;
                 if (winOS)
                 {
                     powershellReference = await this.verifyPowershellCanRun(install);
