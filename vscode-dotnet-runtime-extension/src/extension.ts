@@ -96,6 +96,7 @@ namespace configKeys
     export const proxyUrl = 'proxyUrl';
     export const allowInvalidPaths = 'allowInvalidPaths';
     export const cacheTimeToLiveMultiplier = 'cacheTimeToLiveMultiplier';
+    export const showResetDataCommand = 'showResetDataCommand';
 }
 
 namespace commandKeys
@@ -144,6 +145,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     }
     const resolvedTimeoutSeconds = timeoutValue === undefined ? defaultTimeoutValue : timeoutValue;
     const proxyLink = extensionConfiguration.get<string>(configKeys.proxyUrl);
+    const showResetDataCommand = extensionConfiguration.get<boolean>(configKeys.showResetDataCommand);
 
     // Create a cache with the TTL setting that we can only reasonably access from here.
     const cacheTimeToLiveMultiplier = Math.abs(Number(extensionConfiguration.get<string>(configKeys.cacheTimeToLiveMultiplier) ?? 1)) ?? 1;
@@ -860,9 +862,13 @@ We will try to install .NET, but are unlikely to be able to connect to the serve
         dotnetUninstallAllRegistration,
         showOutputChannelRegistration,
         ensureDependenciesRegistration,
-        resetDataPublicRegistration,
         reportIssueRegistration,
         ...eventStreamObservers);
+
+    if (showResetDataCommand)
+    {
+        vsCodeContext.subscriptions.push(resetDataPublicRegistration);
+    }
 }
 
 export function ReEnableActivationForManualActivation()

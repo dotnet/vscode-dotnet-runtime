@@ -60,7 +60,7 @@
                 "command": "dotnet.resetData",
                 "title": "Reset Extension Data (Uninstalls All Installations, Which May Cause Other Extensions To Fail. Uninstall Dependent Extensions First)",
                 "category": ".NET Install Tool",
-                "enablement": "dotnetAcquisitionExtension.showResetDataCommand"
+                "enablement": "config.dotnetAcquisitionExtension.showResetDataCommand"
             }
         ],
         "configuration": {
@@ -116,7 +116,7 @@
                 "dotnetAcquisitionExtension.showResetDataCommand": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Show the command to reset extension data in the command palette.."
+                    "description": "Show the command to reset extension data in the command palette. Restart VS Code and remove dependent extensions first."
                 }
             }
         }
