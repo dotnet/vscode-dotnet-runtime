@@ -74,7 +74,8 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function ()
     function setupWorker(workerContext: IAcquisitionWorkerContext, eventStream: IEventStream): [MockDotnetCoreAcquisitionWorker, IAcquisitionInvoker]
     {
         const acquisitionWorker = getMockAcquisitionWorker(workerContext);
-        const invoker = new NoInstallAcquisitionInvoker(eventStream, acquisitionWorker, workerContext, path.dirname(getExpectedPath(getInstallFromContext(workerContext).installId, workerContext.acquisitionContext.mode ?? 'runtime')));
+        const expectedPath = path.dirname(getExpectedPath(getInstallFromContext(workerContext).installId, workerContext.acquisitionContext.mode ?? 'runtime'));
+        const invoker = new NoInstallAcquisitionInvoker(eventStream, acquisitionWorker, workerContext, expectedPath);
 
         return [acquisitionWorker, invoker];
     }
