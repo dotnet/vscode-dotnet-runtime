@@ -35,7 +35,8 @@ import
     DotnetWSLSecurityError,
     EventBasedError,
     EventCancellationError,
-    SuppressedAcquisitionError
+    SuppressedAcquisitionError,
+    UtilizingExistingInstallPromise
 } from '../EventStream/EventStreamEvents';
 import * as versionUtils from './VersionUtilities';
 
