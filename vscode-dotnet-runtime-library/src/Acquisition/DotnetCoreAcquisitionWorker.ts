@@ -35,7 +35,8 @@ import
     DotnetWSLSecurityError,
     EventBasedError,
     EventCancellationError,
-    SuppressedAcquisitionError
+    SuppressedAcquisitionError,
+    UtilizingExistingInstallPromise
 } from '../EventStream/EventStreamEvents';
 import * as versionUtils from './VersionUtilities';
 
@@ -52,7 +53,7 @@ import { IFileUtilities } from '../Utils/IFileUtilities';
 import { getInstallFromContext, getInstallIdCustomArchitecture } from '../Utils/InstallIdUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { executeWithLock, isRunningUnderWSL } from '../Utils/TypescriptUtilities';
-import { DOTNET_INFORMATION_CACHE_DURATION_MS, GLOBAL_LOCK_PING_DURATION_MS } from './CacheTimeConstants';
+import { DOTNET_INFORMATION_CACHE_DURATION_MS, GLOBAL_LOCK_PING_DURATION_MS, LOCAL_LOCK_PING_DURATION_MS } from './CacheTimeConstants';
 import { directoryProviderFactory } from './DirectoryProviderFactory';
 import
 {
@@ -66,7 +67,6 @@ import { GlobalInstallerResolver } from './GlobalInstallerResolver';
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetCoreAcquisitionWorker } from './IDotnetCoreAcquisitionWorker';
-import { IDotnetInstallationContext } from './IDotnetInstallationContext';
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { InstallationGraveyard } from './InstallationGraveyard';
 import
@@ -275,6 +275,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         const existingAcquisitionPromise = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getPromise(install, context.acquisitionContext);
         if (existingAcquisitionPromise)
         {
+            context.eventStream.post(new UtilizingExistingInstallPromise(`The requested version ${JSON.stringify(install)} is already being acquired by another extension. Returning the result of it's request when finished.`));
             return { dotnetPath: existingAcquisitionPromise } as IDotnetAcquireResult;
         }
         else
@@ -322,56 +323,54 @@ To keep your .NET version up to date, please reconnect to the internet at your s
     private async acquireLocalCore(context: IAcquisitionWorkerContext, mode: DotnetInstallMode, install: DotnetInstall, acquisitionInvoker: IAcquisitionInvoker): Promise<string>
     {
         const version = context.acquisitionContext.version!;
-        this.checkForPartialInstalls(context, install).catch(() => {});
-
-        let installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls('installed', context.installDirectoryProvider);
-        const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
-        const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
-
-        if (mode === 'sdk')
-        {
-            const installExists = await this.file.exists(dotnetPath);
-            const noInstallsInInstalledList = (installedVersions?.length ?? 0) === 0;
-            if (installExists && noInstallsInInstalledList)
+        return executeWithLock(context.eventStream, false, install.installId, LOCAL_LOCK_PING_DURATION_MS, context.timeoutSeconds * 1000,
+            async () =>
             {
-                // The education bundle already laid down a local install, add it to our managed installs
-                installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream,
-                    context.extensionState).checkForUnrecordedLocalSDKSuccessfulInstall(context, dotnetInstallDir, installedVersions);
+                await this.checkForPartialInstalls(context, install, true).catch(() => {});
+
+                let installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls('installed', context.installDirectoryProvider);
+                const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
+                const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
+
+                if (mode === 'sdk')
+                {
+                    const installExists = await this.file.exists(dotnetPath);
+                    const noInstallsInInstalledList = (installedVersions?.length ?? 0) === 0;
+                    if (installExists && noInstallsInInstalledList)
+                    {
+                        // The education bundle already laid down a local install, add it to our managed installs
+                        installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream,
+                            context.extensionState).checkForUnrecordedLocalSDKSuccessfulInstall(context, dotnetInstallDir, installedVersions);
+                    }
+                }
+
+                context.acquisitionContext.installType ??= 'local'; // Before this API param existed, all calls were for local types.
+                context.acquisitionContext.architecture ??= this.getDefaultInternalArchitecture(context.acquisitionContext.architecture);
+
+                const existingInstall = await this.getExistingInstall(context, installedVersions, install, dotnetPath);
+                if (existingInstall !== null)
+                {
+                    return existingInstall;
+                }
+
+                // We update the extension state to indicate we're starting a .NET Core installation.
+                await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).trackInstallingVersion(context, install);
+                context.eventStream.post(new DotnetAcquisitionStarted(install, version, context.acquisitionContext.requestingExtensionId));
+
+                await acquisitionInvoker.installDotnet(install).catch((reason) =>
+                {
+                    throw reason; // This will get handled and cast into an event based error by its caller.
+                });
+
+                context.installationValidator.validateDotnetInstall(install, dotnetPath);
+
+                await this.removeMatchingLegacyInstall(context, installedVersions, version);
+                await this.tryCleanUpInstallGraveyard(context);
+
+                await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).reclassifyInstallingVersionToInstalled(context, install);
+                return dotnetPath;
             }
-        }
-
-        const existingInstall = await this.getExistingInstall(context, installedVersions, install, dotnetPath);
-        if (existingInstall !== null)
-        {
-            return existingInstall;
-        }
-
-        // We update the extension state to indicate we're starting a .NET Core installation.
-        await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).trackInstallingVersion(context, install);
-
-        const installContext = {
-            installDir: dotnetInstallDir,
-            version,
-            dotnetPath,
-            timeoutSeconds: context.timeoutSeconds,
-            installMode: mode,
-            installType: context.acquisitionContext.installType ?? 'local', // Before this API param existed, all calls were for local types.
-            architecture: context.acquisitionContext.architecture ?? this.getDefaultInternalArchitecture(context.acquisitionContext.architecture),
-        } as IDotnetInstallationContext;
-        context.acquisitionContext.architecture = installContext.architecture;
-        context.eventStream.post(new DotnetAcquisitionStarted(install, version, context.acquisitionContext.requestingExtensionId));
-        await acquisitionInvoker.installDotnet(installContext, install).catch((reason) =>
-        {
-            throw reason; // This will get handled and cast into an event based error by its caller.
-        });
-        context.installationValidator.validateDotnetInstall(install, dotnetPath);
-
-        await this.removeMatchingLegacyInstall(context, installedVersions, version);
-        await this.tryCleanUpInstallGraveyard(context);
-
-        await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).reclassifyInstallingVersionToInstalled(context, install);
-
-        return dotnetPath;
+        );
     }
 
     private async getExistingInstall(context: IAcquisitionWorkerContext, installedVersions: InstallRecord[], install: DotnetInstall, dotnetPath: string): Promise<string | null>
@@ -431,21 +430,28 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         return result.stdout.includes(version);
     }
 
-    private async checkForPartialInstalls(context: IAcquisitionWorkerContext, installId: DotnetInstall)
+    private async checkForPartialInstalls(context: IAcquisitionWorkerContext, install: DotnetInstall, alreadyHoldingLock = false)
     {
-        const installingVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls('installing', context.installDirectoryProvider);
-        const partialInstall = installingVersions?.some(x => x.dotnetInstall.installId === installId.installId);
+        await executeWithLock(context.eventStream, alreadyHoldingLock, install.isGlobal ? GLOBAL_INSTALL_STATE_MODIFIER_LOCK(context.installDirectoryProvider, install) : install.installId,
+            LOCAL_LOCK_PING_DURATION_MS, context.timeoutSeconds * 1000,
+            async () =>
+            {
 
-        // Don't count it as partial if the promise is still being resolved.
-        // The promises get wiped out upon reload, so we can check this.
-        if (partialInstall && await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getPromise(installId, context.acquisitionContext, true) === null)
-        {
-            // Partial install, we never updated our extension to no longer be 'installing'. Maybe someone killed the vscode process or we failed in an unexpected way.
-            context.eventStream.post(new DotnetAcquisitionPartialInstallation(installId));
+                const installingVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls('installing', context.installDirectoryProvider);
+                const partialInstall = installingVersions?.some(x => x.dotnetInstall.installId === install.installId);
 
-            // Delete the existing local files so we can re-install. For global installs, let the installer handle it.
-            await this.uninstallLocal(context, installId);
-        }
+                // Don't count it as partial if the promise is still being resolved.
+                // The promises get wiped out upon reload, so we can check this.
+                if (partialInstall && await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getPromise(install, context.acquisitionContext, true) === null)
+                {
+                    // Partial install, we never updated our extension to no longer be 'installing'. Maybe someone killed the vscode process or we failed in an unexpected way.
+                    context.eventStream.post(new DotnetAcquisitionPartialInstallation(install));
+
+                    // Delete the existing local files so we can re-install. For global installs, let the installer handle it.
+                    await this.uninstallLocal(context, install);
+                }
+            }
+        );
     }
 
     public async tryCleanUpInstallGraveyard(context: IAcquisitionWorkerContext): Promise<void>
@@ -508,7 +514,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
 
         const installingVersion = await globalInstallerResolver.getFullySpecifiedVersion();
         context.eventStream.post(new DotnetGlobalVersionResolutionCompletionEvent(`The version we resolved that was requested is: ${installingVersion}.`));
-        this.checkForPartialInstalls(context, install).catch(() => {});
+        await this.checkForPartialInstalls(context, install).catch(() => {});
 
         const installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls('installed', context.installDirectoryProvider);
 

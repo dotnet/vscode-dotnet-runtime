@@ -162,7 +162,7 @@ export class NodeIPCMutex
                 catch (err: any)
                 {
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                    return reject(err?.message && err?.name ? err as Error : new Error(`Action: ${actionId} Failed to acquire lock: ${JSON.stringify(err ?? '')}`));
+                    return reject(err?.message && err?.name ? err as Error : new Error(`Action: ${actionId} Failed During Execution: ${JSON.stringify(err ?? '')}`));
                 }
                 finally
                 {

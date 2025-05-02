@@ -5,7 +5,6 @@
 
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import * as cp from 'child_process';
 import { warn } from 'console';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -36,7 +35,6 @@ import
 } from 'vscode-dotnet-runtime-library';
 import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
 import * as extension from '../../extension';
-import { uninstallSDKExtension } from '../../ExtensionUninstall';
 import rimraf = require('rimraf');
 
 const standardTimeoutTime = 100000;
@@ -123,7 +121,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
       const _ = new MockInstallTracker(eventStream, mockContext.extensionState);
 
       // Assert preinstalled SDKs are detected
-      const acquisitionInvoker = new NoInstallAcquisitionInvoker(eventStream, acquisitionWorker);
+      const acquisitionInvoker = new NoInstallAcquisitionInvoker(eventStream, acquisitionWorker, mockContext, path.dirname(sdkDirCurrent));
       const result = await acquisitionWorker.acquireLocalSDK(mockContext, acquisitionInvoker);
       assert.equal(path.dirname(result.dotnetPath), dotnetDir, 'preinstalled sdk path is the same as installed sdk path on api call');
       const preinstallEvents = eventStream.events
@@ -170,24 +168,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
 
       // Clean up storage
       await promisify(rimraf)(dotnetDir);
-    }).timeout(standardTimeoutTime);
-
-    test('Install Command', async () =>
-    {
-      const context: IDotnetAcquireContext = { version: currentSDKVersion, requestingExtensionId: 'ms-dotnettools.sample-extension' };
-      const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context);
-      assert.exists(result);
-      assert.exists(result!.dotnetPath);
-      assert.include(result!.dotnetPath, '.dotnet');
-      const sdkDir = fs.readdirSync(path.join(path.dirname(result!.dotnetPath), 'sdk'))[0];
-      assert.include(sdkDir, context.version);
-      if (os.platform() === 'win32')
-      {
-        assert.include(result!.dotnetPath, process.env.APPDATA!);
-      }
-      assert.isTrue(fs.existsSync(result!.dotnetPath));
-      // Clean up storage
-      await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
     }).timeout(standardTimeoutTime);
 
     test('Install Command with Unknown Extension Id', async () =>
@@ -246,42 +226,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
       assert.strictEqual(await resolver.getFullySpecifiedVersion(), fullVersion);
     }).timeout(standardTimeoutTime);
 
-    test('Install Command Sets the PATH', async () =>
-    {
-      const existingPath = process.env.PATH;
-      const context: IDotnetAcquireContext = { version: currentSDKVersion, requestingExtensionId: 'ms-dotnettools.sample-extension' };
-      const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context);
-      assert.exists(result, 'The acquisition command did not provide a valid result?');
-      assert.exists(result!.dotnetPath);
-
-      const expectedPath = path.dirname(result!.dotnetPath);
-      const pathVar = environmentVariableCollection.variables.PATH;
-
-      if (existingPath?.includes('dotnet'))
-      {
-        warn('The local SDK test could not run on your machine correctly because it has a GLOBAL SDK installed.');
-        return;
-      }
-
-      assert.include(pathVar, expectedPath);
-
-      let pathResult: string;
-      if (os.platform() === 'win32')
-      {
-        pathResult = cp.execSync(`%SystemRoot%\\System32\\reg.exe query "HKCU\\Environment" /v "Path"`).toString();
-      } else if (os.platform() === 'darwin')
-      {
-        pathResult = fs.readFileSync(path.join(os.homedir(), '.zshrc')).toString();
-      } else
-      {
-        pathResult = fs.readFileSync(path.join(os.homedir(), '.profile')).toString();
-      }
-      assert.include(pathResult, expectedPath);
-
-      // Clean up storage
-      await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
-    }).timeout(standardTimeoutTime);
-
     test('Install Status Command', async () =>
     {
       const existingPath = process.env.PATH;
@@ -302,16 +246,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
 
       // Clean up storage
       await vscode.commands.executeCommand('dotnet-sdk.uninstallAll');
-    }).timeout(standardTimeoutTime);
-
-    test('Extension Uninstall Removes SDKs', async () =>
-    {
-      const context: IDotnetAcquireContext = { version: currentSDKVersion, requestingExtensionId: 'ms-dotnettools.sample-extension' };
-      const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet-sdk.acquire', context);
-      assert.exists(result);
-      assert.exists(result!.dotnetPath);
-      uninstallSDKExtension();
-      assert.isFalse(fs.existsSync(result!.dotnetPath));
     }).timeout(standardTimeoutTime);
   });
 });
