@@ -3,7 +3,6 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as cp from 'child_process';
-import * as fs from 'fs';
 import * as os from 'os';
 import path = require('path');
 
@@ -85,13 +84,14 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                         const meetsRequirement = await validator.dotnetMeetsRequirement(dotnetPath, { acquireContext: this.workerContext.acquisitionContext, versionSpecRequirement: 'equal' });
                         if (meetsRequirement)
                         {
+                            this.eventStream.post(new DotnetAcquisitionCompleted(install, dotnetPath, this.workerContext.acquisitionContext.version));
                             return resolve();
                         }
                     }
 
                     try
                     {
-                        await fs.promises.rm(installDir, { recursive: true, force: true });
+                        await this.fileUtilities.wipeDirectory(installDir, this.eventStream, undefined, true);
                     }
                     catch (err: any)
                     {

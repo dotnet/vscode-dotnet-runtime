@@ -69,6 +69,7 @@ import
     LocalMemoryCacheSingleton,
     NoExtensionIdProvided,
     registerEventStream,
+    UninstallErrorConfiguration,
     UserManualInstallFailure,
     UserManualInstallRequested,
     UserManualInstallSuccess,
@@ -95,6 +96,7 @@ namespace configKeys
     export const proxyUrl = 'proxyUrl';
     export const allowInvalidPaths = 'allowInvalidPaths';
     export const cacheTimeToLiveMultiplier = 'cacheTimeToLiveMultiplier';
+    export const showResetDataCommand = 'showResetDataCommand';
 }
 
 namespace commandKeys
@@ -112,6 +114,7 @@ namespace commandKeys
     export const showAcquisitionLog = 'showAcquisitionLog';
     export const ensureDotnetDependencies = 'ensureDotnetDependencies';
     export const reportIssue = 'reportIssue';
+    export const resetData = 'resetData';
 }
 
 const commandPrefix = 'dotnet';
@@ -142,6 +145,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     }
     const resolvedTimeoutSeconds = timeoutValue === undefined ? defaultTimeoutValue : timeoutValue;
     const proxyLink = extensionConfiguration.get<string>(configKeys.proxyUrl);
+    const showResetDataCommand = extensionConfiguration.get<boolean>(configKeys.showResetDataCommand);
 
     // Create a cache with the TTL setting that we can only reasonably access from here.
     const cacheTimeToLiveMultiplier = Math.abs(Number(extensionConfiguration.get<string>(configKeys.cacheTimeToLiveMultiplier) ?? 1)) ?? 1;
@@ -395,9 +399,17 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         return pathResult;
     });
 
+    const resetDataPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.resetData}`, async () =>
+    {
+        const uninstallContext: IDotnetUninstallContext = {
+            errorConfiguration: UninstallErrorConfiguration.DisplayAllErrorPopups,
+        };
+        return uninstallAll(uninstallContext);
+    });
+
     const dotnetUninstallPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallPublic}`, async () =>
     {
-        const existingInstalls = await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).getExistingInstalls('installed', directoryProviderFactory(
+        const existingInstalls = await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).getExistingInstalls(directoryProviderFactory(
             'runtime', vsCodeContext.globalStoragePath));
 
         const menuItems = existingInstalls?.sort(
@@ -438,7 +450,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             const selectedInstall: DotnetInstall = installRecord.dotnetInstall;
             let canContinue = true;
-            const uninstallWillBreakSomething = !(await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).canUninstall('installed', selectedInstall, directoryProviderFactory(
+            const uninstallWillBreakSomething = !(await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).canUninstall(selectedInstall, directoryProviderFactory(
                 'runtime', vsCodeContext.globalStoragePath), true));
 
             const yes = `Continue`;
@@ -642,6 +654,11 @@ ${JSON.stringify(commandContext)}`));
 
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallAll}`, async (commandContext: IDotnetUninstallContext | undefined) =>
     {
+        return uninstallAll(commandContext);
+    });
+
+    async function uninstallAll(commandContext: IDotnetUninstallContext | undefined): Promise<number>
+    {
         await callWithErrorHandling(async () =>
         {
             const mode = 'runtime' as DotnetInstallMode;
@@ -652,7 +669,9 @@ ${JSON.stringify(commandContext)}`));
         },
             getIssueContext(existingPathConfigWorker)(commandContext ? commandContext.errorConfiguration : undefined, 'uninstallAll')
         );
-    });
+
+        return Promise.resolve(0);
+    }
 
     const showOutputChannelRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.showAcquisitionLog}`, () => outputChannel.show(/* preserveFocus */ false));
 
@@ -845,6 +864,11 @@ We will try to install .NET, but are unlikely to be able to connect to the serve
         ensureDependenciesRegistration,
         reportIssueRegistration,
         ...eventStreamObservers);
+
+    if (showResetDataCommand)
+    {
+        vsCodeContext.subscriptions.push(resetDataPublicRegistration);
+    }
 }
 
 export function ReEnableActivationForManualActivation()

@@ -8,12 +8,10 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
-import { GetDotnetInstallInfo } from '../../Acquisition/DotnetInstall';
 import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 import { IAcquisitionInvoker } from '../../Acquisition/IAcquisitionInvoker';
 import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
-import { InstallOwner, InstallRecord } from '../../Acquisition/InstallRecord';
-import { InstallTrackerSingleton } from '../../Acquisition/InstallTrackerSingleton';
+import { InstallRecord } from '../../Acquisition/InstallRecord';
 import { IEventStream } from '../../EventStream/EventStream';
 import
 {
@@ -21,7 +19,6 @@ import
     DotnetAcquisitionStarted,
     DotnetAcquisitionStatusResolved,
     DotnetAcquisitionStatusUndefined,
-    DotnetInstallGraveyardEvent,
     DotnetLockEvent,
     DotnetUninstallAllCompleted,
     DotnetUninstallAllStarted,
@@ -58,7 +55,6 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function ()
     this.afterEach(async () =>
     {
         // Tear down tmp storage for fresh run
-        InstallTrackerSingleton.getInstance(new MockEventStream(), new MockExtensionContext()).clearPromises();
         WebRequestWorkerSingleton.getInstance().destroy();
         LocalMemoryCacheSingleton.getInstance().invalidate();
     });
@@ -129,7 +125,6 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function ()
         assert.equal(exePath, expectedPath, 'The exe path is correct');
 
         // Should be finished installing
-        assert.isEmpty(context.get<string[]>(installingVersionsKey, []), 'There are no versions marked as still installing');
         assert.isNotEmpty(context.get<string[]>(installedVersionsKey, []), 'There is a version marked as installed');
         assert.include(context.get<InstallRecord[]>(installedVersionsKey, []).map(x => x.dotnetInstall.installId), installId, 'The version marked as installed is the expected version');
 
@@ -338,43 +333,6 @@ ${eventStream.events.map(event => event.eventName).join(', ')}`);
         await acquireAndUninstallAll('6.0', 'sdk', 'local');
     }).timeout(expectedTimeoutTime);
 
-    test('Graveyard Removes Failed Uninstalls', async () =>
-    {
-        const version = '1.0';
-        const [eventStream, extContext] = setupStates();
-        const ctx = getMockAcquisitionContext('runtime', version, expectedTimeoutTime, eventStream, extContext);
-        const [acquisitionWorker, invoker] = setupWorker(ctx, eventStream);
-        const installId = getInstallIdCustomArchitecture(ctx.acquisitionContext.version, ctx.acquisitionContext.architecture, 'runtime', 'local');
-        const install = GetDotnetInstallInfo(version, 'runtime', 'local', os.arch());
-
-        const res = await acquisitionWorker.acquireLocalRuntime(ctx, invoker);
-        await assertAcquisitionSucceeded(installId, res.dotnetPath, eventStream, extContext);
-        acquisitionWorker.AddToGraveyard(ctx, install, 'Not applicable');
-
-        const versionToKeep = '5.0';
-        migrateContextToNewInstall(ctx, versionToKeep, os.arch());
-        await acquisitionWorker.acquireLocalRuntime(ctx, invoker);
-
-        assert.exists(eventStream.events.find(event => event instanceof DotnetInstallGraveyardEvent), 'The graveyard tried to uninstall .NET');
-        assert.isEmpty(extContext.get<InstallRecord[]>(installingVersionsKey, []), 'We did not hang/ get interrupted during the install.');
-        assert.deepEqual(extContext.get<InstallRecord[]>(installedVersionsKey, []),
-            [
-                {
-                    dotnetInstall: {
-                        architecture: 'x64',
-                        installId: '5.0~x64',
-                        isGlobal: false,
-                        installMode: 'runtime',
-                        version: '5.0',
-                    },
-                    installingExtensions: [
-                        'test'
-                    ] as InstallOwner[],
-                }
-            ] as InstallRecord[],
-            '.NET was successfully uninstalled and cleaned up properly when marked to be.');
-    }).timeout(expectedTimeoutTime);
-
     test('Correctly Removes Legacy (No-Architecture) Installs', async () =>
     {
         const runtimeV5 = '5.0.00';
@@ -410,7 +368,7 @@ ${eventStream.events.map(event => event.eventName).join(', ')}`);
         let detailedRemainingInstalls: InstallRecord[] = extensionContext.get<InstallRecord[]>(installedVersionsKey, []);
         let remainingInstalls: string[] = detailedRemainingInstalls.map(x => x.dotnetInstall.installId);
         assert.deepStrictEqual(remainingInstalls, ['5.0.00~x64', runtimeV6, sdkV5, sdkV6],
-            'Only The Requested Legacy Runtime is replaced when new runtime is installed');
+            'Only The Requested Legacy Runtime is replaced when a new runtime is installed');
 
         // Install a legacy runtime again to make sure its not removed when installing a new SDK with the same version
         migrateContextToNewInstall(ctx, runtimeV5, null);

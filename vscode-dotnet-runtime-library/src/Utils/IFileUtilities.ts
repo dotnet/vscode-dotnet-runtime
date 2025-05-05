@@ -14,7 +14,7 @@ export abstract class IFileUtilities
     /**
      * @param directoryToWipe the directory to delete all of the files in if privilege to do so exists.
      */
-    public abstract wipeDirectory(directoryToWipe: string, eventStream?: IEventStream, fileExtensionsToDelete?: string[]): Promise<void>;
+    public abstract wipeDirectory(directoryToWipe: string, eventStream?: IEventStream, fileExtensionsToDelete?: string[], verifyDotnetNotInUse?: boolean): Promise<void>;
 
     /**
      *

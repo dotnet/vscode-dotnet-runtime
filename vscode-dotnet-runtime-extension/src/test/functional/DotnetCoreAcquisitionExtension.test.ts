@@ -26,7 +26,6 @@ import
     ITelemetryEvent,
     LocalMemoryCacheSingleton,
     MockEnvironmentVariableCollection,
-    MockEventStream,
     MockExtensionConfiguration,
     MockExtensionContext,
     MockTelemetryReporter,
@@ -42,7 +41,6 @@ import
     getMockUtilityContext,
     getPathSeparator
 } from 'vscode-dotnet-runtime-library';
-import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
 import * as extension from '../../extension';
 
 const assert: any = chai.assert;
@@ -121,7 +119,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
         mockState.clear();
         MockTelemetryReporter.telemetryEvents = [];
         await new FileUtilities().wipeDirectory(storagePath);
-        InstallTrackerSingleton.getInstance(new MockEventStream(), new MockExtensionContext()).clearPromises();
         // Do not want cached results from prior tests to interfere
         LocalMemoryCacheSingleton.getInstance().invalidate();
     }).timeout(standardTimeoutTime);
@@ -722,4 +719,66 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
         assert.equal(undefined, result, 'Acquire Status for no ASP.NET installed when Runtime is installed should not mistake Runtime Install as ASP.NET Install');
     }).timeout(standardTimeoutTime);
 
+    test('resetData command wipes install', async () =>
+    {
+        const dotnetPathRes = await installRuntime('9.0', 'runtime');
+        const uninstallRes = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.resetData');
+        assert.exists(uninstallRes, 'The resetData command should return a result');
+
+        assert.isFalse(fs.existsSync(dotnetPathRes), 'The dotnet path should not exist after resetData command');
+        assert.isFalse(fs.existsSync(path.dirname(dotnetPathRes)), 'The dotnet path should not exist after resetData command');
+    }).timeout(standardTimeoutTime);
+
+    test('resetData command does not cause invalid state if other extensions use runtime', async () =>
+    {
+        let dotnetPathRes = await installRuntime('9.0', 'runtime');
+        const openFileHandle = await fs.promises.open(dotnetPathRes, fs.constants.O_RDWR);
+        try
+        {
+            const uninstallRes = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.resetData');
+            assert.equal(uninstallRes, 0);
+
+            assert.isTrue(fs.existsSync(path.dirname(dotnetPathRes)), 'The dotnet exec should exist after resetData command because it was in use');
+            assert.isTrue(fs.existsSync(dotnetPathRes), 'The dotnet folder should exist after resetData command because it was in use');
+
+            // Installing again after reset when prior file in use, should not throw an error
+            dotnetPathRes = await installRuntime('9.0', 'runtime');
+        }
+        finally
+        {
+            await openFileHandle.close();
+        }
+    }).timeout(standardTimeoutTime);
+
+    test('Uninstall command does not proceed if dotnet.exe is open', async () =>
+    {
+        const dotnetPath = await installRuntime('9.0', 'runtime');
+        const openFileHandle = await fs.promises.open(dotnetPath, fs.constants.O_RDWR);
+
+        try
+        {
+            const uninstallResult = await vscode.commands.executeCommand<string>('dotnet.uninstall', { version: '9.0', requestingExtensionId, mode: 'runtime' });
+            assert.equal(uninstallResult, '1', 'Uninstall command should return 1 indicating no action was taken');
+            assert.isTrue(fs.existsSync(dotnetPath), 'The dotnet.exe file should still exist because it was in use');
+        } finally
+        {
+            await openFileHandle.close();
+        }
+    }).timeout(standardTimeoutTime);
+
+    test('UninstallAll command does not proceed if dotnet.exe is open', async () =>
+    {
+        const dotnetPath = await installRuntime('9.0', 'runtime');
+        const openFileHandle = await fs.promises.open(dotnetPath, fs.constants.O_RDWR);
+
+        try
+        {
+            const uninstallAllResult = await vscode.commands.executeCommand<string>('dotnet.uninstallAll');
+            assert.equal(uninstallAllResult, '0', 'UninstallAll command should return 0 indicating no action was taken');
+            assert.isTrue(fs.existsSync(dotnetPath), 'The dotnet.exe file should still exist because it was in use');
+        } finally
+        {
+            await openFileHandle.close();
+        }
+    }).timeout(standardTimeoutTime);
 });

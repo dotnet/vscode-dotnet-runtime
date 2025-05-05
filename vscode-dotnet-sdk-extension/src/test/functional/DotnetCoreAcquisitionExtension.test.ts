@@ -13,27 +13,18 @@ import { promisify } from 'util';
 import * as vscode from 'vscode';
 import
 {
-  DotnetAcquisitionAlreadyInstalled,
-  DotnetPreinstallDetected,
-  getInstallIdCustomArchitecture,
   getMockAcquisitionContext,
-  getMockAcquisitionWorker,
   GlobalInstallerResolver,
   IDotnetAcquireContext,
   IDotnetAcquireResult,
   IExistingPaths,
   MockEnvironmentVariableCollection,
-  MockEventStream,
   MockExtensionConfiguration,
   MockExtensionContext,
   MockIndexWebRequestWorker,
-  MockInstallTracker,
   MockTelemetryReporter,
-  MockWindowDisplayWorker,
-  NoInstallAcquisitionInvoker,
-  SdkInstallationDirectoryProvider
+  MockWindowDisplayWorker
 } from 'vscode-dotnet-runtime-library';
-import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
 import * as extension from '../../extension';
 import rimraf = require('rimraf');
 
@@ -81,7 +72,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
       mockState.clear();
       MockTelemetryReporter.telemetryEvents = [];
       await promisify(rimraf)(storagePath);
-      InstallTrackerSingleton.getInstance(new MockEventStream(), new MockExtensionContext()).clearPromises();
     });
 
 
@@ -91,84 +81,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
       assert.exists(extensionContext);
       assert.isAbove(extensionContext.subscriptions.length, 0);
     });
-
-    test('Detect Preinstalled SDK', async () =>
-    {
-      // Set up acquisition worker
-      const context = new MockExtensionContext();
-      const eventStream = new MockEventStream();
-      const installDirectoryProvider = new SdkInstallationDirectoryProvider(storagePath);
-
-      const version = currentSDKVersion;
-      const earlierVersion = '3.1';
-      const mockContext = getMockAcquisitionContext('sdk', version, 10000, eventStream, context, undefined, installDirectoryProvider);
-      const acquisitionWorker = getMockAcquisitionWorker(mockContext);
-
-      // Write 'preinstalled' SDKs
-      const dotnetDir = installDirectoryProvider.getInstallDir(version);
-      const dotnetExePath = path.join(dotnetDir, `dotnet${os.platform() === 'win32' ? '.exe' : ''}`);
-
-      const sdkCurrentInstallId = getInstallIdCustomArchitecture(version, os.arch(), 'sdk', 'local');
-      const sdkDirCurrent = path.join(dotnetDir, 'sdk', sdkCurrentInstallId);
-
-      const sdkEarlierInstallId = getInstallIdCustomArchitecture(earlierVersion, os.arch(), 'sdk', 'local');
-      const sdkDirEarlier = path.join(dotnetDir, 'sdk', sdkEarlierInstallId);
-      fs.mkdirSync(sdkDirCurrent, { recursive: true });
-      fs.mkdirSync(sdkDirEarlier, { recursive: true });
-      fs.writeFileSync(dotnetExePath, '');
-
-      // set the event stream of the singleton since this is normally not needed per run
-      const _ = new MockInstallTracker(eventStream, mockContext.extensionState);
-
-      // Assert preinstalled SDKs are detected
-      const acquisitionInvoker = new NoInstallAcquisitionInvoker(eventStream, acquisitionWorker, mockContext, path.dirname(sdkDirCurrent));
-      const result = await acquisitionWorker.acquireLocalSDK(mockContext, acquisitionInvoker);
-      assert.equal(path.dirname(result.dotnetPath), dotnetDir, 'preinstalled sdk path is the same as installed sdk path on api call');
-      const preinstallEvents = eventStream.events
-        .filter(event => event instanceof DotnetPreinstallDetected)
-        .map(event => event as DotnetPreinstallDetected);
-      assert.equal(preinstallEvents.length, 2);
-      assert.exists(preinstallEvents.find(event => event.installId.installId === sdkCurrentInstallId), 'The current sdk install key exists');
-      assert.exists(preinstallEvents.find(event => event.installId.installId === sdkEarlierInstallId), 'The earlier sdk install key exists');
-      const alreadyInstalledEvent = eventStream.events
-        .find(event => event instanceof DotnetAcquisitionAlreadyInstalled) as DotnetAcquisitionAlreadyInstalled;
-      assert.exists(alreadyInstalledEvent, 'An already installed event was posted');
-      assert.equal(alreadyInstalledEvent.install.installId, sdkCurrentInstallId, 'the current install is what was already installed');
-
-      // Clean up storage
-      await promisify(rimraf)(dotnetDir);
-    }).timeout(standardTimeoutTime);
-
-    test('Install Status Command with Preinstalled SDK', async () =>
-    {
-      // Set up acquisition worker
-      const installDirectoryProvider = new SdkInstallationDirectoryProvider(storagePath);
-
-      const version = currentSDKVersion;
-      const mockContext = getMockAcquisitionContext('sdk', version, 10000, undefined, undefined, undefined, installDirectoryProvider);
-      const acquisitionWorker = getMockAcquisitionWorker(mockContext);
-
-      const currentVersionInstallId = getInstallIdCustomArchitecture(version, os.arch(), 'sdk', 'local');
-      InstallTrackerSingleton.getInstance(mockContext.eventStream, mockContext.extensionState).clearPromises();
-      // Ensure nothing is returned when there is no preinstalled SDK
-      const noPreinstallResult = await acquisitionWorker.acquireStatus(mockContext, 'sdk');
-      assert.isUndefined(noPreinstallResult);
-
-      // Write 'preinstalled' SDK
-      const dotnetDir = installDirectoryProvider.getInstallDir(version);
-      const dotnetExePath = path.join(dotnetDir, `dotnet${os.platform() === 'win32' ? '.exe' : ''}`);
-
-      const sdkDir50 = path.join(dotnetDir, 'sdk', currentVersionInstallId);
-      fs.mkdirSync(sdkDir50, { recursive: true });
-      fs.writeFileSync(dotnetExePath, '');
-
-      // Assert preinstalled SDKs are detected
-      const result = await acquisitionWorker.acquireStatus(mockContext, 'sdk');
-      assert.equal(path.dirname(result!.dotnetPath), dotnetDir);
-
-      // Clean up storage
-      await promisify(rimraf)(dotnetDir);
-    }).timeout(standardTimeoutTime);
 
     test('Install Command with Unknown Extension Id', async () =>
     {

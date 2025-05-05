@@ -3,6 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 * Licensed under the MIT License. See License.txt in the project root for license information.
 * ------------------------------------------------------------------------------------------ */
+import { exec } from 'child_process';
 import * as crypto from 'crypto';
 import * as eol from 'eol';
 import * as fs from 'fs';
@@ -18,12 +19,15 @@ import
     DotnetCommandFallbackOSEvent,
     DotnetFileWriteRequestEvent,
     EmptyDirectoryToWipe,
+    FileIsBusy,
+    FileIsNotBusy,
     FileToWipe,
     SuppressedAcquisitionError
 } from '../EventStream/EventStreamEvents';
 import { CommandExecutor } from './CommandExecutor';
 import { IFileUtilities } from './IFileUtilities';
 import { IUtilityContext } from './IUtilityContext';
+import { getDotnetExecutable } from './TypescriptUtilities';
 
 export class FileUtilities extends IFileUtilities
 {
@@ -67,29 +71,33 @@ export class FileUtilities extends IFileUtilities
      * @param directoryToWipe the directory to delete all of the files in if privilege to do so exists.
      * @param fileExtensionsToDelete - if undefined, delete all files. if not, delete only files with extensions in this array in lower case.
      */
-    public async wipeDirectory(directoryToWipe: string, eventStream?: IEventStream, fileExtensionsToDelete?: string[])
+    public async wipeDirectory(directoryToWipe: string, eventStream?: IEventStream, fileExtensionsToDelete?: string[], verifyDotnetNotInUse = false)
     {
         if (!(await this.exists(directoryToWipe)))
         {
             eventStream?.post(new EmptyDirectoryToWipe(`The directory ${directoryToWipe} did not exist, so it was not wiped.`))
             return;
         }
+        else if (verifyDotnetNotInUse && await FileUtilities.fileIsOpen(path.join(directoryToWipe, getDotnetExecutable()), eventStream))
+        {
+            return;
+        }
 
-        const directoryFiles: string[] = await fs.promises.readdir(directoryToWipe);
-        for (const f of directoryFiles)
+        const directoryEntries: string[] = await fs.promises.readdir(directoryToWipe);
+        for (const entry of directoryEntries)
         {
             try
             {
-                eventStream?.post(new FileToWipe(`The file ${f} may be deleted.`))
-                if (!fileExtensionsToDelete || fileExtensionsToDelete?.includes(path.extname(f).toLocaleLowerCase()))
+                eventStream?.post(new FileToWipe(`Path ${entry} may be deleted.`))
+                if (!fileExtensionsToDelete || fileExtensionsToDelete?.includes(path.extname(entry).toLocaleLowerCase()))
                 {
-                    eventStream?.post(new FileToWipe(`The file ${f} is being deleted -- if no error is reported, it should be wiped.`))
-                    await fs.promises.rm(path.join(directoryToWipe, f));
+                    eventStream?.post(new FileToWipe(`Path  ${entry} is being deleted -- if no error is reported, it should be wiped.`))
+                    await fs.promises.rm(path.join(directoryToWipe, entry), { recursive: true, force: true });
                 }
             }
             catch (error: any)
             {
-                eventStream?.post(new SuppressedAcquisitionError(error, `Failed to delete ${f} when marked for deletion.`));
+                eventStream?.post(new SuppressedAcquisitionError(error, `Failed to delete ${entry} when marked for deletion.`));
             }
         };
     }
@@ -234,6 +242,71 @@ export class FileUtilities extends IFileUtilities
         }
     }
 
+    public static async fileIsOpen(filePath: string, eventStream?: IEventStream): Promise<boolean>
+    {
+        let fileHandle: fs.promises.FileHandle | null = null;
+        if (os.platform() === 'win32')
+        {
+            try
+            {
+                // eslint-disable-next-line no-bitwise
+                fileHandle = await fs.promises.open(filePath, fs.constants.O_RDONLY | 0x10000000); // 0x10000000 is the FILE_FLAG_NO_BUFFERING flag to try to hold an exclusive 'lock'
+            }
+            catch (error: any)
+            {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                if (error?.code === 'EBUSY')
+                {
+                    eventStream?.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle`));
+                    return true;
+                }
+            }
+            finally
+            {
+                await fileHandle?.close();
+            }
+            eventStream?.post(new FileIsNotBusy(`The file ${filePath} is not busy due to another file handle`));
+            return false;
+        }
+        else
+        {
+            try
+            {
+                return promisify(exec)(`lsof ${filePath}`).then(
+                    fulfilled =>
+                    {
+                        const lines = fulfilled?.stdout?.toString().split('\n');
+                        if (lines.length > 1) // lsof returns a header line and then the lines of open files
+                        {
+                            eventStream?.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle as lsof shows`));
+                            return Promise.resolve(true);
+                        }
+                        else
+                        {
+                            eventStream?.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle as lsof is empty`));
+                            return Promise.resolve(false);
+                        }
+                    },
+                    rejected =>
+                    {
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                        if (rejected?.code?.toString() === 'EACCESS')
+                        {
+                            eventStream?.post(new FileIsBusy(`The file ${filePath} is presumed busy due to EACCESS`));
+                            return Promise.resolve(true);
+                        }
+                        return Promise.resolve(false); // lsof returns a non-zero exit code if the file is not open by any process. EACCESS is thrown if the user does not have permission to run lsof on that file.
+                        // ENOENT or others may be thrown if the file DNE, but we only care if its open.
+                    }).finally(() => { return false; });
+            }
+            catch (error: any)
+            {
+                eventStream?.post(new SuppressedAcquisitionError(error, `Failed to check if file ${filePath} is open.`));
+                return false;
+            }
+        }
+    }
+
     /**
      *
      * @returns true if the process is running with admin privileges
@@ -286,4 +359,3 @@ export class FileUtilities extends IFileUtilities
         return res;
     }
 }
-
