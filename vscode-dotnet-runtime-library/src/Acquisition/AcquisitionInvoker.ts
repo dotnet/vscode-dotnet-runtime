@@ -84,6 +84,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                         const meetsRequirement = await validator.dotnetMeetsRequirement(dotnetPath, { acquireContext: this.workerContext.acquisitionContext, versionSpecRequirement: 'equal' });
                         if (meetsRequirement)
                         {
+                            this.eventStream.post(new DotnetAcquisitionCompleted(install, dotnetPath, this.workerContext.acquisitionContext.version));
                             return resolve();
                         }
                     }
