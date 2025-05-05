@@ -154,5 +154,5 @@ This project may contain trademarks or logos for projects, products, or services
 [changing the installation timeout]: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#install-script-timeouts
 [Unity]: https://marketplace.visualstudio.com/items?itemName=VisualStudioToolsForUnity.vstuc
 [.NET MAUI]: https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.dotnet-maui
-[CMake]: https://marketplace.visualstudio.com/items?itemName=twxs.cmake
+[CMake]: https://marketplace.visualstudio.com/items?itemName=josetr.cmake-language-support-vscode
 [Bicep]: https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-bicep
