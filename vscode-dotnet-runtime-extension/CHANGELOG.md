@@ -7,16 +7,21 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-## [2.3.4] - 2025-5-5
+## [2.3.5] - 2025-5-5
 
-RHEL now uses dnf over yum.
-Caching is utilized more often for checking the status of dotnet.
-Changes to reliability where existing installations can be reused.
-Performance improvements by removing deprecated logic or simplifying logic.
-Uninstall no longer allows uninstallation when dotnet is in use.
-Clean up corrupt save data from very old versions of this extension.
-Adds a hidden command 'resetData' you can enable visiblity of to clear extension data.
-Uninstall logic is rewritten and improved.
+- Changes in the pre-release 2.3.4 version are now applied to a release version.
+- Performance and reliability improvements.
+
+## [2.3.4] - 2025-5-7 (Pre-release)
+
+- RHEL now uses dnf over yum.
+- Caching is utilized more often for checking the status of dotnet.
+- Changes to reliability where existing installations can be reused.
+- Performance improvements by removing deprecated logic or simplifying logic.
+- Uninstall no longer allows uninstallation when dotnet is in use.
+- Clean up corrupt save data from very old versions of this extension.
+- Adds a hidden command 'resetData' you can enable visiblity of to clear extension data.
+- Uninstall logic is rewritten and improved.
 
 ## [2.3.3] - 2025-4-15
 
