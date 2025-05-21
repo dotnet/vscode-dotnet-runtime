@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-## [2.3.5] - 2025-5-5
+## [2.3.5] - 2025-5-26
 
 - Changes in the pre-release 2.3.4 version are now applied to a release version.
 - Performance and reliability improvements.
