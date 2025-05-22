@@ -10,13 +10,13 @@ export class VSCodeExtensionContext extends IVSCodeExtensionContext
 {
     private context: vscode.ExtensionContext;
 
-    constructor(trueContext : vscode.ExtensionContext)
+    constructor(trueContext: vscode.ExtensionContext)
     {
         super();
         this.context = trueContext;
     }
 
-    public setVSCodeEnvironmentVariable(variable : string, value : string) : void
+    public setVSCodeEnvironmentVariable(variable: string, value: string): void
     {
         const environment = this.context.environmentVariableCollection;
         environment.replace(variable, value);
@@ -30,17 +30,18 @@ export class VSCodeExtensionContext extends IVSCodeExtensionContext
 
     public registerOnExtensionChange<A extends any[], R>(f: (...args: A) => R, ...args: A): void
     {
-        vscode.extensions.onDidChange(() => {
+        vscode.extensions.onDidChange(() =>
+        {
             f(...(args));
         })
     }
 
-    public getExtensions() : readonly vscode.Extension<any>[]
+    public getExtensions(): readonly vscode.Extension<any>[]
     {
-        return vscode.extensions.all;
+        return vscode.extensions.all;;
     }
 
-    public executeCommand(command : string, ...args: any[]) : Thenable<any>
+    public executeCommand(command: string, ...args: any[]): Thenable<any>
     {
         return vscode.commands.executeCommand(command, ...args);
     }
