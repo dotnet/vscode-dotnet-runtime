@@ -504,6 +504,11 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
      */
     const dotnetFindPathRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.findPath}`, async (commandContext: IDotnetFindPathContext): Promise<IDotnetAcquireResult | undefined> =>
     {
+        return findPath(commandContext);
+    });
+
+    async function findPath(commandContext: IDotnetFindPathContext): Promise<IDotnetAcquireResult | undefined>
+    {
         globalEventStream.post(new DotnetFindPathCommandInvoked(`The find path command was invoked.`, commandContext));
 
         if (!commandContext.acquireContext.mode || !commandContext.acquireContext.requestingExtensionId || !commandContext.acquireContext.version || !commandContext.acquireContext.architecture)
@@ -590,7 +595,7 @@ onHostfxrRecord : ${JSON.stringify(dotnetOnHostfxrRecord)}
 Requirement:
 ${JSON.stringify(commandContext)}`));
         return undefined;
-    });
+    }
 
     async function getPathIfValid(path: string | undefined, validator: IDotnetConditionValidator, commandContext: IDotnetFindPathContext): Promise<string | undefined>
     {
@@ -844,6 +849,14 @@ We will try to install .NET, but are unlikely to be able to connect to the serve
 
         return null;
     }
+
+    // Preemptively load the cacheable information for other extensions to try to increase performance.
+    const commonCaseCallingContext = { version: '9.0', mode: 'aspnetcore', requestingExtensionId: 'self', installType: 'local', architecture: os.platform() } as IDotnetAcquireContext;
+    callWithErrorHandling(async () =>
+    {
+        await findPath({ acquireContext: commonCaseCallingContext, versionSpecRequirement: 'latestPatch', rejectPreviews: true });
+    }, getIssueContext(existingPathConfigWorker)(AcquireErrorConfiguration.DisableErrorPopups, 'initialization-find', commonCaseCallingContext.version), commonCaseCallingContext.requestingExtensionId)
+        .catch(() => {});
 
     // Preemptively install .NET for extensions who tell us to in their package.json
     const jsonInstaller = new JsonInstaller(globalEventStream, vsCodeExtensionContext);
