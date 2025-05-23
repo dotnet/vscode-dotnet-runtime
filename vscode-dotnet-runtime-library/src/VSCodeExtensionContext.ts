@@ -38,7 +38,7 @@ export class VSCodeExtensionContext extends IVSCodeExtensionContext
 
     public getExtensions(): readonly vscode.Extension<any>[]
     {
-        return vscode.extensions.all;;
+        return vscode.extensions.all;
     }
 
     public executeCommand(command: string, ...args: any[]): Thenable<any>
