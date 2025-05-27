@@ -12,6 +12,7 @@ import { DOTNET_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetConditionValidator } from './IDotnetConditionValidator';
 import { IDotnetListInfo } from './IDotnetListInfo';
+import { InstallRecordWithPath } from './InstallRecordWithPath';
 import * as versionUtils from './VersionUtilities';
 
 type simplifiedVersionSpec = 'equal' | 'greater_than_or_equal' | 'less_than_or_equal' |
@@ -245,6 +246,11 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
                     return false
             }
         }
+    }
+
+    public filterValidPaths(recordPaths: InstallRecordWithPath[], requirement: IDotnetFindPathContext): InstallRecordWithPath[]
+    {
+        return recordPaths.filter(installInfo => this.stringVersionMeetsRequirement(installInfo.installRecord.dotnetInstall.version, requirement.acquireContext.version, requirement));
     }
 
     private stringArchitectureMeetsRequirement(outputArchitecture: string, requiredArchitecture: string | null | undefined): boolean

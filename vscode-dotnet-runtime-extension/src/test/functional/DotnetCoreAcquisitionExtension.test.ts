@@ -447,6 +447,43 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
         }
     }).timeout(standardTimeoutTime);
 
+    test('Find dotnet PATH Command works with extension-managed runtime installations', async () =>
+    {
+        // First install a runtime that we'll try to find
+        const version = '7.0';
+        const runtimePath = await installRuntime(version, 'runtime', os.arch());
+        assert.exists(runtimePath, 'Runtime should be installed successfully');
+
+        const originalPath = process.env.PATH;
+        try
+        {
+            // Filter PATH to remove any existing dotnet installations
+            process.env.PATH = process.env.PATH?.split(getPathSeparator())
+                .filter((x: string) => !(includesPathWithLikelyDotnet(x)))
+                .join(getPathSeparator());
+
+            // First verify no runtimes are found on PATH
+            const findPathContext: IDotnetFindPathContext = {
+                acquireContext: {
+                    version,
+                    requestingExtensionId,
+                    mode: 'runtime',
+                    architecture: os.arch()
+                },
+                versionSpecRequirement: 'latestPatch'
+            };
+
+            // Then verify we can find the extension-managed runtime
+            const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath', findPathContext);
+            assert.exists(result, 'Should find a runtime');
+            assert.exists(result!.dotnetPath, 'Should find a runtime path');
+            assert.equal(result!.dotnetPath.toLowerCase(), runtimePath.toLowerCase(), 'Should find the correct runtime path');
+        } finally
+        {
+            process.env.PATH = originalPath;
+        }
+    }).timeout(standardTimeoutTime);
+
     test('Install SDK Globally E2E (Requires Admin)', async () =>
     {
         // We only test if the process is running under ADMIN because non-admin requires user-intervention.
