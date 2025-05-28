@@ -300,7 +300,7 @@ ${stderr}`));
         this.context?.eventStream.post(new SudoProcCommandExchangeBegin(`Handing command off to master process. ${new Date().toISOString()}`));
         this.context?.eventStream.post(new CommandProcessorExecutionBegin(`The command ${commandToExecuteString} was forwarded to the master process to run.`));
 
-
+        const commandStartTime = process.hrtime.bigint();
         const waitTimeMs = this.context?.timeoutSeconds ? (Math.max(this.context?.timeoutSeconds * 1000, 1000)) : 600000;
         const sampleRateMs = 100;
         await loopWithTimeoutOnCond(sampleRateMs, waitTimeMs,
@@ -340,7 +340,7 @@ ${stderr}`));
         {
             this.context?.eventStream.post(new CommandProcessorExecutionEnd(`The command ${commandToExecuteString} was finished by the master process, as ${outputFile} was found.`));
 
-            this.logCommandResult(commandOutputJson, commandToExecuteString);
+            this.logCommandResult(commandOutputJson, commandToExecuteString, commandStartTime, commandToExecuteString.split(' ')?.[0] ?? 'sudo');
 
             if ((commandOutputJson as CommandExecutorResult).status !== '0' && terminalFailure)
             {
@@ -527,20 +527,18 @@ ${stderr}`));
                     const result = { stdout: rejected?.stdout?.toString() ?? '', stderr: rejected?.stderr?.toString() ?? '', status: rejected?.code?.toString() ?? rejected?.signal?.toString() ?? '' };
                     if (terminalFailure)
                     {
-                        this.logCommandResult(result, fullCommandString);
+                        this.logCommandResult(result, fullCommandString, commandStartTime, command.commandRoot);
                         throw rejected ?? new Error(`Spawning ${fullCommandString} failed with an unspecified error.`); // according to nodejs spec, this should never be possible
                     }
                     else
                     {
-                        const durationMs = (Number(process.hrtime.bigint() - commandStartTime) / 1000000).toFixed(2);
-                        this.context?.eventStream.post(new CommandExecutionTimer(`The command ${fullCommandString} took ${durationMs} ms to run.`, durationMs, command.commandRoot, fullCommandString));
                         // signal is a string or obj, code is a number
                         return result;
                     }
                 }
             );
 
-            this.logCommandResult(commandResult, fullCommandString);
+            this.logCommandResult(commandResult, fullCommandString, commandStartTime, command.commandRoot);
 
             if (useCache)
             {
@@ -550,8 +548,11 @@ ${stderr}`));
         }
     }
 
-    private logCommandResult(commandResult: CommandExecutorResult, fullCommandStringForTelemetryOnly: string)
+    private logCommandResult(commandResult: CommandExecutorResult, fullCommandStringForTelemetryOnly: string, commandStartTime: bigint, commandRoot: string)
     {
+        const durationMs = (Number(process.hrtime.bigint() - commandStartTime) / 1000000).toFixed(2);
+        this.context?.eventStream.post(new CommandExecutionTimer(`The command ${fullCommandStringForTelemetryOnly} took ${durationMs} ms to run.`, durationMs, commandRoot, fullCommandStringForTelemetryOnly));
+
         this.context?.eventStream.post(new CommandExecutionStatusEvent(`The command ${fullCommandStringForTelemetryOnly} exited:
 ${commandResult.status}.`));
 

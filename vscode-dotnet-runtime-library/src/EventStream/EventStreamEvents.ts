@@ -967,7 +967,7 @@ export class CommandExecutionTimer extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'CommandExecutionTimer';
 
-    constructor(public readonly eventMessage: string, public readonly durationMs: string, public readonly commandRoot: string, public readonly fullCommandString) { super(eventMessage); }
+    constructor(public readonly eventMessage: string, public readonly durationMs: string, public readonly commandRoot: string, public readonly fullCommandString: string) { super(eventMessage); }
 
     public getProperties()
     {
