@@ -18,6 +18,7 @@ import
     CommandExecutionStatusEvent,
     CommandExecutionStdError,
     CommandExecutionStdOut,
+    CommandExecutionTimer,
     CommandExecutionUnderSudoEvent,
     CommandExecutionUnknownCommandExecutionAttempt,
     CommandExecutionUserAskDialogueEvent,
@@ -513,6 +514,7 @@ ${stderr}`));
                 });
             }
 
+            const commandStartTime = process.hrtime.bigint();
             const commandResult: CommandExecutorResult = await promisify(proc.exec)(fullCommandString, options).then(
                 fulfilled =>
                 {
@@ -530,6 +532,8 @@ ${stderr}`));
                     }
                     else
                     {
+                        const durationMs = (Number(process.hrtime.bigint() - commandStartTime) / 1000000).toFixed(2);
+                        this.context?.eventStream.post(new CommandExecutionTimer(`The command ${fullCommandString} took ${durationMs} ms to run.`, durationMs, command.commandRoot, fullCommandString));
                         // signal is a string or obj, code is a number
                         return result;
                     }
