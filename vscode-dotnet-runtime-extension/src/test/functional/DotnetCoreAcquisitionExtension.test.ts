@@ -462,7 +462,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
                 .filter((x: string) => !(includesPathWithLikelyDotnet(x)))
                 .join(getPathSeparator());
 
-            // First verify no runtimes are found on PATH
             const findPathContext: IDotnetFindPathContext = {
                 acquireContext: {
                     version,
