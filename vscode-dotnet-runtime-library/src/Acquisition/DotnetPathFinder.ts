@@ -35,6 +35,8 @@ import { IFileUtilities } from '../Utils/IFileUtilities';
 import { EnvironmentVariableIsDefined, getDotnetExecutable, getOSArch, getPathSeparator } from '../Utils/TypescriptUtilities';
 import { DOTNET_INFORMATION_CACHE_DURATION_MS, SYS_CMD_SEARCH_CACHE_DURATION_MS } from './CacheTimeConstants';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
+import { InstallRecordWithPath } from './InstallRecordWithPath';
+import { InstallTrackerSingleton } from './InstallTrackerSingleton';
 import { RegistryReader } from './RegistryReader';
 
 export class DotnetPathFinder implements IDotnetPathFinder
@@ -92,6 +94,13 @@ export class DotnetPathFinder implements IDotnetPathFinder
         return undefined;
     }
 
+    public async findExtensionManagedRuntimes(): Promise<InstallRecordWithPath[]>
+    {
+        const installedVersions = await InstallTrackerSingleton.getInstance(this.workerContext.eventStream, this.workerContext.extensionState).getExistingInstalls(this.workerContext.installDirectoryProvider);
+        const installedVersionRuntimeHostPaths = installedVersions.map(install => ({ installRecord: install, path: path.join(this.workerContext.installDirectoryProvider.getInstallDir(install.dotnetInstall.installId), getDotnetExecutable()) }));
+        return installedVersionRuntimeHostPaths ?? [];
+    }
+
     /**
      * @remarks This only checks dotnet --list-runtimes or --list-sdks, so it can be more performant for the base case.
      * This allows skipping which, where, and also does not rely on --info which is slower because it shells to the SDK instead of just being the host.
@@ -100,11 +109,14 @@ export class DotnetPathFinder implements IDotnetPathFinder
     public async findDotnetFastFromListOnly(): Promise<string[] | undefined>
     {
         const oldLookup = process.env.DOTNET_MULTILEVEL_LOOKUP;
-        try {
+        try
+        {
             process.env.DOTNET_MULTILEVEL_LOOKUP = '0'; // make it so --list-runtimes only finds the runtimes on that path: https://learn.microsoft.com/en-us/dotnet/core/compatibility/deployment/7.0/multilevel-lookup#reason-for-change
             const finalPath = await this.getTruePath(['dotnet']);
             return this.returnWithRestoringEnvironment(finalPath, 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
-        } finally {
+        }
+        finally
+        {
             process.env.DOTNET_MULTILEVEL_LOOKUP = oldLookup; // Ensure the environment variable is always restored
         }
     }

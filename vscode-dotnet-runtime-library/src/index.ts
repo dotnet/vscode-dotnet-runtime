@@ -22,6 +22,7 @@ export * from './Acquisition/IInstallationDirectoryProvider';
 export * from './Acquisition/IJsonInstaller';
 export * from './Acquisition/InstallationValidator';
 export * from './Acquisition/InstallRecord';
+export * from './Acquisition/InstallRecordWithPath';
 export * from './Acquisition/IVersionResolver';
 export * from './Acquisition/JsonInstaller';
 export * from './Acquisition/LinuxGlobalInstaller';
@@ -67,3 +68,4 @@ export * from './Utils/TypescriptUtilities';
 export * from './Utils/VSCodeEnvironment';
 export * from './Utils/WebRequestWorkerSingleton';
 export * from './VSCodeExtensionContext';
+
