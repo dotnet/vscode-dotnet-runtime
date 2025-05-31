@@ -12,6 +12,7 @@ import { DOTNET_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetConditionValidator } from './IDotnetConditionValidator';
 import { IDotnetListInfo } from './IDotnetListInfo';
+import { InstallRecordWithPath } from './InstallRecordWithPath';
 import * as versionUtils from './VersionUtilities';
 
 type simplifiedVersionSpec = 'equal' | 'greater_than_or_equal' | 'less_than_or_equal' |
@@ -172,35 +173,11 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
 
             if (availableMinor === requestedMinor && requestedPatch)
             {
-                const availablePatchStr: string | null = requirement.acquireContext.mode !== 'sdk' ?
-                    versionUtils.getRuntimePatchVersionString(availableVersion, this.workerContext.eventStream, this.workerContext)
-                    :
-                    (() =>
-                    {
-                        const band = versionUtils.getSDKCompleteBandAndPatchVersionString(availableVersion, this.workerContext.eventStream, this.workerContext);
-                        if (band)
-                        {
-                            return band;
-                        }
-                        return null;
-                    })();
-                const availablePatch = availablePatchStr ? Number(availablePatchStr) : null;
-
-                const availableBandStr: string | null = requirement.acquireContext.mode === 'sdk' ?
-                    (() =>
-                    {
-                        const featureBand = versionUtils.getFeatureBandFromVersion(availableVersion, this.workerContext.eventStream, this.workerContext, false);
-                        if (featureBand)
-                        {
-                            return featureBand;
-                        }
-                        return null;
-                    })() : null;
-                const availableBand = availableBandStr ? Number(availableBandStr) : null;
+                const availablePatch = this.getPatchOrFeatureBandWithPatch(availableVersion, requirement);
 
                 switch (adjustedVersionSpec)
                 {
-                    // the 'availablePatch' must exist, since the version is from --list-runtimes or --list-sdks.
+                    // the 'availablePatch' must exist, since the version is from --list-runtimes or --list-sdks, or our internal tracking of installs.
                     case 'equal':
                         return availablePatch === requestedPatch;
                     case 'greater_than_or_equal':
@@ -209,6 +186,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
                     case 'less_than_or_equal':
                         return availablePatch! <= requestedPatch;
                     case 'latestPatch':
+                        const availableBand = this.getFeatureBand(availableVersion, requirement);
                         const requestedBandStr = requirement.acquireContext.mode === 'sdk' ? versionUtils.getFeatureBandFromVersion(requestedVersion, this.workerContext.eventStream, this.workerContext, false) ?? null : null;
                         const requestedBand = requestedBandStr ? Number(requestedBandStr) : null;
                         return availablePatch! >= requestedPatch && (availableBand ? availableBand === requestedBand : true);
@@ -226,7 +204,10 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
                         return availableMinor <= requestedMinor;
                     case 'latestPatch':
                     case 'latestFeature':
-                        return false
+                        const availableBand = this.getFeatureBand(availableVersion, requirement);
+                        const requestedBandStr = requirement.acquireContext.mode === 'sdk' ? versionUtils.getFeatureBandFromVersion(requestedVersion, this.workerContext.eventStream, this.workerContext, false) ?? null : null;
+                        const requestedBand = requestedBandStr ? Number(requestedBandStr) : null;
+                        return availableMinor === requestedMinor && (availableBand ? availableBand === requestedBand : true);
                 }
             }
         }
@@ -245,6 +226,45 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
                     return false
             }
         }
+    }
+
+    private getFeatureBand(availableVersion: string, requirement: IDotnetFindPathContext): number | null
+    {
+        const availableBandStr: string | null = requirement.acquireContext.mode === 'sdk' ?
+            (() =>
+            {
+                const featureBand = versionUtils.getFeatureBandFromVersion(availableVersion, this.workerContext.eventStream, this.workerContext, false);
+                if (featureBand)
+                {
+                    return featureBand;
+                }
+                return null;
+            })() : null;
+        return availableBandStr ? Number(availableBandStr) : null;
+    }
+
+    private getPatchOrFeatureBandWithPatch(availableVersion: string, requirement: IDotnetFindPathContext): number | null
+    {
+        const availablePatchStr: string | null = requirement.acquireContext.mode !== 'sdk' ?
+            versionUtils.getRuntimePatchVersionString(availableVersion, this.workerContext.eventStream, this.workerContext)
+            :
+            (() =>
+            {
+                const band = versionUtils.getSDKCompleteBandAndPatchVersionString(availableVersion, this.workerContext.eventStream, this.workerContext);
+                if (band)
+                {
+                    return band;
+                }
+                return null;
+            })();
+
+        const availablePatch = availablePatchStr ? Number(availablePatchStr) : null;
+        return availablePatch;
+    }
+
+    public filterValidPaths(recordPaths: InstallRecordWithPath[], requirement: IDotnetFindPathContext): InstallRecordWithPath[]
+    {
+        return recordPaths.filter(installInfo => this.stringVersionMeetsRequirement(installInfo.installRecord.dotnetInstall.version, requirement.acquireContext.version, requirement));
     }
 
     private stringArchitectureMeetsRequirement(outputArchitecture: string, requiredArchitecture: string | null | undefined): boolean
