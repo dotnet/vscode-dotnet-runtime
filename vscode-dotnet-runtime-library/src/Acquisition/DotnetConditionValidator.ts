@@ -2,7 +2,6 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
-import * as os from 'os';
 import { DotnetConditionsValidated, DotnetFindPathDidNotMeetCondition, DotnetUnableToCheckPATHArchitecture } from '../EventStream/EventStreamEvents';
 import { IDotnetFindPathContext } from '../IDotnetFindPathContext';
 import { CommandExecutor } from '../Utils/CommandExecutor';
@@ -33,7 +32,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
 
         if (requirement.acquireContext.mode === 'sdk')
         {
-            const availableSDKs = await this.getSDKs(dotnetExecutablePath, requirement.acquireContext.architecture ?? os.arch() === 'arm64' ? 'arm64' : 'x64');
+            const availableSDKs = await this.getSDKs(dotnetExecutablePath, requirement.acquireContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
             hostArch = availableSDKs?.at(0)?.architecture ?? await this.getHostArchitecture(dotnetExecutablePath, requirement);
             if (availableSDKs.some((sdk) =>
             {
@@ -48,8 +47,8 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
         else
         {
             // No need to consider SDKs when looking for runtimes as all the runtimes installed with the SDKs will be included in the runtimes list.
-            const availableRuntimes = await this.getRuntimes(dotnetExecutablePath, requirement.acquireContext.architecture ?? os.arch() === 'arm64' ? 'arm64' : 'x64');
-            hostArch ??= availableRuntimes?.at(0)?.architecture ?? await this.getHostArchitecture(dotnetExecutablePath, requirement);
+            const availableRuntimes = await this.getRuntimes(dotnetExecutablePath, requirement.acquireContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
+            hostArch = availableRuntimes?.at(0)?.architecture ?? await this.getHostArchitecture(dotnetExecutablePath, requirement);
             if (availableRuntimes.some((runtime) =>
             {
                 return runtime.mode === requirement.acquireContext.mode && this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) &&
@@ -117,14 +116,13 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
         return hostArch;
     }
 
-    public async getSDKs(existingPath: string, requestedArchitecture: string | null): Promise<IDotnetListInfo[]>
+    public async getSDKs(existingPath: string, requestedArchitecture: string): Promise<IDotnetListInfo[]>
     {
         if (!existingPath || existingPath === '""')
         {
             return [];
         }
 
-        requestedArchitecture ??= DotnetCoreAcquisitionWorker.defaultArchitecture();
         const findSDKsCommand = CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-sdks', '--arch', requestedArchitecture]);
 
         const sdkInfo = await (this.executor!).execute(findSDKsCommand, { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false).then(async (result) =>
