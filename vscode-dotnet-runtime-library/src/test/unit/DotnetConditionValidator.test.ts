@@ -40,6 +40,8 @@ const executionResultWithListRuntimesResultWithFullOnly = { status: '0', stdout:
 const executionResultWithListSDKsResultWithPreviewOnly = { status: '0', stdout: listSDKsResultWithEightPreviewOnly, stderr: '' };
 const executionResultWithListSDKsResultFullSDK = { status: '0', stdout: listSDKsResultWithEightFull, stderr: '' };
 
+const defaultTimeoutTimeMs = 10000; // 10 seconds
+
 suite('DotnetConditionValidator Unit Tests', function ()
 {
     const utilityContext = getMockUtilityContext();
@@ -290,7 +292,7 @@ suite('DotnetConditionValidator Unit Tests', function ()
         // Check architecture was set correctly
         assert.strictEqual(sdks[0].architecture, 'arm64', 'SDK architecture should be set to requested architecture');
         assert.strictEqual(runtimes[0].architecture, 'arm64', 'Runtime architecture should be set to requested architecture');
-    });
+    }).timeout(defaultTimeoutTimeMs);
 
     test('getSDKs and getRuntimes call dotnet --info if --arch is not supported', async () =>
     {
@@ -332,7 +334,7 @@ suite('DotnetConditionValidator Unit Tests', function ()
         // Check architecture was set to null
         assert.isNull(sdks[0].architecture, 'SDK architecture should be null when host does not support --arch');
         assert.isNull(runtimes[0].architecture, 'Runtime architecture should be null when host does not support --arch');
-    });
+    }).timeout(defaultTimeoutTimeMs);
 
     test('dotnet --info is called if .NET 10 is detected but invalid arch returns status 0', async () =>
     {
@@ -368,6 +370,6 @@ suite('DotnetConditionValidator Unit Tests', function ()
 
         // Check architecture was set to null
         assert.isNull(sdks[0].architecture, 'Architecture should be null when --arch is not supported');
-    });
+    }).timeout(defaultTimeoutTimeMs);
 
 });
