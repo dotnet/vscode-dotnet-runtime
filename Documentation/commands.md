@@ -48,3 +48,6 @@ lookup the PATH first to see if there's a matching install, etc.
     "mode": "aspnetcore"
 }
 ```
+
+Note: If you are a developer for a highly used extension or an extension that is provided by Microsoft, you may be in our 'skip' list to enhance performance.
+Please check the list if this is not working for you and ask us to exclude you: [Skipped Extensions](vscode-dotnet-runtime-library/src/Acquisition/JsonInstaller.ts).
