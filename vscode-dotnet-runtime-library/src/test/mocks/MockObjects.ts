@@ -20,7 +20,7 @@ import { InstallTrackerSingleton } from '../../Acquisition/InstallTrackerSinglet
 import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
 import { VersionResolver } from '../../Acquisition/VersionResolver';
 import { IEventStream } from '../../EventStream/EventStream';
-import { DotnetAcquisitionCompleted, EventBasedError, TestAcquireCalled } from '../../EventStream/EventStreamEvents';
+import { CommandExecutionEvent, DotnetAcquisitionCompleted, EventBasedError, TestAcquireCalled } from '../../EventStream/EventStreamEvents';
 import { IEvent } from '../../EventStream/IEvent';
 import { ILoggingObserver } from '../../EventStream/ILoggingObserver';
 import { ITelemetryReporter } from '../../EventStream/TelemetryObserver';
@@ -374,6 +374,7 @@ export class MockCommandExecutor extends ICommandExecutor
     private trueExecutor: CommandExecutor;
     public fakeReturnValue = { status: '', stderr: '', stdout: '' };
     public attemptedCommand = '';
+    private readonly acquisitionContext: IAcquisitionWorkerContext;
 
     // If you expect several commands to be run and want to specify unique outputs for each, describe them in the same order using the below two arrays.
     // We will check for an includes match and not an exact match!
@@ -383,6 +384,7 @@ export class MockCommandExecutor extends ICommandExecutor
     constructor(acquisitionContext: IAcquisitionWorkerContext, utilContext: IUtilityContext)
     {
         super(acquisitionContext, utilContext);
+        this.acquisitionContext = acquisitionContext;
         this.trueExecutor = new CommandExecutor(acquisitionContext, utilContext);
     }
 
@@ -395,12 +397,19 @@ export class MockCommandExecutor extends ICommandExecutor
             return this.trueExecutor.execute(command, options, terminalFailure);
         }
 
+        this.acquisitionContext.eventStream.post(new CommandExecutionEvent(`Executing command: ${this.attemptedCommand}`));
         for (let i = 0; i < this.otherCommandPatternsToMock.length; ++i)
         {
             const commandPatternToLookFor = this.otherCommandPatternsToMock[i];
             if (command.commandRoot.includes(commandPatternToLookFor) ||
                 command.commandParts.some((arg) => arg.includes(commandPatternToLookFor)))
             {
+                const indexOfExactMatch = this.otherCommandPatternsToMock.indexOf(this.attemptedCommand);
+                if (indexOfExactMatch !== -1)
+                {
+                    // If we have an exact match, return the value for that command.
+                    return this.otherCommandsReturnValues[indexOfExactMatch];
+                }
                 return this.otherCommandsReturnValues[i];
             }
         }

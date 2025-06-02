@@ -539,7 +539,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             }
         }
 
-        const dotnetsOnPATH = await finder.findRawPathEnvironmentSetting(requestedArchitecture);
+        const dotnetsOnPATH = await finder.findRawPathEnvironmentSetting(true, requestedArchitecture);
         for (const dotnetPath of dotnetsOnPATH ?? [])
         {
             const validatedPATH = await getPathIfValid(dotnetPath, validator, commandContext);
@@ -550,7 +550,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             }
         }
 
-        const dotnetsOnRealPATH = await finder.findRealPathEnvironmentSetting(requestedArchitecture);
+        const dotnetsOnRealPATH = await finder.findRealPathEnvironmentSetting(true, requestedArchitecture);
         for (const dotnetPath of dotnetsOnRealPATH ?? [])
         {
             const validatedRealPATH = await getPathIfValid(dotnetPath, validator, commandContext);
@@ -563,7 +563,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
         if (commandContext.acquireContext.mode === 'runtime' || commandContext.acquireContext.mode === 'aspnetcore')
         {
-            const extensionManagedRuntimeRecordPaths = await finder.findExtensionManagedRuntimes(requestedArchitecture);
+            const extensionManagedRuntimeRecordPaths = await finder.findExtensionManagedRuntimes();
             const filteredExtensionManagedRuntimeRecordPaths = validator.filterValidPaths(extensionManagedRuntimeRecordPaths, commandContext);
             for (const dotnetPath of filteredExtensionManagedRuntimeRecordPaths ?? [])
             {
