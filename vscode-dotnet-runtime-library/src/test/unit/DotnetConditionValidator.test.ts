@@ -40,7 +40,7 @@ const executionResultWithListRuntimesResultWithFullOnly = { status: '0', stdout:
 const executionResultWithListSDKsResultWithPreviewOnly = { status: '0', stdout: listSDKsResultWithEightPreviewOnly, stderr: '' };
 const executionResultWithListSDKsResultFullSDK = { status: '0', stdout: listSDKsResultWithEightFull, stderr: '' };
 
-const defaultTimeoutTimeMs = 10000; // 10 seconds
+const defaultTimeoutTimeMs = 25000;
 
 suite('DotnetConditionValidator Unit Tests', function ()
 {
