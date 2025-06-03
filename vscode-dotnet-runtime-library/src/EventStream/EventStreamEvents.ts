@@ -963,6 +963,21 @@ export abstract class WebRequestTimer extends DotnetCustomMessageEvent
     }
 }
 
+export class CommandExecutionTimer extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'CommandExecutionTimer';
+
+    constructor(public readonly eventMessage: string, public readonly durationMs: string, public readonly commandRoot: string, public readonly fullCommandString: string) { super(eventMessage); }
+
+    public getProperties()
+    {
+        return {
+            ...super.getProperties(), DurationMs: this.durationMs, CommandRoot: TelemetryUtilities.HashAllPaths(this.fullCommandString),
+            HashedFullCommand: TelemetryUtilities.HashData(this.commandRoot)
+        };
+    }
+}
+
 export class WebRequestTime extends WebRequestTimer
 {
     public readonly eventName = 'WebRequestTime';
