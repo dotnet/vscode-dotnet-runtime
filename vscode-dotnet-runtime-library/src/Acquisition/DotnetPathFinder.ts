@@ -106,13 +106,13 @@ export class DotnetPathFinder implements IDotnetPathFinder
      * This allows skipping which, where, and also does not rely on --info which is slower because it shells to the SDK instead of just being the host.
      * @returns The path to the dotnet executable, which may be a symlink to the actual executable.
      */
-    public async findDotnetFastFromListOnly(): Promise<string[] | undefined>
+    public async findDotnetFastFromListOnly(requestedArchitecture: string | null): Promise<string[] | undefined>
     {
         const oldLookup = process.env.DOTNET_MULTILEVEL_LOOKUP;
         try
         {
             process.env.DOTNET_MULTILEVEL_LOOKUP = '0'; // make it so --list-runtimes only finds the runtimes on that path: https://learn.microsoft.com/en-us/dotnet/core/compatibility/deployment/7.0/multilevel-lookup#reason-for-change
-            const finalPath = await this.getTruePath(['dotnet']);
+            const finalPath = await this.getTruePath(['dotnet'], requestedArchitecture);
             return this.returnWithRestoringEnvironment(finalPath, 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
         }
         finally
@@ -131,7 +131,7 @@ export class DotnetPathFinder implements IDotnetPathFinder
      * In an install such as homebrew, the PATH is not indicative of all of the PATHs. So dotnet may be missing in the PATH even though it is found in an alternative shell.
      * The PATH can be discovered using path_helper on mac.
      */
-    public async findRawPathEnvironmentSetting(tryUseTrueShell = true): Promise<string[] | undefined>
+    public async findRawPathEnvironmentSetting(tryUseTrueShell = true, requestedArchitecture: string | null): Promise<string[] | undefined>
     {
         const oldLookup = process.env.DOTNET_MULTILEVEL_LOOKUP;
         process.env.DOTNET_MULTILEVEL_LOOKUP = '0'; // make it so --list-runtimes only finds the runtimes on that path: https://learn.microsoft.com/en-us/dotnet/core/compatibility/deployment/7.0/multilevel-lookup#reason-for-change
@@ -208,7 +208,7 @@ export class DotnetPathFinder implements IDotnetPathFinder
         if (dotnetsOnPATH && (dotnetsOnPATH?.length ?? 0) > 0)
         {
             this.workerContext.eventStream.post(new DotnetFindPathPATHFound(`Found.NET on the path: ${JSON.stringify(dotnetsOnPATH)}`));
-            return this.returnWithRestoringEnvironment(await this.getTruePath(dotnetsOnPATH), 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
+            return this.returnWithRestoringEnvironment(await this.getTruePath(dotnetsOnPATH, requestedArchitecture), 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
 
         }
         else
@@ -259,10 +259,10 @@ export class DotnetPathFinder implements IDotnetPathFinder
      *
      * We can't use realpath on all paths, because some paths are polymorphic executables and the realpath is invalid.
      */
-    public async findRealPathEnvironmentSetting(tryUseTrueShell = true): Promise<string[] | undefined>
+    public async findRealPathEnvironmentSetting(tryUseTrueShell = true, requestedArchitecture: string | null): Promise<string[] | undefined>
     {
         this.workerContext.eventStream.post(new DotnetFindPathLookupRealPATH(`Looking up.NET on the real path.`));
-        const dotnetsOnPATH = await this.findRawPathEnvironmentSetting(tryUseTrueShell);
+        const dotnetsOnPATH = await this.findRawPathEnvironmentSetting(tryUseTrueShell, requestedArchitecture);
         const realPaths = [];
 
         for (const dotnetOnPATH of dotnetsOnPATH ?? [])
@@ -279,7 +279,7 @@ export class DotnetPathFinder implements IDotnetPathFinder
         {
             return undefined;
         }
-        return this.getTruePath(realPaths);
+        return this.getTruePath(realPaths, requestedArchitecture);
     }
 
     public async findHostInstallPaths(requestedArchitecture: string): Promise<string[] | undefined>
@@ -312,7 +312,7 @@ export class DotnetPathFinder implements IDotnetPathFinder
             {
                 this.workerContext.eventStream.post(new DotnetFindPathNoHostOnRegistry(`The host could not be found in the registry`));
             }
-            return this.returnWithRestoringEnvironment(await this.getTruePath(lodash.uniq(paths)), 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
+            return this.returnWithRestoringEnvironment(await this.getTruePath(lodash.uniq(paths), requestedArchitecture), 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
         }
         else
         {
@@ -337,7 +337,7 @@ export class DotnetPathFinder implements IDotnetPathFinder
                 this.workerContext.eventStream.post(new DotnetFindPathNoHostOnFileSystem(`The host could not be found in the file system.`));
             }
 
-            return this.returnWithRestoringEnvironment(await this.getTruePath(lodash.uniq(paths)), 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
+            return this.returnWithRestoringEnvironment(await this.getTruePath(lodash.uniq(paths), requestedArchitecture), 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
         }
     }
 
@@ -377,14 +377,14 @@ export class DotnetPathFinder implements IDotnetPathFinder
      * @returns The actual physical location/path on disk where the executables lie for each of the paths.
      * Some of the symlinks etc resolve to a path which works but is still not the actual path.
      */
-    public async getTruePath(tentativePaths: string[]): Promise<string[]>
+    public async getTruePath(tentativePaths: string[], requestedArchitecture: string | null): Promise<string[]>
     {
         const truePaths = [];
 
         for (const tentativePath of tentativePaths)
         {
             // This will even work if only the sdk is installed, list-runtimes on an sdk installed host would work
-            const runtimeInfo = await new DotnetConditionValidator(this.workerContext, this.utilityContext, this.executor).getRuntimes(tentativePath);
+            const runtimeInfo = await new DotnetConditionValidator(this.workerContext, this.utilityContext, this.executor).getRuntimes(tentativePath, requestedArchitecture);
             if ((runtimeInfo?.length ?? 0) > 0)
             {
                 // q.t. from @dibarbet on the C# Extension:

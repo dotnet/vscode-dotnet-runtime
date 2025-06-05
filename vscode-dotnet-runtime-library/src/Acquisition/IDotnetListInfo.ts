@@ -5,4 +5,4 @@
 
 import { DotnetInstallMode } from "./DotnetInstallMode";
 
-export interface IDotnetListInfo { mode: DotnetInstallMode, version: string, directory : string };
+export interface IDotnetListInfo { mode: DotnetInstallMode, version: string, directory : string, architecture: string | null };

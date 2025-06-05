@@ -30,7 +30,7 @@ suite('LocalMemoryCacheSingleton Unit Tests', function ()
     test('It caches path lookup', async () =>
     {
         const finder = new DotnetPathFinder(mockContext, mockUtility, mockExecutor, mockFile);
-        const result = await finder.getTruePath(['dotnet']);
+        const result = await finder.getTruePath(['dotnet'], null);
 
         const cachePutEvent = eventStream.events.find(event => event instanceof CachePutEvent && Number((event as CachePutEvent).ttl) === DOTNET_INFORMATION_CACHE_DURATION_MS
             && (event as CachePutEvent).indexStr.includes('--list-runtimes') && (event as CachePutEvent).indexStr.includes('dotnet'));
@@ -41,7 +41,7 @@ suite('LocalMemoryCacheSingleton Unit Tests', function ()
         assert.exists(cachePutEvent, `The cache put event was found: ${JSON.stringify(eventStream.events)}.`);
         assert.exists(cacheShouldBeEmptyOneTimeEvent, `The cache was checked but it was empty at first: ${JSON.stringify(eventStream.events, null, " ")}`);
 
-        const secondResult = await finder.getTruePath(['dotnet']);
+        const secondResult = await finder.getTruePath(['dotnet'], null);
 
         const cacheShouldHaveItEvent = eventStream.events.find(event => event instanceof CacheGetEvent
             && (event as CacheGetEvent).indexStr.includes('dotnet') && (event as CacheGetEvent).indexStr.includes('--list-runtimes') && (event as CacheGetEvent).value !== undefined);
