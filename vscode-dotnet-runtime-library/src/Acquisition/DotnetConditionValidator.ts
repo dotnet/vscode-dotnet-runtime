@@ -5,6 +5,7 @@
 import { DotnetConditionsValidated, DotnetFindPathDidNotMeetCondition, DotnetUnableToCheckPATHArchitecture } from '../EventStream/EventStreamEvents';
 import { IDotnetFindPathContext } from '../IDotnetFindPathContext';
 import { CommandExecutor } from '../Utils/CommandExecutor';
+import { CommandExecutorCommand } from '../Utils/CommandExecutorCommand';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
@@ -303,6 +304,12 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
         return true;
     }
 
+    public getRuntimesCommand(existingPath: string, requestedArchitecture: string): CommandExecutorCommand
+    {
+        return CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-runtimes', '--arch', requestedArchitecture]);
+
+    }
+
     public async getRuntimes(existingPath: string, requestedArchitecture: string | null): Promise<IDotnetListInfo[]>
     {
         if (!existingPath || existingPath === '""')
@@ -311,13 +318,12 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
         }
 
         requestedArchitecture ??= DotnetCoreAcquisitionWorker.defaultArchitecture()
-        const findRuntimesCommand = CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-runtimes', '--arch', requestedArchitecture]);
 
         const windowsDesktopString = 'Microsoft.WindowsDesktop.App';
         const aspnetCoreString = 'Microsoft.AspNetCore.App';
         const runtimeString = 'Microsoft.NETCore.App';
 
-        const runtimeInfo = await (this.executor!).execute(findRuntimesCommand, { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false).then(async (result) =>
+        const runtimeInfo = await (this.executor!).execute(this.getRuntimesCommand(existingPath, requestedArchitecture), { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false).then(async (result) =>
         {
             if (result.status !== '0')
             {

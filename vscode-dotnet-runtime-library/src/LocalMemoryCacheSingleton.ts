@@ -96,6 +96,29 @@ export class LocalMemoryCacheSingleton
         return this.put(this.cacheableCommandToKey(key), obj, { ttlMs: ttl } as LocalMemoryCacheMetadata, context);
     }
 
+    /**
+     *
+     * @param newCommandRoot The root of the command that will result in the same output. Example: if we know "dotnet" is "C:\\Program Files\\dotnet\\dotnet.exe"
+     * @param originalCommand The identical command that had likely already been cached. Won't make it so if that's not already the case.
+     * @param populateDefaultOptions If true, will populate the default options for the command. This is useful if the command is not already populated with the default options.
+     * @param context
+     */
+    public cacheIdenticalCommandWithUniqueRoot(newCommandRoot: string, originalCommand: CacheableCommand, populateDefaultOptions = true, context: IAcquisitionWorkerContext): void
+    {
+        if (populateDefaultOptions)
+        {
+            originalCommand.options = { ...originalCommand.options, CommandExecutor.getDefaultOptions() };
+        }
+        const cachedRes = this.getCommand(originalCommand, context);
+
+        if (cachedRes)
+        {
+            const cloneCommand = originalCommand;
+            cloneCommand.command.commandRoot = newCommandRoot;
+            this.putCommand(cloneCommand, cachedRes, context);
+        }
+    }
+
     public invalidate(context?: IAcquisitionWorkerContext): void
     {
         context?.eventStream.post(new CacheClearEvent(`Wiping the cache at ${new Date().toISOString()}`));

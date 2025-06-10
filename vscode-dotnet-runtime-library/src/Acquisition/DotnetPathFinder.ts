@@ -30,11 +30,14 @@ import
     DotnetFindPathRootUnderEmulationButNoneSet,
     FileDoesNotExist
 } from '../EventStream/EventStreamEvents';
+import { LocalMemoryCacheSingleton } from '../LocalMemoryCacheSingleton';
+import { CommandExecutorCommand } from '../Utils/CommandExecutorCommand';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { IFileUtilities } from '../Utils/IFileUtilities';
 import { EnvironmentVariableIsDefined, getDotnetExecutable, getOSArch, getPathSeparator } from '../Utils/TypescriptUtilities';
 import { DOTNET_INFORMATION_CACHE_DURATION_MS, SYS_CMD_SEARCH_CACHE_DURATION_MS } from './CacheTimeConstants';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
+import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { InstallRecordWithPath } from './InstallRecordWithPath';
 import { InstallTrackerSingleton } from './InstallTrackerSingleton';
 import { RegistryReader } from './RegistryReader';
@@ -380,11 +383,13 @@ export class DotnetPathFinder implements IDotnetPathFinder
     public async getTruePath(tentativePaths: string[], requestedArchitecture: string | null): Promise<string[]>
     {
         const truePaths = [];
+        requestedArchitecture ??= DotnetCoreAcquisitionWorker.defaultArchitecture()
 
         for (const tentativePath of tentativePaths)
         {
             // This will even work if only the sdk is installed, list-runtimes on an sdk installed host would work
-            const runtimeInfo = await new DotnetConditionValidator(this.workerContext, this.utilityContext, this.executor).getRuntimes(tentativePath, requestedArchitecture);
+            const validator = new DotnetConditionValidator(this.workerContext, this.utilityContext, this.executor);
+            const runtimeInfo = await validator.getRuntimes(tentativePath, requestedArchitecture);
             if ((runtimeInfo?.length ?? 0) > 0)
             {
                 // q.t. from @dibarbet on the C# Extension:
@@ -396,7 +401,13 @@ export class DotnetPathFinder implements IDotnetPathFinder
                 //
                 // Since dotnet --list-runtimes will always use the real assembly path to output the runtime folder (no symlinks!)
                 // we know the dotnet executable will be two folders up in the install root.
-                truePaths.push(path.join(path.dirname(path.dirname(runtimeInfo[0].directory)), getDotnetExecutable()));
+                const truePath = path.join(path.dirname(path.dirname(runtimeInfo[0].directory)), getDotnetExecutable());
+                truePaths.push(truePath);
+
+                // Preload the cache with the same calls. Also do SDK and INFO. Also make it aware when it does cache one to cache the other?
+                LocalMemoryCacheSingleton.getInstance().cacheIdenticalCommandWithUniqueRoot(
+                    // This isnt quite right as we
+                    { command: validator.getRuntimesCommand(truePath, requestedArchitecture) as CommandExecutorCommand, options: { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS } }, true, this.workerContext)
             }
             else
             {
