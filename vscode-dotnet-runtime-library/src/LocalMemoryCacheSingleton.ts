@@ -130,6 +130,7 @@ export class LocalMemoryCacheSingleton
     private cacheableCommandToKey(key: CacheableCommand): string
     {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        Object.keys(key.options).sort();
         return `${CommandExecutor.prettifyCommandExecutorCommand(key.command)}${JSON.stringify(key.options, function replacer(k, v)
         {
             // Replace the dotnetInstallToolCacheTtlMs key with undefined so that it doesn't affect the cache key.

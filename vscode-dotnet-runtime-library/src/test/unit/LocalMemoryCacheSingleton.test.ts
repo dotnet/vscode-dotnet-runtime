@@ -59,4 +59,61 @@ suite('LocalMemoryCacheSingleton Unit Tests', function ()
         const resultShouldExist = LocalMemoryCacheSingleton.getInstance().get('foo', mockContext);
         assert.equal(resultShouldExist, 'bar', 'The cache caches after 0 but renewed ttl.');
     });
+
+    test('It correctly uses cache with command aliases', async () => {
+        const originalPath = 'dotnet';
+        const aliasPath = 'C:\\Program Files\\dotnet\\dotnet.exe';
+        const cacheKey = `${originalPath} --list-sdks`;
+        const cacheValue = '10.0.100 [C:\\Program Files\\dotnet\\sdk]`;
+        
+        // Cache with original path
+        LocalMemoryCacheSingleton.getInstance().put(cacheKey, cacheValue, { ttlMs: 90000 } as LocalMemoryCacheMetadata, mockContext);
+        
+        // Before alias registration
+        assert.equal(LocalMemoryCacheSingleton.getInstance().get(cacheKey, mockContext), cacheValue);
+        assert.isUndefined(LocalMemoryCacheSingleton.getInstance().get(`${aliasPath} --list-sdks`, mockContext));
+        
+        // Register alias and test
+        LocalMemoryCacheSingleton.getInstance().aliasCommandAsAnotherCommandRoot(aliasPath, originalPath, eventStream);
+        assert.equal(LocalMemoryCacheSingleton.getInstance().get(`${aliasPath} --list-sdks`, mockContext), cacheValue);
+        
+        // Verify event
+        const aliasEvent = eventStream.events.find(event => 
+            event instanceof CacheAliasCreated && 
+            (event as CacheAliasCreated).eventMessage.includes(aliasPath)
+        );
+        assert.exists(aliasEvent);
+    });
+
+    test('It handles command options with different properties correctly', async () => {
+        const commandRoot = 'dotnet';
+        const commandArgs = ['--list-runtimes'];
+        const outputValue = 'Microsoft.NETCore.App 10.0.1';
+        
+        // Command with original options order
+        const originalCommand = {
+            command: { commandRoot, args: commandArgs },
+            options: { ttl: 90000, env: { 'LANG': 'en-US' } }
+        };
+        
+        // Same options but different order
+        const reorderedCommand = {
+            command: { commandRoot, args: commandArgs },
+            options: { env: { 'LANG': 'en-US' }, ttl: 90000 }
+        };
+        
+        // Different properties
+        const differentCommand = {
+            command: { commandRoot, args: commandArgs },
+            options: { ttl: 90000, verbose: true }
+        };
+        
+        // Cache original command
+        LocalMemoryCacheSingleton.getInstance().putCommand(originalCommand, outputValue, mockContext);
+        
+        // Test results
+        assert.equal(LocalMemoryCacheSingleton.getInstance().getCommand(originalCommand, mockContext), outputValue);
+        assert.equal(LocalMemoryCacheSingleton.getInstance().getCommand(reorderedCommand, mockContext), outputValue);
+        assert.notEqual(LocalMemoryCacheSingleton.getInstance().getCommand(differentCommand, mockContext), outputValue);
+    });
 });
