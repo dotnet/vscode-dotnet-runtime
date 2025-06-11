@@ -1195,6 +1195,15 @@ export class DotnetFindPathLookupSetting extends DotnetCustomMessageEvent
     public readonly eventName = 'DotnetFindPathLookupSetting';
 }
 
+export class CacheAliasCreated extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'CacheAliasCreated';
+    public getProperties()
+    {
+        return { Message: this.eventMessage, ...getDisabledTelemetryOnChance(1) };
+    };
+}
+
 export class DotnetFindPathSettingFound extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'DotnetFindPathSettingFound';

@@ -31,7 +31,6 @@ import
     FileDoesNotExist
 } from '../EventStream/EventStreamEvents';
 import { LocalMemoryCacheSingleton } from '../LocalMemoryCacheSingleton';
-import { CommandExecutorCommand } from '../Utils/CommandExecutorCommand';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { IFileUtilities } from '../Utils/IFileUtilities';
 import { EnvironmentVariableIsDefined, getDotnetExecutable, getOSArch, getPathSeparator } from '../Utils/TypescriptUtilities';
@@ -404,10 +403,16 @@ export class DotnetPathFinder implements IDotnetPathFinder
                 const truePath = path.join(path.dirname(path.dirname(runtimeInfo[0].directory)), getDotnetExecutable());
                 truePaths.push(truePath);
 
-                // Preload the cache with the same calls. Also do SDK and INFO. Also make it aware when it does cache one to cache the other?
-                LocalMemoryCacheSingleton.getInstance().cacheIdenticalCommandWithUniqueRoot(
-                    // This isnt quite right as we
-                    { command: validator.getRuntimesCommand(truePath, requestedArchitecture) as CommandExecutorCommand, options: { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS } }, true, this.workerContext)
+                // Preload the cache with the calls we've already done.
+                // Example: 'dotnet' --list-runtimes will be the same as 'C:\\Program Files\\dotnet\\dotnet.exe' --list-runtimes
+                // If the dotnet executable full path was 'C:\\Program Files\\dotnet\\dotnet.exe'.
+
+                // We do NOT want to do this on Unix, because the dotnet executable is potentially polymorphic.
+                // /usr/local/bin/dotnet becomes /snap/dotnet-sdk/current/dotnet in reality, may have different behavior in shells.
+                if (os.platform() === 'win32')
+                {
+                    LocalMemoryCacheSingleton.getInstance().aliasCommandAsAnotherCommandRoot(truePath, tentativePath, this.workerContext.eventStream);
+                }
             }
             else
             {

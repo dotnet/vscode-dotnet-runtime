@@ -304,10 +304,9 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
         return true;
     }
 
-    public getRuntimesCommand(existingPath: string, requestedArchitecture: string): CommandExecutorCommand
+    private getRuntimesCommand(existingPath: string, requestedArchitecture: string): CommandExecutorCommand
     {
         return CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-runtimes', '--arch', requestedArchitecture]);
-
     }
 
     public async getRuntimes(existingPath: string, requestedArchitecture: string | null): Promise<IDotnetListInfo[]>
