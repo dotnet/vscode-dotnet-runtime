@@ -26,7 +26,7 @@ suite('LoggingObserver Unit Tests', () =>
         // Create a fake event and call the post/dispose function
         const fakeEvent = new DotnetUninstallAllStarted();
         loggingObserver.post(fakeEvent);
-        loggingObserver.dispose();
+        await loggingObserver.disposeAsync();
 
         // Check if the log file content is same as expected content
         fs.readdirSync(tempPath).forEach(file =>
