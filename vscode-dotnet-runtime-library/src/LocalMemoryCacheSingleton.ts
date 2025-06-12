@@ -107,6 +107,19 @@ export class LocalMemoryCacheSingleton
         return this.put(this.cacheableCommandToKey(key), obj, { ttlMs: ttl } as LocalMemoryCacheMetadata, context);
     }
 
+    private sortObjectKeys(unordered: any): any
+    {
+        const ordered = Object.keys(unordered).sort().reduce(
+            (obj, key) =>
+            {
+                (obj as any)[key] = unordered[key];
+                return obj;
+            },
+            {}
+        );
+    }
+
+
     /**
      *
      * @param commandRootAlias The root of the command that will result in the same output. Example: if we know "dotnet" is "C:\\Program Files\\dotnet\\dotnet.exe"
@@ -130,8 +143,7 @@ export class LocalMemoryCacheSingleton
     private cacheableCommandToKey(key: CacheableCommand): string
     {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        Object.keys(key.options).sort();
-        return `${CommandExecutor.prettifyCommandExecutorCommand(key.command)}${JSON.stringify(key.options, function replacer(k, v)
+        return `${CommandExecutor.prettifyCommandExecutorCommand(key.command)}${JSON.stringify(this.sortObjectKeys(key.options), function replacer(k, v)
         {
             // Replace the dotnetInstallToolCacheTtlMs key with undefined so that it doesn't affect the cache key.
             if (k === 'dotnetInstallToolCacheTtlMs')

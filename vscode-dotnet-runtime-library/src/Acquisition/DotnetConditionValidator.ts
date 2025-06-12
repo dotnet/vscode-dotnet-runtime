@@ -30,41 +30,59 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
     public async dotnetMeetsRequirement(dotnetExecutablePath: string, requirement: IDotnetFindPathContext): Promise<boolean>
     {
         let hostArch = '';
+        const oldLookup = process.env.DOTNET_MULTILEVEL_LOOKUP;
+        // This is deprecated but still needed to scan .NET 6 and below
+        process.env.DOTNET_MULTILEVEL_LOOKUP = '0'; // make it so --list-runtimes only finds the runtimes on that path: https://learn.microsoft.com/en-us/dotnet/core/compatibility/deployment/7.0/multilevel-lookup#reason-for-change
 
-        if (requirement.acquireContext.mode === 'sdk')
+        try
         {
-            const availableSDKs = await this.getSDKs(dotnetExecutablePath, requirement.acquireContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
-            hostArch = availableSDKs?.at(0)?.architecture ?? await this.getHostArchitecture(dotnetExecutablePath, requirement);
-            if (availableSDKs.some((sdk) =>
+            if (requirement.acquireContext.mode === 'sdk')
             {
-                return this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) &&
-                    this.stringVersionMeetsRequirement(sdk.version, requirement.acquireContext.version, requirement) && this.allowPreview(sdk.version, requirement);
-            }))
-            {
-                this.workerContext.eventStream.post(new DotnetConditionsValidated(`${dotnetExecutablePath} satisfies the conditions.`));
-                return true;
+                const availableSDKs = await this.getSDKs(dotnetExecutablePath, requirement.acquireContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
+                hostArch = availableSDKs?.at(0)?.architecture ?? await this.getHostArchitecture(dotnetExecutablePath, requirement);
+                if (availableSDKs.some((sdk) =>
+                {
+                    return this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) &&
+                        this.stringVersionMeetsRequirement(sdk.version, requirement.acquireContext.version, requirement) && this.allowPreview(sdk.version, requirement);
+                }))
+                {
+                    this.workerContext.eventStream.post(new DotnetConditionsValidated(`${dotnetExecutablePath} satisfies the conditions.`));
+                    return true;
+                }
             }
-        }
-        else
-        {
-            // No need to consider SDKs when looking for runtimes as all the runtimes installed with the SDKs will be included in the runtimes list.
-            const availableRuntimes = await this.getRuntimes(dotnetExecutablePath, requirement.acquireContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
-            hostArch = availableRuntimes?.at(0)?.architecture ?? await this.getHostArchitecture(dotnetExecutablePath, requirement);
-            if (availableRuntimes.some((runtime) =>
+            else
             {
-                return runtime.mode === requirement.acquireContext.mode && this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) &&
-                    this.stringVersionMeetsRequirement(runtime.version, requirement.acquireContext.version, requirement) && this.allowPreview(runtime.version, requirement);
-            }))
-            {
-                this.workerContext.eventStream.post(new DotnetConditionsValidated(`${dotnetExecutablePath} satisfies the conditions.`));
-                return true;
+                // No need to consider SDKs when looking for runtimes as all the runtimes installed with the SDKs will be included in the runtimes list.
+                const availableRuntimes = await this.getRuntimes(dotnetExecutablePath, requirement.acquireContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
+                hostArch = availableRuntimes?.at(0)?.architecture ?? await this.getHostArchitecture(dotnetExecutablePath, requirement);
+                if (availableRuntimes.some((runtime) =>
+                {
+                    return runtime.mode === requirement.acquireContext.mode && this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) &&
+                        this.stringVersionMeetsRequirement(runtime.version, requirement.acquireContext.version, requirement) && this.allowPreview(runtime.version, requirement);
+                }))
+                {
+                    this.workerContext.eventStream.post(new DotnetConditionsValidated(`${dotnetExecutablePath} satisfies the conditions.`));
+                    return true;
+                }
             }
-        }
 
-        this.workerContext.eventStream.post(new DotnetFindPathDidNotMeetCondition(`${dotnetExecutablePath} did NOT satisfy the conditions: hostArch: ${hostArch}, requiredArch: ${requirement.acquireContext.architecture},
+            this.workerContext.eventStream.post(new DotnetFindPathDidNotMeetCondition(`${dotnetExecutablePath} did NOT satisfy the conditions: hostArch: ${hostArch}, requiredArch: ${requirement.acquireContext.architecture},
             required version: ${requirement.acquireContext.version}, required mode: ${requirement.acquireContext.mode}`));
 
-        return false;
+            return false;
+        }
+        finally
+        {
+            // Restore the environment variable to its original value
+            if (oldLookup !== undefined)
+            {
+                process.env.DOTNET_MULTILEVEL_LOOKUP = oldLookup;
+            }
+            else
+            {
+                delete process.env.DOTNET_MULTILEVEL_LOOKUP;
+            }
+        }
     }
 
     /**
