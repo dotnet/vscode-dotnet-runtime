@@ -107,19 +107,6 @@ export class LocalMemoryCacheSingleton
         return this.put(this.cacheableCommandToKey(key), obj, { ttlMs: ttl } as LocalMemoryCacheMetadata, context);
     }
 
-    private sortObjectKeys(unordered: any): any
-    {
-        const ordered = Object.keys(unordered).sort().reduce(
-            (obj, key) =>
-            {
-                (obj as any)[key] = unordered[key];
-                return obj;
-            },
-            {}
-        );
-    }
-
-
     /**
      *
      * @param commandRootAlias The root of the command that will result in the same output. Example: if we know "dotnet" is "C:\\Program Files\\dotnet\\dotnet.exe"
@@ -142,19 +129,35 @@ export class LocalMemoryCacheSingleton
 
     private cacheableCommandToKey(key: CacheableCommand): string
     {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        return `${CommandExecutor.prettifyCommandExecutorCommand(key.command)}${JSON.stringify(this.sortObjectKeys(key.options), function replacer(k, v)
+        // Get all keys sorted
+        const sortedKeys = Object.keys(key.options).sort();
+
+        // Build ordered string manually
+        let optionsString = '{';
+        sortedKeys.forEach((k, index) =>
         {
-            // Replace the dotnetInstallToolCacheTtlMs key with undefined so that it doesn't affect the cache key.
+            const v = key.options[k];
+            // Apply same replacer logic
+            let value = v;
             if (k === 'dotnetInstallToolCacheTtlMs')
             {
-                return undefined;
-            }
-            else if (k === 'env')
+                value = undefined;
+            } else if (k === 'env')
             {
-                return `${minimizeEnvironment(v)}`;
+                value = minimizeEnvironment(v);
             }
-            return v;
-        })}`;
+
+            if (value !== undefined)
+            {
+                optionsString += `"${k}":${JSON.stringify(value)}`;
+                if (index < sortedKeys.length - 1)
+                {
+                    optionsString += ',';
+                }
+            }
+        });
+        optionsString += '}';
+
+        return `${CommandExecutor.prettifyCommandExecutorCommand(key.command)}${optionsString}`;
     }
 };
