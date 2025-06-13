@@ -653,7 +653,6 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
             const setSystemVariable = CommandExecutor.makeCommand(`setx`, [`${variable}`, `"${value}"`]);
             try
             {
-                const shellEditResponse = (await this.execute(setShellVariable, null, false)).status;
                 const shellEditResponse = (await this.execute(setShellVariable, { shell: true }, false)).status;
                 environmentEditExitCode += Number(shellEditResponse[0]);
                 const systemEditResponse = (await this.execute(setSystemVariable, null, false)).status
