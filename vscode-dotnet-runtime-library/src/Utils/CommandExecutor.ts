@@ -6,7 +6,6 @@
 import * as proc from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
-import { promisify } from 'util';
 import open = require('open');
 import path = require('path');
 
@@ -519,29 +518,7 @@ ${stderr}`));
             }
 
             const commandStartTime = process.hrtime.bigint();
-            const commandResult: CommandExecutorResult = await promisify(proc.exec)(fullCommandString, options).then(
-                fulfilled =>
-                {
-                    // If any status besides 0 is returned, an error is thrown by nodejs
-                    return { stdout: fulfilled.stdout?.toString() ?? '', stderr: fulfilled.stderr?.toString() ?? '', status: '0' };
-                },
-                rejected => // Rejected object: error type with stderr : Buffer, stdout : Buffer ... with .code (number) or .signal (string)}
-                { // see https://nodejs.org/api/child_process.html#child_processexeccommand-options-callback
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                    const result = { stdout: rejected?.stdout?.toString() ?? '', stderr: rejected?.stderr?.toString() ?? '', status: rejected?.code?.toString() ?? rejected?.signal?.toString() ?? '' };
-                    if (terminalFailure)
-                    {
-                        this.logCommandResult(result, fullCommandString, commandStartTime, command.commandRoot);
-                        throw rejected ?? new Error(`Spawning ${fullCommandString} failed with an unspecified error.`); // according to nodejs spec, this should never be possible
-                    }
-                    else
-                    {
-                        // signal is a string or obj, code is a number
-                        return result;
-                    }
-                }
-            );
-
+            const commandResult: CommandExecutorResult = await this.asyncSpawn(command, options, terminalFailure);
             this.logCommandResult(commandResult, fullCommandString, commandStartTime, command.commandRoot);
 
             if (useCache)
@@ -551,6 +528,68 @@ ${stderr}`));
             return commandResult;
         }
     }
+
+    private asyncSpawn(commandToExecute: CommandExecutorCommand, options: any, terminalFailure: boolean): Promise<CommandExecutorResult>
+    {
+        return new Promise((resolve, reject) =>
+        {
+            const child = proc.spawn(commandToExecute.commandRoot, commandToExecute.commandParts, {
+                ...options,
+                stdio: ['pipe', 'pipe', 'pipe'], // Capture stdout and stderr
+            });
+
+            let stdout = '';
+            let stderr = '';
+
+            child.stdout.on('data', (data: any) =>
+            {
+                stdout += data.toString();
+            });
+
+            child.stderr.on('data', (data: any) =>
+            {
+                stderr += data.toString();
+            });
+
+            child.on('close', (code: any) =>
+            {
+                if (code === 0)
+                {
+                    return resolve({ stdout: stdout, stderr: stderr, status: '0' });
+                }
+                else
+                {
+                    const result = { stdout: stdout, stderr: stderr, status: code?.toString() ?? '1' };
+                    if (terminalFailure)
+                    {
+                        this.logCommandResult(result, CommandExecutor.prettifyCommandExecutorCommand(commandToExecute, false), process.hrtime.bigint(), commandToExecute.commandRoot);
+                        return reject(new CommandExecutionNonZeroExitFailure(new EventBasedError('CommandExecutionNonZeroExitFailure', ''), null));
+                    }
+                    else
+                    {
+                        // signal is a string or obj, code is a number
+                        return resolve(result);
+                    }
+                }
+            }); // We don't need to handle exit, close is when all exits have been called. (stderr, stdout)
+
+            child.on('error', (error) =>
+            {
+                const result = { stdout: stdout, stderr: stderr, status: error.name?.toString() ?? '' };
+                if (terminalFailure)
+                {
+                    this.logCommandResult(result, CommandExecutor.prettifyCommandExecutorCommand(commandToExecute, false), process.hrtime.bigint(), commandToExecute.commandRoot);
+                    return reject(new CommandExecutionNonZeroExitFailure(new EventBasedError('CommandExecutionNonZeroExitFailure', ''), null));
+                }
+                else
+                {
+                    // signal is a string or obj, code is a number
+                    return resolve(result);
+                }
+            });
+        });
+    }
+
 
     private logCommandResult(commandResult: CommandExecutorResult, fullCommandStringForTelemetryOnly: string, commandStartTime: bigint, commandRoot: string)
     {
@@ -650,7 +689,8 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
         if (os.platform() === 'win32')
         {
             const setShellVariable = CommandExecutor.makeCommand(`set`, [`${variable}=${value}`]);
-            const setSystemVariable = CommandExecutor.makeCommand(`setx`, [`${variable}`, `"${value}"`]);
+            // "" does not escape but instead provides it as a string
+            const setSystemVariable = CommandExecutor.makeCommand(`setx`, [`${variable}`, `${value}`]);
             try
             {
                 const shellEditResponse = (await this.execute(setShellVariable, { shell: true }, false)).status;

@@ -87,7 +87,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
             return '';
         }
 
-        const infoCommand = CommandExecutor.makeCommand(`"${hostPath}"`, ['--info']);
+        const infoCommand = CommandExecutor.makeCommand(`${hostPath}`, ['--info']);
         const envWithForceEnglish = process.env;
         envWithForceEnglish.DOTNET_CLI_UI_LANGUAGE = 'en-US';
         // System may not have english installed, but CDK already calls this without issue -- the .NET SDK language invocation is also wrapped by a runtime library and natively includes english assets
@@ -123,7 +123,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
             return [];
         }
 
-        const findSDKsCommand = CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-sdks', '--arch', requestedArchitecture]);
+        const findSDKsCommand = CommandExecutor.makeCommand(`${existingPath}`, ['--list-sdks', '--arch', requestedArchitecture]);
 
         const sdkInfo = await (this.executor!).execute(findSDKsCommand, { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false).then(async (result) =>
         {
@@ -162,7 +162,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
         // We don't check that the version is 10.0 or later after 2026 when .NET 11 starts rolling out, as It will be slower to check all of the numbers in the output for versions >= 10.
         const hostMaySupportArchFlag = listDotnetInstallsStdout.includes("10.0") || listDotnetInstallsStdout.includes("11.0") || Date.now() >= new Date('2026-03-01').getTime();
         // Use runtimes instead of sdks, as sdks will always have a runtime, and runtime search can be cached across both mode calls.
-        const findInvalidCommand = CommandExecutor.makeCommand(`"${dotnetExecutablePath}"`, ['--list-runtimes', '--arch', 'invalid-arch']);
+        const findInvalidCommand = CommandExecutor.makeCommand(`${dotnetExecutablePath}`, ['--list-runtimes', '--arch', 'invalid-arch']);
         const hostSupportsArchFlag = hostMaySupportArchFlag ? (await (this.executor!).execute(findInvalidCommand, { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false)).status !== '0' : false;
         return hostSupportsArchFlag;
     }
@@ -311,7 +311,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
         }
 
         requestedArchitecture ??= DotnetCoreAcquisitionWorker.defaultArchitecture()
-        const findRuntimesCommand = CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-runtimes', '--arch', requestedArchitecture]);
+        const findRuntimesCommand = CommandExecutor.makeCommand(`${existingPath}`, ['--list-runtimes', '--arch', requestedArchitecture]);
 
         const windowsDesktopString = 'Microsoft.WindowsDesktop.App';
         const aspnetCoreString = 'Microsoft.AspNetCore.App';
