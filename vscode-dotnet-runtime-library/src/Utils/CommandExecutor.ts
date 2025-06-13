@@ -440,7 +440,7 @@ ${stderr}`));
             options.cwd ??= path.resolve(__dirname);
 
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            options.shell ??= true;
+            options.shell ??= false;
 
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             options.encoding = 'utf8';
@@ -455,7 +455,7 @@ ${stderr}`));
         else
         {
             options = {
-                cwd: path.resolve(__dirname), shell: true, encoding: 'utf8', env:
+                cwd: path.resolve(__dirname), shell: false, encoding: 'utf8', env:
                     { ...process.env, DOTNET_CLI_UI_LANGUAGE: 'en-US', DOTNET_NOLOGO: 'true' }
             };
         }
