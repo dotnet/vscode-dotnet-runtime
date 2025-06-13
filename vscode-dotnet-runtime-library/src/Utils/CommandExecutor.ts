@@ -442,7 +442,7 @@ ${stderr}`));
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             options.shell ??= os.platform() === 'win32' ? false : true;
             // ^ Windows systemcalls (node.js process library uses process_wrap which uses process.cc which makes system calls)
-            // Seem to resolve the PATH by default. Unix system calls do not.
+            // Windows seems to resolve the PATH by default in a system call. Unix system calls do not.
             // We could further improve Unix performance in the future by re-implementing our own PATH resolution.
             // And turning SHELL off by default on Unix as well.
 
@@ -459,7 +459,7 @@ ${stderr}`));
         else
         {
             options = {
-                cwd: path.resolve(__dirname), shell: os.platform() === 'win32' ? false : true;, encoding: 'utf8', env:
+                cwd: path.resolve(__dirname), shell: os.platform() === 'win32' ? false : true, encoding: 'utf8', env:
                     { ...process.env, DOTNET_CLI_UI_LANGUAGE: 'en-US', DOTNET_NOLOGO: 'true' }
             };
         }
