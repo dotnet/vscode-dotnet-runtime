@@ -49,7 +49,7 @@ export async function isRunningUnderWSL(acquisitionContext: IAcquisitionWorkerCo
 
     const command = CommandExecutor.makeCommand('grep', ['-i', 'Microsoft', '/proc/version']);
     executor ??= new CommandExecutor(acquisitionContext, utilityContext);
-    const commandResult = await executor.execute(command, {}, false);
+    const commandResult = await executor.execute(command, { shell: true }, false);
 
     if (!commandResult || !commandResult.stdout)
     {
