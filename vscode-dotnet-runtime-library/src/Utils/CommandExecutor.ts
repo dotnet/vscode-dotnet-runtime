@@ -555,11 +555,11 @@ ${stderr}`));
             {
                 if (code === 0)
                 {
-                    return resolve({ stdout: stdout, stderr: stderr, status: '0' });
+                    return resolve({ stdout, stderr, status: '0' });
                 }
                 else
                 {
-                    const result = { stdout: stdout, stderr: stderr, status: code?.toString() ?? '1' };
+                    const result = { stdout, stderr, status: code?.toString() ?? '1' };
                     if (terminalFailure)
                     {
                         this.logCommandResult(result, CommandExecutor.prettifyCommandExecutorCommand(commandToExecute, false), process.hrtime.bigint(), commandToExecute.commandRoot);
@@ -575,7 +575,7 @@ ${stderr}`));
 
             child.on('error', (error) =>
             {
-                const result = { stdout: stdout, stderr: stderr, status: error.name?.toString() ?? '' };
+                const result = { stdout, stderr, status: error.name?.toString() ?? '' };
                 if (terminalFailure)
                 {
                     this.logCommandResult(result, CommandExecutor.prettifyCommandExecutorCommand(commandToExecute, false), process.hrtime.bigint(), commandToExecute.commandRoot);

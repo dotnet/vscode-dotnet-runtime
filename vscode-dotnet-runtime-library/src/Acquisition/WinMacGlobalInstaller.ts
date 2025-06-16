@@ -454,11 +454,11 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
             let commandOptions: string[] = [];
             if (await this.file.isElevated(this.acquisitionContext, this.utilityContext))
             {
-                commandOptions = [`/quiet`, `/install`, `/norestart`];
+                commandOptions = [`/install`, `/quiet`, `/norestart`];
             }
             else
             {
-                commandOptions = [`/passive`, `/install`, `/norestart`]
+                commandOptions = [`/install`, `/passive`, `/norestart`]
             }
 
             this.acquisitionContext.eventStream.post(new NetInstallerBeginExecutionEvent(`The Windows .NET Installer has been launched.`));
