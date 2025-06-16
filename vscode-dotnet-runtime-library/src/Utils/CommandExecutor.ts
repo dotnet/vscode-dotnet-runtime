@@ -6,7 +6,6 @@
 import * as proc from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
-import { promisify } from 'util';
 import open = require('open');
 import path = require('path');
 
@@ -440,7 +439,11 @@ ${stderr}`));
             options.cwd ??= path.resolve(__dirname);
 
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            options.shell ??= true;
+            options.shell ??= os.platform() === 'win32' ? false : true;
+            // ^ Windows systemcalls (node.js process library uses process_wrap which uses process.cc which makes system calls)
+            // Windows seems to resolve the PATH by default in a system call. Unix system calls do not.
+            // We could further improve Unix performance in the future by re-implementing our own PATH resolution.
+            // And turning SHELL off by default on Unix as well.
 
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             options.encoding = 'utf8';
@@ -455,7 +458,7 @@ ${stderr}`));
         else
         {
             options = {
-                cwd: path.resolve(__dirname), shell: true, encoding: 'utf8', env:
+                cwd: path.resolve(__dirname), shell: os.platform() === 'win32' ? false : true, encoding: 'utf8', env:
                     { ...process.env, DOTNET_CLI_UI_LANGUAGE: 'en-US', DOTNET_NOLOGO: 'true' }
             };
         }
@@ -515,29 +518,7 @@ ${stderr}`));
             }
 
             const commandStartTime = process.hrtime.bigint();
-            const commandResult: CommandExecutorResult = await promisify(proc.exec)(fullCommandString, options).then(
-                fulfilled =>
-                {
-                    // If any status besides 0 is returned, an error is thrown by nodejs
-                    return { stdout: fulfilled.stdout?.toString() ?? '', stderr: fulfilled.stderr?.toString() ?? '', status: '0' };
-                },
-                rejected => // Rejected object: error type with stderr : Buffer, stdout : Buffer ... with .code (number) or .signal (string)}
-                { // see https://nodejs.org/api/child_process.html#child_processexeccommand-options-callback
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                    const result = { stdout: rejected?.stdout?.toString() ?? '', stderr: rejected?.stderr?.toString() ?? '', status: rejected?.code?.toString() ?? rejected?.signal?.toString() ?? '' };
-                    if (terminalFailure)
-                    {
-                        this.logCommandResult(result, fullCommandString, commandStartTime, command.commandRoot);
-                        throw rejected ?? new Error(`Spawning ${fullCommandString} failed with an unspecified error.`); // according to nodejs spec, this should never be possible
-                    }
-                    else
-                    {
-                        // signal is a string or obj, code is a number
-                        return result;
-                    }
-                }
-            );
-
+            const commandResult: CommandExecutorResult = await this.asyncSpawn(command, options, terminalFailure);
             this.logCommandResult(commandResult, fullCommandString, commandStartTime, command.commandRoot);
 
             if (useCache)
@@ -547,6 +528,68 @@ ${stderr}`));
             return commandResult;
         }
     }
+
+    private asyncSpawn(commandToExecute: CommandExecutorCommand, options: any, terminalFailure: boolean): Promise<CommandExecutorResult>
+    {
+        return new Promise((resolve, reject) =>
+        {
+            const child = proc.spawn(commandToExecute.commandRoot, commandToExecute.commandParts, {
+                ...options,
+                stdio: ['ignore', 'pipe', 'pipe'], // Ignore stdin (we won't send any input), Capture stdout and stderr
+            });
+
+            let stdout = '';
+            let stderr = '';
+
+            child.stdout.on('data', (data: any) =>
+            {
+                stdout += data.toString();
+            });
+
+            child.stderr.on('data', (data: any) =>
+            {
+                stderr += data.toString();
+            });
+
+            child.on('close', (code: any) =>
+            {
+                if (code === 0)
+                {
+                    return resolve({ stdout, stderr, status: '0' });
+                }
+                else
+                {
+                    const result = { stdout, stderr, status: code?.toString() ?? '1' };
+                    if (terminalFailure)
+                    {
+                        this.logCommandResult(result, CommandExecutor.prettifyCommandExecutorCommand(commandToExecute, false), process.hrtime.bigint(), commandToExecute.commandRoot);
+                        return reject(new CommandExecutionNonZeroExitFailure(new EventBasedError('CommandExecutionNonZeroExitFailure', ''), null));
+                    }
+                    else
+                    {
+                        // signal is a string or obj, code is a number
+                        return resolve(result);
+                    }
+                }
+            }); // We don't need to handle exit, close is when all exits have been called. (stderr, stdout)
+
+            child.on('error', (error) =>
+            {
+                const result = { stdout, stderr, status: error.name?.toString() ?? '' };
+                if (terminalFailure)
+                {
+                    this.logCommandResult(result, CommandExecutor.prettifyCommandExecutorCommand(commandToExecute, false), process.hrtime.bigint(), commandToExecute.commandRoot);
+                    return reject(new CommandExecutionNonZeroExitFailure(new EventBasedError('CommandExecutionNonZeroExitFailure', ''), null));
+                }
+                else
+                {
+                    // signal is a string or obj, code is a number
+                    return resolve(result);
+                }
+            });
+        });
+    }
+
 
     private logCommandResult(commandResult: CommandExecutorResult, fullCommandStringForTelemetryOnly: string, commandStartTime: bigint, commandRoot: string)
     {
@@ -646,10 +689,10 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
         if (os.platform() === 'win32')
         {
             const setShellVariable = CommandExecutor.makeCommand(`set`, [`${variable}=${value}`]);
-            const setSystemVariable = CommandExecutor.makeCommand(`setx`, [`${variable}`, `"${value}"`]);
+            const setSystemVariable = CommandExecutor.makeCommand(`setx`, [`${variable}`, `${value}`]);
             try
             {
-                const shellEditResponse = (await this.execute(setShellVariable, null, false)).status;
+                const shellEditResponse = (await this.execute(setShellVariable, { shell: true }, false)).status;
                 environmentEditExitCode += Number(shellEditResponse[0]);
                 const systemEditResponse = (await this.execute(setSystemVariable, null, false)).status
                 environmentEditExitCode += Number(systemEditResponse[0]);
