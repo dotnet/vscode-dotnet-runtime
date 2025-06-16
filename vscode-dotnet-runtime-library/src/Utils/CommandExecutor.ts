@@ -535,7 +535,7 @@ ${stderr}`));
         {
             const child = proc.spawn(commandToExecute.commandRoot, commandToExecute.commandParts, {
                 ...options,
-                stdio: ['pipe', 'pipe', 'pipe'], // Capture stdout and stderr
+                stdio: ['ignore', 'pipe', 'pipe'], // Ignore stdin (we won't send any input), Capture stdout and stderr
             });
 
             let stdout = '';
@@ -689,7 +689,6 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
         if (os.platform() === 'win32')
         {
             const setShellVariable = CommandExecutor.makeCommand(`set`, [`${variable}=${value}`]);
-            // "" does not escape but instead provides it as a string
             const setSystemVariable = CommandExecutor.makeCommand(`setx`, [`${variable}`, `${value}`]);
             try
             {
