@@ -37,16 +37,19 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
 
         try
         {
-            const availableSDKs = await this.getSDKs(dotnetExecutablePath, requirement.acquireContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(), ExecutableArchitectureDetector.IsKnownArchitecture(hostArch));
-            const finalHostArch = ExecutableArchitectureDetector.IsKnownArchitecture(hostArch) ? hostArch : availableSDKs?.at(0)?.architecture ?? await this.getHostArchitecture(dotnetExecutablePath, requirement);
-            if (availableSDKs.some((sdk) =>
+            if (requirement.acquireContext.mode === 'sdk')
             {
-                return this.stringArchitectureMeetsRequirement(finalHostArch!, requirement.acquireContext.architecture) &&
-                    this.stringVersionMeetsRequirement(sdk.version, requirement.acquireContext.version, requirement) && this.allowPreview(sdk.version, requirement);
-            }))
-            {
-                this.workerContext.eventStream.post(new DotnetConditionsValidated(`${dotnetExecutablePath} satisfies the conditions.`));
-                return true;
+                const availableSDKs = await this.getSDKs(dotnetExecutablePath, requirement.acquireContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(), ExecutableArchitectureDetector.IsKnownArchitecture(hostArch));
+                const finalHostArch = ExecutableArchitectureDetector.IsKnownArchitecture(hostArch) ? hostArch : availableSDKs?.at(0)?.architecture ?? await this.getHostArchitecture(dotnetExecutablePath, requirement);
+                if (availableSDKs.some((sdk) =>
+                {
+                    return this.stringArchitectureMeetsRequirement(finalHostArch!, requirement.acquireContext.architecture) &&
+                        this.stringVersionMeetsRequirement(sdk.version, requirement.acquireContext.version, requirement) && this.allowPreview(sdk.version, requirement);
+                }))
+                {
+                    this.workerContext.eventStream.post(new DotnetConditionsValidated(`${dotnetExecutablePath} satisfies the conditions.`));
+                    return true;
+                }
             }
             else
             {
@@ -62,12 +65,12 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
                     this.workerContext.eventStream.post(new DotnetConditionsValidated(`${dotnetExecutablePath} satisfies the conditions.`));
                     return true;
                 }
+            }
 
-                this.workerContext.eventStream.post(new DotnetFindPathDidNotMeetCondition(`${dotnetExecutablePath} did NOT satisfy the conditions: hostArch: ${hostArch}, requiredArch: ${requirement.acquireContext.architecture},
+            this.workerContext.eventStream.post(new DotnetFindPathDidNotMeetCondition(`${dotnetExecutablePath} did NOT satisfy the conditions: hostArch: ${hostArch}, requiredArch: ${requirement.acquireContext.architecture},
             required version: ${requirement.acquireContext.version}, required mode: ${requirement.acquireContext.mode}`));
 
-                return false;
-            }
+            return false;
         }
         finally
         {
