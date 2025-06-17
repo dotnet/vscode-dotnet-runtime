@@ -373,19 +373,26 @@ suite('DotnetConditionValidator Unit Tests', function ()
 
     test('It does not call info or list-runtimes for known architectures', async () =>
     {
-        const acquisitionContext = getMockAcquisitionContext('runtime', '8.0');
-        acquisitionContext.eventStream = eventStream;
-        const mockExecutor = new MockCommandExecutor(acquisitionContext, utilityContext);
-        const conditionValidator = new DotnetConditionValidator(acquisitionContext, utilityContext, mockExecutor);
+        const { validator, mockEventStream, mockExecutorWithEventStream } = makeValidatorWithMockExecutorAndEventStream();
 
+        mockExecutorWithEventStream.otherCommandPatternsToMock = [
+            '--list-sdks',
+            '--list-runtimes --arch invalid-arch',
+            '--info'
+        ];
+        mockExecutorWithEventStream.otherCommandsReturnValues = [
+            { status: '0', stdout: "10.0.100 [C:\\Program Files\\dotnet\\sdk]", stderr: '' }, // --list-sdks
+            { status: '0', stdout: 'Microsoft.NETCore.App 10.0.1 [C:\\Program Files\\dotnet\\shared\\Microsoft.NETCore.App]', stderr: '' }, // --list-runtimes --arch invalid-arch
+            { status: '0', stdout: 'Architecture: x64', stderr: '' } // --info
+        ];
         // Test runtimes with knownArchitecture = true
-        await conditionValidator.getRuntimes('dotnet', os.arch(), true);
+        await validator.getRuntimes('dotnet', os.arch(), true);
 
         // Test SDKs with knownArchitecture = true
-        await conditionValidator.getSDKs('dotnet', os.arch(), true);
+        await validator.getSDKs('dotnet', os.arch(), true);
 
         // Verify that no commands were executed with --list-runtimes or --info
-        const executedCommands = eventStream.events
+        const executedCommands = mockEventStream.events
             .filter(event => event instanceof CommandExecutionEvent);
 
         assert.isFalse(

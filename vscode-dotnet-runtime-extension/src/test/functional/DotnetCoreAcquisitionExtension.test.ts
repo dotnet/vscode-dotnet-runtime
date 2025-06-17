@@ -424,12 +424,12 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
     }).timeout(standardTimeoutTime);
 
 
-    test('Find dotnet PATH Command No Arch Available But Accept By Default', async () =>
+    test('Find dotnet PATH Command No Arch Available But Arch Found From File', async () =>
     {
         // look for a different architecture of 3.1
         if (os.platform() !== 'darwin')
         {
-            await findPathWithRequirementAndInstall('3.1', 'runtime', os.arch() == 'arm64' ? 'x64' : os.arch(), 'greater_than_or_equal', true,
+            await findPathWithRequirementAndInstall('3.1', 'runtime', os.arch() == 'arm64' ? 'x64' : os.arch(), 'greater_than_or_equal', false,
                 { version: '3.1', mode: 'runtime', architecture: 'arm64', requestingExtensionId: requestingExtensionId }
             );
         }
