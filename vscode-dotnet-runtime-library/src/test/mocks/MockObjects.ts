@@ -397,9 +397,13 @@ export class MockCommandExecutor extends ICommandExecutor
         {
             const commandPatternToLookFor = this.otherCommandPatternsToMock[i];
             if (command.commandRoot.includes(commandPatternToLookFor) ||
-                command.commandParts.some((arg) => arg.includes(commandPatternToLookFor)))
+                command.commandParts.some((arg) => commandPatternToLookFor.includes(arg)))
             {
-                const indexOfExactMatch = this.otherCommandPatternsToMock.indexOf(this.attemptedCommand);
+                let indexOfExactMatch = this.otherCommandPatternsToMock.indexOf(this.attemptedCommand);
+                if (indexOfExactMatch === -1)
+                {
+                    indexOfExactMatch = this.otherCommandPatternsToMock.indexOf(command.commandParts.join(' '));
+                }
                 if (indexOfExactMatch !== -1)
                 {
                     // If we have an exact match, return the value for that command.
