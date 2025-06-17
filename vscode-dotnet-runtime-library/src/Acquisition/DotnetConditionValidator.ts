@@ -30,7 +30,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
 
     public async dotnetMeetsRequirement(dotnetExecutablePath: string, requirement: IDotnetFindPathContext): Promise<boolean>
     {
-        let hostArch = new ExecutableArchitectureDetector().getExecutableArchitecture(dotnetExecutablePath);
+        const hostArch = new ExecutableArchitectureDetector().getExecutableArchitecture(dotnetExecutablePath);
         const oldLookup = process.env.DOTNET_MULTILEVEL_LOOKUP;
         // This is deprecated but still needed to scan .NET 6 and below
         process.env.DOTNET_MULTILEVEL_LOOKUP = '0'; // make it so --list-runtimes only finds the runtimes on that path: https://learn.microsoft.com/en-us/dotnet/core/compatibility/deployment/7.0/multilevel-lookup#reason-for-change

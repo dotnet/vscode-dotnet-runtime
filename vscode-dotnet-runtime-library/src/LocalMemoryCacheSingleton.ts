@@ -136,7 +136,8 @@ export class LocalMemoryCacheSingleton
         let optionsString = '{';
         sortedKeys.forEach((k, index) =>
         {
-            const v = key.options[k];
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            const v = key.options?.[k];
             // Apply same replacer logic
             let value = v;
             if (k === 'dotnetInstallToolCacheTtlMs')
