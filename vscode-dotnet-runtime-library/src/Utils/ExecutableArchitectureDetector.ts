@@ -17,21 +17,21 @@ export class ExecutableArchitectureDetector
      */
     private static readonly EXECUTABLEFILESIGNATURES =
         {
-            // ELF Magic: 0x7F followed by 'ELF' in ASCII
+            // ELF Format: 0x7F followed by 'ELF' in ASCII
             ELF: {
                 DELIMITER: 0x7F,
                 E: 0x45,
                 L: 0x4C,
                 F: 0x46
             },
-            // Mach-O Magic: 0xCF 0xFA 0xED 0xFE (Little-endian format)
+            // Mach-O Format: 0xCF 0xFA 0xED 0xFE (Little-endian format)
             MACHO: {
                 CF: 0xCF,
                 FA: 0xFA,
                 ED: 0xED,
                 FE: 0xFE
             },
-            // DOS/PE Magic: 'MZ' in ASCII (Mark Zebinski, format creator)
+            // DOS/PE Format: 'MZ' in ASCII (Mark Zbikowski, format creator)
             PE: {
                 M: 0x4D,
                 Z: 0x5A
@@ -43,20 +43,19 @@ export class ExecutableArchitectureDetector
      * Supports Windows PE/COFF, macOS Mach-O, and Linux ELF formats.
      *
      * @param executablePath Full path to the executable file
-     * @returns The target architecture or null if it cannot be determined
+     * @returns The target architecture or null if it cannot be determined.
+     * Supported values are 'x86', 'x64', 'arm64', 'other', or null if the file is not recognized.
      */
     public getExecutableArchitecture(executablePath: string): Architecture
     {
         try
         {
-            // Create a buffer for reading the header
+            // Create a buffer for reading the header, which is a maximum of 64 bytes for our purposes.
             const headerBuffer = Buffer.alloc(64);
             const fd = readFileSync(executablePath);
 
-            // Read only the first 64 bytes
             fd.copy(headerBuffer, 0, 0, 64);
 
-            // Check for valid file size
             if (headerBuffer.length < 64)
             {
                 return null;
@@ -66,10 +65,12 @@ export class ExecutableArchitectureDetector
             if (this.isElfFormat(headerBuffer))
             {
                 return this.getElfArchitecture(headerBuffer);
-            } else if (this.isMachOFormat(headerBuffer))
+            }
+            else if (this.isMachOFormat(headerBuffer))
             {
                 return this.getMachOArchitecture(headerBuffer);
-            } else if (this.isPEFormat(headerBuffer))
+            }
+            else if (this.isPEFormat(headerBuffer))
             {
                 return this.getPEArchitecture(executablePath);
             }
