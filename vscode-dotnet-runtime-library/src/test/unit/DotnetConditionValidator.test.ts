@@ -371,7 +371,7 @@ suite('DotnetConditionValidator Unit Tests', function ()
         assert.isNull(sdks[0].architecture, 'Architecture should be null when --arch is not supported');
     }).timeout(defaultTimeoutTimeMs);
 
-    test('It does not call info or list-runtimes for known invalid architectures', async () =>
+    test('It does not call info or list-runtimes for known architectures', async () =>
     {
         const eventStream = new MockEventStream();
         const acquisitionContext = getMockAcquisitionContext('runtime', '8.0');
