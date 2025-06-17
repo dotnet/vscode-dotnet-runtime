@@ -6,8 +6,8 @@
 
 import * as nodeCache from 'node-cache';
 import { IAcquisitionWorkerContext } from "./Acquisition/IAcquisitionWorkerContext";
-import { CacheClearEvent, CacheGetEvent, CachePutEvent } from "./EventStream/EventStreamEvents";
-import { TelemetryUtilities } from './EventStream/TelemetryUtilities';
+import { IEventStream } from './EventStream/EventStream';
+import { CacheAliasCreated, CacheClearEvent, CacheGetEvent, CachePutEvent } from "./EventStream/EventStreamEvents";
 import { CommandExecutor } from "./Utils/CommandExecutor";
 import { CommandExecutorCommand } from "./Utils/CommandExecutorCommand";
 import { CommandExecutorResult } from "./Utils/CommandExecutorResult";
@@ -30,6 +30,8 @@ export class LocalMemoryCacheSingleton
     protected static instance: LocalMemoryCacheSingleton;
 
     protected cache: nodeCache = new nodeCache();
+
+    private commandRootAliases: Map<string, string> = new Map<string, string>();
 
     protected constructor(public readonly timeToLiveMultiplier = 1)
     {
@@ -67,6 +69,10 @@ export class LocalMemoryCacheSingleton
 
     public getCommand(key: CacheableCommand, context: IAcquisitionWorkerContext): CommandExecutorResult | undefined
     {
+        if (this.commandRootAliases.has(key.command.commandRoot))
+        {
+            key.command.commandRoot = this.commandRootAliases.get(key.command.commandRoot) ?? key.command.commandRoot;
+        }
         return this.get(this.cacheableCommandToKey(key), context);
     }
 
@@ -93,7 +99,26 @@ export class LocalMemoryCacheSingleton
     {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         const ttl = key.options?.dotnetInstallToolCacheTtlMs ?? 5000;
+        if (this.commandRootAliases.has(key.command.commandRoot))
+        {
+            key.command.commandRoot = this.commandRootAliases.get(key.command.commandRoot) ?? key.command.commandRoot;
+        }
+
         return this.put(this.cacheableCommandToKey(key), obj, { ttlMs: ttl } as LocalMemoryCacheMetadata, context);
+    }
+
+    /**
+     *
+     * @param commandRootAlias The root of the command that will result in the same output. Example: if we know "dotnet" is "C:\\Program Files\\dotnet\\dotnet.exe"
+     * @param aliasedCommandRoot The identical command that had likely already been cached.
+     * @remarks This does not work in the opposite direction. If you alias "dotnet" to "dotnet2", it will not alias "dotnet2" to "dotnet".
+     * Trying that will result in neither command being cache aliased to one another.
+     * Basically, this will replace all command checks in the cache that have the commandRoot of `commandRootAlias` with the `aliasedCommandRoot`.
+     */
+    public aliasCommandAsAnotherCommandRoot(commandRootAlias: string, aliasedCommandRoot: string, eventStream: IEventStream): void
+    {
+        eventStream.post(new CacheAliasCreated(`Aliasing command root ${commandRootAlias} to ${aliasedCommandRoot}`));
+        this.commandRootAliases.set(commandRootAlias, aliasedCommandRoot);
     }
 
     public invalidate(context?: IAcquisitionWorkerContext): void
@@ -104,19 +129,35 @@ export class LocalMemoryCacheSingleton
 
     private cacheableCommandToKey(key: CacheableCommand): string
     {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        return `${CommandExecutor.prettifyCommandExecutorCommand(key.command)}${JSON.stringify(key.options, function replacer(k, v)
+        // Get all keys sorted
+        const sortedKeys = Object.keys(key.options).sort();
+
+        // Build ordered string manually
+        let optionsString = '{';
+        sortedKeys.forEach((k, index) =>
         {
-            // Replace the dotnetInstallToolCacheTtlMs key with undefined so that it doesn't affect the cache key.
+            const v = key.options[k];
+            // Apply same replacer logic
+            let value = v;
             if (k === 'dotnetInstallToolCacheTtlMs')
             {
-                return undefined;
-            }
-            else if (k === 'env')
+                value = undefined;
+            } else if (k === 'env')
             {
-                return `${minimizeEnvironment(v)}`;
+                value = minimizeEnvironment(v);
             }
-            return v;
-        })}`;
+
+            if (value !== undefined)
+            {
+                optionsString += `"${k}":${JSON.stringify(value)}`;
+                if (index < sortedKeys.length - 1)
+                {
+                    optionsString += ',';
+                }
+            }
+        });
+        optionsString += '}';
+
+        return `${CommandExecutor.prettifyCommandExecutorCommand(key.command)}${optionsString}`;
     }
 };
