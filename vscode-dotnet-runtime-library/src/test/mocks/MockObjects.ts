@@ -392,11 +392,6 @@ export class MockCommandExecutor extends ICommandExecutor
     {
         this.attemptedCommand = CommandExecutor.prettifyCommandExecutorCommand(command);
 
-        if (this.shouldActuallyExecuteCommand(command))
-        {
-            return this.trueExecutor.execute(command, options, terminalFailure);
-        }
-
         this.acquisitionContext.eventStream.post(new CommandExecutionEvent(`Executing command: ${this.attemptedCommand}`));
         for (let i = 0; i < this.otherCommandPatternsToMock.length; ++i)
         {
@@ -412,6 +407,11 @@ export class MockCommandExecutor extends ICommandExecutor
                 }
                 return this.otherCommandsReturnValues[i];
             }
+        }
+
+        if (this.shouldActuallyExecuteCommand(command))
+        {
+            return this.trueExecutor.execute(command, options, terminalFailure);
         }
 
         return this.fakeReturnValue;

@@ -623,7 +623,7 @@ the fake dotnet path setting is an empty dir -- if it is not empty, test cleanup
 
         // acquire with the alternative extension id which has a path setting set to the fake path
         // If the setting is bad then it should also acquire somewhere else.
-        const context: IDotnetAcquireContext = { version: '5.0', requestingExtensionId: 'alternative.extension', architecture: os.platform() };
+        const context: IDotnetAcquireContext = { version: '5.0', requestingExtensionId: 'alternative.extension', architecture: os.arch() };
 
         const resultForAcquiringPathSettingRuntime = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
         assert.exists(resultForAcquiringPathSettingRuntime!.dotnetPath, 'Basic acquire works');
