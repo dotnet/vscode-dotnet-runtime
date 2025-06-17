@@ -16,10 +16,11 @@
 		"vscode:prepublish": "npm run compile && dotnet build ../msbuild/signJs --property jsOutputPath=..\\..\\vscode-dotnet-runtime-library\\dist -bl -v:normal",
 		"compile": "npm run clean && tsc -p ./ && npm run mockPack",
 		"mockPack": "run-script-os",
+		"copyTestAssets": "copyfiles -u 4 \"src/test/mocks/Executables/**/*\" dist/test/mocks/Executables/",
 		"mockPack:darwin:linux": "cd .. && sh ./mock-webpack.sh && cd vscode-dotnet-runtime-library",
 		"mockPack:win32": "pushd .. && @powershell -NoProfile -ExecutionPolicy Unrestricted -Command ./mock-webpack.ps1 && popd",
 		"watch": "npm run clean && tsc -watch -p ./",
-		"test": "npm run compile --silent && npm run unit-test",
+		"test": "npm run compile --silent && npm run copyTestAssets && npm run unit-test",
 		"unit-test": "mocha -u tdd -- dist/test/unit/**.test.js",
 		"clean": "rimraf dist"
 	},
@@ -27,6 +28,7 @@
 		"@types/chai": "4.2.22",
 		"@types/lodash": "^4.17.13",
 		"@types/proper-lockfile": "^4.1.2",
+		"copyfiles": "^2.4.1",
 		"glob": "^7.2.0"
 	},
 	"dependencies": {

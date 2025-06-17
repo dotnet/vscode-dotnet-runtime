@@ -6,6 +6,7 @@ import { DotnetConditionsValidated, DotnetFindPathDidNotMeetCondition, DotnetUna
 import { IDotnetFindPathContext } from '../IDotnetFindPathContext';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { CommandExecutorCommand } from '../Utils/CommandExecutorCommand';
+import { ExecutableArchitectureDetector } from '../Utils/ExecutableArchitectureDetector';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
@@ -29,7 +30,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
 
     public async dotnetMeetsRequirement(dotnetExecutablePath: string, requirement: IDotnetFindPathContext): Promise<boolean>
     {
-        let hostArch = '';
+        const hostArch = new ExecutableArchitectureDetector().getExecutableArchitecture(dotnetExecutablePath);
         const oldLookup = process.env.DOTNET_MULTILEVEL_LOOKUP;
         // This is deprecated but still needed to scan .NET 6 and below
         process.env.DOTNET_MULTILEVEL_LOOKUP = '0'; // make it so --list-runtimes only finds the runtimes on that path: https://learn.microsoft.com/en-us/dotnet/core/compatibility/deployment/7.0/multilevel-lookup#reason-for-change
@@ -38,11 +39,11 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
         {
             if (requirement.acquireContext.mode === 'sdk')
             {
-                const availableSDKs = await this.getSDKs(dotnetExecutablePath, requirement.acquireContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
-                hostArch = availableSDKs?.at(0)?.architecture ?? await this.getHostArchitecture(dotnetExecutablePath, requirement);
+                const availableSDKs = await this.getSDKs(dotnetExecutablePath, requirement.acquireContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(), ExecutableArchitectureDetector.IsKnownArchitecture(hostArch));
+                const finalHostArch = ExecutableArchitectureDetector.IsKnownArchitecture(hostArch) ? hostArch : availableSDKs?.at(0)?.architecture ?? await this.getHostArchitecture(dotnetExecutablePath, requirement);
                 if (availableSDKs.some((sdk) =>
                 {
-                    return this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) &&
+                    return this.stringArchitectureMeetsRequirement(finalHostArch!, requirement.acquireContext.architecture) &&
                         this.stringVersionMeetsRequirement(sdk.version, requirement.acquireContext.version, requirement) && this.allowPreview(sdk.version, requirement);
                 }))
                 {
@@ -53,11 +54,11 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
             else
             {
                 // No need to consider SDKs when looking for runtimes as all the runtimes installed with the SDKs will be included in the runtimes list.
-                const availableRuntimes = await this.getRuntimes(dotnetExecutablePath, requirement.acquireContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
-                hostArch = availableRuntimes?.at(0)?.architecture ?? await this.getHostArchitecture(dotnetExecutablePath, requirement);
+                const availableRuntimes = await this.getRuntimes(dotnetExecutablePath, requirement.acquireContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(), ExecutableArchitectureDetector.IsKnownArchitecture(hostArch));
+                const finalHostArch = ExecutableArchitectureDetector.IsKnownArchitecture(hostArch) ? hostArch : availableRuntimes?.at(0)?.architecture ?? await this.getHostArchitecture(dotnetExecutablePath, requirement);
                 if (availableRuntimes.some((runtime) =>
                 {
-                    return runtime.mode === requirement.acquireContext.mode && this.stringArchitectureMeetsRequirement(hostArch, requirement.acquireContext.architecture) &&
+                    return runtime.mode === requirement.acquireContext.mode && this.stringArchitectureMeetsRequirement(finalHostArch!, requirement.acquireContext.architecture) &&
                         this.stringVersionMeetsRequirement(runtime.version, requirement.acquireContext.version, requirement) && this.allowPreview(runtime.version, requirement);
                 }))
                 {
@@ -135,7 +136,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
         return hostArch;
     }
 
-    public async getSDKs(existingPath: string, requestedArchitecture: string): Promise<IDotnetListInfo[]>
+    public async getSDKs(existingPath: string, requestedArchitecture: string, knownArchitecture: boolean): Promise<IDotnetListInfo[]>
     {
         if (!existingPath || existingPath === '""')
         {
@@ -151,7 +152,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
                 return [];
             }
 
-            const hostSupportsArchFlag = await this.hostSupportsArchFlag(existingPath, result.stdout);
+            const architectureKnown = knownArchitecture ? true : await this.hostSupportsArchFlag(existingPath, result.stdout);
             const sdks = result.stdout.split('\n').map((line) => line.trim()).filter((line) => (line?.length ?? 0) > 0);
             const sdkInfos: IDotnetListInfo[] = sdks.map((sdk) =>
             {
@@ -160,7 +161,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
                     mode: 'sdk',
                     version: parts[0],
                     directory: sdk.split(' ').slice(1).join(' ').slice(1, -1), // need to remove the brackets from the path [path],
-                    architecture: hostSupportsArchFlag ? requestedArchitecture : null
+                    architecture: architectureKnown ? requestedArchitecture : null
                 } as IDotnetListInfo;
             }).filter(x => x !== null) as IDotnetListInfo[];
 
@@ -327,7 +328,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
         return CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-runtimes', '--arch', requestedArchitecture]);
     }
 
-    public async getRuntimes(existingPath: string, requestedArchitecture: string | null): Promise<IDotnetListInfo[]>
+    public async getRuntimes(existingPath: string, requestedArchitecture: string | null, knownArchitecture: boolean): Promise<IDotnetListInfo[]>
     {
         if (!existingPath || existingPath === '""')
         {
@@ -347,7 +348,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
                 return [];
             }
 
-            const hostSupportsArchFlag = await this.hostSupportsArchFlag(existingPath, result.stdout);
+            const architectureKnown = knownArchitecture ? true : await this.hostSupportsArchFlag(existingPath, result.stdout);
             const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => (line?.length ?? 0) > 0);
             const runtimeInfos: IDotnetListInfo[] = runtimes.map((runtime) =>
             {
@@ -357,7 +358,7 @@ Please set the PATH to a dotnet host that matches the architecture ${requirement
                     version: parts[1],
                     directory: runtime.split(' ').slice(2).join(' ').slice(1, -1), // account for spaces in PATH, no space should appear before then and luckily path is last.
                     // the 2nd slice needs to remove the brackets from the path [path]
-                    architecture: hostSupportsArchFlag ? requestedArchitecture : null
+                    architecture: architectureKnown ? requestedArchitecture : null
                 } as IDotnetListInfo;
             }).filter(x => x !== null) as IDotnetListInfo[];
 

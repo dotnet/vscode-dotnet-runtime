@@ -4,6 +4,7 @@
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
 import * as lodash from 'lodash';
+import * as os from 'os';
 import { DotnetConditionValidator } from '../../Acquisition/DotnetConditionValidator';
 import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 import { DotnetVersionSpecRequirement } from '../../DotnetVersionSpecRequirement';
@@ -249,30 +250,28 @@ suite('DotnetConditionValidator Unit Tests', function ()
         };
         const mockExecutorWithEventStream = new MockCommandExecutor(acquisitionContextWithEventStream, utilityContext);
         const validator = new DotnetConditionValidator(acquisitionContextWithEventStream, utilityContext, mockExecutorWithEventStream);
-        return { validator, mockEventStream };
+        return { validator, mockEventStream, mockExecutorWithEventStream };
     }
 
     test('getSDKs and getRuntimes do not call dotnet --info if --arch is supported', async () =>
     {
-        const { validator, mockEventStream } = makeValidatorWithMockExecutorAndEventStream();
+        const { validator, mockEventStream, mockExecutorWithEventStream } = makeValidatorWithMockExecutorAndEventStream();
 
-        mockExecutor.otherCommandPatternsToMock = [
-            '--list-sdks',
-            '--list-runtimes',
+        mockExecutorWithEventStream.otherCommandPatternsToMock = [
+            '--list-sdks --arch arm64',
+            '--list-runtimes --arch arm64',
             '--list-runtimes --arch invalid-arch',
             '--info'
         ];
-        mockExecutor.otherCommandsReturnValues = [
+        mockExecutorWithEventStream.otherCommandsReturnValues = [
             { status: '0', stdout: "10.0.100 [C:\\Program Files\\dotnet\\sdk]", stderr: '' }, // --list-sdks
             { status: '0', stdout: "Microsoft.NETCore.App 10.0.1 [C:\\Program Files\\dotnet\\shared\\Microsoft.NETCore.App]", stderr: '' }, // --list-runtimes
             { status: '1', stdout: '', stderr: 'error: unrecognized architecture' }, // --list-runtimes --arch invalid-arch
-            { status: '0', stdout: 'Architecture: x64', stderr: '' } // --info
+            { status: '0', stdout: 'Architecture: arm64', stderr: '' } // --info
         ];
 
-        (validator as any).hostSupportsArchFlag = async () => true;
-
-        const sdks = await validator.getSDKs('dotnet', 'arm64');
-        const runtimes = await validator.getRuntimes('dotnet', 'arm64');
+        const sdks = await validator.getSDKs('dotnet', 'arm64', false);
+        const runtimes = await validator.getRuntimes('dotnet', 'arm64', false);
 
         // Also test through dotnetMeetsRequirement
         const requirement = {
@@ -296,15 +295,15 @@ suite('DotnetConditionValidator Unit Tests', function ()
 
     test('getSDKs and getRuntimes call dotnet --info if --arch is not supported', async () =>
     {
-        const { validator, mockEventStream } = makeValidatorWithMockExecutorAndEventStream();
+        const { validator, mockEventStream, mockExecutorWithEventStream } = makeValidatorWithMockExecutorAndEventStream();
 
-        mockExecutor.otherCommandPatternsToMock = [
+        mockExecutorWithEventStream.otherCommandPatternsToMock = [
             '--list-sdks',
             '--list-runtimes',
             '--list-runtimes --arch invalid-arch',
             '--info'
         ];
-        mockExecutor.otherCommandsReturnValues = [
+        mockExecutorWithEventStream.otherCommandsReturnValues = [
             { status: '0', stdout: "9.0.100 [C:\\Program Files\\dotnet\\sdk]", stderr: '' }, // --list-sdks
             { status: '0', stdout: "Microsoft.NETCore.App 9.0.1 [C:\\Program Files\\dotnet\\shared\\Microsoft.NETCore.App]", stderr: '' }, // --list-runtimes
             { status: '0', stdout: 'Microsoft.NETCore.App 9.0.1 [C:\\Program Files\\dotnet\\shared\\Microsoft.NETCore.App]', stderr: '' }, // --list-runtimes --arch invalid-arch
@@ -313,8 +312,8 @@ suite('DotnetConditionValidator Unit Tests', function ()
 
         (validator as any).hostSupportsArchFlag = async () => false;
 
-        const sdks = await validator.getSDKs('dotnet', 'arm64');
-        const runtimes = await validator.getRuntimes('dotnet', 'arm64');
+        const sdks = await validator.getSDKs('dotnet', 'arm64', false);
+        const runtimes = await validator.getRuntimes('dotnet', 'arm64', false);
 
         // Also test through dotnetMeetsRequirement
         const requirement = {
@@ -338,20 +337,20 @@ suite('DotnetConditionValidator Unit Tests', function ()
 
     test('dotnet --info is called if .NET 10 is detected but invalid arch returns status 0', async () =>
     {
-        const { validator, mockEventStream } = makeValidatorWithMockExecutorAndEventStream();
+        const { validator, mockEventStream, mockExecutorWithEventStream } = makeValidatorWithMockExecutorAndEventStream();
 
-        mockExecutor.otherCommandPatternsToMock = [
+        mockExecutorWithEventStream.otherCommandPatternsToMock = [
             '--list-sdks',
             '--list-runtimes --arch invalid-arch',
             '--info'
         ];
-        mockExecutor.otherCommandsReturnValues = [
+        mockExecutorWithEventStream.otherCommandsReturnValues = [
             { status: '0', stdout: "10.0.100 [C:\\Program Files\\dotnet\\sdk]", stderr: '' }, // --list-sdks
             { status: '0', stdout: 'Microsoft.NETCore.App 10.0.1 [C:\\Program Files\\dotnet\\shared\\Microsoft.NETCore.App]', stderr: '' }, // --list-runtimes --arch invalid-arch
             { status: '0', stdout: 'Architecture: x64', stderr: '' } // --info
         ];
 
-        const sdks = await validator.getSDKs('dotnet', 'arm64');
+        const sdks = await validator.getSDKs('dotnet', 'arm64', false);
 
         // Also test through dotnetMeetsRequirement
         const requirement = {
@@ -372,4 +371,38 @@ suite('DotnetConditionValidator Unit Tests', function ()
         assert.isNull(sdks[0].architecture, 'Architecture should be null when --arch is not supported');
     }).timeout(defaultTimeoutTimeMs);
 
+    test('It does not call info or list-runtimes for known architectures', async () =>
+    {
+        const { validator, mockEventStream, mockExecutorWithEventStream } = makeValidatorWithMockExecutorAndEventStream();
+
+        mockExecutorWithEventStream.otherCommandPatternsToMock = [
+            '--list-sdks',
+            '--list-runtimes --arch invalid-arch',
+            '--info'
+        ];
+        mockExecutorWithEventStream.otherCommandsReturnValues = [
+            { status: '0', stdout: "10.0.100 [C:\\Program Files\\dotnet\\sdk]", stderr: '' }, // --list-sdks
+            { status: '0', stdout: 'Microsoft.NETCore.App 10.0.1 [C:\\Program Files\\dotnet\\shared\\Microsoft.NETCore.App]', stderr: '' }, // --list-runtimes --arch invalid-arch
+            { status: '0', stdout: 'Architecture: x64', stderr: '' } // --info
+        ];
+        // Test runtimes with knownArchitecture = true
+        await validator.getRuntimes('dotnet', os.arch(), true);
+
+        // Test SDKs with knownArchitecture = true
+        await validator.getSDKs('dotnet', os.arch(), true);
+
+        // Verify that no commands were executed with --list-runtimes or --info
+        const executedCommands = mockEventStream.events
+            .filter(event => event instanceof CommandExecutionEvent);
+
+        assert.isFalse(
+            executedCommands.some(cmd => cmd.eventMessage.includes('--info')),
+            'It should not execute --info command when architecture is known'
+        );
+
+        assert.isFalse(
+            executedCommands.some(cmd => cmd.eventMessage.includes('invalid-arch')),
+            'It should not execute commands with invalid-arch when architecture is known'
+        );
+    });
 });

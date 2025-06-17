@@ -388,7 +388,7 @@ export class DotnetPathFinder implements IDotnetPathFinder
         {
             // This will even work if only the sdk is installed, list-runtimes on an sdk installed host would work
             const validator = new DotnetConditionValidator(this.workerContext, this.utilityContext, this.executor);
-            const runtimeInfo = await validator.getRuntimes(tentativePath, requestedArchitecture);
+            const runtimeInfo = await validator.getRuntimes(tentativePath, requestedArchitecture, true);
             if ((runtimeInfo?.length ?? 0) > 0)
             {
                 // q.t. from @dibarbet on the C# Extension:
