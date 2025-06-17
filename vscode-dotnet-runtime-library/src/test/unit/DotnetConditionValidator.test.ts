@@ -4,6 +4,7 @@
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
 import * as lodash from 'lodash';
+import * as os from 'os';
 import { DotnetConditionValidator } from '../../Acquisition/DotnetConditionValidator';
 import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 import { DotnetVersionSpecRequirement } from '../../DotnetVersionSpecRequirement';
@@ -269,10 +270,8 @@ suite('DotnetConditionValidator Unit Tests', function ()
             { status: '0', stdout: 'Architecture: x64', stderr: '' } // --info
         ];
 
-        (validator as any).hostSupportsArchFlag = async () => true;
-
-        const sdks = await validator.getSDKs('dotnet', 'arm64');
-        const runtimes = await validator.getRuntimes('dotnet', 'arm64');
+        const sdks = await validator.getSDKs('dotnet', 'arm64', false);
+        const runtimes = await validator.getRuntimes('dotnet', 'arm64', false);
 
         // Also test through dotnetMeetsRequirement
         const requirement = {
@@ -313,8 +312,8 @@ suite('DotnetConditionValidator Unit Tests', function ()
 
         (validator as any).hostSupportsArchFlag = async () => false;
 
-        const sdks = await validator.getSDKs('dotnet', 'arm64');
-        const runtimes = await validator.getRuntimes('dotnet', 'arm64');
+        const sdks = await validator.getSDKs('dotnet', 'arm64', false);
+        const runtimes = await validator.getRuntimes('dotnet', 'arm64', false);
 
         // Also test through dotnetMeetsRequirement
         const requirement = {
@@ -351,7 +350,7 @@ suite('DotnetConditionValidator Unit Tests', function ()
             { status: '0', stdout: 'Architecture: x64', stderr: '' } // --info
         ];
 
-        const sdks = await validator.getSDKs('dotnet', 'arm64');
+        const sdks = await validator.getSDKs('dotnet', 'arm64', false);
 
         // Also test through dotnetMeetsRequirement
         const requirement = {
@@ -372,4 +371,32 @@ suite('DotnetConditionValidator Unit Tests', function ()
         assert.isNull(sdks[0].architecture, 'Architecture should be null when --arch is not supported');
     }).timeout(defaultTimeoutTimeMs);
 
+    test('It does not call info or list-runtimes for known invalid architectures', async () =>
+    {
+        const eventStream = new MockEventStream();
+        const acquisitionContext = getMockAcquisitionContext('runtime', '8.0');
+        acquisitionContext.eventStream = eventStream;
+        const mockExecutor = new MockCommandExecutor(acquisitionContext, utilityContext);
+        const conditionValidator = new DotnetConditionValidator(acquisitionContext, utilityContext, mockExecutor);
+
+        // Test runtimes with knownArchitecture = true
+        await conditionValidator.getRuntimes('dotnet', os.arch(), true);
+
+        // Test SDKs with knownArchitecture = true
+        await conditionValidator.getSDKs('dotnet', os.arch(), true);
+
+        // Verify that no commands were executed with --list-runtimes or --info
+        const executedCommands = eventStream.events
+            .filter(event => event instanceof CommandExecutionEvent);
+
+        assert.isFalse(
+            executedCommands.some(cmd => cmd.eventMessage.includes('--info')),
+            'It should not execute --info command when architecture is known'
+        );
+
+        assert.isFalse(
+            executedCommands.some(cmd => cmd.eventMessage.includes('invalid-arch')),
+            'It should not execute commands with invalid-arch when architecture is known'
+        );
+    });
 });
