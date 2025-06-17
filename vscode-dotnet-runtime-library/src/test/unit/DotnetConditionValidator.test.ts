@@ -373,7 +373,6 @@ suite('DotnetConditionValidator Unit Tests', function ()
 
     test('It does not call info or list-runtimes for known architectures', async () =>
     {
-        const eventStream = new MockEventStream();
         const acquisitionContext = getMockAcquisitionContext('runtime', '8.0');
         acquisitionContext.eventStream = eventStream;
         const mockExecutor = new MockCommandExecutor(acquisitionContext, utilityContext);
