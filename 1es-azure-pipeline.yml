@@ -42,7 +42,7 @@ parameters:
     os: windows
     emoji: 🪟
   - name: NetCore1ESPool-Internal
-    image: 1es-ubuntu-2204
+    image: ubuntu-latest
     os: linux
     emoji: 🐧
   - name: Azure Pipelines
@@ -95,8 +95,8 @@ extends:
         parameters:
           pool:
             name: Azure Pipelines
-            image: macOS-latest
-            os: macOS
+            image: ubuntu-latest
+            os: linux
           useOneEngineeringPool: true
       - template: pipeline-templates/package-vsix.yaml@self
         parameters:
