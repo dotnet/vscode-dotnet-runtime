@@ -28,13 +28,18 @@ export class OutputChannelObserver implements IEventStreamObserver
     private readonly inProgressDownloads: string[] = [];
     private downloadProgressInterval: NodeJS.Timeout | undefined;
 
-    // private inProgressDownloads:
-    constructor(private readonly outputChannel: vscode.OutputChannel)
+    constructor(private readonly outputChannel: vscode.OutputChannel, private readonly suppressOutput: boolean = false)
     {
     }
 
+
     public post(event: IEvent): void
     {
+        if (this.suppressOutput)
+        {
+            return;
+        }
+
         switch (event.type)
         {
             case EventType.DotnetAcquisitionStart:
