@@ -225,4 +225,47 @@ ${fs.readdirSync(installerDownloadFolder).join(', ')}`);
             }
         }
     }).timeout(standardTimeoutTime);
+
+    test('InterpretExitCode returns user-friendly messages for common exit codes', () =>
+    {
+        // Test exit code 5 - insufficient permissions
+        const exitCode5Message = WinMacGlobalInstaller.InterpretExitCode('5');
+        assert.equal(exitCode5Message, 'Insufficient permissions are available to install .NET. Please run the installer as an administrator.');
+        assert.isFalse(exitCode5Message.includes('report'), 'Exit code 5 should not ask for bug reports');
+        assert.isTrue(WinMacGlobalInstaller.IsUserFriendlyExitCode('5'), 'Exit code 5 should be marked as user-friendly');
+
+        // Test exit code 1618 - another installation in progress
+        const exitCode1618Message = WinMacGlobalInstaller.InterpretExitCode('1618');
+        assert.equal(exitCode1618Message, 'Another installation is already in progress. Complete that installation before proceeding with this install.');
+        assert.isFalse(exitCode1618Message.includes('report'), 'Exit code 1618 should not ask for bug reports');
+        assert.isTrue(WinMacGlobalInstaller.IsUserFriendlyExitCode('1618'), 'Exit code 1618 should be marked as user-friendly');
+
+        // Test exit code 112 - disk full
+        const exitCode112Message = WinMacGlobalInstaller.InterpretExitCode('112');
+        assert.equal(exitCode112Message, 'The disk is full. Please free up space and try again.');
+        assert.isFalse(exitCode112Message.includes('report'), 'Exit code 112 should not ask for bug reports');
+        assert.isTrue(WinMacGlobalInstaller.IsUserFriendlyExitCode('112'), 'Exit code 112 should be marked as user-friendly');
+
+        // Test exit code 255 - terminated by another process
+        const exitCode255Message = WinMacGlobalInstaller.InterpretExitCode('255');
+        assert.equal(exitCode255Message, 'The .NET Installer was terminated by another process unexpectedly. Please try again.');
+        assert.isFalse(exitCode255Message.includes('report'), 'Exit code 255 should not ask for bug reports');
+        assert.isTrue(WinMacGlobalInstaller.IsUserFriendlyExitCode('255'), 'Exit code 255 should be marked as user-friendly');
+
+        // Test exit code 2147942405 - insufficient permissions (alternative code)
+        const exitCode2147942405Message = WinMacGlobalInstaller.InterpretExitCode('2147942405');
+        assert.equal(exitCode2147942405Message, 'Insufficient permissions are available to install .NET. Please try again as an administrator.');
+        assert.isFalse(exitCode2147942405Message.includes('report'), 'Exit code 2147942405 should not ask for bug reports');
+        assert.isTrue(WinMacGlobalInstaller.IsUserFriendlyExitCode('2147942405'), 'Exit code 2147942405 should be marked as user-friendly');
+
+        // Test exit code 1 - generic failure (should include report message)
+        const exitCode1Message = WinMacGlobalInstaller.InterpretExitCode('1');
+        assert.isTrue(exitCode1Message.includes('report'), 'Exit code 1 should ask for bug reports');
+        assert.isFalse(WinMacGlobalInstaller.IsUserFriendlyExitCode('1'), 'Exit code 1 should not be marked as user-friendly');
+
+        // Test unknown exit code
+        const unknownCodeMessage = WinMacGlobalInstaller.InterpretExitCode('9999');
+        assert.equal(unknownCodeMessage, '', 'Unknown exit codes should return empty string');
+        assert.isFalse(WinMacGlobalInstaller.IsUserFriendlyExitCode('9999'), 'Unknown exit codes should not be marked as user-friendly');
+    });
 });

@@ -85,6 +85,16 @@ We cannot verify our .NET file host at this time. Please try again later or inst
         this.registry = registryReader ?? new RegistryReader(context, utilContext);
     }
 
+    /**
+     * Determines if the given exit code has a user-friendly, self-contained error message
+     * that doesn't need additional technical details to be helpful to the user.
+     */
+    public static IsUserFriendlyExitCode(code: string): boolean
+    {
+        const userFriendlyExitCodes = ['5', '112', '255', '1618', '2147942405', UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR];
+        return userFriendlyExitCodes.includes(code);
+    }
+
     public static InterpretExitCode(code: string): string
     {
         const reportLogMessage = `Please provide your .NET Installer log (note our privacy notice), which can be found at %temp%.
