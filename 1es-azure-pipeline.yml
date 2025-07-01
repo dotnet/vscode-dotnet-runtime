@@ -95,8 +95,8 @@ extends:
         parameters:
           pool:
             name: Azure Pipelines
-            image: ubuntu-latest
-            os: linux
+            image: windows-latest
+            os: windows
           useOneEngineeringPool: true
       - template: pipeline-templates/package-vsix.yaml@self
         parameters:

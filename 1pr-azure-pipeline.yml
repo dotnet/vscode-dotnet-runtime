@@ -59,8 +59,8 @@ stages:
   - template: pipeline-templates/lint.yaml
     parameters:
       pool:
-        vmImage: ubuntu-latest
-        os: linux
+        vmImage: windows-latest
+        os: windows
       useOneEngineeringPool: false
   - template: pipeline-templates/package-vsix.yaml
     parameters:
