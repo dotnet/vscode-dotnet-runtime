@@ -3,9 +3,9 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-import * as vscode from 'vscode';
+import { IOutputChannel, ViewColumn } from '../../EventStream/IOutputChannel';
 
-export class MockOutputChannel implements vscode.OutputChannel
+export class MockOutputChannel implements IOutputChannel
 {
     name: string = 'Test';
     appendedText: string[] = [];
@@ -23,7 +23,7 @@ export class MockOutputChannel implements vscode.OutputChannel
 
     replace(value: string): void
     {
-        // Not needed for this test
+        // Not needed
     }
 
     clear(): void
@@ -33,7 +33,7 @@ export class MockOutputChannel implements vscode.OutputChannel
     }
 
     show(preserveFocus?: boolean): void;
-    show(column?: vscode.ViewColumn, preserveFocus?: boolean): void;
+    show(column?: ViewColumn, preserveFocus?: boolean): void;
     show(column?: any, preserveFocus?: any): void
     {
         // Not needed
@@ -46,6 +46,6 @@ export class MockOutputChannel implements vscode.OutputChannel
 
     dispose(): void
     {
-        // Not needed for this test
+        // Not needed
     }
 }

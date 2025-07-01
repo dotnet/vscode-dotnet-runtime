@@ -2,7 +2,6 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
-import * as vscode from 'vscode';
 import
 {
     DotnetAcquisitionAlreadyInstalled,
@@ -22,13 +21,14 @@ import
 import { EventType } from './EventType';
 import { IEvent } from './IEvent';
 import { IEventStreamObserver } from './IEventStreamObserver';
+import { IOutputChannel } from './IOutputChannel';
 
 export class OutputChannelObserver implements IEventStreamObserver
 {
     private readonly inProgressDownloads: string[] = [];
     private downloadProgressInterval: NodeJS.Timeout | undefined;
 
-    constructor(private readonly outputChannel: vscode.OutputChannel, private readonly suppressOutput: boolean = false)
+    constructor(private readonly outputChannel: IOutputChannel, private readonly suppressOutput: boolean = false)
     {
     }
 
