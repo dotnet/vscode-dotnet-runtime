@@ -12,12 +12,8 @@ and this project adheres to [Semantic Versioning].
 Breaking change: No longer download the latest runtime per every single request with `acquire`.
 Instead, update periodically, to prevent slow down on startup when new tooling must be acquired to be secure.
 
-## [2.3.7] - 2025-7
-
-Improve performance with shell utilization.
 Improve error messages and output minimization.
 Add API surface to get dotnet --list-sdks --arch or dotnet --list-runtimes --arch output.
-
 ## [2.3.6] - 2025-6-23
 
 Further performance enhancements.
