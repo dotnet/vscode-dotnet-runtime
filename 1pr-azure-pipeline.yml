@@ -31,7 +31,7 @@ parameters:
     os: windows
     emoji: 🪟
   - name: NetCore-Public
-    demands: ImageOverride -equals 1es-ubuntu-2204-open
+    demands: ImageOverride -equals build.ubuntu.2204.amd64.open
     os: linux
     emoji: 🐧
 
