@@ -186,7 +186,7 @@ export class OutputChannelObserver implements IEventStreamObserver
 
     private startDownloadIndicator()
     {
-        this.downloadProgressInterval = setInterval(() => this.outputChannel.append('.'), 1000);
+        this.downloadProgressInterval = setInterval(() => this.outputChannel.append('.'), 3000);
     }
 
     private stopDownloadIndicator()
