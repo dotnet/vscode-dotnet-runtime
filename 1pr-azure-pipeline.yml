@@ -34,6 +34,10 @@ parameters:
     demands: ImageOverride -equals build.ubuntu.2204.amd64.open
     os: linux
     emoji: 🐧
+  - name: NetCore-Public
+    vmImage: macOS-latest
+    os: macOS
+    emoji: 🍎
 
 stages:
 - stage: o # o is just used so it looks like a bullet point in the output of devops
@@ -43,7 +47,10 @@ stages:
       parameters:
         pool:
           name: ${{ image.name }}
-          demands: ${{ image.demands }}
+          ${{ if image.demands }}:
+            demands: ${{ image.demands }}
+          ${{ if image.vmImage }}:
+            vmImage: ${{ image.vmImage }}
           os: ${{ image.os }}
           emoji: ${{ image.emoji }}
         useOneEngineeringPool: false
