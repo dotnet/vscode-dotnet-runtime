@@ -20,18 +20,18 @@ variables:
   value: true
 
 # The public PR pool schema is different from the 1ES one. We use 'vmImage' which is a default azure pipeline schema. 'os' and 'name' have nothing to do with image selection here.
-# 1ES uses 'image' but defining an image this way using our public pools duseOneEngineeringPool not work as they aren't configured this way.
+# 1ES uses 'image' but defining an image this way using our public pools useOneEngineeringPool not work as they aren't configured this way.
 # We can later add the flag 'useOneEngineeringPool' or one engineering system: false or true in all tasks to determine if we use vmImage or a 1es pool object.
 parameters:
 - name: pools
   type: object
   default:
   - name: NetCore-Public
-    vmImage: windows-latest
+    demands: ImageOverride -equals 1es-windows-2022-open
     os: windows
     emoji: 🪟
   - name: NetCore-Public
-    vmImage: ubuntu-latest
+    demands: ImageOverride -equals 1es-ubuntu-2204-open
     os: linux
     emoji: 🐧
   - name: NetCore-Public
@@ -59,13 +59,13 @@ stages:
   - template: pipeline-templates/lint.yaml
     parameters:
       pool:
-        vmImage: windows-latest
+        demands: ImageOverride -equals 1es-windows-2022-open
         os: windows
       useOneEngineeringPool: false
   - template: pipeline-templates/package-vsix.yaml
     parameters:
       pool:
-        vmImage: windows-latest
+        demands: ImageOverride -equals 1es-windows-2022-open
         os: windows
       useOneEngineeringPool: false
       SignType: Test

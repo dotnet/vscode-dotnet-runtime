@@ -42,7 +42,7 @@ parameters:
     os: windows
     emoji: 🪟
   - name: NetCore1ESPool-Internal
-    image: ubuntu-latest
+    image: 1es-ubuntu-2204
     os: linux
     emoji: 🐧
   - name: Azure Pipelines
@@ -94,8 +94,8 @@ extends:
       - template: pipeline-templates/lint.yaml@self
         parameters:
           pool:
-            name: Azure Pipelines
-            image: windows-latest
+            name: NetCore1ESPool-Internal
+            image: 1es-windows-2022
             os: windows
           useOneEngineeringPool: true
       - template: pipeline-templates/package-vsix.yaml@self
