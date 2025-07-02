@@ -4,7 +4,7 @@
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
 import { DotnetInstall } from '../../Acquisition/DotnetInstall';
-import { DotnetAcquisitionCompleted, DotnetAcquisitionStarted, DotnetFileIntegrityFailureEvent } from '../../EventStream/EventStreamEvents';
+import { DotnetAcquisitionCompleted, DotnetAcquisitionStarted, DotnetExistingPathResolutionCompleted, DotnetFileIntegrityFailureEvent } from '../../EventStream/EventStreamEvents';
 import { OutputChannelObserver } from '../../EventStream/OutputChannelObserver';
 import { MockOutputChannel } from '../mocks/MockOutputChannel';
 
@@ -47,7 +47,7 @@ suite('OutputChannelObserver Unit Tests', function ()
         const observer = new OutputChannelObserver(mockOutputChannel, false);
 
         // Test with an event that produces output
-        const acquisitionStartedEvent = new DotnetAcquisitionStarted(mockInstall, 'test-extension');
+        const acquisitionStartedEvent = new DotnetExistingPathResolutionCompleted(mockInstall.installId);
         observer.post(acquisitionStartedEvent);
 
         // Verify output was written when suppressOutput is false
