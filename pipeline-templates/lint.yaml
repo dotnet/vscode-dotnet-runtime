@@ -4,10 +4,7 @@ parameters:
 jobs:
   - job: ESLint
     pool:
-      ${{ if eq(parameters.useOneEngineeringPool, 'true') }}:
-        ${{ parameters.pool }}
-      ${{ else }}:
-        vmImage: ${{ parameters.pool.vmImage }}
+      ${{ parameters.pool }}
     displayName: '🧶 ESLint'
     steps:
     - template: install-node.yaml
