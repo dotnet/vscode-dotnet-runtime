@@ -42,6 +42,7 @@ stages:
     - template: pipeline-templates/build-test.yaml
       parameters:
         pool:
+          name: ${{ image.name }}
           demands: ${{ image.demands }}
           os: ${{ image.os }}
           emoji: ${{ image.emoji }}
@@ -55,12 +56,14 @@ stages:
   - template: pipeline-templates/lint.yaml
     parameters:
       pool:
+        name: NetCore-Public
         demands: ImageOverride -equals 1es-windows-2022-open
         os: windows
       useOneEngineeringPool: false
   - template: pipeline-templates/package-vsix.yaml
     parameters:
       pool:
+        name: NetCore-Public
         demands: ImageOverride -equals 1es-windows-2022-open
         os: windows
       useOneEngineeringPool: false
