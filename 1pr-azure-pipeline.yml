@@ -34,7 +34,7 @@ parameters:
     demands: ImageOverride -equals build.ubuntu.2204.amd64.open
     os: linux
     emoji: 🐧
-  - name: NetCore-Public
+  - name: Azure Pipelines
     vmImage: macOS-latest
     os: macOS
     emoji: 🍎
