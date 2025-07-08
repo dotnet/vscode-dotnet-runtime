@@ -47,7 +47,6 @@ import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
 import { IExtensionState } from '../IExtensionState';
 import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { CommandExecutor } from '../Utils/CommandExecutor';
-import { Debugging } from '../Utils/Debugging';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { IFileUtilities } from '../Utils/IFileUtilities';
 import { getInstallFromContext, getInstallIdCustomArchitecture } from '../Utils/InstallIdUtilities';

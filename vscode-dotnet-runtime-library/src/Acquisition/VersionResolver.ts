@@ -13,7 +13,6 @@ import
     EventBasedError,
     EventCancellationError
 } from '../EventStream/EventStreamEvents';
-import { Debugging } from '../Utils/Debugging';
 import { getAssumedInstallInfo, getInstallFromContext } from '../Utils/InstallIdUtilities';
 import { WebRequestWorkerSingleton } from '../Utils/WebRequestWorkerSingleton';
 
