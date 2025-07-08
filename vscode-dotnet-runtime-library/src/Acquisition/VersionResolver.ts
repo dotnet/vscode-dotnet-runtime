@@ -169,18 +169,15 @@ export class VersionResolver implements IVersionResolver
         {
             parsedVer = null;
         }
-        Debugging.log(`Semver parsing passed: ${version}.`, this.context.eventStream);
 
         if (!parsedVer || (version.split('.').length !== 2 && version.split('.').length !== 3))
         {
-            Debugging.log(`Resolving the version: ${version} ... it is invalid!`, this.context.eventStream);
             const err = new DotnetVersionResolutionError(new EventCancellationError('DotnetVersionResolutionError',
                 `An invalid version was requested. Version: ${version}`),
                 getAssumedInstallInfo(version, this.context.acquisitionContext.mode!));
             this.context.eventStream.post(err);
             throw err.error;
         }
-        Debugging.log(`The version ${version} was determined to be valid.`, this.context.eventStream);
     }
 
     private async getReleasesInfo(mode: DotnetInstallMode): Promise<IDotnetListVersionsResult>
