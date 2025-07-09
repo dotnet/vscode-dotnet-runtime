@@ -5,10 +5,7 @@ parameters:
 jobs:
 - job: ${{ parameters.pool.os }}_Package
   pool:
-    ${{ if eq(parameters.useOneEngineeringPool, 'true') }}:
-        ${{ parameters.pool }}
-    ${{ else }}:
-        vmImage: ${{ parameters.pool.vmImage }}
+    ${{ parameters.pool }}
   displayName: '📦 Package and Publish'
   strategy:
     matrix:

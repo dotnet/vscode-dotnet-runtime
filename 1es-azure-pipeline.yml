@@ -94,9 +94,9 @@ extends:
       - template: pipeline-templates/lint.yaml@self
         parameters:
           pool:
-            name: Azure Pipelines
-            image: macOS-latest
-            os: macOS
+            name: NetCore1ESPool-Internal
+            image: 1es-windows-2022
+            os: windows
           useOneEngineeringPool: true
       - template: pipeline-templates/package-vsix.yaml@self
         parameters:
