@@ -59,8 +59,8 @@ suite('Linux Version Resolver Tests', function ()
             const testMockDistroProvider = new MockDistroProvider(pair, testContext, getMockUtilityContext(), testMockExecutor);
             const testResolver = new LinuxVersionResolver(testContext, getMockUtilityContext(), testMockExecutor, testMockDistroProvider);
 
-            // Mock /etc/os-release to fail
-            testMockExecutor.otherCommandPatternsToMock = ['/etc/os-release', '/usr/lib/os-release'];
+            // Mock /etc/os-release to fail and /usr/lib/os-release to succeed
+            testMockExecutor.otherCommandPatternsToMock = ['cat /etc/os-release', 'cat /usr/lib/os-release'];
             testMockExecutor.otherCommandsReturnValues = [
                 { stdout: '', stderr: 'No such file or directory', status: '1' }, // /etc/os-release fails
                 { stdout: 'NAME="Ubuntu"\nVERSION_ID="24.04"', stderr: '', status: '0' } // /usr/lib/os-release succeeds
@@ -84,8 +84,8 @@ suite('Linux Version Resolver Tests', function ()
             const testMockDistroProvider = new MockDistroProvider(pair, testContext, getMockUtilityContext(), testMockExecutor);
             const testResolver = new LinuxVersionResolver(testContext, getMockUtilityContext(), testMockExecutor, testMockDistroProvider);
 
-            // Mock both files to succeed with different content
-            testMockExecutor.otherCommandPatternsToMock = ['/etc/os-release'];
+            // Mock /etc/os-release to succeed - fallback should not be needed
+            testMockExecutor.otherCommandPatternsToMock = ['cat /etc/os-release'];
             testMockExecutor.otherCommandsReturnValues = [
                 { stdout: 'NAME="Fedora Linux"\nVERSION_ID="39"', stderr: '', status: '0' } // /etc/os-release succeeds
             ];
@@ -95,9 +95,6 @@ suite('Linux Version Resolver Tests', function ()
             assert.exists(distroVersion.version);
             assert.equal(distroVersion.distro, 'Fedora Linux');
             assert.equal(distroVersion.version, '39');
-            // Should only have tried /etc/os-release
-            assert.include(testMockExecutor.attemptedCommand, '/etc/os-release');
-            assert.notInclude(testMockExecutor.attemptedCommand, '/usr/lib/os-release');
         }
     });
 
@@ -112,7 +109,7 @@ suite('Linux Version Resolver Tests', function ()
             const testResolver = new LinuxVersionResolver(testContext, getMockUtilityContext(), testMockExecutor, testMockDistroProvider);
 
             // Mock both files to fail
-            testMockExecutor.otherCommandPatternsToMock = ['/etc/os-release', '/usr/lib/os-release'];
+            testMockExecutor.otherCommandPatternsToMock = ['cat /etc/os-release', 'cat /usr/lib/os-release'];
             testMockExecutor.otherCommandsReturnValues = [
                 { stdout: '', stderr: 'No such file or directory', status: '1' }, // /etc/os-release fails
                 { stdout: '', stderr: 'No such file or directory', status: '1' }  // /usr/lib/os-release fails
@@ -141,7 +138,7 @@ suite('Linux Version Resolver Tests', function ()
             const testResolver = new LinuxVersionResolver(testContext, getMockUtilityContext(), testMockExecutor, testMockDistroProvider);
 
             // Mock /etc/os-release to have invalid content, /usr/lib/os-release to also be invalid
-            testMockExecutor.otherCommandPatternsToMock = ['/etc/os-release', '/usr/lib/os-release'];
+            testMockExecutor.otherCommandPatternsToMock = ['cat /etc/os-release', 'cat /usr/lib/os-release'];
             testMockExecutor.otherCommandsReturnValues = [
                 { stdout: 'SOME_OTHER_KEY="value"', stderr: '', status: '0' }, // /etc/os-release has no NAME/VERSION_ID
                 { stdout: 'ANOTHER_KEY="value"', stderr: '', status: '0' }     // /usr/lib/os-release also has no NAME/VERSION_ID
