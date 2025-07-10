@@ -24,10 +24,6 @@ import
 } from '../mocks/MockObjects';
 
 import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
-import
-{
-    Debugging
-} from '../../Utils/Debugging';
 import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
 import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 
@@ -66,19 +62,14 @@ suite('WebRequestWorker Unit Tests', function ()
 
     test('Install Script Request Failure With Fallback Install Script', async () =>
     {
-        Debugging.log('Get Test Context.');
         const eventStream = new MockEventStream();
 
-        Debugging.log('Instantiate Install Script Worker.');
         const installScriptWorker: IInstallScriptAcquisitionWorker = new MockInstallScriptWorker(getMockAcquisitionContext('runtime', '', undefined, eventStream), true, true);
 
-        Debugging.log('Request the install script path.');
         const scriptPath = await installScriptWorker.getDotnetInstallScriptPath();
 
-        Debugging.log('Asserting the path is as expected.');
         assert.equal(scriptPath, path.join(__dirname, '..'));
 
-        Debugging.log('Scan the event stream events.');
         assert.exists(eventStream.events.find(event => event instanceof DotnetInstallScriptAcquisitionError));
         assert.exists(eventStream.events.find(event => event instanceof DotnetFallbackInstallScriptUsed));
     });

@@ -623,22 +623,7 @@ export class DotnetInstallCancelledByUserError extends DotnetInstallExpectedAbor
     public readonly eventName = 'DotnetInstallCancelledByUserError';
 }
 
-export class DotnetDebuggingMessage extends IEvent
-{
-    public readonly eventName = 'DotnetDebuggingMessage';
-    public readonly type = EventType.DotnetDebuggingMessage;
 
-    constructor(public readonly message: string)
-    {
-        super();
-        this.message = message;
-    }
-
-    public getProperties()
-    {
-        return { message: this.message };
-    }
-}
 
 export class DotnetNonZeroInstallerExitCodeError extends DotnetAcquisitionError
 {

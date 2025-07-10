@@ -8,13 +8,13 @@ import * as os from 'os';
 import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 import { GenericDistroSDKProvider } from '../../Acquisition/GenericDistroSDKProvider';
 import { DistroVersionPair, DotnetDistroSupportStatus } from '../../Acquisition/LinuxVersionResolver';
+import { UBUNTU_DISTRO_INFO_KEY } from '../../Acquisition/StringConstants';
 import * as versionUtils from '../../Acquisition/VersionUtilities';
+import { getMajor } from '../../Acquisition/VersionUtilities';
 import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
 import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
 import { MockCommandExecutor } from '../mocks/MockObjects';
-import { UBUNTU_DISTRO_INFO_KEY } from '../../Acquisition/StringConstants';
 import { getLatestLinuxDotnet, getLinuxSupportedDotnetSDKVersion, getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
-import { getMajor, getMajorMinor } from '../../Acquisition/VersionUtilities';
 const assert = chai.assert;
 const standardTimeoutTime = 100000;
 

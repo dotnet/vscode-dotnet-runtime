@@ -6,8 +6,8 @@ NC=`tput sgr0`
 echo ""
 echo "----------- Bundling Install Scripts -----------"
 echo ""
-curl https://dot.net/v1/dotnet-install.ps1 --retry 2 -o "./vscode-dotnet-runtime-library/install scripts/dotnet-install.ps1"
-curl https://dot.net/v1/dotnet-install.sh --retry 2 -o "./vscode-dotnet-runtime-library/install scripts/dotnet-install.sh"
+curl https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.ps1 --retry 2 -o "./vscode-dotnet-runtime-library/install scripts/dotnet-install.ps1"
+curl https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh --retry 2 -o "./vscode-dotnet-runtime-library/install scripts/dotnet-install.sh"
 if [ $? -eq 0 ];
 then
     echo ""

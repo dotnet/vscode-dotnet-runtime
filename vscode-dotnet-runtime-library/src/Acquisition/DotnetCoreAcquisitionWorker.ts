@@ -47,7 +47,6 @@ import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
 import { IExtensionState } from '../IExtensionState';
 import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { CommandExecutor } from '../Utils/CommandExecutor';
-import { Debugging } from '../Utils/Debugging';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { IFileUtilities } from '../Utils/IFileUtilities';
 import { getInstallFromContext, getInstallIdCustomArchitecture } from '../Utils/InstallIdUtilities';
@@ -246,8 +245,6 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         let acquisitionPromise = null;
         if (globalInstallerResolver)
         {
-            Debugging.log(`The Acquisition Worker has Determined a Global Install was requested.`, context.eventStream);
-
             acquisitionPromise = this.acquireGlobalCore(context, globalInstallerResolver, install).catch(async (error: any) =>
             {
                 await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream).catch(() => {});
