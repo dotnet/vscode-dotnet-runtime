@@ -49,6 +49,116 @@ suite('Linux Version Resolver Tests', function ()
         }
     });
 
+    test('It falls back to /usr/lib/os-release when /etc/os-release fails', async () =>
+    {
+        if (shouldRun)
+        {
+            // Create a new resolver and mock executor for this test to avoid state contamination
+            const testContext = util.getMockAcquisitionContext('sdk', mockVersion);
+            const testMockExecutor = new MockCommandExecutor(testContext, getMockUtilityContext());
+            const testMockDistroProvider = new MockDistroProvider(pair, testContext, getMockUtilityContext(), testMockExecutor);
+            const testResolver = new LinuxVersionResolver(testContext, getMockUtilityContext(), testMockExecutor, testMockDistroProvider);
+
+            // Mock /etc/os-release to fail
+            testMockExecutor.otherCommandPatternsToMock = ['/etc/os-release', '/usr/lib/os-release'];
+            testMockExecutor.otherCommandsReturnValues = [
+                { stdout: '', stderr: 'No such file or directory', status: '1' }, // /etc/os-release fails
+                { stdout: 'NAME="Ubuntu"\nVERSION_ID="24.04"', stderr: '', status: '0' } // /usr/lib/os-release succeeds
+            ];
+
+            const distroVersion = await testResolver.getRunningDistro();
+            assert.exists(distroVersion.distro);
+            assert.exists(distroVersion.version);
+            assert.equal(distroVersion.distro, 'Ubuntu');
+            assert.equal(distroVersion.version, '24.04');
+        }
+    });
+
+    test('It prefers /etc/os-release over /usr/lib/os-release when both exist', async () =>
+    {
+        if (shouldRun)
+        {
+            // Create a new resolver and mock executor for this test
+            const testContext = util.getMockAcquisitionContext('sdk', mockVersion);
+            const testMockExecutor = new MockCommandExecutor(testContext, getMockUtilityContext());
+            const testMockDistroProvider = new MockDistroProvider(pair, testContext, getMockUtilityContext(), testMockExecutor);
+            const testResolver = new LinuxVersionResolver(testContext, getMockUtilityContext(), testMockExecutor, testMockDistroProvider);
+
+            // Mock both files to succeed with different content
+            testMockExecutor.otherCommandPatternsToMock = ['/etc/os-release'];
+            testMockExecutor.otherCommandsReturnValues = [
+                { stdout: 'NAME="Fedora Linux"\nVERSION_ID="39"', stderr: '', status: '0' } // /etc/os-release succeeds
+            ];
+
+            const distroVersion = await testResolver.getRunningDistro();
+            assert.exists(distroVersion.distro);
+            assert.exists(distroVersion.version);
+            assert.equal(distroVersion.distro, 'Fedora Linux');
+            assert.equal(distroVersion.version, '39');
+            // Should only have tried /etc/os-release
+            assert.include(testMockExecutor.attemptedCommand, '/etc/os-release');
+            assert.notInclude(testMockExecutor.attemptedCommand, '/usr/lib/os-release');
+        }
+    });
+
+    test('It throws error when both os-release files fail', async () =>
+    {
+        if (shouldRun)
+        {
+            // Create a new resolver and mock executor for this test
+            const testContext = util.getMockAcquisitionContext('sdk', mockVersion);
+            const testMockExecutor = new MockCommandExecutor(testContext, getMockUtilityContext());
+            const testMockDistroProvider = new MockDistroProvider(pair, testContext, getMockUtilityContext(), testMockExecutor);
+            const testResolver = new LinuxVersionResolver(testContext, getMockUtilityContext(), testMockExecutor, testMockDistroProvider);
+
+            // Mock both files to fail
+            testMockExecutor.otherCommandPatternsToMock = ['/etc/os-release', '/usr/lib/os-release'];
+            testMockExecutor.otherCommandsReturnValues = [
+                { stdout: '', stderr: 'No such file or directory', status: '1' }, // /etc/os-release fails
+                { stdout: '', stderr: 'No such file or directory', status: '1' }  // /usr/lib/os-release fails
+            ];
+
+            try
+            {
+                await testResolver.getRunningDistro();
+                assert.fail('Expected an error to be thrown');
+            }
+            catch (error)
+            {
+                assert.include(error.message, 'do /etc/os-release or /usr/lib/os-release exist?');
+            }
+        }
+    });
+
+    test('It throws error when os-release files have no NAME or VERSION_ID', async () =>
+    {
+        if (shouldRun)
+        {
+            // Create a new resolver and mock executor for this test
+            const testContext = util.getMockAcquisitionContext('sdk', mockVersion);
+            const testMockExecutor = new MockCommandExecutor(testContext, getMockUtilityContext());
+            const testMockDistroProvider = new MockDistroProvider(pair, testContext, getMockUtilityContext(), testMockExecutor);
+            const testResolver = new LinuxVersionResolver(testContext, getMockUtilityContext(), testMockExecutor, testMockDistroProvider);
+
+            // Mock /etc/os-release to have invalid content, /usr/lib/os-release to also be invalid
+            testMockExecutor.otherCommandPatternsToMock = ['/etc/os-release', '/usr/lib/os-release'];
+            testMockExecutor.otherCommandsReturnValues = [
+                { stdout: 'SOME_OTHER_KEY="value"', stderr: '', status: '0' }, // /etc/os-release has no NAME/VERSION_ID
+                { stdout: 'ANOTHER_KEY="value"', stderr: '', status: '0' }     // /usr/lib/os-release also has no NAME/VERSION_ID
+            ];
+
+            try
+            {
+                await testResolver.getRunningDistro();
+                assert.fail('Expected an error to be thrown');
+            }
+            catch (error)
+            {
+                assert.include(error.message, 'do /etc/os-release or /usr/lib/os-release exist?');
+            }
+        }
+    });
+
     test('It rejects distro install if microsoft install exists', async () =>
     {
         if (shouldRun)
