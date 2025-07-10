@@ -113,7 +113,7 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
     }
 
     /**
-     * @remarks relies on /etc/os-release currently. public for testing purposes.
+     * @remarks relies on /etc/os-release with fallback to /usr/lib/os-release. public for testing purposes.
      * @returns The linux distro and version thats running this app. Should only ever be ran on linux.
      */
     public async getRunningDistro(): Promise<DistroVersionPair>
@@ -123,12 +123,33 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
             return this.distro;
         }
 
-        const commandResult = await this.commandRunner.execute(CommandExecutor.makeCommand(`cat`, [`/etc/os-release`]), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS });
-        const distroNameKey = 'NAME';
-        const distroVersionKey = 'VERSION_ID';
+        const result = await this.tryGetDistroFromFile('/etc/os-release') ?? await this.tryGetDistroFromFile('/usr/lib/os-release');
+        
+        if (!result)
+        {
+            const err = new DotnetAcquisitionDistroUnknownError(new EventCancellationError('DotnetAcquisitionDistroUnknownError',
+                `${this.baseUnsupportedDistroErrorMessage} ... do /etc/os-release or /usr/lib/os-release exist?`),
+                getInstallFromContext(this.workerContext));
+            this.workerContext.eventStream.post(err);
+            throw err.error;
+        }
 
+        return result;
+    }
+
+    /**
+     * @remarks Attempts to read distro information from the specified os-release file.
+     * @param osReleaseFilePath The path to the os-release file to read.
+     * @returns DistroVersionPair if successful, null if the file cannot be read.
+     */
+    private async tryGetDistroFromFile(osReleaseFilePath: string): Promise<DistroVersionPair | null>
+    {
         try
         {
+            const commandResult = await this.commandRunner.execute(CommandExecutor.makeCommand(`cat`, [osReleaseFilePath]), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS });
+            const distroNameKey = 'NAME';
+            const distroVersionKey = 'VERSION_ID';
+
             const stdOut = commandResult.stdout.toString().split('\n');
             // We need to remove the quotes from the KEY="VALUE"\n pairs returned by the command stdout, and then turn it into a dictionary. We can't use replaceAll for older browsers.
             // Replace only replaces one quote, so we remove the 2nd one later.
@@ -142,10 +163,7 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
 
             if (distroName === '' || distroVersion === '')
             {
-                const error = new DotnetAcquisitionDistroUnknownError(new EventCancellationError('DotnetAcquisitionDistroUnknownError',
-                    this.baseUnsupportedDistroErrorMessage), getInstallFromContext(this.workerContext));
-                this.workerContext.eventStream.post(error);
-                throw error.error;
+                return null;
             }
 
             const pair: DistroVersionPair = { distro: distroName, version: distroVersion };
@@ -153,11 +171,8 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
         }
         catch (error)
         {
-            const err = new DotnetAcquisitionDistroUnknownError(new EventCancellationError('DotnetAcquisitionDistroUnknownError',
-                `${this.baseUnsupportedDistroErrorMessage} ... does /etc/os-release exist?`),
-                getInstallFromContext(this.workerContext));
-            this.workerContext.eventStream.post(err);
-            throw err.error;
+            // File doesn't exist or cannot be read, return null to try the next file
+            return null;
         }
     }
 
