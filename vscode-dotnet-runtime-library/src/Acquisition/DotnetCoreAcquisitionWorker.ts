@@ -455,9 +455,15 @@ To keep your .NET version up to date, please reconnect to the internet at your s
 
         if (installerResult !== '0')
         {
+            // For user-friendly exit codes, show only the interpreted message without verbose details
+            const interpretedMessage = WinMacGlobalInstaller.InterpretExitCode(installerResult);
+            const errorMessage = WinMacGlobalInstaller.IsUserFriendlyExitCode(installerResult)
+                ? interpretedMessage
+                : `An error was raised by the .NET SDK installer. The exit code it gave us: ${installerResult}.
+${interpretedMessage}`;
+
             const err = new DotnetNonZeroInstallerExitCodeError(new EventBasedError('DotnetNonZeroInstallerExitCodeError',
-                `An error was raised by the .NET SDK installer. The exit code it gave us: ${installerResult}.
-${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
+                errorMessage), install);
             context.eventStream.post(err);
             throw err;
         }
