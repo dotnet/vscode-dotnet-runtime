@@ -411,7 +411,7 @@ export class DotnetPathFinder implements IDotnetPathFinder
                 // /usr/local/bin/dotnet becomes /snap/dotnet-sdk/current/dotnet in reality, may have different behavior in shells.
                 if (os.platform() === 'win32')
                 {
-                    LocalMemoryCacheSingleton.getInstance().aliasCommandAsAnotherCommandRoot(`"${truePath}"`, `"${tentativePath}"`, this.workerContext.eventStream);
+                    LocalMemoryCacheSingleton.getInstance().aliasCommandAsAnotherCommandRoot(`${truePath}`, `${tentativePath}`, this.workerContext.eventStream);
                 }
             }
             else

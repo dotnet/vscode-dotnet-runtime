@@ -112,17 +112,19 @@ suite('Windows & Mac Global Installer Tests', function ()
         {
             assert.isTrue(mockExecutor.attemptedCommand.startsWith('open'), `It ran the right mac command, open. Command found: ${mockExecutor.attemptedCommand}`);
             assert.isTrue(mockExecutor.attemptedCommand.includes('-W'), 'It used the -W flag');
-            assert.isTrue(mockExecutor.attemptedCommand.includes('"'), 'It put the installer in quotes for username with space in it');
+            const executablePath = mockExecutor.attemptedCommand.split('-W')[1].trim();
+            assert.isTrue(fs.existsSync(executablePath), 'It used a full path of an executable that exists');
         }
         else if (os.platform() === 'win32')
         {
-            const returnedPath = mockExecutor.attemptedCommand.split(' ')[0].slice(1, -1);
+            const returnedPath = mockExecutor.attemptedCommand.split('/install')[0].trim();
             assert.isTrue(fs.existsSync(returnedPath), `It ran a command to an executable that exists: ${returnedPath}`);
-            assert.isTrue(mockExecutor.attemptedCommand.includes('"'), 'It put the installer in quotes for username with space in it');
+            assert.isTrue(mockExecutor.attemptedCommand.includes('.exe'), 'It has the .exe in the path of the installer, and did not skip / split incorrectly via a path space');
             if (await new FileUtilities().isElevated(mockSdkContext, utilContext))
             {
                 assert.include(mockExecutor.attemptedCommand, ' /quiet /install /norestart', 'It ran under the hood if it had privileges already');
             }
+
         }
         mockSdkContext
         // Rerun install to clean it up.

@@ -138,7 +138,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
             context.architecture = arch;
         }
         const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
-        assert.exists(result, 'Command results a result');
+        assert.exists(result, 'Acquire Command results a result');
         assert.exists(result!.dotnetPath, 'The return type of the local runtime install command has a .dotnetPath property');
         assert.isTrue(fs.existsSync(result!.dotnetPath), 'The returned path of .net does exist');
         assert.include(result!.dotnetPath, '.dotnet', '.dotnet is in the path of the local runtime install');
