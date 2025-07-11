@@ -569,6 +569,21 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             return { dotnetPath: validatedRoot };
         }
 
+        if (commandContext.acquireContext.mode === 'runtime' || commandContext.acquireContext.mode === 'aspnetcore')
+        {
+            const extensionManagedRuntimeRecordPaths = await finder.findExtensionManagedRuntimes();
+            const filteredExtensionManagedRuntimeRecordPaths = validator.filterValidPaths(extensionManagedRuntimeRecordPaths, commandContext);
+            for (const dotnetPath of filteredExtensionManagedRuntimeRecordPaths ?? [])
+            {
+                const validatedExistingManagedPath = await getPathIfValid(dotnetPath.path, validator, commandContext);
+                if (validatedExistingManagedPath)
+                {
+                    loggingObserver.dispose();
+                    return { dotnetPath: dotnetPath.path };
+                }
+            }
+        }
+
         const dotnetOnHostfxrRecord = await finder.findHostInstallPaths(commandContext.acquireContext.architecture);
         for (const dotnetPath of dotnetOnHostfxrRecord ?? [])
         {
