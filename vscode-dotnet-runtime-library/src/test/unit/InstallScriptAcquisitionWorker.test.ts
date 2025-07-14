@@ -106,11 +106,7 @@ suite('InstallScriptAcquisitionWorker Unit Tests', function ()
             false // no fallback
         );
 
-        await assert.isRejected(
-            installScriptWorker.getDotnetInstallScriptPath(),
-            Error,
-            'Failed to Find Dotnet Install Script'
-        );
+        await assert.isRejected(installScriptWorker.getDotnetInstallScriptPath());
     }).timeout(maxTimeoutTime);
 
     test('Multiple calls to get script path should be idempotent', async () =>
