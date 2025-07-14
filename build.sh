@@ -83,7 +83,7 @@ then
 fi
 popd
 
-# /bin/bash ./mock-webpack.sh
+/bin/bash ./mock-webpack.sh
 
 echo ""
 echo "${GREEN}Build succeeded!${NC}"
