@@ -108,11 +108,6 @@
                     "type": "boolean",
                     "description": "If you'd like to continue using a .NET path that is not meant to be used for an extension and may cause instability (please read above about the existingDotnetPath setting) then set this to true and restart."
                 },
-                "dotnetAcquisitionExtension.highVerbosity": {
-                    "type": "boolean",
-                    "description": "Enable this to show more detailed output from our extension.",
-                    "default": "false"
-                },
                 "dotnetAcquisitionExtension.cacheTimeToLiveMultiplier": {
                     "type": "number",
                     "default": 1,
@@ -127,6 +122,11 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Hide all messages in the output window from our extension. Error pop-ups from APIs that other extensions request we display will still appear."
+                },
+                "dotnetAcquisitionExtension.highVerbosity": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable this to show more detailed output from our extension."
                 }
             }
         }

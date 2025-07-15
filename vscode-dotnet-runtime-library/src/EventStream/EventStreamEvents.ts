@@ -1696,8 +1696,16 @@ export class DotnetAcquisitionInProgress extends IEvent
     public readonly type = EventType.DotnetAcquisitionInProgress;
 
     public readonly eventName = 'DotnetAcquisitionInProgress';
-    constructor(public readonly install: DotnetInstall, public readonly requestingExtensionId: string | null) { super(); }
+    public verboseOutputOnly = true;
 
+    constructor(public readonly install: DotnetInstall, public readonly requestingExtensionId: string | null)
+    {
+        super();
+        if (requestingExtensionId === 'user')
+        {
+            this.verboseOutputOnly = false;
+        }
+    }
     public getProperties()
     {
         return {
@@ -1715,7 +1723,14 @@ export class DotnetAcquisitionAlreadyInstalled extends IEvent
 
     public verboseOutputOnly = true;
 
-    constructor(public readonly install: DotnetInstall, public readonly requestingExtensionId: string | null) { super(); }
+    constructor(public readonly install: DotnetInstall, public readonly requestingExtensionId: string | null)
+    {
+        super();
+        if (requestingExtensionId === 'user')
+        {
+            this.verboseOutputOnly = false;
+        }
+    }
 
     public getProperties()
     {
