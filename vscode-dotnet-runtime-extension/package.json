@@ -120,8 +120,8 @@
                 },
                 "dotnetAcquisitionExtension.suppressOutput": {
                     "type": "boolean",
-                    "description": "Enable this to show more detailed output from our extension.",
-                    "default": "false"
+                    "default": false,
+                    "description": "Hide all messages in the output window from our extension. Error pop-ups from APIs that other extensions request we display will still appear.",
                 }
             }
         }
