@@ -35,8 +35,7 @@ import
     DotnetWSLSecurityError,
     EventBasedError,
     EventCancellationError,
-    SuppressedAcquisitionError,
-    UtilizingExistingInstallPromise
+    SuppressedAcquisitionError
 } from '../EventStream/EventStreamEvents';
 import * as versionUtils from './VersionUtilities';
 
@@ -399,12 +398,16 @@ To keep your .NET version up to date, please reconnect to the internet at your s
     {
         if (error instanceof EventBasedError || error instanceof EventCancellationError)
         {
-            error.message = `.NET Acquisition Failed: ${error.message}, ${error?.stack}`;
             return error;
         }
         else
         {
-            // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
+            if (error?.error?.message !== undefined) // DotnetAcquisitionError is a bad but common pattern where the error is included in the thrown object
+            {
+                const convertedError = new EventBasedError(error.constructor.name, error.error.message, error?.stack);
+                return convertedError;
+            }
+
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             const newError = new EventBasedError('DotnetAcquisitionError', `.NET Acquisition Failed: ${error?.message ?? JSON.stringify(error)}`);
             return newError;

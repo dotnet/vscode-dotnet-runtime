@@ -14,16 +14,14 @@ import
     DotnetDebuggingMessage,
     DotnetExistingPathResolutionCompleted,
     DotnetInstallExpectedAbort,
-    DotnetNonZeroInstallerExitCodeError,
     DotnetOfflineInstallUsed,
     DotnetOfflineWarning,
     DotnetUpgradedEvent,
-    DotnetVisibleWarningEvent,
+    DotnetVisibleWarningEvent
 } from './EventStreamEvents';
 import { EventType } from './EventType';
 import { IEvent } from './IEvent';
 import { IEventStreamObserver } from './IEventStreamObserver';
-import { WinMacGlobalInstaller } from '../Acquisition/WinMacGlobalInstaller';
 
 export class OutputChannelObserver implements IEventStreamObserver
 {
@@ -117,37 +115,7 @@ export class OutputChannelObserver implements IEventStreamObserver
                 if (this.inProgressDownloads.includes(error?.install?.installId ?? ''))
                 {
                     this.outputChannel.appendLine(`Failed to download .NET ${error?.install?.installId}:`);
-                    
-                    // For user-friendly installer exit codes, show only the clean interpreted message
-                    if (error instanceof DotnetNonZeroInstallerExitCodeError)
-                    {
-                        const errorMessage = error?.error?.message || '';
-                        const exitCodeMatch = errorMessage.match(/The exit code it gave us: (\w+)\./);
-                        if (exitCodeMatch && WinMacGlobalInstaller.IsUserFriendlyExitCode(exitCodeMatch[1]))
-                        {
-                            // Extract just the interpreted message (everything after the exit code line)
-                            const lines = errorMessage.split('\n');
-                            if (lines.length > 1)
-                            {
-                                this.outputChannel.appendLine(lines.slice(1).join('\n'));
-                            }
-                            else
-                            {
-                                this.outputChannel.appendLine(errorMessage);
-                            }
-                        }
-                        else
-                        {
-                            // Show full error message for non-user-friendly codes
-                            this.outputChannel.appendLine(error?.error?.message);
-                        }
-                    }
-                    else
-                    {
-                        // Show full error message for non-installer errors
-                        this.outputChannel.appendLine(error?.error?.message);
-                    }
-                    
+                    this.outputChannel.appendLine(error?.error?.message);
                     this.outputChannel.appendLine('');
 
                     this.updateDownloadIndicators(error.install?.installId);
