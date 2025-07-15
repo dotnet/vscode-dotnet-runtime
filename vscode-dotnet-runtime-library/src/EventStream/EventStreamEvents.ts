@@ -848,6 +848,7 @@ export class DotnetInstallScriptAcquisitionCompleted extends DotnetAcquisitionSu
 export class DotnetExistingPathResolutionCompleted extends DotnetAcquisitionSuccessEvent
 {
     public readonly eventName = 'DotnetExistingPathResolutionCompleted';
+    public verboseOutputOnly = true;
 
     constructor(public readonly resolvedPath: string) { super(); }
 

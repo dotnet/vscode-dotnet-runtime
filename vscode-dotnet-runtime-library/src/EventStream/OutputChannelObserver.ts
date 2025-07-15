@@ -28,14 +28,15 @@ export class OutputChannelObserver implements IEventStreamObserver
     private readonly inProgressDownloads: string[] = [];
     private downloadProgressInterval: NodeJS.Timeout | undefined;
 
-    constructor(private readonly outputChannel: IOutputChannel, private readonly suppressOutput: boolean = false)
+    constructor(private readonly outputChannel: IOutputChannel, private readonly suppressOutput: boolean = false, private readonly highVerbosity: boolean = false)
     {
     }
 
 
     public post(event: IEvent): void
     {
-        if (this.suppressOutput)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        if (this.suppressOutput || ((event as any)?.verboseOutputOnly && this.highVerbosity))
         {
             return;
         }

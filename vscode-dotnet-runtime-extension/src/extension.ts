@@ -98,6 +98,7 @@ namespace configKeys
     export const cacheTimeToLiveMultiplier = 'cacheTimeToLiveMultiplier';
     export const showResetDataCommand = 'showResetDataCommand';
     export const suppressOutput = 'suppressOutput';
+    export const highVerbosity = 'highVerbosity';
 }
 
 namespace commandKeys
@@ -155,6 +156,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
     const allowInvalidPathSetting = extensionConfiguration.get<boolean>(configKeys.allowInvalidPaths);
     const suppressOutput = extensionConfiguration.get<boolean>(configKeys.suppressOutput) ?? false;
+    const suppressOutput = extensionConfiguration.get<boolean>(configKeys.highVerbosity) ?? false;
     const isExtensionTelemetryEnabled = enableExtensionTelemetry(extensionConfiguration, configKeys.enableTelemetry);
     const displayWorker = extensionContext ? extensionContext.displayWorker : new WindowDisplayWorker();
 
@@ -175,7 +177,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         packageJson
     } as IEventStreamContext;
     const [globalEventStream, outputChannel, loggingObserver,
-        eventStreamObservers, telemetryObserver, _] = registerEventStream(eventStreamContext, vsCodeExtensionContext, utilContext, suppressOutput);
+        eventStreamObservers, telemetryObserver, _] = registerEventStream(eventStreamContext, vsCodeExtensionContext, utilContext, suppressOutput, highVerbosity);
 
 
     // Setting up command-shared classes for Runtime & SDK Acquisition
