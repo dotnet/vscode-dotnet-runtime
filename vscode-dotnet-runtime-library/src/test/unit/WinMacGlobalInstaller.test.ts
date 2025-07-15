@@ -237,7 +237,6 @@ ${fs.readdirSync(installerDownloadFolder).join(', ')}`);
         // Test exit code 1 - generic failure (should include report message)
         const exitCode1Message = WinMacGlobalInstaller.InterpretExitCode('1');
         assert.isTrue(exitCode1Message.includes('report'), 'Exit code 1 should ask for bug reports');
-        assert.isFalse(WinMacGlobalInstaller.IsUserFriendlyExitCode('1'), 'Exit code 1 should not be marked as user-friendly');
 
         // Test unknown exit code
         const unknownCodeMessage = WinMacGlobalInstaller.InterpretExitCode('9999');

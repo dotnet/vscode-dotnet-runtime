@@ -402,9 +402,11 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         }
         else
         {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             if (error?.error?.message !== undefined) // DotnetAcquisitionError is a bad but common pattern where the error is included in the thrown object
             {
-                const convertedError = new EventBasedError(error.constructor.name, error.error.message, error?.stack);
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                const convertedError = new EventBasedError(error?.constructor?.name ?? 'DotnetAcquisitionError', error?.error?.message, error?.stack);
                 return convertedError;
             }
 
