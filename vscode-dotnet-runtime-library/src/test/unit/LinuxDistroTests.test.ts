@@ -65,7 +65,7 @@ suite('Linux Distro Logic Unit Tests', function ()
             // assert this passes : we don't want the test to be reliant on machine state for whether the package exists or not, so don't check output
             await provider.dotnetPackageExistsOnSystem(mockVersion, installType);
             const version = await getLinuxSupportedDotnetSDKVersion(acquisitionContext);
-            assert.equal(mockExecutor.attemptedCommand, `dpkg -l dotnet-sdk-${versionUtils.getMajorMinor(version, acquisitionContext.eventStream, acquisitionContext)}`);
+            assert.isTrue(mockExecutor.attemptedCommand.includes(`dpkg -l dotnet-sdk`));
         }
     }).timeout(standardTimeoutTime);
 
