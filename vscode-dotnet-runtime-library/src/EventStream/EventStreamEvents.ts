@@ -331,16 +331,21 @@ abstract class DotnetAcquisitionFinalErrorBase extends DotnetAcquisitionError
 export class DotnetGlobalSDKAcquisitionError extends DotnetAcquisitionFinalErrorBase
 {
     public eventName = 'DotnetGlobalSDKAcquisitionError';
+    public verboseOutputOnly = true;
 }
 
 export class DotnetRuntimeFinalAcquisitionError extends DotnetAcquisitionFinalErrorBase
 {
     public eventName = 'DotnetRuntimeFinalAcquisitionError';
+    public verboseOutputOnly = true;
+
 }
 
 export class DotnetASPNetRuntimeFinalAcquisitionError extends DotnetAcquisitionFinalErrorBase
 {
     public eventName = 'DotnetASPNetRuntimeFinalAcquisitionError';
+    public verboseOutputOnly = true;
+
 }
 
 export abstract class DotnetNonAcquisitionError extends IEvent
@@ -1706,6 +1711,8 @@ export class DotnetAcquisitionAlreadyInstalled extends IEvent
 {
     public readonly eventName = 'DotnetAcquisitionAlreadyInstalled';
     public readonly type = EventType.DotnetAcquisitionAlreadyInstalled;
+
+    public verboseOutputOnly = true;
 
     constructor(public readonly install: DotnetInstall, public readonly requestingExtensionId: string | null) { super(); }
 
