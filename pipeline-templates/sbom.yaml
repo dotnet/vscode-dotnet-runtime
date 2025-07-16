@@ -4,10 +4,7 @@ parameters:
 jobs:
 - job: SBOM
   pool:
-    ${{ if eq(parameters.useOneEngineeringPool, 'true') }}:
-      ${{ parameters.pool }}
-    ${{ else }}:
-      vmImage: ${{ parameters.pool.vmImage }}
+    ${{ parameters.pool }}
   displayName: 📝 SBOM Generation
   dependsOn:
   - ${{ parameters.pool.os }}_Build
