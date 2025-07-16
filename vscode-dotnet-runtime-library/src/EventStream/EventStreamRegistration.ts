@@ -36,7 +36,7 @@ export interface IEventStreamContext
 }
 
 export function registerEventStream(context: IEventStreamContext, extensionContext: IVSCodeExtensionContext,
-    utilityContext: IUtilityContext): [EventStream, vscode.OutputChannel, LoggingObserver, IEventStreamObserver[], TelemetryObserver | null, ModalEventRepublisher]
+    utilityContext: IUtilityContext, suppressOutput = false): [EventStream, vscode.OutputChannel, LoggingObserver, IEventStreamObserver[], TelemetryObserver | null, ModalEventRepublisher]
 {
     const outputChannel = vscode.window.createOutputChannel(context.displayChannelName);
     if (!fs.existsSync(context.logPath))
@@ -49,7 +49,7 @@ export function registerEventStream(context: IEventStreamContext, extensionConte
     const eventStreamObservers: IEventStreamObserver[] =
         [
             new StatusBarObserver(vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, Number.MIN_VALUE), context.showLogCommand),
-            new OutputChannelObserver(outputChannel),
+            new OutputChannelObserver(outputChannel, suppressOutput),
             loggingObserver
         ];
 
