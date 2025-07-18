@@ -93,6 +93,7 @@ namespace configKeys
     export const enableTelemetry = 'enableTelemetry';
     export const existingPath = 'existingDotnetPath';
     export const existingSharedPath = 'sharedExistingDotnetPath'
+    export const dotnetSDKPath = 'dotnetSDKPath';
     export const proxyUrl = 'proxyUrl';
     export const allowInvalidPaths = 'allowInvalidPaths';
     export const cacheTimeToLiveMultiplier = 'cacheTimeToLiveMultiplier';
@@ -516,15 +517,27 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
         globalEventStream.post(new DotnetFindPathLookupSetting(`Looking up vscode setting.`));
         const workerContext = getAcquisitionWorkerContext(commandContext.acquireContext.mode, commandContext.acquireContext);
-        const existingPath = await resolveExistingPathIfExists(existingPathConfigWorker, commandContext.acquireContext, workerContext, utilContext, commandContext.versionSpecRequirement);
 
         // The setting is not intended to be used as the SDK, only the runtime for extensions to run on. Ex: PowerShell policy doesn't allow us to install the runtime, let users set the path manually.
-        if (existingPath && commandContext.acquireContext.mode !== 'sdk')
+        if (commandContext.acquireContext.mode !== 'sdk')
         {
-            // We don't need to validate the existing path as it gets validated in the lookup logic already.
-            globalEventStream.post(new DotnetFindPathSettingFound(`Found vscode setting.`));
-            loggingObserver.dispose();
-            return existingPath;
+            const existingHostRuntimeInternalExtensionPath = await resolveExistingPathIfExists(existingPathConfigWorker, commandContext.acquireContext, workerContext, utilContext, commandContext.versionSpecRequirement);
+            if (existingHostRuntimeInternalExtensionPath)
+            {
+                // We don't need to validate the existing path as it gets validated in the lookup logic already.
+                globalEventStream.post(new DotnetFindPathSettingFound(`Found vscode setting.`));
+                loggingObserver.dispose();
+                return existingHostRuntimeInternalExtensionPath;
+            }
+        }
+        else if (commandContext.acquireContext.mode === 'sdk')
+        {
+            const existingHostSDKUserPath = extensionConfiguration.get<string>(configKeys.dotnetSDKPath);
+            if (existingHostSDKUserPath)
+            {
+                // Don't validate the existing SDK path as it is a user setting and we assume the user knows what they are doing.
+                return { dotnetPath: existingHostSDKUserPath };
+            }
         }
 
         const validator = new DotnetConditionValidator(workerContext, utilContext);
@@ -584,7 +597,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
         loggingObserver.dispose();
         globalEventStream.post(new DotnetFindPathNoPathMetCondition(`Could not find a single host path that met the conditions.
-existingPath : ${existingPath?.dotnetPath}
+existingPath : ${existingHostRuntimeInternalExtensionPath?.dotnetPath}
 onPath : ${JSON.stringify(dotnetsOnPATH)}
 onRealPath : ${JSON.stringify(dotnetsOnRealPATH)}
 onRoot : ${dotnetOnROOT}
