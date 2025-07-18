@@ -407,8 +407,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
             }
 
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            const newError = new EventBasedError('DotnetAcquisitionError', `.NET Acquisition Failed: ${error?.message ?? JSON.stringify(error)}`);
-            return newError;
+            return new EventBasedError('DotnetAcquisitionError', `.NET Acquisition Failed: ${error?.message ?? JSON.stringify(error)}`);
         }
     }
 
