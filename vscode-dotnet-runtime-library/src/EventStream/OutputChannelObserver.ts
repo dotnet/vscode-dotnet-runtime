@@ -10,7 +10,6 @@ import
     DotnetAcquisitionInProgress,
     DotnetAcquisitionStarted,
     DotnetCustomMessageEvent,
-    DotnetDebuggingMessage,
     DotnetExistingPathResolutionCompleted,
     DotnetInstallExpectedAbort,
     DotnetOfflineInstallUsed,
@@ -137,10 +136,6 @@ export class OutputChannelObserver implements IEventStreamObserver
             case EventType.DotnetUpgradedEvent:
                 const upgradeMessage = event as DotnetUpgradedEvent;
                 this.outputChannel.appendLine(`${upgradeMessage.eventMessage}:`);
-                break;
-            case EventType.DotnetDebuggingMessage:
-                const loggedMessage = event as DotnetDebuggingMessage;
-                this.outputChannel.appendLine(loggedMessage.message);
                 break;
             case EventType.OfflineInstallUsed:
                 const offlineUsedMsg = event as DotnetOfflineInstallUsed;

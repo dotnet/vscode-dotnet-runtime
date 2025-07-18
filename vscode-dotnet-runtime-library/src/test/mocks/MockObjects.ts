@@ -322,7 +322,7 @@ export class MockVersionResolver extends VersionResolver
 
 export class MockInstallScriptWorker extends InstallScriptAcquisitionWorker
 {
-    constructor(ctx: IAcquisitionWorkerContext, failing: boolean, private fallback = false)
+    constructor(ctx: IAcquisitionWorkerContext, private failing: boolean, private fallback = false)
     {
         super(ctx);
         this.webWorker = failing ?
@@ -338,6 +338,10 @@ export class MockInstallScriptWorker extends InstallScriptAcquisitionWorker
         }
         else
         {
+            if (this.failing)
+            {
+                throw new Error('Failed to Acquire Dotnet Install Script');
+            }
             return super.getFallbackScriptPath();
         }
     }
