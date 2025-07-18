@@ -54,6 +54,13 @@ parameters:
   type: string
   default: Test
   values: [ 'Test', 'Real' ]
+- name: PRERELEASE
+  displayName: Prerelease
+  type: boolean
+  default: false
+  values:
+  - true
+  - false
 
 extends:
   template: v1/1ES.Official.PipelineTemplate.yml@1esPipelines
@@ -106,6 +113,7 @@ extends:
             os: windows
           useOneEngineeringPool: true
           SignType: ${{ parameters.SignType }}
+          PREELEASE: ${{ parameters.PRERELEASE }}
       - template: pipeline-templates/sbom.yaml@self
         parameters:
           pool:
