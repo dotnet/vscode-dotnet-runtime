@@ -462,7 +462,6 @@ export class MockCommandExecutor extends ICommandExecutor
         return this.trueExecutor.setEnvironmentVariable(variable, value, vscodeContext, failureWarningMessage, nonWinFailureMessage);
     }
 }
-
 export class MockFileUtilities extends IFileUtilities
 {
     private trueUtilities = new FileUtilities();

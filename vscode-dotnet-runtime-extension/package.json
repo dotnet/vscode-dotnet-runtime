@@ -117,6 +117,11 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Show the command to reset extension data in the command palette. Restart VS Code and remove dependent extensions first."
+                },
+                "dotnetAcquisitionExtension.suppressOutput": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Hide all messages in the output window from our extension. Error pop-ups from APIs that other extensions request we display will still appear."
                 }
             }
         }
