@@ -113,13 +113,13 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             case '255':
                 return `The .NET Installer was terminated by another process unexpectedly. Please try again.`;
             case '1260':
-                return `The .NET SDK Install is blocked by group policy. Please contact your IT Admin to install .NET.`
+                return `The .NET SDK Install is blocked by group policy. For more information, contact your system administrator.`
             case '1460':
                 return `The .NET SDK had a timeout error. ${reportLogMessage}`;
             case '1603':
                 return `Fatal error during .NET SDK installation. ${reportLogMessage}`;
             case '1618':
-                return `Another installation of .NET is already in progress. Complete that installation before proceeding with this install.`;
+                return `Another installation is already in progress. Complete that installation before proceeding with this install.`;
             case '000751':
                 return `.NET Installer Failed: A page fault was satisfied by reading from a secondary storage device. ${reportLogMessage}`;
             case '2147500037':
