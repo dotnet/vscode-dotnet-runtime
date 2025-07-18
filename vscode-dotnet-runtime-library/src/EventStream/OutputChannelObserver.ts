@@ -15,7 +15,7 @@ import
     DotnetOfflineInstallUsed,
     DotnetOfflineWarning,
     DotnetUpgradedEvent,
-    DotnetVisibleWarningEvent,
+    DotnetVisibleWarningEvent
 } from './EventStreamEvents';
 import { EventType } from './EventType';
 import { IEvent } from './IEvent';

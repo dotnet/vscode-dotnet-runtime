@@ -85,6 +85,15 @@ We cannot verify our .NET file host at this time. Please try again later or inst
         this.registry = registryReader ?? new RegistryReader(context, utilContext);
     }
 
+    /**
+     * Determines if the given exit code has a user-friendly, self-contained error message
+     * that doesn't need additional technical details to be helpful to the user.
+     */
+    public static IsUserFriendlyExitCode(code: string): boolean
+    {
+        return this.InterpretExitCode(code) !== '';
+    }
+
     public static InterpretExitCode(code: string): string
     {
         const reportLogMessage = `Please provide your .NET Installer log (note our privacy notice), which can be found at %temp%.
@@ -98,13 +107,13 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             case '5':
                 return `Insufficient permissions are available to install .NET. Please run the installer as an administrator.`;
             case '67':
-                return `The network name cannot be found. ${reportLogMessage}`;
+                return `The network name cannot be found to install .NET. ${reportLogMessage}`;
             case '112':
                 return `The disk is full. Please free up space and try again.`;
             case '255':
                 return `The .NET Installer was terminated by another process unexpectedly. Please try again.`;
             case '1260':
-                return `The .NET SDK is blocked by group policy. Can you please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues`
+                return `The .NET SDK Install is blocked by group policy. For more information, contact your system administrator.`
             case '1460':
                 return `The .NET SDK had a timeout error. ${reportLogMessage}`;
             case '1603':
@@ -112,9 +121,9 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             case '1618':
                 return `Another installation is already in progress. Complete that installation before proceeding with this install.`;
             case '000751':
-                return `Page fault was satisfied by reading from a secondary storage device. ${reportLogMessage}`;
+                return `.NET Installer Failed: A page fault was satisfied by reading from a secondary storage device. ${reportLogMessage}`;
             case '2147500037':
-                return `An unspecified error occurred. ${reportLogMessage}`;
+                return `.NET Installer Failed: An unspecified error occurred. ${reportLogMessage}`;
             case '2147942405':
                 return `Insufficient permissions are available to install .NET. Please try again as an administrator.`;
             case UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR:
