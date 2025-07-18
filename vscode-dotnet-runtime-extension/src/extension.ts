@@ -517,11 +517,13 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
         globalEventStream.post(new DotnetFindPathLookupSetting(`Looking up vscode setting.`));
         const workerContext = getAcquisitionWorkerContext(commandContext.acquireContext.mode, commandContext.acquireContext);
+        let existingPathForLog = '';
 
         // The setting is not intended to be used as the SDK, only the runtime for extensions to run on. Ex: PowerShell policy doesn't allow us to install the runtime, let users set the path manually.
         if (commandContext.acquireContext.mode !== 'sdk')
         {
             const existingHostRuntimeInternalExtensionPath = await resolveExistingPathIfExists(existingPathConfigWorker, commandContext.acquireContext, workerContext, utilContext, commandContext.versionSpecRequirement);
+            existingPathForLog = existingHostRuntimeInternalExtensionPath?.dotnetPath ?? '';
             if (existingHostRuntimeInternalExtensionPath)
             {
                 // We don't need to validate the existing path as it gets validated in the lookup logic already.
@@ -533,6 +535,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         else if (commandContext.acquireContext.mode === 'sdk')
         {
             const existingHostSDKUserPath = extensionConfiguration.get<string>(configKeys.dotnetSDKPath);
+            existingPathForLog = existingHostSDKUserPath ?? '';
             if (existingHostSDKUserPath)
             {
                 // Don't validate the existing SDK path as it is a user setting and we assume the user knows what they are doing.
@@ -597,7 +600,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
         loggingObserver.dispose();
         globalEventStream.post(new DotnetFindPathNoPathMetCondition(`Could not find a single host path that met the conditions.
-existingPath : ${existingHostRuntimeInternalExtensionPath?.dotnetPath}
+codePathSetting : ${existingPathForLog}
 onPath : ${JSON.stringify(dotnetsOnPATH)}
 onRealPath : ${JSON.stringify(dotnetsOnRealPATH)}
 onRoot : ${dotnetOnROOT}
