@@ -35,7 +35,7 @@ export class OutputChannelObserver implements IEventStreamObserver
     public post(event: IEvent): void
     {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        if (this.suppressOutput || ((event as any)?.verboseOutputOnly && this.highVerbosity))
+        if (this.suppressOutput || ((event as any)?.verboseOutputOnly && !this.highVerbosity))
         {
             return;
         }
