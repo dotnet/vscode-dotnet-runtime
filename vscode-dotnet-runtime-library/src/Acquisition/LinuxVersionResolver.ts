@@ -20,16 +20,15 @@ import { FileUtilities } from '../Utils/FileUtilities';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
 import { DebianDistroSDKProvider } from './DebianDistroSDKProvider';
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { GenericDistroSDKProvider } from './GenericDistroSDKProvider';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 import { RedHatDistroSDKProvider } from './RedHatDistroSDKProvider';
+import { DEBIAN_DISTRO_INFO_KEY, RED_HAT_DISTRO_INFO_KEY, UBUNTU_DISTRO_INFO_KEY } from './StringConstants';
 import { VersionResolver } from './VersionResolver';
 import * as versionUtils from './VersionUtilities';
-import { DEBIAN_DISTRO_INFO_KEY, RED_HAT_DISTRO_INFO_KEY, UBUNTU_DISTRO_INFO_KEY } from './StringConstants';
 
 
 /**
@@ -123,18 +122,21 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
             return this.distro;
         }
 
-        const commandResult = await this.commandRunner.execute(CommandExecutor.makeCommand(`cat`, [`/etc/os-release`]), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS });
+        const mainOSDeclarationFile = `/etc/os-release`;
+        // Some distros may not include the os-release file specified by system d, https://0pointer.de/blog/projects/os-release and this is a recommended fallback https://man7.org/linux/man-pages/man5/os-release.5.html
+        const backupOSDeclarationFile = `/usr/lib/os-release`;
+        const osDeclarationFile = await new FileUtilities().exists(mainOSDeclarationFile) ? mainOSDeclarationFile : backupOSDeclarationFile;
+
         const distroNameKey = 'NAME';
         const distroVersionKey = 'VERSION_ID';
-
         try
         {
-            const stdOut = commandResult.stdout.toString().split('\n');
+            const osInfo = (await new FileUtilities().read(osDeclarationFile)).split('\n');
             // We need to remove the quotes from the KEY="VALUE"\n pairs returned by the command stdout, and then turn it into a dictionary. We can't use replaceAll for older browsers.
             // Replace only replaces one quote, so we remove the 2nd one later.
-            const stdOutWithQuotesRemoved = stdOut.map(x => x.replace('"', ''));
-            const stdOutWithSeparatedKeyValues = stdOutWithQuotesRemoved.map(x => x.split('='));
-            const keyValueMap = Object.fromEntries(stdOutWithSeparatedKeyValues.map(x => [x[0], x[1]]));
+            const infoWithQuotesRemoved = osInfo.map(x => x.replace('"', ''));
+            const infoWithSeparatedKeyValues = infoWithQuotesRemoved.map(x => x.split('='));
+            const keyValueMap = Object.fromEntries(infoWithSeparatedKeyValues.map(x => [x[0], x[1]]));
 
             // Remove the 2nd quotes.
             const distroName: string = keyValueMap[distroNameKey]?.replace('"', '') ?? '';
@@ -154,7 +156,7 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
         catch (error)
         {
             const err = new DotnetAcquisitionDistroUnknownError(new EventCancellationError('DotnetAcquisitionDistroUnknownError',
-                `${this.baseUnsupportedDistroErrorMessage} ... does /etc/os-release exist?`),
+                `${this.baseUnsupportedDistroErrorMessage} ... does /etc/os-release or /usr/lib/os-release exist?`),
                 getInstallFromContext(this.workerContext));
             this.workerContext.eventStream.post(err);
             throw err.error;
