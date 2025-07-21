@@ -318,7 +318,7 @@ export class FileUtilities extends IFileUtilities
         {
             try
             {
-                const commandResult = await executor.execute(CommandExecutor.makeCommand('id', ['-u']), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }, false);
+                const commandResult = await executor.execute(CommandExecutor.makeCommand('id', ['-u']), { shell: true, dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }, false);
                 return commandResult.status === '0';
             }
             catch (error: any)

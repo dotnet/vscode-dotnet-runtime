@@ -271,7 +271,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         {
             if (os.platform() === 'win32') // Windows does not have chmod +x ability with nodejs.
             {
-                const permissionsCommand = CommandExecutor.makeCommand('icacls', [`"${installerPath}"`, '/grant:r', `"%username%":F`, '/t', '/c']);
+                const permissionsCommand = CommandExecutor.makeCommand('icacls', [`${installerPath}`, '/grant:r', `%username%:F`, '/t', '/c']);
                 const commandRes = await this.commandRunner.execute(permissionsCommand, {}, false);
                 if (commandRes.stderr !== '')
                 {
@@ -343,7 +343,7 @@ Please try again, or download the .NET Installer file yourself. You may also rep
             else if (error?.message?.includes('EPERM'))
             {
                 this.acquisitionContext.eventStream.post(new DotnetFileIntegrityFailureEvent(`The file ${installerFile} did not have the correct permissions scope to be assessed.
-Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerFile}"`]), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }, false))}`));
+Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`${installerFile}`]), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }, false))}`));
             }
             return ask ? this.userChoosesToContinueWithInvalidHash() : false;
         }
@@ -445,7 +445,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
             }
             else if (workingCommand.commandRoot === 'command')
             {
-                workingCommand = CommandExecutor.makeCommand(`open`, [`-W`, `"${path.resolve(installerPath)}"`]);
+                workingCommand = CommandExecutor.makeCommand(`open`, [`-W`, `${path.resolve(installerPath)}`]);
             }
 
             this.acquisitionContext.eventStream.post(new NetInstallerBeginExecutionEvent(`The OS X .NET Installer has been launched.`));
@@ -459,15 +459,15 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
         }
         else
         {
-            const command = `"${path.resolve(installerPath)}"`;
+            const command = `${path.resolve(installerPath)}`;
             let commandOptions: string[] = [];
             if (await this.file.isElevated(this.acquisitionContext, this.utilityContext))
             {
-                commandOptions = [`/quiet`, `/install`, `/norestart`];
+                commandOptions = [`/install`, `/quiet`, `/norestart`];
             }
             else
             {
-                commandOptions = [`/passive`, `/install`, `/norestart`]
+                commandOptions = [`/install`, `/passive`, `/norestart`]
             }
 
             this.acquisitionContext.eventStream.post(new NetInstallerBeginExecutionEvent(`The Windows .NET Installer has been launched.`));
@@ -487,7 +487,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
                     // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                     error.message = `The installer does not have permission to execute. Please try running as an administrator. ${error?.message}.
-Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`"${installerPath}"`]), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }, false))}`;
+Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.makeCommand('icacls', [`${installerPath}`]), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }, false))}`;
                 }
                 // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access

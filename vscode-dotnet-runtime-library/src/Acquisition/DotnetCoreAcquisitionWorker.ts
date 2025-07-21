@@ -356,7 +356,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
     private async sdkIsFound(context: IAcquisitionWorkerContext, version: string): Promise<boolean>
     {
         const executor = new CommandExecutor(context, this.utilityContext);
-        const listSDKsCommand = CommandExecutor.makeCommand('dotnet', ['--list-sdks', '--arch']);
+        const listSDKsCommand = CommandExecutor.makeCommand('dotnet', ['--list-sdks', '--arch', context.acquisitionContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture()], false);
         const result = await executor.execute(listSDKsCommand, { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false);
 
         if (result.status !== '0')
