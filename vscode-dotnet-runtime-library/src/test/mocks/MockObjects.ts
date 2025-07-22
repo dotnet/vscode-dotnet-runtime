@@ -780,3 +780,30 @@ export class MockInstallTracker extends InstallTrackerSingleton
         this.extensionState = extensionState;
     }
 }
+
+export class MockOfflineWebRequestWorker extends WebRequestWorkerSingleton
+{
+    private static mockInstance: MockOfflineWebRequestWorker | null = null;
+
+    private constructor()
+    {
+        super();
+    }
+
+    public static overrideInstance(): void
+    {
+        this.mockInstance = new MockOfflineWebRequestWorker();
+        (WebRequestWorkerSingleton as any).instance = this.mockInstance;
+    }
+
+    public static resetInstance(): void
+    {
+        this.mockInstance = null;
+        (WebRequestWorkerSingleton as any).instance = null;
+    }
+
+    public async isOnline(): Promise<boolean>
+    {
+        return false; // Always offline
+    }
+}
