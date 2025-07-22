@@ -1096,9 +1096,9 @@ foreground-child@^3.1.0, foreground-child@^3.3.1:
     signal-exit "^4.0.1"
 
 form-data@^4.0.0:
-  version "4.0.3"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/form-data/-/form-data-4.0.3.tgz"
-  integrity sha1-YIsbPz4ovg/M9ZAfyF+zZB5c8K4=
+  version "4.0.4"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/form-data/-/form-data-4.0.4.tgz#784cdcce0669a9d68e94d11ac4eea98088edd2c4"
+  integrity sha1-eEzczgZpqdaOlNEaxO6pgIjt0sQ=
   dependencies:
     asynckit "^0.4.0"
     combined-stream "^1.0.8"
@@ -2084,7 +2084,16 @@ stdin-discarder@^0.2.2:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/stdin-discarder/-/stdin-discarder-0.2.2.tgz"
   integrity sha1-OQA39ExK4aGuU1xf443Dq6jZl74=
 
-"string-width-cjs@npm:string-width@^4.2.0", string-width@^4.1.0, string-width@^4.2.0, string-width@^4.2.3:
+"string-width-cjs@npm:string-width@^4.2.0":
+  version "4.2.3"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/string-width/-/string-width-4.2.3.tgz"
+  integrity sha1-JpxxF9J7Ba0uU2gwqOyJXvnG0BA=
+  dependencies:
+    emoji-regex "^8.0.0"
+    is-fullwidth-code-point "^3.0.0"
+    strip-ansi "^6.0.1"
+
+string-width@^4.1.0, string-width@^4.2.0, string-width@^4.2.3:
   version "4.2.3"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/string-width/-/string-width-4.2.3.tgz"
   integrity sha1-JpxxF9J7Ba0uU2gwqOyJXvnG0BA=
@@ -2118,7 +2127,14 @@ string_decoder@~1.1.1:
   dependencies:
     safe-buffer "~5.1.0"
 
-"strip-ansi-cjs@npm:strip-ansi@^6.0.1", strip-ansi@^6.0.0, strip-ansi@^6.0.1:
+"strip-ansi-cjs@npm:strip-ansi@^6.0.1":
+  version "6.0.1"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/strip-ansi/-/strip-ansi-6.0.1.tgz"
+  integrity sha1-nibGPTD1NEPpSJSVshBdN7Z6hdk=
+  dependencies:
+    ansi-regex "^5.0.1"
+
+strip-ansi@^6.0.0, strip-ansi@^6.0.1:
   version "6.0.1"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/strip-ansi/-/strip-ansi-6.0.1.tgz"
   integrity sha1-nibGPTD1NEPpSJSVshBdN7Z6hdk=
@@ -2369,7 +2385,16 @@ workerpool@^9.2.0:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/workerpool/-/workerpool-9.3.2.tgz"
   integrity sha1-TARai0N64bxwxkavEZKai00jhlY=
 
-"wrap-ansi-cjs@npm:wrap-ansi@^7.0.0", wrap-ansi@^7.0.0:
+"wrap-ansi-cjs@npm:wrap-ansi@^7.0.0":
+  version "7.0.0"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/wrap-ansi/-/wrap-ansi-7.0.0.tgz"
+  integrity sha1-Z+FFz/UQpqaYS98RUpEdadLrnkM=
+  dependencies:
+    ansi-styles "^4.0.0"
+    string-width "^4.1.0"
+    strip-ansi "^6.0.0"
+
+wrap-ansi@^7.0.0:
   version "7.0.0"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/wrap-ansi/-/wrap-ansi-7.0.0.tgz"
   integrity sha1-Z+FFz/UQpqaYS98RUpEdadLrnkM=
