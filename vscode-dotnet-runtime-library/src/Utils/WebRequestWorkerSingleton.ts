@@ -62,7 +62,7 @@ export class WebRequestWorkerSingleton
     private clientCreationError: any;
 
     protected constructor()
-{
+    {
         try
         {
             const uncachedAxiosClient = Axios.create();
@@ -272,7 +272,7 @@ export class WebRequestWorkerSingleton
     public async isOnline(timeoutSec: number, eventStream: IEventStream): Promise<boolean>
     {
         const microsoftServerHostName = 'www.microsoft.com';
-        const expectedDNSResolutionTimeMs = Math.max(timeoutSec * 10 * 2, 100); // Assumption: DNS resolution should take less than 1/50th of the time it'd take to download .NET.
+        const expectedDNSResolutionTimeMs = Math.max(timeoutSec * 2, 100); // Assumption: DNS resolution should take less than 1/50th of the time it'd take to download .NET.
         // ... 100 ms is there as a default to prevent the dns resolver from throwing a runtime error if the user sets timeoutSeconds to 0.
 
         const dnsResolver = new dns.promises.Resolver({ timeout: expectedDNSResolutionTimeMs });
