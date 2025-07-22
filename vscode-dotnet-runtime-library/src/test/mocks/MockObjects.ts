@@ -273,6 +273,35 @@ export class MockIndexWebRequestWorker extends WebRequestWorkerSingleton
 
 }
 
+export class OfflineWebRequestWorker extends WebRequestWorkerSingleton
+{
+    constructor()
+    {
+        super();
+        const _ = WebRequestWorkerSingleton.getInstance(); // cause super to exist
+    }
+
+    public async isOnline(timeoutSec: number, eventStream: IEventStream): Promise<boolean>
+    {
+        return false; // Always return false to simulate offline mode
+    }
+
+    protected async makeWebRequest(url: string, ctx: IAcquisitionWorkerContext, throwOnError: boolean, numRetries: number): Promise<string | undefined>
+    {
+        throw new Error('Network request failed - offline mode');
+    }
+
+    public async getCachedData(url: string, ctx: IAcquisitionWorkerContext, retriesCount = 2): Promise<string | undefined>
+    {
+        throw new Error('Network request failed - offline mode');
+    }
+
+    public async downloadFile(url: string, dest: string, ctx: IAcquisitionWorkerContext): Promise<void>
+    {
+        throw new Error('Download failed - offline mode');
+    }
+}
+
 export class MockVSCodeExtensionContext extends IVSCodeExtensionContext
 {
     registerOnExtensionChange<A extends any[], R>(f: (...args: A) => R, ...args: A): void

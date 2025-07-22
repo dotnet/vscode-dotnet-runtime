@@ -20,6 +20,7 @@ import
     DotnetAcquisitionStatusResolved,
     DotnetAcquisitionStatusUndefined,
     DotnetLockEvent,
+    DotnetOfflineInstallUsed,
     DotnetUninstallAllCompleted,
     DotnetUninstallAllStarted,
     TestAcquireCalled
@@ -38,6 +39,7 @@ import
     MockExtensionContext,
     MockInstallTracker,
     NoInstallAcquisitionInvoker,
+    OfflineWebRequestWorker,
     RejectingAcquisitionInvoker,
 } from '../mocks/MockObjects';
 import { getMockAcquisitionContext, getMockAcquisitionWorker } from './TestUtility';
@@ -429,6 +431,83 @@ ${eventStream.events.map(event => event.eventName).join(', ')}`);
             const expectedPath = getExpectedPath(installId, acquisitionContext.acquisitionContext.mode!);
             assert.equal(result.dotnetPath, expectedPath);
             deleteFolderRecursive(path.join(process.cwd(), installApostropheFolder));
+        }
+    }).timeout(expectedTimeoutTime);
+
+    test('getSimilarExistingInstall finds existing install when offline', async () =>
+    {
+        const version = '8.0.0';
+        const requestedVersion = '8.0.1'; // Request a newer patch version
+        const [eventStream, extContext] = setupStates();
+
+        // Set up the worker with the original version first
+        const originalContext = getMockAcquisitionContext('runtime', version, expectedTimeoutTime, eventStream, extContext);
+        const [acquisitionWorker, invoker] = setupWorker(originalContext, eventStream);
+
+        // First, "install" the original version
+        await callAcquire(originalContext, acquisitionWorker, invoker);
+
+        // Now create a new context requesting the newer patch version
+        const newContext = getMockAcquisitionContext('runtime', requestedVersion, expectedTimeoutTime, eventStream, extContext);
+
+        // Replace the WebRequestWorkerSingleton instance with our offline mock
+        const originalInstance = WebRequestWorkerSingleton.getInstance();
+        const offlineWorker = new OfflineWebRequestWorker();
+        (WebRequestWorkerSingleton as any).instance = offlineWorker;
+
+        try
+        {
+            // Call getSimilarExistingInstall which should find the existing 8.0.0 install
+            const result = await acquisitionWorker.getSimilarExistingInstall(newContext);
+
+            // Verify that it found the existing install
+            assert.isNotNull(result, 'Should find existing install when offline');
+            assert.isString(result!.dotnetPath, 'Should return a valid dotnet path');
+
+            // Verify the correct events were posted
+            const offlineEvent = eventStream.events.find(event =>
+                event.eventName === 'DotnetOfflineInstallUsed'
+            );
+            assert.isNotNull(offlineEvent, 'Should post DotnetOfflineInstallUsed event');
+
+            const statusResolvedEvent = eventStream.events.find(event =>
+                event.eventName === 'DotnetAcquisitionStatusResolved'
+            );
+            assert.isNotNull(statusResolvedEvent, 'Should post DotnetAcquisitionStatusResolved event');
+
+        } finally
+        {
+            // Restore the original WebRequestWorkerSingleton instance
+            (WebRequestWorkerSingleton as any).instance = originalInstance;
+        }
+    }).timeout(expectedTimeoutTime);
+
+    test('getSimilarExistingInstall returns null when no matching install exists', async () =>
+    {
+        const requestedVersion = '8.0.1';
+        const [eventStream, extContext] = setupStates();
+
+        // Create a context without any pre-existing installs
+        const context = getMockAcquisitionContext('runtime', requestedVersion, expectedTimeoutTime, eventStream, extContext);
+        const [acquisitionWorker, invoker] = setupWorker(context, eventStream);
+
+        // Replace the WebRequestWorkerSingleton instance with our offline mock
+        const originalInstance = WebRequestWorkerSingleton.getInstance();
+        const offlineWorker = new OfflineWebRequestWorker();
+        (WebRequestWorkerSingleton as any).instance = offlineWorker;
+
+        try
+        {
+            // Call getSimilarExistingInstall which should return null since no installs exist
+            const result = await acquisitionWorker.getSimilarExistingInstall(context);
+
+            // Verify that it returns null
+            assert.isNull(result, 'Should return null when no matching install exists');
+
+        } finally
+        {
+            // Restore the original WebRequestWorkerSingleton instance
+            (WebRequestWorkerSingleton as any).instance = originalInstance;
         }
     }).timeout(expectedTimeoutTime);
 
