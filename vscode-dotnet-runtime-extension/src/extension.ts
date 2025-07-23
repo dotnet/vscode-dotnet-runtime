@@ -32,6 +32,7 @@ import
     DotnetInstallType,
     DotnetOfflineWarning,
     DotnetPathFinder,
+    DotnetResolver,
     DotnetVersionCategorizedEvent,
     DotnetVersionResolutionError,
     DotnetVersionSpecRequirement,
@@ -119,7 +120,6 @@ namespace commandKeys
     export const ensureDotnetDependencies = 'ensureDotnetDependencies';
     export const reportIssue = 'reportIssue';
     export const resetData = 'resetData';
-
     export const availableInstalls = 'availableInstalls';
 }
 
@@ -428,7 +428,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 } as IDotnetAcquireContext;
                 const workerContext = getAcquisitionWorkerContext(commandContext.mode, fakeAcquireContext);
 
-                const dotnetResolver = new DotnetConditionValidator(workerContext, utilContext);
+                const dotnetResolver = new DotnetResolver(workerContext, utilContext);
                 const installsInListForm: IDotnetListInfo[] = await dotnetResolver.getDotnetInstalls(commandContext.dotnetExecutablePath ?? 'dotnet', commandContext.mode, commandContext.architecture);
 
                 return installsInListForm.map((installInfo: IDotnetListInfo) =>
@@ -901,6 +901,7 @@ We will try to install .NET, but are unlikely to be able to connect to the serve
         dotnetAcquireRegistration,
         dotnetAcquireStatusRegistration,
         dotnetAcquireGlobalSDKRegistration,
+        dotnetAvailableInstallsRegistration,
         acquireGlobalSDKPublicRegistration,
         dotnetFindPathRegistration,
         dotnetListVersionsRegistration,
