@@ -53,6 +53,7 @@ import
     IDotnetConditionValidator,
     IDotnetEnsureDependenciesContext,
     IDotnetFindPathContext,
+    IDotnetListInfo,
     IDotnetListVersionsContext,
     IDotnetListVersionsResult,
     IDotnetUninstallContext,
@@ -116,6 +117,8 @@ namespace commandKeys
     export const ensureDotnetDependencies = 'ensureDotnetDependencies';
     export const reportIssue = 'reportIssue';
     export const resetData = 'resetData';
+
+    export const availableInstalls = 'availableInstalls';
 }
 
 const commandPrefix = 'dotnet';
@@ -400,6 +403,36 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, 'acquireStatus'));
         return pathResult;
     });
+
+
+    const dotnetAvailableInstallsRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.availableInstalls}`,
+        async (commandContext: IDotnetSearchContext): Promise<IDotnetSearchResult[]> =>
+        {
+            if (commandContext.mode === undefined || commandContext.requestingExtensionId === undefined)
+            {
+                throw new EventCancellationError('BadContextualAvailbleInstallsError', `The dotnet.availableInstalls API request was missing either a mode or requestingExtensionId. Please provide this.`);
+            }
+
+            const installs = await callWithErrorHandling(async () =>
+            {
+                const workerContext = getAcquisitionWorkerContext(commandContext.mode, commandContext);
+                const dotnetResolver = new DotnetConditionValidator(workerContext, utilContext);
+                const installsInListForm: IDotnetListInfo[] = await dotnetResolver.getDotnetInstalls(commandContext.dotnetExecutablePath ?? 'dotnet', commandContext.mode, commandContext.architecture);
+
+                return installsInListForm.map((installInfo: IDotnetListInfo) =>
+                {
+                    return {
+                        mode: installInfo.mode,
+                        version: installInfo.version,
+                        directory: installInfo.directory,
+                        architecture: installInfo.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(),
+                    } as IDotnetSearchResult;
+                });
+            }, getIssueContext(existingPathConfigWorker)(commandContext?.errorConfiguration, commandKeys.availableInstalls));
+
+            return installs ?? [];
+        });
+
 
     const resetDataPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.resetData}`, async () =>
     {

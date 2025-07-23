@@ -43,6 +43,8 @@ export * from './IDotnetAcquireResult';
 export * from './IDotnetEnsureDependenciesContext';
 export * from './IDotnetFindPathContext';
 export * from './IDotnetListVersionsContext';
+export * from './IDotnetSearchContext';
+export * from './IDotnetSearchResult';
 export * from './IDotnetUninstallContext';
 export * from './IExtensionContext';
 export * from './IExtensionState';

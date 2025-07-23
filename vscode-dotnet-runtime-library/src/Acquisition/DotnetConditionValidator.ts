@@ -12,6 +12,7 @@ import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { DOTNET_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
+import { DotnetInstallMode } from './DotnetInstallMode';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetConditionValidator } from './IDotnetConditionValidator';
 import { IDotnetListInfo } from './IDotnetListInfo';
@@ -28,7 +29,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
         this.executor ??= new CommandExecutor(this.workerContext, this.utilityContext);
     }
 
-    public async dotnetMeetsRequirement(dotnetExecutablePath: string, requirement: IDotnetFindPathContext): Promise<boolean>
+    public async getDotnetInfo(dotnetExecutablePath: string, mode: DotnetInstallMode, requestedArchitecture: string | undefined | null): Promise<IDotnetListInfo[]>
     {
         const hostArch = new ExecutableArchitectureDetector().getExecutableArchitecture(dotnetExecutablePath);
         const oldLookup = process.env.DOTNET_MULTILEVEL_LOOKUP;
@@ -37,40 +38,34 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
 
         try
         {
-            if (requirement.acquireContext.mode === 'sdk')
+            if (mode === 'sdk')
             {
-                const availableSDKs = await this.getSDKs(dotnetExecutablePath, requirement.acquireContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(), ExecutableArchitectureDetector.IsKnownArchitecture(hostArch));
-                const finalHostArch = ExecutableArchitectureDetector.IsKnownArchitecture(hostArch) ? hostArch : availableSDKs?.at(0)?.architecture ?? await this.getHostArchitecture(dotnetExecutablePath, requirement);
-                if (availableSDKs.some((sdk) =>
+                const availableSDKs = await this.getSDKs(dotnetExecutablePath, requestedArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(), ExecutableArchitectureDetector.IsKnownArchitecture(hostArch));
+                const resolvedHostArchitecture = ExecutableArchitectureDetector.IsKnownArchitecture(hostArch) ? hostArch : availableSDKs?.at(0)?.architecture ?? await this.getHostArchitectureViaInfo(dotnetExecutablePath, requestedArchitecture);
+
+                // We request to the host to only return the installs that match the architecture for both sdks and runtimes, so they must match now
+                return availableSDKs.map((sdk) =>
                 {
-                    return this.stringArchitectureMeetsRequirement(finalHostArch!, requirement.acquireContext.architecture) &&
-                        this.stringVersionMeetsRequirement(sdk.version, requirement.acquireContext.version, requirement) && this.allowPreview(sdk.version, requirement);
-                }))
-                {
-                    this.workerContext.eventStream.post(new DotnetConditionsValidated(`${dotnetExecutablePath} satisfies the conditions.`));
-                    return true;
-                }
+                    return {
+                        ...sdk,
+                        architecture: resolvedHostArchitecture
+                    };
+                }) as IDotnetListInfo[];
             }
             else
             {
                 // No need to consider SDKs when looking for runtimes as all the runtimes installed with the SDKs will be included in the runtimes list.
-                const availableRuntimes = await this.getRuntimes(dotnetExecutablePath, requirement.acquireContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(), ExecutableArchitectureDetector.IsKnownArchitecture(hostArch));
-                const finalHostArch = ExecutableArchitectureDetector.IsKnownArchitecture(hostArch) ? hostArch : availableRuntimes?.at(0)?.architecture ?? await this.getHostArchitecture(dotnetExecutablePath, requirement);
-                if (availableRuntimes.some((runtime) =>
+                const availableRuntimes = await this.getRuntimes(dotnetExecutablePath, requestedArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(), ExecutableArchitectureDetector.IsKnownArchitecture(hostArch));
+                const resolvedHostArchitecture = ExecutableArchitectureDetector.IsKnownArchitecture(hostArch) ? hostArch : availableRuntimes?.at(0)?.architecture ?? await this.getHostArchitectureViaInfo(dotnetExecutablePath, requirement);
+
+                return availableRuntimes.map((runtime) =>
                 {
-                    return runtime.mode === requirement.acquireContext.mode && this.stringArchitectureMeetsRequirement(finalHostArch!, requirement.acquireContext.architecture) &&
-                        this.stringVersionMeetsRequirement(runtime.version, requirement.acquireContext.version, requirement) && this.allowPreview(runtime.version, requirement);
-                }))
-                {
-                    this.workerContext.eventStream.post(new DotnetConditionsValidated(`${dotnetExecutablePath} satisfies the conditions.`));
-                    return true;
-                }
+                    return {
+                        ...runtime,
+                        architecture: resolvedHostArchitecture
+                    };
+                }) as IDotnetListInfo[];
             }
-
-            this.workerContext.eventStream.post(new DotnetFindPathDidNotMeetCondition(`${dotnetExecutablePath} did NOT satisfy the conditions: hostArch: ${hostArch}, requiredArch: ${requirement.acquireContext.architecture},
-            required version: ${requirement.acquireContext.version}, required mode: ${requirement.acquireContext.mode}`));
-
-            return false;
         }
         finally
         {
@@ -86,6 +81,43 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
         }
     }
 
+    public async dotnetMeetsRequirement(dotnetExecutablePath: string, requirement: IDotnetFindPathContext): Promise<boolean>
+    {
+        const availableInstalls = await this.getDotnetInfo(dotnetExecutablePath, requirement.acquireContext.mode ?? 'runtime', requirement.acquireContext.architecture);
+        // Assumption : All APIs we call return only one architecture in the group of installs we get (currently a true assumption)
+        const determinedInstallArchitecture = availableInstalls.at(0)?.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture();
+
+        if (requirement.acquireContext.mode === 'sdk')
+        {
+            if (availableInstalls.some((sdk) =>
+            {
+                return this.stringArchitectureMeetsRequirement(determinedInstallArchitecture, requirement.acquireContext.architecture) &&
+                    this.stringVersionMeetsRequirement(sdk.version, requirement.acquireContext.version, requirement) && this.allowPreview(sdk.version, requirement);
+            }))
+            {
+                this.workerContext.eventStream.post(new DotnetConditionsValidated(`${dotnetExecutablePath} satisfies the conditions.`));
+                return true;
+            }
+        }
+        else
+        {
+            if (availableInstalls.some((runtime) =>
+            {
+                return runtime.mode === requirement.acquireContext.mode && this.stringArchitectureMeetsRequirement(determinedInstallArchitecture, requirement.acquireContext.architecture) &&
+                    this.stringVersionMeetsRequirement(runtime.version, requirement.acquireContext.version, requirement) && this.allowPreview(runtime.version, requirement);
+            }))
+            {
+                this.workerContext.eventStream.post(new DotnetConditionsValidated(`${dotnetExecutablePath} satisfies the conditions.`));
+                return true;
+            }
+        }
+
+        this.workerContext.eventStream.post(new DotnetFindPathDidNotMeetCondition(`${dotnetExecutablePath} did NOT satisfy the conditions: hostArch: ${hostArch}, requiredArch: ${requirement.acquireContext.architecture},
+            required version: ${requirement.acquireContext.version}, required mode: ${requirement.acquireContext.mode}`));
+
+        return false;
+    }
+
     /**
      *
      * @param hostPath The path to the dotnet executable
@@ -97,7 +129,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
      * @remarks Will return '' if the architecture cannot be determined for some peculiar reason (e.g. dotnet --info is broken or changed).
      */
     // eslint-disable-next-line @typescript-eslint/require-await
-    private async getHostArchitecture(hostPath: string, requirement: IDotnetFindPathContext): Promise<string>
+    private async getHostArchitectureViaInfo(hostPath: string, expectedArchitecture?: string | undefined | null): Promise<string>
     {
         // dotnet --info is not machine-readable and subject to breaking changes. See https://github.com/dotnet/sdk/issues/33697 and https://github.com/dotnet/runtime/issues/98735/
         // Unfortunately even with a new API, that might not go in until .NET 10 and beyond, so we have to rely on dotnet --info for now.*/
@@ -118,8 +150,8 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
             const archLine = lines.find((line) => line.startsWith('Architecture:'));
             if (archLine === undefined)
             {
-                this.workerContext.eventStream.post(new DotnetUnableToCheckPATHArchitecture(`Could not find the architecture of the dotnet host ${hostPath}. If this host does not match the architecture ${requirement.acquireContext.architecture}:
-Please set the PATH to a dotnet host that matches the architecture ${requirement.acquireContext.architecture}. An incorrect architecture will cause instability for the extension ${requirement.acquireContext.requestingExtensionId}.`));
+                this.workerContext.eventStream.post(new DotnetUnableToCheckPATHArchitecture(`Could not find the architecture of the dotnet host ${hostPath}. If this host does not match the architecture ${expectedArchitecture}:
+Please set the PATH to a dotnet host that matches the architecture. An incorrect architecture will cause instability for any C# or .NET related applications that rely on this install.`));
                 if (process.env.DOTNET_INSTALL_TOOL_DONT_ACCEPT_UNKNOWN_ARCH === '1')
                 {
                     return 'unknown'; // Bad value to cause failure mismatch, which will become 'auto'
