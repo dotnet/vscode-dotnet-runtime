@@ -732,6 +732,27 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
         await testAcquire('runtime');
     }).timeout(standardTimeoutTime);
 
+    test('acquireStatus can work Offline', async () =>
+    {
+        const availableVersion = '8.0';
+        try
+        {
+            await installRuntime(availableVersion, 'runtime');
+
+            // Simulate offline mode by not allowing network requests
+            process.env.DOTNET_INSTALL_TOOL_OFFLINE = '1';
+
+            const context: IDotnetAcquireContext = { version: availableVersion, requestingExtensionId, mode: 'runtime' };
+            let result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquireStatus', context);
+            assert.isDefined(result, 'acquireStatusResult should be defined');
+            assert.include(result!.dotnetPath, availableVersion, 'acquireStatusResult should contain the expected version in the path');
+        }
+        finally
+        {
+            process.env.DOTNET_INSTALL_TOOL_OFFLINE = undefined
+        }
+    }).timeout(standardTimeoutTime);
+
     test('Install Aspnet runtime Status Command', async () =>
     {
         await testAcquire('aspnetcore');
