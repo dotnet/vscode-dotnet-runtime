@@ -85,6 +85,9 @@ suite('DotnetResolver Unit Tests', function ()
 
         (validator as any).hostSupportsArchFlag = async () => false;
 
+        const publicSDKs = await validator.getDotnetInstalls('dotnet', 'runtime', 'arm64');
+        const publicRuntimes = await validator.getDotnetInstalls('dotnet', 'sdk', 'arm64');
+
         const sdks = await validator.getSDKs('dotnet', 'arm64', false);
         const runtimes = await validator.getRuntimes('dotnet', 'arm64', false);
         const infoEvents = mockEventStream.events.filter(e => e instanceof CommandExecutionEvent && e.eventMessage && e.eventMessage.includes('--info'));
@@ -93,6 +96,8 @@ suite('DotnetResolver Unit Tests', function ()
         // Check architecture was set to null
         assert.isNull(sdks[0].architecture, 'SDK architecture should be null when host does not support --arch');
         assert.isNull(runtimes[0].architecture, 'Runtime architecture should be null when host does not support --arch');
+        assert.equal(publicSDKs?.at(0)?.architecture, os.arch(), 'Public SDKs architecture should be defaulted to os.arch() when host does not support --arch');
+        assert.equal(publicRuntimes?.at(0)?.architecture, os.arch(), 'Public SDKs architecture should be defaulted to os.arch() when host does not support --arch');
     }).timeout(defaultTimeoutTimeMs);
 
     test('dotnet --info is called if .NET 10 is detected but invalid arch returns status 0', async () =>
@@ -110,12 +115,16 @@ suite('DotnetResolver Unit Tests', function ()
             { status: '0', stdout: 'Architecture: x64', stderr: '' } // --info
         ];
 
+
+        const publicSDKs = await validator.getDotnetInstalls('dotnet', 'runtime', 'arm64');
+
         const sdks = await validator.getSDKs('dotnet', 'arm64', false);
         const infoEvents = mockEventStream.events.filter(e => e instanceof CommandExecutionEvent && e.eventMessage && e.eventMessage.includes('--info'));
         assert.isAbove(infoEvents.length, 0, 'dotnet --info should be called if --arch returns status 0 even with .NET 10');
 
         // Check architecture was set to null
         assert.isNull(sdks[0].architecture, 'Architecture should be null when --arch is not supported');
+        assert.equal(publicSDKs?.at(0)?.architecture, os.arch(), 'Public SDKs architecture should be defaulted to os.arch() when host does not support --arch');
     }).timeout(defaultTimeoutTimeMs);
 
     test('It does not call info or list-runtimes for known architectures', async () =>
