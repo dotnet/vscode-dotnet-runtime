@@ -29,7 +29,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
         this.executor ??= new CommandExecutor(this.workerContext, this.utilityContext);
     }
 
-    public async getDotnetInfo(dotnetExecutablePath: string, mode: DotnetInstallMode, requestedArchitecture: string | undefined | null): Promise<IDotnetListInfo[]>
+    public async getDotnetInstalls(dotnetExecutablePath: string, mode: DotnetInstallMode, requestedArchitecture: string | undefined | null): Promise<IDotnetListInfo[]>
     {
         const hostArch = new ExecutableArchitectureDetector().getExecutableArchitecture(dotnetExecutablePath);
         const oldLookup = process.env.DOTNET_MULTILEVEL_LOOKUP;
@@ -56,7 +56,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
             {
                 // No need to consider SDKs when looking for runtimes as all the runtimes installed with the SDKs will be included in the runtimes list.
                 const availableRuntimes = await this.getRuntimes(dotnetExecutablePath, requestedArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(), ExecutableArchitectureDetector.IsKnownArchitecture(hostArch));
-                const resolvedHostArchitecture = ExecutableArchitectureDetector.IsKnownArchitecture(hostArch) ? hostArch : availableRuntimes?.at(0)?.architecture ?? await this.getHostArchitectureViaInfo(dotnetExecutablePath, requirement);
+                const resolvedHostArchitecture = ExecutableArchitectureDetector.IsKnownArchitecture(hostArch) ? hostArch : availableRuntimes?.at(0)?.architecture ?? await this.getHostArchitectureViaInfo(dotnetExecutablePath, requestedArchitecture);
 
                 return availableRuntimes.map((runtime) =>
                 {
@@ -83,7 +83,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
 
     public async dotnetMeetsRequirement(dotnetExecutablePath: string, requirement: IDotnetFindPathContext): Promise<boolean>
     {
-        const availableInstalls = await this.getDotnetInfo(dotnetExecutablePath, requirement.acquireContext.mode ?? 'runtime', requirement.acquireContext.architecture);
+        const availableInstalls = await this.getDotnetInstalls(dotnetExecutablePath, requirement.acquireContext.mode ?? 'runtime', requirement.acquireContext.architecture);
         // Assumption : All APIs we call return only one architecture in the group of installs we get (currently a true assumption)
         const determinedInstallArchitecture = availableInstalls.at(0)?.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture();
 
@@ -112,7 +112,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
             }
         }
 
-        this.workerContext.eventStream.post(new DotnetFindPathDidNotMeetCondition(`${dotnetExecutablePath} did NOT satisfy the conditions: hostArch: ${hostArch}, requiredArch: ${requirement.acquireContext.architecture},
+        this.workerContext.eventStream.post(new DotnetFindPathDidNotMeetCondition(`${dotnetExecutablePath} did NOT satisfy the conditions: hostArch: ${determinedInstallArchitecture}, requiredArch: ${requirement.acquireContext.architecture},
             required version: ${requirement.acquireContext.version}, required mode: ${requirement.acquireContext.mode}`));
 
         return false;

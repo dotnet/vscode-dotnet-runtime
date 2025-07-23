@@ -56,6 +56,8 @@ import
     IDotnetListInfo,
     IDotnetListVersionsContext,
     IDotnetListVersionsResult,
+    IDotnetSearchContext,
+    IDotnetSearchResult,
     IDotnetUninstallContext,
     IDotnetVersion,
     IEventStreamContext,
@@ -415,7 +417,17 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             const installs = await callWithErrorHandling(async () =>
             {
-                const workerContext = getAcquisitionWorkerContext(commandContext.mode, commandContext);
+                // Bad design: An acquire context is needed to setup the state, but don't want to untangle that in this change.
+                const fakeAcquireContext = {
+                    version: 'notApplicable',
+                    requestingExtensionId: commandContext.requestingExtensionId,
+                    architecture: commandContext.architecture,
+                    mode: commandContext.mode,
+                    installType: 'local' as DotnetInstallType, // does not matter as we search based on the host path
+                    errorConfiguration: commandContext.errorConfiguration
+                } as IDotnetAcquireContext;
+                const workerContext = getAcquisitionWorkerContext(commandContext.mode, fakeAcquireContext);
+
                 const dotnetResolver = new DotnetConditionValidator(workerContext, utilContext);
                 const installsInListForm: IDotnetListInfo[] = await dotnetResolver.getDotnetInstalls(commandContext.dotnetExecutablePath ?? 'dotnet', commandContext.mode, commandContext.architecture);
 
