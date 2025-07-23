@@ -58,9 +58,6 @@ parameters:
   displayName: Prerelease
   type: boolean
   default: false
-  values:
-  - true
-  - false
 
 extends:
   template: v1/1ES.Official.PipelineTemplate.yml@1esPipelines
