@@ -21,7 +21,7 @@ export interface IDotnetSearchContext
      * @property requestingExtensionId - The Extension that relies on our extension to acquire the runtime or .NET SDK. It MUST be provided.
      *
      * @property errorConfiguration - An set of options for the desired treat as error and error verbosity behaviors of the extension.
-
+     *
      * @property architecture - Optional: The architecture of the host path given: (accepts 'x64', 'x86', 'arm64') - Will default to the executable architecture if detectable, else the `os.arch()`
      *
      * @property mode - Whether the install should be of the sdk, runtime, or aspnetcore (runtime).
