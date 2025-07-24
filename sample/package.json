@@ -76,6 +76,11 @@
 				"category": "Sample"
 			},
 			{
+				"command": "sample.dotnet.availableInstalls",
+				"title": "Find the .NET installs on the PATH",
+				"category": "Sample"
+			},
+			{
 				"command": "sample.dotnet-sdk.acquire",
 				"title": "Acquire .NET SDK",
 				"category": "Sample"

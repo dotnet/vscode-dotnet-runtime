@@ -264,7 +264,7 @@ ${stderr}`);
 ${JSON.stringify(result) ?? 'undefined'}`);
     });
 
-    const sampleAvailableInstallsRegistration = vscode.commands.registerCommand('sample.dotnet.availableInstals', async (version) =>
+    const sampleAvailableInstallsRegistration = vscode.commands.registerCommand('sample.dotnet.availableInstalls', async (version) =>
     {
         let dotnetPath = await vscode.window.showInputBox({
             placeHolder: 'undefined',
@@ -291,7 +291,7 @@ ${JSON.stringify(result) ?? 'undefined'}`);
         try
         {
             const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.availableInstalls', { architecture: arch, requestingExtensionId: requestingExtensionId, mode: searchMode, dotnetExecutablePath: dotnetPath });
-            vscode.window.showInformationMessage(`.NET Discovered\n
+            vscode.window.showInformationMessage(`.NET Discovered:\n
 ${JSON.stringify(result) ?? 'undefined'}`);
         }
         catch (error)
