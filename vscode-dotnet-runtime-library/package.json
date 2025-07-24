@@ -8,7 +8,7 @@
 	},
 	"license": "MIT",
 	"engines": {
-		"vscode": "^1.99.0"
+		"vscode": "^1.101.0"
 	},
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
@@ -16,10 +16,11 @@
 		"vscode:prepublish": "npm run compile && dotnet build ../msbuild/signJs --property jsOutputPath=..\\..\\vscode-dotnet-runtime-library\\dist -bl -v:normal",
 		"compile": "npm run clean && tsc -p ./ && npm run mockPack",
 		"mockPack": "run-script-os",
+		"copyTestAssets": "copyfiles -u 4 \"src/test/mocks/Executables/**/*\" dist/test/mocks/Executables/",
 		"mockPack:darwin:linux": "cd .. && sh ./mock-webpack.sh && cd vscode-dotnet-runtime-library",
 		"mockPack:win32": "pushd .. && @powershell -NoProfile -ExecutionPolicy Unrestricted -Command ./mock-webpack.ps1 && popd",
 		"watch": "npm run clean && tsc -watch -p ./",
-		"test": "npm run compile --silent && npm run unit-test",
+		"test": "npm run compile --silent && npm run copyTestAssets && npm run unit-test",
 		"unit-test": "mocha -u tdd -- dist/test/unit/**.test.js",
 		"clean": "rimraf dist"
 	},
@@ -27,6 +28,7 @@
 		"@types/chai": "4.2.22",
 		"@types/lodash": "^4.17.13",
 		"@types/proper-lockfile": "^4.1.2",
+		"copyfiles": "^2.4.1",
 		"glob": "^7.2.0"
 	},
 	"dependencies": {
@@ -49,7 +51,7 @@
 		"get-proxy-settings": "^0.1.13",
 		"https-proxy-agent": "^7.0.4",
 		"lodash": "^4.17.21",
-		"mocha": "^9.1.3",
+		"mocha": "^11.7.0",
 		"node-cache": "^5.1.2",
 		"open": "^8.4.0",
 		"rimraf": "3.0.2",

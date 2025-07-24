@@ -50,3 +50,4 @@
 *.sln text=auto eol=crlf
 
 *.sh eol=lf
+*.lock linguist-generated=true

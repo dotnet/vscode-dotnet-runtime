@@ -26,9 +26,19 @@ export class LoggingObserver implements ILoggingObserver
         this.writeLine('');
     }
 
+    private innerDispose(): Promise<void>
+    {
+        return fs.promises.writeFile(this.logFilePath, this.log.join('\n'));
+    }
+
     public dispose(): void
     {
-        fs.writeFileSync(this.logFilePath, this.log.join('\n'));
+        this.innerDispose().catch(() => {});
+    }
+
+    public async disposeAsync(): Promise<void>
+    {
+        await this.innerDispose();
     }
 
     public getFileLocation(): string

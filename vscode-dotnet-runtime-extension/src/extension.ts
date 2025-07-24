@@ -97,6 +97,7 @@ namespace configKeys
     export const allowInvalidPaths = 'allowInvalidPaths';
     export const cacheTimeToLiveMultiplier = 'cacheTimeToLiveMultiplier';
     export const showResetDataCommand = 'showResetDataCommand';
+    export const suppressOutput = 'suppressOutput';
 }
 
 namespace commandKeys
@@ -153,6 +154,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
 
     const allowInvalidPathSetting = extensionConfiguration.get<boolean>(configKeys.allowInvalidPaths);
+    const suppressOutput = extensionConfiguration.get<boolean>(configKeys.suppressOutput) ?? false;
     const isExtensionTelemetryEnabled = enableExtensionTelemetry(extensionConfiguration, configKeys.enableTelemetry);
     const displayWorker = extensionContext ? extensionContext.displayWorker : new WindowDisplayWorker();
 
@@ -173,7 +175,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         packageJson
     } as IEventStreamContext;
     const [globalEventStream, outputChannel, loggingObserver,
-        eventStreamObservers, telemetryObserver, _] = registerEventStream(eventStreamContext, vsCodeExtensionContext, utilContext);
+        eventStreamObservers, telemetryObserver, _] = registerEventStream(eventStreamContext, vsCodeExtensionContext, utilContext, suppressOutput);
 
 
     // Setting up command-shared classes for Runtime & SDK Acquisition
@@ -558,21 +560,6 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             {
                 loggingObserver.dispose();
                 return { dotnetPath: validatedRealPATH };
-            }
-        }
-
-        if (commandContext.acquireContext.mode === 'runtime' || commandContext.acquireContext.mode === 'aspnetcore')
-        {
-            const extensionManagedRuntimeRecordPaths = await finder.findExtensionManagedRuntimes();
-            const filteredExtensionManagedRuntimeRecordPaths = validator.filterValidPaths(extensionManagedRuntimeRecordPaths, commandContext);
-            for (const dotnetPath of filteredExtensionManagedRuntimeRecordPaths ?? [])
-            {
-                const validatedExistingManagedPath = await getPathIfValid(dotnetPath.path, validator, commandContext);
-                if (validatedExistingManagedPath)
-                {
-                    loggingObserver.dispose();
-                    return { dotnetPath: dotnetPath.path };
-                }
             }
         }
 

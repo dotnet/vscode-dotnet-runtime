@@ -623,22 +623,7 @@ export class DotnetInstallCancelledByUserError extends DotnetInstallExpectedAbor
     public readonly eventName = 'DotnetInstallCancelledByUserError';
 }
 
-export class DotnetDebuggingMessage extends IEvent
-{
-    public readonly eventName = 'DotnetDebuggingMessage';
-    public readonly type = EventType.DotnetDebuggingMessage;
 
-    constructor(public readonly message: string)
-    {
-        super();
-        this.message = message;
-    }
-
-    public getProperties()
-    {
-        return { message: this.message };
-    }
-}
 
 export class DotnetNonZeroInstallerExitCodeError extends DotnetAcquisitionError
 {
@@ -1193,6 +1178,15 @@ export class CacheGetEvent extends DotnetCustomMessageEvent
 export class DotnetFindPathLookupSetting extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'DotnetFindPathLookupSetting';
+}
+
+export class CacheAliasCreated extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'CacheAliasCreated';
+    public getProperties()
+    {
+        return { Message: this.eventMessage, ...getDisabledTelemetryOnChance(1) };
+    };
 }
 
 export class DotnetFindPathSettingFound extends DotnetCustomMessageEvent

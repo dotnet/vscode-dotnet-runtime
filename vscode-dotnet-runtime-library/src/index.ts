@@ -53,7 +53,6 @@ export * from './test/mocks/MockObjects';
 export * from './test/mocks/MockWindowDisplayWorker';
 export * from './test/unit/TestUtility';
 export * from './Utils/CommandExecutor';
-export * from './Utils/Debugging';
 export * from './Utils/ErrorHandler';
 export * from './Utils/ExtensionConfigurationWorker';
 export * from './Utils/FileUtilities';

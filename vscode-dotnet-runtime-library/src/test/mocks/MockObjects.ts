@@ -322,7 +322,7 @@ export class MockVersionResolver extends VersionResolver
 
 export class MockInstallScriptWorker extends InstallScriptAcquisitionWorker
 {
-    constructor(ctx: IAcquisitionWorkerContext, failing: boolean, private fallback = false)
+    constructor(ctx: IAcquisitionWorkerContext, private failing: boolean, private fallback = false)
     {
         super(ctx);
         this.webWorker = failing ?
@@ -338,6 +338,10 @@ export class MockInstallScriptWorker extends InstallScriptAcquisitionWorker
         }
         else
         {
+            if (this.failing)
+            {
+                throw new Error('Failed to Acquire Dotnet Install Script');
+            }
             return super.getFallbackScriptPath();
         }
     }
@@ -392,19 +396,18 @@ export class MockCommandExecutor extends ICommandExecutor
     {
         this.attemptedCommand = CommandExecutor.prettifyCommandExecutorCommand(command);
 
-        if (this.shouldActuallyExecuteCommand(command))
-        {
-            return this.trueExecutor.execute(command, options, terminalFailure);
-        }
-
         this.acquisitionContext.eventStream.post(new CommandExecutionEvent(`Executing command: ${this.attemptedCommand}`));
         for (let i = 0; i < this.otherCommandPatternsToMock.length; ++i)
         {
             const commandPatternToLookFor = this.otherCommandPatternsToMock[i];
             if (command.commandRoot.includes(commandPatternToLookFor) ||
-                command.commandParts.some((arg) => arg.includes(commandPatternToLookFor)))
+                command.commandParts.some((arg) => commandPatternToLookFor.includes(arg)))
             {
-                const indexOfExactMatch = this.otherCommandPatternsToMock.indexOf(this.attemptedCommand);
+                let indexOfExactMatch = this.otherCommandPatternsToMock.indexOf(this.attemptedCommand);
+                if (indexOfExactMatch === -1)
+                {
+                    indexOfExactMatch = this.otherCommandPatternsToMock.indexOf(command.commandParts.join(' '));
+                }
                 if (indexOfExactMatch !== -1)
                 {
                     // If we have an exact match, return the value for that command.
@@ -412,6 +415,11 @@ export class MockCommandExecutor extends ICommandExecutor
                 }
                 return this.otherCommandsReturnValues[i];
             }
+        }
+
+        if (this.shouldActuallyExecuteCommand(command))
+        {
+            return this.trueExecutor.execute(command, options, terminalFailure);
         }
 
         return this.fakeReturnValue;
@@ -454,7 +462,6 @@ export class MockCommandExecutor extends ICommandExecutor
         return this.trueExecutor.setEnvironmentVariable(variable, value, vscodeContext, failureWarningMessage, nonWinFailureMessage);
     }
 }
-
 export class MockFileUtilities extends IFileUtilities
 {
     private trueUtilities = new FileUtilities();
