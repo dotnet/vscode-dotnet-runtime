@@ -392,15 +392,25 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     {
         const pathResult = await callWithErrorHandling(async () =>
         {
-            const mode = commandContext.mode ?? 'runtime' as DotnetInstallMode;
+            commandContext.mode ??= 'runtime' as DotnetInstallMode;
+            commandContext.architecture ??= DotnetCoreAcquisitionWorker.defaultArchitecture();
+            commandContext.installType ??= 'local' as DotnetInstallType;
+            commandContext.requestingExtensionId ??= 'unspecified';
             const worker = getAcquisitionWorker();
-            const workerContext = getAcquisitionWorkerContext(mode, commandContext);
+            const workerContext = getAcquisitionWorkerContext(commandContext.mode, commandContext);
 
             globalEventStream.post(new DotnetAcquisitionStatusRequested(commandContext.version, commandContext.requestingExtensionId));
+
+            const existingOfflinePath = await getExistingInstallIfOffline(worker, workerContext);
+            if (existingOfflinePath)
+            {
+                return Promise.resolve(existingOfflinePath);
+            }
+
             const runtimeVersionResolver = new VersionResolver(workerContext);
-            const resolvedVersion = await runtimeVersionResolver.getFullVersion(commandContext.version, mode);
+            const resolvedVersion = await runtimeVersionResolver.getFullVersion(commandContext.version, commandContext.mode);
             commandContext.version = resolvedVersion;
-            const dotnetPath = await worker.acquireStatus(workerContext, mode);
+            const dotnetPath = await worker.acquireStatus(workerContext, commandContext.mode);
             return dotnetPath;
         }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, 'acquireStatus'));
         return pathResult;
