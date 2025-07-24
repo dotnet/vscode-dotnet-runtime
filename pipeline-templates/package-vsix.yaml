@@ -1,6 +1,7 @@
 parameters:
   pool: ''
   SignType: ''
+  PRERELEASE: false
 
 jobs:
 - job: ${{ parameters.pool.os }}_Package
@@ -39,7 +40,11 @@ jobs:
   - bash: |
       npm i -g rimraf
       npm i -g @vscode/vsce
-      vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
+      if [ "${{ parameters.PRERELEASE }}" = "true" ]; then
+        vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn --pre-release
+      else
+        vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
+      fi
       cp $(package-name)-$(GetVersion.version).vsix ../packages/$(package-name)-$(GetVersion.version).vsix
     displayName: 📦 Package Artifact
     workingDirectory: $(dir-name)
