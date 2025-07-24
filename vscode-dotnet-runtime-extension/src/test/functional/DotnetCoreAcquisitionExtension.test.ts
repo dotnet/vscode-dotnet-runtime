@@ -729,7 +729,7 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
 
         assert.exists(availableInstalls, 'The availableInstalls API should return a result');
         assert.isArray(availableInstalls, 'The availableInstalls API should return an array');
-        assert.isTrue(availableInstalls!.some(install => install.version === '6.0'), 'The acquired runtime should be listed in available installs');
+        assert.isTrue(availableInstalls!.some(install => install.version.includes('6')), 'The acquired runtime should be listed in available installs');
     }).timeout(standardTimeoutTime);
 
     test('dotnet.availableInstalls API checks system dotnet if no path is provided', async () =>

@@ -264,6 +264,42 @@ ${stderr}`);
 ${JSON.stringify(result) ?? 'undefined'}`);
     });
 
+    const sampleAvailableInstallsRegistration = vscode.commands.registerCommand('sample.dotnet.availableInstals', async (version) =>
+    {
+        let dotnetPath = await vscode.window.showInputBox({
+            placeHolder: 'undefined',
+            value: 'undefined',
+            prompt: 'The .NET Host Path to Scan.',
+        });
+
+        dotnetPath = dotnetPath === 'undefined' ? undefined : dotnetPath;
+
+        let arch = await vscode.window.showInputBox({
+            placeHolder: 'x64',
+            value: 'x64',
+            prompt: 'The .NET runtime architecture.',
+        });
+
+        arch = arch?.toLowerCase();
+
+        let searchMode = await vscode.window.showInputBox({
+            placeHolder: 'runtime',
+            value: 'runtime',
+            prompt: 'look for an sdk, runtime, aspnetcore runtime, etc',
+        });
+
+        try
+        {
+            const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.availableInstalls', { architecture: arch, requestingExtensionId: requestingExtensionId, mode: searchMode, dotnetExecutablePath: dotnetPath });
+            vscode.window.showInformationMessage(`.NET Discovered\n
+${JSON.stringify(result) ?? 'undefined'}`);
+        }
+        catch (error)
+        {
+            vscode.window.showErrorMessage((error as Error).toString());
+        }
+    });
+
     context.subscriptions.push(
         sampleHelloWorldRegistration,
         sampleAcquireRegistration,
@@ -274,6 +310,7 @@ ${JSON.stringify(result) ?? 'undefined'}`);
         sampleConcurrentASPNETTest,
         sampleShowAcquisitionLogRegistration,
         sampleFindPathRegistration,
+        sampleAvailableInstallsRegistration
     );
 
     // --------------------------------------------------------------------------
