@@ -35,8 +35,8 @@ import { FileUtilities } from '../Utils/FileUtilities';
 import { IFileUtilities } from '../Utils/IFileUtilities';
 import { EnvironmentVariableIsDefined, getDotnetExecutable, getOSArch, getPathSeparator } from '../Utils/TypescriptUtilities';
 import { DOTNET_INFORMATION_CACHE_DURATION_MS, SYS_CMD_SEARCH_CACHE_DURATION_MS } from './CacheTimeConstants';
-import { DotnetConditionValidator } from './DotnetConditionValidator';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
+import { DotnetResolver } from './DotnetResolver';
 import { InstallRecordWithPath } from './InstallRecordWithPath';
 import { InstallTrackerSingleton } from './InstallTrackerSingleton';
 import { RegistryReader } from './RegistryReader';
@@ -387,8 +387,8 @@ export class DotnetPathFinder implements IDotnetPathFinder
         for (const tentativePath of tentativePaths)
         {
             // This will even work if only the sdk is installed, list-runtimes on an sdk installed host would work
-            const validator = new DotnetConditionValidator(this.workerContext, this.utilityContext, this.executor);
-            const runtimeInfo = await validator.getRuntimes(tentativePath, requestedArchitecture, true);
+            const resolver = new DotnetResolver(this.workerContext, this.utilityContext, this.executor);
+            const runtimeInfo = await resolver.getRuntimes(tentativePath, requestedArchitecture, true);
             if ((runtimeInfo?.length ?? 0) > 0)
             {
                 // q.t. from @dibarbet on the C# Extension:
