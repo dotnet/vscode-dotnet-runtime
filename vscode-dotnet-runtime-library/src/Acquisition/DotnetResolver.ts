@@ -15,6 +15,7 @@ import { DotnetInstallMode } from './DotnetInstallMode';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetListInfo } from './IDotnetListInfo';
 import { IDotnetResolver } from './IDotnetResolver';
+import * as os from 'os';
 
 export class DotnetResolver implements IDotnetResolver
 {
@@ -23,6 +24,13 @@ export class DotnetResolver implements IDotnetResolver
         this.executor ??= new CommandExecutor(this.workerContext, this.utilityContext);
     }
 
+    /**
+     *
+     * @param dotnetExecutablePath The path to the dotnet executable that contains installs of the runtimes and SDKs to search.
+     * @param mode The mode to search for, either 'sdk' or 'runtime', or another mode.
+     * @param requestedArchitecture The architecture to search for, or undefined to search based on the host architecture, falling back to the os.arch()
+     * @returns An array of IDotnetListInfo objects representing the SDKs or runtimes installed on the system.
+     */
     public async getDotnetInstalls(dotnetExecutablePath: string, mode: DotnetInstallMode, requestedArchitecture: string | undefined | null): Promise<IDotnetListInfo[]>
     {
         const hostArch = new ExecutableArchitectureDetector().getExecutableArchitecture(dotnetExecutablePath);
@@ -102,7 +110,7 @@ export class DotnetResolver implements IDotnetResolver
         // System may not have english installed, but CDK already calls this without issue -- the .NET SDK language invocation is also wrapped by a runtime library and natively includes english assets
         const hostArch = await (this.executor!).execute(infoCommand, { env: envWithForceEnglish, dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false).then((result) =>
         {
-            const lines = result.stdout.split('\n').map((line) => line.trim()).filter((line) => (line?.length ?? 0) > 0);
+            const lines = result.stdout.split(os.EOL).map((line) => line.trim()).filter(Boolean);
             // This is subject to change but there is no good alternative to do this
             const archLine = lines.find((line) => line.startsWith('Architecture:'));
             if (archLine === undefined)
@@ -125,6 +133,13 @@ Please set the PATH to a dotnet host that matches the architecture. An incorrect
         return hostArch;
     }
 
+    /**
+     *
+     * @param existingPath the path to the executable of the dotnet muxer
+     * @param requestedArchitecture the architecture we want SDKs of
+     * @param knownArchitecture whether we already know the architecture of the host and therefore the SDKs
+     * @returns An array of IDotnetListInfo objects representing the SDKs installed on the system.
+     */
     public async getSDKs(existingPath: string, requestedArchitecture: string, knownArchitecture: boolean): Promise<IDotnetListInfo[]>
     {
         if (!existingPath || existingPath === '""')
@@ -142,7 +157,7 @@ Please set the PATH to a dotnet host that matches the architecture. An incorrect
         }
 
         const architectureKnown = knownArchitecture ? true : await this.hostSupportsArchFlag(existingPath, result.stdout);
-        const sdks = result.stdout.split('\n').map((line) => line.trim()).filter((line) => (line?.length ?? 0) > 0);
+        const sdks = result.stdout.split(os.EOL).map((line) => line.trim()).filter(Boolean);
         const sdkInfos: IDotnetListInfo[] = sdks.map((sdk) =>
         {
             const parts = sdk.split(' ', 2);
@@ -178,6 +193,13 @@ Please set the PATH to a dotnet host that matches the architecture. An incorrect
         return CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-runtimes', '--arch', requestedArchitecture]);
     }
 
+    /**
+     *
+     * @param existingPath the path to the executable of the dotnet muxer
+     * @param requestedArchitecture the architecture we want runtimes of
+     * @param knownArchitecture whether the architecture is known
+     * @returns an array of IDotnetListInfo objects representing the runtimes installed on the system
+     */
     public async getRuntimes(existingPath: string, requestedArchitecture: string | null, knownArchitecture: boolean): Promise<IDotnetListInfo[]>
     {
         if (!existingPath || existingPath === '""')
@@ -199,7 +221,7 @@ Please set the PATH to a dotnet host that matches the architecture. An incorrect
         }
 
         const architectureKnown = knownArchitecture ? true : await this.hostSupportsArchFlag(existingPath, result.stdout);
-        const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => (line?.length ?? 0) > 0);
+        const runtimes = result.stdout.split(os.EOL).map((line) => line.trim()).filter(Boolean);
         const runtimeInfos: IDotnetListInfo[] = runtimes.map((runtime) =>
         {
             const parts = runtime.split(' ', 3); // account for spaces in PATH, no space should appear before then and luckily path is last
