@@ -134,30 +134,27 @@ Please set the PATH to a dotnet host that matches the architecture. An incorrect
 
         const findSDKsCommand = CommandExecutor.makeCommand(`"${existingPath}"`, ['--list-sdks', '--arch', requestedArchitecture]);
 
-        const sdkInfo = await (this.executor!).execute(findSDKsCommand, { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false).then(async (result) =>
+        const result = await (this.executor!).execute(findSDKsCommand, { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false);
+
+        if (result.status !== '0')
         {
-            if (result.status !== '0')
-            {
-                return [];
-            }
+            return [];
+        }
 
-            const architectureKnown = knownArchitecture ? true : await this.hostSupportsArchFlag(existingPath, result.stdout);
-            const sdks = result.stdout.split('\n').map((line) => line.trim()).filter((line) => (line?.length ?? 0) > 0);
-            const sdkInfos: IDotnetListInfo[] = sdks.map((sdk) =>
-            {
-                const parts = sdk.split(' ', 2);
-                return {
-                    mode: 'sdk',
-                    version: parts[0],
-                    directory: sdk.split(' ').slice(1).join(' ').slice(1, -1), // need to remove the brackets from the path [path],
-                    architecture: architectureKnown ? requestedArchitecture : null
-                } as IDotnetListInfo;
-            }).filter(x => x !== null) as IDotnetListInfo[];
+        const architectureKnown = knownArchitecture ? true : await this.hostSupportsArchFlag(existingPath, result.stdout);
+        const sdks = result.stdout.split('\n').map((line) => line.trim()).filter((line) => (line?.length ?? 0) > 0);
+        const sdkInfos: IDotnetListInfo[] = sdks.map((sdk) =>
+        {
+            const parts = sdk.split(' ', 2);
+            return {
+                mode: 'sdk',
+                version: parts[0],
+                directory: sdk.split(' ').slice(1).join(' ').slice(1, -1), // need to remove the brackets from the path [path],
+                architecture: architectureKnown ? requestedArchitecture : null
+            } as IDotnetListInfo;
+        }).filter(x => x !== null) as IDotnetListInfo[];
 
-            return sdkInfos;
-        });
-
-        return sdkInfo;
+        return sdkInfos;
     }
 
     private async hostSupportsArchFlag(dotnetExecutablePath: string, listDotnetInstallsStdout: string): Promise<boolean>
@@ -194,30 +191,27 @@ Please set the PATH to a dotnet host that matches the architecture. An incorrect
         const aspnetCoreString = 'Microsoft.AspNetCore.App';
         const runtimeString = 'Microsoft.NETCore.App';
 
-        const runtimeInfo = await (this.executor!).execute(this.getRuntimesCommand(existingPath, requestedArchitecture), { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false).then(async (result) =>
+        const result = await (this.executor!).execute(this.getRuntimesCommand(existingPath, requestedArchitecture), { dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false);
+
+        if (result.status !== '0')
         {
-            if (result.status !== '0')
-            {
-                return [];
-            }
+            return [];
+        }
 
-            const architectureKnown = knownArchitecture ? true : await this.hostSupportsArchFlag(existingPath, result.stdout);
-            const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => (line?.length ?? 0) > 0);
-            const runtimeInfos: IDotnetListInfo[] = runtimes.map((runtime) =>
-            {
-                const parts = runtime.split(' ', 3); // account for spaces in PATH, no space should appear before then and luckily path is last
-                return {
-                    mode: parts[0] === aspnetCoreString ? 'aspnetcore' : parts[0] === runtimeString ? 'runtime' : 'sdk', // sdk is a placeholder for windows desktop, will never match since this is for runtime search only
-                    version: parts[1],
-                    directory: runtime.split(' ').slice(2).join(' ').slice(1, -1), // account for spaces in PATH, no space should appear before then and luckily path is last.
-                    // the 2nd slice needs to remove the brackets from the path [path]
-                    architecture: architectureKnown ? requestedArchitecture : null
-                } as IDotnetListInfo;
-            }).filter(x => x !== null) as IDotnetListInfo[];
+        const architectureKnown = knownArchitecture ? true : await this.hostSupportsArchFlag(existingPath, result.stdout);
+        const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter((line) => (line?.length ?? 0) > 0);
+        const runtimeInfos: IDotnetListInfo[] = runtimes.map((runtime) =>
+        {
+            const parts = runtime.split(' ', 3); // account for spaces in PATH, no space should appear before then and luckily path is last
+            return {
+                mode: parts[0] === aspnetCoreString ? 'aspnetcore' : parts[0] === runtimeString ? 'runtime' : 'sdk', // sdk is a placeholder for windows desktop, will never match since this is for runtime search only
+                version: parts[1],
+                directory: runtime.split(' ').slice(2).join(' ').slice(1, -1), // account for spaces in PATH, no space should appear before then and luckily path is last.
+                // the 2nd slice needs to remove the brackets from the path [path]
+                architecture: architectureKnown ? requestedArchitecture : null
+            } as IDotnetListInfo;
+        }).filter(x => x !== null) as IDotnetListInfo[];
 
-            return runtimeInfos;
-        });
-
-        return runtimeInfo;
+        return runtimeInfos;
     }
 }
