@@ -132,7 +132,7 @@ const possiblyUsefulUpperCaseEnvVars = new Set<string>([ // This is a local vari
     'PWD',
     'BASHOPTS',
     'SHELLOPTS',
-    'GREP_OPTIONS'
+    'GREP_OPTIONS',
     'NO_COLOR',
     'PS1',
     'PS2',
