@@ -9,7 +9,6 @@ export class MockOutputChannel implements IOutputChannel
 {
     name: string = 'Test';
     appendedText: string[] = [];
-    appendedLines: string[] = [];
 
     append(value: string): void
     {
@@ -18,7 +17,7 @@ export class MockOutputChannel implements IOutputChannel
 
     appendLine(value: string): void
     {
-        this.appendedLines.push(value);
+        this.appendedText.push(value + '\n');
     }
 
     replace(value: string): void
@@ -29,7 +28,6 @@ export class MockOutputChannel implements IOutputChannel
     clear(): void
     {
         this.appendedText = [];
-        this.appendedLines = [];
     }
 
     show(preserveFocus?: boolean): void;

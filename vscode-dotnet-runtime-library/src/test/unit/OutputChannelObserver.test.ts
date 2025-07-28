@@ -38,7 +38,6 @@ suite('OutputChannelObserver Unit Tests', function ()
 
         // Verify no output was written when suppressOutput is true
         assert.isEmpty(mockOutputChannel.appendedText, 'No output should be written when suppressOutput is true');
-        assert.isEmpty(mockOutputChannel.appendedLines, 'No lines should be written when suppressOutput is true');
     }).timeout(defaultTimeoutTime);
 
     test('It produces output when suppressOutput is false', async () =>
@@ -64,8 +63,8 @@ suite('OutputChannelObserver Unit Tests', function ()
         observer.post(warningEvent);
 
         // Verify output was written with default behavior
-        assert.isNotEmpty(mockOutputChannel.appendedLines, 'Output should be written with default behavior');
-        assert.include(mockOutputChannel.appendedLines.join(''), 'Test warning message', 'The warning message should be in the output');
+        assert.isNotEmpty(mockOutputChannel.appendedText, 'Output should be written with default behavior');
+        assert.include(mockOutputChannel.appendedText.join(''), 'Test warning message', 'The warning message should be in the output');
     }).timeout(defaultTimeoutTime);
 
     test('It handles verbose-only events based on highVerbosity setting', async () =>
@@ -80,7 +79,7 @@ suite('OutputChannelObserver Unit Tests', function ()
         observerVerbose.post(verboseEvent);
         observerNonVerbose.post(verboseEvent);
 
-        assert.include(mockOutputChannel1.appendedLines, 'Test error', 'Verbose-only events should display when highVerbosity is true');
-        assert.notInclude(mockOutputChannel2.appendedLines, 'Test error', 'Verbose-only events should not display when highVerbosity is false');
+        assert.include(mockOutputChannel1.appendedText, 'Test error', 'Verbose-only events should display when highVerbosity is true');
+        assert.notInclude(mockOutputChannel2.appendedText, 'Test error', 'Verbose-only events should not display when highVerbosity is false');
     }).timeout(defaultTimeoutTime);
 });
