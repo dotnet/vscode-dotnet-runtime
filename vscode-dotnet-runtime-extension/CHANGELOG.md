@@ -7,9 +7,33 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-## [2.3.6] - 2025-6
+## [3.0.0] - 2025-7
+
+Breaking change: No longer download the latest runtime per every single request with `acquire`.
+Instead, update periodically, to prevent slow down on startup when new tooling must be acquired to be secure.
+Add API surface to get dotnet --list-sdks --arch or dotnet --list-runtimes --arch output.
+Add setting to specify a local .NET SDK.
+Reduce error messages and add verbose setting.
+
+## [2.3.7] - 2025-7-28 (Prerelease)
+
+Improve error messages and output minimization.
+Add setting to disable all messages.
+Improve logic for offline handling.
+Improve fallback logic for failure edge cases.
+Add a fallback for distro detection.
+Migrate to Node 22.
+Update dependencies.
+
+## [2.3.6] - 2025-6-23
 
 Further performance enhancements.
+Increase aggression of caching.
+Use binary file headers to improve performance.
+Improve performance with logging.
+Improve performance by skipping unnecessary work.
+Update architecture detection to work with legacy dotnet executables.
+No longer check package.json files of unnecessary extensions for parsing package.json requests.
 
 ## [2.3.5] - 2025-5-26
 

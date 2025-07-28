@@ -7,7 +7,7 @@
 		"url": "https://github.com/dotnet/vscode-dotnet-runtime.git"
 	},
 	"license": "MIT",
-	"version": "2.3.3",
+	"version": "2.3.7",
 	"publisher": "ms-dotnettools",
 	"engines": {
 		"vscode": "^1.75.0"
@@ -76,6 +76,11 @@
 				"category": "Sample"
 			},
 			{
+				"command": "sample.dotnet.availableInstalls",
+				"title": "Find the .NET installs on the PATH",
+				"category": "Sample"
+			},
+			{
 				"command": "sample.dotnet-sdk.acquire",
 				"title": "Acquire .NET SDK",
 				"category": "Sample"
@@ -133,7 +138,7 @@
 		"@types/rimraf": "3.0.2",
 		"@types/source-map-support": "^0.5.10",
 		"@types/vscode": "1.74.0",
-		"mocha": "^9.2.2",
+		"mocha": "^11.7.0",
 		"rimraf": "3.0.2",
 		"tslint": "5.20.1",
 		"typescript": "4.4.4"

@@ -6,12 +6,12 @@
 import * as chai from 'chai';
 import * as os from 'os';
 import { DistroVersionPair, LinuxVersionResolver } from '../../Acquisition/LinuxVersionResolver';
+import { RED_HAT_DISTRO_INFO_KEY, UBUNTU_DISTRO_INFO_KEY } from '../../Acquisition/StringConstants';
 import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
 import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
 import { MockCommandExecutor, MockDistroProvider } from '../mocks/MockObjects';
 import * as util from './TestUtility';
 import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
-import { RED_HAT_DISTRO_INFO_KEY, UBUNTU_DISTRO_INFO_KEY } from '../../Acquisition/StringConstants';
 const assert = chai.assert;
 
 
@@ -43,7 +43,6 @@ suite('Linux Version Resolver Tests', function ()
         if (shouldRun)
         {
             const distroVersion = await resolver.getRunningDistro();
-            assert.equal(mockExecutor.attemptedCommand, 'cat /etc/os-release');
             assert.exists(distroVersion.distro);
             assert.exists(distroVersion.version);
         }
