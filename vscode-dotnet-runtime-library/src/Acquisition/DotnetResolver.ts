@@ -15,7 +15,6 @@ import { DotnetInstallMode } from './DotnetInstallMode';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetListInfo } from './IDotnetListInfo';
 import { IDotnetResolver } from './IDotnetResolver';
-import * as os from 'os';
 
 export class DotnetResolver implements IDotnetResolver
 {
@@ -110,7 +109,7 @@ export class DotnetResolver implements IDotnetResolver
         // System may not have english installed, but CDK already calls this without issue -- the .NET SDK language invocation is also wrapped by a runtime library and natively includes english assets
         const hostArch = await (this.executor!).execute(infoCommand, { env: envWithForceEnglish, dotnetInstallToolCacheTtlMs: DOTNET_INFORMATION_CACHE_DURATION_MS }, false).then((result) =>
         {
-            const lines = result.stdout.split(os.EOL).map((line) => line.trim()).filter(Boolean);
+            const lines = result.stdout.split('\n').map((line) => line.trim()).filter(Boolean);
             // This is subject to change but there is no good alternative to do this
             const archLine = lines.find((line) => line.startsWith('Architecture:'));
             if (archLine === undefined)
@@ -157,7 +156,7 @@ Please set the PATH to a dotnet host that matches the architecture. An incorrect
         }
 
         const architectureKnown = knownArchitecture ? true : await this.hostSupportsArchFlag(existingPath, result.stdout);
-        const sdks = result.stdout.split(os.EOL).map((line) => line.trim()).filter(Boolean);
+        const sdks = result.stdout.split('\n').map((line) => line.trim()).filter(Boolean);
         const sdkInfos: IDotnetListInfo[] = sdks.map((sdk) =>
         {
             const parts = sdk.split(' ', 2);
@@ -221,7 +220,7 @@ Please set the PATH to a dotnet host that matches the architecture. An incorrect
         }
 
         const architectureKnown = knownArchitecture ? true : await this.hostSupportsArchFlag(existingPath, result.stdout);
-        const runtimes = result.stdout.split(os.EOL).map((line) => line.trim()).filter(Boolean);
+        const runtimes = result.stdout.split('\n').map((line) => line.trim()).filter(Boolean);
         const runtimeInfos: IDotnetListInfo[] = runtimes.map((runtime) =>
         {
             const parts = runtime.split(' ', 3); // account for spaces in PATH, no space should appear before then and luckily path is last
