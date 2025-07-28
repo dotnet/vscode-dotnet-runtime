@@ -528,6 +528,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         globalEventStream.post(new DotnetFindPathLookupSetting(`Looking up vscode setting.`));
         const workerContext = getAcquisitionWorkerContext(commandContext.acquireContext.mode, commandContext.acquireContext);
         let existingPathForLog = '';
+        const validator = new DotnetConditionValidator(workerContext, utilContext);
 
         // The setting is not intended to be used as the SDK, only the runtime for extensions to run on. Ex: PowerShell policy doesn't allow us to install the runtime, let users set the path manually.
         if (commandContext.acquireContext.mode !== 'sdk')
@@ -548,12 +549,15 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             existingPathForLog = existingHostSDKUserPath ?? '';
             if (existingHostSDKUserPath)
             {
-                // Don't validate the existing SDK path as it is a user setting and we assume the user knows what they are doing.
-                return { dotnetPath: existingHostSDKUserPath };
+                const validatedSDKPath = await getPathIfValid(existingHostSDKUserPath, validator, commandContext);
+                if (validatedSDKPath)
+                {
+                    loggingObserver.dispose();
+                    return { dotnetPath: validatedSDKPath };
+                }
             }
         }
 
-        const validator = new DotnetConditionValidator(workerContext, utilContext);
         const finder = new DotnetPathFinder(workerContext, utilContext);
 
         const dotnetOnShellSpawn = (await finder.findDotnetFastFromListOnly(requestedArchitecture))?.[0] ?? '';
