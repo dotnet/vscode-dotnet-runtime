@@ -4,6 +4,7 @@
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
 import * as lodash from 'lodash';
+import * as os from 'os';
 import { DotnetConditionValidator } from '../../Acquisition/DotnetConditionValidator';
 import { IDotnetFindPathContext } from '../../IDotnetFindPathContext';
 import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
@@ -13,24 +14,20 @@ import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility'
 const assert = chai.assert;
 
 const listRuntimesResultWithEightPreviewOnly = `
-Microsoft.NETCore.App 8.0.0-alpha.2.24522.8 [C:\\Program Files\\dotnet\\shared\\Microsoft.AspNetCore.App]
-Microsoft.AspNetCore.App 9.0.0-rc.2.24474.3 [C:\\Program Files\\dotnet\\shared\\Microsoft.AspNetCore.App]
-
-`;
+Microsoft.NETCore.App 8.0.0-alpha.2.24522.8 [C:\\Program Files\\dotnet\\shared\\Microsoft.AspNetCore.App]${os.EOL}
+Microsoft.AspNetCore.App 9.0.0-rc.2.24474.3 [C:\\Program Files\\dotnet\\shared\\Microsoft.AspNetCore.App]${os.EOL}${os.EOL}`;
 
 const listSDKsResultWithEightPreviewOnly = `
-8.0.100-rc.2.24474.11 [C:\\Program Files\\dotnet\\sdk]
-`;
+8.0.100-rc.2.24474.11 [C:\\Program Files\\dotnet\\sdk]${os.EOL}`;
 
 const listRuntimesResultWithEightFull = `
 ${listRuntimesResultWithEightPreviewOnly}
-Microsoft.NETCore.App 8.0.7 [C:\\Program Files\\dotnet\\shared\\Microsoft.AspNetCore.App]
-`
+Microsoft.NETCore.App 8.0.7 [C:\\Program Files\\dotnet\\shared\\Microsoft.AspNetCore.App]${os.EOL}`;
 
 const listSDKsResultWithEightFull = `
 ${listSDKsResultWithEightPreviewOnly}
-8.0.101 [C:\\Program Files\\dotnet\\sdk]
-`
+8.0.101 [C:\\Program Files\\dotnet\\sdk]${os.EOL}`
+
 const executionResultWithListRuntimesResultWithPreviewOnly = { status: '0', stdout: listRuntimesResultWithEightPreviewOnly, stderr: '' };
 const executionResultWithListRuntimesResultWithFullOnly = { status: '0', stdout: listRuntimesResultWithEightFull, stderr: '' };
 
