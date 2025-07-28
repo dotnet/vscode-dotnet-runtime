@@ -17,20 +17,6 @@ import
     DotnetVersionSpecRequirement,
     EnvironmentVariableIsDefined,
     FileUtilities,
-    IDotnetAcquireContext,
-    IDotnetAcquireResult,
-    IDotnetFindPathContext,
-    IDotnetListVersionsContext,
-    IDotnetListVersionsResult,
-    IExistingPaths,
-    ITelemetryEvent,
-    LocalMemoryCacheSingleton,
-    MockEnvironmentVariableCollection,
-    MockExtensionConfiguration,
-    MockExtensionContext,
-    MockTelemetryReporter,
-    MockWebRequestWorker,
-    MockWindowDisplayWorker,
     getDistroInfo,
     getDotnetExecutable,
     getInstallIdCustomArchitecture,
@@ -39,7 +25,23 @@ import
     getMockAcquisitionContext,
     getMockAcquisitionWorkerContext,
     getMockUtilityContext,
-    getPathSeparator
+    getPathSeparator,
+    IDotnetAcquireContext,
+    IDotnetAcquireResult,
+    IDotnetFindPathContext,
+    IDotnetListVersionsContext,
+    IDotnetListVersionsResult,
+    IDotnetSearchContext,
+    IDotnetSearchResult,
+    IExistingPaths,
+    ITelemetryEvent,
+    LocalMemoryCacheSingleton,
+    MockEnvironmentVariableCollection,
+    MockExtensionConfiguration,
+    MockExtensionContext,
+    MockTelemetryReporter,
+    MockWebRequestWorker,
+    MockWindowDisplayWorker
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 
@@ -704,6 +706,52 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
         {
             const recLinuxVersionFull = getMajorMinor(await getLinuxSupportedDotnetSDKVersion(mockAcquisitionContext), mockAcquisitionContext.eventStream, mockAcquisitionContext)
             assert.equal(result[0].version, `${recLinuxVersionFull}.1xx`, `The SDK did not recommend the version (it said ${result[0].version}) it was supposed to, which should be N.0.1xx based on surface level distro knowledge, version ${JSON.stringify(await getDistroInfo(mockAcquisitionContext))}. If a new version is available, this test may need to be updated to the newest version.`);
+        }
+    }).timeout(standardTimeoutTime);
+
+
+    test('dotnet.availableInstalls API works after acquiring a runtime', async () =>
+    {
+        // Acquire a runtime
+        const runtimeContext: IDotnetAcquireContext = { version: '6.0', requestingExtensionId, mode: 'runtime' };
+        const acquireResult = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', runtimeContext);
+        assert.exists(acquireResult, 'The acquire command should return a result');
+        assert.exists(acquireResult!.dotnetPath, 'The acquire command should return a valid dotnet path');
+
+        // Call dotnet.availableInstalls API
+        const availableInstalls = await vscode.commands.executeCommand<IDotnetSearchResult[]>('dotnet.availableInstalls',
+            {
+                dotnetExecutablePath: acquireResult!.dotnetPath,
+                mode: 'runtime',
+                requestingExtensionId,
+                architecture: os.arch()
+            } as IDotnetSearchContext
+        );
+
+        assert.exists(availableInstalls, 'The availableInstalls API should return a result');
+        assert.isArray(availableInstalls, 'The availableInstalls API should return an array');
+        assert.isTrue(availableInstalls!.some(install => install.version.includes('6')), 'The acquired runtime should be listed in available installs');
+    }).timeout(standardTimeoutTime);
+
+    test('dotnet.availableInstalls API checks system dotnet if no path is provided', async () =>
+    {
+        // Call dotnet.availableInstalls API without providing a dotnet path
+        const availableInstalls = await vscode.commands.executeCommand<IDotnetSearchResult[]>('dotnet.availableInstalls', {
+            mode: 'runtime',
+            requestingExtensionId
+        });
+
+        assert.exists(availableInstalls, 'The availableInstalls API should return a result');
+        assert.isArray(availableInstalls, 'The availableInstalls API should return an array');
+
+        // Validate the output (system may or may not have installs)
+        if (availableInstalls!.length > 0)
+        {
+            assert.exists(availableInstalls![0].version, 'The first install should have a version');
+            assert.exists(availableInstalls![0].directory, 'The first install should have a directory');
+        } else
+        {
+            assert.isTrue(availableInstalls!.length === 0, 'No installs found on the system');
         }
     }).timeout(standardTimeoutTime);
 
