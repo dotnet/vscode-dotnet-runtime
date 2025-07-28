@@ -97,7 +97,7 @@ export class DotnetResolver implements IDotnetResolver
     private async getHostArchitectureViaInfo(hostPath: string, expectedArchitecture?: string | undefined | null): Promise<string>
     {
         // dotnet --info is not machine-readable and subject to breaking changes. See https://github.com/dotnet/sdk/issues/33697 and https://github.com/dotnet/runtime/issues/98735/
-        // Unfortunately even with a new API, that might not go in until .NET 10 and beyond, so we have to rely on dotnet --info for now.*/
+        // Unfortunately even with a new API, that might not go in until .NET 10 and beyond, so we have to rely on dotnet --info for now.
 
         if (!hostPath || hostPath === '""')
         {
