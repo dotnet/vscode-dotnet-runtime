@@ -32,6 +32,7 @@ import
     DotnetInstallType,
     DotnetOfflineWarning,
     DotnetPathFinder,
+    DotnetResolver,
     DotnetVersionCategorizedEvent,
     DotnetVersionResolutionError,
     DotnetVersionSpecRequirement,
@@ -53,8 +54,11 @@ import
     IDotnetConditionValidator,
     IDotnetEnsureDependenciesContext,
     IDotnetFindPathContext,
+    IDotnetListInfo,
     IDotnetListVersionsContext,
     IDotnetListVersionsResult,
+    IDotnetSearchContext,
+    IDotnetSearchResult,
     IDotnetUninstallContext,
     IDotnetVersion,
     IEventStreamContext,
@@ -116,6 +120,7 @@ namespace commandKeys
     export const ensureDotnetDependencies = 'ensureDotnetDependencies';
     export const reportIssue = 'reportIssue';
     export const resetData = 'resetData';
+    export const availableInstalls = 'availableInstalls';
 }
 
 const commandPrefix = 'dotnet';
@@ -410,6 +415,46 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, 'acquireStatus'));
         return pathResult;
     });
+
+
+    const dotnetAvailableInstallsRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.availableInstalls}`,
+        async (commandContext: IDotnetSearchContext): Promise<IDotnetSearchResult[]> =>
+        {
+            if (commandContext.mode === undefined || commandContext.requestingExtensionId === undefined)
+            {
+                throw new EventCancellationError('BadContextualAvailbleInstallsError', `The dotnet.availableInstalls API request was missing either a mode or requestingExtensionId. Please provide this.`);
+            }
+
+            const installs = await callWithErrorHandling(async () =>
+            {
+                // Bad design: An acquire context is needed to setup the state, but don't want to untangle that in this change.
+                const fakeAcquireContext = {
+                    version: 'notApplicable',
+                    requestingExtensionId: commandContext.requestingExtensionId,
+                    architecture: commandContext.architecture,
+                    mode: commandContext.mode,
+                    installType: 'local' as DotnetInstallType, // does not matter as we search based on the host path
+                    errorConfiguration: commandContext.errorConfiguration
+                } as IDotnetAcquireContext;
+                const workerContext = getAcquisitionWorkerContext(commandContext.mode, fakeAcquireContext);
+
+                const dotnetResolver = new DotnetResolver(workerContext, utilContext);
+                const installsInListForm: IDotnetListInfo[] = await dotnetResolver.getDotnetInstalls(commandContext.dotnetExecutablePath ?? 'dotnet', commandContext.mode, commandContext.architecture);
+
+                return installsInListForm.map((installInfo: IDotnetListInfo) =>
+                {
+                    return {
+                        mode: installInfo.mode,
+                        version: installInfo.version,
+                        directory: installInfo.directory,
+                        architecture: installInfo.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(),
+                    } as IDotnetSearchResult;
+                });
+            }, getIssueContext(existingPathConfigWorker)(commandContext?.errorConfiguration, commandKeys.availableInstalls));
+
+            return installs ?? [];
+        });
+
 
     const resetDataPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.resetData}`, async () =>
     {
@@ -866,6 +911,7 @@ We will try to install .NET, but are unlikely to be able to connect to the serve
         dotnetAcquireRegistration,
         dotnetAcquireStatusRegistration,
         dotnetAcquireGlobalSDKRegistration,
+        dotnetAvailableInstallsRegistration,
         acquireGlobalSDKPublicRegistration,
         dotnetFindPathRegistration,
         dotnetListVersionsRegistration,
