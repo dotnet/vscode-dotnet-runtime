@@ -4,7 +4,7 @@
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
 import { DotnetInstall } from '../../Acquisition/DotnetInstall';
-import { DotnetAcquisitionCompleted, DotnetAcquisitionStarted, DotnetASPNetRuntimeFinalAcquisitionError, DotnetFileIntegrityFailureEvent, DotnetOfflineWarning } from '../../EventStream/EventStreamEvents';
+import { DotnetAcquisitionCompleted, DotnetAcquisitionStarted, DotnetExistingPathResolutionCompleted, DotnetFileIntegrityFailureEvent, DotnetOfflineWarning } from '../../EventStream/EventStreamEvents';
 import { OutputChannelObserver } from '../../EventStream/OutputChannelObserver';
 import { MockOutputChannel } from '../mocks/MockOutputChannel';
 
@@ -64,7 +64,7 @@ suite('OutputChannelObserver Unit Tests', function ()
 
         // Verify output was written with default behavior
         assert.isNotEmpty(mockOutputChannel.appendedText, 'Output should be written with default behavior');
-        assert.include(mockOutputChannel.appendedText.join(''), 'Test warning message', 'The warning message should be in the output');
+        assert.include(mockOutputChannel.appendedText, 'Test warning message', 'The warning message should be in the output');
     }).timeout(defaultTimeoutTime);
 
     test('It handles verbose-only events based on highVerbosity setting', async () =>
@@ -74,12 +74,12 @@ suite('OutputChannelObserver Unit Tests', function ()
         const observerVerbose = new OutputChannelObserver(mockOutputChannel1, false, true);
         const observerNonVerbose = new OutputChannelObserver(mockOutputChannel2, false, false);
 
-        const verboseEvent = new DotnetASPNetRuntimeFinalAcquisitionError(new Error('Test error'), '', { installId: '8.0~x64', isGlobal: false, architecture: 'x64', version: '8.0', installMode: 'runtime' } as DotnetInstall);
+        const verboseEvent = new DotnetExistingPathResolutionCompleted(`Path`);
 
         observerVerbose.post(verboseEvent);
         observerNonVerbose.post(verboseEvent);
 
-        assert.include(mockOutputChannel1.appendedText, 'Test error', 'Verbose-only events should display when highVerbosity is true');
-        assert.notInclude(mockOutputChannel2.appendedText, 'Test error', 'Verbose-only events should not display when highVerbosity is false');
+        assert.include(mockOutputChannel1.appendedText, 'path', 'Verbose-only events should display when highVerbosity is true');
+        assert.notInclude(mockOutputChannel2.appendedText, 'path', 'Verbose-only events should not display when highVerbosity is false');
     }).timeout(defaultTimeoutTime);
 });
