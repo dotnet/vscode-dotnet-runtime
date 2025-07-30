@@ -181,7 +181,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         showLogCommand: `${commandPrefix}.${commandKeys.showAcquisitionLog}`,
         packageJson
     } as IEventStreamContext;
-    const [globalEventStream, outputChannel, loggingObserver,
+    const [globalEventStream, outputChannelObserver, loggingObserver,
         eventStreamObservers, telemetryObserver, _] = registerEventStream(eventStreamContext, vsCodeExtensionContext, utilContext, suppressOutput, highVerbosity);
 
 
@@ -293,7 +293,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             commandContext.version = fullyResolvedVersion;
             telemetryObserver?.setAcquisitionContext(workerContext, commandContext);
 
-            outputChannel.show(true);
+            outputChannelObserver.showOutputIfHasContent();
             const dotnetPath = await worker.acquireGlobalSDK(workerContext, globalInstallerResolver);
 
             new CommandExecutor(workerContext, utilContext).setPathEnvVar(dotnetPath.dotnetPath, moreInfoUrl, displayWorker, vsCodeExtensionContext, true);
@@ -535,7 +535,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 requestingExtensionId: 'user'
             }
 
-            outputChannel.show(true);
+            outputChannelObserver.showOutputIfHasContent();
             return uninstall(commandContext, true);
         }
     });
@@ -733,7 +733,7 @@ ${JSON.stringify(commandContext)}`));
         return Promise.resolve(0);
     }
 
-    const showOutputChannelRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.showAcquisitionLog}`, () => outputChannel.show(/* preserveFocus */ false));
+    const showOutputChannelRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.showAcquisitionLog}`, () => outputChannelObserver.showOutputIfHasContent());
 
     const ensureDependenciesRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.ensureDotnetDependencies}`, async (commandContext: IDotnetEnsureDependenciesContext) =>
     {

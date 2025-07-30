@@ -26,8 +26,13 @@ export class OutputChannelObserver implements IEventStreamObserver
 {
     private readonly inProgressDownloads: string[] = [];
     private downloadProgressInterval: NodeJS.Timeout | undefined;
+    private hasContent: boolean = false;
 
-    constructor(private readonly outputChannel: IOutputChannel, private readonly suppressOutput: boolean = false, private readonly highVerbosity: boolean = false)
+    constructor(
+        private readonly outputChannel: IOutputChannel,
+        private readonly suppressOutput: boolean = false,
+        private readonly highVerbosity: boolean = false,
+    )
     {
     }
 
@@ -47,18 +52,18 @@ export class OutputChannelObserver implements IEventStreamObserver
 
                 this.inProgressDownloads.push(acquisitionStarted.install.installId);
 
-                this.outputChannel.append(`${acquisitionStarted.requestingExtensionId} requested to download the ${acquisitionStarted.install.installMode === 'sdk' ? '.NET SDK' :
+                this.writeOutput(`${acquisitionStarted.requestingExtensionId} requested to download the ${acquisitionStarted.install.installMode === 'sdk' ? '.NET SDK' :
                     acquisitionStarted.install.installMode === 'runtime' ? '.NET Runtime' :
                         '.NET ASP.NET Runtime'
                     }.`);
 
-                this.outputChannel.appendLine('');
+                this.writeOutputWithLine('');
 
                 if ((this.inProgressDownloads?.length ?? 0) > 1)
                 {
                     // Already a download in progress
-                    this.outputChannel.appendLine(` -- Concurrent download of '${acquisitionStarted.install.installId}' started!`);
-                    this.outputChannel.appendLine('');
+                    this.writeOutputWithLine(` -- Concurrent download of '${acquisitionStarted.install.installId}' started!`);
+                    this.writeOutputWithLine('');
                 }
                 else
                 {
@@ -66,20 +71,20 @@ export class OutputChannelObserver implements IEventStreamObserver
                 }
 
                 const startVersionString = this.inProgressDownloads.join(', ');
-                this.outputChannel.append(`Downloading .NET version(s) ${startVersionString} ...`);
+                this.writeOutput(`Downloading .NET version(s) ${startVersionString} ...`);
                 break;
             case EventType.DotnetAcquisitionCompleted:
                 const acquisitionCompleted = event as DotnetAcquisitionCompleted;
-                this.outputChannel.appendLine(' Done!');
-                this.outputChannel.appendLine(`.NET ${acquisitionCompleted.install.installId} executable path: ${acquisitionCompleted.dotnetPath}`);
-                this.outputChannel.appendLine('');
+                this.writeOutputWithLine(' Done!');
+                this.writeOutputWithLine(`.NET ${acquisitionCompleted.install.installId} executable path: ${acquisitionCompleted.dotnetPath}`);
+                this.writeOutputWithLine('');
 
                 this.inProgressVersionDone(acquisitionCompleted.install.installId);
 
                 if ((this.inProgressDownloads?.length ?? 0) > 0)
                 {
                     const completedVersionString = `'${this.inProgressDownloads.join('\', \'')}'`;
-                    this.outputChannel.append(`Still downloading .NET version(s) ${completedVersionString} ...`);
+                    this.writeOutput(`Still downloading .NET version(s) ${completedVersionString} ...`);
                 }
                 else
                 {
@@ -89,18 +94,18 @@ export class OutputChannelObserver implements IEventStreamObserver
             case EventType.DotnetAcquisitionSuccessEvent:
                 if (event instanceof DotnetExistingPathResolutionCompleted)
                 {
-                    this.outputChannel.append(`Using configured .NET path: ${(event as DotnetExistingPathResolutionCompleted).resolvedPath}\n`);
+                    this.writeOutput(`Using configured .NET path: ${(event as DotnetExistingPathResolutionCompleted).resolvedPath}\n`);
                 }
                 break;
             case EventType.DotnetVisibleWarning:
-                this.outputChannel.appendLine('');
-                this.outputChannel.appendLine((event as DotnetVisibleWarningEvent).eventMessage);
-                this.outputChannel.appendLine('');
+                this.writeOutputWithLine('');
+                this.writeOutputWithLine((event as DotnetVisibleWarningEvent).eventMessage);
+                this.writeOutputWithLine('');
                 break;
             case EventType.DotnetAcquisitionAlreadyInstalled:
                 if (event instanceof DotnetAcquisitionAlreadyInstalled)
                 {
-                    this.outputChannel.append(`${(event as DotnetAcquisitionAlreadyInstalled).requestingExtensionId
+                    this.writeOutput(`${(event as DotnetAcquisitionAlreadyInstalled).requestingExtensionId
                         }: Trying to install .NET ${(event as DotnetAcquisitionAlreadyInstalled).install.installId
                         } but it already exists. No downloads or changes were made.\n`);
                 }
@@ -108,20 +113,20 @@ export class OutputChannelObserver implements IEventStreamObserver
             case EventType.DotnetAcquisitionInProgress:
                 if (event instanceof DotnetAcquisitionInProgress)
                 {
-                    this.outputChannel.append(`${(event as DotnetAcquisitionInProgress).requestingExtensionId
+                    this.writeOutput(`${(event as DotnetAcquisitionInProgress).requestingExtensionId
                         } tried to install .NET ${(event as DotnetAcquisitionInProgress).install.installId
                         } but that install had already been requested. No downloads or changes were made.\n`);
                 }
                 break;
             case EventType.DotnetAcquisitionError, EventType.DotnetAcquisitionFinalError:
                 const error = event as DotnetAcquisitionError;
-                this.outputChannel.appendLine(`\nError : (${error?.eventName ?? ''})`);
+                this.writeOutputWithLine(`\nError : (${error?.eventName ?? ''})`);
 
                 if (this.inProgressDownloads.includes(error?.install?.installId ?? ''))
                 {
-                    this.outputChannel.appendLine(`Failed to download .NET ${error?.install?.installId}:`);
-                    this.outputChannel.appendLine(error?.error?.message);
-                    this.outputChannel.appendLine('');
+                    this.writeOutputWithLine(`Failed to download .NET ${error?.install?.installId}:`);
+                    this.writeOutputWithLine(error?.error?.message);
+                    this.writeOutputWithLine('');
 
                     this.updateDownloadIndicators(error.install?.installId);
                 }
@@ -129,31 +134,51 @@ export class OutputChannelObserver implements IEventStreamObserver
                 break;
             case EventType.DotnetInstallExpectedAbort:
                 const abortEvent = event as DotnetInstallExpectedAbort;
-                this.outputChannel.appendLine(`Cancelled Installation of .NET ${abortEvent.install?.installId}.`);
-                this.outputChannel.appendLine(abortEvent.error.message);
+                this.writeOutputWithLine(`Cancelled Installation of .NET ${abortEvent.install?.installId}.`);
+                this.writeOutputWithLine(abortEvent.error.message);
 
                 this.updateDownloadIndicators(abortEvent.install?.installId);
                 break;
             case EventType.DotnetUpgradedEvent:
                 const upgradeMessage = event as DotnetUpgradedEvent;
-                this.outputChannel.appendLine(`${upgradeMessage.eventMessage}:`);
+                this.writeOutputWithLine(`${upgradeMessage.eventMessage}:`);
                 break;
             case EventType.OfflineInstallUsed:
                 const offlineUsedMsg = event as DotnetOfflineInstallUsed;
-                this.outputChannel.appendLine(offlineUsedMsg.eventMessage);
+                this.writeOutputWithLine(offlineUsedMsg.eventMessage);
                 break;
             case EventType.OfflineWarning:
                 const offlineWarning = event as DotnetOfflineWarning;
-                this.outputChannel.appendLine(offlineWarning.eventMessage);
+                this.writeOutputWithLine(offlineWarning.eventMessage);
                 break;
             case EventType.DotnetUninstallMessage:
                 const uninstallMessage = event as DotnetCustomMessageEvent;
-                this.outputChannel.appendLine(uninstallMessage.eventMessage);
+                this.writeOutputWithLine(uninstallMessage.eventMessage);
                 break;
             case EventType.FeedInjectionMessage:
                 const feedMessage = event as DotnetCustomMessageEvent;
-                this.outputChannel.appendLine(feedMessage.eventMessage);
+                this.writeOutputWithLine(feedMessage.eventMessage);
                 break;
+        }
+    }
+
+    private writeOutput(output: string)
+    {
+        this.outputChannel.append(output);
+        this.hasContent = true;
+    }
+
+    private writeOutputWithLine(output: string)
+    {
+        this.outputChannel.appendLine(output);
+        this.hasContent = true;
+    }
+
+    public showOutputIfHasContent(preserveFocus: boolean = true): void
+    {
+        if (this.hasContent)
+        {
+            this.outputChannel.show(preserveFocus);
         }
     }
 
@@ -172,7 +197,7 @@ export class OutputChannelObserver implements IEventStreamObserver
         if ((this.inProgressDownloads?.length ?? 0) > 0)
         {
             const errorVersionString = this.inProgressDownloads.join(', ');
-            this.outputChannel.append(`Still downloading .NET version(s) ${errorVersionString} ...`);
+            this.writeOutput(`Still downloading .NET version(s) ${errorVersionString} ...`);
         }
         else
         {
@@ -182,7 +207,7 @@ export class OutputChannelObserver implements IEventStreamObserver
 
     private startDownloadIndicator()
     {
-        this.downloadProgressInterval = setInterval(() => this.outputChannel.append('.'), 3000);
+        this.downloadProgressInterval = setInterval(() => this.writeOutput('.'), 3000);
     }
 
     private stopDownloadIndicator()

@@ -206,7 +206,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
         }, issueContext(commandContext ? commandContext.errorConfiguration : undefined, 'uninstallAll'));
     });
 
-    const showOutputChannelRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.showAcquisitionLog}`, () => outputChannel.show(/* preserveFocus */ false));
+    const showOutputChannelRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.showAcquisitionLog}`, () => outputChannel.showOutputIfHasContent(/* preserveFocus */ false));
 
     const reportIssueRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.reportIssue}`, async () =>
     {
