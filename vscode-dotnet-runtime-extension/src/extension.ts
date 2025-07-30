@@ -293,7 +293,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             commandContext.version = fullyResolvedVersion;
             telemetryObserver?.setAcquisitionContext(workerContext, commandContext);
 
-            outputChannelObserver.showOutputIfHasContent();
+            outputChannelObserver.showOutput();
             const dotnetPath = await worker.acquireGlobalSDK(workerContext, globalInstallerResolver);
 
             new CommandExecutor(workerContext, utilContext).setPathEnvVar(dotnetPath.dotnetPath, moreInfoUrl, displayWorker, vsCodeExtensionContext, true);
@@ -535,7 +535,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 requestingExtensionId: 'user'
             }
 
-            outputChannelObserver.showOutputIfHasContent();
+            outputChannelObserver.showOutput();
             return uninstall(commandContext, true);
         }
     });
@@ -733,7 +733,7 @@ ${JSON.stringify(commandContext)}`));
         return Promise.resolve(0);
     }
 
-    const showOutputChannelRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.showAcquisitionLog}`, () => outputChannelObserver.showOutputIfHasContent());
+    const showOutputChannelRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.showAcquisitionLog}`, () => outputChannelObserver.showOutput());
 
     const ensureDependenciesRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.ensureDotnetDependencies}`, async (commandContext: IDotnetEnsureDependenciesContext) =>
     {
