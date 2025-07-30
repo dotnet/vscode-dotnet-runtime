@@ -54,7 +54,7 @@ export class OutputChannelObserver implements IEventStreamObserver
 
                 this.appendOutput(`${acquisitionStarted.requestingExtensionId} requested to download the ${acquisitionStarted.install.installMode === 'sdk' ? '.NET SDK' :
                     acquisitionStarted.install.installMode === 'runtime' ? '.NET Runtime' :
-                        '.NET ASP.NET Runtime'
+                        'ASP.NET Core'
                     }.`);
 
                 this.appendOutputLine('');
