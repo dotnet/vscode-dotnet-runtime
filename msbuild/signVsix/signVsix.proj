@@ -9,7 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
     <FilesToSign Include="$(OutDir)*.vsix">
-      <Authenticode>VsixSHA2</Authenticode>
+      <Authenticode>VSCodePublisher</Authenticode>
     </FilesToSign>
   </ItemGroup>
 </Project>
