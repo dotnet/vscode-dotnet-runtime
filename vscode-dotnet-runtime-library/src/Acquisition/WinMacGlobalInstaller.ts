@@ -18,6 +18,9 @@ import
     DotnetUnexpectedInstallerOSError,
     EventBasedError,
     EventCancellationError,
+    MacInstallerBackupFailure,
+    MacInstallerBackupSuccess,
+    MacInstallerFailure,
     NetInstallerBeginExecutionEvent,
     NetInstallerEndExecutionEvent,
     OSXOpenNotAvailableError,
@@ -42,6 +45,7 @@ import { IGlobalInstaller } from './IGlobalInstaller';
 import { IRegistryReader } from './IRegistryReader';
 import { RegistryReader } from './RegistryReader';
 import { GLOBAL_INSTALL_STATE_MODIFIER_LOCK, UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR } from './StringConstants';
+import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 
 namespace validationPromptConstants
 {
@@ -416,6 +420,39 @@ If you were waiting for the install to succeed, please extend the timeout settin
         return arm64EmulationHostPath;
     }
 
+    private async darwinInstallBackup(installerPath: string) : Promise<string>
+    {
+        // The -W flag makes it so we wait for the installer .pkg to exit, though we are unable to get the exit code.
+        const possibleCommands =
+            [
+                CommandExecutor.makeCommand(`command`, [`-v`, `open`]),
+                CommandExecutor.makeCommand(`/usr/bin/open`, [])
+            ];
+
+        let workingCommand = await this.commandRunner.tryFindWorkingCommand(possibleCommands);
+        if (!workingCommand)
+        {
+            const error = new EventBasedError('OSXOpenNotAvailableError',
+                `The 'open' command on OSX was not detected. This is likely due to the PATH environment variable on your system being clobbered by another program.
+Please correct your PATH variable or make sure the 'open' utility is installed so .NET can properly execute.`);
+            this.acquisitionContext.eventStream.post(new OSXOpenNotAvailableError(error, getInstallFromContext(this.acquisitionContext)));
+            throw error;
+        }
+        else if (workingCommand.commandRoot === 'command')
+        {
+            workingCommand = CommandExecutor.makeCommand(`open`, [`-W`, `"${path.resolve(installerPath)}"`]);
+        }
+
+        this.acquisitionContext.eventStream.post(new NetInstallerBeginExecutionEvent(`The OS X .NET Installer has been launched.`));
+
+        const commandResult = await this.commandRunner.execute(workingCommand, { timeout: this.acquisitionContext.timeoutSeconds * 1000 }, false);
+
+        this.acquisitionContext.eventStream.post(new NetInstallerEndExecutionEvent(`The OS X .NET Installer has closed.`));
+        this.handleTimeout(commandResult);
+
+        return commandResult.status;
+    }
+
     /**
      *
      * @param installerPath The path to the installer file to run.
@@ -426,36 +463,37 @@ If you were waiting for the install to succeed, please extend the timeout settin
         if (os.platform() === 'darwin')
         {
             // For Mac:
-            // We don't rely on the installer because it doesn't allow us to run without sudo, and we don't want to handle the user password.
-            // The -W flag makes it so we wait for the installer .pkg to exit, though we are unable to get the exit code.
-            const possibleCommands =
-                [
-                    CommandExecutor.makeCommand(`command`, [`-v`, `open`]),
-                    CommandExecutor.makeCommand(`/usr/bin/open`, [])
-                ];
-
-            let workingCommand = await this.commandRunner.tryFindWorkingCommand(possibleCommands);
-            if (!workingCommand)
-            {
-                const error = new EventBasedError('OSXOpenNotAvailableError',
-                    `The 'open' command on OSX was not detected. This is likely due to the PATH environment variable on your system being clobbered by another program.
-Please correct your PATH variable or make sure the 'open' utility is installed so .NET can properly execute.`);
-                this.acquisitionContext.eventStream.post(new OSXOpenNotAvailableError(error, getInstallFromContext(this.acquisitionContext)));
-                throw error;
-            }
-            else if (workingCommand.commandRoot === 'command')
-            {
-                workingCommand = CommandExecutor.makeCommand(`open`, [`-W`, `"${path.resolve(installerPath)}"`]);
-            }
-
-            this.acquisitionContext.eventStream.post(new NetInstallerBeginExecutionEvent(`The OS X .NET Installer has been launched.`));
-
-            const commandResult = await this.commandRunner.execute(workingCommand, { timeout: this.acquisitionContext.timeoutSeconds * 1000 }, false);
-
+            const sudoInstallerCommand = CommandExecutor.makeCommand('installer', ['-pkg', `"${path.resolve(installerPath)}"`, '-target', '/'], true);
+                        this.acquisitionContext.eventStream.post(new NetInstallerBeginExecutionEvent(`The OS X .NET Installer has been launched.`));
+            const installerResult = await this.commandRunner.execute(sudoInstallerCommand);
             this.acquisitionContext.eventStream.post(new NetInstallerEndExecutionEvent(`The OS X .NET Installer has closed.`));
-            this.handleTimeout(commandResult);
+            this.handleTimeout(installerResult);
+ 
+            if(installerResult.status !== '0')
+            {
+                // Try to have the user manually go through the installation process
+                // Osascript has some issues running the installer for a pkg, and open does not have an exit code besides 0 if the user cancels/denies.
+                // For understanding the success rates, we can subtract the MacInstallerFailure amount but add back in MacInstallerBackupSuccess for when the user does succeed.
+                // This prevents counting a user who leaves the PC as a failure.
+                // The error code from the installer will give us a better understading of the installer issues and not count them as an issue in the VS Code setup logic
+                this.acquisitionContext.eventStream.post(new MacInstallerFailure(`The installer failed.`, installerResult.status, installerResult.stderr, installerResult.stdout));
+                await this.darwinInstallBackup(installerPath);
 
-            return commandResult.status;
+                const expectedDotnetHostPath = await this.getExpectedGlobalSDKPath(this.acquisitionContext.acquisitionContext.version, this.acquisitionContext.acquisitionContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
+                const expectedInstall = getInstallFromContext(this.acquisitionContext);
+                const validatedInstall = this.acquisitionContext.installationValidator.validateDotnetInstall(expectedInstall, expectedDotnetHostPath, os.platform() === 'darwin', false);
+                if()
+                {
+                    this.acquisitionContext.eventStream.post(new MacInstallerBackupSuccess(`The installer succeeded when invoked manually.`));
+                    return '0';
+                }
+                else
+                {
+                    // Add this back to the failure count as it gets accounted for in the platfom agnostic logc
+                                        this.acquisitionContext.eventStream.post(new MacInstallerBackupFailure(`The installer also failed when invoked manually.`));
+                }
+            }
+            return installerResult.status;
         }
         else
         {

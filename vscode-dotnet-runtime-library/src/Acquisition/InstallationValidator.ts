@@ -15,12 +15,16 @@ import { IInstallationValidator } from './IInstallationValidator';
 import { DotnetInstall } from './DotnetInstall';
 
 export class InstallationValidator extends IInstallationValidator {
-    public validateDotnetInstall(install: DotnetInstall, dotnetPath: string, isDotnetFolder = false, failOnErr = true): void {
+    public validateDotnetInstall(install: DotnetInstall, dotnetPath: string, isDotnetFolder = false, failOnErr = true): boolean {
         const dotnetValidationFailed = `Validation of .dotnet installation for version ${JSON.stringify(install)} failed:`;
         const folder = path.dirname(dotnetPath);
 
         if(!isDotnetFolder)
         {
+            if(!fs.existsSync(folder))
+            {
+                // this class should be rewritten to return false in this case and throw if desired by calling the func, also why is ichecking the folder if !isdotnetfolder...
+            }
             this.assertOrThrowError(failOnErr, fs.existsSync(folder),
             `${dotnetValidationFailed} Expected installation folder ${folder} does not exist.`, install, dotnetPath);
 
@@ -48,6 +52,7 @@ export class InstallationValidator extends IInstallationValidator {
         }
 
         this.eventStream.post(new DotnetInstallationValidated(install));
+        return true;
     }
 
     private assertOrThrowError(failOnErr : boolean, passedValidation: boolean, message: string, install: DotnetInstall, dotnetPath: string) {
@@ -65,7 +70,9 @@ ${message}`;
 
         if(!passedValidation && !failOnErr)
         {
-            this.eventStream?.post(new DotnetInstallationValidationMissed(new Error(message), message))
+            this.eventStream?.post(new DotnetInstallationValidationMissed(new Error(message), message));
         }
+
+        return false;
     }
 }
