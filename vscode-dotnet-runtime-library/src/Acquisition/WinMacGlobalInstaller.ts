@@ -39,13 +39,13 @@ import { IFileUtilities } from '../Utils/IFileUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { executeWithLock, getOSArch } from '../Utils/TypescriptUtilities';
 import { GLOBAL_LOCK_PING_DURATION_MS, SYSTEM_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
+import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { DotnetInstall } from './DotnetInstall';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IGlobalInstaller } from './IGlobalInstaller';
 import { IRegistryReader } from './IRegistryReader';
 import { RegistryReader } from './RegistryReader';
 import { GLOBAL_INSTALL_STATE_MODIFIER_LOCK, UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR } from './StringConstants';
-import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 
 namespace validationPromptConstants
 {
@@ -420,7 +420,7 @@ If you were waiting for the install to succeed, please extend the timeout settin
         return arm64EmulationHostPath;
     }
 
-    private async darwinInstallBackup(installerPath: string) : Promise<string>
+    private async darwinInstallBackup(installerPath: string): Promise<string>
     {
         // The -W flag makes it so we wait for the installer .pkg to exit, though we are unable to get the exit code.
         const possibleCommands =
@@ -464,33 +464,33 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
         {
             // For Mac:
             const sudoInstallerCommand = CommandExecutor.makeCommand('installer', ['-pkg', `"${path.resolve(installerPath)}"`, '-target', '/'], true);
-                        this.acquisitionContext.eventStream.post(new NetInstallerBeginExecutionEvent(`The OS X .NET Installer has been launched.`));
+            this.acquisitionContext.eventStream.post(new NetInstallerBeginExecutionEvent(`The OS X .NET Installer has been launched.`));
             const installerResult = await this.commandRunner.execute(sudoInstallerCommand);
             this.acquisitionContext.eventStream.post(new NetInstallerEndExecutionEvent(`The OS X .NET Installer has closed.`));
             this.handleTimeout(installerResult);
- 
-            if(installerResult.status !== '0')
+
+            if (installerResult.status !== '0')
             {
                 // Try to have the user manually go through the installation process
                 // Osascript has some issues running the installer for a pkg, and open does not have an exit code besides 0 if the user cancels/denies.
                 // For understanding the success rates, we can subtract the MacInstallerFailure amount but add back in MacInstallerBackupSuccess for when the user does succeed.
                 // This prevents counting a user who leaves the PC as a failure.
-                // The error code from the installer will give us a better understading of the installer issues and not count them as an issue in the VS Code setup logic
+                // The error code from the installer will give us a better understanding of the installer issues and not count them as an issue in the VS Code setup logic
                 this.acquisitionContext.eventStream.post(new MacInstallerFailure(`The installer failed.`, installerResult.status, installerResult.stderr, installerResult.stdout));
                 await this.darwinInstallBackup(installerPath);
 
                 const expectedDotnetHostPath = await this.getExpectedGlobalSDKPath(this.acquisitionContext.acquisitionContext.version, this.acquisitionContext.acquisitionContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
                 const expectedInstall = getInstallFromContext(this.acquisitionContext);
                 const validatedInstall = this.acquisitionContext.installationValidator.validateDotnetInstall(expectedInstall, expectedDotnetHostPath, os.platform() === 'darwin', false);
-                if()
+                if (validatedInstall)
                 {
                     this.acquisitionContext.eventStream.post(new MacInstallerBackupSuccess(`The installer succeeded when invoked manually.`));
                     return '0';
                 }
                 else
                 {
-                    // Add this back to the failure count as it gets accounted for in the platfom agnostic logc
-                                        this.acquisitionContext.eventStream.post(new MacInstallerBackupFailure(`The installer also failed when invoked manually.`));
+                    // Add this back to the failure count as it gets accounted for in the platform agnostic logic
+                    this.acquisitionContext.eventStream.post(new MacInstallerBackupFailure(`The installer also failed when invoked manually.`));
                 }
             }
             return installerResult.status;
