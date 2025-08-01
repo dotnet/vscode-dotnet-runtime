@@ -574,7 +574,6 @@ export class DotnetWSLSecurityError extends DotnetInstallExpectedAbort
     public readonly eventName = 'DotnetWSLSecurityError';
 }
 
-
 export abstract class DotnetAcquisitionVersionError extends DotnetAcquisitionError
 {
     constructor(error: Error, public readonly install: DotnetInstall | null)
@@ -1308,6 +1307,29 @@ export class DotnetTelemetrySettingEvent extends DotnetCustomMessageEvent
     public readonly eventName = 'DotnetTelemetrySettingEvent';
 }
 
+export class MacInstallerFailure extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'MacInstallerFailure';
+
+    constructor(message: string, private readonly status: string, private readonly stdout: string, private readonly stderr: string)
+    {
+        super(message);
+    }
+    public getProperties()
+    {
+        return { Status: this.status, Stdout: this.stdout, StdErr: this.stderr, ...super.getProperties() };
+    }
+}
+
+export class MacInstallerBackupSuccess extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'MacInstallerBackupSuccess';
+}
+
+export class MacInstallerBackupFailure extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'MacInstallerBackupSuccess';
+}
 
 export class DistroSupport extends DotnetCustomMessageEvent
 {
