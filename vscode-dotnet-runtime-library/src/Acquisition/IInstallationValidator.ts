@@ -10,5 +10,5 @@ export abstract class IInstallationValidator
 {
     constructor(protected readonly eventStream: IEventStream) {}
 
-    public abstract validateDotnetInstall(install: DotnetInstall, dotnetPath: string, isDotnetFolder?: boolean, failOnErr?: boolean): boolean;
+    public abstract validateDotnetInstall(install: DotnetInstall, dotnetPath: string, validateDirectory?: boolean, failOnErr?: boolean): boolean;
 }

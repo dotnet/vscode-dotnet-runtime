@@ -481,7 +481,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
 
                 const expectedDotnetHostPath = await this.getExpectedGlobalSDKPath(this.acquisitionContext.acquisitionContext.version, this.acquisitionContext.acquisitionContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
                 const expectedInstall = getInstallFromContext(this.acquisitionContext);
-                const validatedInstall = this.acquisitionContext.installationValidator.validateDotnetInstall(expectedInstall, expectedDotnetHostPath, os.platform() === 'darwin', false);
+                const validatedInstall = this.acquisitionContext.installationValidator.validateDotnetInstall(expectedInstall, expectedDotnetHostPath, false, false);
                 if (validatedInstall)
                 {
                     this.acquisitionContext.eventStream.post(new MacInstallerBackupSuccess(`The installer succeeded when invoked manually.`));

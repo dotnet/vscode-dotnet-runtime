@@ -666,7 +666,7 @@ export class MockTelemetryReporter implements ITelemetryReporter
 
 export class MockInstallationValidator extends IInstallationValidator
 {
-    public validateDotnetInstall(version: DotnetInstall, dotnetPath: string): boolean
+    public validateDotnetInstall(version: DotnetInstall, dotnetPath: string, validateDirectory?: boolean, failOnErr?: boolean): boolean
     {
         return true;
     }
