@@ -39,6 +39,7 @@ export * from './EventStream/EventStream';
 export * from './EventStream/EventStreamEvents';
 export * from './EventStream/EventStreamRegistration';
 export * from './EventStream/IWindowDisplayWorker';
+export * from './EventStream/OutputChannelObserver';
 export * from './EventStream/WindowDisplayWorker';
 export * from './IDotnetAcquireContext';
 export * from './IDotnetAcquireResult';
