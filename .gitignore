@@ -30,6 +30,7 @@ project.lock.json
 *.ipch
 *.js
 !.eslintrc.js
+!dotnet-install-mcp.js
 *.d.ts
 *.js.map
 .build/
