@@ -102,6 +102,7 @@ namespace configKeys
     export const cacheTimeToLiveMultiplier = 'cacheTimeToLiveMultiplier';
     export const showResetDataCommand = 'showResetDataCommand';
     export const suppressOutput = 'suppressOutput';
+    export const highVerbosity = 'highVerbosity';
 }
 
 namespace commandKeys
@@ -160,6 +161,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
     const allowInvalidPathSetting = extensionConfiguration.get<boolean>(configKeys.allowInvalidPaths);
     const suppressOutput = extensionConfiguration.get<boolean>(configKeys.suppressOutput) ?? false;
+    const highVerbosity = extensionConfiguration.get<boolean>(configKeys.highVerbosity) ?? false;
     const isExtensionTelemetryEnabled = enableExtensionTelemetry(extensionConfiguration, configKeys.enableTelemetry);
     const displayWorker = extensionContext ? extensionContext.displayWorker : new WindowDisplayWorker();
 
@@ -179,8 +181,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         showLogCommand: `${commandPrefix}.${commandKeys.showAcquisitionLog}`,
         packageJson
     } as IEventStreamContext;
-    const [globalEventStream, outputChannel, loggingObserver,
-        eventStreamObservers, telemetryObserver, _] = registerEventStream(eventStreamContext, vsCodeExtensionContext, utilContext, suppressOutput);
+    const [globalEventStream, outputChannelObserver, loggingObserver,
+        eventStreamObservers, telemetryObserver, _] = registerEventStream(eventStreamContext, vsCodeExtensionContext, utilContext, suppressOutput, highVerbosity);
 
 
     // Setting up command-shared classes for Runtime & SDK Acquisition
@@ -291,7 +293,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             commandContext.version = fullyResolvedVersion;
             telemetryObserver?.setAcquisitionContext(workerContext, commandContext);
 
-            outputChannel.show(true);
+            outputChannelObserver.showOutput();
             const dotnetPath = await worker.acquireGlobalSDK(workerContext, globalInstallerResolver);
 
             new CommandExecutor(workerContext, utilContext).setPathEnvVar(dotnetPath.dotnetPath, moreInfoUrl, displayWorker, vsCodeExtensionContext, true);
@@ -533,7 +535,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 requestingExtensionId: 'user'
             }
 
-            outputChannel.show(true);
+            outputChannelObserver.showOutput();
             return uninstall(commandContext, true);
         }
     });
@@ -731,7 +733,7 @@ ${JSON.stringify(commandContext)}`));
         return Promise.resolve(0);
     }
 
-    const showOutputChannelRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.showAcquisitionLog}`, () => outputChannel.show(/* preserveFocus */ false));
+    const showOutputChannelRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.showAcquisitionLog}`, () => outputChannelObserver.showOutput());
 
     const ensureDependenciesRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.ensureDotnetDependencies}`, async (commandContext: IDotnetEnsureDependenciesContext) =>
     {

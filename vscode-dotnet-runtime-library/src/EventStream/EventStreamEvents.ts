@@ -331,16 +331,19 @@ abstract class DotnetAcquisitionFinalErrorBase extends DotnetAcquisitionError
 export class DotnetGlobalSDKAcquisitionError extends DotnetAcquisitionFinalErrorBase
 {
     public eventName = 'DotnetGlobalSDKAcquisitionError';
+    public verboseOutputOnly = true;
 }
 
 export class DotnetRuntimeFinalAcquisitionError extends DotnetAcquisitionFinalErrorBase
 {
     public eventName = 'DotnetRuntimeFinalAcquisitionError';
+    public verboseOutputOnly = true;
 }
 
 export class DotnetASPNetRuntimeFinalAcquisitionError extends DotnetAcquisitionFinalErrorBase
 {
     public eventName = 'DotnetASPNetRuntimeFinalAcquisitionError';
+    public verboseOutputOnly = true;
 }
 
 export abstract class DotnetNonAcquisitionError extends IEvent
@@ -827,6 +830,7 @@ export class DotnetInstallScriptAcquisitionCompleted extends DotnetAcquisitionSu
 export class DotnetExistingPathResolutionCompleted extends DotnetAcquisitionSuccessEvent
 {
     public readonly eventName = 'DotnetExistingPathResolutionCompleted';
+    public verboseOutputOnly = true;
 
     constructor(public readonly resolvedPath: string) { super(); }
 
@@ -1695,9 +1699,17 @@ export class DotnetAcquisitionPartialInstallation extends DotnetAcquisitionMessa
 export class DotnetAcquisitionInProgress extends IEvent
 {
     public readonly type = EventType.DotnetAcquisitionInProgress;
+    public verboseOutputOnly = true;
 
     public readonly eventName = 'DotnetAcquisitionInProgress';
-    constructor(public readonly install: DotnetInstall, public readonly requestingExtensionId: string | null) { super(); }
+    constructor(public readonly install: DotnetInstall, public readonly requestingExtensionId: string | null)
+    {
+        super();
+        if (requestingExtensionId === 'user')
+        {
+            this.verboseOutputOnly = false;
+        }
+    }
 
     public getProperties()
     {
@@ -1713,8 +1725,15 @@ export class DotnetAcquisitionAlreadyInstalled extends IEvent
 {
     public readonly eventName = 'DotnetAcquisitionAlreadyInstalled';
     public readonly type = EventType.DotnetAcquisitionAlreadyInstalled;
-
-    constructor(public readonly install: DotnetInstall, public readonly requestingExtensionId: string | null) { super(); }
+    public verboseOutputOnly = true;
+    constructor(public readonly install: DotnetInstall, public readonly requestingExtensionId: string | null)
+    {
+        super();
+        if (requestingExtensionId === 'user')
+        {
+            this.verboseOutputOnly = false;
+        }
+    }
 
     public getProperties()
     {
