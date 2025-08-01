@@ -7,13 +7,20 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-## [3.0.0] - 2025-7
+## [3.0.0] - 2025-8
 
 Breaking change: No longer download the latest runtime per every single request with `acquire`.
 Instead, update periodically, to prevent slow down on startup when new tooling must be acquired to be secure.
-Add API surface to get dotnet --list-sdks --arch or dotnet --list-runtimes --arch output.
 Add setting to specify a local .NET SDK.
-Reduce error messages and add verbose setting.
+
+## [2.3.8] - 2025-8-3 (Prerelease)
+
+No longer takes focus in suppressed output mode.
+Extension is less verbose by default and adds a highVerbosity setting to bring back messages.
+Improved reliability and UX when installing via Mac.
+Improved reliability when offline.
+Adds 'dotnet.availableVersions' API to get available sdks or runtimes to a specific host or dotnet.exe. This shares a cache and performance improvements for other extensions.
+Updated to a new signing certificate, thanks @joerobich!
 
 ## [2.3.7] - 2025-7-28 (Prerelease)
 
