@@ -114,7 +114,7 @@ export class InstallationValidator extends IInstallationValidator
         } catch (error)
         {
             return this.handleValidationError(
-                `${baseErrorMessage} Unable to verify that "${dotnetPath}" is a file: ${error}`,
+                `${baseErrorMessage} Unable to verify that "${dotnetPath}" is a file: ${JSON.stringify(error ?? '')}`,
                 context,
                 failOnErr
             );
@@ -155,7 +155,7 @@ export class InstallationValidator extends IInstallationValidator
         catch (error)
         {
             return this.handleValidationError(
-                `${baseErrorMessage} Unable to read dotnet directory "${dotnetPath}": ${error}`,
+                `${baseErrorMessage} Unable to read dotnet directory "${dotnetPath}": ${JSON.stringify(error ?? '')}`,
                 context,
                 failOnErr
             );
