@@ -63,6 +63,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
 
     const existingPathVersionToFake = '5.0.1~x64'
     const pathWithIncorrectVersionForTest = path.join(__dirname, `/.dotnet/${existingPathVersionToFake}/${getDotnetExecutable()}`);
+    const pathForSDKSetting = path.join(__dirname, `/.dotnet/${getDotnetExecutable()}`);
 
     const mockExistingPathsWithGlobalConfig: IExistingPaths = {
         individualizedExtensionPaths: [{ extensionId: 'alternative.extension', path: pathWithIncorrectVersionForTest }],
@@ -106,7 +107,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
         extension.ReEnableActivationForManualActivation();
         extension.activate(extensionContext, {
             telemetryReporter: new MockTelemetryReporter(),
-            extensionConfiguration: new MockExtensionConfiguration(mockExistingPathsWithGlobalConfig.individualizedExtensionPaths!, true, mockExistingPathsWithGlobalConfig.sharedExistingPath!),
+            extensionConfiguration: new MockExtensionConfiguration(mockExistingPathsWithGlobalConfig.individualizedExtensionPaths!, true, mockExistingPathsWithGlobalConfig.sharedExistingPath!, false, pathForSDKSetting),
             displayWorker: mockDisplayWorker,
         });
     });
@@ -660,9 +661,9 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
         const findPath = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath', { acquireContext: Object.assign({}, context, { mode: 'runtime' }), versionSpecRequirement: 'equal' });
         assert.equal(findPath!.dotnetPath, pathWithIncorrectVersionForTest, 'findPath uses vscode setting for runtime'); // this is set for the alternative.extension in the settings
 
-        // check that find path does not use the setting even if its set because it should not use the wrong thing that does not meet the condition
+        // check that find path does uses the SDK setting for SDK lookup, and not the runtime setting
         const findSDKPath = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath', { acquireContext: Object.assign({}, context, { mode: 'sdk' }), versionSpecRequirement: 'equal' });
-        assert.equal(findSDKPath?.dotnetPath ?? undefined, undefined, 'findPath does not find path setting for the SDK');
+        assert.equal(findSDKPath?.dotnetPath ?? undefined, pathForSDKSetting, 'findPath uses find path setting for the SDK');
     }).timeout(standardTimeoutTime * 3);
 
     test('List Sdks & Runtimes', async () =>
