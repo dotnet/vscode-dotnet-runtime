@@ -86,6 +86,7 @@ import
 } from 'vscode-dotnet-runtime-library';
 import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
+import { setupDotnetMcp } from './dotnet-mcp-provider';
 import open = require('open');
 
 const packageJson = require('../package.json');
@@ -907,6 +908,9 @@ We will try to install .NET, but are unlikely to be able to connect to the serve
 
     // Preemptively install .NET for extensions who tell us to in their package.json
     const jsonInstaller = new JsonInstaller(globalEventStream, vsCodeExtensionContext);
+
+    // Setup MCP Server
+    setupDotnetMcp(vsCodeContext, globalEventStream);
 
     // Exposing API Endpoints
     vsCodeContext.subscriptions.push(

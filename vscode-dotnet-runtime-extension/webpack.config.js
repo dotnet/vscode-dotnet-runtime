@@ -4,7 +4,7 @@
 
 const path = require('path');
 const CopyPlugin = require('copy-webpack-plugin');
-const { exec } = require('node:child_process');
+const {exec} = require('node:child_process');
 const PermissionsOutputPlugin = require('webpack-permissions-plugin');
 
 /**@type {import('webpack').Configuration}*/
@@ -46,26 +46,30 @@ const config = {
     ]
   },
   plugins: [
-    new CopyPlugin({ patterns: [
-      { from: path.resolve(__dirname, '../vscode-dotnet-runtime-library/install scripts'), to: path.resolve(__dirname, 'dist', 'install scripts') },
-      { from: path.resolve(__dirname, '../vscode-dotnet-runtime-library/distro-data'), to: path.resolve(__dirname, 'dist', 'distro-data') },
-      { from: path.resolve(__dirname, '../images'), to: path.resolve(__dirname, 'images') },
-      { from: path.resolve(__dirname, '../LICENSE.txt'), to: path.resolve(__dirname, 'LICENSE.txt') }
-  ]}),
-  new PermissionsOutputPlugin({
-    buildFolders: [
-    ],
-    buildFiles: [
-      {
-        path: path.resolve(__dirname, 'dist', 'distro-data', 'distro-support.json'),
-        fileMode: '544'
-      },
-      {
-        path: path.resolve(__dirname, 'dist', 'install scripts', 'interprocess-communicator.sh'),
-        fileMode: '500'
-      }
-    ]
-  })
+    new CopyPlugin({
+      patterns: [
+        {from: path.resolve(__dirname, '../vscode-dotnet-runtime-library/install scripts'), to: path.resolve(__dirname, 'dist', 'install scripts')},
+        {from: path.resolve(__dirname, '../vscode-dotnet-runtime-library/distro-data'), to: path.resolve(__dirname, 'dist', 'distro-data')},
+        {from: path.resolve(__dirname, '../images'), to: path.resolve(__dirname, 'images')},
+        {from: path.resolve(__dirname, '../LICENSE.txt'), to: path.resolve(__dirname, 'LICENSE.txt')},
+        {from: path.resolve(__dirname, 'src/dotnet-install-mcp.js'), to: path.resolve(__dirname, 'dist', 'dotnet-install-mcp.js')},
+        {from: path.resolve(__dirname, 'src/mcp-package.json'), to: path.resolve(__dirname, 'dist', 'mcp-package.json')}
+      ]
+    }),
+    new PermissionsOutputPlugin({
+      buildFolders: [
+      ],
+      buildFiles: [
+        {
+          path: path.resolve(__dirname, 'dist', 'distro-data', 'distro-support.json'),
+          fileMode: '544'
+        },
+        {
+          path: path.resolve(__dirname, 'dist', 'install scripts', 'interprocess-communicator.sh'),
+          fileMode: '500'
+        }
+      ]
+    })
   ]
 };
 module.exports = config;

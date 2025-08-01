@@ -1,0 +1,26 @@
+{
+    "name": "dotnet-install-mcp",
+    "version": "1.0.0",
+    "description": "Standalone MCP command-line tool for .NET installation via VS Code extension",
+    "main": "dotnet-install-mcp.js",
+    "bin": {
+        "dotnet-install-mcp": "./dotnet-install-mcp.js"
+    },
+    "scripts": {
+        "start": "node dotnet-install-mcp.js"
+    },
+    "dependencies": {
+        "uuid": "^9.0.0"
+    },
+    "keywords": [
+        "dotnet",
+        "mcp",
+        "vscode",
+        "installation"
+    ],
+    "author": ".NET Foundation",
+    "license": "MIT",
+    "engines": {
+        "node": ">=14.0.0"
+    }
+}
