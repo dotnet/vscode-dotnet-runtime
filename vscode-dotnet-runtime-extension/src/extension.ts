@@ -73,6 +73,7 @@ import
     LocalMemoryCacheSingleton,
     NoExtensionIdProvided,
     registerEventStream,
+    RuntimeInstallationDirectoryProvider,
     UninstallErrorConfiguration,
     UserManualInstallFailure,
     UserManualInstallRequested,
@@ -625,6 +626,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             loggingObserver.dispose();
             return { dotnetPath: validatedRoot };
         }
+
+        // merge with find local runtimes PR and make sure latest is retrieved
 
         const dotnetOnHostfxrRecord = await finder.findHostInstallPaths(commandContext.acquireContext.architecture);
         for (const dotnetPath of dotnetOnHostfxrRecord ?? [])

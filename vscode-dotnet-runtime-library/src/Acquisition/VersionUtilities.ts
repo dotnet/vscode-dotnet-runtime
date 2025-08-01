@@ -249,3 +249,30 @@ function isNumber(value: string | number): boolean
         !isNaN(Number(value.toString()))
     );
 }
+
+/**
+ *
+ * @returns the date of the most recent patch Tuesday that has passed, which is the second Tuesday of the month.
+ * This is when new .NET SDKs and runtimes are released.
+ */
+export function mostRecentPatchTuesday(): Date
+{
+    const secondTuesdayThisMonth = secondTuesdayOfTheMonth(new Date());
+
+    if (secondTuesdayThisMonth.getTime() > Date.now())
+    {
+        // If the second Tuesday of the current month is in the future, we need to get the second Tuesday of the previous month.
+        const lastMonth = new Date(secondTuesdayThisMonth.getFullYear(), secondTuesdayThisMonth.getMonth() - 1, 1);
+        return secondTuesdayOfTheMonth(lastMonth)
+    }
+
+    return secondTuesdayThisMonth;
+}
+
+export function secondTuesdayOfTheMonth(date: Date): Date
+{
+    const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+    const tuesday = 2;
+    const firstTuesday = new Date(firstDayOfMonth.setDate(firstDayOfMonth.getDate() + (tuesday - firstDayOfMonth.getDay() + 7) % 7));
+    return new Date(firstTuesday.setDate(firstTuesday.getDate() + 7));
+}
