@@ -2053,6 +2053,11 @@ util-deprecate@~1.0.1:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/util-deprecate/-/util-deprecate-1.0.2.tgz"
   integrity sha1-RQ1Nyfpw3nMnYvvS1KKJgUGaDM8=
 
+uuid@^9.0.0:
+  version "9.0.1"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/uuid/-/uuid-9.0.1.tgz"
+  integrity sha1-4YjUyIU8xyIiA5LEJM1jfzIpPzA=
+
 "vscode-dotnet-runtime-library@file:../vscode-dotnet-runtime-library":
   version "1.0.0"
   resolved "file:../vscode-dotnet-runtime-library"
