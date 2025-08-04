@@ -110,8 +110,8 @@ suite('Windows & Mac Global Installer Tests', function ()
 
         if (os.platform() === 'darwin')
         {
-            assert.isTrue(mockExecutor.attemptedCommand.startsWith('open'), `It ran the right mac command, open. Command found: ${mockExecutor.attemptedCommand}`);
-            assert.isTrue(mockExecutor.attemptedCommand.includes('-W'), 'It used the -W flag');
+            assert.isTrue(mockExecutor.attemptedCommand.startsWith('sudo'), `It ran under sudo. C${mockExecutor.attemptedCommand}`);
+            assert.isTrue(mockExecutor.attemptedCommand.includes('installer'), 'It used the installer command');
             assert.isTrue(mockExecutor.attemptedCommand.includes('"'), 'It put the installer in quotes for username with space in it');
         }
         else if (os.platform() === 'win32')
