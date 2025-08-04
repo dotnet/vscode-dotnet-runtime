@@ -693,7 +693,7 @@ export class MockLoggingObserver implements ILoggingObserver
 export class MockExtensionConfiguration implements IExtensionConfiguration
 {
     constructor(private readonly existingPaths: ILocalExistingPath[], private readonly enableTelemetry: boolean, private readonly existingSharedPath: string,
-        public allowInvalidPaths = false
+        public allowInvalidPaths = false, public sdkPath: string = ''
     ) {}
 
     public update<T>(section: string, value: T): Thenable<void>
@@ -723,6 +723,10 @@ export class MockExtensionConfiguration implements IExtensionConfiguration
         else if (name === 'showResetDataCommand')
         {
             return true as unknown as T;
+        }
+        else if (name === 'dotnetSDKPath')
+        {
+            return this.sdkPath as unknown as T;
         }
         else
         {
