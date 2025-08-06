@@ -3166,9 +3166,9 @@ tinyglobby@^0.2.13:
     picomatch "^4.0.2"
 
 tmp@^0.2.1:
-  version "0.2.3"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/tmp/-/tmp-0.2.3.tgz#eb783cc22bc1e8bebd0671476d46ea4eb32a79ae"
-  integrity sha1-63g8wivB6L69BnFHbUbqTrMqea4=
+  version "0.2.4"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/tmp/-/tmp-0.2.4.tgz#c6db987a2ccc97f812f17137b36af2b6521b0d13"
+  integrity sha1-xtuYeizMl/gS8XE3s2rytlIbDRM=
 
 to-regex-range@^5.0.1:
   version "5.0.1"
