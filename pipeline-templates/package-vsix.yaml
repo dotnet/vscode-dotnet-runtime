@@ -45,7 +45,10 @@ jobs:
       else
         vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
       fi
+      vsce generate-manifest -i $(package-name)-$(GetVersion.version).vsix -o $(package-name)-$(GetVersion.version).manifest
       cp $(package-name)-$(GetVersion.version).vsix ../packages/$(package-name)-$(GetVersion.version).vsix
+      cp $(package-name)-$(GetVersion.version).manifest ../packages/$(package-name)-$(GetVersion.version).manifest
+      cp $(package-name)-$(GetVersion.version).manifest ../packages/$(package-name)-$(GetVersion.version).signature.p7s
     displayName: 📦 Package Artifact
     workingDirectory: $(dir-name)
     env:
