@@ -388,6 +388,7 @@ export class DotnetPathFinder implements IDotnetPathFinder
         {
             // This will even work if only the sdk is installed, list-runtimes on an sdk installed host would work
             const resolver = new DotnetResolver(this.workerContext, this.utilityContext, this.executor);
+            // Bug 5 - we cant assume the architecture is correct, we should do that at the end of true path since that actually knows the path. And modify the API calls.
             const runtimeInfo = await resolver.getRuntimes(tentativePath, requestedArchitecture, true);
             if ((runtimeInfo?.length ?? 0) > 0)
             {

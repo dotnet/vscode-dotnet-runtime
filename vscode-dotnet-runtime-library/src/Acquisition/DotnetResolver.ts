@@ -32,6 +32,7 @@ export class DotnetResolver implements IDotnetResolver
      */
     public async getDotnetInstalls(dotnetExecutablePath: string, mode: DotnetInstallMode, requestedArchitecture: string | undefined | null): Promise<IDotnetListInfo[]>
     {
+        // TODO: Bug 1 - Does not resolve path such as 'dotnet' below
         const hostArch = new ExecutableArchitectureDetector().getExecutableArchitecture(dotnetExecutablePath);
         const oldLookup = process.env.DOTNET_MULTILEVEL_LOOKUP;
         // This is deprecated but still needed to scan .NET 6 and below
@@ -41,8 +42,14 @@ export class DotnetResolver implements IDotnetResolver
         {
             if (mode === 'sdk')
             {
+                // BUG 2 - Somehow --arch invalid check is not running if hostArch is null
                 const availableSDKs = await this.getSDKs(dotnetExecutablePath, requestedArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(), ExecutableArchitectureDetector.IsKnownArchitecture(hostArch));
                 const resolvedHostArchitecture = ExecutableArchitectureDetector.IsKnownArchitecture(hostArch) ? hostArch : availableSDKs?.at(0)?.architecture ?? await this.getHostArchitectureViaInfo(dotnetExecutablePath, requestedArchitecture);
+
+                if (requestedArchitecture && (resolvedHostArchitecture !== requestedArchitecture))
+                {
+                    return [];
+                }
 
                 // We request to the host to only return the installs that match the architecture for both sdks and runtimes, so they must match now
                 return availableSDKs.map((sdk) =>
@@ -58,6 +65,11 @@ export class DotnetResolver implements IDotnetResolver
                 // No need to consider SDKs when looking for runtimes as all the runtimes installed with the SDKs will be included in the runtimes list.
                 const availableRuntimes = await this.getRuntimes(dotnetExecutablePath, requestedArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(), ExecutableArchitectureDetector.IsKnownArchitecture(hostArch));
                 const resolvedHostArchitecture = ExecutableArchitectureDetector.IsKnownArchitecture(hostArch) ? hostArch : availableRuntimes?.at(0)?.architecture ?? await this.getHostArchitectureViaInfo(dotnetExecutablePath, requestedArchitecture);
+
+                if (requestedArchitecture && (resolvedHostArchitecture !== requestedArchitecture))
+                {
+                    return [];
+                }
 
                 return availableRuntimes.map((runtime) =>
                 {
@@ -136,7 +148,7 @@ Please set the PATH to a dotnet host that matches the architecture. An incorrect
      *
      * @param existingPath the path to the executable of the dotnet muxer
      * @param requestedArchitecture the architecture we want SDKs of
-     * @param knownArchitecture whether we already know the architecture of the host and therefore the SDKs
+     * @param knownArchitecture whether we already know the architecture of the host and therefore the SDKs - not a safe check if true is used
      * @returns An array of IDotnetListInfo objects representing the SDKs installed on the system.
      */
     public async getSDKs(existingPath: string, requestedArchitecture: string, knownArchitecture: boolean): Promise<IDotnetListInfo[]>
@@ -195,7 +207,7 @@ Please set the PATH to a dotnet host that matches the architecture. An incorrect
     /**
      *
      * @param existingPath the path to the executable of the dotnet muxer
-     * @param requestedArchitecture the architecture we want runtimes of
+     * @param requestedArchitecture the architecture we want runtimes of - not a safe check if true is used
      * @param knownArchitecture whether the architecture is known
      * @returns an array of IDotnetListInfo objects representing the runtimes installed on the system
      */
