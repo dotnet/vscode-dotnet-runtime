@@ -65,7 +65,7 @@ jobs:
     displayName: '📩 Copy Artifact'
     inputs:
       SourceFolder: '$(Build.SourcesDirectory)'
-      Contents: '**\*.vsix'
+      Contents: '**\$(package-name)-$(GetVersion.version)*.*'
       TargetFolder: '$(Build.ArtifactStagingDirectory)'
       flattenFolders: true
   - task: CopyFiles@2
