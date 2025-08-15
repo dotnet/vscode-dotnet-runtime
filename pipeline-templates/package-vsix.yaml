@@ -97,7 +97,7 @@ jobs:
       }
     displayName: 🔑 Verify VSIX Signature Files
     workingDirectory: $(dir-name)
-    condition: and( succeeded(), or( ne( variables['Build.Reason'], 'PullRequest'), eq('$(SignType)', 'Real')))
+    condition: and( succeeded(), eq('$(SignType)', 'Real'))
   - task: CmdLine@2
     displayName: 🤌 Rename Signed VSIX
     inputs:
