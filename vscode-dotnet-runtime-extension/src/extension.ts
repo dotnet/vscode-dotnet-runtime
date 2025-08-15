@@ -27,11 +27,11 @@ import
     DotnetFindPathMetCondition,
     DotnetFindPathNoPathMetCondition,
     DotnetFindPathSettingFound,
+    DotnetHostPathFinder,
     DotnetInstall,
     DotnetInstallMode,
     DotnetInstallType,
     DotnetOfflineWarning,
-    DotnetPathFinder,
     DotnetResolver,
     DotnetVersionCategorizedEvent,
     DotnetVersionResolutionError,
@@ -585,9 +585,9 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         }
 
         const validator = new DotnetConditionValidator(workerContext, utilContext);
-        const finder = new DotnetPathFinder(workerContext, utilContext);
+        const finder = new DotnetHostPathFinder(workerContext, utilContext);
 
-        const dotnetOnShellSpawn = (await finder.findDotnetFastFromListOnly(requestedArchitecture))?.[0] ?? '';
+        const dotnetOnShellSpawn = (await finder.findDotnetFastFromListOnly(requestedArchitecture)) ?? '';
         if (dotnetOnShellSpawn)
         {
             const validatedShellSpawn = await getPathIfValid(dotnetOnShellSpawn, validator, commandContext);

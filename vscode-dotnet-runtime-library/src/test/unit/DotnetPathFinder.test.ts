@@ -6,7 +6,7 @@ import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as os from 'os';
 import * as path from 'path';
-import { DotnetPathFinder } from '../../Acquisition/DotnetPathFinder';
+import { DotnetHostPathFinder } from '../../Acquisition/DotnetHostPathFinder';
 import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
 import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
 import { MockCommandExecutor, MockFileUtilities } from '../mocks/MockObjects';
@@ -15,7 +15,7 @@ import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility'
 const assert = chai.assert;
 chai.use(chaiAsPromised);
 
-suite('DotnetPathFinder Unit Tests', function ()
+suite('DotnetHostPathFinder Unit Tests', function ()
 {
     const installRecordPath = `/etc/dotnet/install_location_${os.arch()}`;
     const installRecordPathNoArch = `/etc/dotnet/install_location`;
@@ -46,7 +46,7 @@ suite('DotnetPathFinder Unit Tests', function ()
             mockFile.filePathsAndExistValues[path.join(installRecordPath, fakeDotnetPath)] = true;
             mockFile.filePathsAndReadValues = { [installRecordPath]: fakeDotnetPath };
 
-            const finder = new DotnetPathFinder(mockContext, mockUtility, mockExecutor, mockFile);
+            const finder = new DotnetHostPathFinder(mockContext, mockUtility, mockExecutor, mockFile);
             const result = await finder.findHostInstallPaths(os.arch());
 
             assert.isTrue(result !== undefined, 'The dotnet path finder found a dotnet path');
@@ -65,7 +65,7 @@ suite('DotnetPathFinder Unit Tests', function ()
             mockFile.filePathsAndExistValues[path.join(installRecordPathNoArch, fakeDotnetPath)] = true;
             mockFile.filePathsAndReadValues = { [installRecordPathNoArch]: fakeDotnetPath };
 
-            const finder = new DotnetPathFinder(mockContext, mockUtility, mockExecutor, mockFile);
+            const finder = new DotnetHostPathFinder(mockContext, mockUtility, mockExecutor, mockFile);
             const result = await finder.findHostInstallPaths(os.arch());
 
             assert.isTrue(result !== undefined, 'The dotnet path finder found a dotnet path');

@@ -86,23 +86,23 @@
     tslib "^2.6.2"
 
 "@azure/msal-browser@^4.2.0":
-  version "4.15.0"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@azure/msal-browser/-/msal-browser-4.15.0.tgz"
-  integrity sha1-BZ0nASdVDCUCoNBgkKvADCx4Iu8=
+  version "4.18.0"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@azure/msal-browser/-/msal-browser-4.18.0.tgz"
+  integrity sha1-6hETdmmRb2rKZ0SKQk4ClBf8md4=
   dependencies:
-    "@azure/msal-common" "15.8.1"
+    "@azure/msal-common" "15.9.0"
 
-"@azure/msal-common@15.8.1":
-  version "15.8.1"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@azure/msal-common/-/msal-common-15.8.1.tgz"
-  integrity sha1-JxDw/55LE0fITaHCaFchPHUw12w=
+"@azure/msal-common@15.9.0":
+  version "15.9.0"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@azure/msal-common/-/msal-common-15.9.0.tgz"
+  integrity sha1-SbYqeY3RtHtBDm5UD9NgCfHU0Y4=
 
 "@azure/msal-node@^3.5.0":
-  version "3.6.3"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@azure/msal-node/-/msal-node-3.6.3.tgz"
-  integrity sha1-0HzuQE0HGFCkZX6G4HtDwXNPl/g=
+  version "3.6.4"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@azure/msal-node/-/msal-node-3.6.4.tgz"
+  integrity sha1-k38ON+c9SN+2irjzpQOgzyGmUoU=
   dependencies:
-    "@azure/msal-common" "15.8.1"
+    "@azure/msal-common" "15.9.0"
     jsonwebtoken "^9.0.0"
     uuid "^8.3.0"
 
@@ -248,46 +248,6 @@
     http-proxy-agent "^7.0.0"
     https-proxy-agent "^7.0.0"
     tslib "^2.6.2"
-
-"@vscode/vsce-sign-alpine-arm64@2.0.5":
-  version "2.0.5"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/vsce-sign-alpine-arm64/-/vsce-sign-alpine-arm64-2.0.5.tgz"
-  integrity sha1-40y/kfToamz1KrwubnUISuGPbEo=
-
-"@vscode/vsce-sign-alpine-x64@2.0.5":
-  version "2.0.5"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/vsce-sign-alpine-x64/-/vsce-sign-alpine-x64-2.0.5.tgz"
-  integrity sha1-dEPA6DnnTwP84MwxRTMPDSqAzIc=
-
-"@vscode/vsce-sign-darwin-arm64@2.0.5":
-  version "2.0.5"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/vsce-sign-darwin-arm64/-/vsce-sign-darwin-arm64-2.0.5.tgz"
-  integrity sha1-LqusfYNxKSqNIqFbP/V/GYjCnWs=
-
-"@vscode/vsce-sign-darwin-x64@2.0.5":
-  version "2.0.5"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/vsce-sign-darwin-x64/-/vsce-sign-darwin-x64-2.0.5.tgz"
-  integrity sha1-lvsDKcijZxhMID1iV0+akhkwItg=
-
-"@vscode/vsce-sign-linux-arm@2.0.5":
-  version "2.0.5"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/vsce-sign-linux-arm/-/vsce-sign-linux-arm-2.0.5.tgz"
-  integrity sha1-vwc0DbH+Ncs6iiIrLaSqJTEO4lE=
-
-"@vscode/vsce-sign-linux-arm64@2.0.5":
-  version "2.0.5"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/vsce-sign-linux-arm64/-/vsce-sign-linux-arm64-2.0.5.tgz"
-  integrity sha1-wEUCMqukP76t/1MJg4pWVdxwOcg=
-
-"@vscode/vsce-sign-linux-x64@2.0.5":
-  version "2.0.5"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/vsce-sign-linux-x64/-/vsce-sign-linux-x64-2.0.5.tgz"
-  integrity sha1-I4KZJPQIZ+kNXju4Yejo+gResO4=
-
-"@vscode/vsce-sign-win32-arm64@2.0.5":
-  version "2.0.5"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/vsce-sign-win32-arm64/-/vsce-sign-win32-arm64-2.0.5.tgz"
-  integrity sha1-GO8nH199mzHAMSdYLBscUfJuI7Q=
 
 "@vscode/vsce-sign-win32-x64@2.0.5":
   version "2.0.5"
@@ -683,9 +643,9 @@ camelcase@^6.0.0:
   integrity sha1-VoW5XrIJrJwMF3Rnd4ychN9Yupo=
 
 caniuse-lite@^1.0.30001726:
-  version "1.0.30001727"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/caniuse-lite/-/caniuse-lite-1.0.30001727.tgz"
-  integrity sha1-IulwZCKtN6pQVWr4wQ5A4tk6i4U=
+  version "1.0.30001731"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/caniuse-lite/-/caniuse-lite-1.0.30001731.tgz"
+  integrity sha1-J3wHQW6kYT7FZOWw/7R+e2DzLi8=
 
 chalk@^2.3.0, chalk@^2.4.2:
   version "2.4.2"
@@ -717,20 +677,20 @@ cheerio-select@^2.1.0:
     domutils "^3.0.1"
 
 cheerio@^1.0.0-rc.9:
-  version "1.1.0"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/cheerio/-/cheerio-1.1.0.tgz"
-  integrity sha1-h7m+xt02luQF6nnafSdJ2DCLCVM=
+  version "1.1.2"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/cheerio/-/cheerio-1.1.2.tgz"
+  integrity sha1-Jq936JM2yBxj6oMZf4aLTL01E2k=
   dependencies:
     cheerio-select "^2.1.0"
     dom-serializer "^2.0.0"
     domhandler "^5.0.3"
     domutils "^3.2.2"
-    encoding-sniffer "^0.2.0"
+    encoding-sniffer "^0.2.1"
     htmlparser2 "^10.0.0"
     parse5 "^7.3.0"
     parse5-htmlparser2-tree-adapter "^7.1.0"
     parse5-parser-stream "^7.1.2"
-    undici "^7.10.0"
+    undici "^7.12.0"
     whatwg-mimetype "^4.0.0"
 
 chokidar@^4.0.1:
@@ -959,9 +919,9 @@ ecdsa-sig-formatter@1.0.11:
     safe-buffer "^5.0.1"
 
 electron-to-chromium@^1.5.173:
-  version "1.5.183"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/electron-to-chromium/-/electron-to-chromium-1.5.183.tgz"
-  integrity sha1-OMLhaRBWm2xZW9FtHTnRIYvw/7Y=
+  version "1.5.194"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/electron-to-chromium/-/electron-to-chromium-1.5.194.tgz"
+  integrity sha1-BeVBwzc7qNlnplySvBTWBgiQgjY=
 
 emoji-regex@^8.0.0:
   version "8.0.0"
@@ -973,7 +933,7 @@ emoji-regex@^9.2.2:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/emoji-regex/-/emoji-regex-9.2.2.tgz"
   integrity sha1-hAyIA7DYBH9P8M+WMXazLU7z7XI=
 
-encoding-sniffer@^0.2.0:
+encoding-sniffer@^0.2.1:
   version "0.2.1"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/encoding-sniffer/-/encoding-sniffer-0.2.1.tgz"
   integrity sha1-OW7JesIs5aA3ukSvGZKsnUanuBk=
@@ -2299,10 +2259,10 @@ underscore@^1.12.1:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/underscore/-/underscore-1.13.7.tgz"
   integrity sha1-lw4zljr5p92iKPF+voOZ5fvmOhA=
 
-undici@^7.10.0:
-  version "7.11.0"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/undici/-/undici-7.11.0.tgz"
-  integrity sha1-jhOlT2Kvp1ZmbAWQw4s4ZuKG0LM=
+undici@^7.12.0:
+  version "7.13.0"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/undici/-/undici-7.13.0.tgz"
+  integrity sha1-kzH5n8QpcNy99UGZ5mBHVbpUQzo=
 
 update-browserslist-db@^1.1.3:
   version "1.1.3"
@@ -2362,7 +2322,7 @@ uuid@^8.3.0:
     fsevents "^2.3.3"
 
 "vscode-dotnet-runtime@file:../vscode-dotnet-runtime-extension":
-  version "2.3.7"
+  version "2.3.8"
   resolved "file:../vscode-dotnet-runtime-extension"
   dependencies:
     "@types/chai-as-promised" "^7.1.8"
@@ -2423,9 +2383,9 @@ webpack-sources@^3.3.3:
   integrity sha1-1L9/mQlnXXoHD/FNDvKk88mCxyM=
 
 webpack@^5.1.0, webpack@^5.95.0:
-  version "5.100.1"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/webpack/-/webpack-5.100.1.tgz"
-  integrity sha1-2Kfndh0lO5YSSO2e12YcUWmFk94=
+  version "5.101.0"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/webpack/-/webpack-5.101.0.tgz"
+  integrity sha1-S4FAf/rZhX+B/wP4cuM2m5GYzJ0=
   dependencies:
     "@types/eslint-scope" "^3.7.7"
     "@types/estree" "^1.0.8"
