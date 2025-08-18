@@ -186,7 +186,6 @@ export class DotnetResolver implements IDotnetResolver
                 else
                 {
                     this.workerContext.eventStream.post(new DotnetFindPathNoRuntimesOnHost(`The host: ${tentativePath} does not contain a .NET runtime installation.`));
-
                 }
             }
 
