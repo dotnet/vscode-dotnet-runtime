@@ -110,7 +110,7 @@ extends:
             os: windows
           useOneEngineeringPool: true
           SignType: ${{ parameters.SignType }}
-          PREELEASE: ${{ parameters.PRERELEASE }}
+          PRERELEASE: ${{ parameters.PRERELEASE }}
       - template: pipeline-templates/sbom.yaml@self
         parameters:
           pool:
