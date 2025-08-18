@@ -10,14 +10,29 @@ jobs:
     timeoutInMinutes: 4320 # job times out in 3 days
     steps:
     - task: ManualValidation@0
+      name: validation
       timeoutInMinutes: 4320
       inputs:
         instructions: 'Please validate that the release build has been tested, and resume to publish a new version'
-        onTimeout: 'reject'
+        onTimeout: 'resume'
+    - bash: |
+        # Check if validation was explicitly approved (not timed out)
+        if [ "$(validation.ManualValidationResult)" = "succeeded" ]; then
+          echo "##vso[task.setvariable variable=shouldPublish;isOutput=true]true"
+          echo "Validation approved - will proceed with publish"
+        else
+          echo "##vso[task.setvariable variable=shouldPublish;isOutput=true]false"
+          echo "Validation timed out, was rejected, or was skipped - skipping publish"
+          echo "ManualValidationResult value: $(validation.ManualValidationResult)"
+        fi
+      name: setPublishFlag
+      displayName: 'Set publish flag based on validation result'
+      condition: always() # Run even if validation step had issues
   - job: Publish
     pool:
       ${{ parameters.pool }}
     displayName: '🌐 Publish to Marketplace'
+    condition: and(succeeded(), eq(dependencies.waitForValidation.outputs['setPublishFlag.shouldPublish'], 'true'))
     dependsOn:
     - waitForValidation
     - ${{ parameters.pool.os }}_Package
