@@ -11,13 +11,14 @@ jobs:
       inputs:
       - input: pipelineArtifact
         artifactName: 'vscode-dotnet-runtime-extension'
-        targetPath: '$(System.DefaultWorkingDirectory)/artifacts'
+        targetPath: '$(Build.ArtifactStagingDirectory)'
     pool:
       ${{ parameters.pool }}
     displayName: '🌐 Publish to Marketplace'
     environment: 'vscode-dotnetcore-extension-releases'  # This requires approval gates configured in Azure DevOps
     dependsOn:
     - ${{ parameters.pool.os }}_Package
+    - SBOM
     strategy:
       runOnce:
         deploy:
@@ -26,9 +27,9 @@ jobs:
           - pwsh: |
               # Extract version from downloaded VSIX filename
               Write-Host "Artifacts directory contents:"
-              Get-ChildItem -Path '$(System.DefaultWorkingDirectory)/artifacts' -Recurse | Format-Table Name, FullName
+              Get-ChildItem -Path '$(Build.ArtifactStagingDirectory)' -Recurse | Format-Table Name, FullName
 
-              $vsixFile = Get-ChildItem -Path '$(System.DefaultWorkingDirectory)/artifacts' -Recurse -Filter "vscode-dotnet-runtime-*.vsix" | Select-Object -First 1
+              $vsixFile = Get-ChildItem -Path '$(Build.ArtifactStagingDirectory)' -Recurse -Filter "vscode-dotnet-runtime-*.vsix" | Select-Object -First 1
               if (-not $vsixFile) {
                 Write-Error "Could not find VSIX file in artifacts"
                 exit 1
@@ -53,7 +54,7 @@ jobs:
               azureSubscription: 'VSCode Marketplace Publishing'
               scriptType: "pscore"
               scriptLocation: 'inlineScript'
-              workingDirectory: '$(System.DefaultWorkingDirectory)/artifacts'
+              workingDirectory: '$(Build.ArtifactStagingDirectory)'
               inlineScript: |
                 npm i -g --verbose @vscode/vsce
 
@@ -102,5 +103,4 @@ jobs:
                 }
                 Else {
                   Write-Host "##[command]vsce $publishArgs"
-                  vsce @publishArgs
                 }
