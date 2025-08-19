@@ -13,7 +13,7 @@ Breaking change: No longer download the latest runtime per every single request 
 Instead, update periodically, to prevent slow down on startup when new tooling must be acquired to be secure.
 Add setting to specify a local .NET SDK.
 
-## [2.3.8] - 2025-8-3 (Prerelease)
+## [2.3.9] - 2025-8-3 (Prerelease, Skipping 2.3.8)
 
 No longer takes focus in suppressed output mode.
 Extension is less verbose by default and adds a highVerbosity setting to bring back messages.
@@ -22,7 +22,7 @@ Improved reliability when offline.
 Adds 'dotnet.availableVersions' API to get available sdks or runtimes to a specific host or dotnet.exe. This shares a cache and performance improvements for other extensions.
 Updated to a new signing certificate, thanks @joerobich!
 
-## [2.3.7] - 2025-7-28 (Prerelease)
+## [2.3.7] - 2025-7-28
 
 Improve error messages and output minimization.
 Add setting to disable all messages.
