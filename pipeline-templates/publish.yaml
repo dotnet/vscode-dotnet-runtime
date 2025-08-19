@@ -8,6 +8,10 @@ jobs:
     templateContext:
       type: releaseJob
       isProduction: true
+      inputs:
+      - input: pipelineArtifact
+        artifactName: 'vscode-dotnet-runtime-extension'
+        targetPath: '$(System.DefaultWorkingDirectory)/artifacts'
     pool:
       ${{ parameters.pool }}
     displayName: '🌐 Publish to Marketplace'
@@ -18,17 +22,13 @@ jobs:
       runOnce:
         deploy:
           steps:
-          - task: DownloadPipelineArtifact@2
-            displayName: '⬇️ Download Packaged Extension'
-            inputs:
-              path: '$(System.ArtifactsDirectory)'
           - template: install-node.yaml
           - pwsh: |
               # Extract version from downloaded VSIX filename
               Write-Host "Artifacts directory contents:"
-              Get-ChildItem -Path '$(System.ArtifactsDirectory)' -Recurse | Format-Table Name, FullName
+              Get-ChildItem -Path '$(System.DefaultWorkingDirectory)/artifacts' -Recurse | Format-Table Name, FullName
 
-              $vsixFile = Get-ChildItem -Path '$(System.ArtifactsDirectory)' -Recurse -Filter "vscode-dotnet-runtime-*.vsix" | Select-Object -First 1
+              $vsixFile = Get-ChildItem -Path '$(System.DefaultWorkingDirectory)/artifacts' -Recurse -Filter "vscode-dotnet-runtime-*.vsix" | Select-Object -First 1
               if (-not $vsixFile) {
                 Write-Error "Could not find VSIX file in artifacts"
                 exit 1
@@ -53,7 +53,7 @@ jobs:
               azureSubscription: 'VSCode Marketplace Publishing'
               scriptType: "pscore"
               scriptLocation: 'inlineScript'
-              workingDirectory: '$(System.ArtifactsDirectory)'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/artifacts'
               inlineScript: |
                 npm i -g --verbose @vscode/vsce
 
@@ -102,4 +102,5 @@ jobs:
                 }
                 Else {
                   Write-Host "##[command]vsce $publishArgs"
+                  vsce @publishArgs
                 }
