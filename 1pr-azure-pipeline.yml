@@ -75,4 +75,3 @@ stages:
         os: windows
       useOneEngineeringPool: false
       SignType: Test
-      PRERELEASE: true
