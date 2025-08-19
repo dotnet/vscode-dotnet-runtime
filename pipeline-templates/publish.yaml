@@ -5,6 +5,9 @@ parameters:
 
 jobs:
   - deployment: PublishToMarketplace
+    templateContext:
+      type: releaseJob
+      isProduction: true
     pool:
       ${{ parameters.pool }}
     displayName: '🌐 Publish to Marketplace'
