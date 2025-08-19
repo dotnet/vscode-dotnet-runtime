@@ -18,6 +18,8 @@ jobs:
       runOnce:
         deploy:
           steps:
+          - checkout: self
+            displayName: '📥 Checkout source code'
           - task: DownloadPipelineArtifact@2
             displayName: '⬇️ Download Packaged Extension'
             inputs:
