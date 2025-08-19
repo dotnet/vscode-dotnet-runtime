@@ -18,28 +18,29 @@ jobs:
         notifyUsers: |
           [project]\Project Administrators
           [project]\Contributors
-    - bash: |
-        # Check if validation was explicitly approved (not timed out)
-        if [ "$(validation.ManualValidationResult)" = "succeeded" ]; then
-          echo "##vso[task.setvariable variable=shouldPublish;isOutput=true]true"
-          echo "Validation approved - will proceed with publish"
-        else
-          echo "##vso[task.setvariable variable=shouldPublish;isOutput=true]false"
-          echo "Validation timed out, was rejected, or was skipped - skipping publish"
-          echo "ManualValidationResult value: $(validation.ManualValidationResult)"
-        fi
-      name: setPublishFlag
-      displayName: 'Set publish flag based on validation result'
-      condition: always() # Run even if validation step had issues
   - job: Publish
     pool:
       ${{ parameters.pool }}
     displayName: '🌐 Publish to Marketplace'
-    condition: and(succeeded(), eq(dependencies.waitForValidation.outputs['setPublishFlag.shouldPublish'], 'true'))
     dependsOn:
     - waitForValidation
     - ${{ parameters.pool.os }}_Package
     steps:
+    - powershell: |
+        # Check if validation was explicitly approved (not timed out)
+        $validationResult = "$(dependencies.waitForValidation.outputs['validation.ManualValidationResult'])"
+        Write-Host "Manual Validation Result: '$validationResult'"
+
+        if ($validationResult -eq "succeeded") {
+          Write-Host "##vso[task.setvariable variable=shouldPublish]true"
+          Write-Host "Validation approved - will proceed with publish"
+        } else {
+          Write-Host "##vso[task.setvariable variable=shouldPublish]false"
+          Write-Host "Validation timed out, was rejected, or was skipped - skipping publish"
+          Write-Host "##vso[task.complete result=SucceededWithIssues;]Publish skipped due to validation result: '$validationResult'"
+        }
+      name: checkValidationResult
+      displayName: 'Check validation result and set publish flag'
     - task: DownloadPipelineArtifact@2
       displayName: '⬇️ Download Packaged Extension'
       inputs:
@@ -54,6 +55,7 @@ jobs:
       workingDirectory: 'vscode-dotnet-runtime-extension'
     - task: AzureCLI@2
       displayName: '🚀 Publish to Marketplace'
+      condition: eq(variables['shouldPublish'], 'true')
       inputs:
         azureSubscription: 'VSCode Marketplace Publishing'
         scriptType: "pscore"
