@@ -18,20 +18,35 @@ jobs:
       runOnce:
         deploy:
           steps:
-          - checkout: self
-            displayName: '📥 Checkout source code'
           - task: DownloadPipelineArtifact@2
             displayName: '⬇️ Download Packaged Extension'
             inputs:
               path: '$(System.ArtifactsDirectory)'
           - template: install-node.yaml
-          - bash: |
-              VERSION=`node -p "require('./package.json').version"`
-              npm version $VERSION --allow-same-version
-              echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
+          - pwsh: |
+              # Extract version from downloaded VSIX filename
+              Write-Host "Artifacts directory contents:"
+              Get-ChildItem -Path '$(System.ArtifactsDirectory)' -Recurse | Format-Table Name, FullName
+
+              $vsixFile = Get-ChildItem -Path '$(System.ArtifactsDirectory)' -Recurse -Filter "vscode-dotnet-runtime-*.vsix" | Select-Object -First 1
+              if (-not $vsixFile) {
+                Write-Error "Could not find VSIX file in artifacts"
+                exit 1
+              }
+
+              # Extract version from filename (e.g., vscode-dotnet-runtime-1.2.3.vsix -> 1.2.3)
+              if ($vsixFile.Name -match 'vscode-dotnet-runtime-(.+)\.vsix$') {
+                $version = $matches[1]
+                # Handle signed VSIX files (remove -signed suffix if present)
+                $version = $version -replace '-signed$', ''
+                Write-Host "Extracted version: $version"
+                echo "##vso[task.setvariable variable=version;isOutput=true]$version"
+              } else {
+                Write-Error "Could not extract version from VSIX filename: $($vsixFile.Name)"
+                exit 1
+              }
             name: GetVersion
-            displayName: '❓ Get Version'
-            workingDirectory: 'vscode-dotnet-runtime-extension'
+            displayName: '❓ Extract Version from Artifact'
           - task: AzureCLI@2
             displayName: '🚀 Publish to Marketplace'
             inputs:
@@ -42,24 +57,27 @@ jobs:
               inlineScript: |
                 npm i -g --verbose @vscode/vsce
 
-                # Debug: List the artifacts directory structure
-                Write-Host "Artifacts directory contents:"
-                Get-ChildItem -Recurse | Format-Table Name, FullName
+                # Find the required files using extracted version
+                $version = "$(GetVersion.version)"
+                Write-Host "Looking for files with version: $version"
 
-                # Find the required files
-                $vsixFile = Get-ChildItem -Recurse -Filter "vscode-dotnet-runtime-$(GetVersion.version).vsix" | Select-Object -First 1
+                # Find VSIX file (try signed first, then regular)
+                $vsixFile = Get-ChildItem -Recurse -Filter "vscode-dotnet-runtime-$version-signed.vsix" | Select-Object -First 1
                 if (-not $vsixFile) {
-                  $vsixFile = Get-ChildItem -Recurse -Filter "vscode-dotnet-runtime-$(GetVersion.version)-signed.vsix" | Select-Object -First 1
+                  $vsixFile = Get-ChildItem -Recurse -Filter "vscode-dotnet-runtime-$version.vsix" | Select-Object -First 1
                 }
 
-                $manifestFile = Get-ChildItem -Recurse -Filter "vscode-dotnet-runtime-$(GetVersion.version).manifest" | Select-Object -First 1
-                $signatureFile = Get-ChildItem -Recurse -Filter "vscode-dotnet-runtime-$(GetVersion.version).signature.p7s" | Select-Object -First 1
+                $manifestFile = Get-ChildItem -Recurse -Filter "vscode-dotnet-runtime-$version.manifest" | Select-Object -First 1
+                $signatureFile = Get-ChildItem -Recurse -Filter "vscode-dotnet-runtime-$version.signature.p7s" | Select-Object -First 1
 
                 if (-not $vsixFile -or -not $manifestFile -or -not $signatureFile) {
-                  Write-Error "Could not find required files for version $(GetVersion.version)"
-                  Write-Error "VSIX: $($vsixFile -ne $null)"
-                  Write-Error "Manifest: $($manifestFile -ne $null)"
-                  Write-Error "Signature: $($signatureFile -ne $null)"
+                  Write-Error "Could not find required files for version $version"
+                  Write-Error "VSIX found: $($vsixFile -ne $null)"
+                  Write-Error "Manifest found: $($manifestFile -ne $null)"
+                  Write-Error "Signature found: $($signatureFile -ne $null)"
+
+                  Write-Host "Available files:"
+                  Get-ChildItem -Recurse | Format-Table Name, FullName
                   exit 1
                 }
 
@@ -84,5 +102,4 @@ jobs:
                 }
                 Else {
                   Write-Host "##[command]vsce $publishArgs"
-
                 }
