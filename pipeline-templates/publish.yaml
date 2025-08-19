@@ -8,7 +8,7 @@ jobs:
     pool:
       ${{ parameters.pool }}
     displayName: '🌐 Publish to Marketplace'
-    environment: 'Production'  # This requires approval gates configured in Azure DevOps
+    environment: 'vscode-dotnetcore-extension-releases'  # This requires approval gates configured in Azure DevOps
     dependsOn:
     - ${{ parameters.pool.os }}_Package
     strategy:
