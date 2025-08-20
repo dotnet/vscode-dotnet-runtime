@@ -105,4 +105,29 @@ suite('DotnetResolver Unit Tests', function ()
         assert.equal(sdks?.at(0)?.architecture, 'x64', 'Resolved Runtimes should find architecture from --info');
         assert.equal(armSdks.length, 0, 'an arm sdk is not reported when info and dotnet output is only x64');
     }).timeout(defaultTimeoutTimeMs);
+
+    test('Windows Desktop Runtime is not included in runtime discovery results', async () =>
+    {
+        const { validator, mockEventStream, mockExecutorWithEventStream } = makeResolverWithMockExecutorAndEventStream();
+
+        mockExecutorWithEventStream.otherCommandPatternsToMock = [
+            '--list-runtimes --arch x64',
+        ];
+        mockExecutorWithEventStream.otherCommandsReturnValues = [
+            {
+                status: '0',
+                stdout: "Microsoft.NETCore.App 8.0.1 [C:\\dotnet\\shared\\Microsoft.NETCore.App]\nMicrosoft.AspNetCore.App 8.0.1 [C:\\dotnet\\shared\\Microsoft.AspNetCore.App]\nMicrosoft.WindowsDesktop.App 8.0.1 [C:\\dotnet\\shared\\Microsoft.WindowsDesktop.App]",
+                stderr: ''
+            },
+        ];
+
+        const runtimes = await validator.getRuntimes('dotnet', 'x64');
+
+        // Should only return NETCore.App and AspNetCore.App, but not WindowsDesktop.App
+        assert.lengthOf(runtimes, 2, 'Should return exactly 2 runtimes (NETCore and AspNetCore)');
+
+        const runtimeTypes = runtimes.map(r => r.mode);
+        assert.include(runtimeTypes, 'runtime', 'Should include Microsoft.NETCore.App as runtime');
+        assert.notInclude(runtimeTypes, 'sdk', 'Should not include Windows Desktop Runtime (mapped to sdk placeholder)');
+    }).timeout(defaultTimeoutTimeMs);
 });
