@@ -8,10 +8,6 @@
       <OutDir>$(RepoRoot)packages\</OutDir>
   </PropertyGroup>
 
-  <ItemGroup>
-      <PackageReference Include="Microsoft.VisualStudioEng.MicroBuild.Core" Version="1.0.0" />
-  </ItemGroup>
-
   <PropertyGroup Condition="'$(SignType)' == ''">
       <SignType>test</SignType>
   </PropertyGroup>
