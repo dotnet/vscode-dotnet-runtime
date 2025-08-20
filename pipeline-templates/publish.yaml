@@ -10,7 +10,7 @@ jobs:
       isProduction: true
       inputs:
         - input: pipelineArtifact
-          artifactName: vscode-dotnet-runtime-extension
+          artifactName: vscode-dotnet-install-tool
           targetPath: $(System.DefaultWorkingDirectory)
           listFiles: true
     pool:

@@ -17,7 +17,7 @@ jobs:
     - output: pipelineArtifact
       displayName: '📂 Publish .VSIX'
       targetPath: '$(System.DefaultWorkingDirectory)'
-      artifactName: '$(dir-name)'
+      artifactName: vscode-dotnet-install-tool
     mb:
       signing:
         enabled: true
