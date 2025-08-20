@@ -74,4 +74,4 @@ stages:
         demands: ImageOverride -equals 1es-windows-2022-open
         os: windows
       useOneEngineeringPool: false
-      SignType: Test
+      signType: Test

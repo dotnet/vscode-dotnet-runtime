@@ -100,7 +100,8 @@ extends:
             image: 1es-windows-2022
             os: windows
           useOneEngineeringPool: true
-          SignType: Real
+          signType: real
+          signWithProd: true
       - template: pipeline-templates/sbom.yaml@self
         parameters:
           pool:
