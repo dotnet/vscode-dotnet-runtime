@@ -26,12 +26,12 @@ export class OutputChannelObserver implements IEventStreamObserver
 {
     private readonly inProgressDownloads: string[] = [];
     private downloadProgressInterval: NodeJS.Timeout | undefined;
-    private hasContent: boolean = false;
+    private hasContent = false;
 
     constructor(
         private readonly outputChannel: IOutputChannel,
-        private readonly suppressOutput: boolean = false,
-        private readonly highVerbosity: boolean = false,
+        private readonly suppressOutput = false,
+        private readonly highVerbosity = false,
     )
     {
     }
@@ -174,7 +174,7 @@ export class OutputChannelObserver implements IEventStreamObserver
         this.hasContent = true;
     }
 
-    public showOutput(preserveFocus: boolean = true): void
+    public showOutput(preserveFocus = true): void
     {
         if (this.hasContent)
         {
