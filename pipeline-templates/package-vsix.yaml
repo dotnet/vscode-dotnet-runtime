@@ -21,12 +21,8 @@ jobs:
     mb:
       signing:
         enabled: true
-        # Set signType to real if the build is a CI, otherwise use test
-        ${{ if eq(variables['Build.Reason'], 'IndividualCI') }}:
-          signType: real
-          signWithProd: true
-        ${{ else }}:
-          signType: test
+        signType: real
+        signWithProd: true
   steps:
   - template: install-node.yaml
   - bash: |
