@@ -25,11 +25,91 @@ jobs:
           steps:
           - template: install-node.yaml
           - pwsh: |
+              Write-Host "====================== FILE STRUCTURE OVERVIEW ======================"
+              Write-Host ""
+
+              # Function to create a tree-like structure
+              function Show-DirectoryTree {
+                param(
+                  [string]$Path,
+                  [string]$Title,
+                  [string]$Prefix = ""
+                )
+
+                Write-Host "$Title" -ForegroundColor Cyan
+                Write-Host "Path: $Path" -ForegroundColor Yellow
+                Write-Host ""
+
+                if (Test-Path $Path) {
+                  try {
+                    $items = Get-ChildItem -Path $Path -Recurse | Sort-Object FullName
+                    $totalFiles = ($items | Where-Object { -not $_.PSIsContainer }).Count
+                    $totalDirs = ($items | Where-Object { $_.PSIsContainer }).Count
+
+                    Write-Host "📊 Summary: $totalDirs directories, $totalFiles files" -ForegroundColor Green
+                    Write-Host ""
+
+                    # Group by directory for better structure
+                    $directories = $items | Where-Object { $_.PSIsContainer } | Sort-Object FullName
+                    $files = $items | Where-Object { -not $_.PSIsContainer } | Sort-Object FullName
+
+                    # Show directory structure first
+                    if ($directories.Count -gt 0) {
+                      Write-Host "📁 Directory Structure:" -ForegroundColor Magenta
+                      foreach ($dir in $directories) {
+                        $relativePath = $dir.FullName.Replace($Path, "").TrimStart('\', '/')
+                        $depth = ($relativePath.Split('\', '/') | Where-Object { $_ -ne "" }).Count
+                        $indent = "  " * $depth + "├── "
+                        Write-Host "$indent$($dir.Name)/" -ForegroundColor Blue
+                      }
+                      Write-Host ""
+                    }
+
+                    # Show files grouped by directory
+                    Write-Host "📄 Files:" -ForegroundColor Magenta
+                    $filesByDir = $files | Group-Object { Split-Path $_.FullName -Parent }
+
+                    foreach ($group in ($filesByDir | Sort-Object Name)) {
+                      $relativeDirPath = $group.Name.Replace($Path, "").TrimStart('\', '/')
+                      if ($relativeDirPath -eq "") {
+                        Write-Host "  📂 Root:" -ForegroundColor Yellow
+                      } else {
+                        Write-Host "  📂 $relativeDirPath:" -ForegroundColor Yellow
+                      }
+
+                      foreach ($file in ($group.Group | Sort-Object Name)) {
+                        $size = if ($file.Length -lt 1KB) { "$($file.Length) B" }
+                               elseif ($file.Length -lt 1MB) { "{0:N1} KB" -f ($file.Length / 1KB) }
+                               else { "{0:N1} MB" -f ($file.Length / 1MB) }
+
+                        Write-Host "    ├── $($file.Name) ($size)" -ForegroundColor White
+                      }
+                      Write-Host ""
+                    }
+                  }
+                  catch {
+                    Write-Host "❌ Error accessing directory: $_" -ForegroundColor Red
+                  }
+                } else {
+                  Write-Host "❌ Directory does not exist" -ForegroundColor Red
+                }
+                Write-Host "=================================================================" -ForegroundColor Cyan
+                Write-Host ""
+              }
+
+              # Show System.DefaultWorkingDirectory
+              Show-DirectoryTree -Path "$(System.DefaultWorkingDirectory)" -Title "🏠 SYSTEM DEFAULT WORKING DIRECTORY"
+
+              # Show Build.ArtifactStagingDirectory
+              Show-DirectoryTree -Path "$(Build.ArtifactStagingDirectory)" -Title "🎯 BUILD ARTIFACT STAGING DIRECTORY"
+
+            displayName: '📋 List All Files Recursively'
+          - pwsh: |
               # Extract version from downloaded VSIX filename
               Write-Host "Artifacts directory contents:"
-              Get-ChildItem -Path '$(System.DefaultWorkingDirectory)/drop' -Recurse | Format-Table Name, FullName
+              Get-ChildItem -Path '$(System.DefaultWorkingDirectory)' -Recurse | Format-Table Name, FullName
 
-              $vsixFile = Get-ChildItem -Path '$(System.DefaultWorkingDirectory)/drop' -Recurse -Filter "vscode-dotnet-runtime-*.vsix" | Select-Object -First 1
+              $vsixFile = Get-ChildItem -Path '$(System.DefaultWorkingDirectory)' -Recurse -Filter "vscode-dotnet-runtime-*.vsix" | Select-Object -First 1
               if (-not $vsixFile) {
                 Write-Error "Could not find VSIX file in artifacts"
                 exit 1
@@ -54,7 +134,7 @@ jobs:
               azureSubscription: 'VSCode Marketplace Publishing'
               scriptType: "pscore"
               scriptLocation: 'inlineScript'
-              workingDirectory: $(System.DefaultWorkingDirectory)/drop
+              workingDirectory: $(System.DefaultWorkingDirectory)
               inlineScript: |
                 npm i -g --verbose @vscode/vsce
 
