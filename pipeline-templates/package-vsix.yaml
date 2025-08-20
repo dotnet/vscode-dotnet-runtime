@@ -1,6 +1,6 @@
 parameters:
   pool: ''
-  signType: ''
+  SignType: ''
 
 jobs:
 - job: ${{ parameters.pool.os }}_Package
@@ -46,7 +46,7 @@ jobs:
   - ${{ if eq(parameters.useOneEngineeringPool, 'true') }}:
     - template: prepare-signing.yaml
       parameters:
-        signType: ${{ parameters.signType }}
+        SignType: ${{ parameters.SignType }}
   - bash: |
       npm i -g rimraf
       npm i -g @vscode/vsce
@@ -64,11 +64,11 @@ jobs:
     displayName: 📦 Package Artifact
     workingDirectory: $(dir-name)
     env:
-      signType: ${{ parameters.signType }}
+      SignType: ${{ parameters.SignType }}
   - script: dotnet build msbuild/signVsix -v:normal
     displayName: 🖊️ Sign VSIXes
     env:
-      signType: ${{ parameters.signType }}
+      SignType: ${{ parameters.SignType }}
   - pwsh: |
       Function Spawn-Tool($command, $commandArgs, $retryCount=0) {
         Write-Host "$pwd >"
@@ -109,7 +109,7 @@ jobs:
       }
     displayName: 🔑 Verify VSIX Signature Files
     workingDirectory: $(dir-name)
-    condition: and( succeeded(), eq('$(signType)', 'Real'))
+    condition: and( succeeded(), eq('$(SignType)', 'Real'))
   - task: CmdLine@2
     displayName: 🤌 Rename Signed VSIX
     inputs:
@@ -132,6 +132,6 @@ jobs:
   - template: publish.yaml
     parameters:
       pool: ${{ parameters.pool }}
-      signType: ${{ parameters.signType }}
+      SignType: ${{ parameters.SignType }}
       version: $(GetVersion.version)
       useOneEngineeringPool: true

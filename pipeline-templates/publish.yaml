@@ -1,6 +1,6 @@
 parameters:
   pool: ''
-  signType: ''
+  SignType: ''
   useOneEngineeringPool: ''
 
 jobs:
@@ -98,7 +98,7 @@ jobs:
                   $signatureFile.FullName
                 )
 
-                If ("${{ parameters.signType }}" -ne "Real") {
+                If ("${{ parameters.SignType }}" -ne "Real") {
                   Write-Host "With a test-signed build, the command to publish is printed instead of run."
                   Write-Host "##[command]vsce $publishArgs"
                 }

@@ -11,12 +11,12 @@ steps:
   - task: MicroBuildSigningPlugin@4
     displayName: 🔧 Install MicroBuild Signing Plugin
     inputs:
-      signType: ${{ parameters.signType }}
+      SignType: ${{ parameters.SignType }}
       zipSources: false
       feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
       azureSubscription: 'MicroBuild Signing Task (DevDiv)'
       ${{ if eq(variables['Build.Reason'], 'IndividualCI') }}:
         ConnectedPMEServiceName: 248d384a-b39b-46e3-8ad5-c2c210d5e7ca
     env:
-      signType: ${{ parameters.signType }}
+      SignType: ${{ parameters.SignType }}
       TeamName: DotNetCore
