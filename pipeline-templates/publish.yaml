@@ -8,22 +8,21 @@ jobs:
     templateContext:
       type: releaseJob
       isProduction: true
+      inputs:
+        - input: pipelineArtifact
+          artifactName: vscode-dotnet-runtime-extension
+          targetPath: $(System.DefaultWorkingDirectory)
+          listFiles: true
     pool:
       ${{ parameters.pool }}
     displayName: '🌐 Publish to Marketplace'
     environment: 'vscode-dotnetcore-extension-releases'  # This requires approval gates configured in Azure DevOps
     dependsOn:
     - ${{ parameters.pool.os }}_Package
-    - SBOM
     strategy:
       runOnce:
         deploy:
           steps:
-          - task: 1ES.DownloadPipelineArtifact@1
-            displayName: '⬇️ Download Packaged Extension'
-            inputs:
-              artifactName: vscode-dotnet-runtime-extension
-              targetPath: $(System.DefaultWorkingDirectory)/drop
           - template: install-node.yaml
           - pwsh: |
               # Extract version from downloaded VSIX filename

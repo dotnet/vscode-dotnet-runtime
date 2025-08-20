@@ -16,7 +16,7 @@ jobs:
     outputs:
     - output: pipelineArtifact
       displayName: '📂 Publish .VSIX'
-      targetPath: '$(Build.ArtifactStagingDirectory)'
+      targetPath: '$(System.DefaultWorkingDirectory)'
       artifactName: '$(dir-name)'
     mb:
       signing:
