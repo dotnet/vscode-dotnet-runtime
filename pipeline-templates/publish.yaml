@@ -13,6 +13,10 @@ jobs:
           artifactName: vscode-dotnet-install-tool
           targetPath: $(System.DefaultWorkingDirectory)
           listFiles: true
+        - input: pipelineArtifact
+          artifactName: Packages
+          destinationPath: $(Pipeline.Workspace)
+          listFiles: true
     pool:
       ${{ parameters.pool }}
     displayName: '🌐 Publish to Marketplace'
