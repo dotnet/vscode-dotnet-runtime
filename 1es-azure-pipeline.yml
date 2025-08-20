@@ -67,6 +67,8 @@ extends:
         enabled: true
       componentgovernance:
         ignoreDirectories: '.vscode-test/**'
+      featureFlags:
+        branchValidation: enforceInAllJobs
     stages:
     - stage: Internal
       jobs:
