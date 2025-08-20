@@ -138,12 +138,12 @@ export class DotnetResolver implements IDotnetResolver
     }
 
     /**
-    *
-    * @param tentativePaths Paths that may hold a dotnet executable.
-    * @param suggestedArchitecture The architecture to resolve the paths for - this is only a suggestion and you must validate afterward
-    * @returns The actual physical location/path on disk where the executables lie for each of the paths.
-    * Some of the symlinks etc resolve to a path which works but is still not the actual path.
-    */
+     *
+     * @param tentativePaths Paths that may hold a dotnet executable.
+     * @param suggestedArchitecture The architecture to resolve the paths for - this is only a suggestion and you must validate afterward
+     * @returns The actual physical location/path on disk where the executables lie for each of the paths.
+     * Some of the symlinks etc resolve to a path which works but is still not the actual path.
+     */
     public async resolveTruePaths(tentativePaths: string[], suggestedArchitecture: string | null): Promise<string[]>
     {
         const oldLookup = process.env.DOTNET_MULTILEVEL_LOOKUP;
@@ -206,17 +206,17 @@ export class DotnetResolver implements IDotnetResolver
     }
 
     /**
-    *
-    * @param hostPath The path to the dotnet executable
-    * @returns The architecture of the dotnet host from the PATH, in dotnet info string format
-    * The .NET Host will only list versions of the runtime and sdk that match its architecture.
-    * Thus, any runtime or sdk that it prints out will be the same architecture as the host.
-    * This information is not always accurate as dotnet info is subject to change.
-    *
-    * @remarks Will return '' if the architecture cannot be determined for some peculiar reason (e.g. dotnet --info is broken or changed).
-    */
+     *
+     * @param hostPath The path to the dotnet executable
+     * @returns The architecture of the dotnet host from the PATH, in dotnet info string format
+     * The .NET Host will only list versions of the runtime and sdk that match its architecture.
+     * Thus, any runtime or sdk that it prints out will be the same architecture as the host.
+     * This information is not always accurate as dotnet info is subject to change.
+     *
+     * @remarks Will return '' if the architecture cannot be determined for some peculiar reason (e.g. dotnet --info is broken or changed).
+     */
     // eslint-disable-next-line @typescript-eslint/require-await
-    private async getHostArchitectureViaInfo(hostPath: string, expectedArchitecture?: string | undefined | null): Promise<string>
+    private async getHostArchitectureViaInfo(hostPath: string, expectedArchitecture?: string   | null): Promise<string>
     {
         // dotnet --info is not machine-readable and subject to breaking changes. See https://github.com/dotnet/sdk/issues/33697 and https://github.com/dotnet/runtime/issues/98735/
         // Unfortunately even with a new API, that might not go in until .NET 10 and beyond, so we have to rely on dotnet --info for now.
@@ -283,7 +283,7 @@ Please set the PATH to a dotnet host that matches the architecture. An incorrect
             const parts = sdk.split(' ', 2);
             return {
                 mode: 'sdk',
-                version: parts[0],
+                version: parts?.[0],
                 directory: sdk.split(' ').slice(1).join(' ').slice(1, -1), // need to remove the brackets from the path [path],
                 architecture: null
             } as IDotnetListInfo;
@@ -344,14 +344,14 @@ Please set the PATH to a dotnet host that matches the architecture. An incorrect
         {
             const parts = runtime.split(' ', 3); // account for spaces in PATH, no space should appear before then and luckily path is last
             return {
-                mode: parts[0] === aspnetCoreString ? 'aspnetcore' : parts[0] === runtimeString ? 'runtime' : 'sdk', // sdk is a placeholder for windows desktop, will never match since this is for runtime search only
-                version: parts[1],
+                mode: parts?.[0] === aspnetCoreString ? 'aspnetcore' : parts[0] === runtimeString ? 'runtime' : 'sdk', // sdk is a placeholder for windows desktop, so it can get filtered out until we supported that.
+                version: parts?.[1],
                 directory: runtime.split(' ').slice(2).join(' ').slice(1, -1), // account for spaces in PATH, no space should appear before then and luckily path is last.
                 // the 2nd slice needs to remove the brackets from the path [path]
                 architecture: null
             } as IDotnetListInfo;
         }).filter(x => x !== null) as IDotnetListInfo[];
 
-        return runtimeInfos;
+        return runtimeInfos.filter(x => x.mode !== 'sdk');
     }
 }
