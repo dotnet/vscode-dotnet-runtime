@@ -31,12 +31,13 @@ jobs:
           - template: list-file-structure.yaml
           - pwsh: |
               # Extract version from downloaded VSIX filename
+              $packagesPath = Join-Path -Path $(System.DefaultWorkingDirectory) -ChildPath 'packages'
               Write-Host "Artifacts directory contents:"
-              Get-ChildItem -Path '$(System.DefaultWorkingDirectory)' -Recurse | Format-Table Name, FullName
+              Get-ChildItem -Path $packagesPath -Recurse | Format-Table Name, FullName
 
-              $vsixFile = Get-ChildItem -Path '$(System.DefaultWorkingDirectory)' -Recurse -Filter "vscode-dotnet-runtime-*.vsix" | Select-Object -First 1
+              $vsixFile = Get-ChildItem -Path $packagesPath -Recurse -Filter "vscode-dotnet-runtime-*.vsix" | Select-Object -First 1
               if (-not $vsixFile) {
-                Write-Error "Could not find VSIX file in artifacts"
+                Write-Error "Could not find VSIX file in artifacts/packages"
                 exit 1
               }
 
@@ -63,27 +64,29 @@ jobs:
               inlineScript: |
                 npm i -g --verbose @vscode/vsce
 
+                $packagesPath = Join-Path -Path $(System.DefaultWorkingDirectory) -ChildPath 'packages'
+
                 # Find the required files using extracted version
                 $version = "$(GetVersion.version)"
                 Write-Host "Looking for files with version: $version"
 
                 # Find VSIX file (try signed first, then regular)
-                $vsixFile = Get-ChildItem -Recurse -Filter "vscode-dotnet-runtime-$version-signed.vsix" | Select-Object -First 1
+                $vsixFile = Get-ChildItem -Path $packagesPath -Recurse -Filter "vscode-dotnet-runtime-$version-signed.vsix" | Select-Object -First 1
                 if (-not $vsixFile) {
-                  $vsixFile = Get-ChildItem -Recurse -Filter "vscode-dotnet-runtime-$version.vsix" | Select-Object -First 1
+                  $vsixFile = Get-ChildItem -Path $packagesPath -Recurse -Filter "vscode-dotnet-runtime-$version.vsix" | Select-Object -First 1
                 }
 
-                $manifestFile = Get-ChildItem -Recurse -Filter "vscode-dotnet-runtime-$version.manifest" | Select-Object -First 1
-                $signatureFile = Get-ChildItem -Recurse -Filter "vscode-dotnet-runtime-$version.signature.p7s" | Select-Object -First 1
+                $manifestFile = Get-ChildItem -Path $packagesPath -Recurse -Filter "vscode-dotnet-runtime-$version.manifest" | Select-Object -First 1
+                $signatureFile = Get-ChildItem -Path $packagesPath -Recurse -Filter "vscode-dotnet-runtime-$version.signature.p7s" | Select-Object -First 1
 
                 if (-not $vsixFile -or -not $manifestFile -or -not $signatureFile) {
-                  Write-Error "Could not find required files for version $version"
+                  Write-Error "Could not find required files for version $version in packages folder"
                   Write-Error "VSIX found: $($vsixFile -ne $null)"
                   Write-Error "Manifest found: $($manifestFile -ne $null)"
                   Write-Error "Signature found: $($signatureFile -ne $null)"
 
-                  Write-Host "Available files:"
-                  Get-ChildItem -Recurse | Format-Table Name, FullName
+                  Write-Host "Available files in packages folder:"
+                  Get-ChildItem -Path $packagesPath -Recurse | Format-Table Name, FullName
                   exit 1
                 }
 
