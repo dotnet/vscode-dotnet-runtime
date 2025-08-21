@@ -6,9 +6,8 @@
       <MicroBuild_DoNotStrongNameSign>true</MicroBuild_DoNotStrongNameSign>
       <IsPackable>false</IsPackable>
       <OutDir>$(RepoRoot)packages\</OutDir>
-          <!-- Access Azure DevOps variables -->
-      <AzDoWorkingDir>$(System_DefaultWorkingDirectory)</AzDoWorkingDir>
-      <ArtifactDir>$(Build_ArtifactStagingDirectory)</ArtifactDir>
+      <!-- Access Azure DevOps variables -->
+      <AzDoWorkingDir>$([System.IO.Path]::Combine('$(System_DefaultWorkingDirectory)', 'packages'))\</AzDoWorkingDir>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(SignType)' == ''">
@@ -25,13 +24,13 @@
           Text="Did not find any .signature.p7s files to sign - ensure that the .manifest files have been generated."
           Condition="'@(ManifestFiles->Count())' == '0'" />
       <ItemGroup>
-          <FilesToSign Include="$(AzDoWorkingDir)*.signature.p7s">
+          <FilesToSign Include="$(AzDoWorkingDir)**\*.signature.p7s">
               <Authenticode>VSCodePublisher</Authenticode>
           </FilesToSign>
-          <FilesToSign Include="$(AzDoWorkingDir)*.vsix">
+          <FilesToSign Include="$(AzDoWorkingDir)**\*.vsix">
               <Authenticode>VSCodePublisher</Authenticode>
           </FilesToSign>
-          <FilesToSign Include="$(AzDoWorkingDir)*.manifest">
+          <FilesToSign Include="$(AzDoWorkingDir)**\*.manifest">
               <Authenticode>VSCodePublisher</Authenticode>
           </FilesToSign>
       </ItemGroup>
