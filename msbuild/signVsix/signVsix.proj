@@ -16,6 +16,8 @@
 
   <!-- Copies the manifest file to <name>.signature.p7s which is required to submit to the signing service -->
   <Target Name="CopyManifestAsSignature" BeforeTargets="SignFiles">
+      <Message Text="AzDoWorkingDir resolved to: $(AzDoWorkingDir)" Importance="high" />
+
       <ItemGroup>
           <ManifestFiles Include="$(OutDir)*.manifest" />
       </ItemGroup>
@@ -34,5 +36,9 @@
               <Authenticode>VSCodePublisher</Authenticode>
           </FilesToSign>
       </ItemGroup>
+
+      <Message Text="Files to sign found: @(FilesToSign->Count()) files" Importance="high" />
+      <Message Text="Files to sign:" Importance="high" />
+      <Message Text="  %(FilesToSign.Identity) [%(FilesToSign.Authenticode)]" Importance="high" />
   </Target>
 </Project>
