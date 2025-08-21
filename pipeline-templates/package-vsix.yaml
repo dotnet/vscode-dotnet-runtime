@@ -71,6 +71,7 @@ jobs:
     workingDirectory: $(dir-name)
     env:
       SignType: ${{ parameters.SignType }}
+  - template: list-file-structure.yml
   - script: dotnet build msbuild/signVsix -v:normal
     displayName: 🖊️ Sign VSIXes
     env:
