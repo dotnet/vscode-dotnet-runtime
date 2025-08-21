@@ -15,7 +15,7 @@
 
   <ItemGroup>
     <FilesToSign Include="$(OutDir)*.js">
-      <Authenticode>VSCodePublisher</Authenticode>
+      <Authenticode>MicrosoftSHA2</Authenticode>
     </FilesToSign>
   </ItemGroup>
 </Project>
