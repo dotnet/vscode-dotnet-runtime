@@ -23,6 +23,7 @@ jobs:
         enabled: true
         signType: real
         signWithProd: true
+        zipSources: false
   steps:
   - template: install-node.yaml
   - bash: |
