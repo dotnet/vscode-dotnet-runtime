@@ -70,7 +70,7 @@ jobs:
     displayName: 🖊️ Sign VSIXes
     env:
       SignType: ${{ parameters.SignType }}
-  - ${{ if eq(parameters.useOneEngineeringPool, 'true') }}:
+  - ${{ if eq(variables['Build.Reason'], 'IndividualCI') }}:
     - pwsh: |
         Function Spawn-Tool($command, $commandArgs, $retryCount=0) {
           Write-Host "$pwd >"
