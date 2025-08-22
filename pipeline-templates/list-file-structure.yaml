@@ -16,7 +16,6 @@ steps:
         Write-Host "====================== FILE STRUCTURE OVERVIEW ======================"
         Write-Host ""
 
-        # Function to create a tree-like structure
         function Show-DirectoryTree {
           param(
             [string]$Path,
@@ -99,7 +98,6 @@ steps:
           Write-Host ""
         }
 
-        # Process the current path
         Show-DirectoryTree -Path "${{ pathConfig.path }}" -Title "${{ pathConfig.title }}"
 
       displayName: '${{ parameters.displayName }} - ${{ pathConfig.title }}'
