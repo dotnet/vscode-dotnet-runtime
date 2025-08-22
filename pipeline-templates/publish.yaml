@@ -27,6 +27,7 @@ jobs:
       inputs:
         path: '$(System.ArtifactsDirectory)'
     - template: install-node.yaml
+    - template: list-file-structure.yaml
     - bash: |
         VERSION=`node -p "require('./package.json').version"`
         npm version $VERSION --allow-same-version
