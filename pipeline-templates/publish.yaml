@@ -4,59 +4,108 @@ parameters:
   useOneEngineeringPool: ''
 
 jobs:
-  - job: waitForValidation
-    displayName: ☁️ Wait for release approval
-    pool: server
-    timeoutInMinutes: 4320 # job times out in 3 days
-    steps:
-    - task: ManualValidation@0
-      timeoutInMinutes: 4320
+  - deployment: PublishToMarketplace
+    templateContext:
+      type: releaseJob
+      isProduction: true
       inputs:
-        instructions: 'Please validate that the release build has been tested, and resume to publish a new version'
-        onTimeout: 'reject'
-  - job: Publish
+        - input: pipelineArtifact
+          artifactName: vscode-dotnet-install-tool
+          targetPath: '$(System.DefaultWorkingDirectory)' # This is the destination path.
+          listFiles: true
     pool:
       ${{ parameters.pool }}
     displayName: '🌐 Publish to Marketplace'
+    environment: 'vscode-dotnetcore-extension-releases'  # This requires approval gates configured in Azure DevOps
     dependsOn:
-    - waitForValidation
     - ${{ parameters.pool.os }}_Package
-    steps:
-    - task: DownloadPipelineArtifact@2
-      displayName: '⬇️ Download Packaged Extension'
-      inputs:
-        path: '$(System.ArtifactsDirectory)'
-    - template: install-node.yaml
-    - template: list-file-structure.yaml
-    - bash: |
-        VERSION=`node -p "require('./package.json').version"`
-        npm version $VERSION --allow-same-version
-        echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
-      name: GetVersion
-      displayName: '❓ Get Version'
-      workingDirectory: 'vscode-dotnet-runtime-extension'
-    - task: AzureCLI@2
-      displayName: '🚀 Publish to Marketplace'
-      inputs:
-        azureSubscription: 'VSCode Marketplace Publishing'
-        scriptType: "pscore"
-        scriptLocation: 'inlineScript'
-        workingDirectory: '$(System.ArtifactsDirectory)'
-        inlineScript: |
-          npm i -g --verbose @vscode/vsce
-          $basePublishArgs = , "publish"
-          $basePublishArgs += '--azure-credential'
-          $basePublishArgs += '--packagePath'
-          $publishArgs = $basePublishArgs + 'vscode-dotnet-runtime-$(GetVersion.version)-signed.vsix'
-          $publishArgs += '--manifestPath'
-          $publishArgs += 'vscode-dotnet-runtime-$(GetVersion.version).manifest'
-          $publishArgs += '--signaturePath'
-          $publishArgs += 'vscode-dotnet-runtime-$(GetVersion.version).signature.p7s'
-          If ("${{ parameters.SignType }}" -ne "Real") {
-            Write-Host "With a test-signed build, the command to publish is printed instead of run."
-            Write-Host "##[command]vsce $publishArgs"
-          }
-          Else {
-            Write-Host "##[command]vsce $publishArgs"
-            vsce @publishArgs
-          }
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - template: install-node.yaml
+          - template: list-file-structure.yaml
+          - pwsh: |
+              # Extract version from downloaded VSIX filename
+              $packagesPath = Join-Path -Path $(System.DefaultWorkingDirectory) -ChildPath 'packages'
+              Write-Host "Artifacts directory contents:"
+              Get-ChildItem -Path $packagesPath -Recurse | Format-Table Name, FullName
+
+              $vsixFile = Get-ChildItem -Path $packagesPath -Recurse -Filter "vscode-dotnet-runtime-*.vsix" | Select-Object -First 1
+              if (-not $vsixFile) {
+                Write-Error "Could not find VSIX file in artifacts/packages"
+                exit 1
+              }
+
+              # Extract version from filename (e.g., vscode-dotnet-runtime-1.2.3.vsix -> 1.2.3)
+              if ($vsixFile.Name -match 'vscode-dotnet-runtime-(.+)\.vsix$') {
+                $version = $matches[1]
+                # Handle signed VSIX files (remove -signed suffix if present)
+                $version = $version -replace '-signed$', ''
+                Write-Host "Extracted version: $version"
+                echo "##vso[task.setvariable variable=version;isOutput=true]$version"
+              } else {
+                Write-Error "Could not extract version from VSIX filename: $($vsixFile.Name)"
+                exit 1
+              }
+            name: GetVersion
+            displayName: '❓ Extract Version from Artifact'
+          - task: AzureCLI@2
+            displayName: '🚀 Publish to Marketplace'
+            inputs:
+              azureSubscription: 'VSCode Marketplace Publishing'
+              scriptType: "pscore"
+              scriptLocation: 'inlineScript'
+              workingDirectory: $(System.DefaultWorkingDirectory)
+              inlineScript: |
+                npm i -g --verbose @vscode/vsce
+
+                $packagesPath = Join-Path -Path $(System.DefaultWorkingDirectory) -ChildPath 'packages'
+
+                # Find the required files using extracted version
+                $version = "$(GetVersion.version)"
+                Write-Host "Looking for files with version: $version"
+
+                # Find VSIX file (try signed first, then regular)
+                $vsixFile = Get-ChildItem -Path $packagesPath -Recurse -Filter "vscode-dotnet-runtime-$version-signed.vsix" | Select-Object -First 1
+                if (-not $vsixFile) {
+                  $vsixFile = Get-ChildItem -Path $packagesPath -Recurse -Filter "vscode-dotnet-runtime-$version.vsix" | Select-Object -First 1
+                }
+
+                $manifestFile = Get-ChildItem -Path $packagesPath -Recurse -Filter "vscode-dotnet-runtime-$version.manifest" | Select-Object -First 1
+                $signatureFile = Get-ChildItem -Path $packagesPath -Recurse -Filter "vscode-dotnet-runtime-$version.signature.p7s" | Select-Object -First 1
+
+                if (-not $vsixFile -or -not $manifestFile -or -not $signatureFile) {
+                  Write-Error "Could not find required files for version $version in packages folder"
+                  Write-Error "VSIX found: $($vsixFile -ne $null)"
+                  Write-Error "Manifest found: $($manifestFile -ne $null)"
+                  Write-Error "Signature found: $($signatureFile -ne $null)"
+
+                  Write-Host "Available files in packages folder:"
+                  Get-ChildItem -Path $packagesPath -Recurse | Format-Table Name, FullName
+                  exit 1
+                }
+
+                Write-Host "Using VSIX file: $($vsixFile.FullName)"
+                Write-Host "Using manifest: $($manifestFile.FullName)"
+                Write-Host "Using signature: $($signatureFile.FullName)"
+
+                $publishArgs = @(
+                  'publish'
+                  '--azure-credential'
+                  '--packagePath'
+                  $vsixFile.FullName
+                  '--manifestPath'
+                  $manifestFile.FullName
+                  '--signaturePath'
+                  $signatureFile.FullName
+                )
+
+                If ("${{ parameters.SignType }}" -ne "Real") {
+                  Write-Host "With a test-signed build, the command to publish is printed instead of run."
+                  Write-Host "##[command]vsce $publishArgs"
+                }
+                Else {
+                  Write-Host "##[command]vsce $publishArgs"
+
+                }

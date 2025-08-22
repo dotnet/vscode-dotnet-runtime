@@ -17,7 +17,7 @@ jobs:
     - output: pipelineArtifact
       displayName: '📂 Publish .VSIX'
       targetPath: '$(Build.ArtifactStagingDirectory)'
-      artifactName: '$(dir-name)'
+      artifactName: vscode-dotnet-install-tool
   steps:
   - template: install-node.yaml
   - bash: |
