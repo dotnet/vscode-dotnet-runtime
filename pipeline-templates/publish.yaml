@@ -15,7 +15,7 @@ jobs:
           listFiles: true
         - input: pipelineArtifact
           artifactName: SBOM
-          targetPath: '$(System.DefaultWorkingDirectory)\_manifest' # This is the destination path.
+          targetPath: '$(System.DefaultWorkingDirectory)/_manifest' # This is the destination path.
           listFiles: true
     pool:
       ${{ parameters.pool }}
