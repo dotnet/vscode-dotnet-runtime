@@ -20,3 +20,7 @@ jobs:
       displayName: 📢 Publishing SBOM
       artifact: SBOM
       targetPath: $(System.DefaultWorkingDirectory)/_manifest
+    - output: pipelineArtifact
+      displayName: 📢 Publishing SBOM for Staging
+      artifact: StagedSBOM
+      targetPath: '$(Build.ArtifactStagingDirectory)'

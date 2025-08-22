@@ -14,7 +14,7 @@ jobs:
           targetPath: '$(System.DefaultWorkingDirectory)' # This is the destination path.
           listFiles: true
         - input: pipelineArtifact
-          artifactName: SBOM
+          artifactName: StagedSBOM
           targetPath: '$(System.DefaultWorkingDirectory)/_manifest' # This is the destination path.
           listFiles: true
     pool:
