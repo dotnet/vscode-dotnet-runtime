@@ -13,12 +13,17 @@ jobs:
           artifactName: vscode-dotnet-install-tool
           targetPath: '$(System.DefaultWorkingDirectory)' # This is the destination path.
           listFiles: true
+        - input: pipelineArtifact
+          artifactName: SBOM
+          targetPath: '$(System.DefaultWorkingDirectory)\_manifest' # This is the destination path.
+          listFiles: true
     pool:
       ${{ parameters.pool }}
     displayName: '🌐 Publish to Marketplace'
     environment: 'vscode-dotnetcore-extension-releases'  # This requires approval gates configured in Azure DevOps
     dependsOn:
     - ${{ parameters.pool.os }}_Package
+    - SBOM
     strategy:
       runOnce:
         deploy:
