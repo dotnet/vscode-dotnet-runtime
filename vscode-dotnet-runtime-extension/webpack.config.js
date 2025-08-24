@@ -4,68 +4,72 @@
 
 const path = require('path');
 const CopyPlugin = require('copy-webpack-plugin');
-const { exec } = require('node:child_process');
+const {exec} = require('node:child_process');
 const PermissionsOutputPlugin = require('webpack-permissions-plugin');
 
 /**@type {import('webpack').Configuration}*/
 const config = {
-  target: 'node', // vscode extensions run in a Node.js-context 📖 -> https://webpack.js.org/configuration/node/
+    target: 'node', // vscode extensions run in a Node.js-context 📖 -> https://webpack.js.org/configuration/node/
 
-  entry: './/src/extension.ts', // the entry point of this extension, 📖 -> https://webpack.js.org/configuration/entry-context/
-  output: {
-    // the bundle is stored in the 'dist' folder (check package.json), 📖 -> https://webpack.js.org/configuration/output/
-    path: path.resolve(__dirname, 'dist'),
-    filename: 'extension.js',
-    libraryTarget: 'commonjs2',
-    devtoolModuleFilenameTemplate: '../[resource-path]'
-  },
-  node: {
-    __dirname: false,
-    __filename: false,
-  },
-  devtool: 'source-map',
-  externals: {
-    vscode: 'commonjs vscode', // the vscode-module is created on-the-fly and must be excluded. Add other modules that cannot be webpack'ed, 📖 -> https://webpack.js.org/configuration/externals/
-    'applicationinsights-native-metrics': 'commonjs applicationinsights-native-metrics' // ignored because we don't ship native module
-  },
-  resolve: {
-    // support reading TypeScript and JavaScript files, 📖 -> https://github.com/TypeStrong/ts-loader
-    extensions: ['.ts', '.js']
-  },
-  module: {
-    rules: [
-      {
-        test: /\.ts$/,
-        exclude: /node_modules/,
-        use: [
-          {
-            loader: 'ts-loader'
-          }
+    entry: './/src/extension.ts', // the entry point of this extension, 📖 -> https://webpack.js.org/configuration/entry-context/
+    output: {
+        // the bundle is stored in the 'dist' folder (check package.json), 📖 -> https://webpack.js.org/configuration/output/
+        path: path.resolve(__dirname, 'dist'),
+        filename: 'extension.js',
+        libraryTarget: 'commonjs2',
+        devtoolModuleFilenameTemplate: '../[resource-path]'
+    },
+    node: {
+        __dirname: false,
+        __filename: false,
+    },
+    devtool: 'source-map',
+    externals: {
+        vscode: 'commonjs vscode', // the vscode-module is created on-the-fly and must be excluded. Add other modules that cannot be webpack'ed, 📖 -> https://webpack.js.org/configuration/externals/
+        'applicationinsights-native-metrics': 'commonjs applicationinsights-native-metrics' // ignored because we don't ship native module
+    },
+    resolve: {
+        // support reading TypeScript and JavaScript files, 📖 -> https://github.com/TypeStrong/ts-loader
+        extensions: ['.ts', '.js']
+    },
+    module: {
+        rules: [
+            {
+                test: /\.ts$/,
+                exclude: /node_modules/,
+                use: [
+                    {
+                        loader: 'ts-loader'
+                    }
+                ]
+            }
         ]
-      }
+    },
+    plugins: [
+        new CopyPlugin({
+            patterns: [
+                {from: path.resolve(__dirname, '../vscode-dotnet-runtime-library/install scripts'), to: path.resolve(__dirname, 'dist', 'install scripts')},
+                {from: path.resolve(__dirname, '../vscode-dotnet-runtime-library/distro-data'), to: path.resolve(__dirname, 'dist', 'distro-data')},
+                {from: path.resolve(__dirname, '../images'), to: path.resolve(__dirname, 'images')},
+                {from: path.resolve(__dirname, '../LICENSE.txt'), to: path.resolve(__dirname, 'LICENSE.txt')},
+                {from: path.resolve(__dirname, 'src/dotnet-mcp-provider.js'), to: path.resolve(__dirname, 'dist', 'dotnet-mcp-provider.js')},
+                {from: path.resolve(__dirname, 'src/mcp-package.json'), to: path.resolve(__dirname, 'dist', 'mcp-package.json')}
+            ]
+        }),
+        new PermissionsOutputPlugin({
+            buildFolders: [
+            ],
+            buildFiles: [
+                {
+                    path: path.resolve(__dirname, 'dist', 'distro-data', 'distro-support.json'),
+                    fileMode: '544'
+                },
+                {
+                    path: path.resolve(__dirname, 'dist', 'install scripts', 'interprocess-communicator.sh'),
+                    fileMode: '500'
+                }
+            ]
+        })
     ]
-  },
-  plugins: [
-    new CopyPlugin({ patterns: [
-      { from: path.resolve(__dirname, '../vscode-dotnet-runtime-library/install scripts'), to: path.resolve(__dirname, 'dist', 'install scripts') },
-      { from: path.resolve(__dirname, '../vscode-dotnet-runtime-library/distro-data'), to: path.resolve(__dirname, 'dist', 'distro-data') },
-      { from: path.resolve(__dirname, '../images'), to: path.resolve(__dirname, 'images') },
-      { from: path.resolve(__dirname, '../LICENSE.txt'), to: path.resolve(__dirname, 'LICENSE.txt') }
-  ]}),
-  new PermissionsOutputPlugin({
-    buildFolders: [
-    ],
-    buildFiles: [
-      {
-        path: path.resolve(__dirname, 'dist', 'distro-data', 'distro-support.json'),
-        fileMode: '544'
-      },
-      {
-        path: path.resolve(__dirname, 'dist', 'install scripts', 'interprocess-communicator.sh'),
-        fileMode: '500'
-      }
-    ]
-  })
-  ]
 };
 module.exports = config;

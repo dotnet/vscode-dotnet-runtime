@@ -129,7 +129,13 @@
                     "description": "Enable this to show more detailed output from our extension."
                 }
             }
-        }
+        },
+        "mcpServerDefinitionProviders": [
+            {
+                "id": "dotnetInstaller",
+                "label": ".NET Installation Tools"
+            }
+        ]
     },
     "scripts": {
         "vscode:prepublish": "npm run compile-all && npm install && webpack --mode production && dotnet build ../msbuild/signJs --property jsOutputPath=..\\..\\vscode-dotnet-runtime-extension\\dist -bl -v:normal",
@@ -156,6 +162,7 @@
         "shelljs": "^0.8.5",
         "ts-loader": "^9.5.1",
         "typescript": "^5.5.4",
+        "uuid": "^9.0.0",
         "vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library",
         "webpack-permissions-plugin": "^1.0.9"
     },
