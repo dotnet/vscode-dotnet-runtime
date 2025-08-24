@@ -449,7 +449,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
         }
     }).timeout(standardTimeoutTime);
 
-    test('Find dotnet PATH Command does not work with extension-managed runtime installations', async () =>
+    test('Find dotnet PATH Command does work with extension-managed runtime installations', async () =>
     {
         // First install a runtime that we'll try to find
         const version = '7.0';
@@ -476,7 +476,9 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
 
             // Then verify we can find the extension-managed runtime
             const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath', findPathContext);
-            assert.notExists(result, 'Should find a runtime');
+            assert.exists(result, 'Should find a runtime');
+            assert.exists(result!.dotnetPath, 'Should find a runtime path');
+            assert.equal(result!.dotnetPath.toLowerCase(), runtimePath.toLowerCase(), 'Should find the correct runtime path');
         }
         finally
         {
