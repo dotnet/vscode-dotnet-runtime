@@ -644,7 +644,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             return { dotnetPath: validatedRoot };
         }
 
-        if (commandContext.acquireContext.mode === 'runtime' || commandContext.acquireContext.mode === 'aspnetcore')
+        if (commandContext.acquireContext.mode !== 'sdk' && !commandContext.disableLocalLookup)
         {
             const extensionManagedRuntimeRecordPaths = await finder.findExtensionManagedRuntimes();
             const filteredExtensionManagedRuntimeRecordPaths = validator.filterValidPaths(extensionManagedRuntimeRecordPaths, commandContext);
