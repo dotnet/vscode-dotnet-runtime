@@ -43,6 +43,7 @@ import
     ExistingPathResolver,
     ExtensionConfigurationWorker,
     formatIssueUrl,
+    GetDotnetInstallInfo,
     getInstallIdCustomArchitecture,
     getMajor,
     getMajorMinor,
@@ -654,6 +655,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 if (validatedExistingManagedPath)
                 {
                     loggingObserver.dispose();
+                    InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).markInstallAsInUse(getInstallIdCustomArchitecture(command));
                     return { dotnetPath: dotnetPath.path };
                 }
             }

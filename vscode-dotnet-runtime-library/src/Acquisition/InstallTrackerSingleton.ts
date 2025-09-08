@@ -33,9 +33,11 @@ export type InstallState = 'installing' | 'installed';
 export class InstallTrackerSingleton
 {
     protected static instance: InstallTrackerSingleton;
+    protected returnedInstallIds: Set<string>
 
     protected constructor(protected eventStream: IEventStream, protected extensionState: IExtensionState)
     {
+        this.returnedInstallIds = new Set<string>();
     }
 
     public static getInstance(eventStream: IEventStream, extensionState: IExtensionState): InstallTrackerSingleton
@@ -196,6 +198,15 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
         await this.addVersionToExtensionState(context, install, pathToValidate);
     }
 
+    /**
+     * Marks an install as in use so it doesn't get cleaned up during the running instance of code.
+     * @param installId - The install id to mark as in use. This happens automatically when an install is installed, but not when it's returned from the state otherwise.
+     */
+    public markInstallAsInUse(installId: string)
+    {
+        this.returnedInstallIds.add(installId);
+    }
+
     protected async addVersionToExtensionState(context: IAcquisitionWorkerContext, installObj: DotnetInstall, pathToValidate: string, alreadyHoldingLock = false)
     {
         return executeWithLock(this.eventStream, alreadyHoldingLock, this.getLockFilePathForKey(context.installDirectoryProvider, 'installed'), 5, 200000,
@@ -206,6 +217,7 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
                 // We need to validate again ourselves because uninstallAll can blast away the state but holds on to the installed lock when doing so.
                 context.installationValidator.validateDotnetInstall(install, pathToValidate);
 
+                this.returnedInstallIds.add(install.installId);
                 const existingVersions = await this.getExistingInstalls(context.installDirectoryProvider, true);
                 const preExistingInstallIndex = existingVersions.findIndex(x => IsEquivalentInstallation(x.dotnetInstall, install));
 
