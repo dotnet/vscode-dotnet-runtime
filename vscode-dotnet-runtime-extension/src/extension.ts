@@ -191,6 +191,16 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     // Creating API Surfaces
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext): Promise<IDotnetAcquireResult | undefined> =>
     {
+        return acquireLocal(commandContext);
+    });
+
+    async function acquireToUpdateInternal(commandContext: IDotnetAcquireContext): Promise<IDotnetAcquireResult | undefined>
+    {
+        return acquireLocal(commandContext);
+    }
+
+    async function acquireLocal(commandContext: IDotnetAcquireContext): Promise<IDotnetAcquireResult | undefined>
+    {
         const worker = getAcquisitionWorker();
         commandContext.mode = commandContext.mode ?? 'runtime' as DotnetInstallMode;
         const mode = commandContext.mode;
@@ -222,7 +232,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 return existingPath;
             }
 
-            if (!forceUpdate)
+            const isOffline = !(await WebRequestWorkerSingleton.getInstance().isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream));
+            if (!commandContext.forceUpdate || isOffline)
             {
                 // 3.0 Breaking Change: Don't always return latest .NET runtime by default
                 // Always use offline install matching the major.minor if it exists and forceUpdate is not used for the legacy behavior
@@ -254,7 +265,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
         loggingObserver.dispose();
         return dotnetPath;
-    });
+    }
 
     const dotnetAcquireGlobalSDKRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquireGlobalSDK}`, async (commandContext: IDotnetAcquireContext): Promise<IDotnetAcquireResult | undefined> =>
     {
