@@ -2,6 +2,7 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
+import * as path from 'path';
 import { IEventStream } from '../EventStream/EventStream';
 import
 {
@@ -33,11 +34,15 @@ export type InstallState = 'installing' | 'installed';
 export class InstallTrackerSingleton
 {
     protected static instance: InstallTrackerSingleton;
-    protected returnedInstallIds: Set<string>
+
+    // A set of directories of installs - this is ok since each local install we manage gets its own directory.
+    // (That's intentional because we want to ensure a local and specific runtime is used in each case)
+    // Used to determine whether something is likely 'in use' during uninstall.
+    protected returnedInstallDirectories: Set<string>;
 
     protected constructor(protected eventStream: IEventStream, protected extensionState: IExtensionState)
     {
-        this.returnedInstallIds = new Set<string>();
+        this.returnedInstallDirectories = new Set<string>();
     }
 
     public static getInstance(eventStream: IEventStream, extensionState: IExtensionState): InstallTrackerSingleton
@@ -56,7 +61,16 @@ export class InstallTrackerSingleton
         InstallTrackerSingleton.instance.extensionState = extensionState;
     }
 
-    public async canUninstall(dotnetInstall: DotnetInstall, dirProvider: IInstallationDirectoryProvider, allowUninstallUserOnlyInstall = false): Promise<boolean>
+    public async installHasNoLiveDependents(installExePath: string)
+    {
+        return executeWithLock(this.eventStream, false, this.getLockFilePathForKeySimple(path.dirname(installExePath), 'installed'), 5, 200000,
+            async () =>
+            {
+                return this.returnedInstallDirectories.has(installExePath);
+            },);
+    }
+
+    public async installHasNoRegisteredDependents(dotnetInstall: DotnetInstall, dirProvider: IInstallationDirectoryProvider, allowUninstallUserOnlyInstall = false): Promise<boolean>
     {
         return executeWithLock(this.eventStream, false, this.getLockFilePathForKey(dirProvider, 'installed'), 5, 200000,
             async (installationState: InstallState, install: DotnetInstall) =>
@@ -86,9 +100,15 @@ export class InstallTrackerSingleton
             },);
     }
 
-    private getLockFilePathForKey(provider: IInstallationDirectoryProvider, dataKey: string): string
+
+    private getLockFilePathForKeySimple(dataKey: string): string
     {
         return `${dataKey}Lk`;
+    }
+
+    private getLockFilePathForKey(provider: IInstallationDirectoryProvider, dataKey: string): string
+    {
+        return this.getLockFilePathForKeySimple(dataKey);
     }
 
     /**
@@ -200,11 +220,15 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
 
     /**
      * Marks an install as in use so it doesn't get cleaned up during the running instance of code.
-     * @param installId - The install id to mark as in use. This happens automatically when an install is installed, but not when it's returned from the state otherwise.
+     * @param installDirectory - The install id to mark as in use. This happens automatically when an install is installed, but not when it's returned from the state otherwise.
      */
-    public markInstallAsInUse(installId: string)
+    public markInstallAsInUse(installExePath: string)
     {
-        this.returnedInstallIds.add(installId);
+        return executeWithLock(this.eventStream, false, this.getLockFilePathForKeySimple(path.dirname(installExePath), 'installed'), 5, 200000,
+            async () =>
+            {
+                this.returnedInstallDirectories.add(installExePath);
+            },);
     }
 
     protected async addVersionToExtensionState(context: IAcquisitionWorkerContext, installObj: DotnetInstall, pathToValidate: string, alreadyHoldingLock = false)
@@ -217,7 +241,7 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
                 // We need to validate again ourselves because uninstallAll can blast away the state but holds on to the installed lock when doing so.
                 context.installationValidator.validateDotnetInstall(install, pathToValidate);
 
-                this.returnedInstallIds.add(install.installId);
+                this.returnedInstallDirectories.add(install.installId);
                 const existingVersions = await this.getExistingInstalls(context.installDirectoryProvider, true);
                 const preExistingInstallIndex = existingVersions.findIndex(x => IsEquivalentInstallation(x.dotnetInstall, install));
 

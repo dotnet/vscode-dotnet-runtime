@@ -173,7 +173,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
                         possibleInstallWithSameMajorMinor.version));
                     context.eventStream.post(new DotnetOfflineInstallUsed(`We detected you are offline and are using the pre-existing .NET installation ${install.dotnetInstall.installId}.
 To keep your .NET version up to date, please reconnect to the internet at your soonest convenience.`))
-                    InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).markInstallAsInUse(install.dotnetInstall.installId);
+                    InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).markInstallAsInUse(dotnetExePath);
                     return { dotnetPath: dotnetExePath };
                 }
             }
@@ -198,11 +198,11 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
         const dotnetPath = path.join(dotnetInstallDir, this.dotnetExecutable);
         const installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(context.installDirectoryProvider);
-        const existingInstall = await this.getValidExistingInstall(context, installedVersions, install, dotnetPath);
+        const existingInstall = await this.getValidExistingInstallPath(context, installedVersions, install, dotnetPath);
         if (existingInstall)
         {
             context.eventStream.post(new DotnetAcquisitionStatusResolved(install, install.version));
-            InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).markInstallAsInUse(install.installId);
+            InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).markInstallAsInUse(existingInstall);
             return { dotnetPath: existingInstall };
         }
 
@@ -287,10 +287,10 @@ To keep your .NET version up to date, please reconnect to the internet at your s
                 context.acquisitionContext.installType ??= 'local'; // Before this API param existed, all calls were for local types.
                 context.acquisitionContext.architecture ??= this.getDefaultInternalArchitecture(context.acquisitionContext.architecture);
 
-                const existingInstall = await this.getValidExistingInstall(context, installedVersions, install, dotnetPath);
+                const existingInstall = await this.getValidExistingInstallPath(context, installedVersions, install, dotnetPath);
                 if (existingInstall !== null)
                 {
-                    InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).markInstallAsInUse(install.installId);
+                    InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).markInstallAsInUse(existingInstall);
                     return existingInstall;
                 }
 
@@ -310,7 +310,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         );
     }
 
-    private async getValidExistingInstall(context: IAcquisitionWorkerContext, installedVersions: InstallRecord[], install: DotnetInstall, dotnetPath: string): Promise<string | null>
+    private async getValidExistingInstallPath(context: IAcquisitionWorkerContext, installedVersions: InstallRecord[], install: DotnetInstall, dotnetPath: string): Promise<string | null>
     {
         const installExists = await this.file.exists(dotnetPath) || this.usingNoInstallInvoker;
         const installIsInInstalledVersionsList = installedVersions.some(x => IsEquivalentInstallation(x.dotnetInstall, install));
@@ -444,10 +444,10 @@ To keep your .NET version up to date, please reconnect to the internet at your s
 
         let dotnetPath: string = await installer.getExpectedGlobalSDKPath(installingVersion,
             context.acquisitionContext.architecture ?? this.getDefaultInternalArchitecture(context.acquisitionContext.architecture), false);
-        const existingInstall = await this.getValidExistingInstall(context, installedVersions, install, dotnetPath);
+        const existingInstall = await this.getValidExistingInstallPath(context, installedVersions, install, dotnetPath);
         if (existingInstall)
         {
-            InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).markInstallAsInUse(install.installId);
+            InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).markInstallAsInUse(existingInstall);
             return existingInstall;
         }
 
@@ -565,7 +565,7 @@ ${interpretedMessage}`;
                     const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
 
                     await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, force);
-                    if (force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).canUninstall(install, context.installDirectoryProvider))
+                    if (force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).installHasNoRegisteredDependents(install, context.installDirectoryProvider))
                     {
                         context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install.installId}.`));
                         await this.file.wipeDirectory(dotnetInstallDir, context.eventStream, undefined, true,);
@@ -599,7 +599,7 @@ Other dependents remain.`));
                     context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install.installId}.`));
 
                     await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, force);
-                    if (force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).canUninstall(install, context.installDirectoryProvider))
+                    if (force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).installHasNoRegisteredDependents(install, context.installDirectoryProvider))
                     {
                         const installingVersion = await globalInstallerResolver.getFullySpecifiedVersion();
                         const installer: IGlobalInstaller = os.platform() === 'linux' ?
