@@ -222,10 +222,15 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 return existingPath;
             }
 
-            const existingOfflinePath = await getExistingInstallIfOffline(worker, workerContext);
-            if (existingOfflinePath)
+            if (!forceUpdate)
             {
-                return Promise.resolve(existingOfflinePath);
+                // 3.0 Breaking Change: Don't always return latest .NET runtime by default
+                // Always use offline install matching the major.minor if it exists and forceUpdate is not used for the legacy behavior
+                const existingOfflinePath = await getExistingInstallOffline(worker, workerContext);
+                if (existingOfflinePath)
+                {
+                    return Promise.resolve(existingOfflinePath);
+                }
             }
 
             // Note: This will impact the context object given to the worker and error handler since objects own a copy of a reference in JS.
@@ -279,7 +284,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             globalEventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId ?? 'notProvided', commandContext.mode!, commandContext.installType ?? 'global'));
 
-            const existingOfflinePath = await getExistingInstallIfOffline(worker, workerContext);
+            const existingOfflinePath = await getExistingInstallOffline(worker, workerContext);
             if (existingOfflinePath)
             {
                 return Promise.resolve(existingOfflinePath);
@@ -403,7 +408,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             globalEventStream.post(new DotnetAcquisitionStatusRequested(commandContext.version, commandContext.requestingExtensionId));
 
-            const existingOfflinePath = await getExistingInstallIfOffline(worker, workerContext);
+            const existingOfflinePath = await getExistingInstallOffline(worker, workerContext);
             if (existingOfflinePath)
             {
                 return Promise.resolve(existingOfflinePath);
@@ -885,20 +890,20 @@ ${JSON.stringify(commandContext)}`));
         };
     }
 
-    async function getExistingInstallIfOffline(worker: DotnetCoreAcquisitionWorker, workerContext: IAcquisitionWorkerContext): Promise<IDotnetAcquireResult | null>
+    async function getExistingInstallOffline(worker: DotnetCoreAcquisitionWorker, workerContext: IAcquisitionWorkerContext): Promise<IDotnetAcquireResult | null>
     {
-        if (!(await WebRequestWorkerSingleton.getInstance().isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream)))
+        workerContext.acquisitionContext.architecture ??= DotnetCoreAcquisitionWorker.defaultArchitecture();
+        const existingOfflinePath = await worker.getSimilarExistingInstall(workerContext);
+        if (existingOfflinePath?.dotnetPath)
         {
-            workerContext.acquisitionContext.architecture ??= DotnetCoreAcquisitionWorker.defaultArchitecture();
-            const existingOfflinePath = await worker.getSimilarExistingInstall(workerContext);
-            if (existingOfflinePath?.dotnetPath)
+            return Promise.resolve(existingOfflinePath);
+        }
+        else
+        {
+            if (!(await WebRequestWorkerSingleton.getInstance().isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream)))
             {
-                return Promise.resolve(existingOfflinePath);
-            }
-            else
-            {
-                globalEventStream.post(new DotnetOfflineWarning(`It looks like you may be offline (can you connect to www.microsoft.com?) and have no installations of .NET for VS Code.
-We will try to install .NET, but are unlikely to be able to connect to the server. Installation will timeout in ${timeoutValue} seconds.`))
+                globalEventStream.post(new DotnetOfflineWarning(`It looks like you may be offline (can you connect to www.microsoft.com?) and have no compatible installations of .NET ${workerContext.acquisitionContext.version} for ${workerContext.acquisitionContext.requestingExtensionId ?? 'user'}.
+Installation will timeout in ${timeoutValue} seconds.`))
             }
         }
 
