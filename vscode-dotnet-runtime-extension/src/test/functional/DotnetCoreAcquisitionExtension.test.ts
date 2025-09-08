@@ -17,20 +17,6 @@ import
     DotnetVersionSpecRequirement,
     EnvironmentVariableIsDefined,
     FileUtilities,
-    IDotnetAcquireContext,
-    IDotnetAcquireResult,
-    IDotnetFindPathContext,
-    IDotnetListVersionsContext,
-    IDotnetListVersionsResult,
-    IExistingPaths,
-    ITelemetryEvent,
-    LocalMemoryCacheSingleton,
-    MockEnvironmentVariableCollection,
-    MockExtensionConfiguration,
-    MockExtensionContext,
-    MockTelemetryReporter,
-    MockWebRequestWorker,
-    MockWindowDisplayWorker,
     getDistroInfo,
     getDotnetExecutable,
     getInstallIdCustomArchitecture,
@@ -39,7 +25,23 @@ import
     getMockAcquisitionContext,
     getMockAcquisitionWorkerContext,
     getMockUtilityContext,
-    getPathSeparator
+    getPathSeparator,
+    IDotnetAcquireContext,
+    IDotnetAcquireResult,
+    IDotnetFindPathContext,
+    IDotnetListVersionsContext,
+    IDotnetListVersionsResult,
+    IDotnetSearchContext,
+    IDotnetSearchResult,
+    IExistingPaths,
+    ITelemetryEvent,
+    LocalMemoryCacheSingleton,
+    MockEnvironmentVariableCollection,
+    MockExtensionConfiguration,
+    MockExtensionContext,
+    MockTelemetryReporter,
+    MockWebRequestWorker,
+    MockWindowDisplayWorker
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 
@@ -708,6 +710,52 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
         }
     }).timeout(standardTimeoutTime);
 
+
+    test('dotnet.availableInstalls API works after acquiring a runtime', async () =>
+    {
+        // Acquire a runtime
+        const runtimeContext: IDotnetAcquireContext = { version: '6.0', requestingExtensionId, mode: 'runtime' };
+        const acquireResult = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', runtimeContext);
+        assert.exists(acquireResult, 'The acquire command should return a result');
+        assert.exists(acquireResult!.dotnetPath, 'The acquire command should return a valid dotnet path');
+
+        // Call dotnet.availableInstalls API
+        const availableInstalls = await vscode.commands.executeCommand<IDotnetSearchResult[]>('dotnet.availableInstalls',
+            {
+                dotnetExecutablePath: acquireResult!.dotnetPath,
+                mode: 'runtime',
+                requestingExtensionId,
+                architecture: os.arch()
+            } as IDotnetSearchContext
+        );
+
+        assert.exists(availableInstalls, 'The availableInstalls API should return a result');
+        assert.isArray(availableInstalls, 'The availableInstalls API should return an array');
+        assert.isTrue(availableInstalls!.some(install => install.version.includes('6')), 'The acquired runtime should be listed in available installs');
+    }).timeout(standardTimeoutTime);
+
+    test('dotnet.availableInstalls API checks system dotnet if no path is provided', async () =>
+    {
+        // Call dotnet.availableInstalls API without providing a dotnet path
+        const availableInstalls = await vscode.commands.executeCommand<IDotnetSearchResult[]>('dotnet.availableInstalls', {
+            mode: 'runtime',
+            requestingExtensionId
+        });
+
+        assert.exists(availableInstalls, 'The availableInstalls API should return a result');
+        assert.isArray(availableInstalls, 'The availableInstalls API should return an array');
+
+        // Validate the output (system may or may not have installs)
+        if (availableInstalls!.length > 0)
+        {
+            assert.exists(availableInstalls![0].version, 'The first install should have a version');
+            assert.exists(availableInstalls![0].directory, 'The first install should have a directory');
+        } else
+        {
+            assert.isTrue(availableInstalls!.length === 0, 'No installs found on the system');
+        }
+    }).timeout(standardTimeoutTime);
+
     async function testAcquire(installMode: DotnetInstallMode)
     {
         // Runtime is not yet installed
@@ -732,6 +780,27 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
     test('Install Runtime Status Command', async () =>
     {
         await testAcquire('runtime');
+    }).timeout(standardTimeoutTime);
+
+    test('acquireStatus can work Offline', async () =>
+    {
+        const availableVersion = '8.0';
+        try
+        {
+            await installRuntime(availableVersion, 'runtime');
+
+            // Simulate offline mode by not allowing network requests
+            process.env.DOTNET_INSTALL_TOOL_OFFLINE = '1';
+
+            const context: IDotnetAcquireContext = { version: availableVersion, requestingExtensionId, mode: 'runtime' };
+            let result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquireStatus', context);
+            assert.isDefined(result, 'acquireStatusResult should be defined');
+            assert.include(result!.dotnetPath, availableVersion, 'acquireStatusResult should contain the expected version in the path');
+        }
+        finally
+        {
+            process.env.DOTNET_INSTALL_TOOL_OFFLINE = undefined
+        }
     }).timeout(standardTimeoutTime);
 
     test('Install Aspnet runtime Status Command', async () =>

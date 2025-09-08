@@ -49,11 +49,6 @@ parameters:
     image: macOS-latest
     os: macOS
     emoji: 🍎
-- name: SignType
-  displayName: Sign type
-  type: string
-  default: Test
-  values: [ 'Test', 'Real' ]
 
 extends:
   template: v1/1ES.Official.PipelineTemplate.yml@1esPipelines
@@ -105,7 +100,7 @@ extends:
             image: 1es-windows-2022
             os: windows
           useOneEngineeringPool: true
-          SignType: ${{ parameters.SignType }}
+          SignType: Real
       - template: pipeline-templates/sbom.yaml@self
         parameters:
           pool:

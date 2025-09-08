@@ -35,8 +35,7 @@ import
     DotnetWSLSecurityError,
     EventBasedError,
     EventCancellationError,
-    SuppressedAcquisitionError,
-    UtilizingExistingInstallPromise
+    SuppressedAcquisitionError
 } from '../EventStream/EventStreamEvents';
 import * as versionUtils from './VersionUtilities';
 
@@ -47,7 +46,6 @@ import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
 import { IExtensionState } from '../IExtensionState';
 import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { CommandExecutor } from '../Utils/CommandExecutor';
-import { Debugging } from '../Utils/Debugging';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { IFileUtilities } from '../Utils/IFileUtilities';
 import { getInstallFromContext, getInstallIdCustomArchitecture } from '../Utils/InstallIdUtilities';
@@ -246,8 +244,6 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         let acquisitionPromise = null;
         if (globalInstallerResolver)
         {
-            Debugging.log(`The Acquisition Worker has Determined a Global Install was requested.`, context.eventStream);
-
             acquisitionPromise = this.acquireGlobalCore(context, globalInstallerResolver, install).catch(async (error: any) =>
             {
                 await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream).catch(() => {});
@@ -399,15 +395,19 @@ To keep your .NET version up to date, please reconnect to the internet at your s
     {
         if (error instanceof EventBasedError || error instanceof EventCancellationError)
         {
-            error.message = `.NET Acquisition Failed: ${error.message}, ${error?.stack}`;
             return error;
         }
         else
         {
-            // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            const newError = new EventBasedError('DotnetAcquisitionError', `.NET Acquisition Failed: ${error?.message ?? JSON.stringify(error)}`);
-            return newError;
+            if (error?.error?.message !== undefined) // DotnetAcquisitionError is a bad but common pattern where the error is included in the thrown object
+            {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                return new EventBasedError(error?.constructor?.name ?? 'DotnetAcquisitionError', error?.error?.message, error?.stack);
+            }
+
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            return new EventBasedError('DotnetAcquisitionError', `.NET Acquisition Failed: ${error?.message ?? JSON.stringify(error)}`);
         }
     }
 
@@ -455,9 +455,15 @@ To keep your .NET version up to date, please reconnect to the internet at your s
 
         if (installerResult !== '0')
         {
+            // For user-friendly exit codes, show only the interpreted message without verbose details
+            const interpretedMessage = WinMacGlobalInstaller.InterpretExitCode(installerResult);
+            const errorMessage = WinMacGlobalInstaller.IsUserFriendlyExitCode(installerResult)
+                ? interpretedMessage
+                : `An error was raised by the .NET SDK installer. The exit code it gave us: ${installerResult}.
+${interpretedMessage}`;
+
             const err = new DotnetNonZeroInstallerExitCodeError(new EventBasedError('DotnetNonZeroInstallerExitCodeError',
-                `An error was raised by the .NET SDK installer. The exit code it gave us: ${installerResult}.
-${WinMacGlobalInstaller.InterpretExitCode(installerResult)}`), install);
+                errorMessage), install);
             context.eventStream.post(err);
             throw err;
         }
