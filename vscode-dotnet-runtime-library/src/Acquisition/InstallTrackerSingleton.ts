@@ -2,7 +2,6 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
-import * as path from 'path';
 import { IEventStream } from '../EventStream/EventStream';
 import
 {
@@ -63,7 +62,7 @@ export class InstallTrackerSingleton
 
     public async installHasNoLiveDependents(installExePath: string)
     {
-        return executeWithLock(this.eventStream, false, this.getLockFilePathForKeySimple(path.dirname(installExePath), 'installed'), 5, 200000,
+        return executeWithLock(this.eventStream, false, this.getLockFilePathForKeySimple('installed'), 5, 200000,
             async () =>
             {
                 return this.returnedInstallDirectories.has(installExePath);
@@ -224,7 +223,7 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
      */
     public markInstallAsInUse(installExePath: string)
     {
-        return executeWithLock(this.eventStream, false, this.getLockFilePathForKeySimple(path.dirname(installExePath), 'installed'), 5, 200000,
+        return executeWithLock(this.eventStream, false, this.getLockFilePathForKeySimple('installed'), 5, 200000,
             async () =>
             {
                 this.returnedInstallDirectories.add(installExePath);
