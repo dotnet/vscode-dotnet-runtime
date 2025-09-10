@@ -131,6 +131,49 @@ const defaultTimeoutValue = 600;
 const moreInfoUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md';
 let disableActivationUnderTest = true;
 
+/**
+ * Extracts the version from a dotnet install path or install id.
+ * Handles Windows, Linux, and legacy install ids.
+ * Example path: C:\Users\user\...\.dotnet\8.0.20~x64~aspnetcore\dotnet.exe
+ * Example id: 8.0.20~x64~aspnetcore
+ */
+function getVersionFromInstallPathOrId(installPathOrId: string): string
+{
+    if (!installPathOrId) return '';
+
+    // First, try to parse as a path (look for a version folder before dotnet[.exe])
+    // Handles spaces and both Windows/Linux separators
+    const pathParts = installPathOrId.split(/[/\\]/);
+    for (let i = 0; i < pathParts.length; i++)
+    {
+        // Look for a part that matches version pattern (e.g., 8.0.20, 7.0.400)
+        const match = pathParts[i].match(/^(\d+\.\d+\.\d+)(~.*)?$/);
+        if (match)
+        {
+            return match[1];
+        }
+    }
+
+    // If not found, try legacy id parsing
+    if (installPathOrId.includes('-global'))
+    {
+        const splitId = installPathOrId.split('-');
+        return splitId[0];
+    } else if (installPathOrId.includes('~'))
+    {
+        const splitId = installPathOrId.split('~');
+        return splitId[0];
+    }
+
+    // Fallback: try to find a version pattern anywhere in the string
+    const fallbackMatch = installPathOrId.match(/(\d+\.\d+\.\d+)/);
+    if (fallbackMatch)
+    {
+        return fallbackMatch[1];
+    }
+    return '';
+}
+
 export function activate(vsCodeContext: vscode.ExtensionContext, extensionContext?: IExtensionContext)
 {
 
@@ -191,15 +234,36 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     // Creating API Surfaces
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext): Promise<IDotnetAcquireResult | undefined> =>
     {
-        return acquireLocal(commandContext);
+        return (await acquireLocal(commandContext)).dotnetPath;
     });
 
-    async function acquireToUpdateInternal(commandContext: IDotnetAcquireContext): Promise<IDotnetAcquireResult | undefined>
+    async function acquireToUpdateInternal(commandContext: IDotnetAcquireContext): Promise<{ dotnetPath: IDotnetAcquireResult | undefined, install: DotnetInstall } | undefined>
     {
-        return acquireLocal(commandContext);
+        const result = await acquireLocal(commandContext);
+
+        if (result && result.install)
+        {
+            return { dotnetPath: result?.dotnetPath, install: result.install };
+        }
+        else if (result && result.dotnetPath)
+        {
+            const resolvedId = getInstallIdCustomArchitecture(commandContext.version, commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(), commandContext.mode ?? 'runtime', 'local');
+            const resolvedVersion = getVersionFromInstallPathOrId((result.dotnetPath as any)?.dotnetPath || resolvedId);
+
+            const install: DotnetInstall = {
+                installId: resolvedId,
+                version: resolvedVersion,
+                installMode: commandContext.mode ?? 'runtime',
+                isGlobal: false,
+                architecture: commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture()
+            };
+            return { dotnetPath: result?.dotnetPath, install };
+        }
+
+        return undefined;
     }
 
-    async function acquireLocal(commandContext: IDotnetAcquireContext): Promise<IDotnetAcquireResult | undefined>
+    async function acquireLocal(commandContext: IDotnetAcquireContext): Promise<{ dotnetPath: IDotnetAcquireResult | undefined, install: DotnetInstall }>
     {
         const worker = getAcquisitionWorker();
         commandContext.mode = commandContext.mode ?? 'runtime' as DotnetInstallMode;
@@ -264,7 +328,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         }
 
         loggingObserver.dispose();
-        return dotnetPath;
+        return { dotnetPath, install };
     }
 
     const dotnetAcquireGlobalSDKRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquireGlobalSDK}`, async (commandContext: IDotnetAcquireContext): Promise<IDotnetAcquireResult | undefined> =>
@@ -699,7 +763,7 @@ ${JSON.stringify(commandContext)}`));
         return undefined;
     }
 
-    async function uninstall(commandContext: IDotnetAcquireContext | undefined, force = false): Promise<string>
+    async function uninstall(commandContext: IDotnetAcquireContext | undefined, force = false, onlyCheckLiveDependents = false): Promise<string>
     {
         let result = '1';
         await callWithErrorHandling(async () =>
@@ -731,7 +795,7 @@ ${JSON.stringify(commandContext)}`));
 
                 if (commandContext.installType === 'local')
                 {
-                    result = await worker.uninstallLocal(workerContext, install, force);
+                    result = await worker.uninstallLocal(workerContext, install, force, false, onlyCheckLiveDependents);
                 }
                 else
                 {

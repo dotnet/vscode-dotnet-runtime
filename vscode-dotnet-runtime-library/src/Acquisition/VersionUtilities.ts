@@ -15,6 +15,7 @@ import
 } from '../EventStream/EventStreamEvents';
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { BAD_VERSION } from './StringConstants';
 
 const invalidFeatureBandErrorString = `A feature band couldn't be determined for the requested version: `;
 
@@ -40,6 +41,17 @@ export function getMinor(fullySpecifiedVersion: string, eventStream: IEventStrea
     return getMajorMinor(fullySpecifiedVersion, eventStream, context).split('.')[1];
 }
 
+// Returns constants.BAD_VERSION if the version is invalid.
+export function getMajorMinorFromValidVersion(fullySpecifiedVersion: string)
+{
+    if (fullySpecifiedVersion.split('.').length < 2)
+    {
+        return BAD_VERSION;
+    }
+
+    const majorMinor = `${fullySpecifiedVersion.split('.').at(0)}.${fullySpecifiedVersion.split('.').at(1)}`;
+    return majorMinor;
+}
 
 /**
  *
@@ -57,8 +69,7 @@ export function getMajorMinor(fullySpecifiedVersion: string, eventStream: IEvent
         throw event.error;
     }
 
-    const majorMinor = `${fullySpecifiedVersion.split('.').at(0)}.${fullySpecifiedVersion.split('.').at(1)}`;
-    return majorMinor;
+    return getMajorMinorFromValidVersion(fullySpecifiedVersion);
 }
 
 /**

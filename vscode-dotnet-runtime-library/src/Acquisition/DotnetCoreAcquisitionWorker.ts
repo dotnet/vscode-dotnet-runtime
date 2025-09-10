@@ -547,7 +547,7 @@ ${interpretedMessage}`;
         await extensionState.update('installPathsGraveyard', '');
     }
 
-    public async uninstallLocal(context: IAcquisitionWorkerContext, install: DotnetInstall, force = false, alreadyHoldingLock = false): Promise<string>
+    public async uninstallLocal(context: IAcquisitionWorkerContext, install: DotnetInstall, force = false, alreadyHoldingLock = false, onlyCheckLiveDependents = false): Promise<string>
     {
         this.ClearLegacyData(context.extensionState).catch(() => {});
 
@@ -565,7 +565,9 @@ ${interpretedMessage}`;
                     const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
 
                     await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, force);
-                    if (force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).installHasNoRegisteredDependents(install, context.installDirectoryProvider))
+                    const relevantDependents = onlyCheckLiveDependents ? await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).installHasNoLiveDependents(path.join(dotnetInstallDir, this.dotnetExecutable))
+                        : await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).installHasNoDependents(install, context.installDirectoryProvider);
+                    if (force || relevantDependents)
                     {
                         context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install.installId}.`));
                         await this.file.wipeDirectory(dotnetInstallDir, context.eventStream, undefined, true,);

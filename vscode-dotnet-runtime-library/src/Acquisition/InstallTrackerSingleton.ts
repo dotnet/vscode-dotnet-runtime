@@ -2,6 +2,7 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
+import * as path from 'path';
 import { IEventStream } from '../EventStream/EventStream';
 import
 {
@@ -16,7 +17,7 @@ import
 } from '../EventStream/EventStreamEvents';
 import { IExtensionState } from '../IExtensionState';
 import { getAssumedInstallInfo } from '../Utils/InstallIdUtilities';
-import { executeWithLock } from '../Utils/TypescriptUtilities';
+import { executeWithLock, getDotnetExecutable } from '../Utils/TypescriptUtilities';
 import
 {
     DotnetInstall,
@@ -26,7 +27,7 @@ import
 } from './DotnetInstall';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IInstallationDirectoryProvider } from './IInstallationDirectoryProvider';
-import { InstallRecord, InstallRecordOrStr } from './InstallRecord';
+import { InstallOwner, InstallRecord, InstallRecordOrStr } from './InstallRecord';
 
 export type InstallState = 'installing' | 'installed';
 
@@ -60,15 +61,38 @@ export class InstallTrackerSingleton
         InstallTrackerSingleton.instance.extensionState = extensionState;
     }
 
-    public async installHasNoLiveDependents(installExePath: string)
+    /**
+     *
+     * @param installExePath the full path to the dotnet executable of the install to check
+     * @returns Whether an install has a 'live' dependent. In other words, if we have returned this executable to a process to use.
+     * In addition, we check whether the user has set the PATH to a local install, in case we never return it but the user relies on it externally.
+     */
+    public async installHasNoLiveDependents(installExePath: string): Promise<boolean>
     {
         return executeWithLock(this.eventStream, false, this.getLockFilePathForKeySimple('installed'), 5, 200000,
             async () =>
             {
-                return this.returnedInstallDirectories.has(installExePath);
+                // If the user hard-coded their PATH to include the vscode extension install (not a good practice), we likely don't want to uninstall it.
+                return !this.returnedInstallDirectories.has(installExePath) && !(process.env.PATH?.includes(path.dirname(installExePath)) ?? false);
             },);
     }
 
+    public async installHasNoDependents(dotnetInstall: DotnetInstall, dirProvider: IInstallationDirectoryProvider, allowUninstallUserOnlyInstall = false): Promise<boolean>
+    {
+        const hasRegisteredDependents = await this.installHasNoRegisteredDependents(dotnetInstall, dirProvider, allowUninstallUserOnlyInstall);
+        const hasLiveDependents = await this.installHasNoLiveDependents(path.join(dirProvider.getInstallDir(dotnetInstall.installId), getDotnetExecutable()));
+        return !hasRegisteredDependents && !hasLiveDependents;
+    }
+
+    /**
+     *
+     * @param dotnetInstall the install to check the dependents of
+     * @param dirProvider used to resolve the directory of the installation
+     * @param allowUninstallUserOnlyInstall whether we should consider the user as dependent on an install
+     * @returns true if there are no registered dependents. a registered dependent is one that requested the installation and tried to install it.
+     * A dependent may exist even if they didn't ask to install the install - e.g. a path setting or hard-coded PATH value may exist.
+     * A registered dependent may also no longer actually depend on the install. Many extensions who request an install do not properly notify when they are done with said install.
+     */
     public async installHasNoRegisteredDependents(dotnetInstall: DotnetInstall, dirProvider: IInstallationDirectoryProvider, allowUninstallUserOnlyInstall = false): Promise<boolean>
     {
         return executeWithLock(this.eventStream, false, this.getLockFilePathForKey(dirProvider, 'installed'), 5, 200000,
@@ -108,6 +132,31 @@ export class InstallTrackerSingleton
     private getLockFilePathForKey(provider: IInstallationDirectoryProvider, dataKey: string): string
     {
         return this.getLockFilePathForKeySimple(dataKey);
+    }
+
+    public async addOwners(install: DotnetInstall, ownersToAdd: (string | null)[], dirProvider: IInstallationDirectoryProvider): Promise<void>
+    {
+        await executeWithLock(this.eventStream, false, this.getLockFilePathForKey(dirProvider, 'installed'), 5, 200000,
+            async () =>
+            {
+                const existingInstalls = await this.getExistingInstalls(dirProvider, true);
+                const idx = existingInstalls.findIndex(x => IsEquivalentInstallation(x.dotnetInstall, install));
+                if (idx !== -1)
+                {
+                    const installRecord: InstallRecord = existingInstalls[idx];
+                    const ownerSet = new Set(installRecord.installingExtensions);
+                    for (const owner of ownersToAdd)
+                    {
+                        if (owner && !ownerSet.has(owner))
+                        {
+                            ownerSet.add(owner);
+                        }
+                    }
+                    installRecord.installingExtensions = Array.from(ownerSet) as InstallOwner[];
+                    existingInstalls[idx] = installRecord;
+                    await this.extensionState.update('installed', existingInstalls);
+                }
+            });
     }
 
     /**
