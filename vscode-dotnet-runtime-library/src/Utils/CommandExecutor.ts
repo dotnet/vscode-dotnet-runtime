@@ -451,12 +451,18 @@ ${stderr}`));
             options.env.DOTNET_CLI_UI_LANGUAGE ??= 'en-US';
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             options.env.DOTNET_NOLOGO ??= 'true';
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            options.env.NO_COLOR ??= '1';
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            options.env.TERM ??= 'dumb';
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            options.env.GREP_OPTIONS = undefined;
         }
         else
         {
             options = {
                 cwd: path.resolve(__dirname), shell: true, encoding: 'utf8', env:
-                    { ...process.env, DOTNET_CLI_UI_LANGUAGE: 'en-US', DOTNET_NOLOGO: 'true' }
+                    { ...process.env, DOTNET_CLI_UI_LANGUAGE: 'en-US', DOTNET_NOLOGO: 'true', NO_COLOR: '1', TERM: 'dumb', GREP_OPTIONS: undefined }
             };
         }
 
