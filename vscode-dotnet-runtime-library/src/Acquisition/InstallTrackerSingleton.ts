@@ -2,6 +2,8 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
+import * as crypto from 'crypto';
+import * as path from 'path';
 import { IEventStream } from '../EventStream/EventStream';
 import
 {
@@ -12,11 +14,15 @@ import
     RemovingExtensionFromList,
     RemovingOwnerFromList,
     RemovingVersionFromExtensionState,
+    SessionMutexAcquired,
+    SessionMutexAcquisitionFailed,
     SkipAddingInstallEvent
 } from '../EventStream/EventStreamEvents';
 import { IExtensionState } from '../IExtensionState';
+import { EventStreamNodeIPCMutexLoggerWrapper } from '../Utils/EventStreamNodeIPCMutexWrapper';
 import { getAssumedInstallInfo } from '../Utils/InstallIdUtilities';
-import { executeWithLock } from '../Utils/TypescriptUtilities';
+import { NodeIPCMutex } from '../Utils/NodeIPCMutex';
+import { executeWithLock, getDotnetExecutable } from '../Utils/TypescriptUtilities';
 import
 {
     DotnetInstall,
@@ -26,16 +32,51 @@ import
 } from './DotnetInstall';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IInstallationDirectoryProvider } from './IInstallationDirectoryProvider';
-import { InstallRecord, InstallRecordOrStr } from './InstallRecord';
+import { InstallOwner, InstallRecord, InstallRecordOrStr } from './InstallRecord';
 
 export type InstallState = 'installing' | 'installed';
+
+export type SessionsWithInUseExecutables = Map<string, Set<string>>;
 
 export class InstallTrackerSingleton
 {
     protected static instance: InstallTrackerSingleton;
+    protected sessionId: string;
+
+    protected sessionInstallsKey = 'dotnet.returnedInstallDirectories';
 
     protected constructor(protected eventStream: IEventStream, protected extensionState: IExtensionState)
     {
+        const hash = crypto.createHash('sha256');
+        hash.update(process.pid.toString());
+        this.sessionId = hash.digest('hex').slice(0, 10);
+        this.acquirePermanentSessionMutex();
+    }
+
+    /**
+     * Acquires a mutex associated with the current session and holds it for the lifetime
+     * of the process without blocking any threads.
+     *
+     * This is used to indicate that this session is still alive to other processes
+     * that may want to check if installations from this session are still in use.
+     */
+    protected acquirePermanentSessionMutex(): void
+    {
+        const logger = new EventStreamNodeIPCMutexLoggerWrapper(this.eventStream, this.sessionId);
+        const mutex = new NodeIPCMutex(this.sessionId, logger, '');
+
+        // Fire and forget - we don't need to await this
+        mutex.acquire(async () =>
+        {
+            return new Promise<void>(() =>
+            {
+                // Intentionally not calling resolve/reject so we never release
+                this.eventStream.post(new SessionMutexAcquired(`Session ${this.sessionId} has acquired its permanent mutex`));
+            });
+        }, 10, 100, `${this.sessionId}-permanent`).catch((error) =>
+        {
+            this.eventStream.post(new SessionMutexAcquisitionFailed(`Failed to acquire permanent mutex for session ${this.sessionId}: ${error}`));
+        });
     }
 
     public static getInstance(eventStream: IEventStream, extensionState: IExtensionState): InstallTrackerSingleton
@@ -54,7 +95,71 @@ export class InstallTrackerSingleton
         InstallTrackerSingleton.instance.extensionState = extensionState;
     }
 
-    public async canUninstall(dotnetInstall: DotnetInstall, dirProvider: IInstallationDirectoryProvider, allowUninstallUserOnlyInstall = false): Promise<boolean>
+    /**
+     *
+     * @param installExePath the full path to the dotnet executable of the install to check
+     * @returns Whether an install has a 'live' dependent. In other words, if we have returned this executable to a process to use.
+     * In addition, we check whether the user has set the PATH to a local install, in case we never return it but the user relies on it externally.
+     */
+    public async installHasNoLiveDependents(installExePath: string): Promise<boolean>
+    {
+        // We might be able to use a separate lock for just the returnedInstallDirectories, but for simplicity, we'll use the same lock as installed.
+        return executeWithLock(this.eventStream, false, this.getLockFilePathForKeySimple('installed'), 5, 200000,
+            async () =>
+            {
+                const existingSessionsWithUsedExecutablePaths = this.extensionState.get<SessionsWithInUseExecutables>(this.sessionInstallsKey, new Map<string, Set<string>>());
+                for (const [sessionId, exePaths] of existingSessionsWithUsedExecutablePaths)
+                {
+                    if (exePaths.has(installExePath))
+                    {
+                        if (sessionId === this.sessionId)
+                        {
+                            return false; // Our session must be live if this code is running.
+                        }
+
+                        // See if the session is still 'live' - there is no way to ensure we remove it on exit/os crash
+                        const logger = new EventStreamNodeIPCMutexLoggerWrapper(this.eventStream, sessionId);
+                        const mutex = new NodeIPCMutex(sessionId, logger, ``);
+
+
+                        const shouldContinue = await mutex.acquire(async () =>
+                        {
+                            // eslint-disable-next-line no-return-await
+                            existingSessionsWithUsedExecutablePaths.delete(sessionId);
+                            this.extensionState.update(this.sessionInstallsKey, existingSessionsWithUsedExecutablePaths);
+                            return true;
+                        }, 10, 20, `${sessionId}-${crypto.randomUUID()}`).catch(() => { return false; });
+                        if (!shouldContinue)
+                        {
+                            return false;
+                        }
+                    }
+                }
+                // If the user hard-coded their PATH to include the vscode extension install (not a good practice), we likely don't want to uninstall it.
+                return !(
+                    (process.env.PATH?.includes(path.dirname(installExePath)) ?? false) ||
+                    (process.env.DOTNET_ROOT?.includes(path.dirname(installExePath)) ?? false)
+                );
+            });
+    }
+
+    public async installHasNoDependents(dotnetInstall: DotnetInstall, dirProvider: IInstallationDirectoryProvider, allowUninstallUserOnlyInstall = false): Promise<boolean>
+    {
+        const hasRegisteredDependents = await this.installHasNoRegisteredDependents(dotnetInstall, dirProvider, allowUninstallUserOnlyInstall);
+        const hasLiveDependents = await this.installHasNoLiveDependents(path.join(dirProvider.getInstallDir(dotnetInstall.installId), getDotnetExecutable()));
+        return !hasRegisteredDependents && !hasLiveDependents;
+    }
+
+    /**
+     *
+     * @param dotnetInstall the install to check the dependents of
+     * @param dirProvider used to resolve the directory of the installation
+     * @param allowUninstallUserOnlyInstall whether we should consider the user as dependent on an install
+     * @returns true if there are no registered dependents. a registered dependent is one that requested the installation and tried to install it.
+     * A dependent may exist even if they didn't ask to install the install - e.g. a path setting or hard-coded PATH value may exist.
+     * A registered dependent may also no longer actually depend on the install. Many extensions who request an install do not properly notify when they are done with said install.
+     */
+    public async installHasNoRegisteredDependents(dotnetInstall: DotnetInstall, dirProvider: IInstallationDirectoryProvider, allowUninstallUserOnlyInstall = false): Promise<boolean>
     {
         return executeWithLock(this.eventStream, false, this.getLockFilePathForKey(dirProvider, 'installed'), 5, 200000,
             async (installationState: InstallState, install: DotnetInstall) =>
@@ -84,9 +189,40 @@ export class InstallTrackerSingleton
             },);
     }
 
-    private getLockFilePathForKey(provider: IInstallationDirectoryProvider, dataKey: string): string
+
+    private getLockFilePathForKeySimple(dataKey: string): string
     {
         return `${dataKey}Lk`;
+    }
+
+    private getLockFilePathForKey(provider: IInstallationDirectoryProvider, dataKey: string): string
+    {
+        return this.getLockFilePathForKeySimple(dataKey);
+    }
+
+    public async addOwners(install: DotnetInstall, ownersToAdd: (string | null)[], dirProvider: IInstallationDirectoryProvider): Promise<void>
+    {
+        await executeWithLock(this.eventStream, false, this.getLockFilePathForKey(dirProvider, 'installed'), 5, 200000,
+            async () =>
+            {
+                const existingInstalls = await this.getExistingInstalls(dirProvider, true);
+                const idx = existingInstalls.findIndex(x => IsEquivalentInstallation(x.dotnetInstall, install));
+                if (idx !== -1)
+                {
+                    const installRecord: InstallRecord = existingInstalls[idx];
+                    const ownerSet = new Set(installRecord.installingExtensions);
+                    for (const owner of ownersToAdd)
+                    {
+                        if (owner && !ownerSet.has(owner))
+                        {
+                            ownerSet.add(owner);
+                        }
+                    }
+                    installRecord.installingExtensions = Array.from(ownerSet) as InstallOwner[];
+                    existingInstalls[idx] = installRecord;
+                    await this.extensionState.update('installed', existingInstalls);
+                }
+            });
     }
 
     /**
@@ -196,6 +332,28 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
         await this.addVersionToExtensionState(context, install, pathToValidate);
     }
 
+    /**
+     * Marks an install as in use so it doesn't get cleaned up during the running instance of code.
+     * @param installDirectory - The install id to mark as in use. This happens automatically when an install is installed, but not when it's returned from the state otherwise.
+     */
+    public markInstallAsInUse(installExePath: string)
+    {
+        return this.markInstallAsInUseWithInstallLock(installExePath, false, this.sessionId);
+    }
+
+    protected markInstallAsInUseWithInstallLock(installExePath: string, alreadyHoldingLock: boolean, sessionId: string)
+    {
+        return executeWithLock(this.eventStream, alreadyHoldingLock, this.getLockFilePathForKeySimple('installed'), 5, 200000,
+            async () =>
+            {
+                const existingSessionsWithUsedExecutablePaths = this.extensionState.get<SessionsWithInUseExecutables>(this.sessionInstallsKey, new Map<string, Set<string>>());
+                const activeSessionExecutablePaths = existingSessionsWithUsedExecutablePaths.get(sessionId) || new Set();
+                activeSessionExecutablePaths.add(installExePath);
+                existingSessionsWithUsedExecutablePaths.set(sessionId, activeSessionExecutablePaths);
+                this.extensionState.update(this.sessionInstallsKey, existingSessionsWithUsedExecutablePaths);
+            });
+    }
+
     protected async addVersionToExtensionState(context: IAcquisitionWorkerContext, installObj: DotnetInstall, pathToValidate: string, alreadyHoldingLock = false)
     {
         return executeWithLock(this.eventStream, alreadyHoldingLock, this.getLockFilePathForKey(context.installDirectoryProvider, 'installed'), 5, 200000,
@@ -206,6 +364,7 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
                 // We need to validate again ourselves because uninstallAll can blast away the state but holds on to the installed lock when doing so.
                 context.installationValidator.validateDotnetInstall(install, pathToValidate);
 
+                this.markInstallAsInUseWithInstallLock(pathToValidate, true, this.sessionId);
                 const existingVersions = await this.getExistingInstalls(context.installDirectoryProvider, true);
                 const preExistingInstallIndex = existingVersions.findIndex(x => IsEquivalentInstallation(x.dotnetInstall, install));
 

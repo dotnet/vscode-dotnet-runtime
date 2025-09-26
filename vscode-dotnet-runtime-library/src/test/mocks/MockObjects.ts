@@ -750,4 +750,19 @@ export class MockInstallTracker extends InstallTrackerSingleton
     {
         this.extensionState = extensionState;
     }
+
+    public getSessionId(): string
+    {
+        return this.sessionId;
+    }
+
+    /**
+     * Marks an install as in use by a specific session
+     * @param sessionId - The session ID to mark as using the installation
+     * @param installExePath - The path to the dotnet executable of the install to mark
+     */
+    public async markInstallAsInUseBySession(sessionId: string, installExePath: string): Promise<void>
+    {
+        return super.markInstallAsInUseWithInstallLock(installExePath, false, sessionId);
+    }
 }

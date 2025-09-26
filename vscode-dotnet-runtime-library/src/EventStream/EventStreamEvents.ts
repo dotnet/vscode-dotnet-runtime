@@ -850,6 +850,26 @@ export abstract class DotnetAcquisitionMessage extends IEvent
     }
 }
 
+export class SessionMutexAcquired extends DotnetAcquisitionMessage
+{
+    public eventName = 'SessionMutexAcquired';
+
+    constructor(public readonly message: string)
+    {
+        super();
+    }
+}
+
+export class SessionMutexAcquisitionFailed extends DotnetAcquisitionMessage
+{
+    public eventName = 'SessionMutexAcquisitionFailed';
+
+    constructor(public readonly message: string)
+    {
+        super();
+    }
+}
+
 export class DotnetAcquisitionDeletion extends DotnetAcquisitionMessage
 {
     public readonly eventName = 'DotnetAcquisitionDeletion';
