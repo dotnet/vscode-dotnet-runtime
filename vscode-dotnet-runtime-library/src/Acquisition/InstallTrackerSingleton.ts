@@ -14,6 +14,8 @@ import
     RemovingExtensionFromList,
     RemovingOwnerFromList,
     RemovingVersionFromExtensionState,
+    SessionMutexAcquired,
+    SessionMutexAcquisitionFailed,
     SkipAddingInstallEvent
 } from '../EventStream/EventStreamEvents';
 import { IExtensionState } from '../IExtensionState';
@@ -41,12 +43,40 @@ export class InstallTrackerSingleton
     protected static instance: InstallTrackerSingleton;
     protected sessionId: string;
 
+    protected sessionInstallsKey = 'dotnet.returnedInstallDirectories';
+
     protected constructor(protected eventStream: IEventStream, protected extensionState: IExtensionState)
     {
         const hash = crypto.createHash('sha256');
         hash.update(process.pid.toString());
         this.sessionId = hash.digest('hex').slice(0, 10);
-        // acquire the mutex with the session id and hold onto it forever without dead waiting.
+        this.acquirePermanentSessionMutex();
+    }
+
+    /**
+     * Acquires a mutex associated with the current session and holds it for the lifetime
+     * of the process without blocking any threads.
+     *
+     * This is used to indicate that this session is still alive to other processes
+     * that may want to check if installations from this session are still in use.
+     */
+    private acquirePermanentSessionMutex(): void
+    {
+        const logger = new EventStreamNodeIPCMutexLoggerWrapper(this.eventStream, this.sessionId);
+        const mutex = new NodeIPCMutex(this.sessionId, logger, '');
+
+        // Fire and forget - we don't need to await this
+        mutex.acquire(async () =>
+        {
+            return new Promise<void>(() =>
+            {
+                // Intentionally not calling resolve/reject so we never release
+                this.eventStream.post(new SessionMutexAcquired(`Session ${this.sessionId} has acquired its permanent mutex`));
+            });
+        }, 10, 100, `${this.sessionId}-permanent`).catch((error) =>
+        {
+            this.eventStream.post(new SessionMutexAcquisitionFailed(`Failed to acquire permanent mutex for session ${this.sessionId}: ${error}`));
+        });
     }
 
     public static getInstance(eventStream: IEventStream, extensionState: IExtensionState): InstallTrackerSingleton
@@ -77,7 +107,7 @@ export class InstallTrackerSingleton
         return executeWithLock(this.eventStream, false, this.getLockFilePathForKeySimple('installed'), 5, 200000,
             async () =>
             {
-                const existingSessionsWithUsedExecutablePaths = this.extensionState.get<SessionsWithInUseExecutables>('dotnet.returnedInstallDirectories', new Map<string, Set<string>>());
+                const existingSessionsWithUsedExecutablePaths = this.extensionState.get<SessionsWithInUseExecutables>(this.sessionInstallsKey, new Map<string, Set<string>>());
                 for (const [sessionId, exePaths] of existingSessionsWithUsedExecutablePaths)
                 {
                     if (exePaths.has(installExePath))
@@ -91,20 +121,16 @@ export class InstallTrackerSingleton
                         const logger = new EventStreamNodeIPCMutexLoggerWrapper(this.eventStream, sessionId);
                         const mutex = new NodeIPCMutex(sessionId, logger, ``);
 
-                        try
+
+                        const shouldContinue = await mutex.acquire(async () =>
                         {
-                            const _ = await mutex.acquire(async () =>
-                            {
-                                // eslint-disable-next-line no-return-await
-                                existingSessionsWithUsedExecutablePaths.delete(sessionId);
-                                this.extensionState.update('dotnet.returnedInstallDirectories', existingSessionsWithUsedExecutablePaths);
-                                return;
-                            }, 10, 100, `${sessionId}-${crypto.randomUUID()}`).catch(() => { return false; });
-                        }
-                        catch (error)
+                            // eslint-disable-next-line no-return-await
+                            existingSessionsWithUsedExecutablePaths.delete(sessionId);
+                            this.extensionState.update(this.sessionInstallsKey, existingSessionsWithUsedExecutablePaths);
+                            return true;
+                        }, 10, 20, `${sessionId}-${crypto.randomUUID()}`).catch(() => { return false; });
+                        if (!shouldContinue)
                         {
-                            // I dont think this catch will work - need to update and fix it.
-                            // The session is live, since the lock is not acquirable.
                             return false;
                         }
                     }
@@ -320,11 +346,11 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
         return executeWithLock(this.eventStream, alreadyHoldingLock, this.getLockFilePathForKeySimple('installed'), 5, 200000,
             async () =>
             {
-                const existingSessionsWithUsedExecutablePaths = this.extensionState.get<SessionsWithInUseExecutables>('dotnet.returnedInstallDirectories', new Map<string, Set<string>>());
+                const existingSessionsWithUsedExecutablePaths = this.extensionState.get<SessionsWithInUseExecutables>(this.sessionInstallsKey, new Map<string, Set<string>>());
                 const activeSessionExecutablePaths = existingSessionsWithUsedExecutablePaths.get(this.sessionId) || new Set();
                 activeSessionExecutablePaths.add(installExePath);
                 existingSessionsWithUsedExecutablePaths.set(this.sessionId, activeSessionExecutablePaths);
-                this.extensionState.update('dotnet.returnedInstallDirectories', existingSessionsWithUsedExecutablePaths);
+                this.extensionState.update(this.sessionInstallsKey, existingSessionsWithUsedExecutablePaths);
             });
     }
 
