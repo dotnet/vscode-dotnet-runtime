@@ -60,7 +60,7 @@ export class InstallTrackerSingleton
      * This is used to indicate that this session is still alive to other processes
      * that may want to check if installations from this session are still in use.
      */
-    private acquirePermanentSessionMutex(): void
+    protected acquirePermanentSessionMutex(): void
     {
         const logger = new EventStreamNodeIPCMutexLoggerWrapper(this.eventStream, this.sessionId);
         const mutex = new NodeIPCMutex(this.sessionId, logger, '');
@@ -338,18 +338,18 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
      */
     public markInstallAsInUse(installExePath: string)
     {
-        return this.markInstallAsInUseWithInstallLock(installExePath, false);
+        return this.markInstallAsInUseWithInstallLock(installExePath, false, this.sessionId);
     }
 
-    private markInstallAsInUseWithInstallLock(installExePath: string, alreadyHoldingLock: boolean)
+    protected markInstallAsInUseWithInstallLock(installExePath: string, alreadyHoldingLock: boolean, sessionId: string)
     {
         return executeWithLock(this.eventStream, alreadyHoldingLock, this.getLockFilePathForKeySimple('installed'), 5, 200000,
             async () =>
             {
                 const existingSessionsWithUsedExecutablePaths = this.extensionState.get<SessionsWithInUseExecutables>(this.sessionInstallsKey, new Map<string, Set<string>>());
-                const activeSessionExecutablePaths = existingSessionsWithUsedExecutablePaths.get(this.sessionId) || new Set();
+                const activeSessionExecutablePaths = existingSessionsWithUsedExecutablePaths.get(sessionId) || new Set();
                 activeSessionExecutablePaths.add(installExePath);
-                existingSessionsWithUsedExecutablePaths.set(this.sessionId, activeSessionExecutablePaths);
+                existingSessionsWithUsedExecutablePaths.set(sessionId, activeSessionExecutablePaths);
                 this.extensionState.update(this.sessionInstallsKey, existingSessionsWithUsedExecutablePaths);
             });
     }
@@ -364,7 +364,7 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
                 // We need to validate again ourselves because uninstallAll can blast away the state but holds on to the installed lock when doing so.
                 context.installationValidator.validateDotnetInstall(install, pathToValidate);
 
-                this.markInstallAsInUseWithInstallLock(pathToValidate, true);
+                this.markInstallAsInUseWithInstallLock(pathToValidate, true, this.sessionId);
                 const existingVersions = await this.getExistingInstalls(context.installDirectoryProvider, true);
                 const preExistingInstallIndex = existingVersions.findIndex(x => IsEquivalentInstallation(x.dotnetInstall, install));
 
