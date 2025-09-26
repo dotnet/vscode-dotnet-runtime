@@ -7,6 +7,7 @@ import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
 import { IExtensionState } from '../IExtensionState';
 import { AcquireErrorConfiguration } from '../Utils/ErrorHandler';
+import { WebRequestWorkerSingleton } from '../Utils/WebRequestWorkerSingleton';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { IInstallationDirectoryProvider } from './IInstallationDirectoryProvider';
@@ -24,14 +25,13 @@ export interface InstallGroup
 }
 
 /**
- * Validates .NET installations by checking for the existence and validity of .NET executables or directories.
- * Provides options to either throw errors or return false on validation failure.
+ * Manages local installs of .NET, by installing, uninstalling, and updating them sometime after vscode is launched.
  */
 export class LocalInstallUpdateService extends IInstallManagementService
 {
     constructor(protected readonly eventStream: IEventStream, private readonly extensionState: IExtensionState, private readonly managementDirectoryProvider: IInstallationDirectoryProvider,
-        private readonly installAction : () => Promise<IDotnetAcquireResult | undefined>,
-        private readonly uninstallAction : (commandContext: IDotnetAcquireContext, force: boolean, onlyCheckLiveDependents: boolean) => Promise<string>
+        private readonly installAction: (commandContext: IDotnetAcquireContext, ignorePathSetting: boolean) => Promise<IDotnetAcquireResult | undefined>,
+        private readonly uninstallAction: (commandContext: IDotnetAcquireContext, force: boolean, onlyCheckLiveDependents: boolean) => Promise<string>
     )
     {
         super(eventStream);
@@ -70,7 +70,7 @@ export class LocalInstallUpdateService extends IInstallManagementService
 
         for (const install of runtimeInstalls)
         {
-            const majorMinor = versionUtils.getMajorMinorFromValidVersion(install.dotnetInstall.version, this.eventStream);
+            const majorMinor = versionUtils.getMajorMinorFromValidVersion(install.dotnetInstall.version);
             const architecture = install.dotnetInstall.architecture || DotnetCoreAcquisitionWorker.defaultArchitecture();
             const mode = install.dotnetInstall.installMode;
 
@@ -109,32 +109,66 @@ export class LocalInstallUpdateService extends IInstallManagementService
 
     private async automaticUpdate(): Promise<void>
     {
-        // Get install groups.
+        const isOffline = !(await WebRequestWorkerSingleton.getInstance().isOnline(500, this.eventStream));
+        if (isOffline)
+        {
+            // TODO: Add warning about failure to update ?
+            return;
+        }
+
         const installGroups = await this.getInstallGroups();
         for (const group of installGroups.keys())
         {
-            // Call Acquire
             const acquireContext: IDotnetAcquireContext = {
                 version: group.majorMinor,
                 architecture: group.architecture,
                 mode: group.mode,
                 installType: 'local',
                 requestingExtensionId: 'dotnet-runtime-library',
-                errorConfiguration: AcquireErrorConfiguration.DisableErrorPopups // todo : make this quiet as well ?
+                errorConfiguration: AcquireErrorConfiguration.DisableErrorPopups, // todo : make this quiet as well ?
+                forceUpdate: true
             }
-            // TODO : Call acquire with the above context and get the latest install.
-            // Get latest version
-            const latestInstall = '';
 
-            // Mark Owners.
+            // Make sure latest version is acquired (aka update - this defers download of the release manifest away from initialization)
+            await this.installAction(acquireContext, true);
+            // If acquire fails, then the update will throw - we don't want to uninstall if we don't have a newer version to use next time.
+
+            // Get latest install - the install returned by acquire may still be a user managed path (not owned by us) if we're offline.
+            const extensionManagedInstalls = await InstallTrackerSingleton.getInstance(this.eventStream, this.extensionState).getExistingInstalls(this.managementDirectoryProvider, false);
+            const newInstallsInGroup = extensionManagedInstalls.filter(i => i.dotnetInstall.installMode === group.mode &&
+                (i.dotnetInstall.architecture || DotnetCoreAcquisitionWorker.defaultArchitecture()) === group.architecture &&
+                versionUtils.getMajorMinorFromValidVersion(i.dotnetInstall.version) === group.majorMinor);
+
+            // All of the installs were uninstalled in the middle of this process.
+            if (newInstallsInGroup.length === 0)
+            {
+                return;
+            }
+
+            // Sort installations by version (patch/feature band since major.minor is all the same) and find the one with the highest version
+            let latestInstall = newInstallsInGroup[0];
+            if (newInstallsInGroup.length > 1)
+            {
+                for (const install of newInstallsInGroup)
+                {
+                    const currentPatch = Number(versionUtils.getFeatureBandOrPatchFromFullySpecifiedVersion(install.dotnetInstall.version));
+                    const latestPatch = Number(versionUtils.getFeatureBandOrPatchFromFullySpecifiedVersion(latestInstall.dotnetInstall.version));
+                    if (currentPatch > latestPatch)
+                    {
+                        latestInstall = install;
+                    }
+                }
+            }
+
+            // Make it so all owners of all installs the group own the latest version - owning basically means they depend on it / requested it (now in the past for a different version)
             const owners = this.getAllNonUserOwnersOfCollection(installGroups.get(group)!);
-            InstallTrackerSingleton.getInstance(this.eventStream, this.extensionState).addOwners(latestInstall, owners, this.managementDirectoryProvider);
+            InstallTrackerSingleton.getInstance(this.eventStream, this.extensionState).addOwners(latestInstall.dotnetInstall, owners, this.managementDirectoryProvider);
 
             // Uninstall all in the group that are not live dependents and not the latest one (which should also be live but no need to check)
             const installsInGroup = installGroups.get(group)!;
-            installsInGroup.filter(i => i.dotnetInstall.version !== latestInstall.dotnetInstall.version);
+            const outdatedInstalls = installsInGroup.filter(i => i.dotnetInstall.version !== latestInstall.dotnetInstall.version);
 
-            for (const install of installsInGroup)
+            for (const install of outdatedInstalls)
             {
                 const uninstallContext: IDotnetAcquireContext = {
                     version: install.dotnetInstall.version,
@@ -147,6 +181,8 @@ export class LocalInstallUpdateService extends IInstallManagementService
 
                 this.uninstallAction(uninstallContext, false, true).catch((e: any) => {});
             }
+
+            this.extensionState.update('dotnet.latestUpdateDate', new Date(0));
         }
     }
 }

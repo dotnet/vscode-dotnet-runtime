@@ -117,8 +117,8 @@ export function getFeatureBandPatchVersion(fullySpecifiedVersion: string, eventS
  */
 export function getSDKPatchVersionString(fullySpecifiedVersion: string, eventStream: IEventStream, context: IAcquisitionWorkerContext, considerErrorIfNoBand = true): string
 {
-    const patch: string | undefined = fullySpecifiedVersion.split('.')?.[2]?.substring(1)?.split('-')?.[0];
-    if (patch === undefined || !isNumber(patch))
+    const patch = getFeatureBandOrPatchFromFullySpecifiedVersion(fullySpecifiedVersion);
+    if (patch === '' || !isNumber(patch))
     {
         if (considerErrorIfNoBand)
         {
@@ -134,6 +134,13 @@ export function getSDKPatchVersionString(fullySpecifiedVersion: string, eventStr
         return '';
     }
     return patch
+}
+
+
+export function getFeatureBandOrPatchFromFullySpecifiedVersion(fullySpecifiedVersion: string): string
+{
+    const patch: string | undefined = fullySpecifiedVersion.split('.')?.[2]?.substring(1)?.split('-')?.[0];
+    return patch ?? '';
 }
 
 /**

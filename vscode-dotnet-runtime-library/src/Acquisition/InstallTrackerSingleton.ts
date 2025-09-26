@@ -2,6 +2,7 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
+import * as crypto from 'crypto';
 import * as path from 'path';
 import { IEventStream } from '../EventStream/EventStream';
 import
@@ -16,7 +17,9 @@ import
     SkipAddingInstallEvent
 } from '../EventStream/EventStreamEvents';
 import { IExtensionState } from '../IExtensionState';
+import { EventStreamNodeIPCMutexLoggerWrapper } from '../Utils/EventStreamNodeIPCMutexWrapper';
 import { getAssumedInstallInfo } from '../Utils/InstallIdUtilities';
+import { NodeIPCMutex } from '../Utils/NodeIPCMutex';
 import { executeWithLock, getDotnetExecutable } from '../Utils/TypescriptUtilities';
 import
 {
@@ -31,18 +34,19 @@ import { InstallOwner, InstallRecord, InstallRecordOrStr } from './InstallRecord
 
 export type InstallState = 'installing' | 'installed';
 
+export type SessionsWithInUseExecutables = Map<string, Set<string>>;
+
 export class InstallTrackerSingleton
 {
     protected static instance: InstallTrackerSingleton;
-
-    // A set of directories of installs - this is ok since each local install we manage gets its own directory.
-    // (That's intentional because we want to ensure a local and specific runtime is used in each case)
-    // Used to determine whether something is likely 'in use' during uninstall.
-    protected returnedInstallDirectories: Set<string>;
+    protected sessionId: string;
 
     protected constructor(protected eventStream: IEventStream, protected extensionState: IExtensionState)
     {
-        this.returnedInstallDirectories = new Set<string>();
+        const hash = crypto.createHash('sha256');
+        hash.update(process.pid.toString());
+        this.sessionId = hash.digest('hex').slice(0, 10);
+        // acquire the mutex with the session id and hold onto it forever without dead waiting.
     }
 
     public static getInstance(eventStream: IEventStream, extensionState: IExtensionState): InstallTrackerSingleton
@@ -69,12 +73,48 @@ export class InstallTrackerSingleton
      */
     public async installHasNoLiveDependents(installExePath: string): Promise<boolean>
     {
+        // We might be able to use a separate lock for just the returnedInstallDirectories, but for simplicity, we'll use the same lock as installed.
         return executeWithLock(this.eventStream, false, this.getLockFilePathForKeySimple('installed'), 5, 200000,
             async () =>
             {
+                const existingSessionsWithUsedExecutablePaths = this.extensionState.get<SessionsWithInUseExecutables>('dotnet.returnedInstallDirectories', new Map<string, Set<string>>());
+                for (const [sessionId, exePaths] of existingSessionsWithUsedExecutablePaths)
+                {
+                    if (exePaths.has(installExePath))
+                    {
+                        if (sessionId === this.sessionId)
+                        {
+                            return false; // Our session must be live if this code is running.
+                        }
+
+                        // See if the session is still 'live' - there is no way to ensure we remove it on exit/os crash
+                        const logger = new EventStreamNodeIPCMutexLoggerWrapper(this.eventStream, sessionId);
+                        const mutex = new NodeIPCMutex(sessionId, logger, ``);
+
+                        try
+                        {
+                            const _ = await mutex.acquire(async () =>
+                            {
+                                // eslint-disable-next-line no-return-await
+                                existingSessionsWithUsedExecutablePaths.delete(sessionId);
+                                this.extensionState.update('dotnet.returnedInstallDirectories', existingSessionsWithUsedExecutablePaths);
+                                return;
+                            }, 10, 100, `${sessionId}-${crypto.randomUUID()}`).catch(() => { return false; });
+                        }
+                        catch (error)
+                        {
+                            // I dont think this catch will work - need to update and fix it.
+                            // The session is live, since the lock is not acquirable.
+                            return false;
+                        }
+                    }
+                }
                 // If the user hard-coded their PATH to include the vscode extension install (not a good practice), we likely don't want to uninstall it.
-                return !this.returnedInstallDirectories.has(installExePath) && !(process.env.PATH?.includes(path.dirname(installExePath)) ?? false);
-            },);
+                return !(
+                    (process.env.PATH?.includes(path.dirname(installExePath)) ?? false) ||
+                    (process.env.DOTNET_ROOT?.includes(path.dirname(installExePath)) ?? false)
+                );
+            });
     }
 
     public async installHasNoDependents(dotnetInstall: DotnetInstall, dirProvider: IInstallationDirectoryProvider, allowUninstallUserOnlyInstall = false): Promise<boolean>
@@ -272,11 +312,20 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
      */
     public markInstallAsInUse(installExePath: string)
     {
-        return executeWithLock(this.eventStream, false, this.getLockFilePathForKeySimple('installed'), 5, 200000,
+        return this.markInstallAsInUseWithInstallLock(installExePath, false);
+    }
+
+    private markInstallAsInUseWithInstallLock(installExePath: string, alreadyHoldingLock: boolean)
+    {
+        return executeWithLock(this.eventStream, alreadyHoldingLock, this.getLockFilePathForKeySimple('installed'), 5, 200000,
             async () =>
             {
-                this.returnedInstallDirectories.add(installExePath);
-            },);
+                const existingSessionsWithUsedExecutablePaths = this.extensionState.get<SessionsWithInUseExecutables>('dotnet.returnedInstallDirectories', new Map<string, Set<string>>());
+                const activeSessionExecutablePaths = existingSessionsWithUsedExecutablePaths.get(this.sessionId) || new Set();
+                activeSessionExecutablePaths.add(installExePath);
+                existingSessionsWithUsedExecutablePaths.set(this.sessionId, activeSessionExecutablePaths);
+                this.extensionState.update('dotnet.returnedInstallDirectories', existingSessionsWithUsedExecutablePaths);
+            });
     }
 
     protected async addVersionToExtensionState(context: IAcquisitionWorkerContext, installObj: DotnetInstall, pathToValidate: string, alreadyHoldingLock = false)
@@ -289,7 +338,7 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
                 // We need to validate again ourselves because uninstallAll can blast away the state but holds on to the installed lock when doing so.
                 context.installationValidator.validateDotnetInstall(install, pathToValidate);
 
-                this.returnedInstallDirectories.add(install.installId);
+                this.markInstallAsInUseWithInstallLock(pathToValidate, true);
                 const existingVersions = await this.getExistingInstalls(context.installDirectoryProvider, true);
                 const preExistingInstallIndex = existingVersions.findIndex(x => IsEquivalentInstallation(x.dotnetInstall, install));
 

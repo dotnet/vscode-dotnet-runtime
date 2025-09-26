@@ -6,6 +6,7 @@
 import * as cp from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import
 {
@@ -43,6 +44,7 @@ import
     ExistingPathResolver,
     ExtensionConfigurationWorker,
     formatIssueUrl,
+    getDotnetExecutable,
     getInstallIdCustomArchitecture,
     getMajor,
     getMajorMinor,
@@ -70,6 +72,7 @@ import
     IUtilityContext,
     JsonInstaller,
     LinuxVersionResolver,
+    LocalInstallUpdateService,
     LocalMemoryCacheSingleton,
     NoExtensionIdProvided,
     registerEventStream,
@@ -131,49 +134,6 @@ const defaultTimeoutValue = 600;
 const moreInfoUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md';
 let disableActivationUnderTest = true;
 
-/**
- * Extracts the version from a dotnet install path or install id.
- * Handles Windows, Linux, and legacy install ids.
- * Example path: C:\Users\user\...\.dotnet\8.0.20~x64~aspnetcore\dotnet.exe
- * Example id: 8.0.20~x64~aspnetcore
- */
-function getVersionFromInstallPathOrId(installPathOrId: string): string
-{
-    if (!installPathOrId) return '';
-
-    // First, try to parse as a path (look for a version folder before dotnet[.exe])
-    // Handles spaces and both Windows/Linux separators
-    const pathParts = installPathOrId.split(/[/\\]/);
-    for (let i = 0; i < pathParts.length; i++)
-    {
-        // Look for a part that matches version pattern (e.g., 8.0.20, 7.0.400)
-        const match = pathParts[i].match(/^(\d+\.\d+\.\d+)(~.*)?$/);
-        if (match)
-        {
-            return match[1];
-        }
-    }
-
-    // If not found, try legacy id parsing
-    if (installPathOrId.includes('-global'))
-    {
-        const splitId = installPathOrId.split('-');
-        return splitId[0];
-    } else if (installPathOrId.includes('~'))
-    {
-        const splitId = installPathOrId.split('~');
-        return splitId[0];
-    }
-
-    // Fallback: try to find a version pattern anywhere in the string
-    const fallbackMatch = installPathOrId.match(/(\d+\.\d+\.\d+)/);
-    if (fallbackMatch)
-    {
-        return fallbackMatch[1];
-    }
-    return '';
-}
-
 export function activate(vsCodeContext: vscode.ExtensionContext, extensionContext?: IExtensionContext)
 {
 
@@ -228,6 +188,11 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         eventStreamObservers, telemetryObserver, _] = registerEventStream(eventStreamContext, vsCodeExtensionContext, utilContext, suppressOutput, highVerbosity);
 
 
+    const automaticUpdater = new LocalInstallUpdateService(globalEventStream, vsCodeContext.globalState,
+        acquireToUpdateInternal,
+        uninstall
+    );
+
     // Setting up command-shared classes for Runtime & SDK Acquisition
     const existingPathConfigWorker = new ExtensionConfigurationWorker(extensionConfiguration, configKeys.existingPath, configKeys.existingSharedPath);
 
@@ -237,22 +202,32 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         return (await acquireLocal(commandContext)).dotnetPath;
     });
 
-    async function acquireToUpdateInternal(commandContext: IDotnetAcquireContext): Promise<{ dotnetPath: IDotnetAcquireResult | undefined, install: DotnetInstall } | undefined>
+    async function acquireToUpdateInternal(commandContext: IDotnetAcquireContext, ignorePathSetting: boolean): Promise<{ dotnetPath: IDotnetAcquireResult | undefined, install: DotnetInstall } | undefined>
     {
-        const result = await acquireLocal(commandContext);
+        const result = await acquireLocal(commandContext, ignorePathSetting);
 
-        if (result && result.install)
+        if (result && result.dotnetPath && result.install)
         {
             return { dotnetPath: result?.dotnetPath, install: result.install };
         }
         else if (result && result.dotnetPath)
         {
-            const resolvedId = getInstallIdCustomArchitecture(commandContext.version, commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(), commandContext.mode ?? 'runtime', 'local');
-            const resolvedVersion = getVersionFromInstallPathOrId((result.dotnetPath as any)?.dotnetPath || resolvedId);
+            const workerContext = getAcquisitionWorkerContext(commandContext.mode ?? 'runtime', commandContext);
+            // todo : does it make sense for custom user paths to have an 'id' ?
+            const resolvedId = await getInstallIdFromLocalPath(result.dotnetPath.dotnetPath, workerContext, utilContext);
+
+            // The version should be the max parsed from --list blah. We cannot trust the path name to be correct.
+            const resolvedVersions = await new DotnetResolver(workerContext, utilContext).getDotnetInstalls(result.dotnetPath.dotnetPath, commandContext.mode ?? 'runtime', commandContext.architecture);
+            const expectedHostFxrResolutionVersion = resolvedVersions.length > 0 ? resolvedVersions.map(v => v.version).sort().reverse()[0] : null;
+
+            if (!expectedHostFxrResolutionVersion)
+            {
+                return undefined;
+            }
 
             const install: DotnetInstall = {
                 installId: resolvedId,
-                version: resolvedVersion,
+                version: expectedHostFxrResolutionVersion,
                 installMode: commandContext.mode ?? 'runtime',
                 isGlobal: false,
                 architecture: commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture()
@@ -263,7 +238,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         return undefined;
     }
 
-    async function acquireLocal(commandContext: IDotnetAcquireContext): Promise<{ dotnetPath: IDotnetAcquireResult | undefined, install: DotnetInstall }>
+    async function acquireLocal(commandContext: IDotnetAcquireContext, ignorePathSetting = false): Promise<{ dotnetPath: IDotnetAcquireResult | undefined, install: DotnetInstall }>
     {
         const worker = getAcquisitionWorker();
         commandContext.mode = commandContext.mode ?? 'runtime' as DotnetInstallMode;
@@ -291,7 +266,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             }
 
             const existingPath = await resolveExistingPathIfExists(existingPathConfigWorker, commandContext, workerContext, utilContext);
-            if (existingPath)
+            if (existingPath && !ignorePathSetting)
             {
                 return existingPath;
             }
@@ -486,6 +461,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             const existingOfflinePath = await getExistingInstallOffline(worker, workerContext);
             if (existingOfflinePath)
             {
+                // make sure this is marked
                 return Promise.resolve(existingOfflinePath);
             }
 
@@ -507,6 +483,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 throw new EventCancellationError('BadContextualAvailbleInstallsError', `The dotnet.availableInstalls API request was missing either a mode or requestingExtensionId. Please provide this.`);
             }
 
+            const dotnetExecutablePath = commandContext.dotnetExecutablePath ?? 'dotnet';
             const installs = await callWithErrorHandling(async () =>
             {
                 // Bad design: An acquire context is needed to setup the state, but don't want to untangle that in this change.
@@ -521,7 +498,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 const workerContext = getAcquisitionWorkerContext(commandContext.mode, fakeAcquireContext);
 
                 const dotnetResolver = new DotnetResolver(workerContext, utilContext);
-                const installsInListForm: IDotnetListInfo[] = await dotnetResolver.getDotnetInstalls(commandContext.dotnetExecutablePath ?? 'dotnet', commandContext.mode, commandContext.architecture);
+                const installsInListForm: IDotnetListInfo[] = await dotnetResolver.getDotnetInstalls(dotnetExecutablePath, commandContext.mode, commandContext.architecture);
 
                 return installsInListForm.map((installInfo: IDotnetListInfo) =>
                 {
@@ -533,6 +510,11 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                     } as IDotnetSearchResult;
                 });
             }, getIssueContext(existingPathConfigWorker)(commandContext?.errorConfiguration, commandKeys.availableInstalls));
+
+            if (installs?.length ?? 0 > 0)
+            {
+                InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).markInstallAsInUse(dotnetExecutablePath);
+            }
 
             return installs ?? [];
         });
@@ -718,7 +700,6 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 if (validatedExistingManagedPath)
                 {
                     loggingObserver.dispose();
-                    InstallTrackerSingleton.getInstance().markInstallAsInUse(dotnetPath.path);
                     return { dotnetPath: dotnetPath.path };
                 }
             }
@@ -756,6 +737,7 @@ ${JSON.stringify(commandContext)}`));
             if (validated)
             {
                 globalEventStream.post(new DotnetFindPathMetCondition(`${path} met the conditions.`));
+                InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).markInstallAsInUse(path);
                 return path;
             }
         }
@@ -961,6 +943,48 @@ ${JSON.stringify(commandContext)}`));
     function getAcquisitionWorker(): DotnetCoreAcquisitionWorker
     {
         return new DotnetCoreAcquisitionWorker(utilContext, vsCodeExtensionContext);
+    }
+
+
+    /**
+     * Extracts the install id from a dotnet install path that is owned by the .NET Install Tool exclusively.
+     * Handles Windows, Linux, and legacy install ids.
+     * Example path: C:\Users\user\...\.dotnet\8.0.20~x64~aspnetcore\dotnet.exe
+     * Example id: 8.0.20~x64~aspnetcore
+     * Example path for legacy scenario: /Users/username/Library/Application Support/Code/User/globalStorage/ms-dotnettools.vscode-dotnet-runtime/.dotnet/8.0.3/dotnet
+     * Returns null if the install path is invalid (does not verify the installation itself)
+     */
+    function getInstallIdFromExtensionManagedPath(installPath: string): string | null
+    {
+        const executable = getDotnetExecutable();
+        // make sure the path ends in a dotnet exe, otherwise return null
+        if (!installPath.endsWith(executable))
+        {
+            return null;
+        }
+
+        const presumedIdentifier = path.basename(path.dirname(installPath));
+        if (installPath.includes(process.env._VSCODE_DOTNET_INSTALL_FOLDER ?? 'Code'))
+        {
+            return presumedIdentifier;
+        }
+
+        return null;
+    }
+
+    async function getInstallIdFromLocalPath(installPath: string, workerContext: IAcquisitionWorkerContext, utilityContext: IUtilityContext): Promise<string>
+    {
+        const id = getInstallIdFromExtensionManagedPath(installPath);
+        if (id)
+        {
+            return id;
+        }
+
+        const dotnetResolver = new DotnetResolver(workerContext, utilityContext);
+        const installsInListForm: IDotnetListInfo[] = await dotnetResolver.getDotnetInstalls(installPath, '', commandContext.architecture);
+
+
+        return getInstallIdCustomArchitecture(commandContext.version, commandContext.architecture, mode, 'local');
     }
 
     function getIssueContext(configResolver: ExtensionConfigurationWorker)
