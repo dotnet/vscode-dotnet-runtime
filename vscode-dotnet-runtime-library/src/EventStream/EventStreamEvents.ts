@@ -870,6 +870,16 @@ export class SessionMutexAcquisitionFailed extends DotnetAcquisitionMessage
     }
 }
 
+export class SessionMutexReleased extends DotnetAcquisitionMessage
+{
+    public eventName = 'SessionMutexReleased';
+
+    constructor(public readonly message: string)
+    {
+        super();
+    }
+}
+
 export class DotnetAcquisitionDeletion extends DotnetAcquisitionMessage
 {
     public readonly eventName = 'DotnetAcquisitionDeletion';

@@ -765,4 +765,22 @@ export class MockInstallTracker extends InstallTrackerSingleton
     {
         return super.markInstallAsInUseWithInstallLock(installExePath, false, sessionId);
     }
+
+    /**
+     * Exposes the protected endSession method for testing purposes
+     * @returns A promise that resolves when the mutex is released
+     */
+    public async mockEndSession(): Promise<void>
+    {
+        return this.endSession();
+    }
+
+    /**
+     * Exposes the protected restartSessionMutex method for testing purposes
+     * @returns A promise that resolves when the mutex is acquired
+     */
+    public async mockRestartSessionMutex(): Promise<void>
+    {
+        return this.restartSessionMutex();
+    }
 }

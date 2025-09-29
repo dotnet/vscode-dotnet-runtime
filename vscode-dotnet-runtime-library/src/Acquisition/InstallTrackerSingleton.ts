@@ -16,6 +16,7 @@ import
     RemovingVersionFromExtensionState,
     SessionMutexAcquired,
     SessionMutexAcquisitionFailed,
+    SessionMutexReleased,
     SkipAddingInstallEvent
 } from '../EventStream/EventStreamEvents';
 import { IExtensionState } from '../IExtensionState';
@@ -42,6 +43,9 @@ export class InstallTrackerSingleton
 {
     protected static instance: InstallTrackerSingleton;
     protected sessionId: string;
+    protected sessionMutexResolver?: () => void;
+    protected sessionMutex?: NodeIPCMutex;
+    protected static readonly SESSION_MUTEX_ACQUIRE_TIMEOUT_MS = 100;
 
     protected sessionInstallsKey = 'dotnet.returnedInstallDirectories';
 
@@ -64,19 +68,61 @@ export class InstallTrackerSingleton
     {
         const logger = new EventStreamNodeIPCMutexLoggerWrapper(this.eventStream, this.sessionId);
         const mutex = new NodeIPCMutex(this.sessionId, logger, '');
+        this.sessionMutex = mutex;
 
         // Fire and forget - we don't need to await this
         mutex.acquire(async () =>
         {
-            return new Promise<void>(() =>
+            return new Promise<void>((resolve) =>
             {
-                // Intentionally not calling resolve/reject so we never release
+                // Store the resolve function so it can be called from endSession
+                this.sessionMutexResolver = resolve;
                 this.eventStream.post(new SessionMutexAcquired(`Session ${this.sessionId} has acquired its permanent mutex`));
             });
-        }, 10, 100, `${this.sessionId}-permanent`).catch((error) =>
+        }, 10, InstallTrackerSingleton.SESSION_MUTEX_ACQUIRE_TIMEOUT_MS, `${this.sessionId}-permanent`).catch((error) =>
         {
             this.eventStream.post(new SessionMutexAcquisitionFailed(`Failed to acquire permanent mutex for session ${this.sessionId}: ${error}`));
         });
+    }
+
+    /**
+     * Ends the session by releasing the permanent mutex.
+     * This is primarily intended for testing scenarios.
+     * @returns A promise that resolves when the mutex is released
+     */
+    protected async endSession(): Promise<void>
+    {
+        if (this.sessionMutexResolver)
+        {
+            // Call the resolver function to resolve the promise and release the mutex
+            this.sessionMutexResolver();
+            this.sessionMutexResolver = undefined;
+            this.eventStream.post(new SessionMutexReleased(`Session ${this.sessionId} has released its permanent mutex`));
+
+            // Give the system a moment to recognize the mutex release
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+    }
+
+    /**
+     * Restarts the session mutex after it has been released.
+     * This is primarily intended for testing scenarios.
+     * @returns A promise that resolves when the mutex is acquired or when the timeout is reached
+     */
+    protected async restartSessionMutex(): Promise<void>
+    {
+        // Only restart if the session isn't currently active
+        if (!this.sessionMutexResolver)
+        {
+            this.acquirePermanentSessionMutex();
+
+            // Wait for the acquisition to complete or timeout
+            await new Promise(resolve => setTimeout(resolve, InstallTrackerSingleton.SESSION_MUTEX_ACQUIRE_TIMEOUT_MS));
+            if (!this.sessionMutexResolver)
+            {
+                throw new Error(`Failed to acquire session mutex within ${InstallTrackerSingleton.SESSION_MUTEX_ACQUIRE_TIMEOUT_MS}ms`);
+            }
+        }
     }
 
     public static getInstance(eventStream: IEventStream, extensionState: IExtensionState): InstallTrackerSingleton

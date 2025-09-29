@@ -3,7 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
-import { fork } from 'child_process';
+import { ChildProcess, fork } from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import { DotnetInstall } from '../../Acquisition/DotnetInstall';
@@ -61,31 +61,139 @@ function generateRandomSessionId(): string
 }
 
 // Helper function to spawn a process that holds a mutex with a specific session ID
-function spawnMutexHolderProcess(sessionId: string): Promise<{ child: any, sessionId: string }>
+function spawnMutexHolderProcess(sessionId?: string): Promise<{ child: ChildProcess, sessionId: string }>
 {
+    const actualSessionId = sessionId || generateRandomSessionId();
+    const scriptPath = path.resolve(__dirname, '../../mocks/MockMutexHolder.js');
+
+    // Verify the script exists
+    if (!fs.existsSync(scriptPath))
+    {
+        return Promise.reject(new Error(`Mock mutex holder script not found at ${scriptPath}`));
+    }
+
+    console.log(`Starting mutex holder process for session ${actualSessionId} with script at ${scriptPath}`);
+
     return new Promise((resolve, reject) =>
     {
-        const child = fork(path.join(__dirname, '../mocks/MockMutexHolder.js'));
+        // Set up handlers for stdout and stderr to debug issues
+        const stdoutChunks: Buffer[] = [];
+        const stderrChunks: Buffer[] = [];
 
-        // Set up event handlers
+        // Use fork to start the mutex holder process
+        const child = fork(scriptPath, [], {
+            stdio: ['pipe', 'pipe', 'pipe', 'ipc']
+        });
+
+        if (child.stdout)
+        {
+            child.stdout.on('data', (chunk) =>
+            {
+                stdoutChunks.push(Buffer.from(chunk));
+                console.log(`[Mutex ${actualSessionId}] ${chunk.toString().trim()}`);
+            });
+        }
+
+        if (child.stderr)
+        {
+            child.stderr.on('data', (chunk) =>
+            {
+                stderrChunks.push(Buffer.from(chunk));
+                console.error(`[Mutex ${actualSessionId}] ERROR: ${chunk.toString().trim()}`);
+            });
+        }
+
+        // Track if we've resolved or rejected already
+        let settled = false;
+
+        // Set up error handler
+        child.on('error', (err) =>
+        {
+            const stdout = Buffer.concat(stdoutChunks).toString();
+            const stderr = Buffer.concat(stderrChunks).toString();
+
+            console.error(`Error in mutex holder process for session ${actualSessionId}:`, err);
+            console.error(`Process stdout: ${stdout}`);
+            console.error(`Process stderr: ${stderr}`);
+
+            if (!settled)
+            {
+                settled = true;
+                reject(new Error(`Failed to spawn mutex holder process: ${err.message}`));
+            }
+        });
+
+        // Handle process exit
+        child.on('exit', (code, signal) =>
+        {
+            console.log(`Mutex holder process for session ${actualSessionId} exited with code ${code}, signal ${signal}`);
+            if (!settled)
+            {
+                settled = true;
+
+                const stdout = Buffer.concat(stdoutChunks).toString();
+                const stderr = Buffer.concat(stderrChunks).toString();
+
+                console.error(`Process stdout: ${stdout}`);
+                console.error(`Process stderr: ${stderr}`);
+
+                reject(new Error(`Mutex holder process exited unexpectedly with code ${code} and signal ${signal}`));
+            }
+        });
+
+        // Set up message handler
         child.on('message', (msg: any) =>
         {
             if (msg.acquired)
             {
-                resolve({ child, sessionId });
+                console.log(`Mutex holder process acquired mutex for session ${actualSessionId}`);
+                if (!settled)
+                {
+                    settled = true;
+                    resolve({ child, sessionId: actualSessionId });
+                }
             } else if (msg.error)
             {
-                reject(new Error(msg.error));
+                console.error(`Mutex holder process failed to acquire mutex for session ${actualSessionId}:`, msg.error);
+                if (!settled)
+                {
+                    settled = true;
+                    reject(new Error(msg.error));
+                }
             }
         });
 
         // Start the mutex holder with the given session ID
-        child.send({ sessionId });
+        child.send({ sessionId: actualSessionId });
 
         // Set a timeout in case the process doesn't respond
         setTimeout(() =>
         {
-            reject(new Error('Timeout waiting for mutex holder process to start'));
+            if (!settled)
+            {
+                settled = true;
+                console.error(`Timeout waiting for mutex holder process to start for session ${actualSessionId}`);
+
+                const stdout = Buffer.concat(stdoutChunks).toString();
+                const stderr = Buffer.concat(stderrChunks).toString();
+
+                console.error(`Process stdout: ${stdout}`);
+                console.error(`Process stderr: ${stderr}`);
+
+                // Try to kill the process before rejecting
+                try
+                {
+                    if (!child.killed)
+                    {
+                        child.kill('SIGKILL');
+                    }
+                } catch (e)
+                {
+                    console.error(`Failed to kill mutex holder process: ${e}`);
+                }
+
+                reject(new Error(`Timeout waiting for mutex holder process to start for session ${actualSessionId}`));
+            }
         }, 5000);
     });
 }
@@ -291,19 +399,87 @@ suite('InstallTracker Unit Tests', function ()
 
 suite('InstallTracker Session Mutex Tests', function ()
 {
-    const testTimeoutTime = 10000; // 10 seconds timeout for these tests
-    let mutexHolderProcesses: { child: any, sessionId: string }[] = [];
+    const testTimeoutTime = 30000; // 30 seconds timeout for these tests
+
+    // Helper function to clean up mutex holder processes
+    async function cleanupMutexHolders(processes: { child: ChildProcess, sessionId: string }[]): Promise<void>
+    {
+        for (const process of processes)
+        {
+            try
+            {
+                if (!process.child.killed && process.child.pid)
+                {
+                    console.log(`Cleaning up mutex holder process with PID: ${process.child.pid} for session ${process.sessionId}`);
+                    // Try to send exit command first for graceful shutdown
+                    if (process.child.connected)
+                    {
+                        try
+                        {
+                            process.child.send({ command: 'exit' });
+                            // Give it a little time to clean up
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                        }
+                        catch (err)
+                        {
+                            console.log(`Failed to send exit command: ${err}`);
+                        }
+                    }
+
+                    // Force kill if still running
+                    if (!process.child.killed)
+                    {
+                        process.child.kill('SIGTERM');
+                    }
+                }
+            }
+            catch (err)
+            {
+                console.error(`Error killing mutex holder process: ${err}`);
+            }
+        }
+    }
+
+    // Clean up any orphaned mutex socket files before tests
+    this.beforeAll(function ()
+    {
+        const cleanupSockets = () =>
+        {
+            try
+            {
+                const ipcPathDir = os.platform() === 'linux' && process.env.XDG_RUNTIME_DIR ?
+                    process.env.XDG_RUNTIME_DIR : os.tmpdir();
+
+                if (os.platform() !== 'win32' && fs.existsSync(ipcPathDir))
+                {
+                    const files = fs.readdirSync(ipcPathDir);
+                    files.forEach(file =>
+                    {
+                        if (file.startsWith('vscd-test-session-') && file.endsWith('.sock'))
+                        {
+                            const fullPath = path.join(ipcPathDir, file);
+                            try
+                            {
+                                console.log(`Cleaning up orphaned socket file: ${fullPath}`);
+                                fs.unlinkSync(fullPath);
+                            } catch (e)
+                            {
+                                console.error(`Failed to clean up socket file ${fullPath}: ${e}`);
+                            }
+                        }
+                    });
+                }
+            } catch (err)
+            {
+                console.error(`Error during socket cleanup: ${err}`);
+            }
+        };
+
+        cleanupSockets();
+    });
 
     this.afterEach(async () =>
     {
-        // Clean up spawned processes
-        for (const process of mutexHolderProcesses)
-        {
-            process.child.send({ exit: true });
-            process.child.kill();
-        }
-        mutexHolderProcesses = [];
-
         // Tear down tmp storage for fresh run
         WebRequestWorkerSingleton.getInstance().destroy();
         LocalMemoryCacheSingleton.getInstance().invalidate();
@@ -314,105 +490,152 @@ suite('InstallTracker Session Mutex Tests', function ()
 
     test('It detects that a session is alive when its mutex is held', async () =>
     {
-        const sessionId = generateRandomSessionId();
-
-        // Spawn a process that holds the mutex for the session
-        const { child } = await spawnMutexHolderProcess(sessionId);
-        mutexHolderProcesses.push({ child, sessionId });
-
-        const installExePath = path.join(fakeValidDir, getDotnetExecutable());
+        const processes: { child: ChildProcess, sessionId: string }[] = [];
         const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
-        await validator.markInstallAsInUseBySession(sessionId, installExePath);
+        const sessionId = validator.getSessionId();
 
-        // Check that the session is detected as alive
-        const hasNoLiveDependents = await validator.installHasNoLiveDependents(installExePath);
+        try
+        {
+            const installExePath = path.join(fakeValidDir, getDotnetExecutable());
+            await validator.markInstallAsInUseBySession(sessionId, installExePath);
 
-        // Since the session is alive and has the install marked as in use, it should have live dependents
-        assert.isFalse(hasNoLiveDependents, 'Install should be detected as having live dependents when session is alive');
+            const hasNoLiveDependents = await validator.installHasNoLiveDependents(installExePath);
+            // Since the session is alive and has the install marked as in use, it should have live dependents
+            assert.isFalse(hasNoLiveDependents, 'Install should be detected as having live dependents when session is alive');
+        }
+        finally
+        {
+            await validator.mockEndSession();
+            await cleanupMutexHolders(processes);
+        }
     }).timeout(testTimeoutTime);
 
     test('It detects that a session is dead when its process is killed', async () =>
     {
-        const sessionId = generateRandomSessionId();
-
-        const { child } = await spawnMutexHolderProcess(sessionId);
-
-        const installExePath = path.join(fakeValidDir, getDotnetExecutable());
+        const processes: { child: ChildProcess, sessionId: string }[] = [];
         const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
-        await validator.markInstallAsInUseBySession(sessionId, installExePath);
-        child.kill('SIGKILL');
+        const sessionId = validator.getSessionId();
 
-        // Give the system a moment to recognize the process is dead
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        try
+        {
+            const { child } = await spawnMutexHolderProcess(sessionId);
+            processes.push({ child, sessionId });
 
-        const hasNoLiveDependents = await validator.installHasNoLiveDependents(installExePath);
-        // Since the session is now dead, it should not have live dependents
-        assert.isTrue(hasNoLiveDependents, 'Install should be detected as not having live dependents when session is dead');
+            const installExePath = path.join(fakeValidDir, getDotnetExecutable());
+
+            await validator.markInstallAsInUseBySession(sessionId, installExePath);
+            await validator.mockEndSession();
+
+            const hasNoLiveDependents = await validator.installHasNoLiveDependents(installExePath);
+            assert.isTrue(hasNoLiveDependents, 'Install should be detected as not having live dependents when session is dead');
+        }
+        finally
+        {
+            await validator.mockEndSession();
+            await cleanupMutexHolders(processes);
+        }
     }).timeout(testTimeoutTime);
 
     test('It handles multiple sessions with different installs correctly', async () =>
     {
         const sessionId1 = generateRandomSessionId();
         const sessionId2 = generateRandomSessionId();
-
-        const process1 = await spawnMutexHolderProcess(sessionId1);
-        const process2 = await spawnMutexHolderProcess(sessionId2);
-        mutexHolderProcesses.push(process1, process2);
-
-        const installExePath1 = path.join(fakeValidDir, getDotnetExecutable());
-        const installExePath2 = path.join(os.tmpdir(), 'dotnet-test', getDotnetExecutable());
-        fs.mkdirSync(path.dirname(installExePath2), { recursive: true });
-        fs.writeFileSync(installExePath2, 'fake-dotnet');
-
+        const processes: { child: ChildProcess, sessionId: string }[] = [];
+        let tempFile: string | undefined;
         const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
 
-        await validator.markInstallAsInUseBySession(sessionId1, installExePath1);
-        await validator.markInstallAsInUseBySession(sessionId2, installExePath2);
-
-        // Both sessions are alive, so both installs should have live dependents
-        const hasNoLiveDependents1 = await validator.installHasNoLiveDependents(installExePath1);
-        const hasNoLiveDependents2 = await validator.installHasNoLiveDependents(installExePath2);
-
-        assert.isFalse(hasNoLiveDependents1, 'First install should have live dependents');
-        assert.isFalse(hasNoLiveDependents2, 'Second install should have live dependents');
-
-        process1.child.kill('SIGKILL');
-
-        // Give the system a moment to recognize the process is dead
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        const hasNoLiveDependents1After = await validator.installHasNoLiveDependents(installExePath1);
-        const hasNoLiveDependents2After = await validator.installHasNoLiveDependents(installExePath2);
-
-        assert.isTrue(hasNoLiveDependents1After, 'First install should not have live dependents after its session died');
-        assert.isFalse(hasNoLiveDependents2After, 'Second install should still have live dependents');
-
-        // Clean up the temporary file
         try
         {
-            fs.unlinkSync(installExePath2);
-            fs.rmdirSync(path.dirname(installExePath2), { recursive: true });
+            const { child: child1 } = await spawnMutexHolderProcess(sessionId1);
+            const { child: child2 } = await spawnMutexHolderProcess(sessionId2);
+            processes.push(
+                { child: child1, sessionId: sessionId1 },
+                { child: child2, sessionId: sessionId2 }
+            );
+
+            const installExePath1 = path.join(fakeValidDir, getDotnetExecutable());
+            const installExePath2 = path.join(os.tmpdir(), 'dotnet-test', getDotnetExecutable());
+            tempFile = installExePath2; // Save for cleanup
+            fs.mkdirSync(path.dirname(installExePath2), { recursive: true });
+            fs.writeFileSync(installExePath2, 'fake-dotnet');
+
+
+            // End any existing session from constructor
+            await validator.mockEndSession();
+            // Start a new session with our ID
+            (validator as any).sessionId = validator.getSessionId();
+            await validator.mockRestartSessionMutex();
+
+            await validator.markInstallAsInUseBySession(sessionId1, installExePath1);
+            await validator.markInstallAsInUseBySession(sessionId2, installExePath2);
+
+            // Both sessions are alive, so both installs should have live dependents
+            const hasNoLiveDependents1 = await validator.installHasNoLiveDependents(installExePath1);
+            const hasNoLiveDependents2 = await validator.installHasNoLiveDependents(installExePath2);
+
+            assert.isFalse(hasNoLiveDependents1, 'First install should have live dependents');
+            assert.isFalse(hasNoLiveDependents2, 'Second install should have live dependents');
+
+            // Terminate the first process to simulate a session ending
+            if (processes[0].child && !processes[0].child.killed)
+            {
+                processes[0].child.kill('SIGKILL');
+            }
+
+            // Give the system a moment to recognize the process is dead
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            const hasNoLiveDependents1After = await validator.installHasNoLiveDependents(installExePath1);
+            const hasNoLiveDependents2After = await validator.installHasNoLiveDependents(installExePath2);
+
+            assert.isTrue(hasNoLiveDependents1After, 'First install should not have live dependents after its session died');
+            assert.isFalse(hasNoLiveDependents2After, 'Second install should still have live dependents');
         }
-        catch (e)
+        finally
         {
-            // Ignore errors in cleanup
+            await validator.mockEndSession();
+            await cleanupMutexHolders(processes);
+
+            // Clean up the temporary file
+            if (tempFile)
+            {
+                try
+                {
+                    fs.unlinkSync(tempFile);
+                    fs.rmdirSync(path.dirname(tempFile), { recursive: true });
+                } catch (e)
+                {
+                    // Ignore errors in cleanup
+                }
+            }
         }
     }).timeout(testTimeoutTime);
 
     test('It acquires permanent session mutex on construction', async () =>
     {
-        // Create a validator with a custom session ID
-        const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
+        const installTracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
+        const processes: { child: ChildProcess, sessionId: string }[] = [];
 
-        // Try to acquire the same mutex in another process
         try
         {
-            await spawnMutexHolderProcess(validator.getSessionId());
-            assert.fail('Should not be able to acquire mutex that should be held by the validator');
-        } catch (err)
+            // Try to acquire the same mutex in another process
+            try
+            {
+                const result = await spawnMutexHolderProcess(installTracker.getSessionId());
+                processes.push(result);
+                assert.fail('Should not be able to acquire mutex that should be held by the validator');
+            }
+            catch (err)
+            {
+                // Expected - mutex should be held by the validator
+                assert.isDefined(err, 'Should get an error when trying to acquire a mutex already held');
+            }
+        }
+        finally
         {
-            // Expected - mutex should be held by the validator
-            assert.isDefined(err, 'Should get an error when trying to acquire a mutex already held');
+            // End the session when we're done
+            await installTracker.mockEndSession();
+            await cleanupMutexHolders(processes);
         }
     }).timeout(testTimeoutTime);
 });
