@@ -192,11 +192,13 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         acquireLocal,
         uninstall
     );
-    automaticUpdater.ManageInstalls().catch((e) =>
+
+    automaticUpdater.ManageInstalls().catch((e: any) =>
     {
         if (!suppressOutput)
         {
-            vscode.window.showWarningMessage(`The .NET Runtime may be out of date. An error occurred while checking for updates: ${e.message}.`);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            vscode.window.showWarningMessage(`The .NET Runtime may be out of date. An error occurred while checking for updates: ${e?.message ?? JSON.stringify(e)}.`);
         }
     });
 
@@ -485,7 +487,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             if (installs?.length ?? 0 > 0)
             {
-                InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).markInstallAsInUse(dotnetExecutablePath);
+                await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).markInstallAsInUse(dotnetExecutablePath);
             }
 
             return installs ?? [];
@@ -502,7 +504,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
     const dotnetUninstallPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallPublic}`, async () =>
     {
-        const existingInstalls = await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).getExistingInstalls(directoryProviderFactory(
+        const existingInstalls: InstallRecord[] = await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).getExistingInstalls(directoryProviderFactory(
             'runtime', vsCodeContext.globalStoragePath));
 
         const menuItems = existingInstalls?.sort(
@@ -709,7 +711,7 @@ ${JSON.stringify(commandContext)}`));
             if (validated)
             {
                 globalEventStream.post(new DotnetFindPathMetCondition(`${path} met the conditions.`));
-                InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).markInstallAsInUse(path);
+                await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).markInstallAsInUse(path);
                 return path;
             }
         }

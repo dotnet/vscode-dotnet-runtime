@@ -173,7 +173,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
                         possibleInstallWithSameMajorMinor.version));
                     context.eventStream.post(new DotnetOfflineInstallUsed(`We detected you are offline and are using the pre-existing .NET installation ${install.dotnetInstall.installId}.
 To keep your .NET version up to date, please reconnect to the internet at your soonest convenience.`))
-                    InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).markInstallAsInUse(dotnetExePath);
+                    await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).markInstallAsInUse(dotnetExePath);
                     return { dotnetPath: dotnetExePath };
                 }
             }
@@ -202,7 +202,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         if (existingInstall)
         {
             context.eventStream.post(new DotnetAcquisitionStatusResolved(install, install.version));
-            InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).markInstallAsInUse(existingInstall);
+            await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).markInstallAsInUse(existingInstall);
             return { dotnetPath: existingInstall };
         }
 
@@ -290,7 +290,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
                 const existingInstall = await this.getValidExistingInstallPath(context, installedVersions, install, dotnetPath);
                 if (existingInstall !== null)
                 {
-                    InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).markInstallAsInUse(existingInstall);
+                    await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).markInstallAsInUse(existingInstall);
                     return existingInstall;
                 }
 
@@ -447,7 +447,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         const existingInstall = await this.getValidExistingInstallPath(context, installedVersions, install, dotnetPath);
         if (existingInstall)
         {
-            InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).markInstallAsInUse(existingInstall);
+            await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).markInstallAsInUse(existingInstall);
             return existingInstall;
         }
 

@@ -37,20 +37,20 @@ export class LocalInstallUpdateService extends IInstallManagementService
         super(eventStream);
     }
 
-    public async ManageInstalls(updateCadenceMs = 300000): Promise<void>
+    public ManageInstalls(updateCadenceMs = 300000): void
     {
         this.checkForUpdates(updateCadenceMs).catch((e) => {});
     }
 
     /**
-    * Check for updates to the locally installed .NET runtimes.
-    * The updates will not be installed immediately.
-    * This will also uninstall any runtimes that are out of support or got updated and are not in use.
-    *
-    * @param workerContext
-    * @param automaticUpdateDelayMs When should the updates be installed/uninstalled after launching VS Code? Default: 5 Minutes.
-    * Check update 5 minutes after user starts VS Code, based on average time to intellisense + user activity to avoid disruption.
-    */
+     * Check for updates to the locally installed .NET runtimes.
+     * The updates will not be installed immediately.
+     * This will also uninstall any runtimes that are out of support or got updated and are not in use.
+     *
+     * @param workerContext
+     * @param automaticUpdateDelayMs When should the updates be installed/uninstalled after launching VS Code? Default: 5 Minutes.
+     * Check update 5 minutes after user starts VS Code, based on average time to intellisense + user activity to avoid disruption.
+     */
     private async checkForUpdates(automaticUpdateDelayMs = 300000): Promise<void>
     {
         const lastUpdateDate = this.extensionState.get<Date>('dotnet.latestUpdateDate', new Date(0));
@@ -59,7 +59,7 @@ export class LocalInstallUpdateService extends IInstallManagementService
         if ((Date.now() - new Date(lastUpdateDate).getTime()) >= oneDayMs)
         {
             await new Promise(resolve => setTimeout(resolve, automaticUpdateDelayMs));
-            this.automaticUpdate();
+            this.automaticUpdate().catch(() => {});
         }
     }
 
@@ -113,7 +113,7 @@ export class LocalInstallUpdateService extends IInstallManagementService
         if (isOffline)
         {
             // TODO: Add warning about failure to update ?
-            return;
+            return Promise.resolve();
         }
 
         const installGroups = await this.getInstallGroups();
@@ -142,7 +142,7 @@ export class LocalInstallUpdateService extends IInstallManagementService
             // All of the installs were uninstalled in the middle of this process.
             if (newInstallsInGroup.length === 0)
             {
-                return;
+                return Promise.resolve();
             }
 
             // Sort installations by version (patch/feature band since major.minor is all the same) and find the one with the highest version
@@ -162,7 +162,7 @@ export class LocalInstallUpdateService extends IInstallManagementService
 
             // Make it so all owners of all installs the group own the latest version - owning basically means they depend on it / requested it (now in the past for a different version)
             const owners = this.getAllNonUserOwnersOfCollection(installGroups.get(group)!);
-            InstallTrackerSingleton.getInstance(this.eventStream, this.extensionState).addOwners(latestInstall.dotnetInstall, owners, this.managementDirectoryProvider);
+            await InstallTrackerSingleton.getInstance(this.eventStream, this.extensionState).addOwners(latestInstall.dotnetInstall, owners, this.managementDirectoryProvider);
 
             // Uninstall all in the group that are not live dependents and not the latest one (which should also be live but no need to check)
             const installsInGroup = installGroups.get(group)!;
@@ -183,6 +183,7 @@ export class LocalInstallUpdateService extends IInstallManagementService
             }
 
             this.extensionState.update('dotnet.latestUpdateDate', new Date(0));
+            return Promise.resolve();
         }
     }
 }

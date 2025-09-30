@@ -173,7 +173,7 @@ export class InstallTrackerSingleton
                             // eslint-disable-next-line no-return-await
                             existingSessionsWithUsedExecutablePaths.delete(sessionId);
                             this.extensionState.update(this.sessionInstallsKey, existingSessionsWithUsedExecutablePaths);
-                            return true;
+                            return Promise.resolve(true);
                         }, 10, 20, `${sessionId}-${crypto.randomUUID()}`).catch(() => { return false; });
                         if (!shouldContinue)
                         {
@@ -397,6 +397,7 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
                 activeSessionExecutablePaths.add(installExePath);
                 existingSessionsWithUsedExecutablePaths.set(sessionId, activeSessionExecutablePaths);
                 this.extensionState.update(this.sessionInstallsKey, existingSessionsWithUsedExecutablePaths);
+                return Promise.resolve();
             });
     }
 
@@ -410,7 +411,7 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
                 // We need to validate again ourselves because uninstallAll can blast away the state but holds on to the installed lock when doing so.
                 context.installationValidator.validateDotnetInstall(install, pathToValidate);
 
-                this.markInstallAsInUseWithInstallLock(pathToValidate, true, this.sessionId);
+                await this.markInstallAsInUseWithInstallLock(pathToValidate, true, this.sessionId);
                 const existingVersions = await this.getExistingInstalls(context.installDirectoryProvider, true);
                 const preExistingInstallIndex = existingVersions.findIndex(x => IsEquivalentInstallation(x.dotnetInstall, install));
 

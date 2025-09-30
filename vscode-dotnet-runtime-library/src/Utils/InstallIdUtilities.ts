@@ -1,41 +1,3 @@
-/**
- * Extracts the version from a dotnet install path or install id.
- * Handles Windows, Linux, and legacy install ids.
- * Example path: C:\Users\user\...\.dotnet\8.0.20~x64~aspnetcore\dotnet.exe
- * Example id: 8.0.20~x64~aspnetcore
- */
-export function getVersionFromInstallPathOrId(installPathOrId: string): string
-{
-    if (!installPathOrId) return '';
-
-    // First, try to parse as a path (look for a version folder before dotnet[.exe])
-    // Handles spaces and both Windows/Linux separators
-    const pathParts = installPathOrId.split(/[/\\]/);
-    for (let i = 0; i < pathParts.length; i++)
-    {
-        // Look for a part that matches version pattern (e.g., 8.0.20, 7.0.400)
-        const match = pathParts[i].match(/^(\d+\.\d+\.\d+)(~.*)?$/);
-        if (match)
-        {
-            return match[1];
-        }
-    }
-
-    // If not found, try legacy id parsing (reuse getVersionFromLegacyInstallId)
-    const legacyVersion = getVersionFromLegacyInstallId(installPathOrId);
-    if (looksLikeRuntimeVersion(legacyVersion))
-    {
-        return legacyVersion;
-    }
-
-    // Fallback: try to find a version pattern anywhere in the string
-    const fallbackMatch = installPathOrId.match(/(\d+\.\d+\.\d+)/);
-    if (fallbackMatch)
-    {
-        return fallbackMatch[1];
-    }
-    return '';
-}
 /* --------------------------------------------------------------------------------------------
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
@@ -46,7 +8,6 @@ import { DotnetInstall, looksLikeRuntimeVersion } from '../Acquisition/DotnetIns
 import { DOTNET_INSTALL_MODE_LIST, DotnetInstallMode } from '../Acquisition/DotnetInstallMode';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { DotnetInstallType } from '../IDotnetAcquireContext';
-
 
 export function getInstallIdCustomArchitecture(version: string, architecture: string | null | undefined, mode: DotnetInstallMode,
     installType: DotnetInstallType = 'local'): string

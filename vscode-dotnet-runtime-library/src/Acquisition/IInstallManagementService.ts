@@ -9,5 +9,5 @@ export abstract class IInstallManagementService
 {
     constructor(protected readonly eventStream: IEventStream) {}
 
-    public abstract ManageInstalls(): Promise<void>;
+    public abstract ManageInstalls(): void;
 }

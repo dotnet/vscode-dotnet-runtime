@@ -49,7 +49,7 @@ export class ExistingPathResolver
         }
         if (existingPath && (await this.providedPathMeetsAPIRequirement(this.workerContext, existingPath, this.workerContext.acquisitionContext, requirement) || this.allowInvalidPath(this.workerContext)))
         {
-            InstallTrackerSingleton.getInstance(this.workerContext.eventStream, this.workerContext.extensionState).markInstallAsInUse(existingPath);
+            await InstallTrackerSingleton.getInstance(this.workerContext.eventStream, this.workerContext.extensionState).markInstallAsInUse(existingPath);
             return { dotnetPath: existingPath } as IDotnetAcquireResult;
         }
 
