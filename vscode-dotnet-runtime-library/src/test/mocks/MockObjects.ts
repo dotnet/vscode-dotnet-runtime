@@ -770,7 +770,7 @@ export class MockInstallTracker extends InstallTrackerSingleton
      * Exposes the protected endSession method for testing purposes
      * @returns A promise that resolves when the mutex is released
      */
-    public async mockEndSession(): Promise<void>
+    public async endAnySingletonTrackingSessions(): Promise<void>
     {
         return this.endSession();
     }
@@ -779,7 +779,7 @@ export class MockInstallTracker extends InstallTrackerSingleton
      * Exposes the protected restartSessionMutex method for testing purposes
      * @returns A promise that resolves when the mutex is acquired
      */
-    public async mockRestartSessionMutex(): Promise<void>
+    public async startNewSharedSingletonSession(): Promise<void>
     {
         return this.restartSessionMutex();
     }

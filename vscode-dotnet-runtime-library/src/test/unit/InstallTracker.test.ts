@@ -64,7 +64,7 @@ function generateRandomSessionId(): string
 function spawnMutexHolderProcess(sessionId?: string): Promise<{ child: ChildProcess, sessionId: string }>
 {
     const actualSessionId = sessionId || generateRandomSessionId();
-    const scriptPath = path.resolve(__dirname, '../../mocks/MockMutexHolder.js');
+    const scriptPath = path.resolve(__dirname, '../../../test/mocks/MockMutexHolder.js');
 
     // Verify the script exists
     if (!fs.existsSync(scriptPath))
@@ -205,6 +205,8 @@ suite('InstallTracker Unit Tests', function ()
         // Tear down tmp storage for fresh run
         WebRequestWorkerSingleton.getInstance().destroy();
         LocalMemoryCacheSingleton.getInstance().invalidate();
+        const trackerSingletonMockAccess = new MockInstallTracker(new MockEventStream(), new MockExtensionContext());
+        trackerSingletonMockAccess.endAnySingletonTrackingSessions();
     });
 
     test('It Creates a New Record for a New Install', async () =>
@@ -226,7 +228,6 @@ suite('InstallTracker Unit Tests', function ()
         }
         finally
         {
-            tracker.mockEndSession();
         }
     }).timeout(defaultTimeoutTime);
 
@@ -252,7 +253,6 @@ suite('InstallTracker Unit Tests', function ()
         }
         finally
         {
-            tracker.mockEndSession();
         }
     }).timeout(defaultTimeoutTime);
 
@@ -281,7 +281,6 @@ suite('InstallTracker Unit Tests', function ()
         }
         finally
         {
-            tracker.mockEndSession();
         }
     }).timeout(defaultTimeoutTime);
 
@@ -314,7 +313,6 @@ suite('InstallTracker Unit Tests', function ()
         }
         finally
         {
-            tracker.mockEndSession();
         }
     }).timeout(defaultTimeoutTime);
 
@@ -331,7 +329,6 @@ suite('InstallTracker Unit Tests', function ()
         }
         finally
         {
-            tracker.mockEndSession();
         }
     }).timeout(defaultTimeoutTime);
 
@@ -363,8 +360,8 @@ suite('InstallTracker Unit Tests', function ()
         }
         finally
         {
-            tracker.mockEndSession();
-            otherRequesterTracker.mockEndSession();
+            tracker.endAnySingletonTrackingSessions();
+            otherRequesterTracker.endAnySingletonTrackingSessions();
         }
     }).timeout(defaultTimeoutTime);
 
@@ -394,7 +391,6 @@ suite('InstallTracker Unit Tests', function ()
         }
         finally
         {
-            tracker.mockEndSession();
         }
     }).timeout(defaultTimeoutTime);
 
@@ -442,7 +438,6 @@ suite('InstallTracker Unit Tests', function ()
         }
         finally
         {
-            tracker.mockEndSession();
         }
     }).timeout(defaultTimeoutTime);
 });
@@ -536,6 +531,9 @@ suite('InstallTracker Session Mutex Tests', function ()
 
         // Reset extension state
         resetExtensionState();
+
+        const trackerSingletonMockAccess = new MockInstallTracker(new MockEventStream(), new MockExtensionContext());
+        trackerSingletonMockAccess.endAnySingletonTrackingSessions();
     });
 
     test('It detects that a session is alive when its mutex is held', async () =>
@@ -555,7 +553,6 @@ suite('InstallTracker Session Mutex Tests', function ()
         }
         finally
         {
-            await validator.mockEndSession();
             await cleanupMutexHolders(processes);
         }
     }).timeout(testTimeoutTime);
@@ -574,14 +571,13 @@ suite('InstallTracker Session Mutex Tests', function ()
             const installExePath = path.join(fakeValidDir, getDotnetExecutable());
 
             await validator.markInstallAsInUseBySession(sessionId, installExePath);
-            await validator.mockEndSession();
+            await validator.endAnySingletonTrackingSessions();
 
             const hasNoLiveDependents = await validator.installHasNoLiveDependents(installExePath);
             assert.isTrue(hasNoLiveDependents, 'Install should be detected as not having live dependents when session is dead');
         }
         finally
         {
-            await validator.mockEndSession();
             await cleanupMutexHolders(processes);
         }
     }).timeout(testTimeoutTime);
@@ -611,10 +607,10 @@ suite('InstallTracker Session Mutex Tests', function ()
 
 
             // End any existing session from constructor
-            await validator.mockEndSession();
+            await validator.endAnySingletonTrackingSessions();
             // Start a new session with our ID
             (validator as any).sessionId = validator.getSessionId();
-            await validator.mockRestartSessionMutex();
+            await validator.startNewSharedSingletonSession();
 
             await validator.markInstallAsInUseBySession(sessionId1, installExePath1);
             await validator.markInstallAsInUseBySession(sessionId2, installExePath2);
@@ -643,7 +639,6 @@ suite('InstallTracker Session Mutex Tests', function ()
         }
         finally
         {
-            await validator.mockEndSession();
             await cleanupMutexHolders(processes);
 
             // Clean up the temporary file
@@ -683,8 +678,6 @@ suite('InstallTracker Session Mutex Tests', function ()
         }
         finally
         {
-            // End the session when we're done
-            await installTracker.mockEndSession();
             await cleanupMutexHolders(processes);
         }
     }).timeout(testTimeoutTime);

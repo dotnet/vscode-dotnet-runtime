@@ -37,9 +37,9 @@ export class LocalInstallUpdateService extends IInstallManagementService
         super(eventStream);
     }
 
-    public ManageInstalls(updateCadenceMs = 300000): void
+    public ManageInstalls(updateCadenceMs = 300000): Promise<void>
     {
-        this.checkForUpdates(updateCadenceMs).catch((e) => {});
+        return this.checkForUpdates(updateCadenceMs);
     }
 
     /**
@@ -59,7 +59,7 @@ export class LocalInstallUpdateService extends IInstallManagementService
         if ((Date.now() - new Date(lastUpdateDate).getTime()) >= oneDayMs)
         {
             await new Promise(resolve => setTimeout(resolve, automaticUpdateDelayMs));
-            this.automaticUpdate().catch(() => {});
+            return this.automaticUpdate();
         }
     }
 
