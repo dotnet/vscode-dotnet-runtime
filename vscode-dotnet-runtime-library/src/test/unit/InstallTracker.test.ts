@@ -34,6 +34,7 @@ const secondInstall: DotnetInstall = {
     installId: `${secondVersion}~${os.arch()}`,
     installMode: defaultMode
 }
+
 const defaultTimeoutTime = 5000;
 const eventStream = new MockEventStream();
 const fakeValidDir = path.join(__dirname, 'dotnetFakeDir');
@@ -64,7 +65,9 @@ function generateRandomSessionId(): string
 function spawnMutexHolderProcess(sessionId?: string): Promise<{ child: ChildProcess, sessionId: string }>
 {
     const actualSessionId = sessionId || generateRandomSessionId();
-    const scriptPath = path.resolve(__dirname, '../../../test/mocks/MockMutexHolder.js');
+
+    // Remove 'dist' from the path so the js file is used.
+    const scriptPath = path.resolve(__dirname, '../../../src/test/mocks/MockMutexHolder.js');
 
     // Verify the script exists
     if (!fs.existsSync(scriptPath))
@@ -681,4 +684,5 @@ suite('InstallTracker Session Mutex Tests', function ()
             await cleanupMutexHolders(processes);
         }
     }).timeout(testTimeoutTime);
+
 });
