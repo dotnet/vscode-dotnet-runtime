@@ -735,7 +735,7 @@ export class MockInstallTracker extends InstallTrackerSingleton
 {
     constructor(eventStream: IEventStream, extensionState: IExtensionState)
     {
-        super(eventStream, extensionState);
+        super(eventStream, extensionState, false);
         // Cause an instance to exist so that we can override the members.
         const _ = InstallTrackerSingleton.getInstance(eventStream, extensionState);
         this.overrideMembers(eventStream, extensionState);
@@ -753,7 +753,7 @@ export class MockInstallTracker extends InstallTrackerSingleton
 
     public getSessionId(): string
     {
-        return this.sessionId;
+        return InstallTrackerSingleton.sessionId;
     }
 
     /**

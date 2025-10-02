@@ -14,7 +14,6 @@ import
     RemovingExtensionFromList,
     RemovingOwnerFromList,
     RemovingVersionFromExtensionState,
-    SessionMutexAcquired,
     SessionMutexAcquisitionFailed,
     SessionMutexReleased,
     SkipAddingInstallEvent
@@ -42,19 +41,23 @@ export type SessionsWithInUseExecutables = Map<string, Set<string>>;
 export class InstallTrackerSingleton
 {
     protected static instance: InstallTrackerSingleton;
-    protected sessionId: string;
-    protected sessionMutexResolver?: () => void;
-    protected sessionMutex?: NodeIPCMutex;
+    protected static sessionId: string;
+    protected static sessionMutexReleaser?: (() => void);
     protected static readonly SESSION_MUTEX_ACQUIRE_TIMEOUT_MS = 100;
+    protected static readonly SESSION_MUTEX_PING_DURATION = 50;
 
     protected sessionInstallsKey = 'dotnet.returnedInstallDirectories';
 
-    protected constructor(protected eventStream: IEventStream, protected extensionState: IExtensionState)
+    protected constructor(protected eventStream: IEventStream, protected extensionState: IExtensionState, protected defineReleaseFunction = true)
     {
         const hash = crypto.createHash('sha256');
         hash.update(process.pid.toString());
-        this.sessionId = hash.digest('hex').slice(0, 10);
-        this.acquirePermanentSessionMutex();
+        InstallTrackerSingleton.sessionId = `$session-${hash.digest('hex').slice(0, 10)}`;
+        if (defineReleaseFunction)
+        {
+            InstallTrackerSingleton.sessionMutexReleaser = undefined;
+            this.acquirePermanentSessionMutex();
+        }
     }
 
     /**
@@ -66,22 +69,18 @@ export class InstallTrackerSingleton
      */
     protected acquirePermanentSessionMutex(): void
     {
-        const logger = new EventStreamNodeIPCMutexLoggerWrapper(this.eventStream, this.sessionId);
-        const mutex = new NodeIPCMutex(this.sessionId, logger, '');
-        this.sessionMutex = mutex;
+        const logger = new EventStreamNodeIPCMutexLoggerWrapper(this.eventStream, InstallTrackerSingleton.sessionId);
+        const mutex = new NodeIPCMutex(InstallTrackerSingleton.sessionId, logger, '');
 
-        // Fire and forget - we don't need to await this
-        mutex.acquire(async () =>
+        mutex.acquireWithManualRelease(InstallTrackerSingleton.sessionId, InstallTrackerSingleton.SESSION_MUTEX_PING_DURATION, InstallTrackerSingleton.SESSION_MUTEX_ACQUIRE_TIMEOUT_MS).catch((error) =>
         {
-            return new Promise<void>((resolve) =>
+            this.eventStream.post(new SessionMutexAcquisitionFailed(`Failed to acquire permanent mutex for session ${InstallTrackerSingleton.sessionId}: ${error}`));
+        }).then((resolved) =>
+        {
+            if (resolved)
             {
-                // Store the resolve function so it can be called from endSession
-                this.sessionMutexResolver = resolve;
-                this.eventStream.post(new SessionMutexAcquired(`Session ${this.sessionId} has acquired its permanent mutex`));
-            });
-        }, 10, InstallTrackerSingleton.SESSION_MUTEX_ACQUIRE_TIMEOUT_MS, `${this.sessionId}-permanent`).catch((error) =>
-        {
-            this.eventStream.post(new SessionMutexAcquisitionFailed(`Failed to acquire permanent mutex for session ${this.sessionId}: ${error}`));
+                InstallTrackerSingleton.sessionMutexReleaser = resolved;
+            }
         });
     }
 
@@ -92,15 +91,17 @@ export class InstallTrackerSingleton
      */
     protected async endSession(): Promise<void>
     {
-        if (this.sessionMutexResolver)
+        // Wait for the release function to get returned - this prevents delaying startup for test scenarios where we want to release the mutex, since the ctor cannot await
+        await new Promise(resolve => setTimeout(resolve, InstallTrackerSingleton.SESSION_MUTEX_ACQUIRE_TIMEOUT_MS + InstallTrackerSingleton.SESSION_MUTEX_PING_DURATION * 2));
+
+        if (InstallTrackerSingleton.sessionMutexReleaser !== undefined)
         {
             // Call the resolver function to resolve the promise and release the mutex
-            this.sessionMutexResolver();
-            this.sessionMutexResolver = undefined;
-            this.eventStream.post(new SessionMutexReleased(`Session ${this.sessionId} has released its permanent mutex`));
+            InstallTrackerSingleton.sessionMutexReleaser();
+            InstallTrackerSingleton.sessionMutexReleaser = undefined;
+            this.eventStream.post(new SessionMutexReleased(`Session ${InstallTrackerSingleton.sessionId} has released its permanent mutex`));
 
-            // Give the system a moment to recognize the mutex release
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, InstallTrackerSingleton.SESSION_MUTEX_ACQUIRE_TIMEOUT_MS + InstallTrackerSingleton.SESSION_MUTEX_PING_DURATION * 2));
         }
     }
 
@@ -111,14 +112,17 @@ export class InstallTrackerSingleton
      */
     protected async restartSessionMutex(): Promise<void>
     {
+        // Wait for the release function to get returned - this prevents delaying startup for test scenarios where we want to release the mutex, since the ctor cannot await
+        await new Promise(resolve => setTimeout(resolve, InstallTrackerSingleton.SESSION_MUTEX_ACQUIRE_TIMEOUT_MS + InstallTrackerSingleton.SESSION_MUTEX_PING_DURATION * 2));
+
         // Only restart if the session isn't currently active
-        if (!this.sessionMutexResolver)
+        if (InstallTrackerSingleton.sessionMutexReleaser === undefined)
         {
             this.acquirePermanentSessionMutex();
 
             // Wait for the acquisition to complete or timeout
             await new Promise(resolve => setTimeout(resolve, InstallTrackerSingleton.SESSION_MUTEX_ACQUIRE_TIMEOUT_MS));
-            if (!this.sessionMutexResolver)
+            if (InstallTrackerSingleton.sessionMutexReleaser === undefined)
             {
                 throw new Error(`Failed to acquire session mutex within ${InstallTrackerSingleton.SESSION_MUTEX_ACQUIRE_TIMEOUT_MS}ms`);
             }
@@ -158,7 +162,7 @@ export class InstallTrackerSingleton
                 {
                     if (exePaths.has(installExePath))
                     {
-                        if (sessionId === this.sessionId)
+                        if (sessionId === InstallTrackerSingleton.sessionId)
                         {
                             return false; // Our session must be live if this code is running.
                         }
@@ -384,7 +388,7 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
      */
     public markInstallAsInUse(installExePath: string)
     {
-        return this.markInstallAsInUseWithInstallLock(installExePath, false, this.sessionId);
+        return this.markInstallAsInUseWithInstallLock(installExePath, false, InstallTrackerSingleton.sessionId);
     }
 
     protected markInstallAsInUseWithInstallLock(installExePath: string, alreadyHoldingLock: boolean, sessionId: string)
@@ -411,7 +415,7 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
                 // We need to validate again ourselves because uninstallAll can blast away the state but holds on to the installed lock when doing so.
                 context.installationValidator.validateDotnetInstall(install, pathToValidate);
 
-                await this.markInstallAsInUseWithInstallLock(pathToValidate, true, this.sessionId);
+                await this.markInstallAsInUseWithInstallLock(pathToValidate, true, InstallTrackerSingleton.sessionId);
                 const existingVersions = await this.getExistingInstalls(context.installDirectoryProvider, true);
                 const preExistingInstallIndex = existingVersions.findIndex(x => IsEquivalentInstallation(x.dotnetInstall, install));
 

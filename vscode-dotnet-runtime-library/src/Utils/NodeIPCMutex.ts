@@ -96,6 +96,11 @@ export class NodeIPCMutex
      */
     public async acquire<T>(fn: () => Promise<T>, retryDelayMs = 100, timeoutTimeMs = 1000, actionId: string): Promise<T>
     {
+        return this.acquireInternal(fn, retryDelayMs, timeoutTimeMs, actionId);
+    }
+
+    private async acquireInternal<T>(fn: () => Promise<T>, retryDelayMs: number, timeoutTimeMs: number, actionId: string, manualRelease = false): Promise<T>
+    {
         const maxRetryCountToEndAtRoughlyTimeoutTime = Math.ceil(timeoutTimeMs / retryDelayMs) + 1;
         let retries = 0;
 
@@ -103,7 +108,7 @@ export class NodeIPCMutex
         {
             try
             {
-                return await this.tryAcquire(actionId, fn);
+                return await this.tryAcquire(actionId, fn, manualRelease);
             }
             catch (error: any)
             {
@@ -141,7 +146,16 @@ export class NodeIPCMutex
         }
     }
 
-    private async tryAcquire<T>(actionId: string, fn: () => Promise<T>): Promise<T>
+    public async acquireWithManualRelease(actionId: string, retryDelayMs = 100, timeoutTimeMs = 1000): Promise<() => void>
+    {
+        await this.acquireInternal(async () => {return;}, retryDelayMs, timeoutTimeMs, actionId, true);
+        return () =>
+        {
+            this.release(actionId);
+        };
+    }
+
+    private async tryAcquire<T>(actionId: string, fn: () => Promise<T>, manualRelease = false): Promise<T>
     {
         return new Promise<T>((resolve, reject) =>
         {
@@ -166,7 +180,10 @@ export class NodeIPCMutex
                 }
                 finally
                 {
-                    this.release(actionId); // Release the lock when done.
+                    if (!manualRelease)
+                    {
+                        this.release(actionId); // Release the lock when done.
+                    }
                 }
             });
         })
