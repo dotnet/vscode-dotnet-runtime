@@ -104,6 +104,7 @@ namespace configKeys
     export const showResetDataCommand = 'showResetDataCommand';
     export const suppressOutput = 'suppressOutput';
     export const highVerbosity = 'highVerbosity';
+    export const runtimeUpdateDelaySeconds = 'runtimeUpdateDelaySeconds';
 }
 
 namespace commandKeys
@@ -152,6 +153,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         fs.mkdirSync(vsCodeContext.globalStoragePath, { recursive: true });
     }
     const resolvedTimeoutSeconds = timeoutValue === undefined ? defaultTimeoutValue : timeoutValue;
+    const runtimeUpdateDelaySeconds = extensionConfiguration.get<number>(configKeys.runtimeUpdateDelaySeconds) ?? 300;
+    const runtimeUpdateDelayMs = runtimeUpdateDelaySeconds * 1000;
     const proxyLink = extensionConfiguration.get<string>(configKeys.proxyUrl);
     const showResetDataCommand = extensionConfiguration.get<boolean>(configKeys.showResetDataCommand);
 
@@ -193,7 +196,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         uninstall
     );
 
-    automaticUpdater.ManageInstalls().catch((e: any) =>
+    automaticUpdater.ManageInstalls(runtimeUpdateDelayMs).catch((e: any) =>
     {
         if (!suppressOutput)
         {

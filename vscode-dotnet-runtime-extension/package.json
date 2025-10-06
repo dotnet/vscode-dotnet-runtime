@@ -127,6 +127,11 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Enable this to show more detailed output from our extension."
+                },
+                "dotnetAcquisitionExtension.runtimeUpdateDelaySeconds": {
+                    "type": "number",
+                    "default": 300,
+                    "description": "The amount of seconds to wait before trying to update the .NET Runtime for the day."
                 }
             }
         }
