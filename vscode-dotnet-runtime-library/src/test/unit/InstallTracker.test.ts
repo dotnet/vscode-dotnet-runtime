@@ -51,6 +51,11 @@ fs.mkdirSync(fakeValidDir, { recursive: true });
 fs.writeFileSync(path.join(fakeValidDir, 'dotnet'), 'fake');
 
 // Helper function to create a random session ID for testing
+// Helper function to generate a unique valid fake directory for installExePath
+function getRandomValidFakeDir(): string
+{
+    return path.join(os.tmpdir(), `dotnet-fake-dir-${Date.now()}-${Math.floor(Math.random() * 1000000)}`);
+}
 function generateRandomSessionId(): string
 {
     const randomBytes = new Uint8Array(3);
@@ -62,6 +67,44 @@ function generateRandomSessionId(): string
 }
 
 // Helper function to spawn a process that holds a mutex with a specific session ID
+// Helper function to kill a child process and wait for its exit
+async function killAndWait(child: ChildProcess, signal: NodeJS.Signals = 'SIGTERM', timeoutMs = 5000): Promise<void>
+{
+    if (!child || child.killed) return;
+    return new Promise((resolve, reject) =>
+    {
+        let settled = false;
+        const timer = setTimeout(() =>
+        {
+            if (!settled)
+            {
+                settled = true;
+                reject(new Error(`Timeout waiting for child process ${child.pid} to exit after kill`));
+            }
+        }, timeoutMs);
+        child.once('exit', () =>
+        {
+            if (!settled)
+            {
+                settled = true;
+                clearTimeout(timer);
+                resolve();
+            }
+        });
+        try
+        {
+            child.kill(signal);
+        } catch (e)
+        {
+            if (!settled)
+            {
+                settled = true;
+                clearTimeout(timer);
+                reject(e);
+            }
+        }
+    });
+}
 function spawnMutexHolderProcess(sessionId?: string): Promise<{ child: ChildProcess, sessionId: string }>
 {
     const actualSessionId = sessionId || generateRandomSessionId();
@@ -465,23 +508,16 @@ suite('InstallTracker Session Mutex Tests', function ()
                         try
                         {
                             process.child.send({ command: 'exit' });
-                            // Give it a little time to clean up
                             await new Promise(resolve => setTimeout(resolve, 100));
-                        }
-                        catch (err)
+                        } catch (err)
                         {
                             console.log(`Failed to send exit command: ${err}`);
                         }
                     }
-
-                    // Force kill if still running
-                    if (!process.child.killed)
-                    {
-                        process.child.kill('SIGTERM');
-                    }
+                    // Use killAndWait to ensure process is dead
+                    await killAndWait(process.child, 'SIGTERM', 5000);
                 }
-            }
-            catch (err)
+            } catch (err)
             {
                 console.error(`Error killing mutex holder process: ${err}`);
             }
@@ -547,7 +583,7 @@ suite('InstallTracker Session Mutex Tests', function ()
 
         try
         {
-            const installExePath = path.join(fakeValidDir, getDotnetExecutable());
+            const installExePath = path.join(getRandomValidFakeDir(), getDotnetExecutable());
             await validator.markInstallAsInUseBySession(sessionId, installExePath);
 
             const hasNoLiveDependents = await validator.installHasNoLiveDependents(installExePath);
@@ -563,7 +599,7 @@ suite('InstallTracker Session Mutex Tests', function ()
     test('It detects that a session is dead when its process is killed', async () =>
     {
         const tracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
-        const installExePath = path.join(fakeValidDir, getDotnetExecutable());
+        const installExePath = path.join(getRandomValidFakeDir(), getDotnetExecutable());
         const sessionId1 = generateRandomSessionId();
 
         const processes: { child: ChildProcess, sessionId: string }[] = [];
@@ -606,8 +642,8 @@ suite('InstallTracker Session Mutex Tests', function ()
                 { child: child3, sessionId: sessionId3 }
             );
 
-            const installExePath1 = path.join(fakeValidDir, getDotnetExecutable());
-            const installExePath2 = path.join(os.tmpdir(), 'dotnet-test', getDotnetExecutable());
+            const installExePath1 = path.join(getRandomValidFakeDir(), getDotnetExecutable());
+            const installExePath2 = path.join(getRandomValidFakeDir(), getDotnetExecutable());
             tempFile = installExePath2; // Save for cleanup
             fs.mkdirSync(path.dirname(installExePath2), { recursive: true });
             fs.writeFileSync(installExePath2, 'fake-dotnet');
@@ -626,11 +662,8 @@ suite('InstallTracker Session Mutex Tests', function ()
             // Terminate the first process to simulate a session ending
             if (processes[0].child && !processes[0].child.killed)
             {
-                processes[0].child.kill('SIGKILL');
+                await killAndWait(processes[0].child, 'SIGKILL', 5000);
             }
-
-            // Give the system a moment to recognize the process is dead
-            await new Promise(resolve => setTimeout(resolve, 1000));
 
             const hasNoLiveDependents1After = await tracker.installHasNoLiveDependents(installExePath1);
             const hasNoLiveDependents2After = await tracker.installHasNoLiveDependents(installExePath2);
@@ -641,20 +674,16 @@ suite('InstallTracker Session Mutex Tests', function ()
             // Terminate the 3rd process to see it can handle multiple sessions on one install
             if (processes[2].child && !processes[2].child.killed)
             {
-                processes[2].child.kill('SIGKILL');
+                await killAndWait(processes[2].child, 'SIGKILL', 5000);
             }
-
-            await new Promise(resolve => setTimeout(resolve, 1000));
 
             const hasNoLiveDependents2Final = await tracker.installHasNoLiveDependents(installExePath2);
             assert.isFalse(hasNoLiveDependents2Final, 'Second install should still have live dependents because session 2 is still alive');
 
             if (processes[1].child && !processes[1].child.killed)
             {
-                processes[1].child.kill('SIGKILL');
+                await killAndWait(processes[1].child, 'SIGKILL', 5000);
             }
-
-            await new Promise(resolve => setTimeout(resolve, 1000));
 
             const hasNoLiveDependents2AllDead = await tracker.installHasNoLiveDependents(installExePath2);
             assert.isTrue(hasNoLiveDependents2AllDead, 'Second install should not have live dependents after all sessions are dead');
