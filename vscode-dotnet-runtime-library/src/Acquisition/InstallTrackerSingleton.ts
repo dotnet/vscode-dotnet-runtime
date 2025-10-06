@@ -171,7 +171,6 @@ export class InstallTrackerSingleton
                         const logger = new EventStreamNodeIPCMutexLoggerWrapper(this.eventStream, sessionId);
                         const mutex = new NodeIPCMutex(sessionId, logger, ``);
 
-
                         const shouldContinue = await mutex.acquire(async () =>
                         {
                             // eslint-disable-next-line no-return-await

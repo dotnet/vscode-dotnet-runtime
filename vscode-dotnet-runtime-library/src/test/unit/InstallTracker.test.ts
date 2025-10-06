@@ -562,22 +562,23 @@ suite('InstallTracker Session Mutex Tests', function ()
 
     test('It detects that a session is dead when its process is killed', async () =>
     {
-        const processes: { child: ChildProcess, sessionId: string }[] = [];
-        const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
-        const sessionId = validator.getSessionId();
+        const tracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
+        const installExePath = path.join(fakeValidDir, getDotnetExecutable());
+        const sessionId1 = generateRandomSessionId();
 
+        const processes: { child: ChildProcess, sessionId: string }[] = [];
         try
         {
-            const { child } = await spawnMutexHolderProcess(sessionId);
-            processes.push({ child, sessionId });
+            const { child: child1 } = await spawnMutexHolderProcess(sessionId1);
+            processes.push({ child: child1, sessionId: sessionId1 });
+            await tracker.markInstallAsInUseBySession(sessionId1, installExePath);
 
-            const installExePath = path.join(fakeValidDir, getDotnetExecutable());
+            let hasNoLiveDependents = await tracker.installHasNoLiveDependents(installExePath);
+            assert.isFalse(hasNoLiveDependents, 'Install should be detected as having live dependents when child is alive');
 
-            await validator.markInstallAsInUseBySession(sessionId, installExePath);
-            await validator.endAnySingletonTrackingSessions();
-
-            const hasNoLiveDependents = await validator.installHasNoLiveDependents(installExePath);
-            assert.isTrue(hasNoLiveDependents, 'Install should be detected as not having live dependents when session is dead');
+            await cleanupMutexHolders(processes);
+            hasNoLiveDependents = await tracker.installHasNoLiveDependents(installExePath);
+            assert.isTrue(hasNoLiveDependents, 'Install should be detected as not having live dependents after session is dead');
         }
         finally
         {
@@ -589,17 +590,20 @@ suite('InstallTracker Session Mutex Tests', function ()
     {
         const sessionId1 = generateRandomSessionId();
         const sessionId2 = generateRandomSessionId();
+        const sessionId3 = generateRandomSessionId();
         const processes: { child: ChildProcess, sessionId: string }[] = [];
         let tempFile: string | undefined;
-        const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
+        const tracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
 
         try
         {
             const { child: child1 } = await spawnMutexHolderProcess(sessionId1);
             const { child: child2 } = await spawnMutexHolderProcess(sessionId2);
+            const { child: child3 } = await spawnMutexHolderProcess(sessionId3);
             processes.push(
                 { child: child1, sessionId: sessionId1 },
-                { child: child2, sessionId: sessionId2 }
+                { child: child2, sessionId: sessionId2 },
+                { child: child3, sessionId: sessionId3 }
             );
 
             const installExePath1 = path.join(fakeValidDir, getDotnetExecutable());
@@ -608,19 +612,13 @@ suite('InstallTracker Session Mutex Tests', function ()
             fs.mkdirSync(path.dirname(installExePath2), { recursive: true });
             fs.writeFileSync(installExePath2, 'fake-dotnet');
 
-
-            // End any existing session from constructor
-            await validator.endAnySingletonTrackingSessions();
-            // Start a new session with our ID
-            (validator as any).sessionId = validator.getSessionId();
-            await validator.startNewSharedSingletonSession();
-
-            await validator.markInstallAsInUseBySession(sessionId1, installExePath1);
-            await validator.markInstallAsInUseBySession(sessionId2, installExePath2);
+            await tracker.markInstallAsInUseBySession(sessionId1, installExePath1);
+            await tracker.markInstallAsInUseBySession(sessionId2, installExePath2);
+            await tracker.markInstallAsInUseBySession(sessionId3, installExePath2);
 
             // Both sessions are alive, so both installs should have live dependents
-            const hasNoLiveDependents1 = await validator.installHasNoLiveDependents(installExePath1);
-            const hasNoLiveDependents2 = await validator.installHasNoLiveDependents(installExePath2);
+            const hasNoLiveDependents1 = await tracker.installHasNoLiveDependents(installExePath1);
+            const hasNoLiveDependents2 = await tracker.installHasNoLiveDependents(installExePath2);
 
             assert.isFalse(hasNoLiveDependents1, 'First install should have live dependents');
             assert.isFalse(hasNoLiveDependents2, 'Second install should have live dependents');
@@ -634,11 +632,32 @@ suite('InstallTracker Session Mutex Tests', function ()
             // Give the system a moment to recognize the process is dead
             await new Promise(resolve => setTimeout(resolve, 1000));
 
-            const hasNoLiveDependents1After = await validator.installHasNoLiveDependents(installExePath1);
-            const hasNoLiveDependents2After = await validator.installHasNoLiveDependents(installExePath2);
+            const hasNoLiveDependents1After = await tracker.installHasNoLiveDependents(installExePath1);
+            const hasNoLiveDependents2After = await tracker.installHasNoLiveDependents(installExePath2);
 
+            assert.isFalse(hasNoLiveDependents2After, 'Second install should still have live dependents because we did not end the session process');
             assert.isTrue(hasNoLiveDependents1After, 'First install should not have live dependents after its session died');
-            assert.isFalse(hasNoLiveDependents2After, 'Second install should still have live dependents');
+
+            // Terminate the 3rd process to see it can handle multiple sessions on one install
+            if (processes[2].child && !processes[2].child.killed)
+            {
+                processes[2].child.kill('SIGKILL');
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            const hasNoLiveDependents2Final = await tracker.installHasNoLiveDependents(installExePath2);
+            assert.isFalse(hasNoLiveDependents2Final, 'Second install should still have live dependents because session 2 is still alive');
+
+            if (processes[1].child && !processes[1].child.killed)
+            {
+                processes[1].child.kill('SIGKILL');
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            const hasNoLiveDependents2AllDead = await tracker.installHasNoLiveDependents(installExePath2);
+            assert.isTrue(hasNoLiveDependents2AllDead, 'Second install should not have live dependents after all sessions are dead');
         }
         finally
         {
