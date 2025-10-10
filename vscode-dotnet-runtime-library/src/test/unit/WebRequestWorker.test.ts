@@ -19,9 +19,9 @@ import
     ErrorAcquisitionInvoker,
     MockEventStream,
     MockInstallScriptWorker,
+    MockInstallTracker,
     MockTrackingWebRequestWorker,
     MockVSCodeExtensionContext,
-    MockInstallTracker,
 } from '../mocks/MockObjects';
 
 import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
