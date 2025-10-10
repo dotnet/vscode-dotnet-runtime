@@ -113,7 +113,6 @@ export class LocalInstallUpdateService extends IInstallManagementService
         const isOffline = !(await WebRequestWorkerSingleton.getInstance().isOnline(500, this.eventStream));
         if (isOffline)
         {
-            // TODO: Add warning about failure to update ?
             return Promise.resolve();
         }
 
