@@ -1453,6 +1453,21 @@ export class CommandExecutionStdOut extends DotnetCustomMessageEvent
     public readonly eventName = 'CommandExecutionStdOut';
 }
 
+export class UninstallingOutdatedInstalls extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'UninstallingOutdatedInstalls';
+}
+
+export class AutomaticUpdateCheck extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'AutomaticUpdateCheck';
+}
+
+export class UpdatingInstallGroups extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'UpdatingInstallGroups';
+}
+
 export class NoMatchingInstallToStopTracking extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'NoMatchingInstallToStopTracking';

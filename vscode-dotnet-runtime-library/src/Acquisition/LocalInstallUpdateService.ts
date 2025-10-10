@@ -3,6 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import { IEventStream } from '../EventStream/EventStream';
+import { AutomaticUpdateCheck, UninstallingOutdatedInstalls, UpdatingInstallGroups } from '../EventStream/EventStreamEvents';
 import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
 import { IExtensionState } from '../IExtensionState';
@@ -14,7 +15,6 @@ import { IInstallationDirectoryProvider } from './IInstallationDirectoryProvider
 import { IInstallManagementService } from './IInstallManagementService';
 import { InstallRecord } from './InstallRecord';
 import { InstallTrackerSingleton } from './InstallTrackerSingleton';
-
 import * as versionUtils from './VersionUtilities';
 
 export interface InstallGroup
@@ -57,7 +57,12 @@ export class LocalInstallUpdateService extends IInstallManagementService
         const lastUpdateDate = this.extensionState.get<Date>('dotnet.latestUpdateDate', new Date(0));
         // Check if at least 1 day (24 hours) has passed since last update per SDL
         const oneDayMs = 24 * 60 * 60 * 1000;
-        if ((Date.now() - new Date(lastUpdateDate).getTime()) >= oneDayMs)
+
+        const timeOfLastUpdate = new Date(lastUpdateDate).getTime();
+        const currentTime = Date.now();
+
+        this.eventStream.post(new AutomaticUpdateCheck(`Checking for updates after ${automaticUpdateDelayMs}. Last Update Date: ${lastUpdateDate.toDateString()}. Current Date: ${currentTime}`));
+        if ((currentTime - timeOfLastUpdate) >= oneDayMs)
         {
             await new Promise(resolve => setTimeout(resolve, automaticUpdateDelayMs));
             return this.automaticUpdate();
@@ -118,6 +123,7 @@ export class LocalInstallUpdateService extends IInstallManagementService
 
         const installGroupEntries = Array.from((await this.getInstallGroups()).entries());
         let processedGroup = false;
+        this.eventStream.post(new UpdatingInstallGroups(`Automatic update triggered and detected the following install groups: ${JSON.stringify(installGroupEntries)}`))
         for (const [group, installsInGroup] of installGroupEntries)
         {
             const acquireContext: IDotnetAcquireContext = {
@@ -168,7 +174,7 @@ export class LocalInstallUpdateService extends IInstallManagementService
 
             // Uninstall all in the group that are not live dependents and not the latest one (which should also be live but no need to check)
             const outdatedInstalls = installsInGroup.filter(i => i.dotnetInstall.version !== latestInstall.dotnetInstall.version);
-
+            this.eventStream.post(new UninstallingOutdatedInstalls(`The installs ${JSON.stringify(outdatedInstalls)} are outdated - attempting to uninstall. The latest install was ${JSON.stringify(latestInstall)}`));
             for (const install of outdatedInstalls)
             {
                 const uninstallContext: IDotnetAcquireContext = {
@@ -185,6 +191,7 @@ export class LocalInstallUpdateService extends IInstallManagementService
 
             processedGroup = true;
         }
+
         if (processedGroup)
         {
             await this.extensionState.update('dotnet.latestUpdateDate', new Date(0));
