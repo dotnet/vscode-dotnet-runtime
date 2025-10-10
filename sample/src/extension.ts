@@ -445,6 +445,19 @@ ${JSON.stringify(result) ?? 'undefined'}`);
         }
     });
 
+    const sampleForceUpdateRegistration = vscode.commands.registerCommand('sample.dotnet.forceUpdate', async () =>
+    {
+        try
+        {
+            // Call the forceUpdate command from the runtime extension
+            await vscode.commands.executeCommand('dotnet.forceUpdate', { requestingExtensionId });
+        }
+        catch (error)
+        {
+            vscode.window.showErrorMessage((error as Error).toString());
+        }
+    });
+
     context.subscriptions.push(
         sampleSDKAcquireRegistration,
         sampleSDKGlobalAcquireRegistration,
@@ -453,5 +466,6 @@ ${JSON.stringify(result) ?? 'undefined'}`);
         sampleSDKrecommendedVersion,
         sampleSDKDotnetUninstallAllRegistration,
         sampleSDKShowAcquisitionLogRegistration,
+        sampleForceUpdateRegistration,
         sampleGlobalSDKFromRuntimeRegistration);
 }

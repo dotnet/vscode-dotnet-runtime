@@ -114,6 +114,11 @@
 				"command": "sample.dotnet-sdk.recommendedVersion",
 				"title": "Show the recommended version of the SDK to install.",
 				"category": "Sample"
+			},
+			{
+				"command": "sample.dotnet.forceUpdate",
+				"title": "Force update of .NET runtimes",
+				"category": "Sample"
 			}
 		]
 	},

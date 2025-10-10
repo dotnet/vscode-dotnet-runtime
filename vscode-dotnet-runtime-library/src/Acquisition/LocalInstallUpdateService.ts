@@ -61,9 +61,10 @@ export class LocalInstallUpdateService extends IInstallManagementService
         const timeOfLastUpdate = new Date(lastUpdateDate).getTime();
         const currentTime = Date.now();
 
-        this.eventStream.post(new AutomaticUpdateCheck(`Checking for updates after ${automaticUpdateDelayMs}. Last Update Date: ${lastUpdateDate.toDateString()}. Current Date: ${currentTime}`));
-        if ((currentTime - timeOfLastUpdate) >= oneDayMs)
+        this.eventStream.post(new AutomaticUpdateCheck(`Checking for updates after ${automaticUpdateDelayMs}. Last Update Date: ${lastUpdateDate.toString()}. Current Date: ${currentTime}`));
+        if (automaticUpdateDelayMs === 0 || (currentTime - timeOfLastUpdate) >= oneDayMs)
         {
+            this.eventStream.post(new AutomaticUpdateCheck(`Commencing updates at ${Date.now().toString()}`));
             await new Promise(resolve => setTimeout(resolve, automaticUpdateDelayMs));
             return this.automaticUpdate();
         }
@@ -71,7 +72,7 @@ export class LocalInstallUpdateService extends IInstallManagementService
 
     private async getInstallGroups(): Promise<Map<InstallGroup, InstallRecord[]>>
     {
-        const runtimeInstalls = await this.installTrackerType.getInstance(this.eventStream, this.extensionState).getExistingInstalls(this.managementDirectoryProvider, false);
+        const runtimeInstalls = (await this.installTrackerType.getInstance(this.eventStream, this.extensionState).getExistingInstalls(this.managementDirectoryProvider, false)).filter(i => i.dotnetInstall.installMode !== 'sdk' && i.dotnetInstall.isGlobal !== true);
         const installGroupsToInstalls = new Map<string, { key: InstallGroup; installs: InstallRecord[] }>();
 
         for (const install of runtimeInstalls)
@@ -123,6 +124,7 @@ export class LocalInstallUpdateService extends IInstallManagementService
 
         const installGroupEntries = Array.from((await this.getInstallGroups()).entries());
         let processedGroup = false;
+
         this.eventStream.post(new UpdatingInstallGroups(`Automatic update triggered and detected the following install groups: ${JSON.stringify(installGroupEntries)}`))
         for (const [group, installsInGroup] of installGroupEntries)
         {
@@ -137,7 +139,7 @@ export class LocalInstallUpdateService extends IInstallManagementService
             }
 
             // Make sure latest version is acquired (aka update - this defers download of the release manifest away from initialization)
-            await this.installAction(acquireContext, true);
+            const addedInstall = await this.installAction(acquireContext, true);
             // If acquire fails, then the update will throw - we don't want to uninstall if we don't have a newer version to use next time.
 
             // Get latest install - the install returned by acquire may still be a user managed path (not owned by us) if we're offline.
@@ -159,11 +161,21 @@ export class LocalInstallUpdateService extends IInstallManagementService
             {
                 for (const install of newInstallsInGroup)
                 {
-                    const currentPatch = Number(versionUtils.getFeatureBandOrPatchFromFullySpecifiedVersion(install.dotnetInstall.version));
-                    const latestPatch = Number(versionUtils.getFeatureBandOrPatchFromFullySpecifiedVersion(latestInstall.dotnetInstall.version));
-                    if (currentPatch > latestPatch)
+                    // For runtime versions like 8.0.19, we need the full patch number
+                    // For SDK versions, this is handled differently as they have format like 7.0.301
+                    const parts = install.dotnetInstall.version.split('.');
+                    const latestParts = latestInstall.dotnetInstall.version.split('.');
+
+                    // Compare full third component if it exists
+                    if (parts.length > 2 && latestParts.length > 2)
                     {
-                        latestInstall = install;
+                        const currentPatch = Number(parts[2].split('-')?.[0] ?? 0); // Remove any suffix like -rc
+                        const latestPatch = Number(latestParts[2].split('-')?.[0] ?? 0);
+
+                        if (currentPatch > latestPatch)
+                        {
+                            latestInstall = install;
+                        }
                     }
                 }
             }
@@ -194,7 +206,7 @@ export class LocalInstallUpdateService extends IInstallManagementService
 
         if (processedGroup)
         {
-            await this.extensionState.update('dotnet.latestUpdateDate', new Date(0));
+            await this.extensionState.update('dotnet.latestUpdateDate', Date.now());
         }
         return Promise.resolve();
     }

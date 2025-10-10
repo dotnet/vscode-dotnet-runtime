@@ -587,9 +587,9 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         return uninstall(commandContext);
     });
 
-    const dotnetForceUpdateRegistration = vscode.commands.registerCommand(`${commandPrefix}.forceUpdate`, async (commandContext: IDotnetAcquireContext): Promise<IDotnetAcquireResult | undefined> =>
+    const dotnetForceUpdateRegistration = vscode.commands.registerCommand(`${commandPrefix}.forceUpdate`, async (commandContext: IDotnetAcquireContext): Promise<void> =>
     {
-        automaticUpdater.ManageInstalls(0).catch((e: any) => {});
+        return automaticUpdater.ManageInstalls(0).catch((e: any) => {});
     });
 
     /**
@@ -744,7 +744,7 @@ ${JSON.stringify(commandContext)}`));
                 const worker = getAcquisitionWorker();
                 const workerContext = getAcquisitionWorkerContext(commandContext.mode, commandContext);
 
-                if (commandContext.installType === 'local' && !force) // if using force mode, we are also using the UI, which passes the fully specified version to uninstall only
+                if (commandContext.installType === 'local' && !force && !(onlyCheckLiveDependents && commandContext.version.split('.').length > 1)) // if using force mode, we are also using the UI, which passes the fully specified version to uninstall only
                 {
                     const versionResolver = new VersionResolver(workerContext);
                     const resolvedVersion = await versionResolver.getFullVersion(commandContext.version, commandContext.mode);

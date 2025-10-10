@@ -22,6 +22,7 @@ import { IExtensionState } from '../IExtensionState';
 import { EventStreamNodeIPCMutexLoggerWrapper } from '../Utils/EventStreamNodeIPCMutexWrapper';
 import { getAssumedInstallInfo } from '../Utils/InstallIdUtilities';
 import { NodeIPCMutex } from '../Utils/NodeIPCMutex';
+import { deserializeMapOfSets, serializeMapOfSets } from '../Utils/SerializationHelpers';
 import { executeWithLock, getDotnetExecutable } from '../Utils/TypescriptUtilities';
 import
 {
@@ -157,7 +158,9 @@ export class InstallTrackerSingleton
         return executeWithLock(this.eventStream, false, this.getLockFilePathForKeySimple('installed'), 5, 200000,
             async () =>
             {
-                const existingSessionsWithUsedExecutablePaths = this.extensionState.get<SessionsWithInUseExecutables>(this.sessionInstallsKey, new Map<string, Set<string>>());
+                const serializedData = this.extensionState.get<Record<string, string[]>>(this.sessionInstallsKey, {});
+                const existingSessionsWithUsedExecutablePaths = deserializeMapOfSets<string, string>(serializedData);
+
                 for (const [sessionId, exePaths] of existingSessionsWithUsedExecutablePaths)
                 {
                     if (exePaths.has(installExePath))
@@ -175,7 +178,7 @@ export class InstallTrackerSingleton
                         {
                             // eslint-disable-next-line no-return-await
                             existingSessionsWithUsedExecutablePaths.delete(sessionId);
-                            this.extensionState.update(this.sessionInstallsKey, existingSessionsWithUsedExecutablePaths);
+                            this.extensionState.update(this.sessionInstallsKey, serializeMapOfSets(existingSessionsWithUsedExecutablePaths));
                             return Promise.resolve(true);
                         }, 10, 20, `${sessionId}-${crypto.randomUUID()}`).catch(() => { return false; });
                         if (!shouldContinue)
@@ -395,11 +398,14 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
         return executeWithLock(this.eventStream, alreadyHoldingLock, this.getLockFilePathForKeySimple('installed'), 5, 200000,
             async () =>
             {
-                const existingSessionsWithUsedExecutablePaths = this.extensionState.get<SessionsWithInUseExecutables>(this.sessionInstallsKey, new Map<string, Set<string>>());
-                const activeSessionExecutablePaths = existingSessionsWithUsedExecutablePaths.get(sessionId) || new Set();
+                const serializedData = this.extensionState.get<Record<string, string[]>>(this.sessionInstallsKey, {});
+                const existingSessionsWithUsedExecutablePaths = deserializeMapOfSets<string, string>(serializedData);
+
+                const activeSessionExecutablePaths = existingSessionsWithUsedExecutablePaths.get(sessionId) || new Set<string>();
                 activeSessionExecutablePaths.add(installExePath);
                 existingSessionsWithUsedExecutablePaths.set(sessionId, activeSessionExecutablePaths);
-                this.extensionState.update(this.sessionInstallsKey, existingSessionsWithUsedExecutablePaths);
+
+                this.extensionState.update(this.sessionInstallsKey, serializeMapOfSets(existingSessionsWithUsedExecutablePaths));
                 return Promise.resolve();
             });
     }
