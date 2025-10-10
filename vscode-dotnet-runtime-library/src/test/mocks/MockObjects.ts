@@ -724,6 +724,10 @@ export class MockExtensionConfiguration implements IExtensionConfiguration
         {
             return true as unknown as T;
         }
+        else if (name === 'runtimeUpdateDelaySeconds')
+        {
+            return 99999999 as unknown as T;
+        }
         else
         {
             return undefined;

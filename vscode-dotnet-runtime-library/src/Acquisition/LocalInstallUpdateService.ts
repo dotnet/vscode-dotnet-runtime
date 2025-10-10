@@ -31,7 +31,8 @@ export class LocalInstallUpdateService extends IInstallManagementService
 {
     constructor(protected readonly eventStream: IEventStream, private readonly extensionState: IExtensionState, private readonly managementDirectoryProvider: IInstallationDirectoryProvider,
         private readonly installAction: (commandContext: IDotnetAcquireContext, ignorePathSetting: boolean) => Promise<IDotnetAcquireResult | undefined>,
-        private readonly uninstallAction: (commandContext: IDotnetAcquireContext, force: boolean, onlyCheckLiveDependents: boolean) => Promise<string>
+        private readonly uninstallAction: (commandContext: IDotnetAcquireContext, force: boolean, onlyCheckLiveDependents: boolean) => Promise<string>,
+        private readonly installTrackerType: typeof InstallTrackerSingleton = InstallTrackerSingleton
     )
     {
         super(eventStream);
@@ -65,8 +66,8 @@ export class LocalInstallUpdateService extends IInstallManagementService
 
     private async getInstallGroups(): Promise<Map<InstallGroup, InstallRecord[]>>
     {
-        const runtimeInstalls = await InstallTrackerSingleton.getInstance(this.eventStream, this.extensionState).getExistingInstalls(this.managementDirectoryProvider, false);
-        const installGroupsToInstalls: Map<InstallGroup, InstallRecord[]> = new Map();
+        const runtimeInstalls = await this.installTrackerType.getInstance(this.eventStream, this.extensionState).getExistingInstalls(this.managementDirectoryProvider, false);
+        const installGroupsToInstalls = new Map<string, { key: InstallGroup; installs: InstallRecord[] }>();
 
         for (const install of runtimeInstalls)
         {
@@ -76,19 +77,19 @@ export class LocalInstallUpdateService extends IInstallManagementService
 
             if (majorMinor !== '0.0')
             {
-                const key = { mode, architecture, majorMinor } as InstallGroup;
-                if (!installGroupsToInstalls.has(key))
+                const mapKey = `${mode}|${architecture}|${majorMinor}`;
+                if (!installGroupsToInstalls.has(mapKey))
                 {
-                    installGroupsToInstalls.set(key, [install]);
+                    installGroupsToInstalls.set(mapKey, { key: { mode, architecture, majorMinor }, installs: [install] });
                 }
                 else
                 {
-                    installGroupsToInstalls.get(key)!.push(install);
+                    installGroupsToInstalls.get(mapKey)!.installs.push(install);
                 }
             }
         }
 
-        return installGroupsToInstalls;
+        return new Map(Array.from(installGroupsToInstalls.values()).map(groupInfo => [groupInfo.key, groupInfo.installs] as [InstallGroup, InstallRecord[]]));
     }
 
     private getAllNonUserOwnersOfCollection(installs: InstallRecord[]): string[]
@@ -116,8 +117,9 @@ export class LocalInstallUpdateService extends IInstallManagementService
             return Promise.resolve();
         }
 
-        const installGroups = await this.getInstallGroups();
-        for (const group of installGroups.keys())
+        const installGroupEntries = Array.from((await this.getInstallGroups()).entries());
+        let processedGroup = false;
+        for (const [group, installsInGroup] of installGroupEntries)
         {
             const acquireContext: IDotnetAcquireContext = {
                 version: group.majorMinor,
@@ -134,7 +136,8 @@ export class LocalInstallUpdateService extends IInstallManagementService
             // If acquire fails, then the update will throw - we don't want to uninstall if we don't have a newer version to use next time.
 
             // Get latest install - the install returned by acquire may still be a user managed path (not owned by us) if we're offline.
-            const extensionManagedInstalls = await InstallTrackerSingleton.getInstance(this.eventStream, this.extensionState).getExistingInstalls(this.managementDirectoryProvider, false);
+            const tracker = this.installTrackerType.getInstance(this.eventStream, this.extensionState);
+            const extensionManagedInstalls = await tracker.getExistingInstalls(this.managementDirectoryProvider, false);
             const newInstallsInGroup = extensionManagedInstalls.filter(i => i.dotnetInstall.installMode === group.mode &&
                 (i.dotnetInstall.architecture || DotnetCoreAcquisitionWorker.defaultArchitecture()) === group.architecture &&
                 versionUtils.getMajorMinorFromValidVersion(i.dotnetInstall.version) === group.majorMinor);
@@ -142,7 +145,7 @@ export class LocalInstallUpdateService extends IInstallManagementService
             // All of the installs were uninstalled in the middle of this process.
             if (newInstallsInGroup.length === 0)
             {
-                return Promise.resolve();
+                continue;
             }
 
             // Sort installations by version (patch/feature band since major.minor is all the same) and find the one with the highest version
@@ -161,11 +164,10 @@ export class LocalInstallUpdateService extends IInstallManagementService
             }
 
             // Make it so all owners of all installs the group own the latest version - owning basically means they depend on it / requested it (now in the past for a different version)
-            const owners = this.getAllNonUserOwnersOfCollection(installGroups.get(group)!);
-            await InstallTrackerSingleton.getInstance(this.eventStream, this.extensionState).addOwners(latestInstall.dotnetInstall, owners, this.managementDirectoryProvider);
+            const owners = this.getAllNonUserOwnersOfCollection(installsInGroup);
+            await tracker.addOwners(latestInstall.dotnetInstall, owners, this.managementDirectoryProvider);
 
             // Uninstall all in the group that are not live dependents and not the latest one (which should also be live but no need to check)
-            const installsInGroup = installGroups.get(group)!;
             const outdatedInstalls = installsInGroup.filter(i => i.dotnetInstall.version !== latestInstall.dotnetInstall.version);
 
             for (const install of outdatedInstalls)
@@ -182,8 +184,12 @@ export class LocalInstallUpdateService extends IInstallManagementService
                 this.uninstallAction(uninstallContext, false, true).catch((e: any) => {});
             }
 
-            this.extensionState.update('dotnet.latestUpdateDate', new Date(0));
-            return Promise.resolve();
+            processedGroup = true;
         }
+        if (processedGroup)
+        {
+            await this.extensionState.update('dotnet.latestUpdateDate', new Date(0));
+        }
+        return Promise.resolve();
     }
 }

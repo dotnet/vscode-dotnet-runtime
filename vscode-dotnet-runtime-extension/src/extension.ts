@@ -196,14 +196,17 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         uninstall
     );
 
-    automaticUpdater.ManageInstalls(runtimeUpdateDelayMs).catch((e: any) =>
+    if (!(process.env.DOTNET_INSTALL_TOOL_UNDER_TEST === 'true')) // Don't try to update while testing - this would make tests fail randomly
     {
-        if (!suppressOutput)
+        automaticUpdater.ManageInstalls(runtimeUpdateDelayMs).catch((e: any) =>
         {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            vscode.window.showWarningMessage(`The .NET Runtime may be out of date. An error occurred while checking for updates: ${e?.message ?? JSON.stringify(e)}.`);
-        }
-    });
+            if (!suppressOutput)
+            {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                vscode.window.showWarningMessage(`The .NET Runtime may be out of date. An error occurred while checking for updates: ${e?.message ?? JSON.stringify(e)}.`);
+            }
+        });
+    }
 
     // Setting up command-shared classes for Runtime & SDK Acquisition
     const existingPathConfigWorker = new ExtensionConfigurationWorker(extensionConfiguration, configKeys.existingPath, configKeys.existingSharedPath);
@@ -213,7 +216,6 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     {
         return acquireLocal(commandContext);
     });
-
 
     async function acquireLocal(commandContext: IDotnetAcquireContext, ignorePathSetting = false): Promise<IDotnetAcquireResult | undefined>
     {
@@ -451,7 +453,6 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         return pathResult;
     });
 
-
     const dotnetAvailableInstallsRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.availableInstalls}`,
         async (commandContext: IDotnetSearchContext): Promise<IDotnetSearchResult[]> =>
         {
@@ -495,7 +496,6 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             return installs ?? [];
         });
-
 
     const resetDataPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.resetData}`, async () =>
     {
@@ -585,6 +585,11 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     const dotnetUninstallRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstall}`, async (commandContext: IDotnetAcquireContext | undefined): Promise<string> =>
     {
         return uninstall(commandContext);
+    });
+
+    const dotnetForceUpdateRegistration = vscode.commands.registerCommand(`${commandPrefix}.forceUpdate`, async (commandContext: IDotnetAcquireContext): Promise<IDotnetAcquireResult | undefined> =>
+    {
+        automaticUpdater.ManageInstalls(0).catch((e: any) => {});
     });
 
     /**
@@ -976,6 +981,7 @@ Installation will timeout in ${timeoutValue} seconds.`))
         dotnetUninstallRegistration,
         dotnetUninstallPublicRegistration,
         dotnetUninstallAllRegistration,
+        dotnetForceUpdateRegistration,
         showOutputChannelRegistration,
         ensureDependenciesRegistration,
         reportIssueRegistration,
