@@ -346,6 +346,12 @@ ${convertedInstalls.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.in
             async (installState: InstallState, install: DotnetInstall, ctx: IAcquisitionWorkerContext) =>
             {
                 this.eventStream.post(new RemovingVersionFromExtensionState(`Removing ${JSON.stringify(install)} with id ${installState} from the state.`));
+
+                if (ctx.acquisitionContext?.requestingExtensionId === 'dotnet-runtime-library')
+                {
+                    forceUninstall = true;
+                }
+
                 const existingInstalls = await this.getExistingInstalls(ctx.installDirectoryProvider, true);
                 const installRecord = existingInstalls.filter(x => IsEquivalentInstallation(x.dotnetInstall, install));
 
