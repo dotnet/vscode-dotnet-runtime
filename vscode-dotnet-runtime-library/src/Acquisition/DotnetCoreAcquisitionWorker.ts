@@ -566,7 +566,7 @@ ${interpretedMessage}`;
 
                     await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, force);
                     const relevantDependents = onlyCheckLiveDependents ? await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).installHasNoLiveDependents(path.join(dotnetInstallDir, this.dotnetExecutable))
-                        : await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).installHasNoDependents(install, context.installDirectoryProvider);
+                        : await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).installHasNoDependents(install, context.installDirectoryProvider, false, context.acquisitionContext.requestingExtensionId ?? '');
                     if (force || relevantDependents)
                     {
                         context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install.installId}.`));
