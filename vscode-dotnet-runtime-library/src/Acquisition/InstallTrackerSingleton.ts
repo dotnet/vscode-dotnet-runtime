@@ -82,7 +82,7 @@ export class InstallTrackerSingleton
             {
                 InstallTrackerSingleton.sessionMutexReleaser = resolved;
             }
-        });
+        }).catch(() => {});
     }
 
     /**

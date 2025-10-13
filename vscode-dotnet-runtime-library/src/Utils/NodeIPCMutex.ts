@@ -148,7 +148,8 @@ export class NodeIPCMutex
 
     public async acquireWithManualRelease(actionId: string, retryDelayMs = 100, timeoutTimeMs = 1000): Promise<() => void>
     {
-        await this.acquireInternal(async () => {return;}, retryDelayMs, timeoutTimeMs, actionId, true);
+        // eslint-disable-next-line @typescript-eslint/require-await
+        await this.acquireInternal(async () => { return; }, retryDelayMs, timeoutTimeMs, actionId, true);
         return () =>
         {
             this.release(actionId);
