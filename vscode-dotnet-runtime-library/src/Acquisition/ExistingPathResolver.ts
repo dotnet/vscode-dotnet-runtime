@@ -14,6 +14,7 @@ import { CommandExecutor } from '../Utils/CommandExecutor';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
+import { DotnetInstall, GetDotnetInstallInfo } from './DotnetInstall';
 import { DotnetResolver } from './DotnetResolver';
 import { InstallTrackerSingleton } from './InstallTrackerSingleton';
 

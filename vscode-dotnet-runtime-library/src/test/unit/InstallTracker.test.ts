@@ -362,7 +362,7 @@ suite('InstallTracker Unit Tests', function ()
         }
     }).timeout(defaultTimeoutTime);
 
-    test('It Removes the Record if No Other Owners Exist', async () =>
+    test('It Does Not Remove the Record if No Other Owners Exist Until Uninstall Reported', async () =>
     {
         resetExtensionState();
 
@@ -371,6 +371,8 @@ suite('InstallTracker Unit Tests', function ()
         {
             await tracker.trackInstalledVersion(mockContext, defaultInstall, fakeValidDir);
             await tracker.untrackInstalledVersion(mockContext, defaultInstall);
+            assert.notDeepEqual(await tracker.getExistingInstalls(mockContext.installDirectoryProvider), [], 'Installed version gets removed with no further owners (installing must be ok)');
+            await tracker.reportSuccessfulUninstall(mockContext, defaultInstall);
             assert.deepStrictEqual(await tracker.getExistingInstalls(mockContext.installDirectoryProvider), [], 'Installed version gets removed with no further owners (installing must be ok)');
         }
         finally

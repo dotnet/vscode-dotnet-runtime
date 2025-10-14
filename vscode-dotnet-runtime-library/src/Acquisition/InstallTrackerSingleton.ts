@@ -149,7 +149,7 @@ export class InstallTrackerSingleton
     /**
      * Checks if an install has no live dependents besides a specific extension.
      * @param installExePath The path of the executable to check for 'live' dependents of sessions of code/insiders/code forks that are running processes
-     * @param dirProvider The directory in which the install records may attach to - optional if the Id to ignore is irrelevnat
+     * @param dirProvider The directory in which the install records may attach to - optional if the Id to ignore is irrelevant
      * @param liveExtensionOwnerToIgnore - The extensionId that we don't care about if it's a live dependent or not - it will be ignored and not considered a dependent regardless.
      * @param dotnetInstall - the install object that extensions may take a dependency on
      * @returns True if there are no currently running extensions (cross process and forks of vscode) that depend on this install.
@@ -168,7 +168,9 @@ export class InstallTrackerSingleton
                     const existingInstalls = await this.getExistingInstalls(dirProvider, true);
                     const installRecord: InstallRecord | undefined = existingInstalls.filter(x => IsEquivalentInstallation(x.dotnetInstall, dotnetInstall))?.[0];
 
-                    if (installRecord && installRecord.installingExtensions.length === 1 && installRecord.installingExtensions?.[0] === liveExtensionOwnerToIgnore)
+                    const installRecordExistsButOnlyOwnerShouldBeIgnored = installRecord && installRecord.installingExtensions.length === 1 && installRecord.installingExtensions?.[0] === liveExtensionOwnerToIgnore;
+                    const installRecordExistsWithNoOwner = installRecord && (installRecord.installingExtensions?.length ?? 0) === 0;
+                    if (!installRecord || installRecordExistsButOnlyOwnerShouldBeIgnored || installRecordExistsWithNoOwner)
                     {
                         // There may be live dependents, but the only extensions which depend on this install are to be ignored
                         // Generally this is for when the extension which installed the runtime in this session wants to uninstall the runtime it installed
@@ -257,6 +259,21 @@ export class InstallTrackerSingleton
 
                 return zeroRelevantRecordsLeft || installedRecordsLeftButNoOwnersRemain || installWasMadeByUserAndHasNoExtensionDependencies;
             }, 'installed', dotnetInstall);
+    }
+
+    public async reportSuccessfulUninstall(context: IAcquisitionWorkerContext, installIdObj: DotnetInstall, forceUninstall = false, alreadyHoldingLock = false)
+    {
+        return executeWithLock(this.eventStream, alreadyHoldingLock, this.getLockFilePathForKey(context.installDirectoryProvider, 'installed'), 5, 200000,
+            async (installState: InstallState, install: DotnetInstall, ctx: IAcquisitionWorkerContext) =>
+            {
+                this.eventStream.post(new RemovingVersionFromExtensionState(`After Uninstallation, Removing ${JSON.stringify(install)} with id ${installState} from the state.`));
+                const existingInstalls = await this.getExistingInstalls(ctx.installDirectoryProvider, true);
+
+                // Assumption: If we are called correctly, there are no more references/extensions that depend on this install, so remove the install from the list entirely.
+                this.eventStream.post(new RemovingExtensionFromList(forceUninstall ? `At the request of ${ctx.acquisitionContext?.requestingExtensionId}, we force uninstalled ${JSON.stringify(install)}.` :
+                    `The last owner ${ctx.acquisitionContext?.requestingExtensionId} removed ${JSON.stringify(install)} entirely from the state.`));
+                await this.extensionState.update(installState, existingInstalls.filter(x => !IsEquivalentInstallation(x.dotnetInstall, install)));
+            }, 'installed', installIdObj, context);
     }
 
     public async uninstallAllRecords(provider: IInstallationDirectoryProvider, deletionFunction: () => Promise<void>): Promise<void>
@@ -395,18 +412,13 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
 
                     const preExistingRecord = installRecord.at(0);
                     const owners = preExistingRecord?.installingExtensions.filter(x => x !== ctx.acquisitionContext?.requestingExtensionId);
-                    if (forceUninstall || (owners?.length ?? 0) < 1)
+                    if (forceUninstall)
                     {
-                        // There are no more references/extensions that depend on this install, so remove the install from the list entirely.
-                        // For installing versions, there should only ever be 1 owner.
-                        // For installed versions, there can be N owners.
-                        this.eventStream.post(new RemovingExtensionFromList(forceUninstall ? `At the request of ${ctx.acquisitionContext?.requestingExtensionId}, we force uninstalled ${JSON.stringify(install)}.` :
-                            `The last owner ${ctx.acquisitionContext?.requestingExtensionId} removed ${JSON.stringify(install)} entirely from the state.`));
-                        await this.extensionState.update(installState, existingInstalls.filter(x => !IsEquivalentInstallation(x.dotnetInstall, install)));
+                        await this.reportSuccessfulUninstall(context, install, true, true);
                     }
                     else
                     {
-                        // There are still other extensions that depend on this install, so merely remove this requesting extension from the list of owners.
+                        // There may be other extensions that depend on this install, so merely remove this requesting extension from the list of owners.
                         this.eventStream.post(new RemovingOwnerFromList(`The owner ${ctx.acquisitionContext?.requestingExtensionId} removed ${JSON.stringify(install)} itself from the list, but ${owners?.join(', ')} remain.`));
                         await this.extensionState.update(installState, existingInstalls.map(x => IsEquivalentInstallation(x.dotnetInstall, install) ?
                             { dotnetInstall: install, installingExtensions: owners } as InstallRecord : x));

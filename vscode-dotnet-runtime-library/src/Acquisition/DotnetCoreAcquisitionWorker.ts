@@ -174,6 +174,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
                     context.eventStream.post(new DotnetOfflineInstallUsed(`We detected you are offline and are using the pre-existing .NET installation ${install.dotnetInstall.installId}.
 To keep your .NET version up to date, please reconnect to the internet at your soonest convenience.`))
                     await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).markInstallAsInUse(dotnetExePath);
+                    await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).trackInstalledVersion(context, install.dotnetInstall, dotnetExePath);
                     return { dotnetPath: dotnetExePath };
                 }
             }
@@ -333,6 +334,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
             {
                 context.eventStream.post(new DotnetAcquisitionThoughtInstalledButNot(`Local Install ${JSON.stringify(install)} at ${dotnetPath} was tracked under installed but it wasn't found. Maybe it got removed externally.`));
                 await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, true);
+                await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).reportSuccessfulUninstall(context, install, true);
                 return null;
             }
 
@@ -342,6 +344,8 @@ To keep your .NET version up to date, please reconnect to the internet at your s
                 {
                     context.eventStream.post(new DotnetAcquisitionThoughtInstalledButNot(`Global Install ${JSON.stringify(install)} at ${dotnetPath} was tracked under installed but it wasn't found. Maybe it got removed externally.`));
                     await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, true);
+                    await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).reportSuccessfulUninstall(context, install, true);
+
                     return null;
                 }
             }
@@ -547,7 +551,7 @@ ${interpretedMessage}`;
         await extensionState.update('installPathsGraveyard', '');
     }
 
-    public async uninstallLocal(context: IAcquisitionWorkerContext, install: DotnetInstall, force = false, alreadyHoldingLock = false, onlyCheckLiveDependents = false): Promise<string>
+    public async uninstallLocal(context: IAcquisitionWorkerContext, install: DotnetInstall, force = false, alreadyHoldingLock = false, useLiveDependentCheck = false): Promise<string>
     {
         this.ClearLegacyData(context.extensionState).catch(() => {});
 
@@ -560,17 +564,21 @@ ${interpretedMessage}`;
                     return '0';
                 }
 
+                const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
+                const dotnetExecutablePath = path.join(dotnetInstallDir, this.dotnetExecutable);
+
                 try
                 {
-                    const dotnetInstallDir = context.installDirectoryProvider.getInstallDir(install.installId);
+                    await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, force);
 
-                    const noRelevantDependents = onlyCheckLiveDependents ? await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).installHasNoLiveDependentsBesidesId(path.join(dotnetInstallDir, this.dotnetExecutable), context.installDirectoryProvider, context.acquisitionContext.requestingExtensionId ?? '', install)
-                        : await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).installHasNoDependents(install, context.installDirectoryProvider, false, context.acquisitionContext.requestingExtensionId ?? '');
+                    const noRelevantDependents = useLiveDependentCheck ? await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).installHasNoLiveDependentsBesidesId(dotnetExecutablePath, context.installDirectoryProvider, context.acquisitionContext.requestingExtensionId ?? '', install)
+                        : await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).installHasNoRegisteredDependentsBesidesId(install, context.installDirectoryProvider, false, context.acquisitionContext.requestingExtensionId ?? '');
+
                     if (force || noRelevantDependents)
                     {
                         context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install.installId}.`));
                         await this.file.wipeDirectory(dotnetInstallDir, context.eventStream, undefined, true,);
-                        await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, force);
+                        await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).reportSuccessfulUninstall(context, install, force);
                         context.eventStream.post(new DotnetUninstallCompleted(`Uninstalled .NET ${install.installId}.`));
                     }
                     else
@@ -584,6 +592,7 @@ Other dependents remain.`));
                 catch (error: any)
                 {
                     context.eventStream.post(new SuppressedAcquisitionError(error, `The attempt to uninstall .NET ${install.installId} failed - was .NET in use?`));
+                    await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).trackInstalledVersion(context, install, dotnetExecutablePath);
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                     return error?.message ?? '1';
                 }
@@ -596,10 +605,14 @@ Other dependents remain.`));
             install), GLOBAL_LOCK_PING_DURATION_MS, context.timeoutSeconds * 1000,
             async () =>
             {
+                let systemInstallPath = '';
+
                 try
                 {
                     context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install.installId}.`));
+                    await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, force);
 
+                    // Note: it's ok not to check live dependents here (though we could) since this will require UAC and extensions do not depend on us to auto-manage admin installs
                     if (force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).installHasNoRegisteredDependentsBesidesId(install, context.installDirectoryProvider, false, context.acquisitionContext.requestingExtensionId ?? ''))
                     {
                         const installingVersion = await globalInstallerResolver.getFullySpecifiedVersion();
@@ -607,11 +620,12 @@ Other dependents remain.`));
                             new LinuxGlobalInstaller(context, this.utilityContext, installingVersion) :
                             new WinMacGlobalInstaller(context, this.utilityContext, installingVersion, await globalInstallerResolver.getInstallerUrl(), await globalInstallerResolver.getInstallerHash());
 
+                        systemInstallPath = await installer.getExpectedGlobalSDKPath(installingVersion, install.architecture);
                         const ok = await installer.uninstallSDK(install);
                         await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream);
                         if (ok === '0')
                         {
-                            await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, force);
+                            await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).reportSuccessfulUninstall(context, install, force);
                             context.eventStream.post(new DotnetUninstallCompleted(`Uninstalled .NET ${install.installId}.`));
                             return '0';
                         }
@@ -623,6 +637,7 @@ Other dependents remain.`));
                 {
                     await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream);
                     context.eventStream.post(new SuppressedAcquisitionError(error, `The attempt to uninstall .NET ${install.installId} failed - was .NET in use?`));
+                    await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).trackInstalledVersion(context, install, systemInstallPath);
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                     return error?.message ?? '1';
                 }
