@@ -146,6 +146,15 @@ export class InstallTrackerSingleton
         InstallTrackerSingleton.instance.extensionState = extensionState;
     }
 
+    /**
+     * Checks if an install has no live dependents besides a specific extension.
+     * @param installExePath The path of the executable to check for 'live' dependents of sessions of code/insiders/code forks that are running processes
+     * @param dirProvider The directory in which the install records may attach to - optional if the Id to ignore is irrelevnat
+     * @param liveExtensionOwnerToIgnore - The extensionId that we don't care about if it's a live dependent or not - it will be ignored and not considered a dependent regardless.
+     * @param dotnetInstall - the install object that extensions may take a dependency on
+     * @returns True if there are no currently running extensions (cross process and forks of vscode) that depend on this install.
+     * @remarks Having an extension id to ignore allows an extension that may have used a dotnet install in this process to tell us we can uninstall it, as it's no longer using it.
+     */
     public async installHasNoLiveDependentsBesidesId(installExePath: string, dirProvider: IInstallationDirectoryProvider | null, liveExtensionOwnerToIgnore: string, dotnetInstall: DotnetInstall | null)
     {
         return executeWithLock(this.eventStream, false, this.getLockFilePathForKeySimple('installed'), 5, 200000,
@@ -214,10 +223,10 @@ export class InstallTrackerSingleton
 
     public async installHasNoDependents(dotnetInstall: DotnetInstall, dirProvider: IInstallationDirectoryProvider, allowUninstallUserOnlyInstall = false, extensionIdToIgnoreForLiveDependent = ''): Promise<boolean>
     {
-        const hasRegisteredDependents = await this.installHasNoRegisteredDependents(dotnetInstall, dirProvider, allowUninstallUserOnlyInstall);
+        const hasNoRegisteredDependents = await this.installHasNoRegisteredDependents(dotnetInstall, dirProvider, allowUninstallUserOnlyInstall);
         const installExecutablePath = path.join(dirProvider.getInstallDir(dotnetInstall.installId), getDotnetExecutable());
-        const hasLiveDependentsBesidesExtensionToIgnore = await this.installHasNoLiveDependentsBesidesId(installExecutablePath, dirProvider, extensionIdToIgnoreForLiveDependent, dotnetInstall);
-        return !hasRegisteredDependents && !hasLiveDependentsBesidesExtensionToIgnore;
+        const hasNoLiveDependentsBesidesExtensionToIgnore = await this.installHasNoLiveDependentsBesidesId(installExecutablePath, dirProvider, extensionIdToIgnoreForLiveDependent, dotnetInstall);
+        return hasNoRegisteredDependents && hasNoLiveDependentsBesidesExtensionToIgnore;
     }
 
     /**
