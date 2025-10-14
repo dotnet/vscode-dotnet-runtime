@@ -223,7 +223,7 @@ export class InstallTrackerSingleton
 
     public async installHasNoDependents(dotnetInstall: DotnetInstall, dirProvider: IInstallationDirectoryProvider, allowUninstallUserOnlyInstall = false, extensionIdToIgnoreForLiveDependent = ''): Promise<boolean>
     {
-        const hasNoRegisteredDependents = await this.installHasNoRegisteredDependents(dotnetInstall, dirProvider, allowUninstallUserOnlyInstall);
+        const hasNoRegisteredDependents = await this.installHasNoRegisteredDependentsBesidesId(dotnetInstall, dirProvider, allowUninstallUserOnlyInstall, extensionIdToIgnoreForLiveDependent);
         const installExecutablePath = path.join(dirProvider.getInstallDir(dotnetInstall.installId), getDotnetExecutable());
         const hasNoLiveDependentsBesidesExtensionToIgnore = await this.installHasNoLiveDependentsBesidesId(installExecutablePath, dirProvider, extensionIdToIgnoreForLiveDependent, dotnetInstall);
         return hasNoRegisteredDependents && hasNoLiveDependentsBesidesExtensionToIgnore;
@@ -238,7 +238,7 @@ export class InstallTrackerSingleton
      * A dependent may exist even if they didn't ask to install the install - e.g. a path setting or hard-coded PATH value may exist.
      * A registered dependent may also no longer actually depend on the install. Many extensions who request an install do not properly notify when they are done with said install.
      */
-    public async installHasNoRegisteredDependents(dotnetInstall: DotnetInstall, dirProvider: IInstallationDirectoryProvider, allowUninstallUserOnlyInstall = false): Promise<boolean>
+    public async installHasNoRegisteredDependentsBesidesId(dotnetInstall: DotnetInstall, dirProvider: IInstallationDirectoryProvider, allowUninstallUserOnlyInstall = false, dependentToIgnoreId: string): Promise<boolean>
     {
         return executeWithLock(this.eventStream, false, this.getLockFilePathForKey(dirProvider, 'installed'), 5, 200000,
             async (installationState: InstallState, install: DotnetInstall) =>
@@ -248,11 +248,14 @@ export class InstallTrackerSingleton
                 const installRecord = existingInstalls.filter(x => IsEquivalentInstallation(x.dotnetInstall, install));
 
                 const zeroInstalledRecordsLeft = (installRecord?.length ?? 0) === 0;
-                const installedRecordsLeftButNoOwnersRemain = installRecord[0]?.installingExtensions?.length === 0;
-                const installWasMadeByUserAndHasNoExtensionDependencies = (allowUninstallUserOnlyInstall &&
-                    installRecord[0]?.installingExtensions?.length === 1 && installRecord[0]?.installingExtensions?.includes('user'));
+                const onlyRecordLeftShouldBeIgnored = (installRecord?.length ?? 0) === 1 && (installRecord[0]?.installingExtensions?.length ?? 0) === 1 && (installRecord[0]?.installingExtensions?.[0] === dependentToIgnoreId);
+                const zeroRelevantRecordsLeft = zeroInstalledRecordsLeft || onlyRecordLeftShouldBeIgnored;
 
-                return zeroInstalledRecordsLeft || installedRecordsLeftButNoOwnersRemain || installWasMadeByUserAndHasNoExtensionDependencies;
+                const installedRecordsLeftButNoOwnersRemain = (installRecord[0]?.installingExtensions?.length ?? 0) === 0;
+                const installWasMadeByUserAndHasNoExtensionDependencies = (allowUninstallUserOnlyInstall &&
+                    (installRecord[0]?.installingExtensions?.length ?? 0) === 1 && installRecord[0]?.installingExtensions?.includes('user'));
+
+                return zeroRelevantRecordsLeft || installedRecordsLeftButNoOwnersRemain || installWasMadeByUserAndHasNoExtensionDependencies;
             }, 'installed', dotnetInstall);
     }
 
