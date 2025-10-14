@@ -110,7 +110,7 @@ function spawnMutexHolderProcess(sessionId?: string): Promise<{ child: ChildProc
     const actualSessionId = sessionId || generateRandomSessionId();
 
     // Remove 'dist' from the path so the js file is used.
-    const scriptPath = path.resolve(__dirname, '../../../src/test/mocks/MockMutexHolder.js');
+    const scriptPath = path.resolve(__dirname, 'MockMutexHolder.js');
 
     // Verify the script exists
     if (!fs.existsSync(scriptPath))
