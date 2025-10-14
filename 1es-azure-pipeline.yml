@@ -67,6 +67,8 @@ extends:
         enabled: true
       componentgovernance:
         ignoreDirectories: '.vscode-test/**'
+      settings:
+        networkIsolationPolicy: CFSClean
     stages:
     - stage: Internal
       jobs:
