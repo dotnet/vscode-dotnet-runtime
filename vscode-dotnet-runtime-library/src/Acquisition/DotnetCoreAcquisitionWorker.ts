@@ -568,7 +568,7 @@ ${interpretedMessage}`;
                 {
                     await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, force);
 
-                    const noRelevantDependents = useLiveDependentCheck ?
+                    const noRelevantDependents = force ? true : useLiveDependentCheck ?
                         await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).installHasNoLiveDependentsBesidesId(dotnetExecutablePath, context.installDirectoryProvider, context.acquisitionContext.requestingExtensionId ?? '', install)
                         : await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).installHasNoRegisteredDependentsBesidesId(install, context.installDirectoryProvider, false, context.acquisitionContext.requestingExtensionId ?? '');
 
