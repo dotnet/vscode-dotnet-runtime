@@ -257,7 +257,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             if (!commandContext.forceUpdate || isOffline)
             {
                 // 3.0 Breaking Change: Don't always return latest .NET runtime by default
-                // Always use offline install matching the major.minor if it exists and forceUpdate is not used for the legacy behavior
+                // Always use offline install matching the major.minor if it exists, unless forceUpdate is set (forceUpdate enables the legacy behavior of always returning the latest .NET runtime)
                 const existingOfflinePath = await getExistingInstallOffline(worker, workerContext);
                 if (existingOfflinePath)
                 {
