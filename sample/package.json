@@ -119,6 +119,11 @@
 				"command": "sample.dotnet.forceUpdate",
 				"title": "Force update of .NET runtimes",
 				"category": "Sample"
+			},
+			{
+				"command": "sample.dotnet.acquireNoForce",
+				"title": "Acquire .NET runtimes without forcing updates",
+				"category": "Sample"
 			}
 		]
 	},

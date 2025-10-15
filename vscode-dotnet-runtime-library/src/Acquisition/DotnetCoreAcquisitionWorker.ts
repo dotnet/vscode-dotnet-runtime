@@ -25,7 +25,6 @@ import
     DotnetLegacyInstallDetectedEvent,
     DotnetLegacyInstallRemovalRequestEvent,
     DotnetNonZeroInstallerExitCodeError,
-    DotnetOfflineInstallUsed,
     DotnetUninstallAllCompleted,
     DotnetUninstallAllStarted,
     DotnetUninstallCompleted,
@@ -171,8 +170,6 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
                 {
                     context.eventStream.post(new DotnetAcquisitionStatusResolved(possibleInstallWithSameMajorMinor,
                         possibleInstallWithSameMajorMinor.version));
-                    context.eventStream.post(new DotnetOfflineInstallUsed(`We detected you are offline and are using the pre-existing .NET installation ${install.dotnetInstall.installId}.
-To keep your .NET version up to date, please reconnect to the internet at your soonest convenience.`))
                     await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).trackInstalledVersion(context, install.dotnetInstall, dotnetExePath);
                     return { dotnetPath: dotnetExePath };
                 }

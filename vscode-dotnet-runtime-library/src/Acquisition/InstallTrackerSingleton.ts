@@ -11,6 +11,8 @@ import
     ConvertingLegacyInstallRecord,
     DuplicateInstallDetected,
     FoundTrackingVersions,
+    NewEvent1,
+    NewEvent2,
     RemovingExtensionFromList,
     RemovingOwnerFromList,
     RemovingVersionFromExtensionState,
@@ -165,6 +167,8 @@ export class InstallTrackerSingleton
                 const serializedData = this.extensionState.get<Record<string, string[]>>(this.sessionInstallsKey, {});
                 const existingSessionsWithUsedExecutablePaths = deserializeMapOfSets<string, string>(serializedData);
 
+                this.eventStream.post(new SearchingLiveDependents(`Searching for live dependents of install at ${installExePath}. Sessions: ${JSON.stringify(existingSessionsWithUsedExecutablePaths)}`));
+
                 if (liveExtensionOwnerToIgnore !== '' && dirProvider !== null && dotnetInstall !== null)
                 {
                     const existingInstalls = await this.getExistingInstalls(dirProvider, true);
@@ -177,6 +181,7 @@ export class InstallTrackerSingleton
                         // There may be live dependents, but the only extensions which depend on this install are to be ignored
                         // Generally this is for when the extension which installed the runtime in this session wants to uninstall the runtime it installed
                         // A flaw in this logic is if there are other dependents that don't need the install and didn't call uninstall (to decrement the ref count), we can't uninstall automatically until next time
+                        this.eventStream.post(new CanIgnoreLiveDependents(`Ignoring the live dependent(s) as they match ${liveExtensionOwnerToIgnore}.`))
                         return true;
                     }
                 }
@@ -187,6 +192,7 @@ export class InstallTrackerSingleton
                     {
                         if (sessionId === InstallTrackerSingleton.sessionId)
                         {
+                            this.eventStream.post(new LiveDependentInUse(`Dependent is in use by this session, so we can't uninstall it.`))
                             return false; // Our session must be live if this code is running.
                         }
 
@@ -197,21 +203,24 @@ export class InstallTrackerSingleton
                         const shouldContinue = await mutex.acquire(async () =>
                         {
                             // eslint-disable-next-line no-return-await
+                            this.eventStream.post(new DependentIsDead(`Dependent Session ${sessionId} is no longer live - continue searching dependents.`))
                             existingSessionsWithUsedExecutablePaths.delete(sessionId);
                             this.extensionState.update(this.sessionInstallsKey, serializeMapOfSets(existingSessionsWithUsedExecutablePaths));
                             return Promise.resolve(true);
                         }, 10, 30, `${sessionId}-${crypto.randomUUID()}`).catch(() => { return false; });
                         if (!shouldContinue)
                         {
+                            this.eventStream.post(new LiveDependentInUse(`Install ${installExePath} is in use by session ${sessionId}, so we can't uninstall it.`))
                             return false; // We couldn't acquire the mutex, so the session must be live
                         }
                     }
                 }
+
                 // If the user hard-coded their PATH to include the vscode extension install (not a good practice), we likely don't want to uninstall it.
-                return !(
-                    (process.env.PATH?.includes(path.dirname(installExePath)) ?? false) ||
-                    (process.env.DOTNET_ROOT?.includes(path.dirname(installExePath)) ?? false)
-                );
+                const processEnvironmentDependsOnInstall = (process.env.PATH?.includes(path.dirname(installExePath)) ?? false) ||
+                    (process.env.DOTNET_ROOT?.includes(path.dirname(installExePath)) ?? false);
+                this.eventStream.post(new ProcessEnvironmentCheck(`Process environment PATH or DOTNET_ROOT depends on install? ${processEnvironmentDependsOnInstall}`));
+                return !processEnvironmentDependsOnInstall;
             });
     }
 
@@ -328,6 +337,8 @@ export class InstallTrackerSingleton
                     }
                     installRecord.installingExtensions = Array.from(ownerSet) as InstallOwner[];
                     existingInstalls[idx] = installRecord;
+
+                    this.eventStream.post(new AddTrackingVersions(`Adding owners ${ownersToAdd.join(', ')} to existing install record ${JSON.stringify(InstallToStrings(install))}`));
                     await this.extensionState.update('installed', existingInstalls);
                 }
             });
@@ -349,8 +360,8 @@ export class InstallTrackerSingleton
             {
                 if (typeof install === 'string')
                 {
-                    this.eventStream.post(new ConvertingLegacyInstallRecord(`Converting legacy install record ${install} to a null owner. Assuming:
-                    ${JSON.stringify(InstallToStrings(getAssumedInstallInfo(install, null)))}`));
+                    this.eventStream.post(new ConvertingLegacyInstallRecord(`Converting legacy install record ${install} to a null owner.Assuming:
+                        ${JSON.stringify(InstallToStrings(getAssumedInstallInfo(install, null)))}`));
                     convertedInstalls.push(
                         {
                             dotnetInstall: getAssumedInstallInfo(install, null),
@@ -386,7 +397,7 @@ export class InstallTrackerSingleton
             this.extensionState.update(installState, convertedInstalls);
 
             this.eventStream.post(new FoundTrackingVersions(`${installState} :
-${convertedInstalls.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.installingExtensions.map(owner => owner ?? 'null').join(', ')}\n`)}`));
+                        ${convertedInstalls.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.installingExtensions.map(owner => owner ?? 'null').join(', ')}\n`)}`));
             return convertedInstalls;
         }, 'installed');
     }
@@ -416,7 +427,7 @@ ${convertedInstalls.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.in
                     if ((installRecord?.length ?? 0) > 1)
                     {
                         this.eventStream.post(new DuplicateInstallDetected(`The install ${(JSON.stringify(install))} has a duplicated record ${installRecord.length} times in the extension state.
-${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(InstallToStrings(x.dotnetInstall))}`)}\n`));
+                        ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(InstallToStrings(x.dotnetInstall))}`)} \n`));
                     }
 
                     const preExistingRecord = installRecord.at(0);
@@ -462,6 +473,7 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
                 activeSessionExecutablePaths.add(installExePath);
                 existingSessionsWithUsedExecutablePaths.set(sessionId, activeSessionExecutablePaths);
 
+                this.eventStream.post(new MarkedInstallInUse(`Session ${InstallTrackerSingleton.sessionId} marked ${installExePath} as in use.Sessions: ${JSON.stringify(activeSessionExecutablePaths)} `));
                 this.extensionState.update(this.sessionInstallsKey, serializeMapOfSets(existingSessionsWithUsedExecutablePaths));
                 return Promise.resolve();
             });
@@ -504,7 +516,7 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
                 }
 
                 this.eventStream.post(new AddTrackingVersions(`Updated ${installationState} :
-${existingVersions.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.installingExtensions.map(owner => owner ?? 'null').join(', ')}\n`)}`));
+${existingVersions.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.installingExtensions.map(owner => owner ?? 'null').join(', ')}\n`)} `));
                 await this.extensionState.update(installationState, existingVersions);
             }, 'installed', installObj, context);
     }

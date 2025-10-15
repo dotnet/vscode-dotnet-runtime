@@ -267,7 +267,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             // Note: This will impact the context object given to the worker and error handler since objects own a copy of a reference in JS.
             const runtimeVersionResolver = new VersionResolver(workerContext);
-            commandContext.version = await runtimeVersionResolver.getFullVersion(commandContext.version, mode);
+            commandContext.version = commandContext.version.split('.')?.length > 2 ? commandContext.version : await runtimeVersionResolver.getFullVersion(commandContext.version, mode);
 
             const acquisitionInvoker = new AcquisitionInvoker(workerContext, utilContext);
             return mode === 'aspnetcore' ? worker.acquireLocalASPNET(workerContext, acquisitionInvoker) : worker.acquireLocalRuntime(workerContext, acquisitionInvoker);

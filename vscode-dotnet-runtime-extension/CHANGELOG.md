@@ -7,11 +7,13 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-## [3.0.0] - 2025-8
+## [3.0.0] - 2025-10
 
-Breaking change: No longer download the latest runtime per every single request with `acquire`.
-Instead, update periodically, to prevent slow down on startup when new tooling must be acquired to be secure.
+Breaking change: No longer downloads the latest runtime per every single request with `acquire`.
+Instead, update periodically, to prevent slow down on startup when new tooling must be acquired.
 Add setting to specify a local .NET SDK.
+Options were added to revert to the legacy behavior for API dependents. Please see: https://github.com/dotnet/docs/issues/49127
+Various Bug fixes.
 
 ## [2.3.9] - 2025-8-3 (Prerelease, Skipping 2.3.8)
 
