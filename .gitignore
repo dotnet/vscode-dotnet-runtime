@@ -30,6 +30,7 @@ project.lock.json
 *.ipch
 *.js
 !.eslintrc.js
+!./vscode-dotnet-runtime-library/src/test/mocks/MockMutexHolder.js
 *.d.ts
 *.js.map
 .build/
