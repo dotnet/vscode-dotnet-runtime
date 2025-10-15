@@ -8,14 +8,18 @@ import { IEventStream } from '../EventStream/EventStream';
 import
 {
     AddTrackingVersions,
+    CanIgnoreLiveDependents,
     ConvertingLegacyInstallRecord,
+    DependentIsDead,
     DuplicateInstallDetected,
     FoundTrackingVersions,
-    NewEvent1,
-    NewEvent2,
+    LiveDependentInUse,
+    MarkedInstallInUse,
+    ProcessEnvironmentCheck,
     RemovingExtensionFromList,
     RemovingOwnerFromList,
     RemovingVersionFromExtensionState,
+    SearchingLiveDependents,
     SessionMutexAcquisitionFailed,
     SessionMutexReleased,
     SkipAddingInstallEvent
@@ -473,7 +477,7 @@ export class InstallTrackerSingleton
                 activeSessionExecutablePaths.add(installExePath);
                 existingSessionsWithUsedExecutablePaths.set(sessionId, activeSessionExecutablePaths);
 
-                this.eventStream.post(new MarkedInstallInUse(`Session ${InstallTrackerSingleton.sessionId} marked ${installExePath} as in use.Sessions: ${JSON.stringify(activeSessionExecutablePaths)} `));
+                this.eventStream.post(new MarkedInstallInUse(`Session ${InstallTrackerSingleton.sessionId} marked ${installExePath} as in use.\nSessions: ${JSON.stringify(existingSessionsWithUsedExecutablePaths)} `));
                 this.extensionState.update(this.sessionInstallsKey, serializeMapOfSets(existingSessionsWithUsedExecutablePaths));
                 return Promise.resolve();
             });

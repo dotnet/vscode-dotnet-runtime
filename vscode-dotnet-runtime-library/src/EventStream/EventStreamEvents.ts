@@ -1213,6 +1213,35 @@ export class DotnetFindPathLookupSetting extends DotnetCustomMessageEvent
     public readonly eventName = 'DotnetFindPathLookupSetting';
 }
 
+export class LiveDependentInUse extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'LiveDependentInUse';
+}
+
+export class DependentIsDead extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'DependentIsDead';
+}
+
+export class ProcessEnvironmentCheck extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'ProcessEnvironmentCheck';
+}
+
+export class MarkedInstallInUse extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'MarkedInstallInUse';
+}
+
+export class CanIgnoreLiveDependents extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'CanIgnoreLiveDependents';
+}
+export class SearchingLiveDependents extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'SearchingLiveDependents';
+}
+
 export class CacheAliasCreated extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'CacheAliasCreated';
