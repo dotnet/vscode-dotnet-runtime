@@ -25,15 +25,15 @@ class TestInstallationDirectoryProvider extends IInstallationDirectoryProvider
     }
 }
 
-function createInstallRecord(version: string, architecture: string, installMode: 'runtime' | 'sdk' | 'aspnetcore', owners: (string | null)[]): InstallRecord
+function createInstallRecord(version: string, architecture: string, installMode: 'runtime' | 'sdk' | 'aspnetcore', owners: (string | null)[], isGlobal = false): InstallRecord
 {
     return {
         dotnetInstall: {
             version,
             architecture,
-            installId: `${version}~${architecture}~${installMode}`,
+            installId: `${version}~${architecture}~${installMode}${isGlobal ? '~global' : ''}`,
             installMode,
-            isGlobal: false
+            isGlobal
         },
         installingExtensions: owners
     };
@@ -303,5 +303,166 @@ suite('LocalInstallUpdateService Unit Tests', function ()
         const armOwnersAdded = ownersAdded.find(entry => entry.install.installId === latestArm.dotnetInstall.installId);
         assert.isDefined(armOwnersAdded, 'Latest arm64 install should receive owners');
         assert.sameMembers(armOwnersAdded!.owners.filter((owner): owner is string => owner !== null), ['owner-arm'], 'Owners for arm64 should remain separate from x64');
+    });
+
+    test('It forces updates immediately when delay is zero and refreshes the last update timestamp', async () =>
+    {
+        const onlineStub = {
+            isOnline: async () => true
+        } as unknown as WebRequestWorkerSingleton;
+
+        (WebRequestWorkerSingleton as unknown as { getInstance: () => WebRequestWorkerSingleton }).getInstance = () => onlineStub;
+
+        const eventStream = new MockEventStream();
+        const extensionState = new MockExtensionContext();
+        const now = new Date();
+        extensionState.update('dotnet.latestUpdateDate', now);
+
+        const directoryProvider = new TestInstallationDirectoryProvider('/tmp');
+
+        const owners: (string | null)[] = ['owner-force'];
+        const legacyInstall = createInstallRecord('8.0.120', 'x64', 'runtime', owners);
+        const latestInstall = createInstallRecord('8.0.180', 'x64', 'runtime', []);
+
+        const trackerInstance = LocalUpdateServiceTestTracker.getInstance(eventStream, extensionState);
+        trackerInstance.setInstallSequences([[legacyInstall], [legacyInstall, latestInstall]]);
+
+        const acquireContexts: IDotnetAcquireContext[] = [];
+        const acquireStub = async (context: IDotnetAcquireContext) =>
+        {
+            acquireContexts.push({ ...context });
+            return undefined;
+        };
+
+        const uninstallContexts: IDotnetAcquireContext[] = [];
+        const uninstallStub = async (context: IDotnetAcquireContext) =>
+        {
+            uninstallContexts.push({ ...context });
+            return '0';
+        };
+
+        const updateService = new LocalInstallUpdateService(eventStream, extensionState, directoryProvider, acquireStub, uninstallStub, LocalUpdateServiceTestTracker);
+
+        const startTime = Date.now();
+        await updateService.ManageInstalls(0);
+
+        assert.lengthOf(acquireContexts, 1, 'Forced updates should trigger acquisition even when the last update was recent');
+        assert.strictEqual(acquireContexts[0].version, '8.0', 'Forced acquisition should target the major.minor version');
+
+        assert.lengthOf(uninstallContexts, 1, 'Outdated installs should still be removed during forced updates');
+        assert.strictEqual(uninstallContexts[0].version, legacyInstall.dotnetInstall.version, 'The legacy install should be scheduled for uninstall');
+
+        const ownersAdded = trackerInstance.getOwnersAdded();
+        assert.lengthOf(ownersAdded, 1, 'Owners should transfer to the latest install during forced updates');
+        assert.strictEqual(ownersAdded[0].install.installId, latestInstall.dotnetInstall.installId, 'Latest install should receive the owners');
+
+        const storedLastUpdate = extensionState.get<number | Date>('dotnet.latestUpdateDate', new Date(0));
+        const storedTime = new Date(storedLastUpdate as any).getTime();
+        assert.isAtLeast(storedTime, startTime, 'Last update timestamp should be refreshed to the current time');
+    });
+
+    test('It ignores sdk and global installs when managing runtime updates', async () =>
+    {
+        const onlineStub = {
+            isOnline: async () => true
+        } as unknown as WebRequestWorkerSingleton;
+
+        (WebRequestWorkerSingleton as unknown as { getInstance: () => WebRequestWorkerSingleton }).getInstance = () => onlineStub;
+
+        const eventStream = new MockEventStream();
+        const extensionState = new MockExtensionContext();
+        extensionState.update('dotnet.latestUpdateDate', new Date(0));
+
+        const directoryProvider = new TestInstallationDirectoryProvider('/tmp');
+
+        const sdkInstall = createInstallRecord('8.0.302', 'x64', 'sdk', ['sdk-owner']);
+        const globalRuntime = createInstallRecord('8.0.180', 'x64', 'runtime', ['global-owner'], true);
+        const legacyRuntime = createInstallRecord('8.0.150', 'x64', 'runtime', ['runtime-owner']);
+        const latestRuntime = createInstallRecord('8.0.190', 'x64', 'runtime', []);
+
+        const trackerInstance = LocalUpdateServiceTestTracker.getInstance(eventStream, extensionState);
+        trackerInstance.setInstallSequences([
+            [sdkInstall, globalRuntime, legacyRuntime],
+            [sdkInstall, globalRuntime, legacyRuntime, latestRuntime]
+        ]);
+
+        const acquireContexts: IDotnetAcquireContext[] = [];
+        const acquireStub = async (context: IDotnetAcquireContext) =>
+        {
+            acquireContexts.push({ ...context });
+            return undefined;
+        };
+
+        const uninstallContexts: IDotnetAcquireContext[] = [];
+        const uninstallStub = async (context: IDotnetAcquireContext) =>
+        {
+            uninstallContexts.push({ ...context });
+            return '0';
+        };
+
+        const updateService = new LocalInstallUpdateService(eventStream, extensionState, directoryProvider, acquireStub, uninstallStub, LocalUpdateServiceTestTracker);
+
+        await updateService.ManageInstalls(0);
+
+        assert.lengthOf(acquireContexts, 1, 'Only runtime installs should trigger acquisition');
+        assert.strictEqual(acquireContexts[0].mode, 'runtime', 'Runtime group should be the only group processed');
+        assert.strictEqual(acquireContexts[0].version, '8.0', 'Runtime acquisition should target the major.minor version');
+
+        assert.lengthOf(uninstallContexts, 1, 'Only the outdated runtime install should be scheduled for uninstall');
+        assert.deepEqual(uninstallContexts.map(context => context.version), [legacyRuntime.dotnetInstall.version], 'SDK and global installs must not be uninstalled');
+
+        const ownersAdded = trackerInstance.getOwnersAdded();
+        assert.lengthOf(ownersAdded, 1, 'Only the newest runtime install should receive owners');
+        assert.strictEqual(ownersAdded[0].install.installId, latestRuntime.dotnetInstall.installId, 'Owners should transfer to the latest runtime install only');
+    });
+
+    test('It selects the highest runtime patch when patch numbers exceed two digits', async () =>
+    {
+        const onlineStub = {
+            isOnline: async () => true
+        } as unknown as WebRequestWorkerSingleton;
+
+        (WebRequestWorkerSingleton as unknown as { getInstance: () => WebRequestWorkerSingleton }).getInstance = () => onlineStub;
+
+        const eventStream = new MockEventStream();
+        const extensionState = new MockExtensionContext();
+        extensionState.update('dotnet.latestUpdateDate', new Date(0));
+
+        const directoryProvider = new TestInstallationDirectoryProvider('/tmp');
+
+        const owners: (string | null)[] = ['runtime-owner'];
+        const legacyInstall = createInstallRecord('8.0.99', 'x64', 'runtime', owners);
+        const latestInstall = createInstallRecord('8.0.100', 'x64', 'runtime', []);
+
+        const trackerInstance = LocalUpdateServiceTestTracker.getInstance(eventStream, extensionState);
+        trackerInstance.setInstallSequences([[legacyInstall], [legacyInstall, latestInstall]]);
+
+        const acquireContexts: IDotnetAcquireContext[] = [];
+        const acquireStub = async (context: IDotnetAcquireContext) =>
+        {
+            acquireContexts.push({ ...context });
+            return undefined;
+        };
+
+        const uninstallContexts: IDotnetAcquireContext[] = [];
+        const uninstallStub = async (context: IDotnetAcquireContext) =>
+        {
+            uninstallContexts.push({ ...context });
+            return '0';
+        };
+
+        const updateService = new LocalInstallUpdateService(eventStream, extensionState, directoryProvider, acquireStub, uninstallStub, LocalUpdateServiceTestTracker);
+
+        await updateService.ManageInstalls(0);
+
+        assert.lengthOf(acquireContexts, 1, 'Runtime group should still trigger acquisition');
+        assert.strictEqual(acquireContexts[0].version, '8.0', 'Runtime acquisition should target the major.minor version');
+
+        assert.lengthOf(uninstallContexts, 1, 'Only the outdated runtime install should be removed');
+        assert.strictEqual(uninstallContexts[0].version, legacyInstall.dotnetInstall.version, 'The lower patch runtime should be uninstalled');
+
+        const ownersAdded = trackerInstance.getOwnersAdded();
+        assert.lengthOf(ownersAdded, 1, 'Owners should move to the newest runtime install');
+        assert.strictEqual(ownersAdded[0].install.installId, latestInstall.dotnetInstall.installId, 'Highest patch runtime should receive owners');
     });
 });
