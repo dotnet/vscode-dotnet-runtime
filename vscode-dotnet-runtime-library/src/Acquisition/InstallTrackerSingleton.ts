@@ -53,7 +53,7 @@ export class InstallTrackerSingleton
     {
         const hash = crypto.createHash('sha256');
         hash.update(process.pid.toString() + crypto.randomBytes(8).toString('hex')); // add random salt to avoid PID collision
-        InstallTrackerSingleton.sessionId = `$session-${hash.digest('hex').slice(0, 10)}`;
+        InstallTrackerSingleton.sessionId = `session-${hash.digest('hex').slice(0, 10)}`;
         if (instantiateReleaseFunction)
         {
             InstallTrackerSingleton.sessionMutexReleaser = undefined;
