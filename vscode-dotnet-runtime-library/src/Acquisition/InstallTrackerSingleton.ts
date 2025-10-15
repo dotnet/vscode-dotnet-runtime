@@ -42,7 +42,7 @@ export type SessionsWithInUseExecutables = Map<string, Set<string>>;
 export class InstallTrackerSingleton
 {
     protected static instance: InstallTrackerSingleton;
-    protected static sessionId: string;
+    protected static sessionId: string; // If we ever add a public static function that utilizes this, this needs to be made not-static.
     protected static sessionMutexReleaser?: (() => void);
     protected static readonly SESSION_MUTEX_ACQUIRE_TIMEOUT_MS = 100;
     protected static readonly SESSION_MUTEX_PING_DURATION = 50;
@@ -265,7 +265,7 @@ export class InstallTrackerSingleton
             }, 'installed', dotnetInstall);
     }
 
-    public async reportSuccessfulUninstall(context: IAcquisitionWorkerContext, installIdObj: DotnetInstall, forceUninstall = false, alreadyHoldingLock = false)
+    protected async reportSuccessfulUninstallHelper(context: IAcquisitionWorkerContext, installIdObj: DotnetInstall, forceUninstall = false, alreadyHoldingLock = false)
     {
         return executeWithLock(this.eventStream, alreadyHoldingLock, this.getLockFilePathForKey(context.installDirectoryProvider, 'installed'), 5, 200000,
             async (installState: InstallState, install: DotnetInstall, ctx: IAcquisitionWorkerContext) =>
@@ -278,6 +278,11 @@ export class InstallTrackerSingleton
                     `The last owner ${ctx.acquisitionContext?.requestingExtensionId} removed ${JSON.stringify(install)} entirely from the state.`));
                 await this.extensionState.update(installState, existingInstalls.filter(x => !IsEquivalentInstallation(x.dotnetInstall, install)));
             }, 'installed', installIdObj, context);
+    }
+
+    public async reportSuccessfulUninstall(context: IAcquisitionWorkerContext, installIdObj: DotnetInstall, forceUninstall = false)
+    {
+        return this.reportSuccessfulUninstallHelper(context, installIdObj, forceUninstall, false);
     }
 
     public async uninstallAllRecords(provider: IInstallationDirectoryProvider, deletionFunction: () => Promise<void>): Promise<void>
@@ -418,7 +423,7 @@ ${installRecord.map(x => `${x.installingExtensions.join(' ')} ${JSON.stringify(I
                     const owners = preExistingRecord?.installingExtensions.filter(x => x !== ctx.acquisitionContext?.requestingExtensionId);
                     if (forceUninstall)
                     {
-                        await this.reportSuccessfulUninstall(context, install, true, true);
+                        await this.reportSuccessfulUninstallHelper(context, install, true, true);
                     }
                     else
                     {
