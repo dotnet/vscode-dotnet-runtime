@@ -49,12 +49,12 @@ export class InstallTrackerSingleton
 
     protected sessionInstallsKey = 'dotnet.returnedInstallDirectories';
 
-    protected constructor(protected eventStream: IEventStream, protected extensionState: IExtensionState, protected defineReleaseFunction = true)
+    protected constructor(protected eventStream: IEventStream, protected extensionState: IExtensionState, protected instantiateReleaseFunction = true)
     {
         const hash = crypto.createHash('sha256');
-        hash.update(process.pid.toString());
+        hash.update(process.pid.toString() + crypto.randomBytes(8).toString('hex')); // add random salt to avoid PID collision
         InstallTrackerSingleton.sessionId = `$session-${hash.digest('hex').slice(0, 10)}`;
-        if (defineReleaseFunction)
+        if (instantiateReleaseFunction)
         {
             InstallTrackerSingleton.sessionMutexReleaser = undefined;
             this.acquirePermanentSessionMutex();
@@ -82,17 +82,18 @@ export class InstallTrackerSingleton
             {
                 InstallTrackerSingleton.sessionMutexReleaser = resolved;
             }
-        }).catch(() => {});
+        }).catch(() => {}); // Assumption : We can ignore these errors because install/uninstall won't work if mutexes are unacquireable
     }
 
     /**
      * Ends the session by releasing the permanent mutex.
-     * This is primarily intended for testing scenarios.
+     * This is primarily intended for testing scenarios, because the test runner will never exit if there is any remaining promise.
      * @returns A promise that resolves when the mutex is released
      */
     protected async endSession(): Promise<void>
     {
         // Wait for the release function to get returned - this prevents delaying startup for test scenarios where we want to release the mutex, since the ctor cannot await
+        // * 2 is due to the possibility of the first ping requiring a resolution of the mutex to release
         await new Promise(resolve => setTimeout(resolve, InstallTrackerSingleton.SESSION_MUTEX_ACQUIRE_TIMEOUT_MS + InstallTrackerSingleton.SESSION_MUTEX_PING_DURATION * 2));
 
         if (InstallTrackerSingleton.sessionMutexReleaser !== undefined)
@@ -102,6 +103,7 @@ export class InstallTrackerSingleton
             InstallTrackerSingleton.sessionMutexReleaser = undefined;
             this.eventStream.post(new SessionMutexReleased(`Session ${InstallTrackerSingleton.sessionId} has released its permanent mutex`));
 
+            // Don't return until we are sure it's been released to prevent race condition confusion
             await new Promise(resolve => setTimeout(resolve, InstallTrackerSingleton.SESSION_MUTEX_ACQUIRE_TIMEOUT_MS + InstallTrackerSingleton.SESSION_MUTEX_PING_DURATION * 2));
         }
     }
@@ -122,7 +124,7 @@ export class InstallTrackerSingleton
             this.acquirePermanentSessionMutex();
 
             // Wait for the acquisition to complete or timeout
-            await new Promise(resolve => setTimeout(resolve, InstallTrackerSingleton.SESSION_MUTEX_ACQUIRE_TIMEOUT_MS));
+            await new Promise(resolve => setTimeout(resolve, InstallTrackerSingleton.SESSION_MUTEX_ACQUIRE_TIMEOUT_MS + InstallTrackerSingleton.SESSION_MUTEX_PING_DURATION * 2));
             if (InstallTrackerSingleton.sessionMutexReleaser === undefined)
             {
                 throw new Error(`Failed to acquire session mutex within ${InstallTrackerSingleton.SESSION_MUTEX_ACQUIRE_TIMEOUT_MS}ms`);
@@ -174,6 +176,7 @@ export class InstallTrackerSingleton
                     {
                         // There may be live dependents, but the only extensions which depend on this install are to be ignored
                         // Generally this is for when the extension which installed the runtime in this session wants to uninstall the runtime it installed
+                        // A flaw in this logic is if there are other dependents that don't need the install and didn't call uninstall (to decrement the ref count), we can't uninstall automatically until next time
                         return true;
                     }
                 }
@@ -197,10 +200,10 @@ export class InstallTrackerSingleton
                             existingSessionsWithUsedExecutablePaths.delete(sessionId);
                             this.extensionState.update(this.sessionInstallsKey, serializeMapOfSets(existingSessionsWithUsedExecutablePaths));
                             return Promise.resolve(true);
-                        }, 10, 20, `${sessionId}-${crypto.randomUUID()}`).catch(() => { return false; });
+                        }, 10, 30, `${sessionId}-${crypto.randomUUID()}`).catch(() => { return false; });
                         if (!shouldContinue)
                         {
-                            return false;
+                            return false; // We couldn't acquire the mutex, so the session must be live
                         }
                     }
                 }
@@ -250,6 +253,7 @@ export class InstallTrackerSingleton
                 const installRecord = existingInstalls.filter(x => IsEquivalentInstallation(x.dotnetInstall, install));
 
                 const zeroInstalledRecordsLeft = (installRecord?.length ?? 0) === 0;
+                // Assumption: no duplicate records could exist ( should hold true )
                 const onlyRecordLeftShouldBeIgnored = (installRecord?.length ?? 0) === 1 && (installRecord[0]?.installingExtensions?.length ?? 0) === 1 && (installRecord[0]?.installingExtensions?.[0] === dependentToIgnoreId);
                 const zeroRelevantRecordsLeft = zeroInstalledRecordsLeft || onlyRecordLeftShouldBeIgnored;
 
