@@ -203,7 +203,6 @@ To keep your .NET version up to date, please reconnect to the internet at your s
         if (existingInstall)
         {
             context.eventStream.post(new DotnetAcquisitionStatusResolved(install, install.version));
-            await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).markInstallAsInUse(existingInstall);
             return { dotnetPath: existingInstall };
         }
 
@@ -291,7 +290,6 @@ To keep your .NET version up to date, please reconnect to the internet at your s
                 const existingInstall = await this.getValidExistingInstallPath(context, installedVersions, install, dotnetPath);
                 if (existingInstall !== null)
                 {
-                    await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).markInstallAsInUse(existingInstall);
                     return existingInstall;
                 }
 
@@ -343,6 +341,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
                 if (!(await this.sdkIsFound(context, context.acquisitionContext.version)))
                 {
                     context.eventStream.post(new DotnetAcquisitionThoughtInstalledButNot(`Global Install ${JSON.stringify(install)} at ${dotnetPath} was tracked under installed but it wasn't found. Maybe it got removed externally.`));
+
                     await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, true);
                     await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).reportSuccessfulUninstall(context, install, true);
 
@@ -355,6 +354,7 @@ To keep your .NET version up to date, please reconnect to the internet at your s
                     ? context.acquisitionContext.requestingExtensionId : null));
 
             await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).trackInstalledVersion(context, install, dotnetPath);
+            await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).markInstallAsInUse(dotnetPath);
             return dotnetPath;
         }
         return null;
@@ -446,12 +446,11 @@ To keep your .NET version up to date, please reconnect to the internet at your s
             return 'fake-sdk';
         }
 
-        let dotnetPath: string = await installer.getExpectedGlobalSDKPath(installingVersion,
+        let dotnetExePath: string = await installer.getExpectedGlobalSDKPath(installingVersion,
             context.acquisitionContext.architecture ?? this.getDefaultInternalArchitecture(context.acquisitionContext.architecture), false);
-        const existingInstall = await this.getValidExistingInstallPath(context, installedVersions, install, dotnetPath);
+        const existingInstall = await this.getValidExistingInstallPath(context, installedVersions, install, dotnetExePath);
         if (existingInstall)
         {
-            await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).markInstallAsInUse(existingInstall);
             return existingInstall;
         }
 
@@ -479,18 +478,18 @@ ${interpretedMessage}`;
         TelemetryUtilities.setDotnetSDKTelemetryToMatch(context.isExtensionTelemetryInitiallyEnabled, this.extensionContext, context, this.utilityContext).catch(() => {});
 
         // in case the path does not exist, try resetting the path using an automatic path search setting
-        dotnetPath = await installer.getExpectedGlobalSDKPath(installingVersion,
+        dotnetExePath = await installer.getExpectedGlobalSDKPath(installingVersion,
             context.acquisitionContext.architecture ?? this.getDefaultInternalArchitecture(context.acquisitionContext.architecture));
 
-        context.installationValidator.validateDotnetInstall(install, dotnetPath, os.platform() === 'darwin', os.platform() !== 'darwin');
+        context.installationValidator.validateDotnetInstall(install, dotnetExePath, os.platform() === 'darwin', os.platform() !== 'darwin');
 
-        context.eventStream.post(new DotnetAcquisitionCompleted(install, dotnetPath, installingVersion));
+        context.eventStream.post(new DotnetAcquisitionCompleted(install, dotnetExePath, installingVersion));
 
-        await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).trackInstalledVersion(context, install, dotnetPath);
+        await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).trackInstalledVersion(context, install, dotnetExePath);
 
         await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream);
         context.eventStream.post(new DotnetGlobalAcquisitionCompletionEvent(`The version ${JSON.stringify(install)} completed successfully.`));
-        return dotnetPath;
+        return dotnetExePath;
     }
 
     /**
@@ -572,7 +571,7 @@ ${interpretedMessage}`;
                     await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, force);
 
                     const noRelevantDependents = useLiveDependentCheck ?
-                          await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).installHasNoLiveDependentsBesidesId(dotnetExecutablePath, context.installDirectoryProvider, context.acquisitionContext.requestingExtensionId ?? '', install)
+                        await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).installHasNoLiveDependentsBesidesId(dotnetExecutablePath, context.installDirectoryProvider, context.acquisitionContext.requestingExtensionId ?? '', install)
                         : await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).installHasNoRegisteredDependentsBesidesId(install, context.installDirectoryProvider, false, context.acquisitionContext.requestingExtensionId ?? '');
 
                     if (force || noRelevantDependents)
