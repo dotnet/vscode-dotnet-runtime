@@ -260,8 +260,6 @@ suite('InstallTracker Unit Tests', function ()
         resetExtensionState();
         const tracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
 
-        try
-        {
             await tracker.trackInstalledVersion(mockContext, defaultInstall, fakeValidDir);
 
             const expected: InstallRecord[] = [
@@ -271,10 +269,7 @@ suite('InstallTracker Unit Tests', function ()
                 } as InstallRecord,
             ]
             assert.deepStrictEqual(await tracker.getExistingInstalls(mockContext.installDirectoryProvider), expected, 'It created a new record for the install');
-        }
-        finally
-        {
-        }
+
     }).timeout(defaultTimeoutTime);
 
     test('Re-Tracking is a No-Op', async () =>
@@ -283,8 +278,6 @@ suite('InstallTracker Unit Tests', function ()
 
         const tracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
 
-        try
-        {
             const expected: InstallRecord[] = [
                 {
                     dotnetInstall: defaultInstall,
@@ -296,10 +289,7 @@ suite('InstallTracker Unit Tests', function ()
             await tracker.trackInstalledVersion(mockContext, defaultInstall, fakeValidDir);
 
             assert.deepStrictEqual(await tracker.getExistingInstalls(mockContext.installDirectoryProvider), expected, 'It did not create a 2nd record for the same INSTALLED install');
-        }
-        finally
-        {
-        }
+
     }).timeout(defaultTimeoutTime);
 
     test('It Only Adds the Extension Id to an Existing Install Copy', async () =>
@@ -307,8 +297,7 @@ suite('InstallTracker Unit Tests', function ()
         resetExtensionState();
 
         const tracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
-        try
-        {
+
             await tracker.trackInstalledVersion(mockContext, defaultInstall, fakeValidDir);
 
             const otherRequesterValidator = new MockInstallTracker(mockContextFromOtherExtension.eventStream, mockContext.extensionState);
@@ -324,10 +313,7 @@ suite('InstallTracker Unit Tests', function ()
             ]
 
             assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls(mockContext.installDirectoryProvider), expected, 'The second extension validator added its id to the existing install');
-        }
-        finally
-        {
-        }
+
     }).timeout(defaultTimeoutTime);
 
     test('It Works With Different Installs From Multiple or Same Requesters', async () =>
@@ -335,8 +321,7 @@ suite('InstallTracker Unit Tests', function ()
         resetExtensionState();
 
         const tracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
-        try
-        {
+
             await tracker.trackInstalledVersion(mockContext, defaultInstall, fakeValidDir);
 
             const otherRequesterValidator = new MockInstallTracker(mockContextFromOtherExtension.eventStream, mockContext.extensionState);
@@ -356,10 +341,7 @@ suite('InstallTracker Unit Tests', function ()
             ]
 
             assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls(mockContext.installDirectoryProvider), expected, 'Multiple installs are tracked separately');
-        }
-        finally
-        {
-        }
+
     }).timeout(defaultTimeoutTime);
 
     test('It Does Not Remove the Record if No Other Owners Exist Until Uninstall Reported', async () =>
@@ -367,17 +349,13 @@ suite('InstallTracker Unit Tests', function ()
         resetExtensionState();
 
         const tracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
-        try
-        {
+
             await tracker.trackInstalledVersion(mockContext, defaultInstall, fakeValidDir);
             await tracker.untrackInstalledVersion(mockContext, defaultInstall);
             assert.notDeepEqual(await tracker.getExistingInstalls(mockContext.installDirectoryProvider), [], 'Installed version gets removed with no further owners (installing must be ok)');
             await tracker.reportSuccessfulUninstall(mockContext, defaultInstall);
             assert.deepStrictEqual(await tracker.getExistingInstalls(mockContext.installDirectoryProvider), [], 'Installed version gets removed with no further owners (installing must be ok)');
-        }
-        finally
-        {
-        }
+
     }).timeout(defaultTimeoutTime);
 
     test('It Only Removes the Extension Id if Other Owners Exist', async () =>
@@ -418,8 +396,7 @@ suite('InstallTracker Unit Tests', function ()
         resetExtensionState();
 
         const tracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
-        try
-        {
+
             const extensionStateWithLegacyStrings = new MockExtensionContext();
             extensionStateWithLegacyStrings.update('installed', [defaultInstall.installId, secondInstall.installId]);
             tracker.setExtensionState(extensionStateWithLegacyStrings);
@@ -436,10 +413,7 @@ suite('InstallTracker Unit Tests', function ()
             ]
 
             assert.deepStrictEqual(await tracker.getExistingInstalls(mockContext.installDirectoryProvider), expected, 'It converted the legacy strings to the new type');
-        }
-        finally
-        {
-        }
+
     }).timeout(defaultTimeoutTime);
 
     test('It Handles Null Owner Gracefully on Duplicate Install and Removal', async () =>
@@ -447,8 +421,7 @@ suite('InstallTracker Unit Tests', function ()
         resetExtensionState();
 
         const tracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
-        try
-        {
+
             const extensionStateWithLegacyStrings = new MockExtensionContext();
             extensionStateWithLegacyStrings.update('installed', [defaultInstall.installId, secondInstall.installId]);
             tracker.setExtensionState(extensionStateWithLegacyStrings);
@@ -483,10 +456,8 @@ suite('InstallTracker Unit Tests', function ()
             ]
 
             assert.deepStrictEqual(await tracker.getExistingInstalls(mockContext.installDirectoryProvider), expectedTwo, 'It removed the owner from the existing null install');
-        }
-        finally
-        {
-        }
+
+
     }).timeout(defaultTimeoutTime);
 });
 
