@@ -5,9 +5,7 @@
 import * as chai from 'chai';
 import
 {
-    deserializeMap,
     deserializeMapOfSets,
-    serializeMap,
     serializeMapOfSets
 } from '../../Utils/SerializationHelpers';
 
@@ -15,73 +13,6 @@ const assert = chai.assert;
 
 suite('SerializationHelpers Unit Tests', function ()
 {
-    suite('serializeMap Tests', () =>
-    {
-        test('should convert a Map to a plain object', () =>
-        {
-            const map = new Map<string, number>();
-            map.set('key1', 1);
-            map.set('key2', 2);
-
-            const obj = serializeMap(map);
-
-            assert.deepStrictEqual(obj, { key1: 1, key2: 2 });
-        });
-
-        test('should handle empty Maps', () =>
-        {
-            const map = new Map<string, number>();
-            const obj = serializeMap(map);
-
-            assert.deepStrictEqual(obj, {});
-        });
-
-        test('should convert number keys to strings', () =>
-        {
-            const map = new Map<number, string>();
-            map.set(1, 'one');
-            map.set(2, 'two');
-
-            const obj = serializeMap(map);
-
-            assert.deepStrictEqual(obj, { '1': 'one', '2': 'two' });
-        });
-    });
-
-    suite('deserializeMap Tests', () =>
-    {
-        test('should convert a plain object to a Map', () =>
-        {
-            const obj = { key1: 1, key2: 2 };
-
-            const map = deserializeMap<string, number>(obj);
-
-            assert.isTrue(map instanceof Map);
-            assert.equal(map.size, 2);
-            assert.equal(map.get('key1'), 1);
-            assert.equal(map.get('key2'), 2);
-        });
-
-        test('should handle null or undefined input', () =>
-        {
-            const map1 = deserializeMap<string, number>(null);
-            assert.isTrue(map1 instanceof Map);
-            assert.equal(map1.size, 0);
-
-            const map2 = deserializeMap<string, number>(undefined);
-            assert.isTrue(map2 instanceof Map);
-            assert.equal(map2.size, 0);
-        });
-
-        test('should handle empty objects', () =>
-        {
-            const map = deserializeMap<string, number>({});
-
-            assert.isTrue(map instanceof Map);
-            assert.equal(map.size, 0);
-        });
-    });
-
     suite('serializeMapOfSets Tests', () =>
     {
         test('should convert a Map of Sets to a plain object of arrays', () =>

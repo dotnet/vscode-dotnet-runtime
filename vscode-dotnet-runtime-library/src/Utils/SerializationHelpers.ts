@@ -9,45 +9,6 @@
  */
 
 /**
- * Converts a Map to a serializable object that can be stored in extension state
- * @param map The Map to serialize
- * @returns A plain object representation of the Map
- */
-export function serializeMap<K extends string | number, V>(map: Map<K, V>): Record<string, V>
-{
-    const obj: Record<string, V> = {};
-    for (const [key, value] of map.entries())
-    {
-        obj[key.toString()] = value;
-    }
-    return obj;
-}
-
-/**
- * Converts a serialized Map object back to a Map instance
- * @param obj The plain object representation of a Map
- * @returns A new Map instance with the object's entries
- */
-export function deserializeMap<K extends string | number, V>(obj: Record<string, V> | undefined | null): Map<K, V>
-{
-    const map = new Map<K, V>();
-    if (!obj)
-    {
-        return map;
-    }
-
-    for (const key in obj)
-    {
-        if (Object.prototype.hasOwnProperty.call(obj, key))
-        {
-            // Cast the key to K - this is safe if K is string | number
-            map.set(key as K, obj[key]);
-        }
-    }
-    return map;
-}
-
-/**
  * Converts a Map with Set values to a serializable object
  * @param map The Map of Sets to serialize
  * @returns A plain object representation of the Map of Sets
