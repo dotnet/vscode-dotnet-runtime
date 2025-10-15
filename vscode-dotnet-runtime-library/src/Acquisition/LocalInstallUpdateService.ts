@@ -134,7 +134,7 @@ export class LocalInstallUpdateService extends IInstallManagementService
                 mode: group.mode,
                 installType: 'local',
                 requestingExtensionId: 'dotnet-runtime-library',
-                errorConfiguration: AcquireErrorConfiguration.DisableErrorPopups, // todo : make this quiet as well ?
+                errorConfiguration: AcquireErrorConfiguration.DisableErrorPopups
                 forceUpdate: true
             }
 
