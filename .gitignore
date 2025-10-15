@@ -30,7 +30,6 @@ project.lock.json
 *.ipch
 *.js
 !.eslintrc.js
-!./vscode-dotnet-runtime-library/src/test/mocks/MockMutexHolder.js
 *.d.ts
 *.js.map
 .build/
@@ -49,4 +48,5 @@ install.*
 vscode-dotnet-runtime-library/install scripts/dotnet-install.*
 vscode-dotnet-runtime-extension/LICENSE.txt
 vscode-dotnet-sdk-extension/LICENSE.txt
+!./vscode-dotnet-runtime-library/src/test/mocks/MockMutexHolder.js
 .vscode/launch.json
