@@ -190,7 +190,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
 
     const runtimeUpdateDirectoryProvider = directoryProviderFactory(
-        'runtime', vsCodeContext.globalStoragePath);
+        'runtime', vsCodeContext.globalStoragePath); // Assumption : aspnetcore and runtime directory provider use the same logic, otherwise updates would not be found
     const automaticUpdater = new LocalInstallUpdateService(globalEventStream, vsCodeContext.globalState, runtimeUpdateDirectoryProvider,
         acquireLocal,
         uninstall
@@ -244,10 +244,13 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                     `Cannot acquire .NET version "${commandContext.version}". Please provide a valid version.`);
             }
 
-            const existingPath = await resolveExistingPathIfExists(existingPathConfigWorker, commandContext, workerContext, utilContext);
-            if (existingPath && !ignorePathSetting)
+            if (!ignorePathSetting)
             {
-                return existingPath;
+                const existingPath = await resolveExistingPathIfExists(existingPathConfigWorker, commandContext, workerContext, utilContext);
+                if (existingPath)
+                {
+                    return existingPath;
+                }
             }
 
             const isOffline = !(await WebRequestWorkerSingleton.getInstance().isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream));
@@ -440,7 +443,6 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             const existingOfflinePath = await getExistingInstallOffline(worker, workerContext);
             if (existingOfflinePath)
             {
-                // make sure this is marked
                 return Promise.resolve(existingOfflinePath);
             }
 
@@ -489,7 +491,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 });
             }, getIssueContext(existingPathConfigWorker)(commandContext?.errorConfiguration, commandKeys.availableInstalls));
 
-            if (installs?.length ?? 0 > 0)
+            if ((installs?.length ?? 0) > 0)
             {
                 await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).markInstallAsInUse(dotnetExecutablePath);
             }
@@ -622,7 +624,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         // The setting is not intended to be used as the SDK, only the runtime for extensions to run on. Ex: PowerShell policy doesn't allow us to install the runtime, let users set the path manually.
         if (existingPath && commandContext.acquireContext.mode !== 'sdk')
         {
-            // We don't need to validate the existing path as it gets validated in the lookup logic already.
+            // We don't need to validate the existing path as it gets validated + tracked in the lookup logic already.
             globalEventStream.post(new DotnetFindPathSettingFound(`Found vscode setting.`));
             loggingObserver.dispose();
             return existingPath;

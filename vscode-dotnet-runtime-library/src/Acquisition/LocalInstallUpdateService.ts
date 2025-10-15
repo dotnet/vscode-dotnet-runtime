@@ -15,6 +15,7 @@ import { IInstallationDirectoryProvider } from './IInstallationDirectoryProvider
 import { IInstallManagementService } from './IInstallManagementService';
 import { InstallRecord } from './InstallRecord';
 import { InstallTrackerSingleton } from './InstallTrackerSingleton';
+import { BAD_VERSION } from './StringConstants';
 import * as versionUtils from './VersionUtilities';
 
 export interface InstallGroup
@@ -58,13 +59,13 @@ export class LocalInstallUpdateService extends IInstallManagementService
         // Check if at least 1 day (24 hours) has passed since last update per SDL
         const oneDayMs = 24 * 60 * 60 * 1000;
 
-        const timeOfLastUpdate = new Date(lastUpdateDate).getTime();
-        const currentTime = Date.now();
+        const timeOfLastUpdate: number = new Date(lastUpdateDate).getTime();
+        const currentTime: number = Date.now();
 
-        this.eventStream.post(new AutomaticUpdateCheck(`Checking for updates after ${automaticUpdateDelayMs}. Last Update Date: ${lastUpdateDate.toString()}. Current Date: ${currentTime}`));
+        this.eventStream.post(new AutomaticUpdateCheck(`Checking for updates after ${automaticUpdateDelayMs}. Last Update Date: ${timeOfLastUpdate}. Current Date: ${currentTime}`));
         if (automaticUpdateDelayMs === 0 || (currentTime - timeOfLastUpdate) >= oneDayMs)
         {
-            this.eventStream.post(new AutomaticUpdateCheck(`Commencing updates at ${Date.now().toString()}`));
+            this.eventStream.post(new AutomaticUpdateCheck(`Commencing updates at ${Date.now().toString()} in ${automaticUpdateDelayMs} ms.`));
             await new Promise(resolve => setTimeout(resolve, automaticUpdateDelayMs));
             return this.automaticUpdate();
         }
@@ -81,7 +82,7 @@ export class LocalInstallUpdateService extends IInstallManagementService
             const architecture = install.dotnetInstall.architecture || DotnetCoreAcquisitionWorker.defaultArchitecture();
             const mode = install.dotnetInstall.installMode;
 
-            if (majorMinor !== '0.0')
+            if (majorMinor !== BAD_VERSION) // We never expect this to happen unless someone manually edited the data
             {
                 const mapKey = `${mode}|${architecture}|${majorMinor}`;
                 if (!installGroupsToInstalls.has(mapKey))
@@ -162,7 +163,7 @@ export class LocalInstallUpdateService extends IInstallManagementService
                 for (const install of newInstallsInGroup)
                 {
                     // For runtime versions like 8.0.19, we need the full patch number
-                    // For SDK versions, this is handled differently as they have format like 7.0.301
+                    // For SDK versions, this is handled differently as they have formats like 7.0.301
                     const parts = install.dotnetInstall.version.split('.');
                     const latestParts = latestInstall.dotnetInstall.version.split('.');
 
@@ -181,7 +182,7 @@ export class LocalInstallUpdateService extends IInstallManagementService
             }
 
             // Make it so all owners of all installs the group own the latest version - owning basically means they depend on it / requested it (now in the past for a different version)
-            const owners = this.getAllNonUserOwnersOfCollection(installsInGroup);
+            const owners = this.getAllNonUserOwnersOfCollection(installsInGroup); // a user owner represents that the user installed it themselves, which is not true with auto-update
             await tracker.addOwners(latestInstall.dotnetInstall, owners, this.managementDirectoryProvider);
 
             // Uninstall all in the group that are not live dependents and not the latest one (which should also be live but no need to check)
@@ -208,6 +209,7 @@ export class LocalInstallUpdateService extends IInstallManagementService
         {
             await this.extensionState.update('dotnet.latestUpdateDate', Date.now());
         }
+
         return Promise.resolve();
     }
 }

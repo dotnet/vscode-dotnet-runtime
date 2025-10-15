@@ -312,7 +312,7 @@ export class InstallTrackerSingleton
                     const ownerSet = new Set(installRecord.installingExtensions);
                     for (const owner of ownersToAdd)
                     {
-                        if (owner && !ownerSet.has(owner))
+                        if (owner)
                         {
                             ownerSet.add(owner);
                         }
