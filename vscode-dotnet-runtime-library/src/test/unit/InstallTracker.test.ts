@@ -358,6 +358,46 @@ suite('InstallTracker Unit Tests', function ()
 
     }).timeout(defaultTimeoutTime);
 
+    test('It retains install records when untracked without remaining owners', async () =>
+    {
+        resetExtensionState();
+
+        const tracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
+
+        await tracker.trackInstalledVersion(mockContext, defaultInstall, fakeValidDir);
+
+        await tracker.untrackInstalledVersion(mockContext, defaultInstall);
+        let installs = await tracker.getExistingInstalls(mockContext.installDirectoryProvider);
+        assert.lengthOf(installs, 1, 'Install should remain tracked after removing last owner');
+        assert.lengthOf(installs[0].installingExtensions ?? [], 0, 'Install should have no owners after untrack');
+
+        await tracker.untrackInstalledVersion(mockContext, defaultInstall);
+        installs = await tracker.getExistingInstalls(mockContext.installDirectoryProvider);
+        assert.lengthOf(installs, 1, 'Install should still be tracked when untrack is called with no owners');
+        assert.lengthOf(installs[0].installingExtensions ?? [], 0, 'Install should remain ownerless after repeated untrack');
+    }).timeout(defaultTimeoutTime);
+
+    test('It normalizes installs with undefined owners when untracked', async () =>
+    {
+        const customExtensionState = new MockExtensionContext();
+        const customEventStream = new MockEventStream();
+        const tracker = new MockInstallTracker(customEventStream, customExtensionState);
+        const customContext = getMockAcquisitionContext(defaultMode, defaultVersion, defaultTimeoutTime, customEventStream, customExtensionState);
+
+        const installWithUndefinedOwners = {
+            dotnetInstall: defaultInstall,
+            installingExtensions: undefined as unknown as (string | null)[]
+        } as InstallRecord;
+
+        await customExtensionState.update('installed', [installWithUndefinedOwners]);
+
+        await tracker.untrackInstalledVersion(customContext, defaultInstall);
+
+        const installs = await tracker.getExistingInstalls(customContext.installDirectoryProvider);
+        assert.lengthOf(installs, 1, 'Install should remain tracked after untrack');
+        assert.deepStrictEqual(installs[0].installingExtensions, [], 'Install should have an empty owners array after cleanup');
+    }).timeout(defaultTimeoutTime);
+
     test('It Only Removes the Extension Id if Other Owners Exist', async () =>
     {
         resetExtensionState();
@@ -594,6 +634,35 @@ suite('InstallTracker Session Mutex Tests', function ()
             await cleanupMutexHolders(processes);
         }
     }).timeout(testTimeoutTime);
+
+    test('It cleans up stale sessions when no process is holding their mutex', async () =>
+    {
+        resetExtensionState();
+
+        const extensionState = new MockExtensionContext();
+        const tracker = new MockInstallTracker(new MockEventStream(), extensionState);
+        const staleSessionId = generateRandomSessionId();
+        const installExePath = path.join(getRandomValidFakeDir(), getDotnetExecutable());
+
+        try
+        {
+            await tracker.markInstallAsInUseBySession(staleSessionId, installExePath);
+
+            const storedBefore = extensionState.get<Record<string, string[]>>('dotnet.returnedInstallDirectories', {});
+            assert.deepEqual(storedBefore[staleSessionId], [installExePath], 'Stale session should be recorded before cleanup');
+
+            const hasNoLiveDependents = await tracker.installHasNoLiveDependents(installExePath);
+            assert.isTrue(hasNoLiveDependents, 'Install should not have live dependents when no mutex holder exists');
+
+            const storedAfter = extensionState.get<Record<string, string[]>>('dotnet.returnedInstallDirectories', {});
+            assert.isUndefined(storedAfter[staleSessionId], 'Stale session should be removed from stored usage map');
+            assert.strictEqual(Object.keys(storedAfter).length, 0, 'No stale sessions should remain in the usage map');
+        }
+        finally
+        {
+            await tracker.endAnySingletonTrackingSessions();
+        }
+    });
 
     test('It handles multiple sessions with different installs correctly', async () =>
     {

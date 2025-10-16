@@ -113,11 +113,49 @@ suite('LocalInstallUpdateService Unit Tests', function ()
 
         assert.lengthOf(uninstallContexts, 1, 'Exactly one outdated install should be scheduled for uninstall');
         assert.strictEqual(uninstallContexts[0].version, legacyInstall.dotnetInstall.version);
+        assert.isUndefined(uninstallContexts[0].forceUpdate, 'Uninstall contexts should not set the forceUpdate flag');
 
         const ownersAdded = trackerInstance.getOwnersAdded();
         assert.lengthOf(ownersAdded, 1, 'Owners should be transferred to the latest install');
         assert.deepEqual(ownersAdded[0].owners, owners, 'Existing owners should be preserved on upgrade');
         assert.strictEqual(ownersAdded[0].install.installId, updatedInstall.dotnetInstall.installId, 'Latest install should receive owners');
+    });
+
+    test('It does not set forceUpdate on uninstall contexts', async () =>
+    {
+        const onlineStub = {
+            isOnline: async () => true
+        } as unknown as WebRequestWorkerSingleton;
+
+        (WebRequestWorkerSingleton as unknown as { getInstance: () => WebRequestWorkerSingleton }).getInstance = () => onlineStub;
+
+        const eventStream = new MockEventStream();
+        const extensionState = new MockExtensionContext();
+        extensionState.update('dotnet.latestUpdateDate', new Date(0));
+
+        const directoryProvider = new TestInstallationDirectoryProvider('/tmp');
+
+        const legacyInstall = createInstallRecord('6.0.100', 'x64', 'runtime', ['owner-a']);
+        const latestInstall = createInstallRecord('6.0.150', 'x64', 'runtime', []);
+
+        const trackerInstance = LocalUpdateServiceTestTracker.getInstance(eventStream, extensionState);
+        trackerInstance.setInstallSequences([[legacyInstall], [legacyInstall, latestInstall]]);
+
+        const acquireStub = async () => undefined;
+
+        const uninstallContexts: IDotnetAcquireContext[] = [];
+        const uninstallStub = async (context: IDotnetAcquireContext) =>
+        {
+            uninstallContexts.push({ ...context });
+            return '0';
+        };
+
+        const updateService = new LocalInstallUpdateService(eventStream, extensionState, directoryProvider, acquireStub, uninstallStub, LocalUpdateServiceTestTracker);
+
+        await updateService.ManageInstalls(0);
+
+        assert.isAbove(uninstallContexts.length, 0, 'An outdated install should be scheduled for uninstall');
+        assert.isTrue(uninstallContexts.every(context => context.forceUpdate === undefined), 'Uninstall contexts must not set forceUpdate');
     });
 
     test('It updates each install group independently and preserves non-user owners', async () =>

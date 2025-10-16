@@ -427,7 +427,8 @@ export class InstallTrackerSingleton
                     }
 
                     const preExistingRecord = installRecord.at(0);
-                    const owners = preExistingRecord?.installingExtensions.filter(x => x !== ctx.acquisitionContext?.requestingExtensionId);
+                    const preExistingOwners = preExistingRecord?.installingExtensions ?? [];
+                    const owners = preExistingOwners.filter(owner => owner !== ctx.acquisitionContext?.requestingExtensionId);
                     if (forceUninstall)
                     {
                         await this.reportSuccessfulUninstallHelper(context, install, true, true);
@@ -435,7 +436,7 @@ export class InstallTrackerSingleton
                     else
                     {
                         // There may be other extensions that depend on this install, so merely remove this requesting extension from the list of owners.
-                        this.eventStream.post(new RemovingOwnerFromList(`The owner ${ctx.acquisitionContext?.requestingExtensionId} removed ${JSON.stringify(install)} itself from the list, but ${owners?.join(', ')} remain.`));
+                        this.eventStream.post(new RemovingOwnerFromList(`The owner ${ctx.acquisitionContext?.requestingExtensionId} removed ${JSON.stringify(install)} itself from the list, but ${owners.join(', ')} remain.`));
                         await this.extensionState.update(installState, existingInstalls.map(x => IsEquivalentInstallation(x.dotnetInstall, install) ?
                             { dotnetInstall: install, installingExtensions: owners } as InstallRecord : x));
                     }
