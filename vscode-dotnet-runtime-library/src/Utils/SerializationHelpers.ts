@@ -40,7 +40,8 @@ export function deserializeMapOfSets<K extends string | number, V>(obj: Record<s
     {
         if (Object.prototype.hasOwnProperty.call(obj, key))
         {
-            const set = new Set<V>((obj[key] || []).filter(Boolean));
+            const sanitizedValues = (obj[key] || []).filter((value) => value !== undefined && value !== null);
+            const set = new Set<V>(sanitizedValues);
             // Cast the key to K - this is safe if K is string | number
             map.set(key as K, set);
         }

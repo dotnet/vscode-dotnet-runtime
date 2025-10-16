@@ -578,7 +578,7 @@ ${interpretedMessage}`;
                     }
                     else
                     {
-                        context.eventStream.post(new DotnetUninstallFailed(`Removed reference of ${JSON.stringify(install)} in path ${dotnetInstallDir}, but did not uninstall.
+                        context.eventStream.post(new DotnetUninstallSkipped(`Removed reference of ${JSON.stringify(install)} in path ${dotnetInstallDir}, but did not uninstall.
 Other dependents remain.`));
                     }
 

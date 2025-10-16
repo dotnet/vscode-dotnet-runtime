@@ -171,7 +171,7 @@ export class InstallTrackerSingleton
                 const serializedData = this.extensionState.get<Record<string, string[]>>(this.sessionInstallsKey, {});
                 const existingSessionsWithUsedExecutablePaths = deserializeMapOfSets<string, string>(serializedData);
 
-                this.eventStream.post(new SearchingLiveDependents(`Searching for live dependents of install at ${installExePath}. Sessions: ${JSON.stringify(existingSessionsWithUsedExecutablePaths)}`));
+                this.eventStream.post(new SearchingLiveDependents(`Searching for live dependents of install at ${installExePath}. Sessions: ${JSON.stringify(serializedData)}`));
 
                 if (liveExtensionOwnerToIgnore !== '' && dirProvider !== null && dotnetInstall !== null)
                 {
@@ -192,31 +192,28 @@ export class InstallTrackerSingleton
 
                 for (const [sessionId, exePaths] of existingSessionsWithUsedExecutablePaths)
                 {
-                    if (exePaths.has(installExePath))
+                    if (sessionId === InstallTrackerSingleton.sessionId && exePaths.has(installExePath))
                     {
-                        if (sessionId === InstallTrackerSingleton.sessionId)
-                        {
-                            this.eventStream.post(new LiveDependentInUse(`Dependent is in use by this session, so we can't uninstall it.`))
-                            return false; // Our session must be live if this code is running.
-                        }
+                        this.eventStream.post(new LiveDependentInUse(`Dependent is in use by this session, so we can't uninstall it.`))
+                        return false; // Our session must be live if this code is running.
+                    }
 
-                        // See if the session is still 'live' - there is no way to ensure we remove it on exit/os crash
-                        const logger = new EventStreamNodeIPCMutexLoggerWrapper(this.eventStream, sessionId);
-                        const mutex = new NodeIPCMutex(sessionId, logger, ``);
+                    // See if the session is still 'live' - there is no way to ensure we remove it on exit/os crash
+                    const logger = new EventStreamNodeIPCMutexLoggerWrapper(this.eventStream, sessionId);
+                    const mutex = new NodeIPCMutex(sessionId, logger, ``);
 
-                        const shouldContinue = await mutex.acquire(async () =>
-                        {
-                            // eslint-disable-next-line no-return-await
-                            this.eventStream.post(new DependentIsDead(`Dependent Session ${sessionId} is no longer live - continue searching dependents.`))
-                            existingSessionsWithUsedExecutablePaths.delete(sessionId);
-                            this.extensionState.update(this.sessionInstallsKey, serializeMapOfSets(existingSessionsWithUsedExecutablePaths));
-                            return Promise.resolve(true);
-                        }, 10, 30, `${sessionId}-${crypto.randomUUID()}`).catch(() => { return false; });
-                        if (!shouldContinue)
-                        {
-                            this.eventStream.post(new LiveDependentInUse(`Install ${installExePath} is in use by session ${sessionId}, so we can't uninstall it.`))
-                            return false; // We couldn't acquire the mutex, so the session must be live
-                        }
+                    const shouldContinue = await mutex.acquire(async () =>
+                    {
+                        // eslint-disable-next-line no-return-await
+                        this.eventStream.post(new DependentIsDead(`Dependent Session ${sessionId} is no longer live - continue searching dependents.`))
+                        existingSessionsWithUsedExecutablePaths.delete(sessionId);
+                        await this.extensionState.update(this.sessionInstallsKey, serializeMapOfSets(existingSessionsWithUsedExecutablePaths));
+                        return Promise.resolve(true);
+                    }, 10, 30, `${sessionId}-${crypto.randomUUID()}`).catch(() => { return false; });
+                    if (!shouldContinue && exePaths.has(installExePath))
+                    {
+                        this.eventStream.post(new LiveDependentInUse(`Install ${installExePath} is in use by session ${sessionId}, so we can't uninstall it.`))
+                        return false; // We couldn't acquire the mutex, so the session must be live
                     }
                 }
 
@@ -355,7 +352,7 @@ export class InstallTrackerSingleton
     public async getExistingInstalls(dirProvider: IInstallationDirectoryProvider, alreadyHoldingLock = false): Promise<InstallRecord[]>
     {
         return executeWithLock(this.eventStream, alreadyHoldingLock, this.getLockFilePathForKey(dirProvider, 'installed'),
-            5, 200000, (installState: InstallState) =>
+            5, 200000, async (installState: InstallState) =>
         {
             const existingInstalls = this.extensionState.get<InstallRecordOrStr[]>(installState, []);
             const convertedInstalls: InstallRecord[] = [];
@@ -398,7 +395,7 @@ export class InstallTrackerSingleton
                 }
             });
 
-            this.extensionState.update(installState, convertedInstalls);
+            await this.extensionState.update(installState, convertedInstalls);
 
             this.eventStream.post(new FoundTrackingVersions(`${installState} :
                         ${convertedInstalls.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.installingExtensions.map(owner => owner ?? 'null').join(', ')}\n`)}`));
@@ -417,11 +414,6 @@ export class InstallTrackerSingleton
             async (installState: InstallState, install: DotnetInstall, ctx: IAcquisitionWorkerContext) =>
             {
                 this.eventStream.post(new RemovingVersionFromExtensionState(`Removing ${JSON.stringify(install)} with id ${installState} from the state.`));
-
-                if (ctx.acquisitionContext?.requestingExtensionId === 'dotnet-runtime-library')
-                {
-                    forceUninstall = true;
-                }
 
                 const existingInstalls = await this.getExistingInstalls(ctx.installDirectoryProvider, true);
                 const installRecord = existingInstalls.filter(x => IsEquivalentInstallation(x.dotnetInstall, install));
@@ -477,8 +469,9 @@ export class InstallTrackerSingleton
                 activeSessionExecutablePaths.add(installExePath);
                 existingSessionsWithUsedExecutablePaths.set(sessionId, activeSessionExecutablePaths);
 
-                this.eventStream.post(new MarkedInstallInUse(`Session ${InstallTrackerSingleton.sessionId} marked ${installExePath} as in use.\nSessions: ${JSON.stringify(existingSessionsWithUsedExecutablePaths)} `));
-                this.extensionState.update(this.sessionInstallsKey, serializeMapOfSets(existingSessionsWithUsedExecutablePaths));
+                const serializedMap = serializeMapOfSets(existingSessionsWithUsedExecutablePaths);
+                this.eventStream.post(new MarkedInstallInUse(`Session ${InstallTrackerSingleton.sessionId} marked ${installExePath} as in use.\nSessions: ${JSON.stringify(serializedMap)}`));
+                await this.extensionState.update(this.sessionInstallsKey, serializedMap);
                 return Promise.resolve();
             });
     }
