@@ -4,13 +4,57 @@
 *--------------------------------------------------------------------------------------------*/
 import { assert } from 'chai';
 import * as path from 'path';
+import { DotnetInstall } from '../../Acquisition/DotnetInstall';
+import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
 import { IInstallationDirectoryProvider } from '../../Acquisition/IInstallationDirectoryProvider';
 import { InstallRecord } from '../../Acquisition/InstallRecord';
+import { InstallTrackerSingleton } from '../../Acquisition/InstallTrackerSingleton';
 import { LocalInstallUpdateService } from '../../Acquisition/LocalInstallUpdateService';
 import { IDotnetAcquireContext } from '../../IDotnetAcquireContext';
+import { IEventStream } from '../../EventStream/EventStream';
+import { IExtensionState } from '../../IExtensionState';
 import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
+import { getDotnetExecutable } from '../../Utils/TypescriptUtilities';
 import { LocalUpdateServiceTestTracker } from '../mocks/LocalInstallUpdateServiceMocks';
-import { MockEventStream, MockExtensionContext } from '../mocks/MockObjects';
+import { MockEventStream, MockExtensionContext, MockInstallTracker } from '../mocks/MockObjects';
+import { getMockAcquisitionContext } from './TestUtility';
+
+class RealLocalUpdateServiceTracker extends MockInstallTracker
+{
+    protected constructor(eventStream: IEventStream, extensionState: IExtensionState)
+    {
+        super(eventStream, extensionState);
+        this.overrideMembers(eventStream, extensionState);
+    }
+
+    public static getInstance(eventStream: IEventStream, extensionState: IExtensionState): RealLocalUpdateServiceTracker
+    {
+        let instance = (InstallTrackerSingleton as unknown as { instance?: InstallTrackerSingleton }).instance as RealLocalUpdateServiceTracker | undefined;
+
+        if (!instance || !(instance instanceof RealLocalUpdateServiceTracker))
+        {
+            instance = new RealLocalUpdateServiceTracker(eventStream, extensionState);
+            (InstallTrackerSingleton as unknown as { instance: InstallTrackerSingleton }).instance = instance;
+        }
+        else
+        {
+            instance.overrideMembers(eventStream, extensionState);
+            instance.setExtensionState(extensionState);
+        }
+
+        return instance;
+    }
+
+    public static async reset(): Promise<void>
+    {
+        const rawInstance = (InstallTrackerSingleton as unknown as { instance?: InstallTrackerSingleton }).instance;
+        if (rawInstance && rawInstance instanceof RealLocalUpdateServiceTracker)
+        {
+            await rawInstance.endAnySingletonTrackingSessions();
+            (InstallTrackerSingleton as unknown as { instance?: InstallTrackerSingleton }).instance = undefined;
+        }
+    }
+}
 
 class TestInstallationDirectoryProvider extends IInstallationDirectoryProvider
 {
@@ -46,6 +90,7 @@ suite('LocalInstallUpdateService Unit Tests', function ()
     this.afterEach(async () =>
     {
         (WebRequestWorkerSingleton as unknown as { getInstance: () => WebRequestWorkerSingleton }).getInstance = originalGetInstance;
+        await RealLocalUpdateServiceTracker.reset();
         await LocalUpdateServiceTestTracker.reset();
     });
 
@@ -120,6 +165,78 @@ suite('LocalInstallUpdateService Unit Tests', function ()
         assert.deepEqual(ownersAdded[0].owners, owners, 'Existing owners should be preserved on upgrade');
         assert.strictEqual(ownersAdded[0].install.installId, updatedInstall.dotnetInstall.installId, 'Latest install should receive owners');
     });
+
+    test('It removes outdated installs when using the real tracker implementation', async () =>
+    {
+        const onlineStub = {
+            isOnline: async () => true
+        } as unknown as WebRequestWorkerSingleton;
+
+        (WebRequestWorkerSingleton as unknown as { getInstance: () => WebRequestWorkerSingleton }).getInstance = () => onlineStub;
+
+        const eventStream = new MockEventStream();
+        const extensionState = new MockExtensionContext();
+        extensionState.update('dotnet.latestUpdateDate', new Date(0));
+
+        const directoryProvider = new TestInstallationDirectoryProvider('/tmp');
+
+        const legacyInstall = createInstallRecord('6.0.100', 'x64', 'runtime', ['owner-real']);
+        const latestInstall = createInstallRecord('6.0.150', 'x64', 'runtime', []);
+
+        extensionState.update('installed', [legacyInstall]);
+
+        const tracker = RealLocalUpdateServiceTracker.getInstance(eventStream, extensionState);
+
+        const acquireStub = async (context: IDotnetAcquireContext) =>
+        {
+            const workerContext = getMockAcquisitionContext(context.mode ?? 'runtime', latestInstall.dotnetInstall.version, 5000, eventStream, extensionState, context.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(), directoryProvider);
+            workerContext.acquisitionContext.requestingExtensionId = context.requestingExtensionId;
+
+            const installPath = path.join(directoryProvider.getInstallDir(latestInstall.dotnetInstall.installId), getDotnetExecutable());
+            await tracker.trackInstalledVersion(workerContext, latestInstall.dotnetInstall, installPath);
+            return undefined;
+        };
+
+        const uninstallStub = async (context: IDotnetAcquireContext, force: boolean, onlyCheckLiveDependents: boolean) =>
+        {
+            const uninstallTracker = RealLocalUpdateServiceTracker.getInstance(eventStream, extensionState);
+            const architecture = context.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture();
+            const dotnetInstall: DotnetInstall = {
+                version: context.version!,
+                architecture,
+                installId: `${context.version}~${architecture}~${context.mode}`,
+                installMode: context.mode!,
+                isGlobal: false
+            };
+
+            const workerContext = getMockAcquisitionContext(context.mode ?? 'runtime', context.version!, 5000, eventStream, extensionState, architecture, directoryProvider);
+            workerContext.acquisitionContext.requestingExtensionId = context.requestingExtensionId;
+
+            const installExePath = path.join(directoryProvider.getInstallDir(dotnetInstall.installId), getDotnetExecutable());
+
+            await uninstallTracker.untrackInstalledVersion(workerContext, dotnetInstall, force);
+
+            const noDependents = force ? true : onlyCheckLiveDependents ?
+                await uninstallTracker.installHasNoLiveDependentsBesidesId(installExePath, directoryProvider, context.requestingExtensionId ?? '', dotnetInstall) :
+                await uninstallTracker.installHasNoRegisteredDependentsBesidesId(dotnetInstall, directoryProvider, false, context.requestingExtensionId ?? '');
+
+            if (force || noDependents)
+            {
+                await uninstallTracker.reportSuccessfulUninstall(workerContext, dotnetInstall, force);
+            }
+
+            return '0';
+        };
+
+        const updateService = new LocalInstallUpdateService(eventStream, extensionState, directoryProvider, acquireStub, uninstallStub, RealLocalUpdateServiceTracker);
+
+        await updateService.ManageInstalls(0);
+
+        const remainingInstalls = await tracker.getExistingInstalls(directoryProvider, false);
+        assert.deepEqual(remainingInstalls.map(install => install.dotnetInstall.installId), [latestInstall.dotnetInstall.installId], 'Only the latest install should remain after cleanup');
+        const latestOwners = remainingInstalls[0]?.installingExtensions ?? [];
+        assert.include(latestOwners, 'owner-real', 'Owners should transfer to the latest install when using the real tracker');
+    }).timeout(10000);
 
     test('It does not set forceUpdate on uninstall contexts', async () =>
     {

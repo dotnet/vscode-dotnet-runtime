@@ -391,7 +391,13 @@ export class InstallTrackerSingleton
                 }
                 else
                 {
-                    convertedInstalls.push(install as InstallRecord);
+                    const owners = Array.isArray(install.installingExtensions) ? install.installingExtensions : [];
+                    convertedInstalls.push(
+                        {
+                            dotnetInstall: install.dotnetInstall,
+                            installingExtensions: owners
+                        } as InstallRecord
+                    );
                 }
             });
 
