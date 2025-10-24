@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning].
 ## [3.0.0] - 2025-11
 
 The official release of 2.4.1.
+Also fixes error output with the architecture.
 
 ## [2.4.1] - 2025-10 (Prerelease)
 
