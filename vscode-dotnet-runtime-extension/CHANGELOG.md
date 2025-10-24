@@ -7,13 +7,20 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-## [3.0.0] - 2025-10
+## [3.0.0] - 2025-11
 
-Breaking change: No longer downloads the latest runtime per every single request with `acquire`.
-Instead, update periodically, to prevent slow down on startup when new tooling must be acquired.
-Add setting to specify a local .NET SDK.
-Options were added to revert to the legacy behavior for API dependents. Please see: https://github.com/dotnet/docs/issues/49127
-Various Bug fixes.
+The official release of 2.4.1.
+
+## [2.4.1] - 2025-10 (Prerelease)
+
+Breaking change: No longer download the latest runtime per every single request with `acquire`.
+Instead, update periodically, to prevent slow down on startup when new tooling must be acquired to be secure. Please see https://github.com/dotnet/docs/issues/49127 for more details.
+`uninstall` also no longer allows uninstall for installs which other extensions claim they are dependent upon in a running session.
+Options were added to revert to the legacy behavior for API dependents.
+Various Bug Fixes were also included.
+
+This will be released as 3.0.0 in a non-prerelease version.
+2.4.0 was not released.
 
 ## [2.3.9] - 2025-8-3 (Prerelease, Skipping 2.3.8)
 
