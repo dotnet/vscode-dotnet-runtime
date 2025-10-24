@@ -88,7 +88,7 @@ export class InstallTrackerSingleton
             {
                 InstallTrackerSingleton.sessionMutexReleaser = resolved;
             }
-        }).catch(() => {}); // Assumption : We can ignore these errors because install/uninstall won't work if mutexes are unacquireable
+        }).catch(() => {}); // Assumption : We can ignore these errors because install/uninstall won't work if mutexes are unacquirable
     }
 
     /**
@@ -361,7 +361,7 @@ export class InstallTrackerSingleton
             {
                 if (typeof install === 'string')
                 {
-                    this.eventStream.post(new ConvertingLegacyInstallRecord(`Converting legacy install record ${install} to a null owner.Assuming:
+                    this.eventStream.post(new ConvertingLegacyInstallRecord(`Converting legacy install record ${install} to a null owner. Assuming:
                         ${JSON.stringify(InstallToStrings(getAssumedInstallInfo(install, null)))}`));
                     convertedInstalls.push(
                         {
