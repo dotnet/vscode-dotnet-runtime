@@ -118,6 +118,11 @@ export class DotnetResolver implements IDotnetResolver
         // Resolve the true path, so a path such as 'dotnet' can be resolved as a file to get the architecture of, without needing to call 'which' or 'where'
         const truePath = await this.resolveTruePath(dotnetExecutablePath, requestedArchitecture ?? null);
 
+        if (!truePath)
+        {
+            return null;
+        }
+
         // Try to get the arch in the most performant way
         const hostArch = new ExecutableArchitectureDetector().getExecutableArchitecture(truePath ?? dotnetExecutablePath);
         const knownArchitecture = ExecutableArchitectureDetector.IsKnownArchitecture(hostArch);
@@ -200,7 +205,7 @@ export class DotnetResolver implements IDotnetResolver
                 }
             }
 
-            return (truePaths?.length ?? 0) > 0 ? truePaths : tentativePaths;
+            return truePaths;
         }
         finally
         {
