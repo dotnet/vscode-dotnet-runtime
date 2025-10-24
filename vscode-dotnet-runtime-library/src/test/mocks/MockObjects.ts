@@ -724,6 +724,10 @@ export class MockExtensionConfiguration implements IExtensionConfiguration
         {
             return true as unknown as T;
         }
+        else if (name === 'runtimeUpdateDelaySeconds')
+        {
+            return 99999999 as unknown as T;
+        }
         else
         {
             return undefined;
@@ -735,7 +739,7 @@ export class MockInstallTracker extends InstallTrackerSingleton
 {
     constructor(eventStream: IEventStream, extensionState: IExtensionState)
     {
-        super(eventStream, extensionState);
+        super(eventStream, extensionState, false);
         // Cause an instance to exist so that we can override the members.
         const _ = InstallTrackerSingleton.getInstance(eventStream, extensionState);
         this.overrideMembers(eventStream, extensionState);
@@ -749,5 +753,38 @@ export class MockInstallTracker extends InstallTrackerSingleton
     public setExtensionState(extensionState: IExtensionState): void
     {
         this.extensionState = extensionState;
+    }
+
+    public getSessionId(): string
+    {
+        return InstallTrackerSingleton.sessionId;
+    }
+
+    /**
+     * Marks an install as in use by a specific session
+     * @param sessionId - The session ID to mark as using the installation
+     * @param installExePath - The path to the dotnet executable of the install to mark
+     */
+    public async markInstallAsInUseBySession(sessionId: string, installExePath: string): Promise<void>
+    {
+        return super.markInstallAsInUseWithInstallLock(installExePath, false, sessionId);
+    }
+
+    /**
+     * Exposes the protected endSession method for testing purposes
+     * @returns A promise that resolves when the mutex is released
+     */
+    public async endAnySingletonTrackingSessions(): Promise<void>
+    {
+        return this.endSession();
+    }
+
+    /**
+     * Exposes the protected restartSessionMutex method for testing purposes
+     * @returns A promise that resolves when the mutex is acquired
+     */
+    public async startNewSharedSingletonSession(): Promise<void>
+    {
+        return this.restartSessionMutex();
     }
 }

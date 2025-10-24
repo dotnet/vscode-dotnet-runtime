@@ -29,6 +29,7 @@ export * from './Acquisition/IVersionResolver';
 export * from './Acquisition/JsonInstaller';
 export * from './Acquisition/LinuxGlobalInstaller';
 export * from './Acquisition/LinuxVersionResolver';
+export * from './Acquisition/LocalInstallUpdateService';
 export * from './Acquisition/RuntimeInstallationDirectoryProvider';
 export * from './Acquisition/SdkInstallationDirectoryProvider';
 export * from './Acquisition/VersionResolver';

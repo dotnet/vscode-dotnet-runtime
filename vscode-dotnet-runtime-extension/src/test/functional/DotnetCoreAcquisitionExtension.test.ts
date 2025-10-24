@@ -479,6 +479,10 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
             assert.exists(result, 'Should find a runtime');
             assert.exists(result!.dotnetPath, 'Should find a runtime path');
             assert.equal(result!.dotnetPath.toLowerCase(), runtimePath.toLowerCase(), 'Should find the correct runtime path');
+
+            const findPathWithoutLocalLookup = { ...findPathContext, disableLocalLookup: true };
+            const resultWithoutLocalLookup = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath', findPathWithoutLocalLookup);
+            assert.notEqual(resultWithoutLocalLookup?.dotnetPath?.toLowerCase(), runtimePath.toLowerCase(), 'Should not find the extension-managed runtime when local lookup is disabled');
         }
         finally
         {

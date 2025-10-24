@@ -250,7 +250,7 @@ export class DotnetHostPathFinder implements IDotnetPathFinder
         }
 
         this.workerContext.eventStream.post(new DotnetFindPathRealPATHFound(`Found.NET on the path: ${JSON.stringify(dotnetsOnPATH)}, realpath: ${realPaths}`));
-        if ((realPaths?.length ?? 0) > 0)
+        if ((realPaths?.length ?? 0) === 0)
         {
             return undefined;
         }

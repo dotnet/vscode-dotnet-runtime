@@ -15,6 +15,9 @@ The official release of 2.4.1.
 
 Breaking change: No longer download the latest runtime per every single request with `acquire`.
 Instead, update periodically, to prevent slow down on startup when new tooling must be acquired to be secure. Please see https://github.com/dotnet/docs/issues/49127 for more details.
+`uninstall` also no longer allows uninstall for installs which other extensions claim they are dependent upon in a running session.
+Options were added to revert to the legacy behavior for API dependents.
+Various Bug Fixes were also included.
 
 This will be released as 3.0.0 in a non-prerelease version.
 2.4.0 was not released.

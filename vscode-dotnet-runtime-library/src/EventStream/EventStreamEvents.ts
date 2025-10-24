@@ -850,6 +850,36 @@ export abstract class DotnetAcquisitionMessage extends IEvent
     }
 }
 
+export class SessionMutexAcquired extends DotnetAcquisitionMessage
+{
+    public eventName = 'SessionMutexAcquired';
+
+    constructor(public readonly message: string)
+    {
+        super();
+    }
+}
+
+export class SessionMutexAcquisitionFailed extends DotnetAcquisitionMessage
+{
+    public eventName = 'SessionMutexAcquisitionFailed';
+
+    constructor(public readonly message: string)
+    {
+        super();
+    }
+}
+
+export class SessionMutexReleased extends DotnetAcquisitionMessage
+{
+    public eventName = 'SessionMutexReleased';
+
+    constructor(public readonly message: string)
+    {
+        super();
+    }
+}
+
 export class DotnetAcquisitionDeletion extends DotnetAcquisitionMessage
 {
     public readonly eventName = 'DotnetAcquisitionDeletion';
@@ -1183,6 +1213,35 @@ export class DotnetFindPathLookupSetting extends DotnetCustomMessageEvent
     public readonly eventName = 'DotnetFindPathLookupSetting';
 }
 
+export class LiveDependentInUse extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'LiveDependentInUse';
+}
+
+export class DependentIsDead extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'DependentIsDead';
+}
+
+export class ProcessEnvironmentCheck extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'ProcessEnvironmentCheck';
+}
+
+export class MarkedInstallInUse extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'MarkedInstallInUse';
+}
+
+export class CanIgnoreLiveDependents extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'CanIgnoreLiveDependents';
+}
+export class SearchingLiveDependents extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'SearchingLiveDependents';
+}
+
 export class CacheAliasCreated extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'CacheAliasCreated';
@@ -1421,6 +1480,21 @@ export class UserManualInstallSuccess extends DotnetCustomMessageEvent
 export class CommandExecutionStdOut extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'CommandExecutionStdOut';
+}
+
+export class UninstallingOutdatedInstalls extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'UninstallingOutdatedInstalls';
+}
+
+export class AutomaticUpdateCheck extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'AutomaticUpdateCheck';
+}
+
+export class UpdatingInstallGroups extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'UpdatingInstallGroups';
 }
 
 export class NoMatchingInstallToStopTracking extends DotnetCustomMessageEvent

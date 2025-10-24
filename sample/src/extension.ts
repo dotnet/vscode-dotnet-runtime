@@ -84,7 +84,7 @@ ${stderr}`);
         }
     });
 
-    async function callAcquireAPI(version: string | undefined, installMode: DotnetInstallMode | undefined)
+    async function callAcquireAPI(version: string | undefined, installMode: DotnetInstallMode | undefined, forceUpdates = true)
     {
         if (!version)
         {
@@ -98,7 +98,7 @@ ${stderr}`);
         try
         {
             await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
-            await vscode.commands.executeCommand('dotnet.acquire', { version, requestingExtensionId, mode: installMode });
+            await vscode.commands.executeCommand('dotnet.acquire', { version, requestingExtensionId, mode: installMode, forceUpdate: forceUpdates });
         }
         catch (error)
         {
@@ -114,6 +114,17 @@ ${stderr}`);
     const sampleAcquireASPNETRegistration = vscode.commands.registerCommand('sample.dotnet.acquireASPNET', async (version) =>
     {
         await callAcquireAPI(version, 'aspnetcore');
+    });
+
+    const sampleAcquireNoForceRegistration = vscode.commands.registerCommand('sample.dotnet.acquireNoForce', async (version) =>
+    {
+        const mode = await vscode.window.showInputBox({
+            placeHolder: 'runtime',
+            value: 'runtime',
+            prompt: '.NET mode to acquire, e.g. runtime or aspnetcore',
+        });
+
+        await callAcquireAPI(undefined, mode as DotnetInstallMode, false);
     });
 
     const sampleAcquireStatusRegistration = vscode.commands.registerCommand('sample.dotnet.acquireStatus', async (version) =>
@@ -445,6 +456,19 @@ ${JSON.stringify(result) ?? 'undefined'}`);
         }
     });
 
+    const sampleForceUpdateRegistration = vscode.commands.registerCommand('sample.dotnet.forceUpdate', async () =>
+    {
+        try
+        {
+            // Call the forceUpdate command from the runtime extension
+            await vscode.commands.executeCommand('dotnet.forceUpdate', { requestingExtensionId });
+        }
+        catch (error)
+        {
+            vscode.window.showErrorMessage((error as Error).toString());
+        }
+    });
+
     context.subscriptions.push(
         sampleSDKAcquireRegistration,
         sampleSDKGlobalAcquireRegistration,
@@ -453,5 +477,7 @@ ${JSON.stringify(result) ?? 'undefined'}`);
         sampleSDKrecommendedVersion,
         sampleSDKDotnetUninstallAllRegistration,
         sampleSDKShowAcquisitionLogRegistration,
-        sampleGlobalSDKFromRuntimeRegistration);
+        sampleForceUpdateRegistration,
+        sampleGlobalSDKFromRuntimeRegistration,
+        sampleAcquireNoForceRegistration);
 }

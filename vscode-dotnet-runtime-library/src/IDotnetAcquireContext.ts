@@ -3,7 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-import { DotnetInstallMode as DotnetInstallMode } from './Acquisition/DotnetInstallMode';
+import { DotnetInstallMode } from './Acquisition/DotnetInstallMode';
 import { AcquireErrorConfiguration } from './Utils/ErrorHandler';
 
 export interface IDotnetAcquireContext
@@ -37,13 +37,19 @@ export interface IDotnetAcquireContext
      * Defaults to 'runtime' as this was the default choice before this existed.
      * Note: If you try to call an install SDK endpoint or install runtime endpoint with a conflicting mode set, the mode will be ignored.
      * Only certain install types / modes combinations are supported at this time, such as local runtimes, local aspnet, and global SDKs.
+     *
+     * @property forceUpdate - Starting in version 3.0.0, the .NET Install Tool does not always check for updates every time acquire is called.
+     * Instead, it will automatically update local runtimes that it manages over time.
+     * If a runtime has a breaking change or a security update, we recommend setting forceUpdate to true to ensure the latest major.minor requested is used.
+     * If you want to have the same behavior as before 3.0.0, please set forceUpdate to true. The default will assume false if it's undefined.
      */
     version: string;
     requestingExtensionId?: string;
     errorConfiguration?: AcquireErrorConfiguration;
     installType?: DotnetInstallType;
     architecture?: string | null | undefined;
-    mode? : DotnetInstallMode;
+    mode?: DotnetInstallMode;
+    forceUpdate?: boolean;
 }
 
 /**

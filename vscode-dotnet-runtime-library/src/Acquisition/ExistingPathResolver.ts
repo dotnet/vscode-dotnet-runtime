@@ -14,7 +14,9 @@ import { CommandExecutor } from '../Utils/CommandExecutor';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
+import { DotnetInstall, GetDotnetInstallInfo } from './DotnetInstall';
 import { DotnetResolver } from './DotnetResolver';
+import { InstallTrackerSingleton } from './InstallTrackerSingleton';
 
 const badExistingPathWarningMessage = `The 'existingDotnetPath' setting was set, but it did not meet the requirements for this extension to run properly.
 This setting has been ignored.
@@ -48,6 +50,7 @@ export class ExistingPathResolver
         }
         if (existingPath && (await this.providedPathMeetsAPIRequirement(this.workerContext, existingPath, this.workerContext.acquisitionContext, requirement) || this.allowInvalidPath(this.workerContext)))
         {
+            await InstallTrackerSingleton.getInstance(this.workerContext.eventStream, this.workerContext.extensionState).markInstallAsInUse(existingPath);
             return { dotnetPath: existingPath } as IDotnetAcquireResult;
         }
 
