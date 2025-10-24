@@ -7,7 +7,7 @@ import { DotnetResolver } from '../../Acquisition/DotnetResolver';
 import { CommandExecutionEvent } from '../../EventStream/EventStreamEvents';
 import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
 import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
-import { MockCommandExecutor, MockEventStream } from '../mocks/MockObjects';
+import { MockCommandExecutor, MockEventStream, MockExtensionContext, MockInstallTracker } from '../mocks/MockObjects';
 import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 const assert = chai.assert;
 
@@ -23,6 +23,8 @@ suite('DotnetResolver Unit Tests', function ()
         // Tear down tmp storage for fresh run
         WebRequestWorkerSingleton.getInstance().destroy();
         LocalMemoryCacheSingleton.getInstance().invalidate();
+        const trackerSingletonMockAccess = new MockInstallTracker(new MockEventStream(), new MockExtensionContext());
+        trackerSingletonMockAccess.endAnySingletonTrackingSessions();
     });
 
     function makeResolverWithMockExecutorAndEventStream()

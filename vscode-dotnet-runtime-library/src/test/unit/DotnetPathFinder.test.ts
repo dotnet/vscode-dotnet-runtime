@@ -9,7 +9,7 @@ import * as path from 'path';
 import { DotnetHostPathFinder } from '../../Acquisition/DotnetHostPathFinder';
 import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
 import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
-import { MockCommandExecutor, MockFileUtilities } from '../mocks/MockObjects';
+import { MockCommandExecutor, MockEventStream, MockExtensionContext, MockFileUtilities, MockInstallTracker } from '../mocks/MockObjects';
 import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 
 const assert = chai.assert;
@@ -34,6 +34,8 @@ suite('DotnetHostPathFinder Unit Tests', function ()
         // Tear down tmp storage for fresh run
         WebRequestWorkerSingleton.getInstance().destroy();
         LocalMemoryCacheSingleton.getInstance().invalidate();
+        const trackerSingletonMockAccess = new MockInstallTracker(new MockEventStream(), new MockExtensionContext());
+        trackerSingletonMockAccess.endAnySingletonTrackingSessions();
     });
 
     test('It can find the hostfxr record on mac/linux', async () =>
