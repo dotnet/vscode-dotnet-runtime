@@ -165,7 +165,8 @@ ${stderr}`);
 
     const sampleResetUpdateSuccessTime = vscode.commands.registerCommand('sample.dotnet.resetUpdateTimer', async () =>
     {
-        context.globalState.update('dotnet.latestUpdateDate', undefined);
+        await context.globalState.update('dotnet.latestUpdateDate', undefined);
+        vscode.window.showInformationMessage(`.NET update timer reset to: ${context.globalState.get('dotnet.latestUpdateDate') ?? new Date(0).toString()}`);
     });
 
     async function acquireConcurrent(versions: [string, string, string], installMode?: DotnetInstallMode)

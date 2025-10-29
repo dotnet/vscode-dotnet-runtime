@@ -124,6 +124,11 @@
 				"command": "sample.dotnet.acquireNoForce",
 				"title": "Acquire .NET runtimes without forcing updates",
 				"category": "Sample"
+			},
+			{
+				"command": "sample.dotnet.resetUpdateTimer",
+				"title": "Reset the update timer for .NET",
+				"category": "Sample"
 			}
 		]
 	},
