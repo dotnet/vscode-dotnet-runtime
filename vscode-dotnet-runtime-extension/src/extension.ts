@@ -193,7 +193,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         'runtime', vsCodeContext.globalStoragePath); // Assumption : aspnetcore and runtime directory provider use the same logic, otherwise updates would not be found
     const automaticUpdater = new LocalInstallUpdateService(globalEventStream, vsCodeContext.globalState, runtimeUpdateDirectoryProvider,
         acquireLocal,
-        uninstall
+        uninstall,
+        loggingObserver
     );
 
     if (!(process.env.DOTNET_INSTALL_TOOL_UNDER_TEST === 'true')) // Don't try to update while testing - this would make tests fail randomly

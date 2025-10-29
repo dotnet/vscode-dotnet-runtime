@@ -4,19 +4,19 @@
 *--------------------------------------------------------------------------------------------*/
 import { assert } from 'chai';
 import * as path from 'path';
-import { DotnetInstall } from '../../Acquisition/DotnetInstall';
 import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
+import { DotnetInstall } from '../../Acquisition/DotnetInstall';
 import { IInstallationDirectoryProvider } from '../../Acquisition/IInstallationDirectoryProvider';
 import { InstallRecord } from '../../Acquisition/InstallRecord';
 import { InstallTrackerSingleton } from '../../Acquisition/InstallTrackerSingleton';
 import { LocalInstallUpdateService } from '../../Acquisition/LocalInstallUpdateService';
-import { IDotnetAcquireContext } from '../../IDotnetAcquireContext';
 import { IEventStream } from '../../EventStream/EventStream';
+import { IDotnetAcquireContext } from '../../IDotnetAcquireContext';
 import { IExtensionState } from '../../IExtensionState';
-import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
 import { getDotnetExecutable } from '../../Utils/TypescriptUtilities';
+import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
 import { LocalUpdateServiceTestTracker } from '../mocks/LocalInstallUpdateServiceMocks';
-import { MockEventStream, MockExtensionContext, MockInstallTracker } from '../mocks/MockObjects';
+import { MockEventStream, MockExtensionContext, MockInstallTracker, MockLoggingObserver } from '../mocks/MockObjects';
 import { getMockAcquisitionContext } from './TestUtility';
 
 class RealLocalUpdateServiceTracker extends MockInstallTracker
@@ -147,7 +147,7 @@ suite('LocalInstallUpdateService Unit Tests', function ()
             return '0';
         };
 
-        const updateService = new LocalInstallUpdateService(eventStream, extensionState, directoryProvider, acquireStub, uninstallStub, LocalUpdateServiceTestTracker);
+        const updateService = new LocalInstallUpdateService(eventStream, extensionState, directoryProvider, acquireStub, uninstallStub, new MockLoggingObserver(), LocalUpdateServiceTestTracker);
 
         await updateService.ManageInstalls(0);
 
@@ -228,7 +228,7 @@ suite('LocalInstallUpdateService Unit Tests', function ()
             return '0';
         };
 
-        const updateService = new LocalInstallUpdateService(eventStream, extensionState, directoryProvider, acquireStub, uninstallStub, RealLocalUpdateServiceTracker);
+        const updateService = new LocalInstallUpdateService(eventStream, extensionState, directoryProvider, acquireStub, uninstallStub, new MockLoggingObserver(), RealLocalUpdateServiceTracker);
 
         await updateService.ManageInstalls(0);
 
@@ -267,7 +267,7 @@ suite('LocalInstallUpdateService Unit Tests', function ()
             return '0';
         };
 
-        const updateService = new LocalInstallUpdateService(eventStream, extensionState, directoryProvider, acquireStub, uninstallStub, LocalUpdateServiceTestTracker);
+        const updateService = new LocalInstallUpdateService(eventStream, extensionState, directoryProvider, acquireStub, uninstallStub, new MockLoggingObserver(), LocalUpdateServiceTestTracker);
 
         await updateService.ManageInstalls(0);
 
@@ -321,7 +321,7 @@ suite('LocalInstallUpdateService Unit Tests', function ()
             return '0';
         };
 
-        const updateService = new LocalInstallUpdateService(eventStream, extensionState, directoryProvider, acquireStub, uninstallStub, LocalUpdateServiceTestTracker);
+        const updateService = new LocalInstallUpdateService(eventStream, extensionState, directoryProvider, acquireStub, uninstallStub, new MockLoggingObserver(), LocalUpdateServiceTestTracker);
 
         await updateService.ManageInstalls(0);
 
@@ -375,7 +375,7 @@ suite('LocalInstallUpdateService Unit Tests', function ()
             return '0';
         };
 
-        const updateService = new LocalInstallUpdateService(eventStream, extensionState, directoryProvider, acquireStub, uninstallStub, LocalUpdateServiceTestTracker);
+        const updateService = new LocalInstallUpdateService(eventStream, extensionState, directoryProvider, acquireStub, uninstallStub, new MockLoggingObserver(), LocalUpdateServiceTestTracker);
 
         let thrownError: Error | undefined;
         try
@@ -438,7 +438,7 @@ suite('LocalInstallUpdateService Unit Tests', function ()
             return '0';
         };
 
-        const updateService = new LocalInstallUpdateService(eventStream, extensionState, directoryProvider, acquireStub, uninstallStub, LocalUpdateServiceTestTracker);
+        const updateService = new LocalInstallUpdateService(eventStream, extensionState, directoryProvider, acquireStub, uninstallStub, new MockLoggingObserver(), LocalUpdateServiceTestTracker);
 
         await updateService.ManageInstalls(0);
 
@@ -496,7 +496,7 @@ suite('LocalInstallUpdateService Unit Tests', function ()
             return '0';
         };
 
-        const updateService = new LocalInstallUpdateService(eventStream, extensionState, directoryProvider, acquireStub, uninstallStub, LocalUpdateServiceTestTracker);
+        const updateService = new LocalInstallUpdateService(eventStream, extensionState, directoryProvider, acquireStub, uninstallStub, new MockLoggingObserver(), LocalUpdateServiceTestTracker);
 
         const startTime = Date.now();
         await updateService.ManageInstalls(0);
@@ -555,7 +555,7 @@ suite('LocalInstallUpdateService Unit Tests', function ()
             return '0';
         };
 
-        const updateService = new LocalInstallUpdateService(eventStream, extensionState, directoryProvider, acquireStub, uninstallStub, LocalUpdateServiceTestTracker);
+        const updateService = new LocalInstallUpdateService(eventStream, extensionState, directoryProvider, acquireStub, uninstallStub, new MockLoggingObserver(), LocalUpdateServiceTestTracker);
 
         await updateService.ManageInstalls(0);
 
@@ -606,7 +606,7 @@ suite('LocalInstallUpdateService Unit Tests', function ()
             return '0';
         };
 
-        const updateService = new LocalInstallUpdateService(eventStream, extensionState, directoryProvider, acquireStub, uninstallStub, LocalUpdateServiceTestTracker);
+        const updateService = new LocalInstallUpdateService(eventStream, extensionState, directoryProvider, acquireStub, uninstallStub, new MockLoggingObserver(), LocalUpdateServiceTestTracker);
 
         await updateService.ManageInstalls(0);
 

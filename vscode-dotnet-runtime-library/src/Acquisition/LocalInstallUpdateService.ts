@@ -4,6 +4,7 @@
 *--------------------------------------------------------------------------------------------*/
 import { IEventStream } from '../EventStream/EventStream';
 import { AutomaticUpdateCheck, UninstallingOutdatedInstalls, UpdatingInstallGroups } from '../EventStream/EventStreamEvents';
+import { ILoggingObserver } from '../EventStream/ILoggingObserver';
 import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
 import { IExtensionState } from '../IExtensionState';
@@ -33,6 +34,7 @@ export class LocalInstallUpdateService extends IInstallManagementService
     constructor(protected readonly eventStream: IEventStream, private readonly extensionState: IExtensionState, private readonly managementDirectoryProvider: IInstallationDirectoryProvider,
         private readonly installAction: (commandContext: IDotnetAcquireContext, ignorePathSetting: boolean) => Promise<IDotnetAcquireResult | undefined>,
         private readonly uninstallAction: (commandContext: IDotnetAcquireContext, force: boolean, onlyCheckLiveDependents: boolean) => Promise<string>,
+        private readonly logger: ILoggingObserver,
         private readonly installTrackerType: typeof InstallTrackerSingleton = InstallTrackerSingleton
     )
     {
@@ -59,15 +61,24 @@ export class LocalInstallUpdateService extends IInstallManagementService
         // Check if at least 1 day (24 hours) has passed since last update per SDL
         const oneDayMs = 24 * 60 * 60 * 1000;
 
-        const timeOfLastUpdate: number = new Date(lastUpdateDate).getTime();
-        const currentTime: number = Date.now();
+        const timeOfLastUpdateMs: number = new Date(lastUpdateDate).getTime();
+        const currentTimeMs: number = Date.now();
+        const timeGapMs = (currentTimeMs - timeOfLastUpdateMs);
 
-        this.eventStream.post(new AutomaticUpdateCheck(`Checking for updates after ${automaticUpdateDelayMs}. Last Update Date: ${timeOfLastUpdate}. Current Date: ${currentTime}`));
-        if (automaticUpdateDelayMs === 0 || (currentTime - timeOfLastUpdate) >= oneDayMs)
+        this.eventStream.post(new AutomaticUpdateCheck(`Checking for updates after ${automaticUpdateDelayMs}. Last Update Date: ${timeOfLastUpdateMs}. Current Date: ${currentTimeMs}`));
+        this.logger.dispose();
+        if (automaticUpdateDelayMs === 0 || timeGapMs >= oneDayMs)
         {
             this.eventStream.post(new AutomaticUpdateCheck(`Commencing updates at ${Date.now().toString()} in ${automaticUpdateDelayMs} ms.`));
+            this.logger.dispose();
             await new Promise(resolve => setTimeout(resolve, automaticUpdateDelayMs));
             return this.automaticUpdate();
+        }
+        else
+        {
+            this.eventStream.post(new AutomaticUpdateCheck(`Skipping update check as the last successful update was within 24 hours: ${timeGapMs} ms vs ${oneDayMs}`));
+            this.logger.dispose();
+            return Promise.resolve();
         }
     }
 
@@ -209,6 +220,8 @@ export class LocalInstallUpdateService extends IInstallManagementService
         {
             await this.extensionState.update('dotnet.latestUpdateDate', Date.now());
         }
+
+        this.logger.dispose();
 
         return Promise.resolve();
     }
