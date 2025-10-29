@@ -65,7 +65,7 @@ export class LocalInstallUpdateService extends IInstallManagementService
         const currentTimeMs: number = Date.now();
         const timeGapMs = (currentTimeMs - timeOfLastUpdateMs);
 
-        this.eventStream.post(new AutomaticUpdateCheck(`Checking for updates after ${automaticUpdateDelayMs}. Last Update Date: ${timeOfLastUpdateMs}. Current Date: ${currentTimeMs}`));
+        this.eventStream.post(new AutomaticUpdateCheck(`Checking for updates after ${automaticUpdateDelayMs}. Last Update Date: ${new Date(timeOfLastUpdateMs).toISOString()}. Current Date: ${new Date(currentTimeMs).toISOString()}`));
         this.logger.dispose();
         if (automaticUpdateDelayMs === 0 || timeGapMs >= oneDayMs)
         {
