@@ -124,6 +124,7 @@ namespace commandKeys
     export const reportIssue = 'reportIssue';
     export const resetData = 'resetData';
     export const availableInstalls = 'availableInstalls';
+    export const resetUpdateTimerInternal = '_resetUpdateTimer';
 }
 
 const commandPrefix = 'dotnet';
@@ -506,6 +507,12 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             errorConfiguration: UninstallErrorConfiguration.DisplayAllErrorPopups,
         };
         return uninstallAll(uninstallContext);
+    });
+
+    const resetUpdateTimerInternalRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.resetUpdateTimerInternal}`, async () =>
+    {
+        await vsCodeContext.globalState.update('dotnet.latestUpdateDate', new Date(0));
+        return vsCodeContext.globalState.get<Date>('dotnet.latestUpdateDate');
     });
 
     const dotnetUninstallPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallPublic}`, async () =>
@@ -987,7 +994,8 @@ Installation will timeout in ${timeoutValue} seconds.`))
         dotnetForceUpdateRegistration,
         showOutputChannelRegistration,
         ensureDependenciesRegistration,
-        reportIssueRegistration,
+    reportIssueRegistration,
+    resetUpdateTimerInternalRegistration,
         ...eventStreamObservers);
 
     if (showResetDataCommand)
