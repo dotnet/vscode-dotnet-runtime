@@ -167,8 +167,8 @@ ${stderr}`);
     {
         try
         {
-            const resetResult = await vscode.commands.executeCommand<Date | string | number | undefined>('dotnet._resetUpdateTimer');
-            const resetDisplay = resetResult !== undefined ? new Date(resetResult).toString() : new Date(0).toString();
+            const resetResult = await vscode.commands.executeCommand<Date | undefined>('dotnet._resetUpdateTimer');
+            const resetDisplay = resetResult ? new Date(resetResult).toString() : 'undefined';
             vscode.window.showInformationMessage(`.NET update timer reset to: ${resetDisplay}`);
         }
         catch (error)

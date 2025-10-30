@@ -445,6 +445,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             const existingOfflinePath = await getExistingInstallOffline(worker, workerContext);
             if (existingOfflinePath)
             {
+                // make sure this is marked
                 return Promise.resolve(existingOfflinePath);
             }
 
@@ -511,7 +512,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
     const resetUpdateTimerInternalRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.resetUpdateTimerInternal}`, async () =>
     {
-        await vsCodeContext.globalState.update('dotnet.latestUpdateDate', new Date(0));
+        await vsCodeContext.globalState.update('dotnet.latestUpdateDate', undefined);
         return vsCodeContext.globalState.get<Date>('dotnet.latestUpdateDate');
     });
 
@@ -994,8 +995,8 @@ Installation will timeout in ${timeoutValue} seconds.`))
         dotnetForceUpdateRegistration,
         showOutputChannelRegistration,
         ensureDependenciesRegistration,
-    reportIssueRegistration,
-    resetUpdateTimerInternalRegistration,
+        reportIssueRegistration,
+        resetUpdateTimerInternalRegistration,
         ...eventStreamObservers);
 
     if (showResetDataCommand)
