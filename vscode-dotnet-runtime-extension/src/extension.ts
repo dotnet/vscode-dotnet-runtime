@@ -445,7 +445,6 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             const existingOfflinePath = await getExistingInstallOffline(worker, workerContext);
             if (existingOfflinePath)
             {
-                // make sure this is marked
                 return Promise.resolve(existingOfflinePath);
             }
 
