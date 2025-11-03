@@ -16,7 +16,7 @@ import { IInstallationDirectoryProvider } from './IInstallationDirectoryProvider
 import { IInstallManagementService } from './IInstallManagementService';
 import { InstallRecord } from './InstallRecord';
 import { InstallTrackerSingleton } from './InstallTrackerSingleton';
-import { BAD_VERSION } from './StringConstants';
+import { AUTOMATIC_UPDATE_EXTENSION_ID, BAD_VERSION } from './StringConstants';
 import * as versionUtils from './VersionUtilities';
 
 export interface InstallGroup
@@ -145,7 +145,7 @@ export class LocalInstallUpdateService extends IInstallManagementService
                 architecture: group.architecture,
                 mode: group.mode,
                 installType: 'local',
-                requestingExtensionId: 'dotnet-runtime-library',
+                requestingExtensionId: AUTOMATIC_UPDATE_EXTENSION_ID,
                 errorConfiguration: AcquireErrorConfiguration.DisableErrorPopups,
                 forceUpdate: true
             }
@@ -205,7 +205,7 @@ export class LocalInstallUpdateService extends IInstallManagementService
                     version: install.dotnetInstall.version,
                     architecture: install.dotnetInstall.architecture,
                     mode: install.dotnetInstall.installMode,
-                    requestingExtensionId: 'dotnet-runtime-library',
+                    requestingExtensionId: AUTOMATIC_UPDATE_EXTENSION_ID,
                     installType: 'local',
                     errorConfiguration: AcquireErrorConfiguration.DisableErrorPopups
                 };
