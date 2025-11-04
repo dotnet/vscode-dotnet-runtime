@@ -465,7 +465,7 @@ export class WebRequestWorkerSingleton
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                     const summarizedError = new EventBasedError('WebRequestFailedFromAxios',
                         `Request to ${url} Failed: ${axiosBasedError?.message}. Aborting.
-${axiosBasedError.cause ? `Error Cause: ${axiosBasedError.cause!.message}` : ``}
+${axiosBasedError.cause ? `Error Cause: ${JSON.stringify(axiosBasedError.cause ?? '')}` : ``}
 Please ensure that you are online.
 
 If you're on a proxy and disable registry access, you must set the proxy in our extension settings. See https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`);

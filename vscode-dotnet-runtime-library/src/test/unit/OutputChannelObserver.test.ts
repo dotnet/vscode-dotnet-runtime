@@ -4,7 +4,7 @@
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
 import { DotnetInstall } from '../../Acquisition/DotnetInstall';
-import { DotnetAcquisitionCompleted, DotnetAcquisitionStarted, DotnetExistingPathResolutionCompleted, DotnetFileIntegrityFailureEvent } from '../../EventStream/EventStreamEvents';
+import { DotnetAcquisitionCompleted, DotnetAcquisitionStarted, DotnetExistingPathResolutionCompleted, DotnetFileIntegrityFailureEvent, DotnetOfflineWarning } from '../../EventStream/EventStreamEvents';
 import { OutputChannelObserver } from '../../EventStream/OutputChannelObserver';
 import { MockOutputChannel } from '../mocks/MockOutputChannel';
 
@@ -38,7 +38,6 @@ suite('OutputChannelObserver Unit Tests', function ()
 
         // Verify no output was written when suppressOutput is true
         assert.isEmpty(mockOutputChannel.appendedText, 'No output should be written when suppressOutput is true');
-        assert.isEmpty(mockOutputChannel.appendedLines, 'No lines should be written when suppressOutput is true');
     }).timeout(defaultTimeoutTime);
 
     test('It produces output when suppressOutput is false', async () =>
@@ -47,7 +46,7 @@ suite('OutputChannelObserver Unit Tests', function ()
         const observer = new OutputChannelObserver(mockOutputChannel, false);
 
         // Test with an event that produces output
-        const acquisitionStartedEvent = new DotnetExistingPathResolutionCompleted(mockInstall.installId);
+        const acquisitionStartedEvent = new DotnetOfflineWarning('Test offline warning message');
         observer.post(acquisitionStartedEvent);
 
         // Verify output was written when suppressOutput is false
@@ -64,7 +63,23 @@ suite('OutputChannelObserver Unit Tests', function ()
         observer.post(warningEvent);
 
         // Verify output was written with default behavior
-        assert.isNotEmpty(mockOutputChannel.appendedLines, 'Output should be written with default behavior');
-        assert.include(mockOutputChannel.appendedLines.join(''), 'Test warning message', 'The warning message should be in the output');
+        assert.isNotEmpty(mockOutputChannel.appendedText, 'Output should be written with default behavior');
+        assert.include(mockOutputChannel.appendedText, 'Test warning message', 'The warning message should be in the output');
+    }).timeout(defaultTimeoutTime);
+
+    test('It handles verbose-only events based on highVerbosity setting', async () =>
+    {
+        const mockOutputChannel1 = new MockOutputChannel();
+        const mockOutputChannel2 = new MockOutputChannel();
+        const observerVerbose = new OutputChannelObserver(mockOutputChannel1, false, true);
+        const observerNonVerbose = new OutputChannelObserver(mockOutputChannel2, false, false);
+
+        const verboseEvent = new DotnetExistingPathResolutionCompleted(`Path`);
+
+        observerVerbose.post(verboseEvent);
+        observerNonVerbose.post(verboseEvent);
+
+        assert.include(mockOutputChannel1.appendedText, 'path', 'Verbose-only events should display when highVerbosity is true');
+        assert.notInclude(mockOutputChannel2.appendedText, 'path', 'Verbose-only events should not display when highVerbosity is false');
     }).timeout(defaultTimeoutTime);
 });

@@ -8,8 +8,8 @@
     <OutDir>$(RepoRoot)packages\</OutDir>
   </PropertyGroup>
   <ItemGroup>
-    <FilesToSign Include="$(OutDir)*.vsix">
-      <Authenticode>VsixSHA2</Authenticode>
+    <FilesToSign Include="$(OutDir)*.signature.p7s">
+      <Authenticode>VSCodePublisher</Authenticode>
     </FilesToSign>
   </ItemGroup>
 </Project>

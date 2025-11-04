@@ -15,6 +15,7 @@ import
 } from '../EventStream/EventStreamEvents';
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { BAD_VERSION } from './StringConstants';
 
 const invalidFeatureBandErrorString = `A feature band couldn't be determined for the requested version: `;
 
@@ -40,6 +41,17 @@ export function getMinor(fullySpecifiedVersion: string, eventStream: IEventStrea
     return getMajorMinor(fullySpecifiedVersion, eventStream, context).split('.')[1];
 }
 
+// Returns constants.BAD_VERSION if the version is invalid.
+export function getMajorMinorFromValidVersion(fullySpecifiedVersion: string)
+{
+    if (fullySpecifiedVersion.split('.').length < 2)
+    {
+        return BAD_VERSION;
+    }
+
+    const majorMinor = `${fullySpecifiedVersion.split('.').at(0)}.${fullySpecifiedVersion.split('.').at(1)}`;
+    return majorMinor;
+}
 
 /**
  *
@@ -57,8 +69,7 @@ export function getMajorMinor(fullySpecifiedVersion: string, eventStream: IEvent
         throw event.error;
     }
 
-    const majorMinor = `${fullySpecifiedVersion.split('.').at(0)}.${fullySpecifiedVersion.split('.').at(1)}`;
-    return majorMinor;
+    return getMajorMinorFromValidVersion(fullySpecifiedVersion);
 }
 
 /**
@@ -106,8 +117,8 @@ export function getFeatureBandPatchVersion(fullySpecifiedVersion: string, eventS
  */
 export function getSDKPatchVersionString(fullySpecifiedVersion: string, eventStream: IEventStream, context: IAcquisitionWorkerContext, considerErrorIfNoBand = true): string
 {
-    const patch: string | undefined = fullySpecifiedVersion.split('.')?.[2]?.substring(1)?.split('-')?.[0];
-    if (patch === undefined || !isNumber(patch))
+    const patch = getSDKFeatureBandOrPatchFromFullySpecifiedVersion(fullySpecifiedVersion);
+    if (patch === '' || !isNumber(patch))
     {
         if (considerErrorIfNoBand)
         {
@@ -123,6 +134,13 @@ export function getSDKPatchVersionString(fullySpecifiedVersion: string, eventStr
         return '';
     }
     return patch
+}
+
+
+export function getSDKFeatureBandOrPatchFromFullySpecifiedVersion(fullySpecifiedVersion: string): string
+{
+    const patch: string | undefined = fullySpecifiedVersion.split('.')?.[2]?.substring(1)?.split('-')?.[0];
+    return patch ?? '';
 }
 
 /**

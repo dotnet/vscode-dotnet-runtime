@@ -27,6 +27,7 @@ jobs:
       inputs:
         path: '$(System.ArtifactsDirectory)'
     - template: install-node.yaml
+    - template: list-file-structure.yaml
     - bash: |
         VERSION=`node -p "require('./package.json').version"`
         npm version $VERSION --allow-same-version
@@ -47,6 +48,10 @@ jobs:
           $basePublishArgs += '--azure-credential'
           $basePublishArgs += '--packagePath'
           $publishArgs = $basePublishArgs + 'vscode-dotnet-runtime-$(GetVersion.version)-signed.vsix'
+          $publishArgs += '--manifestPath'
+          $publishArgs += 'vscode-dotnet-runtime-$(GetVersion.version).manifest'
+          $publishArgs += '--signaturePath'
+          $publishArgs += 'vscode-dotnet-runtime-$(GetVersion.version).signature.p7s'
           If ("${{ parameters.SignType }}" -ne "Real") {
             Write-Host "With a test-signed build, the command to publish is printed instead of run."
             Write-Host "##[command]vsce $publishArgs"

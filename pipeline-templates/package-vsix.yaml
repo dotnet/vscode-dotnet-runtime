@@ -1,7 +1,6 @@
 parameters:
   pool: ''
   SignType: ''
-  PRERELEASE: false
 
 jobs:
 - job: ${{ parameters.pool.os }}_Package
@@ -30,8 +29,19 @@ jobs:
       fi
       npm version $VERSION --allow-same-version
       echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
+
+      # Calculate if this should be prerelease based on patch version (odd = prerelease)
+      PATCH_VERSION="${VERSION##*.}"  # Gets everything after the last dot
+      IS_ODD=$((PATCH_VERSION % 2))
+      if [ $IS_ODD -eq 1 ]; then
+        echo "##vso[task.setvariable variable=isPrerelease;isOutput=true]true"
+        echo "Version $VERSION has odd patch number ($PATCH_VERSION) - will be marked as prerelease"
+      else
+        echo "##vso[task.setvariable variable=isPrerelease;isOutput=true]false"
+        echo "Version $VERSION has even patch number ($PATCH_VERSION) - will be marked as stable release"
+      fi
     name: GetVersion
-    displayName: '❓ Get Version'
+    displayName: '❓ Get Version and Determine Prerelease Status'
     workingDirectory: $(dir-name)
   - ${{ if eq(parameters.useOneEngineeringPool, 'true') }}:
     - template: prepare-signing.yaml
@@ -40,20 +50,67 @@ jobs:
   - bash: |
       npm i -g rimraf
       npm i -g @vscode/vsce
-      if [ "${{ parameters.PRERELEASE }}" = "true" ]; then
+      if [ "$(GetVersion.isPrerelease)" = "true" ]; then
+        echo "Packaging as prerelease..."
         vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn --pre-release
       else
+        echo "Packaging as stable release..."
         vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
       fi
+      vsce generate-manifest -i $(package-name)-$(GetVersion.version).vsix -o $(package-name)-$(GetVersion.version).manifest
       cp $(package-name)-$(GetVersion.version).vsix ../packages/$(package-name)-$(GetVersion.version).vsix
+      cp $(package-name)-$(GetVersion.version).manifest ../packages/$(package-name)-$(GetVersion.version).manifest
+      cp $(package-name)-$(GetVersion.version).manifest ../packages/$(package-name)-$(GetVersion.version).signature.p7s
     displayName: 📦 Package Artifact
     workingDirectory: $(dir-name)
     env:
       SignType: ${{ parameters.SignType }}
+  - template: list-file-structure.yaml
   - script: dotnet build msbuild/signVsix -v:normal
     displayName: 🖊️ Sign VSIXes
     env:
       SignType: ${{ parameters.SignType }}
+  - ${{ if eq(variables['Build.Reason'], 'IndividualCI') }}:
+    - pwsh: |
+        Function Spawn-Tool($command, $commandArgs, $retryCount=0) {
+          Write-Host "$pwd >"
+          for (; $retryCount -ge 0; $retryCount--) {
+            Write-Host "##[command]$command $commandArgs"
+            $output = Invoke-Expression "$command $commandArgs" # Do not use @commandArgs because it quotes '-Target', breaking the script.
+            if ($LASTEXITCODE -eq 0) { break }
+            Write-Host "Task failed with exit code $LASTEXITCODE. $retryCount retries left."
+          }
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          return $output
+        }
+
+        $anyFailed = $false
+        $vsixes = Get-ChildItem -Path ../packages -Filter *.vsix -Recurse
+        foreach ($vsix in $vsixes) {
+          $baseName = "$($vsix.DirectoryName)\$($vsix.BaseName)"
+          $manifestFile = $baseName + ".manifest"
+          $signatureFile = $baseName + ".signature.p7s"
+
+          $vsceVerifyArgs = '@vscode/vsce','verify-signature','--packagePath',$vsix,'--manifestPath',$manifestFile,'--signaturePath',$signatureFile
+          $output = Spawn-Tool 'npx' $vsceVerifyArgs
+
+          # This is a brittle check but the command does not return a non-zero exit code for failed validation.
+          # Opened https://github.com/microsoft/vscode-vsce/issues/1192 to track this.
+          if ($output.Contains('Signature verification result: Success')) {
+            Write-Host "Signature verification succeeded for $vsix"
+          } else {
+            Write-Host ($output | Out-String)
+            Write-Host "##[error]Signature verification failed for $vsix"
+            $anyFailed = $true
+          }
+        }
+
+        if ($anyFailed) {
+            exit 1
+        }
+      displayName: 🔑 Verify VSIX Signature Files
+      workingDirectory: $(dir-name)
   - task: CmdLine@2
     displayName: 🤌 Rename Signed VSIX
     inputs:
@@ -62,7 +119,7 @@ jobs:
     displayName: '📩 Copy Artifact'
     inputs:
       SourceFolder: '$(Build.SourcesDirectory)'
-      Contents: '**\*.vsix'
+      Contents: '**\$(package-name)-$(GetVersion.version)*.*'
       TargetFolder: '$(Build.ArtifactStagingDirectory)'
       flattenFolders: true
   - task: CopyFiles@2

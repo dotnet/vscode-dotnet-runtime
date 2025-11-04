@@ -57,6 +57,9 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function ()
         // Tear down tmp storage for fresh run
         WebRequestWorkerSingleton.getInstance().destroy();
         LocalMemoryCacheSingleton.getInstance().invalidate();
+
+        const trackerSingletonMockAccess = new MockInstallTracker(new MockEventStream(), new MockExtensionContext());
+        trackerSingletonMockAccess.endAnySingletonTrackingSessions();
     });
 
     function setupStates(): [MockEventStream, MockExtensionContext]

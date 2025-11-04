@@ -7,7 +7,7 @@
 		"url": "https://github.com/dotnet/vscode-dotnet-runtime.git"
 	},
 	"license": "MIT",
-	"version": "2.3.7",
+	"version": "3.0.0",
 	"publisher": "ms-dotnettools",
 	"engines": {
 		"vscode": "^1.75.0"
@@ -114,6 +114,21 @@
 				"command": "sample.dotnet-sdk.recommendedVersion",
 				"title": "Show the recommended version of the SDK to install.",
 				"category": "Sample"
+			},
+			{
+				"command": "sample.dotnet.forceUpdate",
+				"title": "Force update of .NET runtimes",
+				"category": "Sample"
+			},
+			{
+				"command": "sample.dotnet.acquireNoForce",
+				"title": "Acquire .NET runtimes without forcing updates",
+				"category": "Sample"
+			},
+			{
+				"command": "sample.dotnet.resetUpdateTimer",
+				"title": "Reset the update timer for .NET",
+				"category": "Sample"
 			}
 		]
 	},
@@ -122,7 +137,7 @@
 		"compile": "npm run clean && tsc -p ./",
 		"watch": "npm run clean && tsc -watch -p ./",
 		"test": "npm run compile && node ./node_modules/vscode/bin/test",
-		"clean": "rimraf out"
+		"clean": "npx rimraf out"
 	},
 	"dependencies": {
 		"@vscode/vsce": "^2.19.0",

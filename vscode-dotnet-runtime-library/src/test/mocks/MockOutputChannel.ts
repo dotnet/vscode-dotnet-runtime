@@ -8,17 +8,16 @@ import { IOutputChannel, ViewColumn } from '../../EventStream/IOutputChannel';
 export class MockOutputChannel implements IOutputChannel
 {
     name: string = 'Test';
-    appendedText: string[] = [];
-    appendedLines: string[] = [];
+    appendedText: string = '';
 
     append(value: string): void
     {
-        this.appendedText.push(value);
+        this.appendedText += value;
     }
 
     appendLine(value: string): void
     {
-        this.appendedLines.push(value);
+        this.appendedText += value + '\n';
     }
 
     replace(value: string): void
@@ -28,8 +27,7 @@ export class MockOutputChannel implements IOutputChannel
 
     clear(): void
     {
-        this.appendedText = [];
-        this.appendedLines = [];
+        this.appendedText = '';
     }
 
     show(preserveFocus?: boolean): void;

@@ -19,6 +19,7 @@ import
     ErrorAcquisitionInvoker,
     MockEventStream,
     MockInstallScriptWorker,
+    MockInstallTracker,
     MockTrackingWebRequestWorker,
     MockVSCodeExtensionContext,
 } from '../mocks/MockObjects';
@@ -49,7 +50,16 @@ suite('WebRequestWorker Unit Tests', function ()
         const mockContext = getMockAcquisitionContext('runtime', '1.0', undefined, eventStream);
         const acquisitionWorker = new DotnetCoreAcquisitionWorker(getMockUtilityContext(), new MockVSCodeExtensionContext());
         const invoker = new ErrorAcquisitionInvoker(eventStream);
-        assert.isRejected(acquisitionWorker.acquireLocalRuntime(mockContext, invoker), Error, '.NET Acquisition Failed');
+        const tracker = new MockInstallTracker(eventStream, mockContext.extensionState);
+
+        try
+        {
+            await assert.isRejected(acquisitionWorker.acquireLocalRuntime(mockContext, invoker), Error, 'Command Failed');
+        }
+        finally
+        {
+            await tracker.endAnySingletonTrackingSessions();
+        }
     }).timeout(maxTimeoutTime);
 
     test('Install Script Request Failure', async () =>

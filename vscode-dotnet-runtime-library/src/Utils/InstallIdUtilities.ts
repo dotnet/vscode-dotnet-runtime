@@ -9,7 +9,6 @@ import { DOTNET_INSTALL_MODE_LIST, DotnetInstallMode } from '../Acquisition/Dotn
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { DotnetInstallType } from '../IDotnetAcquireContext';
 
-
 export function getInstallIdCustomArchitecture(version: string, architecture: string | null | undefined, mode: DotnetInstallMode,
     installType: DotnetInstallType = 'local'): string
 {
