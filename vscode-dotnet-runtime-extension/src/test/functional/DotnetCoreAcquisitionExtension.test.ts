@@ -891,4 +891,28 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
             await openFileHandle.close();
         }
     }).timeout(standardTimeoutTime);
+
+    test('Fully specified version installs specific version when forceUpdate is undefined', async () =>
+    {
+        // First install a .NET 9.0 runtime (will install the latest 9.0.x)
+        const result1 = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', { 
+            version: '9.0', 
+            requestingExtensionId, 
+            mode: 'runtime' as DotnetInstallMode 
+        });
+        assert.exists(result1, 'First install should succeed');
+        assert.exists(result1!.dotnetPath, 'First install should return a path');
+
+        // Now try to install a fully specified version (e.g., 9.0.0) without setting forceUpdate
+        // This should automatically set forceUpdate to true and install the specific version
+        const result2 = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', { 
+            version: '9.0.0', 
+            requestingExtensionId, 
+            mode: 'runtime' as DotnetInstallMode,
+            // Note: forceUpdate is intentionally not set (undefined)
+        });
+        assert.exists(result2, 'Second install with fully specified version should succeed');
+        assert.exists(result2!.dotnetPath, 'Second install should return a path');
+        assert.include(result2!.dotnetPath, '9.0.0', 'Path should include the fully specified version 9.0.0');
+    }).timeout(standardTimeoutTime);
 });

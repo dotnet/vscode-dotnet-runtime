@@ -255,6 +255,13 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 }
             }
 
+            // If a fully specified version (e.g., 8.0.19) is requested and forceUpdate is undefined,
+            // set forceUpdate to true to skip the existing installation check and install the specific version requested.
+            if (commandContext.version.split('.').length > 2 && commandContext.forceUpdate === undefined)
+            {
+                commandContext.forceUpdate = true;
+            }
+
             const isOffline = !(await WebRequestWorkerSingleton.getInstance().isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream));
             if (!commandContext.forceUpdate || isOffline)
             {
