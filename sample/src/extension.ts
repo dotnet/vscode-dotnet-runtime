@@ -163,6 +163,20 @@ ${stderr}`);
         }
     });
 
+    const sampleResetUpdateSuccessTime = vscode.commands.registerCommand('sample.dotnet.resetUpdateTimer', async () =>
+    {
+        try
+        {
+            const resetResult = await vscode.commands.executeCommand<Date | undefined>('dotnet._resetUpdateTimer');
+            const resetDisplay = resetResult ? new Date(resetResult).toString() : 'undefined';
+            vscode.window.showInformationMessage(`.NET update timer reset to: ${resetDisplay}`);
+        }
+        catch (error)
+        {
+            vscode.window.showErrorMessage((error as Error).toString());
+        }
+    });
+
     async function acquireConcurrent(versions: [string, string, string], installMode?: DotnetInstallMode)
     {
         try
@@ -479,5 +493,6 @@ ${JSON.stringify(result) ?? 'undefined'}`);
         sampleSDKShowAcquisitionLogRegistration,
         sampleForceUpdateRegistration,
         sampleGlobalSDKFromRuntimeRegistration,
+        sampleResetUpdateSuccessTime,
         sampleAcquireNoForceRegistration);
 }

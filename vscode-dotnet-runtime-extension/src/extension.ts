@@ -124,6 +124,7 @@ namespace commandKeys
     export const reportIssue = 'reportIssue';
     export const resetData = 'resetData';
     export const availableInstalls = 'availableInstalls';
+    export const resetUpdateTimerInternal = '_resetUpdateTimer';
 }
 
 const commandPrefix = 'dotnet';
@@ -193,7 +194,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         'runtime', vsCodeContext.globalStoragePath); // Assumption : aspnetcore and runtime directory provider use the same logic, otherwise updates would not be found
     const automaticUpdater = new LocalInstallUpdateService(globalEventStream, vsCodeContext.globalState, runtimeUpdateDirectoryProvider,
         acquireLocal,
-        uninstall
+        uninstall,
+        loggingObserver
     );
 
     if (!(process.env.DOTNET_INSTALL_TOOL_UNDER_TEST === 'true')) // Don't try to update while testing - this would make tests fail randomly
@@ -512,6 +514,12 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             errorConfiguration: UninstallErrorConfiguration.DisplayAllErrorPopups,
         };
         return uninstallAll(uninstallContext);
+    });
+
+    const resetUpdateTimerInternalRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.resetUpdateTimerInternal}`, async () =>
+    {
+        await vsCodeContext.globalState.update('dotnet.latestUpdateDate', undefined);
+        return vsCodeContext.globalState.get<Date>('dotnet.latestUpdateDate');
     });
 
     const dotnetUninstallPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallPublic}`, async () =>
@@ -994,6 +1002,7 @@ Installation will timeout in ${timeoutValue} seconds.`))
         showOutputChannelRegistration,
         ensureDependenciesRegistration,
         reportIssueRegistration,
+        resetUpdateTimerInternalRegistration,
         ...eventStreamObservers);
 
     if (showResetDataCommand)

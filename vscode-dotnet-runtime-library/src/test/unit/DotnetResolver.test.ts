@@ -4,7 +4,7 @@
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
 import { DotnetResolver } from '../../Acquisition/DotnetResolver';
-import { CommandExecutionEvent } from '../../EventStream/EventStreamEvents';
+import { CommandExecutionEvent, DotnetUnableToCheckPATHArchitecture } from '../../EventStream/EventStreamEvents';
 import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
 import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
 import { MockCommandExecutor, MockEventStream, MockExtensionContext, MockInstallTracker } from '../mocks/MockObjects';
@@ -131,5 +131,24 @@ suite('DotnetResolver Unit Tests', function ()
         const runtimeTypes = runtimes.map(r => r.mode);
         assert.include(runtimeTypes, 'runtime', 'Should include Microsoft.NETCore.App as runtime');
         assert.notInclude(runtimeTypes, 'sdk', 'Should not include Windows Desktop Runtime (mapped to sdk placeholder)');
+    }).timeout(defaultTimeoutTimeMs);
+
+    test('getDotnetInstalls skips host architecture check when dotnet is unavailable', async () =>
+    {
+        const { validator, mockEventStream, mockExecutorWithEventStream } = makeResolverWithMockExecutorAndEventStream();
+
+        mockExecutorWithEventStream.otherCommandPatternsToMock = [
+            '--list-runtimes --arch x64'
+        ];
+        mockExecutorWithEventStream.otherCommandsReturnValues = [
+            { status: '1', stdout: '', stderr: 'dotnet: command not found' }
+        ];
+
+        const runtimes = await validator.getDotnetInstalls('dotnet', 'runtime', 'x64');
+
+        assert.lengthOf(runtimes, 0, 'No runtimes should be returned when dotnet is unavailable');
+
+        const archEvents = mockEventStream.events.filter(e => e instanceof DotnetUnableToCheckPATHArchitecture);
+        assert.lengthOf(archEvents, 0, 'Host architecture should not be queried when runtime discovery fails');
     }).timeout(defaultTimeoutTimeMs);
 });

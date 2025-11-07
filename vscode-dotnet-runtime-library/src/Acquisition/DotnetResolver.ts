@@ -45,6 +45,11 @@ export class DotnetResolver implements IDotnetResolver
             if (mode === 'sdk')
             {
                 const availableSDKs = await this.getSDKs(dotnetExecutablePath, requestedArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
+                if (availableSDKs.length === 0)
+                {
+                    return [];
+                }
+
                 const resolvedHostArchitecture = await this.resolveHostArchitecture(dotnetExecutablePath, availableSDKs, requestedArchitecture);
 
                 if (requestedArchitecture && (resolvedHostArchitecture !== requestedArchitecture))
@@ -65,6 +70,12 @@ export class DotnetResolver implements IDotnetResolver
             {
                 // No need to consider SDKs when looking for runtimes as all the runtimes installed with the SDKs will be included in the runtimes list.
                 const availableRuntimes = await this.getRuntimes(dotnetExecutablePath, requestedArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
+
+                if (availableRuntimes.length === 0)
+                {
+                    return [];
+                }
+
                 const resolvedHostArchitecture = await this.resolveHostArchitecture(dotnetExecutablePath, availableRuntimes, requestedArchitecture);
 
                 if (requestedArchitecture && (resolvedHostArchitecture !== requestedArchitecture))
@@ -106,6 +117,11 @@ export class DotnetResolver implements IDotnetResolver
     {
         // Resolve the true path, so a path such as 'dotnet' can be resolved as a file to get the architecture of, without needing to call 'which' or 'where'
         const truePath = await this.resolveTruePath(dotnetExecutablePath, requestedArchitecture ?? null);
+
+        if (!truePath)
+        {
+            return null;
+        }
 
         // Try to get the arch in the most performant way
         const hostArch = new ExecutableArchitectureDetector().getExecutableArchitecture(truePath ?? dotnetExecutablePath);
@@ -189,7 +205,7 @@ export class DotnetResolver implements IDotnetResolver
                 }
             }
 
-            return (truePaths?.length ?? 0) > 0 ? truePaths : tentativePaths;
+            return truePaths;
         }
         finally
         {
@@ -216,7 +232,7 @@ export class DotnetResolver implements IDotnetResolver
      * @remarks Will return '' if the architecture cannot be determined for some peculiar reason (e.g. dotnet --info is broken or changed).
      */
     // eslint-disable-next-line @typescript-eslint/require-await
-    private async getHostArchitectureViaInfo(hostPath: string, expectedArchitecture?: string   | null): Promise<string>
+    private async getHostArchitectureViaInfo(hostPath: string, expectedArchitecture?: string | null): Promise<string>
     {
         // dotnet --info is not machine-readable and subject to breaking changes. See https://github.com/dotnet/sdk/issues/33697 and https://github.com/dotnet/runtime/issues/98735/
         // Unfortunately even with a new API, that might not go in until .NET 10 and beyond, so we have to rely on dotnet --info for now.
