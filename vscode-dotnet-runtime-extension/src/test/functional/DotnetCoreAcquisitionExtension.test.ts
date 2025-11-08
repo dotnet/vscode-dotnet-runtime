@@ -542,6 +542,51 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
         }
     }).timeout(standardTimeoutTime * 1000);
 
+    test('Install SDK Globally with Single Digit Version (Requires Admin)', async () =>
+    {
+        // Test that single-digit versions like "7", "8", "9" are properly resolved before checking for existing installs
+        const sdkVersion = '7'; // Single digit version that should be resolved to latest 7.0.xxx
+        const context: IDotnetAcquireContext = { version: sdkVersion, requestingExtensionId: 'sample-extension', installType: 'global' };
+        if (await new FileUtilities().isElevated(getMockAcquisitionWorkerContext(context), getMockUtilityContext()))
+        {
+            const originalPath = process.env.PATH;
+            let result: IDotnetAcquireResult;
+            let error: any;
+            let pathAfterInstall;
+
+            process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH = 'true';
+            try
+            {
+                result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquireGlobalSDK', context);
+            }
+            catch (err)
+            {
+                error = err;
+            }
+            finally
+            {
+                pathAfterInstall = process.env.PATH;
+                process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH = undefined;
+                process.env.PATH = originalPath;
+
+                if (error)
+                {
+                    throw (new Error(`The test failed to acquire SDK with single digit version. Error: ${error}`));
+                }
+            }
+
+            assert.exists(result!, 'The global acquisition command did not provide a result for single digit version');
+            assert.exists(result!.dotnetPath);
+            assert.equal(result!.dotnetPath, 'fake-sdk');
+            assert.exists(pathAfterInstall, 'The environment variable PATH for DOTNET was not found');
+            assert.include(pathAfterInstall, result!.dotnetPath, 'Is the PATH correctly set by the global installer?');
+        }
+        else
+        {
+            warn('The Global SDK E2E Install test with single digit version cannot run as the machine is unprivileged.');
+        }
+    }).timeout(standardTimeoutTime * 1000);
+
     test('Telemetry Sent During Install and Uninstall', async () =>
     {
         if (!vscode.env.isTelemetryEnabled)
