@@ -140,14 +140,22 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
      * A function that allows installations to work in offline mode by preventing us from pinging the server,
      * to check if the .NET is the newest installed version.
      *
-     * @param context
-     * @returns null if no existing install matches with the same major.minor.
-     * Else, returns the newest existing install that matches the major.minor.
+     * @param context - The acquisition worker context containing version and install information
+     * @returns null if no existing install matches with the same major.minor, or if a fully specified 
+     * global SDK version is requested and the existing version is lower than requested.
+     * Otherwise, returns the existing install that matches the major.minor (and meets version requirements for global SDKs).
+     * 
+     * @remarks
+     * For global SDK installations with fully specified versions (e.g., 8.0.415), this method checks
+     * if the existing installation meets or exceeds the requested version using greater_than_or_equal comparison.
+     * This ensures that when a higher SDK version is requested, the lower existing version is not returned
+     * and a new installation proceeds.
      */
     public async getSimilarExistingInstall(context: IAcquisitionWorkerContext): Promise<IDotnetAcquireResult | null>
     {
         const possibleInstallWithSameMajorMinor = getInstallFromContext(context);
         const installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(context.installDirectoryProvider);
+        const requestedVersion = context.acquisitionContext.version;
 
         for (const install of installedVersions)
         {
@@ -157,6 +165,29 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
                 versionUtils.getMajorMinor(install.dotnetInstall.version, context.eventStream, context) ===
                 versionUtils.getMajorMinor(possibleInstallWithSameMajorMinor.version, context.eventStream, context))
             {
+                // For global SDK installations with a fully specified version request, check if the existing version is sufficient
+                if (install.dotnetInstall.isGlobal && 
+                    install.dotnetInstall.installMode === 'sdk' &&
+                    versionUtils.isFullySpecifiedVersion(requestedVersion, context.eventStream, context))
+                {
+                    // Compare versions to ensure the existing install meets or exceeds the requested version
+                    const validator = new DotnetConditionValidator(context, this.utilityContext);
+                    const meetsRequirement = validator.stringVersionMeetsRequirement(
+                        install.dotnetInstall.version,
+                        requestedVersion,
+                        {
+                            acquireContext: context.acquisitionContext,
+                            versionSpecRequirement: 'greater_than_or_equal'
+                        }
+                    );
+                    
+                    if (!meetsRequirement)
+                    {
+                        // Existing version is lower than requested, skip it
+                        continue;
+                    }
+                }
+
                 // Requested version has already been installed.
                 const dotnetExePath = install.dotnetInstall.isGlobal ?
                     os.platform() === 'linux' ?
