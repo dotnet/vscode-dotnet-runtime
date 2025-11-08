@@ -148,6 +148,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
     {
         const possibleInstallWithSameMajorMinor = getInstallFromContext(context);
         const installedVersions = await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).getExistingInstalls(context.installDirectoryProvider);
+        const requestedVersion = context.acquisitionContext.version;
 
         for (const install of installedVersions)
         {
@@ -157,6 +158,29 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
                 versionUtils.getMajorMinor(install.dotnetInstall.version, context.eventStream, context) ===
                 versionUtils.getMajorMinor(possibleInstallWithSameMajorMinor.version, context.eventStream, context))
             {
+                // For global SDK installations with a fully specified version request, check if the existing version is sufficient
+                if (install.dotnetInstall.isGlobal && 
+                    install.dotnetInstall.installMode === 'sdk' &&
+                    versionUtils.isFullySpecifiedVersion(requestedVersion, context.eventStream, context))
+                {
+                    // Compare versions to ensure the existing install meets or exceeds the requested version
+                    const validator = new DotnetConditionValidator(context, this.utilityContext);
+                    const meetsRequirement = validator.stringVersionMeetsRequirement(
+                        install.dotnetInstall.version,
+                        requestedVersion,
+                        {
+                            acquireContext: context.acquisitionContext,
+                            versionSpecRequirement: 'greater_than_or_equal'
+                        }
+                    );
+                    
+                    if (!meetsRequirement)
+                    {
+                        // Existing version is lower than requested, skip it
+                        continue;
+                    }
+                }
+
                 // Requested version has already been installed.
                 const dotnetExePath = install.dotnetInstall.isGlobal ?
                     os.platform() === 'linux' ?
