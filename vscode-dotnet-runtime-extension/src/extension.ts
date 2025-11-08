@@ -325,12 +325,6 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             globalEventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId ?? 'notProvided', commandContext.mode!, commandContext.installType ?? 'global'));
 
-            const existingOfflinePath = await getExistingInstallOffline(worker, workerContext);
-            if (existingOfflinePath)
-            {
-                return Promise.resolve(existingOfflinePath);
-            }
-
             const globalInstallerResolver = new GlobalInstallerResolver(workerContext, commandContext.version);
             fullyResolvedVersion = await globalInstallerResolver.getFullySpecifiedVersion();
 
@@ -338,6 +332,12 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             // Note: This will impact the context object given to the worker and error handler since objects own a copy of a reference in JS.
             commandContext.version = fullyResolvedVersion;
             telemetryObserver?.setAcquisitionContext(workerContext, commandContext);
+
+            const existingOfflinePath = await getExistingInstallOffline(worker, workerContext);
+            if (existingOfflinePath)
+            {
+                return Promise.resolve(existingOfflinePath);
+            }
 
             outputChannelObserver.showOutput();
             const dotnetPath = await worker.acquireGlobalSDK(workerContext, globalInstallerResolver);
