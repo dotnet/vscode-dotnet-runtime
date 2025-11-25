@@ -449,7 +449,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             globalEventStream.post(new DotnetAcquisitionStatusRequested(commandContext.version, commandContext.requestingExtensionId));
 
-            // Caveat : acquireStatus expects only a major.minor, so fully specified versions wont be checked here
+            // Caveat : acquireStatus expects only a major.minor, so fully specified versions won't be checked here
+
             const existingOfflinePath = await getExistingInstallOffline(worker, workerContext);
             if (existingOfflinePath)
             {
