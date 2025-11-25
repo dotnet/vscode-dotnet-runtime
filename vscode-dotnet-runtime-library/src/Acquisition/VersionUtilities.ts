@@ -62,11 +62,11 @@ export function getMajorMinor(fullySpecifiedVersion: string, eventStream: IEvent
 {
     if (fullySpecifiedVersion.split('.').length < 2)
     {
-        if (fullySpecifiedVersion.split('.').length == 0 && isNumber(fullySpecifiedVersion))
+        if (fullySpecifiedVersion.split('.').length === 0 && isNumber(fullySpecifiedVersion))
         {
             return `${fullySpecifiedVersion}.0`;
         }
-        else if (fullySpecifiedVersion.split('.').length == 1 && isNumber(fullySpecifiedVersion.split('.')[0]))
+        else if (fullySpecifiedVersion.split('.').length === 1 && isNumber(fullySpecifiedVersion.split('.')[0]))
         {
             return fullySpecifiedVersion;
         }
