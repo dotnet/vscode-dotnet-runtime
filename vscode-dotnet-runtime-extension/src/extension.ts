@@ -325,7 +325,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             globalEventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId ?? 'notProvided', commandContext.mode!, commandContext.installType ?? 'global'));
 
-            const existingOfflinePath = await getExistingInstallOffline(worker, workerContext);
+            const existingOfflinePath = await getExistingInstallIfOffline(worker, workerContext);
             if (existingOfflinePath)
             {
                 return Promise.resolve(existingOfflinePath);
@@ -449,6 +449,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             globalEventStream.post(new DotnetAcquisitionStatusRequested(commandContext.version, commandContext.requestingExtensionId));
 
+            // Caveat : acquireStatus expects only a major.minor, so fully specified versions wont be checked her
             const existingOfflinePath = await getExistingInstallOffline(worker, workerContext);
             if (existingOfflinePath)
             {
@@ -960,6 +961,16 @@ ${JSON.stringify(commandContext)}`));
                 timeoutInfoUrl: `${moreInfoUrl}#install-script-timeouts`
             } as IIssueContext;
         };
+    }
+
+    async function getExistingInstallIfOffline(worker: DotnetCoreAcquisitionWorker, workerContext: IAcquisitionWorkerContext): Promise<IDotnetAcquireResult | null>
+    {
+        const isOffline = !(await WebRequestWorkerSingleton.getInstance().isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream));
+        if (isOffline)
+        {
+            return getExistingInstallOffline(worker, workerContext);
+        }
+        return null;
     }
 
     async function getExistingInstallOffline(worker: DotnetCoreAcquisitionWorker, workerContext: IAcquisitionWorkerContext): Promise<IDotnetAcquireResult | null>

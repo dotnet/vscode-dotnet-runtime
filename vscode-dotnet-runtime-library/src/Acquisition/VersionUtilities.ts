@@ -55,13 +55,22 @@ export function getMajorMinorFromValidVersion(fullySpecifiedVersion: string)
 
 /**
  *
- * @param fullySpecifiedVersion the fully specified version, e.g. 7.0.301 to get the major minor from.
+ * @param fullySpecifiedVersion the fully specified version, e.g. 7.0.301 to get the major minor from. Also accepts '8' and will assume a .0 minor.
  * @returns the major.minor in the form of '3.1', etc.
  */
 export function getMajorMinor(fullySpecifiedVersion: string, eventStream: IEventStream, context: IAcquisitionWorkerContext): string
 {
     if (fullySpecifiedVersion.split('.').length < 2)
     {
+        if (fullySpecifiedVersion.split('.').length == 0 && isNumber(fullySpecifiedVersion))
+        {
+            return `${fullySpecifiedVersion}.0`;
+        }
+        else if (fullySpecifiedVersion.split('.').length == 1 && isNumber(fullySpecifiedVersion.split('.')[0]))
+        {
+            return fullySpecifiedVersion;
+        }
+
         const event = new DotnetVersionResolutionError(new EventCancellationError('DotnetVersionResolutionError',
             `The requested version ${fullySpecifiedVersion} is invalid.`),
             getInstallFromContext(context));
