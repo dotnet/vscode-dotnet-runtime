@@ -32,6 +32,31 @@ suite('VersionResolver Unit Tests', function ()
         assert(result.some(x => x.version === '2.2.207')); // this is one of the versions we'd expect to be available.
     });
 
+    test('Major Version Is Correctly Extracted For Version 10', async () =>
+    {
+        // Test that major version 10 is correctly extracted as "10" and not "1"
+        const result: IDotnetListVersionsResult = await resolver.GetAvailableDotnetVersions(undefined);
+
+        assert(result);
+        assert(result.length > 0);
+        const version10 = result.find(x => x.channelVersion === '10.0');
+        assert(version10, '.NET 10 should be found in the available versions');
+        assert.equal(version10?.majorVersion, '10', 'Major version should be "10" not "1"');
+        assert.notEqual(version10?.majorVersion, '1', 'Major version should not be truncated to "1"');
+    });
+
+    test('Major Version Is Correctly Extracted For All Versions', async () =>
+    {
+        const result: IDotnetListVersionsResult = await resolver.GetAvailableDotnetVersions(undefined);
+
+        assert(result);
+        for (const version of result)
+        {
+            const expectedMajor = version.channelVersion.split('.')[0];
+            assert.equal(version.majorVersion, expectedMajor, `Major version for ${version.channelVersion} should be ${expectedMajor}`);
+        }
+    });
+
     test('Error With Invalid Version', async () =>
     {
         assert.isRejected(resolver.getFullVersion('foo', 'runtime'), Error, 'Invalid version');

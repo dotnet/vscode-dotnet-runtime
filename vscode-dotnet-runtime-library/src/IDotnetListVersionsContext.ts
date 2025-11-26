@@ -31,6 +31,7 @@ export interface IDotnetVersion {
      *
      * @property version - The full version of the SDK or Runtime. May include text such as -Preview.
      * @property channelVersion - The major.minor version.
+     * @property majorVersion - The major version number (e.g., "10" for .NET 10).
      * @property supportPhase - Whether the version is actively in support or in some other stage of support.
      * @property supportStatus - Is the version in long-term support or 'standard-term' support
      */
@@ -38,6 +39,7 @@ export interface IDotnetVersion {
     supportStatus: DotnetVersionSupportStatus,
     supportPhase: DotnetVersionSupportPhase,
     channelVersion: string,
+    majorVersion: string,
 }
 
 /**

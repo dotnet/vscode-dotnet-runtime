@@ -81,6 +81,8 @@ export class VersionResolver implements IVersionResolver
                     if (release?.['release-type'] === 'lts' || release?.['release-type'] === 'sts')
                     {
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                        const channelVersion: string = release?.['channel-version'] ?? '0.0';
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                         availableVersions?.push({
                             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                             supportStatus: (release?.['release-type'] as DotnetVersionSupportStatus) ?? 'sts',
@@ -88,8 +90,8 @@ export class VersionResolver implements IVersionResolver
                             supportPhase: (release?.['support-phase'] as DotnetVersionSupportPhase) ?? 'eol',
                             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                             version: release?.[getSdkVersions ? 'latest-sdk' : 'latest-runtime'] ?? '0.0',
-                            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                            channelVersion: release?.['channel-version'] ?? '0.0'
+                            channelVersion,
+                            majorVersion: channelVersion.split('.')[0] ?? '0'
                         } as IDotnetVersion
                         );
                     }

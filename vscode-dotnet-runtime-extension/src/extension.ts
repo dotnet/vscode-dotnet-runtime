@@ -895,7 +895,8 @@ ${JSON.stringify(commandContext)}`));
                     {
                         version: suggestedVersion, channelVersion: `${getMajorMinor(suggestedVersion, globalEventStream, workerContext)}`,
                         supportStatus: Number(getMajor(suggestedVersion, globalEventStream, workerContext)) % 2 === 0 ? 'lts' : 'sts',
-                        supportPhase: resolvedSupportPhase
+                        supportPhase: resolvedSupportPhase,
+                        majorVersion: getMajor(suggestedVersion, globalEventStream, workerContext)
                     }
                 ];
             }

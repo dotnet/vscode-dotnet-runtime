@@ -72,6 +72,14 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
     const mockReleasesData = `{
     "releases-index": [
       {
+            "channel-version": "10.0",
+            "latest-release": "10.0.0",
+            "latest-runtime": "10.0.0",
+            "latest-sdk": "10.0.100",
+            "release-type" : "lts",
+            "support-phase": "active"
+        },
+      {
             "channel-version": "8.0",
             "latest-release": "8.0.0-preview.2",
             "latest-runtime": "8.0.0-preview.2.23128.3",
@@ -692,16 +700,21 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
         const apiContext: IDotnetListVersionsContext = { listRuntimes: false };
         const result = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet.listVersions', apiContext, webWorker);
         assert.exists(result);
-        assert.equal(result?.length, 2, `It can find both versions of the SDKs. Found: ${result}`);
-        assert.equal(result?.filter((sdk: any) => sdk.version === '7.0.202').length, 1, 'The mock SDK with the expected version {7.0.200} was not found by the API parsing service.');
+        assert.equal(result?.length, 3, `It can find all versions of the SDKs. Found: ${result}`);
+        assert.equal(result?.filter((sdk: any) => sdk.version === '7.0.202').length, 1, 'The mock SDK with the expected version {7.0.202} was not found by the API parsing service.');
         assert.equal(result?.filter((sdk: any) => sdk.channelVersion === '7.0').length, 1, 'The mock SDK with the expected channel version {7.0} was not found by the API parsing service.');
-        assert.equal(result?.filter((sdk: any) => sdk.supportPhase === 'active').length, 1, 'The mock SDK with the expected support phase of {active} was not found by the API parsing service.');
+        assert.equal(result?.filter((sdk: any) => sdk.majorVersion === '7').length, 1, 'The mock SDK with the expected major version {7} was not found by the API parsing service.');
+        assert.equal(result?.filter((sdk: any) => sdk.majorVersion === '8').length, 1, 'The mock SDK with the expected major version {8} was not found by the API parsing service.');
+        // Test that major version 10 is correctly extracted as "10" and not "1"
+        assert.equal(result?.filter((sdk: any) => sdk.majorVersion === '10').length, 1, 'The mock SDK with the expected major version {10} was not found by the API parsing service. Version 10 may have been truncated incorrectly.');
+        assert.equal(result?.filter((sdk: any) => sdk.majorVersion === '1').length, 0, 'A major version of 1 was found, which suggests version 10 was incorrectly truncated to 1.');
+        assert.equal(result?.filter((sdk: any) => sdk.supportPhase === 'active').length, 2, 'The mock SDK with the expected support phase of {active} was not found by the API parsing service.');
 
         // The API can find the available runtimes and their versions.
         apiContext.listRuntimes = true;
         const runtimeResult = await vscode.commands.executeCommand<IDotnetListVersionsResult>('dotnet.listVersions', apiContext, webWorker);
         assert.exists(runtimeResult);
-        assert.equal(runtimeResult?.length, 2, `It can find both versions of the runtime. Found: ${result}`);
+        assert.equal(runtimeResult?.length, 3, `It can find all versions of the runtime. Found: ${result}`);
         assert.equal(runtimeResult?.filter((runtime: any) => runtime.version === '7.0.4').length, 1, 'The mock Runtime with the expected version was not found by the API parsing service.');
     }).timeout(standardTimeoutTime);
 
