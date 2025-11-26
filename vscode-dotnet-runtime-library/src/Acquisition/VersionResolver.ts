@@ -91,7 +91,7 @@ export class VersionResolver implements IVersionResolver
                             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                             version: release?.[getSdkVersions ? 'latest-sdk' : 'latest-runtime'] ?? '0.0',
                             channelVersion,
-                            majorVersion: channelVersion.split('.')[0] ?? '0'
+                            majorVersion: channelVersion.split('.')[0] || '0'
                         } as IDotnetVersion
                         );
                     }
