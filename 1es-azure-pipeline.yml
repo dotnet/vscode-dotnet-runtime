@@ -68,7 +68,7 @@ extends:
       componentgovernance:
         ignoreDirectories: '.vscode-test/**'
     settings:
-      networkIsolationPolicy: AzureActiveDirectory,AzureKeyVault,AzureResourceManager,AzureStorage,Storage,AzureCloud,AzureCloud.centralus,Storage.CentralUS,GitHub.actions,GitHub,CFSClean
+      networkIsolationPolicy: AzureActiveDirectory,AzureKeyVault,AzureResourceManager,AzureStorage,AzureCloud,AzureCloud.centralus,Storage.CentralUS,GitHub.actions,GitHub,CFSClean
     stages:
     - stage: Internal
       jobs:
