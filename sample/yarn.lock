@@ -249,10 +249,10 @@
     https-proxy-agent "^7.0.0"
     tslib "^2.6.2"
 
-"@vscode/vsce-sign-linux-x64@2.0.5":
+"@vscode/vsce-sign-win32-x64@2.0.5":
   version "2.0.5"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/vsce-sign-linux-x64/-/vsce-sign-linux-x64-2.0.5.tgz"
-  integrity sha1-I4KZJPQIZ+kNXju4Yejo+gResO4=
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/vsce-sign-win32-x64/-/vsce-sign-win32-x64-2.0.5.tgz"
+  integrity sha1-g7iTk+RFHPp+OiGCrqQlD15xrKg=
 
 "@vscode/vsce-sign@^2.0.0":
   version "2.0.6"
@@ -2328,7 +2328,7 @@ uuid@^8.3.0:
     fsevents "^2.3.3"
 
 "vscode-dotnet-runtime@file:../vscode-dotnet-runtime-extension":
-  version "2.4.1"
+  version "3.0.0"
   resolved "file:../vscode-dotnet-runtime-extension"
   dependencies:
     "@types/chai-as-promised" "^7.1.8"
