@@ -146,7 +146,8 @@ suite('WebRequestWorker Unit Tests', function ()
         if (client && client.defaults && client.defaults.headers)
         {
             // Check if User-Agent is set in the default headers
-            const userAgent = (client.defaults.headers as any)['User-Agent'];
+            const headers = client.defaults.headers;
+            const userAgent = 'User-Agent' in headers ? headers['User-Agent'] : undefined;
             assert.equal(userAgent, 'vscode-dotnet-runtime', 'User-Agent header should be set to vscode-dotnet-runtime');
         }
     });
