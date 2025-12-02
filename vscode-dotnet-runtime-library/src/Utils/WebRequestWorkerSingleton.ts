@@ -61,11 +61,24 @@ export class WebRequestWorkerSingleton
     protected static instance: WebRequestWorkerSingleton;
     private clientCreationError: any;
 
+    /**
+     * @returns The axios client instance for testing purposes
+     * @remarks This is exposed for testing only
+     */
+    public getClient(): AxiosCacheInstance | null
+    {
+        return this.client;
+    }
+
     protected constructor()
     {
         try
         {
-            const uncachedAxiosClient = Axios.create();
+            const uncachedAxiosClient = Axios.create({
+                headers: {
+                    'User-Agent': 'vscode-dotnet-runtime'
+                }
+            });
 
             // Wrap the client with a retry interceptor. We don't need to return a new client, it should be applied automatically.
             axiosRetry(uncachedAxiosClient, {
@@ -194,7 +207,12 @@ export class WebRequestWorkerSingleton
         ctx.eventStream.post(new WebRequestUsingAltClient(url, `Using fetch over axios, as axios failed. Axios failure: ${this.clientCreationError ? JSON.stringify(this.clientCreationError) : ''}`));
         try
         {
-            const response = await fetch(url, { signal: AbortSignal.timeout(ctx.timeoutSeconds * 1000) });
+            const response = await fetch(url, { 
+                signal: AbortSignal.timeout(ctx.timeoutSeconds * 1000),
+                headers: {
+                    'User-Agent': 'vscode-dotnet-runtime'
+                }
+            });
             if (url.includes('json'))
             {
                 const responseJson = await response.json();
