@@ -52,7 +52,7 @@
 			},
 			{
 				"command": "sample.dotnet.concurrentTest",
-				"title": "Concurrently acquire all 2.X .NET Core runtimes",
+				"title": "Concurrently acquire .NET runtimes (8.0, 9.0, 10.0)",
 				"category": "Sample"
 			},
 			{
