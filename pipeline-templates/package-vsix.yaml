@@ -48,14 +48,14 @@ jobs:
       parameters:
         SignType: ${{ parameters.SignType }}
   - bash: |
-      npm i -g rimraf --registry=https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/
-      npm i -g @vscode/vsce --registry=https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/
+      npm ci rimraf --registry=https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/
+      npm ci @vscode/vsce --registry=https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/
       if [ "$(GetVersion.isPrerelease)" = "true" ]; then
         echo "Packaging as prerelease..."
-        vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn --pre-release
+        npx vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn --pre-release
       else
         echo "Packaging as stable release..."
-        vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
+        npx vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
       fi
       vsce generate-manifest -i $(package-name)-$(GetVersion.version).vsix -o $(package-name)-$(GetVersion.version).manifest
       cp $(package-name)-$(GetVersion.version).vsix ../packages/$(package-name)-$(GetVersion.version).vsix
