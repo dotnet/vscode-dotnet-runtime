@@ -89,5 +89,5 @@ extends:
                     }
                     Else {
                       Write-Host "##[command]vsce $publishArgs"
-                      vsce @publishArgs
+
                     }
