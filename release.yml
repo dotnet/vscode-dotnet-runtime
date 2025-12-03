@@ -7,7 +7,7 @@ parameters:
     default: false
 
 variables:
-# This is expected to provide pat to tag release.
+# This is expected to provide the PAT used to tag the release.
 - group: DncEng-Partners-Tokens
 
 resources:
@@ -52,6 +52,14 @@ extends:
             deploy:
               steps:
               - template: /pipelines-templates/install-node.yaml
+              - template: list-file-structure.yaml
+              - bash: |
+                  VERSION=`node -p "require('./package.json').version"`
+                  npm version $VERSION --allow-same-version
+                  echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
+                name: GetVersion
+                displayName: '❓ Get Version'
+                workingDirectory: 'vscode-dotnet-runtime-extension'
               - pwsh: |
                   npm install --global @vscode/vsce
                 displayName: 'Install vsce'
