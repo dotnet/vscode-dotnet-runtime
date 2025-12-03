@@ -71,7 +71,7 @@ jobs:
     env:
       SignType: ${{ parameters.SignType }}
   - ${{ if eq(variables['Build.Reason'], 'IndividualCI') }}:
-    - pwsh: |
+    - pwsh: |  
         Function Spawn-Tool($command, $commandArgs, $retryCount=0) {
           Write-Host "$pwd >"
           for (; $retryCount -ge 0; $retryCount--) {

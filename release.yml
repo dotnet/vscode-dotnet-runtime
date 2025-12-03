@@ -1,0 +1,85 @@
+trigger: none
+pr: none
+
+parameters:
+  - name: test
+    type: boolean
+    default: false
+
+variables:
+# This is expected to provide pat to tag release.
+- group: DncEng-Partners-Tokens
+
+resources:
+  repositories:
+  - repository: 1ESPipelineTemplates
+    type: git
+    name: 1ESPipelineTemplates/1ESPipelineTemplates
+    ref: refs/tags/release
+  pipelines:
+  - pipeline: officialBuildCI
+    source: dotnet-vscode-dotnet-runtime
+    branch: main
+extends:
+  template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
+  parameters:
+    pool:
+      name: netcore1espool-internal
+      image: 1es-windows-2022
+      os: windows
+    customBuildTags:
+    - ES365AIMigrationTooling
+    stages:
+    - stage: PublishStage
+      jobs:
+      - deployment: PublishToMarketplace
+        displayName: PublishToMarketplace
+        environment: vscode-dotnetcore-extension-releases
+        pool:
+          name: netcore1espool-internal
+          image: 1es-ubuntu-2204
+          os: linux
+        templateContext:
+          type: releaseJob
+          isProduction: true
+          inputs:
+          - input: pipelineArtifact
+            pipeline: officialBuildCI
+            artifactName: Packages
+            destinationPath: $(Pipeline.Workspace)
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+              - template: /pipelines-templates/install-node.yaml
+              - pwsh: |
+                  npm install --global @vscode/vsce
+                displayName: 'Install vsce'
+              - task: AzureCLI@2
+                displayName: '🚀 Publish to Marketplace'
+                inputs:
+                  azureSubscription: 'VSCode Marketplace Publishing'
+                  scriptType: "pscore"
+                  scriptLocation: 'inlineScript'
+                  workingDirectory: '$(System.ArtifactsDirectory)'
+                  inlineScript: |
+                    npm i -g --verbose @vscode/vsce
+                    $basePublishArgs = , "publish"
+                    $basePublishArgs += '--azure-credential'
+                    $basePublishArgs += '--packagePath'
+                    $publishArgs = $basePublishArgs + 'vscode-dotnet-runtime-$(GetVersion.version)-signed.vsix'
+                    $publishArgs += '--manifestPath'
+                    $publishArgs += 'vscode-dotnet-runtime-$(GetVersion.version).manifest'
+                    $publishArgs += '--signaturePath'
+                    $publishArgs += 'vscode-dotnet-runtime-$(GetVersion.version).signature.p7s'
+                    If ("${{ parameters.SignType }}" -ne "Real") {
+                      Write-Host "With a test-signed build, the command to publish is printed instead of run."
+                      Write-Host "##[command]vsce $publishArgs"
+
+                      Write-Host "🔒 Verify PAT."
+                      vsce verify-pat --azure-credential ms-dotnettools
+                    }
+                    Else {
+                      Write-Host "##[command]vsce $publishArgs"
+                      vsce @publishArgs
+                    }
