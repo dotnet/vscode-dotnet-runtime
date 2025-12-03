@@ -61,7 +61,7 @@ extends:
                 displayName: '❓ Get Version'
                 workingDirectory: 'vscode-dotnet-runtime-extension'
               - pwsh: |
-                  npm install --global @vscode/vsce
+                  npm ci @vscode/vsce
                 displayName: 'Install vsce'
               - task: AzureCLI@2
                 displayName: '🚀 Publish to Marketplace'
@@ -71,7 +71,6 @@ extends:
                   scriptLocation: 'inlineScript'
                   workingDirectory: '$(System.ArtifactsDirectory)'
                   inlineScript: |
-                    npm i -g --verbose @vscode/vsce
                     $basePublishArgs = , "publish"
                     $basePublishArgs += '--azure-credential'
                     $basePublishArgs += '--packagePath'
@@ -82,12 +81,12 @@ extends:
                     $publishArgs += 'vscode-dotnet-runtime-$(GetVersion.version).signature.p7s'
                     If ("${{ parameters.SignType }}" -ne "Real") {
                       Write-Host "With a test-signed build, the command to publish is printed instead of run."
-                      Write-Host "##[command]vsce $publishArgs"
+                      Write-Host "##[command]npx vsce $publishArgs"
 
                       Write-Host "🔒 Verify PAT."
-                      vsce verify-pat --azure-credential ms-dotnettools
+                      npx vsce verify-pat --azure-credential ms-dotnettools
                     }
                     Else {
-                      Write-Host "##[command]vsce $publishArgs"
+                      Write-Host "##[command]npx vsce $publishArgs"
 
                     }
