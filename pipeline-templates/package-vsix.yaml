@@ -48,8 +48,8 @@ jobs:
       parameters:
         SignType: ${{ parameters.SignType }}
   - bash: |
-      npm i -g rimraf
-      npm i -g @vscode/vsce
+      npm i -g rimraf --registry=https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/
+      npm i -g @vscode/vsce --registry=https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/
       if [ "$(GetVersion.isPrerelease)" = "true" ]; then
         echo "Packaging as prerelease..."
         vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn --pre-release
