@@ -45,7 +45,7 @@ extends:
           inputs:
           - input: pipelineArtifact
             pipeline: officialBuildCI
-            artifactName: Packages
+            artifactName: vscode-dotnet-runtime
             destinationPath: $(Pipeline.Workspace)
         strategy:
           runOnce:
@@ -62,7 +62,7 @@ extends:
                 workingDirectory: 'vscode-dotnet-runtime-extension'
               - pwsh: |
                   npm ci @vscode/vsce
-                displayName: 'Install vsce'
+                displayName: '⬇️ Install @vscode/vsce'
               - task: AzureCLI@2
                 displayName: '🚀 Publish to Marketplace'
                 inputs:
