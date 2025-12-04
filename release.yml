@@ -51,7 +51,7 @@ extends:
           runOnce:
             deploy:
               steps:
-              - template: /pipelines-templates/install-node.yaml
+              - template: pipelines-templates/install-node.yaml
               - template: list-file-structure.yaml
               - bash: |
                   VERSION=`node -p "require('./package.json').version"`
