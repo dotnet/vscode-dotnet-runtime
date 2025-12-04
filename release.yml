@@ -79,7 +79,7 @@ extends:
                     $publishArgs += 'vscode-dotnet-runtime-$(GetVersion.version).manifest'
                     $publishArgs += '--signaturePath'
                     $publishArgs += 'vscode-dotnet-runtime-$(GetVersion.version).signature.p7s'
-                    If ("${{ parameters.test }}" -ne "false") {
+                    If (${{ parameters.test }}) {
                       Write-Host "With a test-signed build, the command to publish is printed instead of run."
                       Write-Host "##[command]npx vsce $publishArgs"
 
