@@ -157,7 +157,6 @@
         "https-proxy-agent": "^7.0.2",
         "mocha": "^11.7.0",
         "open": "^8.4.0",
-        "rimraf": "3.0.2",
         "shelljs": "^0.8.5",
         "ts-loader": "^9.5.1",
         "typescript": "^5.5.4",
@@ -171,7 +170,9 @@
         "@types/rimraf": "3.0.2",
         "@types/source-map-support": "^0.5.10",
         "@types/vscode": "1.74.0",
+        "@vscode/vsce": "^3.7.1",
         "copy-webpack-plugin": "^9.0.1",
+        "rimraf": "^6.1.2",
         "webpack": "^5.88.2",
         "webpack-cli": "^4.9.1"
     },
