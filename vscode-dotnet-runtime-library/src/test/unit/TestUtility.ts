@@ -10,12 +10,12 @@ import { directoryProviderFactory } from '../../Acquisition/DirectoryProviderFac
 import { DotnetInstallMode } from '../../Acquisition/DotnetInstallMode';
 import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
 import { IInstallationDirectoryProvider } from '../../Acquisition/IInstallationDirectoryProvider';
-import { IUtilityContext } from '../../Utils/IUtilityContext';
-import { INodeIPCMutexLogger, NodeIPCMutex } from '../../Utils/NodeIPCMutex';
 import { DistroVersionPair, LinuxVersionResolver } from '../../Acquisition/LinuxVersionResolver';
 import { RED_HAT_DISTRO_INFO_KEY, UBUNTU_DISTRO_INFO_KEY } from '../../Acquisition/StringConstants';
 import { IEventStream } from '../../EventStream/EventStream';
 import { IDotnetAcquireContext } from '../../IDotnetAcquireContext';
+import { IUtilityContext } from '../../Utils/IUtilityContext';
+import { INodeIPCMutexLogger, NodeIPCMutex } from '../../Utils/NodeIPCMutex';
 import { MockDotnetCoreAcquisitionWorker, MockEventStream, MockExtensionContext, MockInstallationValidator, MockVSCodeEnvironment, MockVSCodeExtensionContext } from '../mocks/MockObjects';
 import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
 
@@ -159,7 +159,7 @@ export async function getLinuxSupportedDotnetSDKVersion(context: IAcquisitionWor
         }
         else
         {
-            return '8.0.100';
+            return getLatestLinuxDotnet();
         }
     }
     else if (distroInfo.distro === RED_HAT_DISTRO_INFO_KEY)
@@ -170,7 +170,7 @@ export async function getLinuxSupportedDotnetSDKVersion(context: IAcquisitionWor
         }
         else
         {
-            return '9.0.100';
+            return getLatestLinuxDotnet();
         }
     }
     return getLatestLinuxDotnet(); // best effort guess for latest 'dotnet' version atm.
@@ -178,5 +178,5 @@ export async function getLinuxSupportedDotnetSDKVersion(context: IAcquisitionWor
 
 export function getLatestLinuxDotnet()
 {
-    return '9.0.100';
+    return '10.0.100';
 }
