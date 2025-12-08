@@ -25,6 +25,8 @@ variables:
   value: true
 - name: MicroBuildOutputFolderOverride
   value: '$(Agent.TempDirectory)'
+- name: TestBuild
+  value: $[eq(variables['Build.Reason'], 'Manual')]
 
 resources:
   repositories:
@@ -101,6 +103,7 @@ extends:
             os: windows
           useOneEngineeringPool: true
           SignType: Real
+          TestBuild: $(TestBuild)
       - template: pipeline-templates/sbom.yaml@self
         parameters:
           pool:

@@ -1,6 +1,7 @@
 parameters:
   pool: ''
   SignType: ''
+  TestBuild: 'false'
 
 jobs:
 - job: ${{ parameters.pool.os }}_Package
@@ -65,11 +66,13 @@ jobs:
     workingDirectory: $(dir-name)
     env:
       SignType: ${{ parameters.SignType }}
+      TestBuild: ${{ parameters.TestBuild }}
   - template: list-file-structure.yaml
   - script: dotnet build msbuild/signVsix -v:normal
     displayName: 🖊️ Sign VSIXes
     env:
       SignType: ${{ parameters.SignType }}
+      TestBuild: ${{ parameters.TestBuild }}
   - ${{ if eq(variables['Build.Reason'], 'IndividualCI') }}:
     - pwsh: |
         Function Spawn-Tool($command, $commandArgs, $retryCount=0) {
