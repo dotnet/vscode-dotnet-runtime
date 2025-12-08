@@ -45,7 +45,7 @@ extends:
           inputs:
           - input: pipelineArtifact
             pipeline: officialBuildCI
-            artifactName: vscode-dotnet-runtime
+            artifactName: vscode-dotnet-runtime-extension
             destinationPath: $(Pipeline.Workspace)
         strategy:
           runOnce:
