@@ -37,7 +37,7 @@ extends:
         environment: vscode-dotnetcore-extension-releases
         pool:
           name: netcore1espool-internal
-          image: 1es-ubuntu-2204
+          image: 1es-windows-2022
           os: linux
         templateContext:
           type: releaseJob
