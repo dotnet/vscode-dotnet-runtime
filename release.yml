@@ -51,8 +51,6 @@ extends:
           runOnce:
             deploy:
               steps:
-              - checkout: self
-                clean: true
               - template: pipeline-templates/install-node.yaml@self
               - template: pipeline-templates/list-file-structure.yaml@self
               - bash: |
@@ -77,7 +75,7 @@ extends:
                 name: GetVersion
                 displayName: '❓ Get Version'
               - pwsh: |
-                  npm ci @vscode/vsce
+                  npm install --global @vscode/vsce
                 displayName: '⬇️ Install @vscode/vsce'
               - task: AzureCLI@2
                 displayName: '🚀 Publish to Marketplace'
@@ -95,14 +93,14 @@ extends:
                     $publishArgs += 'vscode-dotnet-runtime-$(GetVersion.version).manifest'
                     $publishArgs += '--signaturePath'
                     $publishArgs += 'vscode-dotnet-runtime-$(GetVersion.version).signature.p7s'
+                    $publishArgsString = $publishArgs -join ' '
                     If (${{ parameters.test }}) {
                       Write-Host "With a test-signed build, the command to publish is printed instead of run."
-                      Write-Host "##[command]npx vsce $publishArgs"
+                      Write-Host "##[command]vsce $publishArgsString"
 
                       Write-Host "🔒 Verify PAT."
-                      npx vsce verify-pat --azure-credential ms-dotnettools
+                      vsce verify-pat --azure-credential ms-dotnettools
                     }
                     Else {
-                      Write-Host "##[command]npx vsce $publishArgs"
-
+                      Write-Host "##[command]vsce $publishArgsString"
                     }
