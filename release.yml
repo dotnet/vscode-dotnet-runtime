@@ -51,6 +51,8 @@ extends:
           runOnce:
             deploy:
               steps:
+              - checkout: self
+                clean: true
               - template: pipeline-templates/install-node.yaml@self
               - template: pipeline-templates/list-file-structure.yaml@self
               - bash: |
