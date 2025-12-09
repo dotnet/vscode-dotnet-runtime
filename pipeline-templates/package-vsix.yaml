@@ -19,6 +19,10 @@ jobs:
       displayName: '📂 Publish .VSIX'
       targetPath: '$(Build.ArtifactStagingDirectory)'
       artifactName: '$(dir-name)'
+    - output: pipelineArtifact
+      displayName: '🗂️ Publish Package Files'
+      targetPath: '$(Build.ArtifactStagingDirectory)/package_files'
+      artifactName: 'package_files'
   steps:
   - template: install-node.yaml
   - bash: |
@@ -68,6 +72,22 @@ jobs:
       SignType: ${{ parameters.SignType }}
       TestBuild: ${{ parameters.TestBuild }}
   - template: list-file-structure.yaml
+  - pwsh: |
+      $target = Join-Path '$(Build.ArtifactStagingDirectory)' 'package_files'
+      if (-not (Test-Path $target)) {
+        New-Item -ItemType Directory -Path $target | Out-Null
+      }
+
+      $source = Join-Path '$(Build.SourcesDirectory)' '$(dir-name)'
+      $files = @('package.json', 'package-lock.json', '.npmrc', 'yarn.lock', '.yarnrc')
+
+      foreach ($file in $files) {
+        $sourcePath = Join-Path $source $file
+        if (Test-Path $sourcePath) {
+          Copy-Item -Path $sourcePath -Destination (Join-Path $target $file) -Force
+        }
+      }
+    displayName: '📁 Stage Package Files for Consumption to Enable NPM CI'
   - script: dotnet build msbuild/signVsix -v:normal
     displayName: 🖊️ Sign VSIXes
     env:

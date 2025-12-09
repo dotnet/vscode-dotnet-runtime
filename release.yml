@@ -47,6 +47,10 @@ extends:
             pipeline: officialBuildCI
             artifactName: vscode-dotnet-runtime-extension
             destinationPath: $(Pipeline.Workspace)
+          - input: pipelineArtifact
+            pipeline: officialBuildCI
+            artifactName: package_files
+            destinationPath: $(Pipeline.Workspace)/package_files
         strategy:
           runOnce:
             deploy:
@@ -67,40 +71,50 @@ extends:
 
                   echo "Using version $VERSION derived from artifact $FILE_NAME"
 
-                  if [ -f package.json ]; then
-                    npm version "$VERSION" --allow-same-version
+                  PACKAGE_FILES_DIR="$ARTIFACT_DIR/package_files"
+                  if [ -f "$PACKAGE_FILES_DIR/package.json" ]; then
+                    (cd "$PACKAGE_FILES_DIR" && npm version "$VERSION" --allow-same-version)
                   fi
 
                   echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
                 name: GetVersion
                 displayName: '❓ Get Version'
               - pwsh: |
-                  npm install --global @vscode/vsce
-                displayName: '⬇️ Install @vscode/vsce'
+                  $packageFilesDir = Join-Path '$(Pipeline.Workspace)' 'package_files'
+                  if (-not (Test-Path $packageFilesDir)) {
+                    Write-Error "package_files artifact was not downloaded."
+                    exit 1
+                  }
+
+                  Push-Location $packageFilesDir
+                  try {
+                    npm ci
+                  }
+                  finally {
+                    Pop-Location
+                  }
+                displayName: '⬇️ Restore Node Dependencies'
               - task: AzureCLI@2
                 displayName: '🚀 Publish to Marketplace'
                 inputs:
                   azureSubscription: 'VSCode Marketplace Publishing'
                   scriptType: "pscore"
                   scriptLocation: 'inlineScript'
-                  workingDirectory: '$(System.ArtifactsDirectory)'
+                  workingDirectory: '$(Pipeline.Workspace)/package_files'
                   inlineScript: |
-                    $basePublishArgs = , "publish"
-                    $basePublishArgs += '--azure-credential'
-                    $basePublishArgs += '--packagePath'
-                    $publishArgs = $basePublishArgs + 'vscode-dotnet-runtime-$(GetVersion.version)-signed.vsix'
-                    $publishArgs += '--manifestPath'
-                    $publishArgs += 'vscode-dotnet-runtime-$(GetVersion.version).manifest'
-                    $publishArgs += '--signaturePath'
-                    $publishArgs += 'vscode-dotnet-runtime-$(GetVersion.version).signature.p7s'
+                    $packagePath = Join-Path '$(Pipeline.Workspace)' 'vscode-dotnet-runtime-$(GetVersion.version)-signed.vsix'
+                    $manifestPath = Join-Path '$(Pipeline.Workspace)' 'vscode-dotnet-runtime-$(GetVersion.version).manifest'
+                    $signaturePath = Join-Path '$(Pipeline.Workspace)' 'vscode-dotnet-runtime-$(GetVersion.version).signature.p7s'
+
+                    $publishArgs = @('publish', '--azure-credential', '--packagePath', $packagePath, '--manifestPath', $manifestPath, '--signaturePath', $signaturePath)
                     $publishArgsString = $publishArgs -join ' '
                     If (${{ parameters.test }}) {
                       Write-Host "With a test-signed build, the command to publish is printed instead of run."
-                      Write-Host "##[command]vsce $publishArgsString"
+                      Write-Host "##[command]npx vsce $publishArgsString"
 
                       Write-Host "🔒 Verify PAT."
-                      vsce verify-pat --azure-credential ms-dotnettools
+                      npx vsce verify-pat --azure-credential ms-dotnettools
                     }
                     Else {
-                      Write-Host "##[command]vsce $publishArgsString"
+                      Write-Host "##[command]npx vsce $publishArgsString"
                     }
