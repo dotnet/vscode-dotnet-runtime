@@ -47,10 +47,6 @@ extends:
             pipeline: officialBuildCI
             artifactName: vscode-dotnet-runtime-extension
             destinationPath: $(Pipeline.Workspace)
-          - input: pipelineArtifact
-            pipeline: officialBuildCI
-            artifactName: SBOM
-            destinationPath: $(Pipeline.Workspace)/_manifest
         strategy:
           runOnce:
             deploy:
