@@ -54,8 +54,23 @@ extends:
               - template: pipeline-templates/install-node.yaml@self
               - template: pipeline-templates/list-file-structure.yaml@self
               - bash: |
-                  VERSION=`node -p "require('./package.json').version"`
-                  npm version $VERSION --allow-same-version
+                  ARTIFACT_DIR="$(Pipeline.Workspace)"
+                  VSIX_PATH=$(find "$ARTIFACT_DIR" -type f -name 'vscode-dotnet-runtime-*.vsix' | head -n 1)
+                  if [ -z "$VSIX_PATH" ]; then
+                    echo "##vso[task.logissue type=error]Unable to locate vscode-dotnet-runtime-*.vsix under $ARTIFACT_DIR"
+                    exit 1
+                  fi
+
+                  FILE_NAME=$(basename "$VSIX_PATH")
+                  VERSION=${FILE_NAME#vscode-dotnet-runtime-}
+                  VERSION=${VERSION%.vsix}
+
+                  echo "Using version $VERSION derived from artifact $FILE_NAME"
+
+                  if [ -f package.json ]; then
+                    npm version "$VERSION" --allow-same-version
+                  fi
+
                   echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
                 name: GetVersion
                 displayName: '❓ Get Version'

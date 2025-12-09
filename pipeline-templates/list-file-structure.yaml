@@ -6,6 +6,8 @@ parameters:
         title: "🏠 SYSTEM DEFAULT WORKING DIRECTORY"
       - path: $(Build.ArtifactStagingDirectory)
         title: "🎯 BUILD ARTIFACT STAGING DIRECTORY"
+      - path: $(Pipeline.Workspace)
+        title: "🔧 PIPELINE WORKSPACE"
   - name: displayName
     type: string
     default: '📋 List All Files Recursively'
