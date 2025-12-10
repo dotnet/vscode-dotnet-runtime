@@ -134,10 +134,6 @@ jobs:
         }
       displayName: 🔑 Verify VSIX Signature Files
       workingDirectory: $(dir-name)
-  - task: CmdLine@2
-    displayName: 🤌 Rename Signed VSIX
-    inputs:
-      script: rename ".\packages\$(package-name)-$(GetVersion.version).vsix" $(package-name)-$(GetVersion.version)-signed.vsix
   - task: CopyFiles@2
     displayName: '📩 Copy Artifact'
     inputs:

@@ -102,7 +102,7 @@ extends:
                   scriptLocation: 'inlineScript'
                   workingDirectory: '$(Pipeline.Workspace)/package_files'
                   inlineScript: |
-                    $packagePath = Join-Path '$(Pipeline.Workspace)' 'vscode-dotnet-runtime-$(GetVersion.version)-signed.vsix'
+                    $packagePath = Join-Path '$(Pipeline.Workspace)' 'vscode-dotnet-runtime-$(GetVersion.version).vsix'
                     $manifestPath = Join-Path '$(Pipeline.Workspace)' 'vscode-dotnet-runtime-$(GetVersion.version).manifest'
                     $signaturePath = Join-Path '$(Pipeline.Workspace)' 'vscode-dotnet-runtime-$(GetVersion.version).signature.p7s'
 
