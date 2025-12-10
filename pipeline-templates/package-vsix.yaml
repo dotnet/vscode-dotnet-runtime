@@ -1,6 +1,7 @@
 parameters:
   pool: ''
   SignType: ''
+  TestBuild: 'false'
 
 jobs:
 - job: ${{ parameters.pool.os }}_Package
@@ -18,6 +19,10 @@ jobs:
       displayName: '📂 Publish .VSIX'
       targetPath: '$(Build.ArtifactStagingDirectory)'
       artifactName: '$(dir-name)'
+    - output: pipelineArtifact
+      displayName: '🗂️ Publish Package Files'
+      targetPath: '$(Build.ArtifactStagingDirectory)/package_files'
+      artifactName: 'package_files'
   steps:
   - template: install-node.yaml
   - bash: |
@@ -65,11 +70,29 @@ jobs:
     workingDirectory: $(dir-name)
     env:
       SignType: ${{ parameters.SignType }}
+      TestBuild: ${{ parameters.TestBuild }}
   - template: list-file-structure.yaml
+  - pwsh: |
+      $target = Join-Path '$(Build.ArtifactStagingDirectory)' 'package_files'
+      if (-not (Test-Path $target)) {
+        New-Item -ItemType Directory -Path $target | Out-Null
+      }
+
+      $source = Join-Path '$(Build.SourcesDirectory)' '$(dir-name)'
+      $files = @('package.json', 'package-lock.json', '.npmrc', 'yarn.lock', '.yarnrc')
+
+      foreach ($file in $files) {
+        $sourcePath = Join-Path $source $file
+        if (Test-Path $sourcePath) {
+          Copy-Item -Path $sourcePath -Destination (Join-Path $target $file) -Force
+        }
+      }
+    displayName: '📁 Stage Package Files for Consumption to Enable NPM CI'
   - script: dotnet build msbuild/signVsix -v:normal
     displayName: 🖊️ Sign VSIXes
     env:
       SignType: ${{ parameters.SignType }}
+      TestBuild: ${{ parameters.TestBuild }}
   - ${{ if eq(variables['Build.Reason'], 'IndividualCI') }}:
     - pwsh: |
         Function Spawn-Tool($command, $commandArgs, $retryCount=0) {
@@ -111,10 +134,6 @@ jobs:
         }
       displayName: 🔑 Verify VSIX Signature Files
       workingDirectory: $(dir-name)
-  - task: CmdLine@2
-    displayName: 🤌 Rename Signed VSIX
-    inputs:
-      script: rename ".\packages\$(package-name)-$(GetVersion.version).vsix" $(package-name)-$(GetVersion.version)-signed.vsix
   - task: CopyFiles@2
     displayName: '📩 Copy Artifact'
     inputs:
@@ -129,10 +148,3 @@ jobs:
       Contents: '**\*.binlog'
       TargetFolder: '$(Build.ArtifactStagingDirectory)'
       flattenFolders: false
-- ${{ if eq(parameters.useOneEngineeringPool, 'true') }}:
-  - template: publish.yaml
-    parameters:
-      pool: ${{ parameters.pool }}
-      SignType: ${{ parameters.SignType }}
-      version: $(GetVersion.version)
-      useOneEngineeringPool: true

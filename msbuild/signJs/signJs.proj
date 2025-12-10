@@ -7,13 +7,19 @@
     <IsPackable>false</IsPackable>
     <OutDir>$(MSBuildProjectDirectory)\$(JSOutputPath)\</OutDir>
     <MicroBuild_SigningEnabled>true</MicroBuild_SigningEnabled>
+    <ShouldSign>true</ShouldSign>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(SignType)' == ''">
       <SignType>test</SignType>
   </PropertyGroup>
 
-  <ItemGroup>
+  <PropertyGroup Condition="$([System.String]::Equals('$(TestBuild)', 'true', StringComparison.OrdinalIgnoreCase))">
+    <ShouldSign>false</ShouldSign>
+    <MicroBuild_SigningEnabled>false</MicroBuild_SigningEnabled>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(ShouldSign)' == 'true'">
     <FilesToSign Include="$(OutDir)*.js">
       <Authenticode>MicrosoftSHA2</Authenticode>
     </FilesToSign>
