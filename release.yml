@@ -4,7 +4,7 @@ pr: none
 parameters:
   - name: test
     type: boolean
-    default: false
+    default: true
 
 variables:
 # This is expected to provide the PAT used to tag the release.
@@ -117,4 +117,5 @@ extends:
                     }
                     Else {
                       Write-Host "##[command]npx vsce $publishArgsString"
+                      npx vsce $publishArgs
                     }
