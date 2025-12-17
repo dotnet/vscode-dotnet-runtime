@@ -2615,7 +2615,7 @@ jsonwebtoken@^9.0.0:
     ms "^2.1.1"
     semver "^7.5.4"
 
-jwa@^1.4.1:
+jwa@^1.4.2:
   version "1.4.2"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/jwa/-/jwa-1.4.2.tgz#16011ac6db48de7b102777e57897901520eec7b9"
   integrity sha1-FgEaxttI3nsQJ3fleJeQFSDux7k=
@@ -2625,11 +2625,11 @@ jwa@^1.4.1:
     safe-buffer "^5.0.1"
 
 jws@^3.2.2:
-  version "3.2.2"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/jws/-/jws-3.2.2.tgz#001099f3639468c9414000e99995fa52fb478304"
-  integrity sha1-ABCZ82OUaMlBQADpmZX6UvtHgwQ=
+  version "3.2.3"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/jws/-/jws-3.2.3.tgz#5ac0690b460900a27265de24520526853c0b8ca1"
+  integrity sha1-WsBpC0YJAKJyZd4kUgUmhTwLjKE=
   dependencies:
-    jwa "^1.4.1"
+    jwa "^1.4.2"
     safe-buffer "^5.0.1"
 
 keytar@^7.7.0:
