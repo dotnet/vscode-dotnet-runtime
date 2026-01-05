@@ -57,26 +57,31 @@ extends:
               steps:
               - template: pipeline-templates/install-node.yaml@self
               - template: pipeline-templates/list-file-structure.yaml@self
-              - bash: |
-                  ARTIFACT_DIR="$(Pipeline.Workspace)"
-                  VSIX_PATH=$(find "$ARTIFACT_DIR" -type f -name 'vscode-dotnet-runtime-*.vsix' | head -n 1)
-                  if [ -z "$VSIX_PATH" ]; then
-                    echo "##vso[task.logissue type=error]Unable to locate vscode-dotnet-runtime-*.vsix under $ARTIFACT_DIR"
+              - pwsh: |
+                  $artifactDir = '$(Pipeline.Workspace)'
+                  $vsix = Get-ChildItem -Path $artifactDir -Filter 'vscode-dotnet-runtime-*.vsix' -File -Recurse | Sort-Object FullName | Select-Object -First 1
+                  if (-not $vsix) {
+                    Write-Host "##vso[task.logissue type=error]Unable to locate vscode-dotnet-runtime-*.vsix under $artifactDir"
                     exit 1
-                  fi
+                  }
 
-                  FILE_NAME=$(basename "$VSIX_PATH")
-                  VERSION=${FILE_NAME#vscode-dotnet-runtime-}
-                  VERSION=${VERSION%.vsix}
+                  $version = $vsix.BaseName -replace '^vscode-dotnet-runtime-',''
 
-                  echo "Using version $VERSION derived from artifact $FILE_NAME"
+                  Write-Host "Using version $version derived from artifact $($vsix.Name)"
 
-                  PACKAGE_FILES_DIR="$ARTIFACT_DIR/package_files"
-                  if [ -f "$PACKAGE_FILES_DIR/package.json" ]; then
-                    (cd "$PACKAGE_FILES_DIR" && npm version "$VERSION" --allow-same-version)
-                  fi
+                  $packageFilesDir = Join-Path $artifactDir 'package_files'
+                  $packageJsonPath = Join-Path $packageFilesDir 'package.json'
+                  if (Test-Path $packageJsonPath) {
+                    Push-Location $packageFilesDir
+                    try {
+                      npm version $version --allow-same-version
+                    }
+                    finally {
+                      Pop-Location
+                    }
+                  }
 
-                  echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
+                  Write-Host "##vso[task.setvariable variable=version;isOutput=true]$version"
                 name: GetVersion
                 displayName: '❓ Get Version'
               - pwsh: |
