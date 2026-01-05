@@ -2,9 +2,9 @@ trigger: none
 pr: none
 
 parameters:
-  - name: test
-    type: boolean
-    default: true
+- name: test
+  type: boolean
+  default: true
 
 variables:
 # This is expected to provide the PAT used to tag the release.
