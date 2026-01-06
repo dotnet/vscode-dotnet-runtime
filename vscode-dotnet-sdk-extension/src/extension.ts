@@ -22,6 +22,8 @@ import
     EventBasedError,
     ExtensionConfigurationWorker,
     formatIssueUrl,
+    GlobalInstallerResolver,
+    IAcquisitionWorkerContext,
     IDotnetAcquireContext,
     IDotnetUninstallContext,
     IEventStreamContext,
@@ -38,8 +40,6 @@ import
 } from 'vscode-dotnet-runtime-library';
 import open = require('open');
 
-import { GlobalInstallerResolver } from 'vscode-dotnet-runtime-library/dist/Acquisition/GlobalInstallerResolver';
-import { IAcquisitionWorkerContext } from 'vscode-dotnet-runtime-library/dist/Acquisition/IAcquisitionWorkerContext';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 
 const packageJson = require('../package.json');
