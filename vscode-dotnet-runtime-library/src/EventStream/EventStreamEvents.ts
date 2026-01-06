@@ -1701,6 +1701,16 @@ export class DotnetOfflineWarning extends DotnetCustomMessageEvent
     }
 }
 
+export class MarkInstallAsInUseFailedEvent extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'MarkInstallAsInUseFailedEvent';
+    constructor(eventMsg: string)
+    {
+        super(eventMsg);
+        this.type = EventType.DotnetAcquisitionMessage;
+    }
+}
+
 export class NetInstallerBeginExecutionEvent extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'NetInstallerBeginExecutionEvent';
