@@ -73,6 +73,7 @@ import
     LinuxVersionResolver,
     LocalInstallUpdateService,
     LocalMemoryCacheSingleton,
+    MarkInstallAsInUseFailedEvent,
     NoExtensionIdProvided,
     registerEventStream,
     UninstallErrorConfiguration,
@@ -504,7 +505,17 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             if ((installs?.length ?? 0) > 0)
             {
-                await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).markInstallAsInUse(dotnetExecutablePath);
+                try
+                {
+                    await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).markInstallAsInUse(dotnetExecutablePath);
+                }
+                catch (error: any)
+                {
+                    // Log but don't fail if we can't mark the install as in use (e.g., due to mutex/temp folder issues)
+                    // This is a non-critical operation that shouldn't prevent the extension from finding and using the .NET installation
+                    globalEventStream.post(new MarkInstallAsInUseFailedEvent(
+                        `Failed to mark install as in use: ${error?.message ?? JSON.stringify(error)}. Continuing anyway.`));
+                }
             }
 
             return installs ?? [];
@@ -738,7 +749,17 @@ ${JSON.stringify(commandContext)}`));
             if (validated)
             {
                 globalEventStream.post(new DotnetFindPathMetCondition(`${path} met the conditions.`));
-                await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).markInstallAsInUse(path);
+                try
+                {
+                    await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).markInstallAsInUse(path);
+                }
+                catch (error: any)
+                {
+                    // Log but don't fail if we can't mark the install as in use (e.g., due to mutex/temp folder issues)
+                    // This is a non-critical operation that shouldn't prevent the extension from finding and using the .NET installation
+                    globalEventStream.post(new MarkInstallAsInUseFailedEvent(
+                        `Failed to mark install as in use: ${error?.message ?? JSON.stringify(error)}. Continuing anyway.`));
+                }
                 return path;
             }
         }
