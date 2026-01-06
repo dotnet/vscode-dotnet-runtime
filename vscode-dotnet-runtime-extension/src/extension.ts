@@ -66,6 +66,7 @@ import
     IIssueContext,
     InstallationValidator,
     InstallRecord,
+    InstallTrackerSingleton,
     InvalidUninstallRequest,
     IUtilityContext,
     JsonInstaller,
@@ -85,7 +86,6 @@ import
     WebRequestWorkerSingleton,
     WindowDisplayWorker
 } from 'vscode-dotnet-runtime-library';
-import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 import open = require('open');
 

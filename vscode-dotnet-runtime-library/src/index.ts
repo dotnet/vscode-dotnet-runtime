@@ -25,6 +25,7 @@ export * from './Acquisition/IJsonInstaller';
 export * from './Acquisition/InstallationValidator';
 export * from './Acquisition/InstallRecord';
 export * from './Acquisition/InstallRecordWithPath';
+export * from './Acquisition/InstallTrackerSingleton';
 export * from './Acquisition/IVersionResolver';
 export * from './Acquisition/JsonInstaller';
 export * from './Acquisition/LinuxGlobalInstaller';
