@@ -136,7 +136,7 @@ extends:
                     }
                     Else {
                       Write-Host "##[command]npx vsce $publishArgsString"
-
+                      npx vsce @publishArgs
                       if ($LASTEXITCODE -ne 0) {
                         throw "vsce publish failed with exit code $LASTEXITCODE."
                       }
