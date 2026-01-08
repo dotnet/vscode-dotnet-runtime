@@ -58,11 +58,12 @@ extends:
               - template: pipeline-templates/install-node.yaml@self
               - template: pipeline-templates/list-file-structure.yaml@self
               - pwsh: |
+                  $ErrorActionPreference = 'Stop'
+
                   $artifactDir = '$(Pipeline.Workspace)'
                   $vsix = Get-ChildItem -Path $artifactDir -Filter 'vscode-dotnet-runtime-*.vsix' -File -Recurse | Sort-Object FullName | Select-Object -First 1
                   if (-not $vsix) {
-                    Write-Host "##vso[task.logissue type=error]Unable to locate vscode-dotnet-runtime-*.vsix under $artifactDir"
-                    exit 1
+                    throw "Unable to locate vscode-dotnet-runtime-*.vsix under $artifactDir"
                   }
 
                   $version = $vsix.BaseName -replace '^vscode-dotnet-runtime-',''
@@ -74,7 +75,10 @@ extends:
                   if (Test-Path $packageJsonPath) {
                     Push-Location $packageFilesDir
                     try {
-                      npm version $version --allow-same-version
+                      npm version $version --allow-same-version | Out-String | Write-Verbose
+                      if ($LASTEXITCODE -ne 0) {
+                        throw "npm version failed with exit code $LASTEXITCODE."
+                      }
                     }
                     finally {
                       Pop-Location
@@ -85,15 +89,19 @@ extends:
                 name: GetVersion
                 displayName: '❓ Get Version'
               - pwsh: |
+                  $ErrorActionPreference = 'Stop'
+
                   $packageFilesDir = Join-Path '$(Pipeline.Workspace)' 'package_files'
                   if (-not (Test-Path $packageFilesDir)) {
-                    Write-Error "package_files artifact was not downloaded."
-                    exit 1
+                    throw "package_files artifact was not downloaded."
                   }
 
                   Push-Location $packageFilesDir
                   try {
                     npm ci
+                    if ($LASTEXITCODE -ne 0) {
+                      throw "npm ci failed with exit code $LASTEXITCODE."
+                    }
                   }
                   finally {
                     Pop-Location
@@ -107,6 +115,8 @@ extends:
                   scriptLocation: 'inlineScript'
                   workingDirectory: '$(Pipeline.Workspace)/package_files'
                   inlineScript: |
+                    $ErrorActionPreference = 'Stop'
+
                     $packagePath = Join-Path '$(Pipeline.Workspace)' 'vscode-dotnet-runtime-$(GetVersion.version).vsix'
                     $manifestPath = Join-Path '$(Pipeline.Workspace)' 'vscode-dotnet-runtime-$(GetVersion.version).manifest'
                     $signaturePath = Join-Path '$(Pipeline.Workspace)' 'vscode-dotnet-runtime-$(GetVersion.version).signature.p7s'
@@ -119,8 +129,14 @@ extends:
 
                       Write-Host "🔒 Verify PAT."
                       npx vsce verify-pat --azure-credential ms-dotnettools
+                      if ($LASTEXITCODE -ne 0) {
+                        throw "vsce verify-pat failed with exit code $LASTEXITCODE."
+                      }
                     }
                     Else {
                       Write-Host "##[command]npx vsce $publishArgsString"
-                      npx vsce $publishArgs
+                      npx vsce @publishArgs
+                      if ($LASTEXITCODE -ne 0) {
+                        throw "vsce publish failed with exit code $LASTEXITCODE."
+                      }
                     }
