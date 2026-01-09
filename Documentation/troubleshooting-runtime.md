@@ -1,4 +1,5 @@
 # Troubleshooting Issues with the .NET Install Tool
+     "dotnetAcquisitionExtension.installTimeoutValue" : 180 
 
 ## Install Script Timeouts
 
