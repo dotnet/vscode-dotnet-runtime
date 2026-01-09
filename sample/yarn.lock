@@ -249,10 +249,10 @@
     https-proxy-agent "^7.0.0"
     tslib "^2.6.2"
 
-"@vscode/vsce-sign-win32-x64@2.0.6":
+"@vscode/vsce-sign-linux-x64@2.0.6":
   version "2.0.6"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/vsce-sign-win32-x64/-/vsce-sign-win32-x64-2.0.6.tgz"
-  integrity sha1-dEMO/0HSaBjCP5gmsEXYx1cy6us=
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/vsce-sign-linux-x64/-/vsce-sign-linux-x64-2.0.6.tgz"
+  integrity sha1-reEcru7VJPwWvWxDykmuoAKV3ow=
 
 "@vscode/vsce-sign@^2.0.0":
   version "2.0.9"
