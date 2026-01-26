@@ -13,6 +13,7 @@ import
     AcquisitionInvoker,
     callWithErrorHandling,
     CommandExecutor,
+    compareSdkVersions,
     directoryProviderFactory,
     DotnetAcquisitionMissingLinuxDependencies,
     DotnetAcquisitionRequested,
@@ -43,11 +44,15 @@ import
     ExistingPathResolver,
     ExtensionConfigurationWorker,
     formatIssueUrl,
+    getCompatibleSdkVersions,
     getInstallIdCustomArchitecture,
     getMajor,
     getMajorMinor,
+    getRequirementsFromGlobalJson,
     GlobalAcquisitionContextMenuOpened,
     GlobalInstallerResolver,
+    GlobalJson,
+    GlobalJsonRequirements,
     IAcquisitionWorkerContext,
     IDotnetAcquireContext,
     IDotnetAcquireResult,
@@ -67,13 +72,19 @@ import
     InstallationValidator,
     InstallRecord,
     InvalidUninstallRequest,
+    isCompatibleSdkVersion,
+    isNewerSdkVersion,
     IUtilityContext,
     JsonInstaller,
     LinuxVersionResolver,
     LocalInstallUpdateService,
     LocalMemoryCacheSingleton,
     NoExtensionIdProvided,
+    ParsedSdkVersion,
+    parseGlobalJsonContent,
+    parseSdkVersion,
     registerEventStream,
+    RollForwardPolicy,
     UninstallErrorConfiguration,
     UserManualInstallFailure,
     UserManualInstallRequested,
@@ -83,7 +94,7 @@ import
     VSCodeEnvironment,
     VSCodeExtensionContext,
     WebRequestWorkerSingleton,
-    WindowDisplayWorker
+    WindowDisplayWorker,
 } from 'vscode-dotnet-runtime-library';
 import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
@@ -112,19 +123,25 @@ namespace commandKeys
     export const acquire = 'acquire';
     export const acquireGlobalSDK = 'acquireGlobalSDK';
     export const acquireStatus = 'acquireStatus';
-    export const uninstall = 'uninstall';
-    export const findPath = 'findPath';
-    export const uninstallPublic = 'uninstallPublic'
-    export const uninstallAll = 'uninstallAll';
-    export const listVersions = 'listVersions';
-    export const recommendedVersion = 'recommendedVersion'
-    export const globalAcquireSDKPublic = 'acquireGlobalSDKPublic';
-    export const showAcquisitionLog = 'showAcquisitionLog';
+    export const availableInstalls = 'availableInstalls';
+    export const compareSdkVersions = 'compareSdkVersions';
     export const ensureDotnetDependencies = 'ensureDotnetDependencies';
+    export const findPath = 'findPath';
+    export const getCompatibleSdkVersions = 'getCompatibleSdkVersions';
+    export const globalAcquireSDKPublic = 'acquireGlobalSDKPublic';
+    export const isCompatibleSdkVersion = 'isCompatibleSdkVersion';
+    export const isNewerSdkVersion = 'isNewerSdkVersion';
+    export const listVersions = 'listVersions';
+    export const parseGlobalJson = 'parseGlobalJson';
+    export const parseSdkVersion = 'parseSdkVersion';
+    export const recommendedVersion = 'recommendedVersion'
     export const reportIssue = 'reportIssue';
     export const resetData = 'resetData';
-    export const availableInstalls = 'availableInstalls';
     export const resetUpdateTimerInternal = '_resetUpdateTimer';
+    export const showAcquisitionLog = 'showAcquisitionLog';
+    export const uninstall = 'uninstall';
+    export const uninstallAll = 'uninstallAll';
+    export const uninstallPublic = 'uninstallPublic'
 }
 
 const commandPrefix = 'dotnet';
@@ -841,6 +858,34 @@ ${JSON.stringify(commandContext)}`));
         open(url).catch(() => {});
     });
 
+    const compareSdkVersionsRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.compareSdkVersions}`,
+        (versionA: string, versionB: string): number => compareSdkVersions(versionA, versionB));
+
+    const getCompatibleSdkVersionsRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.getCompatibleSdkVersions}`,
+        (installedVersions: string[], requiredVersion: string, rollForward?: RollForwardPolicy): string[] =>
+            getCompatibleSdkVersions(installedVersions, requiredVersion, rollForward));
+
+    const isCompatibleSdkVersionRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.isCompatibleSdkVersion}`,
+        (installedVersion: string, requiredVersion: string, rollForward?: RollForwardPolicy): boolean =>
+            isCompatibleSdkVersion(installedVersion, requiredVersion, rollForward));
+
+    const isNewerSdkVersionRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.isNewerSdkVersion}`,
+        (versionA: string, versionB: string): boolean => isNewerSdkVersion(versionA, versionB));
+
+    const parseGlobalJsonRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.parseGlobalJson}`,
+        (content: string, filePath: string): GlobalJsonRequirements | undefined =>
+    {
+        const parsed = parseGlobalJsonContent(content);
+        if (!parsed)
+        {
+            return undefined;
+        }
+        return getRequirementsFromGlobalJson(parsed, filePath);
+    });
+
+    const parseSdkVersionRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.parseSdkVersion}`,
+        (version: string): ParsedSdkVersion => parseSdkVersion(version));
+
     // Helper Functions
     async function resolveExistingPathIfExists(configResolver: ExtensionConfigurationWorker, commandContext: IDotnetAcquireContext,
         workerContext: IAcquisitionWorkerContext, utilityContext: IUtilityContext, requirement?: DotnetVersionSpecRequirement): Promise<IDotnetAcquireResult | null>
@@ -999,22 +1044,28 @@ Installation will timeout in ${timeoutValue} seconds.`))
 
     // Exposing API Endpoints
     vsCodeContext.subscriptions.push(
+        acquireGlobalSDKPublicRegistration,
+        compareSdkVersionsRegistration,
+        dotnetAcquireGlobalSDKRegistration,
         dotnetAcquireRegistration,
         dotnetAcquireStatusRegistration,
-        dotnetAcquireGlobalSDKRegistration,
         dotnetAvailableInstallsRegistration,
-        acquireGlobalSDKPublicRegistration,
         dotnetFindPathRegistration,
+        dotnetForceUpdateRegistration,
         dotnetListVersionsRegistration,
         dotnetRecommendedVersionRegistration,
-        dotnetUninstallRegistration,
-        dotnetUninstallPublicRegistration,
         dotnetUninstallAllRegistration,
-        dotnetForceUpdateRegistration,
-        showOutputChannelRegistration,
+        dotnetUninstallPublicRegistration,
+        dotnetUninstallRegistration,
         ensureDependenciesRegistration,
+        getCompatibleSdkVersionsRegistration,
+        isCompatibleSdkVersionRegistration,
+        isNewerSdkVersionRegistration,
+        parseGlobalJsonRegistration,
+        parseSdkVersionRegistration,
         reportIssueRegistration,
         resetUpdateTimerInternalRegistration,
+        showOutputChannelRegistration,
         ...eventStreamObservers);
 
     if (showResetDataCommand)

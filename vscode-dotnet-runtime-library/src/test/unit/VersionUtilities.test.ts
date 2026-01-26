@@ -146,4 +146,137 @@ suite('Version Utilities Unit Tests', function ()
         assert.equal(resolver.isValidLongFormVersionFormat(badSDKVersionPeriods, mockEventStream, mockCtx), false, 'It detects a version with a bad number of periods');
     });
 
+    test('parseSdkVersion parses SDK versions correctly', async () =>
+    {
+        const v1 = resolver.parseSdkVersion('8.0.308');
+        assert.equal(v1.major, 8);
+        assert.equal(v1.minor, 0);
+        assert.equal(v1.featureBand, 3);
+        assert.equal(v1.patch, 8);
+        assert.equal(v1.patchFull, 308);
+        assert.equal(v1.isPrerelease, false);
+
+        const v2 = resolver.parseSdkVersion('9.0.100-preview.1');
+        assert.equal(v2.major, 9);
+        assert.equal(v2.minor, 0);
+        assert.equal(v2.featureBand, 1);
+        assert.equal(v2.patch, 0);
+        assert.equal(v2.isPrerelease, true);
+
+        const v3 = resolver.parseSdkVersion('10.0.200');
+        assert.equal(v3.major, 10);
+        assert.equal(v3.minor, 0);
+        assert.equal(v3.featureBand, 2);
+        assert.equal(v3.patch, 0);
+    });
+
+    test('isCompatibleSdkVersion with disable policy requires exact match', async () =>
+    {
+        assert.equal(resolver.isCompatibleSdkVersion('8.0.308', '8.0.308', 'disable'), true);
+        assert.equal(resolver.isCompatibleSdkVersion('8.0.309', '8.0.308', 'disable'), false);
+        assert.equal(resolver.isCompatibleSdkVersion('8.0.307', '8.0.308', 'disable'), false);
+    });
+
+    test('isCompatibleSdkVersion with patch/latestPatch policy', async () =>
+    {
+        // Same feature band, higher patch is OK
+        assert.equal(resolver.isCompatibleSdkVersion('8.0.308', '8.0.305', 'patch'), true);
+        assert.equal(resolver.isCompatibleSdkVersion('8.0.308', '8.0.305', 'latestPatch'), true);
+
+        // Same feature band, lower patch is NOT OK
+        assert.equal(resolver.isCompatibleSdkVersion('8.0.304', '8.0.305', 'patch'), false);
+
+        // Different feature band is NOT OK
+        assert.equal(resolver.isCompatibleSdkVersion('8.0.400', '8.0.305', 'patch'), false);
+
+        // Different minor is NOT OK
+        assert.equal(resolver.isCompatibleSdkVersion('8.1.305', '8.0.305', 'patch'), false);
+    });
+
+    test('isCompatibleSdkVersion with feature/latestFeature policy', async () =>
+    {
+        // Higher feature band is OK
+        assert.equal(resolver.isCompatibleSdkVersion('8.0.400', '8.0.305', 'feature'), true);
+        assert.equal(resolver.isCompatibleSdkVersion('8.0.400', '8.0.305', 'latestFeature'), true);
+
+        // Same feature band with higher patch is OK
+        assert.equal(resolver.isCompatibleSdkVersion('8.0.308', '8.0.305', 'feature'), true);
+
+        // Lower feature band is NOT OK
+        assert.equal(resolver.isCompatibleSdkVersion('8.0.200', '8.0.305', 'feature'), false);
+
+        // Different minor is NOT OK
+        assert.equal(resolver.isCompatibleSdkVersion('8.1.400', '8.0.305', 'feature'), false);
+    });
+
+    test('isCompatibleSdkVersion with minor/latestMinor policy', async () =>
+    {
+        // Higher minor is OK
+        assert.equal(resolver.isCompatibleSdkVersion('8.1.100', '8.0.305', 'minor'), true);
+        assert.equal(resolver.isCompatibleSdkVersion('8.1.100', '8.0.305', 'latestMinor'), true);
+
+        // Same minor with higher feature band is OK
+        assert.equal(resolver.isCompatibleSdkVersion('8.0.400', '8.0.305', 'minor'), true);
+
+        // Different major is NOT OK
+        assert.equal(resolver.isCompatibleSdkVersion('9.0.100', '8.0.305', 'minor'), false);
+    });
+
+    test('isCompatibleSdkVersion with major/latestMajor policy', async () =>
+    {
+        // Higher major is OK
+        assert.equal(resolver.isCompatibleSdkVersion('9.0.100', '8.0.305', 'major'), true);
+        assert.equal(resolver.isCompatibleSdkVersion('9.0.100', '8.0.305', 'latestMajor'), true);
+
+        // Same major with higher minor is OK
+        assert.equal(resolver.isCompatibleSdkVersion('8.1.100', '8.0.305', 'major'), true);
+
+        // Lower major is NOT OK
+        assert.equal(resolver.isCompatibleSdkVersion('7.0.400', '8.0.305', 'major'), false);
+    });
+
+    test('isCompatibleSdkVersion handles prerelease versions', async () =>
+    {
+        // Prerelease of same base version is less than release
+        assert.equal(resolver.isCompatibleSdkVersion('8.0.308-preview.1', '8.0.308', 'disable'), false);
+
+        // Release is compatible with prerelease requirement
+        assert.equal(resolver.isCompatibleSdkVersion('8.0.308', '8.0.308-preview.1', 'patch'), true);
+    });
+
+    test('getCompatibleSdkVersions filters versions correctly', async () =>
+    {
+        const installed = ['7.0.400', '8.0.304', '8.0.308', '8.0.400', '9.0.100'];
+
+        const patchCompatible = resolver.getCompatibleSdkVersions(installed, '8.0.305', 'patch');
+        assert.deepEqual(patchCompatible, ['8.0.308']);
+
+        const featureCompatible = resolver.getCompatibleSdkVersions(installed, '8.0.305', 'feature');
+        assert.deepEqual(featureCompatible, ['8.0.308', '8.0.400']);
+
+        const majorCompatible = resolver.getCompatibleSdkVersions(installed, '8.0.305', 'major');
+        assert.deepEqual(majorCompatible, ['8.0.308', '8.0.400', '9.0.100']);
+    });
+
+    test('compareSdkVersions compares versions correctly', async () =>
+    {
+        assert.isAbove(resolver.compareSdkVersions('8.0.400', '8.0.308'), 0);
+        assert.isBelow(resolver.compareSdkVersions('8.0.308', '8.0.400'), 0);
+        assert.equal(resolver.compareSdkVersions('8.0.308', '8.0.308'), 0);
+
+        // Different major
+        assert.isAbove(resolver.compareSdkVersions('9.0.100', '8.0.400'), 0);
+
+        // Prerelease is less than release
+        assert.isBelow(resolver.compareSdkVersions('8.0.308-preview.1', '8.0.308'), 0);
+    });
+
+    test('isNewerSdkVersion checks if version is newer', async () =>
+    {
+        assert.equal(resolver.isNewerSdkVersion('8.0.400', '8.0.308'), true);
+        assert.equal(resolver.isNewerSdkVersion('8.0.308', '8.0.400'), false);
+        assert.equal(resolver.isNewerSdkVersion('8.0.308', '8.0.308'), false);
+        assert.equal(resolver.isNewerSdkVersion('9.0.100', '8.0.400'), true);
+    });
+
 });
