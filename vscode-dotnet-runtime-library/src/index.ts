@@ -15,6 +15,7 @@ export * from './Acquisition/DotnetResolver';
 export * from './Acquisition/ExistingPathResolver';
 export * from './Acquisition/GenericDistroSDKProvider';
 export * from './Acquisition/GlobalInstallerResolver';
+export * from './Acquisition/GlobalJson';
 export * from './Acquisition/IAcquisitionWorkerContext';
 export * from './Acquisition/IDotnetConditionValidator';
 export * from './Acquisition/IDotnetListInfo';
