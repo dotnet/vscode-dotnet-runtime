@@ -110,8 +110,8 @@ suite('Windows & Mac Global Installer Tests', function ()
 
         if (os.platform() === 'darwin')
         {
-            assert.isTrue(mockExecutor.attemptedCommand.startsWith('open'), `It ran the right mac command, open. Command found: ${mockExecutor.attemptedCommand}`);
-            assert.isTrue(mockExecutor.attemptedCommand.includes('-W'), 'It used the -W flag');
+            assert.isTrue(mockExecutor.attemptedCommand.startsWith('sudo'), `It ran under sudo. C${mockExecutor.attemptedCommand}`);
+            assert.isTrue(mockExecutor.attemptedCommand.includes('installer'), 'It used the installer command');
             assert.isTrue(mockExecutor.attemptedCommand.includes('"'), 'It put the installer in quotes for username with space in it');
         }
         else if (os.platform() === 'win32')
@@ -225,4 +225,22 @@ ${fs.readdirSync(installerDownloadFolder).join(', ')}`);
             }
         }
     }).timeout(standardTimeoutTime);
+
+    test('InterpretExitCode returns user-friendly messages for common exit codes', () =>
+    {
+        // Test exit code 5 - insufficient permissions
+        const exitCode5Message = WinMacGlobalInstaller.InterpretExitCode('5');
+        assert.equal(exitCode5Message, 'Insufficient permissions are available to install .NET. Please run the installer as an administrator.');
+        assert.isFalse(exitCode5Message.includes('report'), 'Exit code 5 should not ask for bug reports');
+        assert.isTrue(WinMacGlobalInstaller.IsUserFriendlyExitCode('5'), 'Exit code 5 should be marked as user-friendly');
+
+        // Test exit code 1 - generic failure (should include report message)
+        const exitCode1Message = WinMacGlobalInstaller.InterpretExitCode('1');
+        assert.isTrue(exitCode1Message.includes('report'), 'Exit code 1 should ask for bug reports');
+
+        // Test unknown exit code
+        const unknownCodeMessage = WinMacGlobalInstaller.InterpretExitCode('9999');
+        assert.equal(unknownCodeMessage, '', 'Unknown exit codes should return empty string');
+        assert.isFalse(WinMacGlobalInstaller.IsUserFriendlyExitCode('9999'), 'Unknown exit codes should not be marked as user-friendly');
+    });
 });

@@ -3,13 +3,17 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
+import { ChildProcess, fork } from 'child_process';
+import * as fs from 'fs';
 import * as os from 'os';
 import { DotnetInstall } from '../../Acquisition/DotnetInstall';
 import { InstallRecord } from '../../Acquisition/InstallRecord';
 import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
+import { getDotnetExecutable } from '../../Utils/TypescriptUtilities';
 import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
 import { MockEventStream, MockExtensionContext, MockInstallTracker } from '../mocks/MockObjects';
 import { getMockAcquisitionContext } from './TestUtility';
+import path = require('path');
 
 const assert = chai.assert;
 const defaultVersion = '7.0';
@@ -30,9 +34,10 @@ const secondInstall: DotnetInstall = {
     installId: `${secondVersion}~${os.arch()}`,
     installMode: defaultMode
 }
+
 const defaultTimeoutTime = 5000;
 const eventStream = new MockEventStream();
-
+const fakeValidDir = path.join(__dirname, 'dotnetFakeDir');
 const mockContext = getMockAcquisitionContext(defaultMode, defaultVersion, defaultTimeoutTime, eventStream);
 const mockContextFromOtherExtension = getMockAcquisitionContext(defaultMode, defaultVersion, defaultTimeoutTime, eventStream);
 (mockContextFromOtherExtension.acquisitionContext)!.requestingExtensionId = 'testOther';
@@ -40,26 +45,222 @@ const mockContextFromOtherExtension = getMockAcquisitionContext(defaultMode, def
 function resetExtensionState()
 {
     mockContext.extensionState.update('installed', []);
-    mockContext.extensionState.update('installing', []);
+}
 
+fs.mkdirSync(fakeValidDir, { recursive: true });
+fs.writeFileSync(path.join(fakeValidDir, 'dotnet'), 'fake');
+
+// Helper function to create a random session ID for testing
+// Helper function to generate a unique valid fake directory for installExePath
+function getRandomValidFakeDir(): string
+{
+    return path.join(os.tmpdir(), `dotnet-fake-dir-${Date.now()}-${Math.floor(Math.random() * 1000000)}`);
+}
+function generateRandomSessionId(): string
+{
+    const randomBytes = new Uint8Array(3);
+    for (let i = 0; i < randomBytes.length; i++)
+    {
+        randomBytes[i] = Math.floor(Math.random() * 256);
+    }
+    return `test-session-${Array.from(randomBytes).join('')}`;
+}
+
+// Helper function to spawn a process that holds a mutex with a specific session ID
+// Helper function to kill a child process and wait for its exit
+async function killAndWait(child: ChildProcess, signal: NodeJS.Signals = 'SIGTERM', timeoutMs = 5000): Promise<void>
+{
+    if (!child || child.killed) return;
+    return new Promise((resolve, reject) =>
+    {
+        let settled = false;
+        const timer = setTimeout(() =>
+        {
+            if (!settled)
+            {
+                settled = true;
+                reject(new Error(`Timeout waiting for child process ${child.pid} to exit after kill`));
+            }
+        }, timeoutMs);
+        child.once('exit', () =>
+        {
+            if (!settled)
+            {
+                settled = true;
+                clearTimeout(timer);
+                resolve();
+            }
+        });
+        try
+        {
+            child.kill(signal);
+        } catch (e)
+        {
+            if (!settled)
+            {
+                settled = true;
+                clearTimeout(timer);
+                reject(e);
+            }
+        }
+    });
+}
+function spawnMutexHolderProcess(sessionId?: string): Promise<{ child: ChildProcess, sessionId: string }>
+{
+    const actualSessionId = sessionId || generateRandomSessionId();
+
+    // Remove 'dist' from the path so the js file is used.
+    const scriptPath = path.resolve(__dirname, 'MockMutexHolder.js');
+
+    // Verify the script exists
+    if (!fs.existsSync(scriptPath))
+    {
+        return Promise.reject(new Error(`Mock mutex holder script not found at ${scriptPath}`));
+    }
+
+    console.log(`Starting mutex holder process for session ${actualSessionId} with script at ${scriptPath}`);
+
+    return new Promise((resolve, reject) =>
+    {
+        // Set up handlers for stdout and stderr to debug issues
+        const stdoutChunks: Buffer[] = [];
+        const stderrChunks: Buffer[] = [];
+
+        // Use fork to start the mutex holder process
+        const child = fork(scriptPath, [], {
+            stdio: ['pipe', 'pipe', 'pipe', 'ipc']
+        });
+
+        if (child.stdout)
+        {
+            child.stdout.on('data', (chunk) =>
+            {
+                stdoutChunks.push(Buffer.from(chunk));
+                console.log(`[Mutex ${actualSessionId}] ${chunk.toString().trim()}`);
+            });
+        }
+
+        if (child.stderr)
+        {
+            child.stderr.on('data', (chunk) =>
+            {
+                stderrChunks.push(Buffer.from(chunk));
+                console.error(`[Mutex ${actualSessionId}] ERROR: ${chunk.toString().trim()}`);
+            });
+        }
+
+        // Track if we've resolved or rejected already
+        let settled = false;
+
+        // Set up error handler
+        child.on('error', (err) =>
+        {
+            const stdout = Buffer.concat(stdoutChunks).toString();
+            const stderr = Buffer.concat(stderrChunks).toString();
+
+            console.error(`Error in mutex holder process for session ${actualSessionId}:`, err);
+            console.error(`Process stdout: ${stdout}`);
+            console.error(`Process stderr: ${stderr}`);
+
+            if (!settled)
+            {
+                settled = true;
+                reject(new Error(`Failed to spawn mutex holder process: ${err.message}`));
+            }
+        });
+
+        // Handle process exit
+        child.on('exit', (code, signal) =>
+        {
+            console.log(`Mutex holder process for session ${actualSessionId} exited with code ${code}, signal ${signal}`);
+            if (!settled)
+            {
+                settled = true;
+
+                const stdout = Buffer.concat(stdoutChunks).toString();
+                const stderr = Buffer.concat(stderrChunks).toString();
+
+                console.error(`Process stdout: ${stdout}`);
+                console.error(`Process stderr: ${stderr}`);
+
+                reject(new Error(`Mutex holder process exited unexpectedly with code ${code} and signal ${signal}`));
+            }
+        });
+
+        // Set up message handler
+        child.on('message', (msg: any) =>
+        {
+            if (msg.acquired)
+            {
+                console.log(`Mutex holder process acquired mutex for session ${actualSessionId}`);
+                if (!settled)
+                {
+                    settled = true;
+                    resolve({ child, sessionId: actualSessionId });
+                }
+            } else if (msg.error)
+            {
+                console.error(`Mutex holder process failed to acquire mutex for session ${actualSessionId}:`, msg.error);
+                if (!settled)
+                {
+                    settled = true;
+                    reject(new Error(msg.error));
+                }
+            }
+        });
+
+        // Start the mutex holder with the given session ID
+        child.send({ sessionId: actualSessionId });
+
+        // Set a timeout in case the process doesn't respond
+        setTimeout(() =>
+        {
+            if (!settled)
+            {
+                settled = true;
+                console.error(`Timeout waiting for mutex holder process to start for session ${actualSessionId}`);
+
+                const stdout = Buffer.concat(stdoutChunks).toString();
+                const stderr = Buffer.concat(stderrChunks).toString();
+
+                console.error(`Process stdout: ${stdout}`);
+                console.error(`Process stderr: ${stderr}`);
+
+                // Try to kill the process before rejecting
+                try
+                {
+                    if (!child.killed)
+                    {
+                        child.kill('SIGKILL');
+                    }
+                } catch (e)
+                {
+                    console.error(`Failed to kill mutex holder process: ${e}`);
+                }
+
+                reject(new Error(`Timeout waiting for mutex holder process to start for session ${actualSessionId}`));
+            }
+        }, 5000);
+    });
 }
 
 suite('InstallTracker Unit Tests', function ()
 {
-
     this.afterEach(async () =>
     {
         // Tear down tmp storage for fresh run
         WebRequestWorkerSingleton.getInstance().destroy();
         LocalMemoryCacheSingleton.getInstance().invalidate();
+        const trackerSingletonMockAccess = new MockInstallTracker(new MockEventStream(), new MockExtensionContext());
+        trackerSingletonMockAccess.endAnySingletonTrackingSessions();
     });
 
     test('It Creates a New Record for a New Install', async () =>
     {
         resetExtensionState();
+        const tracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
 
-        const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
-        await validator.trackInstallingVersion(mockContext, defaultInstall);
+        await tracker.trackInstalledVersion(mockContext, defaultInstall, fakeValidDir);
 
         const expected: InstallRecord[] = [
             {
@@ -67,16 +268,15 @@ suite('InstallTracker Unit Tests', function ()
                 installingExtensions: ['test']
             } as InstallRecord,
         ]
-        assert.deepStrictEqual(await validator.getExistingInstalls('installing', mockContext.installDirectoryProvider), expected, 'It created a new record for the install');
+        assert.deepStrictEqual(await tracker.getExistingInstalls(mockContext.installDirectoryProvider), expected, 'It created a new record for the install');
+
     }).timeout(defaultTimeoutTime);
 
     test('Re-Tracking is a No-Op', async () =>
     {
         resetExtensionState();
 
-        const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
-        await validator.trackInstallingVersion(mockContext, defaultInstall);
-        await validator.trackInstallingVersion(mockContext, defaultInstall);
+        const tracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
 
         const expected: InstallRecord[] = [
             {
@@ -84,12 +284,11 @@ suite('InstallTracker Unit Tests', function ()
                 installingExtensions: ['test']
             } as InstallRecord,
         ]
-        assert.deepStrictEqual(await validator.getExistingInstalls('installing', mockContext.installDirectoryProvider), expected, 'It did not create a 2nd record for the same installing install');
 
-        await validator.trackInstalledVersion(mockContext, defaultInstall);
-        await validator.trackInstalledVersion(mockContext, defaultInstall);
+        await tracker.trackInstalledVersion(mockContext, defaultInstall, fakeValidDir);
+        await tracker.trackInstalledVersion(mockContext, defaultInstall, fakeValidDir);
 
-        assert.deepStrictEqual(await validator.getExistingInstalls('installed', mockContext.installDirectoryProvider), expected, 'It did not create a 2nd record for the same INSTALLED install');
+        assert.deepStrictEqual(await tracker.getExistingInstalls(mockContext.installDirectoryProvider), expected, 'It did not create a 2nd record for the same INSTALLED install');
 
     }).timeout(defaultTimeoutTime);
 
@@ -97,13 +296,14 @@ suite('InstallTracker Unit Tests', function ()
     {
         resetExtensionState();
 
-        const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
-        await validator.trackInstalledVersion(mockContext, defaultInstall);
+        const tracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
+
+        await tracker.trackInstalledVersion(mockContext, defaultInstall, fakeValidDir);
 
         const otherRequesterValidator = new MockInstallTracker(mockContextFromOtherExtension.eventStream, mockContext.extensionState);
         // Inject the extension state from the old class into the new one, because in vscode its a shared global state but here its mocked
-        otherRequesterValidator.setExtensionState(validator.getExtensionState());
-        await otherRequesterValidator.trackInstalledVersion(mockContextFromOtherExtension, defaultInstall);
+        otherRequesterValidator.setExtensionState(tracker.getExtensionState());
+        await otherRequesterValidator.trackInstalledVersion(mockContextFromOtherExtension, defaultInstall, fakeValidDir);
 
         const expected: InstallRecord[] = [
             {
@@ -112,7 +312,7 @@ suite('InstallTracker Unit Tests', function ()
             } as InstallRecord,
         ]
 
-        assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls('installed', mockContext.installDirectoryProvider), expected, 'The second extension validator added its id to the existing install');
+        assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls(mockContext.installDirectoryProvider), expected, 'The second extension validator added its id to the existing install');
 
     }).timeout(defaultTimeoutTime);
 
@@ -120,13 +320,14 @@ suite('InstallTracker Unit Tests', function ()
     {
         resetExtensionState();
 
-        const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
-        await validator.trackInstalledVersion(mockContext, defaultInstall);
+        const tracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
+
+        await tracker.trackInstalledVersion(mockContext, defaultInstall, fakeValidDir);
 
         const otherRequesterValidator = new MockInstallTracker(mockContextFromOtherExtension.eventStream, mockContext.extensionState);
         // Inject the extension state from the old class into the new one, because in vscode its a shared global state but here its mocked
-        otherRequesterValidator.setExtensionState(validator.getExtensionState());
-        await otherRequesterValidator.trackInstalledVersion(mockContextFromOtherExtension, secondInstall);
+        otherRequesterValidator.setExtensionState(tracker.getExtensionState());
+        await otherRequesterValidator.trackInstalledVersion(mockContextFromOtherExtension, secondInstall, fakeValidDir);
 
         const expected: InstallRecord[] = [
             {
@@ -139,59 +340,106 @@ suite('InstallTracker Unit Tests', function ()
             } as InstallRecord,
         ]
 
-        assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls('installed', mockContext.installDirectoryProvider), expected, 'Multiple installs are tracked separately');
+        assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls(mockContext.installDirectoryProvider), expected, 'Multiple installs are tracked separately');
 
     }).timeout(defaultTimeoutTime);
 
-    test('It Removes the Record if No Other Owners Exist', async () =>
+    test('It Does Not Remove the Record if No Other Owners Exist Until Uninstall Reported', async () =>
     {
         resetExtensionState();
 
-        const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
-        await validator.trackInstallingVersion(mockContext, defaultInstall);
-        await validator.trackInstalledVersion(mockContext, defaultInstall);
+        const tracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
 
-        await validator.untrackInstallingVersion(mockContext, defaultInstall);
-        assert.deepStrictEqual(await validator.getExistingInstalls('installing', mockContext.installDirectoryProvider), [], 'Installing version gets removed with no further owners');
-        await validator.untrackInstalledVersion(mockContext, defaultInstall);
-        assert.deepStrictEqual(await validator.getExistingInstalls('installed', mockContext.installDirectoryProvider), [], 'Installed version gets removed with no further owners (installing must be ok)');
+        await tracker.trackInstalledVersion(mockContext, defaultInstall, fakeValidDir);
+        await tracker.untrackInstalledVersion(mockContext, defaultInstall);
+        assert.notDeepEqual(await tracker.getExistingInstalls(mockContext.installDirectoryProvider), [], 'Installed version gets removed with no further owners (installing must be ok)');
+        await tracker.reportSuccessfulUninstall(mockContext, defaultInstall);
+        assert.deepStrictEqual(await tracker.getExistingInstalls(mockContext.installDirectoryProvider), [], 'Installed version gets removed with no further owners (installing must be ok)');
+
+    }).timeout(defaultTimeoutTime);
+
+    test('It retains install records when untracked without remaining owners', async () =>
+    {
+        resetExtensionState();
+
+        const tracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
+
+        await tracker.trackInstalledVersion(mockContext, defaultInstall, fakeValidDir);
+
+        await tracker.untrackInstalledVersion(mockContext, defaultInstall);
+        let installs = await tracker.getExistingInstalls(mockContext.installDirectoryProvider);
+        assert.lengthOf(installs, 1, 'Install should remain tracked after removing last owner');
+        assert.lengthOf(installs[0].installingExtensions ?? [], 0, 'Install should have no owners after untrack');
+
+        await tracker.untrackInstalledVersion(mockContext, defaultInstall);
+        installs = await tracker.getExistingInstalls(mockContext.installDirectoryProvider);
+        assert.lengthOf(installs, 1, 'Install should still be tracked when untrack is called with no owners');
+        assert.lengthOf(installs[0].installingExtensions ?? [], 0, 'Install should remain ownerless after repeated untrack');
+    }).timeout(defaultTimeoutTime);
+
+    test('It normalizes installs with undefined owners when untracked', async () =>
+    {
+        const customExtensionState = new MockExtensionContext();
+        const customEventStream = new MockEventStream();
+        const tracker = new MockInstallTracker(customEventStream, customExtensionState);
+        const customContext = getMockAcquisitionContext(defaultMode, defaultVersion, defaultTimeoutTime, customEventStream, customExtensionState);
+
+        const installWithUndefinedOwners = {
+            dotnetInstall: defaultInstall,
+            installingExtensions: undefined as unknown as (string | null)[]
+        } as InstallRecord;
+
+        await customExtensionState.update('installed', [installWithUndefinedOwners]);
+
+        await tracker.untrackInstalledVersion(customContext, defaultInstall);
+
+        const installs = await tracker.getExistingInstalls(customContext.installDirectoryProvider);
+        assert.lengthOf(installs, 1, 'Install should remain tracked after untrack');
+        assert.deepStrictEqual(installs[0].installingExtensions, [], 'Install should have an empty owners array after cleanup');
     }).timeout(defaultTimeoutTime);
 
     test('It Only Removes the Extension Id if Other Owners Exist', async () =>
     {
         resetExtensionState();
 
-        const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
-        await validator.trackInstalledVersion(mockContext, defaultInstall);
+        const tracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
+        const otherRequesterTracker = new MockInstallTracker(mockContextFromOtherExtension.eventStream, mockContextFromOtherExtension.extensionState);
+        try
+        {
+            await tracker.trackInstalledVersion(mockContext, defaultInstall, fakeValidDir);
 
-        const otherRequesterValidator = new MockInstallTracker(mockContextFromOtherExtension.eventStream, mockContextFromOtherExtension.extensionState);
-        // Inject the extension state from the old class into the new one, because in vscode its a shared global state but here its mocked
-        otherRequesterValidator.setExtensionState(validator.getExtensionState());
-        await otherRequesterValidator.trackInstalledVersion(mockContextFromOtherExtension, defaultInstall);
+            // Inject the extension state from the old class into the new one, because in vscode its a shared global state but here its mocked
+            otherRequesterTracker.setExtensionState(tracker.getExtensionState());
+            await otherRequesterTracker.trackInstalledVersion(mockContextFromOtherExtension, defaultInstall, fakeValidDir);
 
-        validator.setExtensionState(otherRequesterValidator.getExtensionState());
-        await validator.untrackInstalledVersion(mockContext, defaultInstall);
+            tracker.setExtensionState(otherRequesterTracker.getExtensionState());
+            await tracker.untrackInstalledVersion(mockContext, defaultInstall);
 
-        const expected: InstallRecord[] = [
-            {
-                dotnetInstall: defaultInstall,
-                installingExtensions: ['testOther']
-            } as InstallRecord,
-        ]
+            const expected: InstallRecord[] = [
+                {
+                    dotnetInstall: defaultInstall,
+                    installingExtensions: ['testOther']
+                } as InstallRecord,
+            ]
 
-        assert.deepStrictEqual(expected, await otherRequesterValidator.getExistingInstalls('installed', mockContext.installDirectoryProvider), 'The second extension validator removed its id from the existing install');
-
+            assert.deepStrictEqual(expected, await otherRequesterTracker.getExistingInstalls(mockContext.installDirectoryProvider), 'The second extension validator removed its id from the existing install');
+        }
+        finally
+        {
+            tracker.endAnySingletonTrackingSessions();
+            otherRequesterTracker.endAnySingletonTrackingSessions();
+        }
     }).timeout(defaultTimeoutTime);
 
     test('It Converts Legacy Install Id String to New Type with Null Owner', async () =>
     {
         resetExtensionState();
 
-        const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
+        const tracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
 
         const extensionStateWithLegacyStrings = new MockExtensionContext();
         extensionStateWithLegacyStrings.update('installed', [defaultInstall.installId, secondInstall.installId]);
-        validator.setExtensionState(extensionStateWithLegacyStrings);
+        tracker.setExtensionState(extensionStateWithLegacyStrings);
 
         const expected: InstallRecord[] = [
             {
@@ -204,7 +452,7 @@ suite('InstallTracker Unit Tests', function ()
             }
         ]
 
-        assert.deepStrictEqual(await validator.getExistingInstalls('installed', mockContext.installDirectoryProvider), expected, 'It converted the legacy strings to the new type');
+        assert.deepStrictEqual(await tracker.getExistingInstalls(mockContext.installDirectoryProvider), expected, 'It converted the legacy strings to the new type');
 
     }).timeout(defaultTimeoutTime);
 
@@ -212,11 +460,11 @@ suite('InstallTracker Unit Tests', function ()
     {
         resetExtensionState();
 
-        const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
+        const tracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
 
         const extensionStateWithLegacyStrings = new MockExtensionContext();
         extensionStateWithLegacyStrings.update('installed', [defaultInstall.installId, secondInstall.installId]);
-        validator.setExtensionState(extensionStateWithLegacyStrings);
+        tracker.setExtensionState(extensionStateWithLegacyStrings);
 
         const expected: InstallRecord[] = [
             {
@@ -229,12 +477,12 @@ suite('InstallTracker Unit Tests', function ()
             }
         ]
 
-        await validator.trackInstalledVersion(mockContext, defaultInstall);
+        await tracker.trackInstalledVersion(mockContext, defaultInstall, fakeValidDir);
 
-        assert.deepStrictEqual(expected, await validator.getExistingInstalls('installed', mockContext.installDirectoryProvider), 'It added the new owner to the existing null install');
+        assert.deepStrictEqual(expected, await tracker.getExistingInstalls(mockContext.installDirectoryProvider), 'It added the new owner to the existing null install');
 
-        await validator.untrackInstalledVersion(mockContext, defaultInstall);
-        await validator.untrackInstalledVersion(mockContext, secondInstall);
+        await tracker.untrackInstalledVersion(mockContext, defaultInstall);
+        await tracker.untrackInstalledVersion(mockContext, secondInstall);
 
         const expectedTwo: InstallRecord[] = [
             {
@@ -247,76 +495,284 @@ suite('InstallTracker Unit Tests', function ()
             }
         ]
 
-        assert.deepStrictEqual(await validator.getExistingInstalls('installed', mockContext.installDirectoryProvider), expectedTwo, 'It removed the owner from the existing null install');
+        assert.deepStrictEqual(await tracker.getExistingInstalls(mockContext.installDirectoryProvider), expectedTwo, 'It removed the owner from the existing null install');
+
+
     }).timeout(defaultTimeoutTime);
+});
 
+suite('InstallTracker Session Mutex Tests', function ()
+{
+    const testTimeoutTime = 30000; // 30 seconds timeout for these tests
 
-    test('It Can Reclassify an Install from Installing to Installed', async () =>
+    // Helper function to clean up mutex holder processes
+    async function cleanupMutexHolders(processes: { child: ChildProcess, sessionId: string }[]): Promise<void>
+    {
+        for (const process of processes)
+        {
+            try
+            {
+                if (!process.child.killed && process.child.pid)
+                {
+                    console.log(`Cleaning up mutex holder process with PID: ${process.child.pid} for session ${process.sessionId}`);
+                    // Try to send exit command first for graceful shutdown
+                    if (process.child.connected)
+                    {
+                        try
+                        {
+                            process.child.send({ command: 'exit' });
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                        } catch (err)
+                        {
+                            console.log(`Failed to send exit command: ${err}`);
+                        }
+                    }
+                    // Use killAndWait to ensure process is dead
+                    await killAndWait(process.child, 'SIGTERM', 5000);
+                }
+            } catch (err)
+            {
+                console.error(`Error killing mutex holder process: ${err}`);
+            }
+        }
+    }
+
+    // Clean up any orphaned mutex socket files before tests
+    this.beforeAll(function ()
+    {
+        const cleanupSockets = () =>
+        {
+            try
+            {
+                const ipcPathDir = os.platform() === 'linux' && process.env.XDG_RUNTIME_DIR ?
+                    process.env.XDG_RUNTIME_DIR : os.tmpdir();
+
+                if (os.platform() !== 'win32' && fs.existsSync(ipcPathDir))
+                {
+                    const files = fs.readdirSync(ipcPathDir);
+                    files.forEach(file =>
+                    {
+                        if (file.startsWith('vscd-test-session-') && file.endsWith('.sock'))
+                        {
+                            const fullPath = path.join(ipcPathDir, file);
+                            try
+                            {
+                                console.log(`Cleaning up orphaned socket file: ${fullPath}`);
+                                fs.unlinkSync(fullPath);
+                            } catch (e)
+                            {
+                                console.error(`Failed to clean up socket file ${fullPath}: ${e}`);
+                            }
+                        }
+                    });
+                }
+            } catch (err)
+            {
+                console.error(`Error during socket cleanup: ${err}`);
+            }
+        };
+
+        cleanupSockets();
+    });
+
+    this.afterEach(async () =>
+    {
+        // Tear down tmp storage for fresh run
+        WebRequestWorkerSingleton.getInstance().destroy();
+        LocalMemoryCacheSingleton.getInstance().invalidate();
+
+        // Reset extension state
+        resetExtensionState();
+
+        const trackerSingletonMockAccess = new MockInstallTracker(new MockEventStream(), new MockExtensionContext());
+        trackerSingletonMockAccess.endAnySingletonTrackingSessions();
+    });
+
+    test('It detects that a session is alive when its mutex is held', async () =>
+    {
+        const processes: { child: ChildProcess, sessionId: string }[] = [];
+        const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
+        const sessionId = validator.getSessionId();
+
+        try
+        {
+            const installExePath = path.join(getRandomValidFakeDir(), getDotnetExecutable());
+            await validator.markInstallAsInUseBySession(sessionId, installExePath);
+
+            const hasNoLiveDependents = await validator.installHasNoLiveDependents(installExePath);
+            // Since the session is alive and has the install marked as in use, it should have live dependents
+            assert.isFalse(hasNoLiveDependents, 'Install should be detected as having live dependents when session is alive');
+        }
+        finally
+        {
+            await cleanupMutexHolders(processes);
+        }
+    }).timeout(testTimeoutTime);
+
+    test('It detects that a session is dead when its process is killed', async () =>
+    {
+        const tracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
+        const installExePath = path.join(getRandomValidFakeDir(), getDotnetExecutable());
+        const sessionId1 = generateRandomSessionId();
+
+        const processes: { child: ChildProcess, sessionId: string }[] = [];
+        try
+        {
+            const { child: child1 } = await spawnMutexHolderProcess(sessionId1);
+            processes.push({ child: child1, sessionId: sessionId1 });
+            await tracker.markInstallAsInUseBySession(sessionId1, installExePath);
+
+            let hasNoLiveDependents = await tracker.installHasNoLiveDependents(installExePath);
+            assert.isFalse(hasNoLiveDependents, 'Install should be detected as having live dependents when child is alive');
+
+            await cleanupMutexHolders(processes);
+            hasNoLiveDependents = await tracker.installHasNoLiveDependents(installExePath);
+            assert.isTrue(hasNoLiveDependents, 'Install should be detected as not having live dependents after session is dead');
+        }
+        finally
+        {
+            await cleanupMutexHolders(processes);
+        }
+    }).timeout(testTimeoutTime);
+
+    test('It cleans up stale sessions when no process is holding their mutex', async () =>
     {
         resetExtensionState();
 
-        const validator = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
-        await validator.trackInstallingVersion(mockContext, defaultInstall);
+        const extensionState = new MockExtensionContext();
+        const tracker = new MockInstallTracker(new MockEventStream(), extensionState);
+        const staleSessionId = generateRandomSessionId();
+        const installExePath = path.join(getRandomValidFakeDir(), getDotnetExecutable());
 
-        const otherRequesterValidator = new MockInstallTracker(mockContextFromOtherExtension.eventStream, mockContext.extensionState);
-        // Inject the extension state from the old class into the new one, because in vscode its a shared global state but here its mocked
-        otherRequesterValidator.setExtensionState(validator.getExtensionState());
-        await otherRequesterValidator.trackInstallingVersion(mockContextFromOtherExtension, defaultInstall);
-        await otherRequesterValidator.trackInstallingVersion(mockContextFromOtherExtension, secondInstall);
-        await otherRequesterValidator.reclassifyInstallingVersionToInstalled(mockContextFromOtherExtension, secondInstall);
+        try
+        {
+            await tracker.markInstallAsInUseBySession(staleSessionId, installExePath);
 
-        let expectedInstalling: InstallRecord[] = [
+            const storedBefore = extensionState.get<Record<string, string[]>>('dotnet.returnedInstallDirectories', {});
+            assert.deepEqual(storedBefore[staleSessionId], [installExePath], 'Stale session should be recorded before cleanup');
+
+            const hasNoLiveDependents = await tracker.installHasNoLiveDependents(installExePath);
+            assert.isTrue(hasNoLiveDependents, 'Install should not have live dependents when no mutex holder exists');
+
+            const storedAfter = extensionState.get<Record<string, string[]>>('dotnet.returnedInstallDirectories', {});
+            assert.isUndefined(storedAfter[staleSessionId], 'Stale session should be removed from stored usage map');
+            assert.strictEqual(Object.keys(storedAfter).length, 0, 'No stale sessions should remain in the usage map');
+        }
+        finally
+        {
+            await tracker.endAnySingletonTrackingSessions();
+        }
+    });
+
+    test('It handles multiple sessions with different installs correctly', async () =>
+    {
+        const sessionId1 = generateRandomSessionId();
+        const sessionId2 = generateRandomSessionId();
+        const sessionId3 = generateRandomSessionId();
+        const processes: { child: ChildProcess, sessionId: string }[] = [];
+        let tempFile: string | undefined;
+        const tracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
+
+        try
+        {
+            const { child: child1 } = await spawnMutexHolderProcess(sessionId1);
+            const { child: child2 } = await spawnMutexHolderProcess(sessionId2);
+            const { child: child3 } = await spawnMutexHolderProcess(sessionId3);
+            processes.push(
+                { child: child1, sessionId: sessionId1 },
+                { child: child2, sessionId: sessionId2 },
+                { child: child3, sessionId: sessionId3 }
+            );
+
+            const installExePath1 = path.join(getRandomValidFakeDir(), getDotnetExecutable());
+            const installExePath2 = path.join(getRandomValidFakeDir(), getDotnetExecutable());
+            tempFile = installExePath2; // Save for cleanup
+            fs.mkdirSync(path.dirname(installExePath2), { recursive: true });
+            fs.writeFileSync(installExePath2, 'fake-dotnet');
+
+            await tracker.markInstallAsInUseBySession(sessionId1, installExePath1);
+            await tracker.markInstallAsInUseBySession(sessionId2, installExePath2);
+            await tracker.markInstallAsInUseBySession(sessionId3, installExePath2);
+
+            // Both sessions are alive, so both installs should have live dependents
+            const hasNoLiveDependents1 = await tracker.installHasNoLiveDependents(installExePath1);
+            const hasNoLiveDependents2 = await tracker.installHasNoLiveDependents(installExePath2);
+
+            assert.isFalse(hasNoLiveDependents1, 'First install should have live dependents');
+            assert.isFalse(hasNoLiveDependents2, 'Second install should have live dependents');
+
+            // Terminate the first process to simulate a session ending
+            if (processes[0].child && !processes[0].child.killed)
             {
-                dotnetInstall: defaultInstall,
-                installingExtensions: ['test', 'testOther']
-            } as InstallRecord,
-        ]
+                await killAndWait(processes[0].child, 'SIGKILL', 5000);
+            }
 
-        let expectedInstalled: InstallRecord[] = [
+            const hasNoLiveDependents1After = await tracker.installHasNoLiveDependents(installExePath1);
+            const hasNoLiveDependents2After = await tracker.installHasNoLiveDependents(installExePath2);
+
+            assert.isFalse(hasNoLiveDependents2After, 'Second install should still have live dependents because we did not end the session process');
+            assert.isTrue(hasNoLiveDependents1After, 'First install should not have live dependents after its session died');
+
+            // Terminate the 3rd process to see it can handle multiple sessions on one install
+            if (processes[2].child && !processes[2].child.killed)
             {
-                dotnetInstall: secondInstall,
-                installingExtensions: ['testOther']
-            } as InstallRecord,
-        ]
+                await killAndWait(processes[2].child, 'SIGKILL', 5000);
+            }
 
-        assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls('installed', mockContext.installDirectoryProvider), expectedInstalled, 'The installing version was moved from installing to installed');
-        assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls('installing', mockContext.installDirectoryProvider), expectedInstalling, 'The installing version was not erroneously moved');
+            const hasNoLiveDependents2Final = await tracker.installHasNoLiveDependents(installExePath2);
+            assert.isFalse(hasNoLiveDependents2Final, 'Second install should still have live dependents because session 2 is still alive');
 
-        await otherRequesterValidator.reclassifyInstallingVersionToInstalled(mockContextFromOtherExtension, defaultInstall);
-
-        expectedInstalled = [
+            if (processes[1].child && !processes[1].child.killed)
             {
-                dotnetInstall: secondInstall,
-                installingExtensions: ['testOther']
-            } as InstallRecord,
+                await killAndWait(processes[1].child, 'SIGKILL', 5000);
+            }
+
+            const hasNoLiveDependents2AllDead = await tracker.installHasNoLiveDependents(installExePath2);
+            assert.isTrue(hasNoLiveDependents2AllDead, 'Second install should not have live dependents after all sessions are dead');
+        }
+        finally
+        {
+            await cleanupMutexHolders(processes);
+
+            // Clean up the temporary file
+            if (tempFile)
             {
-                dotnetInstall: defaultInstall,
-                installingExtensions: ['testOther']
-            } as InstallRecord,
-        ]
+                try
+                {
+                    fs.unlinkSync(tempFile);
+                    fs.rmdirSync(path.dirname(tempFile), { recursive: true });
+                } catch (e)
+                {
+                    // Ignore errors in cleanup
+                }
+            }
+        }
+    }).timeout(testTimeoutTime);
 
+    test('It acquires permanent session mutex on construction', async () =>
+    {
+        const installTracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
+        const processes: { child: ChildProcess, sessionId: string }[] = [];
 
-        assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls('installed', mockContext.installDirectoryProvider), expectedInstalled, `The installing version with multiple owners
-was moved from installing to installed`);
-
-        // There is a condition where multiple extensions can be 'installing' the same thing.
-        // Luckily due to the nature of the installs, this should not cause issues with the install.
-
-        expectedInstalling = [
+        try
+        {
+            // Try to acquire the same mutex in another process
+            try
             {
-                dotnetInstall: defaultInstall,
-                installingExtensions: ['test']
-            } as InstallRecord,
-        ]
+                const result = await spawnMutexHolderProcess(installTracker.getSessionId());
+                processes.push(result);
+                assert.fail('Should not be able to acquire mutex that should be held by the validator');
+            }
+            catch (err)
+            {
+                // Expected - mutex should be held by the validator
+                assert.isDefined(err, 'Should get an error when trying to acquire a mutex already held');
+            }
+        }
+        finally
+        {
+            await cleanupMutexHolders(processes);
+        }
+    }).timeout(testTimeoutTime);
 
-        // This is a rare case, but it can happen. In this case, the reclassification should not move the install to installed for the extensions still in the process of installing.
-        // The design could go either way and migrate them all at once, but there is logic that relies on the installing state to be updated on a per extension basis.
-        // So this is the safer option.
-        assert.deepStrictEqual(await otherRequesterValidator.getExistingInstalls('installing', mockContext.installDirectoryProvider), expectedInstalling, 'The installing version from another extension does NOT get moved');
-
-        await validator.reclassifyInstallingVersionToInstalled(mockContext, defaultInstall);
-
-        assert.deepStrictEqual(await validator.getExistingInstalls('installing', mockContext.installDirectoryProvider), [], 'The installing version gets cleared.');
-
-    }).timeout(defaultTimeoutTime);
 });

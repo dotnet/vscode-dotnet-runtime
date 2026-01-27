@@ -4,8 +4,8 @@ $successColor = "Green"
 
 #################### Download backup install scripts ####################
 function DownloadInstallScripts() {
-    Invoke-WebRequest https://dot.net/v1/dotnet-install.ps1 -OutFile "./vscode-dotnet-runtime-library/install scripts/dotnet-install.ps1"
-    Invoke-WebRequest https://dot.net/v1/dotnet-install.sh -OutFile "./vscode-dotnet-runtime-library/install scripts/dotnet-install.sh"
+    Invoke-WebRequest https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.ps1 -OutFile "./vscode-dotnet-runtime-library/install scripts/dotnet-install.ps1"
+    Invoke-WebRequest https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh -OutFile "./vscode-dotnet-runtime-library/install scripts/dotnet-install.sh"
 }
 
 try

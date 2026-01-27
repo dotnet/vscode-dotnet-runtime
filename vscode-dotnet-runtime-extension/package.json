@@ -13,10 +13,10 @@
     "description": "This extension installs and manages different versions of the .NET SDK and Runtime.",
     "connectionString": "InstrumentationKey=02dc18e0-7494-43b2-b2a3-18ada5fcb522;IngestionEndpoint=https://westus2-0.in.applicationinsights.azure.com/;LiveEndpoint=https://westus2.livediagnostics.monitor.azure.com/;ApplicationId=e8e56970-a18a-4101-b7d1-1c5dd7c29eeb",
     "icon": "images/dotnetIcon.png",
-    "version": "2.3.3",
+    "version": "3.0.0",
     "publisher": "ms-dotnettools",
     "engines": {
-        "vscode": "^1.99.0"
+        "vscode": "^1.101.0"
     },
     "categories": [
         "Other"
@@ -55,6 +55,12 @@
                 "command": "dotnet.uninstallPublic",
                 "title": "Uninstall .NET.",
                 "category": ".NET Install Tool"
+            },
+            {
+                "command": "dotnet.resetData",
+                "title": "Reset Extension Data (Uninstalls All Installations, Which May Cause Other Extensions To Fail. Uninstall Dependent Extensions First)",
+                "category": ".NET Install Tool",
+                "enablement": "config.dotnetAcquisitionExtension.showResetDataCommand"
             }
         ],
         "configuration": {
@@ -106,6 +112,26 @@
                     "type": "number",
                     "default": 1,
                     "description": "To improve performance, the results of checking .NET Installations may be cached. If you're facing issues with an install not being detected, try setting this to 0.5, or 0; or increasing the number to improve performance. Restart to change."
+                },
+                "dotnetAcquisitionExtension.showResetDataCommand": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Show the command to reset extension data in the command palette. Restart VS Code and remove dependent extensions first."
+                },
+                "dotnetAcquisitionExtension.suppressOutput": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Hide all messages in the output window from our extension. Error pop-ups from APIs that other extensions request we display will still appear."
+                },
+                "dotnetAcquisitionExtension.highVerbosity": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable this to show more detailed output from our extension."
+                },
+                "dotnetAcquisitionExtension.runtimeUpdateDelaySeconds": {
+                    "type": "number",
+                    "default": 300,
+                    "description": "The amount of seconds to wait before trying to update the .NET Runtime for the day."
                 }
             }
         }
@@ -124,14 +150,13 @@
         "@types/chai-as-promised": "^7.1.8",
         "@vscode/test-electron": "^2.3.9",
         "axios": "^1.7.4",
-        "axios-cache-interceptor": "^1.0.1",
+        "axios-cache-interceptor": "^1.11.2",
         "axios-retry": "^3.4.0",
         "chai": "4.3.4",
         "glob": "^7.2.0",
         "https-proxy-agent": "^7.0.2",
-        "mocha": "^9.1.3",
+        "mocha": "^11.7.0",
         "open": "^8.4.0",
-        "rimraf": "3.0.2",
         "shelljs": "^0.8.5",
         "ts-loader": "^9.5.1",
         "typescript": "^5.5.4",
@@ -145,7 +170,9 @@
         "@types/rimraf": "3.0.2",
         "@types/source-map-support": "^0.5.10",
         "@types/vscode": "1.74.0",
+        "@vscode/vsce": "^3.7.1",
         "copy-webpack-plugin": "^9.0.1",
+        "rimraf": "^6.1.2",
         "webpack": "^5.88.2",
         "webpack-cli": "^4.9.1"
     },

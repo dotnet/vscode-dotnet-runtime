@@ -25,6 +25,8 @@ variables:
   value: true
 - name: MicroBuildOutputFolderOverride
   value: '$(Agent.TempDirectory)'
+- name: TestBuild
+  value: $[eq(variables['Build.Reason'], 'Manual')]
 
 resources:
   repositories:
@@ -49,11 +51,6 @@ parameters:
     image: macOS-latest
     os: macOS
     emoji: 🍎
-- name: SignType
-  displayName: Sign type
-  type: string
-  default: Test
-  values: [ 'Test', 'Real' ]
 
 extends:
   template: v1/1ES.Official.PipelineTemplate.yml@1esPipelines
@@ -63,8 +60,6 @@ extends:
         name: NetCore1ESPool-Internal
         image: 1es-windows-2022
         os: windows
-      sbom:
-        enabled: false # SBOM requires a special setup for node.js projects to ensure all dependencies are included.
       policheck:
         enabled: true
         exclusionsFile: $(System.DefaultWorkingDirectory)\PoliCheckExclusions.xml
@@ -72,6 +67,8 @@ extends:
         enabled: true
       componentgovernance:
         ignoreDirectories: '.vscode-test/**'
+    settings:
+      networkIsolationPolicy: Permissive,CFSClean
     stages:
     - stage: Internal
       jobs:
@@ -94,9 +91,9 @@ extends:
       - template: pipeline-templates/lint.yaml@self
         parameters:
           pool:
-            name: Azure Pipelines
-            image: macOS-latest
-            os: macOS
+            name: NetCore1ESPool-Internal
+            image: 1es-windows-2022
+            os: windows
           useOneEngineeringPool: true
       - template: pipeline-templates/package-vsix.yaml@self
         parameters:
@@ -105,7 +102,8 @@ extends:
             image: 1es-windows-2022
             os: windows
           useOneEngineeringPool: true
-          SignType: ${{ parameters.SignType }}
+          SignType: Real
+          TestBuild: $(TestBuild)
       - template: pipeline-templates/sbom.yaml@self
         parameters:
           pool:

@@ -7,7 +7,70 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-## [2.3.3] - 2025-4-13
+An option to enforce local SDK selection, similar to 'existingDotnetPath' which only applies to runtime selection.
+
+## [3.0.0] - 2025-12
+
+Includes the same content as 2.4.1 but as an official release instead of a prerelease.
+Dependency updates.
+
+## [2.4.1] - 2025-12-1
+
+Breaking change: No longer download the latest runtime per every single request with `acquire`.
+Instead, update periodically, to prevent slow down on startup when new tooling must be acquired to be secure. Please see https://github.com/dotnet/docs/issues/49127 for more details.
+`uninstall` also no longer allows uninstall for installs which other extensions claim they are dependent upon in a running session.
+Options were added to revert to the legacy behavior for API dependents.
+Various Bug Fixes were also included.
+
+This will be released as 3.0.0 in a non-prerelease version.
+2.4.0 was not released.
+
+## [2.3.9] - 2025-8-3 (Prerelease, Skipping 2.3.8)
+
+No longer takes focus in suppressed output mode.
+Extension is less verbose by default and adds a highVerbosity setting to bring back messages.
+Improved reliability and UX when installing via Mac.
+Improved reliability when offline.
+Adds 'dotnet.availableVersions' API to get available sdks or runtimes to a specific host or dotnet.exe. This shares a cache and performance improvements for other extensions.
+Updated to a new signing certificate, thanks @joerobich!
+
+## [2.3.7] - 2025-7-28
+
+Improve error messages and output minimization.
+Add setting to disable all messages.
+Improve logic for offline handling.
+Improve fallback logic for failure edge cases.
+Add a fallback for distro detection.
+Migrate to Node 22.
+Update dependencies.
+
+## [2.3.6] - 2025-6-23
+
+Further performance enhancements.
+Increase aggression of caching.
+Use binary file headers to improve performance.
+Improve performance with logging.
+Improve performance by skipping unnecessary work.
+Update architecture detection to work with legacy dotnet executables.
+No longer check package.json files of unnecessary extensions for parsing package.json requests.
+
+## [2.3.5] - 2025-5-26
+
+- Changes in the pre-release 2.3.4 version are now applied to a release version.
+- Performance and reliability improvements.
+
+## [2.3.4] - 2025-5-7 (Pre-release)
+
+- RHEL now uses dnf over yum.
+- Caching is utilized more often for checking the status of dotnet.
+- Changes to reliability where existing installations can be reused.
+- Performance improvements by removing deprecated logic or simplifying logic.
+- Uninstall no longer allows uninstallation when dotnet is in use.
+- Clean up corrupt save data from very old versions of this extension.
+- Adds a hidden command 'resetData' you can enable visiblity of to clear extension data.
+- Uninstall logic is rewritten and improved.
+
+## [2.3.3] - 2025-4-15
 
 - Performance improvements.
 - No longer utilizes chcp to try to force dotnet --info to output in english for internal parsing (perf)

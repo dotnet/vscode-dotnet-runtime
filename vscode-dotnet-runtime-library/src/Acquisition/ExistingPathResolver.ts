@@ -14,7 +14,9 @@ import { CommandExecutor } from '../Utils/CommandExecutor';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
-import { DotnetPathFinder } from './DotnetPathFinder';
+import { DotnetInstall, GetDotnetInstallInfo } from './DotnetInstall';
+import { DotnetResolver } from './DotnetResolver';
+import { InstallTrackerSingleton } from './InstallTrackerSingleton';
 
 const badExistingPathWarningMessage = `The 'existingDotnetPath' setting was set, but it did not meet the requirements for this extension to run properly.
 This setting has been ignored.
@@ -41,16 +43,14 @@ export class ExistingPathResolver
                 return undefined;
             }
 
-            // The user path setting may be a symlink but we dont want to resolve it since a snap symlink isnt a real directory, we can find the true path better this way:
-            const oldLookup = process.env.DOTNET_MULTILEVEL_LOOKUP;
-            process.env.DOTNET_MULTILEVEL_LOOKUP = '0'; // make it so --list-runtimes only finds the runtimes on that path: https://learn.microsoft.com/en-us/dotnet/core/compatibility/deployment/7.0/multilevel-lookup#reason-for-change
-
-            const dotnetFinder = new DotnetPathFinder(this.workerContext, this.utilityContext, this.executor);
-            const resolvedPaths = await dotnetFinder.returnWithRestoringEnvironment(await dotnetFinder.getTruePath([existingPath ?? '']), 'DOTNET_MULTILEVEL_LOOKUP', oldLookup);
-            existingPath = resolvedPaths?.[0] ?? null;
+            // The user path setting may be a symlink but we don't want to resolve it since a snap symlink isn't a real directory, we can find the true path better this way:
+            const dotnetResolver = new DotnetResolver(this.workerContext, this.utilityContext, this.executor);
+            const resolvedPath = await dotnetResolver.resolveTruePath(existingPath ?? '', this.workerContext.acquisitionContext?.architecture ?? null);
+            existingPath = resolvedPath ?? null;
         }
         if (existingPath && (await this.providedPathMeetsAPIRequirement(this.workerContext, existingPath, this.workerContext.acquisitionContext, requirement) || this.allowInvalidPath(this.workerContext)))
         {
+            await InstallTrackerSingleton.getInstance(this.workerContext.eventStream, this.workerContext.extensionState).markInstallAsInUse(existingPath);
             return { dotnetPath: existingPath } as IDotnetAcquireResult;
         }
 

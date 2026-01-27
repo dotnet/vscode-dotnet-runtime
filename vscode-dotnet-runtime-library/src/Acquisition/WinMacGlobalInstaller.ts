@@ -18,6 +18,9 @@ import
     DotnetUnexpectedInstallerOSError,
     EventBasedError,
     EventCancellationError,
+    MacInstallerBackupFailure,
+    MacInstallerBackupSuccess,
+    MacInstallerFailure,
     NetInstallerBeginExecutionEvent,
     NetInstallerEndExecutionEvent,
     OSXOpenNotAvailableError,
@@ -36,6 +39,7 @@ import { IFileUtilities } from '../Utils/IFileUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { executeWithLock, getOSArch } from '../Utils/TypescriptUtilities';
 import { GLOBAL_LOCK_PING_DURATION_MS, SYSTEM_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
+import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { DotnetInstall } from './DotnetInstall';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IGlobalInstaller } from './IGlobalInstaller';
@@ -85,6 +89,15 @@ We cannot verify our .NET file host at this time. Please try again later or inst
         this.registry = registryReader ?? new RegistryReader(context, utilContext);
     }
 
+    /**
+     * Determines if the given exit code has a user-friendly, self-contained error message
+     * that doesn't need additional technical details to be helpful to the user.
+     */
+    public static IsUserFriendlyExitCode(code: string): boolean
+    {
+        return this.InterpretExitCode(code) !== '';
+    }
+
     public static InterpretExitCode(code: string): string
     {
         const reportLogMessage = `Please provide your .NET Installer log (note our privacy notice), which can be found at %temp%.
@@ -98,13 +111,13 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             case '5':
                 return `Insufficient permissions are available to install .NET. Please run the installer as an administrator.`;
             case '67':
-                return `The network name cannot be found. ${reportLogMessage}`;
+                return `The network name cannot be found to install .NET. ${reportLogMessage}`;
             case '112':
                 return `The disk is full. Please free up space and try again.`;
             case '255':
                 return `The .NET Installer was terminated by another process unexpectedly. Please try again.`;
             case '1260':
-                return `The .NET SDK is blocked by group policy. Can you please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues`
+                return `The .NET SDK Install is blocked by group policy. For more information, contact your system administrator.`
             case '1460':
                 return `The .NET SDK had a timeout error. ${reportLogMessage}`;
             case '1603':
@@ -112,9 +125,9 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             case '1618':
                 return `Another installation is already in progress. Complete that installation before proceeding with this install.`;
             case '000751':
-                return `Page fault was satisfied by reading from a secondary storage device. ${reportLogMessage}`;
+                return `.NET Installer Failed: A page fault was satisfied by reading from a secondary storage device. ${reportLogMessage}`;
             case '2147500037':
-                return `An unspecified error occurred. ${reportLogMessage}`;
+                return `.NET Installer Failed: An unspecified error occurred. ${reportLogMessage}`;
             case '2147942405':
                 return `Insufficient permissions are available to install .NET. Please try again as an administrator.`;
             case UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR:
@@ -263,7 +276,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             if (os.platform() === 'win32') // Windows does not have chmod +x ability with nodejs.
             {
                 const permissionsCommand = CommandExecutor.makeCommand('icacls', [`"${installerPath}"`, '/grant:r', `"%username%":F`, '/t', '/c']);
-                const commandRes = await this.commandRunner.execute(permissionsCommand, { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }, false);
+                const commandRes = await this.commandRunner.execute(permissionsCommand, {}, false);
                 if (commandRes.stderr !== '')
                 {
                     const error = new EventBasedError('FailedToSetInstallerPermissions', `Failed to set icacls permissions on the installer file ${installerPath}. ${commandRes.stderr}`);
@@ -407,6 +420,39 @@ If you were waiting for the install to succeed, please extend the timeout settin
         return arm64EmulationHostPath;
     }
 
+    private async darwinInstallBackup(installerPath: string): Promise<string>
+    {
+        // The -W flag makes it so we wait for the installer .pkg to exit, though we are unable to get the exit code.
+        const possibleCommands =
+            [
+                CommandExecutor.makeCommand(`command`, [`-v`, `open`]),
+                CommandExecutor.makeCommand(`/usr/bin/open`, [])
+            ];
+
+        let workingCommand = await this.commandRunner.tryFindWorkingCommand(possibleCommands);
+        if (!workingCommand)
+        {
+            const error = new EventBasedError('OSXOpenNotAvailableError',
+                `The 'open' command on OSX was not detected. This is likely due to the PATH environment variable on your system being clobbered by another program.
+Please correct your PATH variable or make sure the 'open' utility is installed so .NET can properly execute.`);
+            this.acquisitionContext.eventStream.post(new OSXOpenNotAvailableError(error, getInstallFromContext(this.acquisitionContext)));
+            throw error;
+        }
+        else if (workingCommand.commandRoot === 'command')
+        {
+            workingCommand = CommandExecutor.makeCommand(`open`, [`-W`, `"${path.resolve(installerPath)}"`]);
+        }
+
+        this.acquisitionContext.eventStream.post(new NetInstallerBeginExecutionEvent(`The OS X .NET Installer has been launched.`));
+
+        const commandResult = await this.commandRunner.execute(workingCommand, { timeout: this.acquisitionContext.timeoutSeconds * 1000 }, false);
+
+        this.acquisitionContext.eventStream.post(new NetInstallerEndExecutionEvent(`The OS X .NET Installer has closed.`));
+        this.handleTimeout(commandResult);
+
+        return commandResult.status;
+    }
+
     /**
      *
      * @param installerPath The path to the installer file to run.
@@ -417,36 +463,37 @@ If you were waiting for the install to succeed, please extend the timeout settin
         if (os.platform() === 'darwin')
         {
             // For Mac:
-            // We don't rely on the installer because it doesn't allow us to run without sudo, and we don't want to handle the user password.
-            // The -W flag makes it so we wait for the installer .pkg to exit, though we are unable to get the exit code.
-            const possibleCommands =
-                [
-                    CommandExecutor.makeCommand(`command`, [`-v`, `open`]),
-                    CommandExecutor.makeCommand(`/usr/bin/open`, [])
-                ];
-
-            let workingCommand = await this.commandRunner.tryFindWorkingCommand(possibleCommands);
-            if (!workingCommand)
-            {
-                const error = new EventBasedError('OSXOpenNotAvailableError',
-                    `The 'open' command on OSX was not detected. This is likely due to the PATH environment variable on your system being clobbered by another program.
-Please correct your PATH variable or make sure the 'open' utility is installed so .NET can properly execute.`);
-                this.acquisitionContext.eventStream.post(new OSXOpenNotAvailableError(error, getInstallFromContext(this.acquisitionContext)));
-                throw error;
-            }
-            else if (workingCommand.commandRoot === 'command')
-            {
-                workingCommand = CommandExecutor.makeCommand(`open`, [`-W`, `"${path.resolve(installerPath)}"`]);
-            }
-
+            const sudoInstallerCommand = CommandExecutor.makeCommand('installer', ['-pkg', `"${path.resolve(installerPath)}"`, '-target', '/'], true);
             this.acquisitionContext.eventStream.post(new NetInstallerBeginExecutionEvent(`The OS X .NET Installer has been launched.`));
-
-            const commandResult = await this.commandRunner.execute(workingCommand, { timeout: this.acquisitionContext.timeoutSeconds * 1000 }, false);
-
+            const installerResult = await this.commandRunner.execute(sudoInstallerCommand);
             this.acquisitionContext.eventStream.post(new NetInstallerEndExecutionEvent(`The OS X .NET Installer has closed.`));
-            this.handleTimeout(commandResult);
+            this.handleTimeout(installerResult);
 
-            return commandResult.status;
+            if (installerResult.status !== '0')
+            {
+                // Try to have the user manually go through the installation process
+                // Osascript has some issues running the installer for a pkg, and open does not have an exit code besides 0 if the user cancels/denies.
+                // For understanding the success rates, we can subtract the MacInstallerFailure amount but add back in MacInstallerBackupSuccess for when the user does succeed.
+                // This prevents counting a user who leaves the PC as a failure.
+                // The error code from the installer will give us a better understanding of the installer issues and not count them as an issue in the VS Code setup logic
+                this.acquisitionContext.eventStream.post(new MacInstallerFailure(`The installer failed.`, installerResult.status, installerResult.stderr, installerResult.stdout));
+                await this.darwinInstallBackup(installerPath);
+
+                const expectedDotnetHostPath = await this.getExpectedGlobalSDKPath(this.acquisitionContext.acquisitionContext.version, this.acquisitionContext.acquisitionContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
+                const expectedInstall = getInstallFromContext(this.acquisitionContext);
+                const validatedInstall = this.acquisitionContext.installationValidator.validateDotnetInstall(expectedInstall, expectedDotnetHostPath, false, false);
+                if (validatedInstall)
+                {
+                    this.acquisitionContext.eventStream.post(new MacInstallerBackupSuccess(`The installer succeeded when invoked manually.`));
+                    return '0';
+                }
+                else
+                {
+                    // Add this back to the failure count as it gets accounted for in the platform agnostic logic
+                    this.acquisitionContext.eventStream.post(new MacInstallerBackupFailure(`The installer also failed when invoked manually.`));
+                }
+            }
+            return installerResult.status;
         }
         else
         {

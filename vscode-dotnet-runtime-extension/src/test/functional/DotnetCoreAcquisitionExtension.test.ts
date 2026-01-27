@@ -17,21 +17,6 @@ import
     DotnetVersionSpecRequirement,
     EnvironmentVariableIsDefined,
     FileUtilities,
-    IDotnetAcquireContext,
-    IDotnetAcquireResult,
-    IDotnetFindPathContext,
-    IDotnetListVersionsContext,
-    IDotnetListVersionsResult,
-    IExistingPaths,
-    ITelemetryEvent,
-    LocalMemoryCacheSingleton,
-    MockEnvironmentVariableCollection,
-    MockEventStream,
-    MockExtensionConfiguration,
-    MockExtensionContext,
-    MockTelemetryReporter,
-    MockWebRequestWorker,
-    MockWindowDisplayWorker,
     getDistroInfo,
     getDotnetExecutable,
     getInstallIdCustomArchitecture,
@@ -40,9 +25,24 @@ import
     getMockAcquisitionContext,
     getMockAcquisitionWorkerContext,
     getMockUtilityContext,
-    getPathSeparator
+    getPathSeparator,
+    IDotnetAcquireContext,
+    IDotnetAcquireResult,
+    IDotnetFindPathContext,
+    IDotnetListVersionsContext,
+    IDotnetListVersionsResult,
+    IDotnetSearchContext,
+    IDotnetSearchResult,
+    IExistingPaths,
+    ITelemetryEvent,
+    LocalMemoryCacheSingleton,
+    MockEnvironmentVariableCollection,
+    MockExtensionConfiguration,
+    MockExtensionContext,
+    MockTelemetryReporter,
+    MockWebRequestWorker,
+    MockWindowDisplayWorker
 } from 'vscode-dotnet-runtime-library';
-import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
 import * as extension from '../../extension';
 
 const assert: any = chai.assert;
@@ -121,7 +121,6 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
         mockState.clear();
         MockTelemetryReporter.telemetryEvents = [];
         await new FileUtilities().wipeDirectory(storagePath);
-        InstallTrackerSingleton.getInstance(new MockEventStream(), new MockExtensionContext()).clearPromises();
         // Do not want cached results from prior tests to interfere
         LocalMemoryCacheSingleton.getInstance().invalidate();
     }).timeout(standardTimeoutTime);
@@ -427,12 +426,12 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
     }).timeout(standardTimeoutTime);
 
 
-    test('Find dotnet PATH Command No Arch Available But Accept By Default', async () =>
+    test('Find dotnet PATH Command No Arch Available But Arch Found From File', async () =>
     {
         // look for a different architecture of 3.1
         if (os.platform() !== 'darwin')
         {
-            await findPathWithRequirementAndInstall('3.1', 'runtime', os.arch() == 'arm64' ? 'x64' : os.arch(), 'greater_than_or_equal', true,
+            await findPathWithRequirementAndInstall('3.1', 'runtime', os.arch() == 'arm64' ? 'x64' : os.arch(), 'greater_than_or_equal', false,
                 { version: '3.1', mode: 'runtime', architecture: 'arm64', requestingExtensionId: requestingExtensionId }
             );
         }
@@ -450,23 +449,57 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
         }
     }).timeout(standardTimeoutTime);
 
-    test('Install SDK Globally E2E (Requires Admin)', async () =>
+    test('Find dotnet PATH Command does work with extension-managed runtime installations', async () =>
     {
-        // We only test if the process is running under ADMIN because non-admin requires user-intervention.
-        const sdkVersion = '7.0.103';
-        const context: IDotnetAcquireContext = { version: sdkVersion, requestingExtensionId: 'sample-extension', installType: 'global' };
+        // First install a runtime that we'll try to find
+        const version = '7.0';
+        const runtimePath = await installRuntime(version, 'runtime', os.arch());
+        assert.exists(runtimePath, 'Runtime should be installed successfully');
+
+        const originalPath = process.env.PATH;
+        try
+        {
+            // Filter PATH to remove any existing dotnet installations
+            process.env.PATH = process.env.PATH?.split(getPathSeparator())
+                .filter((x: string) => !(includesPathWithLikelyDotnet(x)))
+                .join(getPathSeparator());
+
+            const findPathContext: IDotnetFindPathContext = {
+                acquireContext: {
+                    version,
+                    requestingExtensionId,
+                    mode: 'runtime',
+                    architecture: os.arch()
+                },
+                versionSpecRequirement: 'latestPatch'
+            };
+
+            // Then verify we can find the extension-managed runtime
+            const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath', findPathContext);
+            assert.exists(result, 'Should find a runtime');
+            assert.exists(result!.dotnetPath, 'Should find a runtime path');
+            assert.equal(result!.dotnetPath.toLowerCase(), runtimePath.toLowerCase(), 'Should find the correct runtime path');
+
+            const findPathWithoutLocalLookup = { ...findPathContext, disableLocalLookup: true };
+            const resultWithoutLocalLookup = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.findPath', findPathWithoutLocalLookup);
+            assert.notEqual(resultWithoutLocalLookup?.dotnetPath?.toLowerCase(), runtimePath.toLowerCase(), 'Should not find the extension-managed runtime when local lookup is disabled');
+        }
+        finally
+        {
+            process.env.PATH = originalPath;
+        }
+    }).timeout(standardTimeoutTime);
+
+    async function runGlobalSdkInstallTest(version: string)
+    {
+        const context: IDotnetAcquireContext = { version, requestingExtensionId: 'sample-extension', installType: 'global' };
         if (await new FileUtilities().isElevated(getMockAcquisitionWorkerContext(context), getMockUtilityContext()))
         {
             const originalPath = process.env.PATH;
-
-            // We cannot use the describe pattern to restore the environment variables using vscode's extension testing infrastructure.
-            // So we must set and unset it ourselves, which isn't ideal as this variable could remain.
-            let result: IDotnetAcquireResult;
+            let result: IDotnetAcquireResult | undefined;
             let error: any;
-            let pathAfterInstall;
+            let pathAfterInstall: string | undefined;
 
-            // We cannot test much as we don't want to leave global installs on dev boxes. But we do want to make sure the e-2-e goes through the right path. Vendors can test the rest.
-            // So we have this environment variable that tells us to stop before running any real install.
             process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH = 'true';
             try
             {
@@ -481,25 +514,43 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
                 pathAfterInstall = process.env.PATH;
                 process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH = undefined;
                 process.env.PATH = originalPath;
-
-                if (error)
-                {
-                    throw (new Error(`The test failed to run the acquire command successfully. Error: ${error}`));
-                }
             }
 
-            assert.exists(result!, 'The global acquisition command did not provide a result?');
+            if (error)
+            {
+                throw new Error(`The test failed to run the acquire command successfully for version ${version}. Error: ${error}`);
+            }
+
+            assert.exists(result, `The global acquisition command did not provide a result for version ${version}`);
             assert.exists(result!.dotnetPath);
             assert.equal(result!.dotnetPath, 'fake-sdk');
             assert.exists(pathAfterInstall, 'The environment variable PATH for DOTNET was not found?');
-            assert.include(pathAfterInstall, result!.dotnetPath, 'Is the PATH correctly set by the global installer?');
+            assert.include(pathAfterInstall!, result!.dotnetPath, 'Is the PATH correctly set by the global installer?');
         }
         else
         {
-            // We could run the installer without privilege but it would require human interaction to use the UAC
-            // And we wouldn't be able to kill the process so the test would leave a lot of hanging processes on the machine
             warn('The Global SDK E2E Install test cannot run as the machine is unprivileged.');
         }
+    }
+
+    test('Install SDK Globally E2E (Requires Admin)', async () =>
+    {
+        await runGlobalSdkInstallTest('7.0.103');
+    }).timeout(standardTimeoutTime * 1000);
+
+    test('Install SDK Globally with major version format', async () =>
+    {
+        await runGlobalSdkInstallTest('9');
+    }).timeout(standardTimeoutTime * 1000);
+
+    test('Install SDK Globally with major minor format', async () =>
+    {
+        await runGlobalSdkInstallTest('10.0');
+    }).timeout(standardTimeoutTime * 1000);
+
+    test('Install SDK Globally with feature band format', async () =>
+    {
+        await runGlobalSdkInstallTest('10.0.1xx');
     }).timeout(standardTimeoutTime * 1000);
 
     test('Telemetry Sent During Install and Uninstall', async () =>
@@ -591,7 +642,7 @@ the fake dotnet path setting is an empty dir -- if it is not empty, test cleanup
 
         // acquire with the alternative extension id which has a path setting set to the fake path
         // If the setting is bad then it should also acquire somewhere else.
-        const context: IDotnetAcquireContext = { version: '5.0', requestingExtensionId: 'alternative.extension', architecture: os.platform() };
+        const context: IDotnetAcquireContext = { version: '5.0', requestingExtensionId: 'alternative.extension', architecture: os.arch() };
 
         const resultForAcquiringPathSettingRuntime = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
         assert.exists(resultForAcquiringPathSettingRuntime!.dotnetPath, 'Basic acquire works');
@@ -674,6 +725,52 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
         }
     }).timeout(standardTimeoutTime);
 
+
+    test('dotnet.availableInstalls API works after acquiring a runtime', async () =>
+    {
+        // Acquire a runtime
+        const runtimeContext: IDotnetAcquireContext = { version: '6.0', requestingExtensionId, mode: 'runtime' };
+        const acquireResult = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', runtimeContext);
+        assert.exists(acquireResult, 'The acquire command should return a result');
+        assert.exists(acquireResult!.dotnetPath, 'The acquire command should return a valid dotnet path');
+
+        // Call dotnet.availableInstalls API
+        const availableInstalls = await vscode.commands.executeCommand<IDotnetSearchResult[]>('dotnet.availableInstalls',
+            {
+                dotnetExecutablePath: acquireResult!.dotnetPath,
+                mode: 'runtime',
+                requestingExtensionId,
+                architecture: os.arch()
+            } as IDotnetSearchContext
+        );
+
+        assert.exists(availableInstalls, 'The availableInstalls API should return a result');
+        assert.isArray(availableInstalls, 'The availableInstalls API should return an array');
+        assert.isTrue(availableInstalls!.some(install => install.version.includes('6')), 'The acquired runtime should be listed in available installs');
+    }).timeout(standardTimeoutTime);
+
+    test('dotnet.availableInstalls API checks system dotnet if no path is provided', async () =>
+    {
+        // Call dotnet.availableInstalls API without providing a dotnet path
+        const availableInstalls = await vscode.commands.executeCommand<IDotnetSearchResult[]>('dotnet.availableInstalls', {
+            mode: 'runtime',
+            requestingExtensionId
+        });
+
+        assert.exists(availableInstalls, 'The availableInstalls API should return a result');
+        assert.isArray(availableInstalls, 'The availableInstalls API should return an array');
+
+        // Validate the output (system may or may not have installs)
+        if (availableInstalls!.length > 0)
+        {
+            assert.exists(availableInstalls![0].version, 'The first install should have a version');
+            assert.exists(availableInstalls![0].directory, 'The first install should have a directory');
+        } else
+        {
+            assert.isTrue(availableInstalls!.length === 0, 'No installs found on the system');
+        }
+    }).timeout(standardTimeoutTime);
+
     async function testAcquire(installMode: DotnetInstallMode)
     {
         // Runtime is not yet installed
@@ -692,12 +789,33 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
         assert.exists(result);
         assert.exists(result!.dotnetPath);
         assert.isTrue(fs.existsSync(result!.dotnetPath!));
-        await promisify(rimraf)(result!.dotnetPath!);
+        await fs.promises.rm(result!.dotnetPath!, { force: true });
     }
 
     test('Install Runtime Status Command', async () =>
     {
         await testAcquire('runtime');
+    }).timeout(standardTimeoutTime);
+
+    test('acquireStatus can work Offline', async () =>
+    {
+        const availableVersion = '8.0';
+        try
+        {
+            await installRuntime(availableVersion, 'runtime');
+
+            // Simulate offline mode by not allowing network requests
+            process.env.DOTNET_INSTALL_TOOL_OFFLINE = '1';
+
+            const context: IDotnetAcquireContext = { version: availableVersion, requestingExtensionId, mode: 'runtime' };
+            let result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquireStatus', context);
+            assert.isDefined(result, 'acquireStatusResult should be defined');
+            assert.include(result!.dotnetPath, availableVersion, 'acquireStatusResult should contain the expected version in the path');
+        }
+        finally
+        {
+            process.env.DOTNET_INSTALL_TOOL_OFFLINE = undefined
+        }
     }).timeout(standardTimeoutTime);
 
     test('Install Aspnet runtime Status Command', async () =>
@@ -722,4 +840,90 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
         assert.equal(undefined, result, 'Acquire Status for no ASP.NET installed when Runtime is installed should not mistake Runtime Install as ASP.NET Install');
     }).timeout(standardTimeoutTime);
 
+    test('resetData command wipes install', async () =>
+    {
+        const dotnetPathRes = await installRuntime('9.0', 'runtime');
+        const uninstallRes = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.resetData');
+        assert.exists(uninstallRes, 'The resetData command should return a result');
+
+        assert.isFalse(fs.existsSync(dotnetPathRes), 'The dotnet path should not exist after resetData command');
+        assert.isFalse(fs.existsSync(path.dirname(dotnetPathRes)), 'The dotnet path should not exist after resetData command');
+    }).timeout(standardTimeoutTime);
+
+    test('resetData command does not cause invalid state if other extensions use runtime', async () =>
+    {
+        let dotnetPathRes = await installRuntime('9.0', 'runtime');
+        const openFileHandle = await fs.promises.open(dotnetPathRes, fs.constants.O_RDWR);
+        try
+        {
+            const uninstallRes = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.resetData');
+            assert.equal(uninstallRes, 0);
+
+            assert.isTrue(fs.existsSync(path.dirname(dotnetPathRes)), 'The dotnet exec should exist after resetData command because it was in use');
+            assert.isTrue(fs.existsSync(dotnetPathRes), 'The dotnet folder should exist after resetData command because it was in use');
+
+            // Installing again after reset when prior file in use, should not throw an error
+            dotnetPathRes = await installRuntime('9.0', 'runtime');
+        }
+        finally
+        {
+            await openFileHandle.close();
+        }
+    }).timeout(standardTimeoutTime);
+
+    test('Uninstall command does not proceed if dotnet.exe is open', async () =>
+    {
+        const dotnetPath = await installRuntime('9.0', 'runtime');
+        const openFileHandle = await fs.promises.open(dotnetPath, fs.constants.O_RDWR);
+
+        try
+        {
+            const uninstallResult = await vscode.commands.executeCommand<string>('dotnet.uninstall', { version: '9.0', requestingExtensionId, mode: 'runtime' });
+            assert.equal(uninstallResult, '1', 'Uninstall command should return 1 indicating no action was taken');
+            assert.isTrue(fs.existsSync(dotnetPath), 'The dotnet.exe file should still exist because it was in use');
+        } finally
+        {
+            await openFileHandle.close();
+        }
+    }).timeout(standardTimeoutTime);
+
+    test('UninstallAll command does not proceed if dotnet.exe is open', async () =>
+    {
+        const dotnetPath = await installRuntime('9.0', 'runtime');
+        const openFileHandle = await fs.promises.open(dotnetPath, fs.constants.O_RDWR);
+
+        try
+        {
+            const uninstallAllResult = await vscode.commands.executeCommand<string>('dotnet.uninstallAll');
+            assert.equal(uninstallAllResult, '0', 'UninstallAll command should return 0 indicating no action was taken');
+            assert.isTrue(fs.existsSync(dotnetPath), 'The dotnet.exe file should still exist because it was in use');
+        } finally
+        {
+            await openFileHandle.close();
+        }
+    }).timeout(standardTimeoutTime);
+
+    test('Fully specified version installs specific version when forceUpdate is undefined', async () =>
+    {
+        // First install a .NET 9.0 runtime (will install the latest 9.0.x)
+        const result1 = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', { 
+            version: '9.0', 
+            requestingExtensionId, 
+            mode: 'runtime' as DotnetInstallMode 
+        });
+        assert.exists(result1, 'First install should succeed');
+        assert.exists(result1!.dotnetPath, 'First install should return a path');
+
+        // Now try to install a fully specified version (e.g., 9.0.0) without setting forceUpdate
+        // This should automatically set forceUpdate to true and install the specific version
+        const result2 = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', { 
+            version: '9.0.0', 
+            requestingExtensionId, 
+            mode: 'runtime' as DotnetInstallMode,
+            // Note: forceUpdate is intentionally not set (undefined)
+        });
+        assert.exists(result2, 'Second install with fully specified version should succeed');
+        assert.exists(result2!.dotnetPath, 'Second install should return a path');
+        assert.include(result2!.dotnetPath, '9.0.0', 'Path should include the fully specified version 9.0.0');
+    }).timeout(standardTimeoutTime);
 });

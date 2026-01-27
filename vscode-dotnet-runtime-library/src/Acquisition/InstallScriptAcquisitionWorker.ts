@@ -11,7 +11,6 @@ import
     DotnetInstallScriptAcquisitionError,
     EventBasedError,
 } from '../EventStream/EventStreamEvents';
-import { Debugging } from '../Utils/Debugging';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 import { WebRequestWorkerSingleton } from '../Utils/WebRequestWorkerSingleton';
@@ -27,26 +26,35 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
     private readonly fileUtilities: FileUtilities;
     private readonly scriptFileEnding = os.platform() === 'win32' ? 'ps1' : 'sh';
 
-
+    protected readonly scriptFileName: string = 'dotnet-install';
 
     constructor(private readonly context: IAcquisitionWorkerContext)
     {
-        const scriptFileName = 'dotnet-install';
-        this.scriptFilePath = path.join(__dirname, 'install scripts', `${scriptFileName}.${this.scriptFileEnding}`);
+        this.scriptFilePath = path.join(__dirname, 'install scripts', `${this.scriptFileName}.${this.scriptFileEnding}`);
         this.webWorker = WebRequestWorkerSingleton.getInstance();
         this.fileUtilities = new FileUtilities();
+    }
+
+    private async getFallbackScript(): Promise<string>
+    {
+        const fallbackPath = this.getFallbackScriptPath();
+        if ((await this.fileUtilities.exists(fallbackPath)))
+        {
+            this.context.eventStream.post(new DotnetFallbackInstallScriptUsed());
+            return fallbackPath;
+        }
+
+        throw new EventBasedError('UnableToAcquireDotnetInstallScript', `Failed to Find Dotnet Install Script: ${this.scriptFileName}.${this.scriptFileEnding}. Please download .NET Manually.`);
     }
 
     public async getDotnetInstallScriptPath(): Promise<string>
     {
         try
         {
-            Debugging.log('getDotnetInstallScriptPath() invoked.');
             const script = await this.webWorker.getCachedData(`${this.scriptAcquisitionUrl}${this.scriptFileEnding}`, this.context);
             if (!script)
             {
-                Debugging.log('The request to acquire the script failed.');
-                throw new EventBasedError('NoInstallScriptPathExists', 'Unable to get script path.');
+                return this.getFallbackScript();
             }
 
             await this.fileUtilities.writeFileOntoDisk(script, this.scriptFilePath, this.context.eventStream);
@@ -55,19 +63,8 @@ export class InstallScriptAcquisitionWorker implements IInstallScriptAcquisition
         }
         catch (error: any)
         {
-            Debugging.log('An error occurred processing the install script.');
             this.context.eventStream.post(new DotnetInstallScriptAcquisitionError(error as Error, getInstallFromContext(this.context)));
-
-            // Try to use fallback install script
-            const fallbackPath = this.getFallbackScriptPath();
-            if ((await this.fileUtilities.exists(fallbackPath)))
-            {
-                Debugging.log('Returning the fallback script path.');
-                this.context.eventStream.post(new DotnetFallbackInstallScriptUsed());
-                return fallbackPath;
-            }
-
-            throw new EventBasedError('UnableToAcquireDotnetInstallScript', `Failed to Acquire Dotnet Install Script: ${error}`);
+            return this.getFallbackScript();
         }
     }
 

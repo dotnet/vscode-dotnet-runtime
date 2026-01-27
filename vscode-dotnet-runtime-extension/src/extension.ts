@@ -27,11 +27,12 @@ import
     DotnetFindPathMetCondition,
     DotnetFindPathNoPathMetCondition,
     DotnetFindPathSettingFound,
+    DotnetHostPathFinder,
     DotnetInstall,
     DotnetInstallMode,
     DotnetInstallType,
     DotnetOfflineWarning,
-    DotnetPathFinder,
+    DotnetResolver,
     DotnetVersionCategorizedEvent,
     DotnetVersionResolutionError,
     DotnetVersionSpecRequirement,
@@ -53,8 +54,11 @@ import
     IDotnetConditionValidator,
     IDotnetEnsureDependenciesContext,
     IDotnetFindPathContext,
+    IDotnetListInfo,
     IDotnetListVersionsContext,
     IDotnetListVersionsResult,
+    IDotnetSearchContext,
+    IDotnetSearchResult,
     IDotnetUninstallContext,
     IDotnetVersion,
     IEventStreamContext,
@@ -66,9 +70,11 @@ import
     IUtilityContext,
     JsonInstaller,
     LinuxVersionResolver,
+    LocalInstallUpdateService,
     LocalMemoryCacheSingleton,
     NoExtensionIdProvided,
     registerEventStream,
+    UninstallErrorConfiguration,
     UserManualInstallFailure,
     UserManualInstallRequested,
     UserManualInstallSuccess,
@@ -95,6 +101,10 @@ namespace configKeys
     export const proxyUrl = 'proxyUrl';
     export const allowInvalidPaths = 'allowInvalidPaths';
     export const cacheTimeToLiveMultiplier = 'cacheTimeToLiveMultiplier';
+    export const showResetDataCommand = 'showResetDataCommand';
+    export const suppressOutput = 'suppressOutput';
+    export const highVerbosity = 'highVerbosity';
+    export const runtimeUpdateDelaySeconds = 'runtimeUpdateDelaySeconds';
 }
 
 namespace commandKeys
@@ -112,6 +122,9 @@ namespace commandKeys
     export const showAcquisitionLog = 'showAcquisitionLog';
     export const ensureDotnetDependencies = 'ensureDotnetDependencies';
     export const reportIssue = 'reportIssue';
+    export const resetData = 'resetData';
+    export const availableInstalls = 'availableInstalls';
+    export const resetUpdateTimerInternal = '_resetUpdateTimer';
 }
 
 const commandPrefix = 'dotnet';
@@ -141,7 +154,10 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         fs.mkdirSync(vsCodeContext.globalStoragePath, { recursive: true });
     }
     const resolvedTimeoutSeconds = timeoutValue === undefined ? defaultTimeoutValue : timeoutValue;
+    const runtimeUpdateDelaySeconds = extensionConfiguration.get<number>(configKeys.runtimeUpdateDelaySeconds) ?? 300;
+    const runtimeUpdateDelayMs = runtimeUpdateDelaySeconds * 1000;
     const proxyLink = extensionConfiguration.get<string>(configKeys.proxyUrl);
+    const showResetDataCommand = extensionConfiguration.get<boolean>(configKeys.showResetDataCommand);
 
     // Create a cache with the TTL setting that we can only reasonably access from here.
     const cacheTimeToLiveMultiplier = Math.abs(Number(extensionConfiguration.get<string>(configKeys.cacheTimeToLiveMultiplier) ?? 1)) ?? 1;
@@ -149,6 +165,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
 
     const allowInvalidPathSetting = extensionConfiguration.get<boolean>(configKeys.allowInvalidPaths);
+    const suppressOutput = extensionConfiguration.get<boolean>(configKeys.suppressOutput) ?? false;
+    const highVerbosity = extensionConfiguration.get<boolean>(configKeys.highVerbosity) ?? false;
     const isExtensionTelemetryEnabled = enableExtensionTelemetry(extensionConfiguration, configKeys.enableTelemetry);
     const displayWorker = extensionContext ? extensionContext.displayWorker : new WindowDisplayWorker();
 
@@ -168,15 +186,40 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         showLogCommand: `${commandPrefix}.${commandKeys.showAcquisitionLog}`,
         packageJson
     } as IEventStreamContext;
-    const [globalEventStream, outputChannel, loggingObserver,
-        eventStreamObservers, telemetryObserver, _] = registerEventStream(eventStreamContext, vsCodeExtensionContext, utilContext);
+    const [globalEventStream, outputChannelObserver, loggingObserver,
+        eventStreamObservers, telemetryObserver, _] = registerEventStream(eventStreamContext, vsCodeExtensionContext, utilContext, suppressOutput, highVerbosity);
 
+
+    const runtimeUpdateDirectoryProvider = directoryProviderFactory(
+        'runtime', vsCodeContext.globalStoragePath); // Assumption : aspnetcore and runtime directory provider use the same logic, otherwise updates would not be found
+    const automaticUpdater = new LocalInstallUpdateService(globalEventStream, vsCodeContext.globalState, runtimeUpdateDirectoryProvider,
+        acquireLocal,
+        uninstall,
+        loggingObserver
+    );
+
+    if (!(process.env.DOTNET_INSTALL_TOOL_UNDER_TEST === 'true')) // Don't try to update while testing - this would make tests fail randomly
+    {
+        automaticUpdater.ManageInstalls(runtimeUpdateDelayMs).catch((e: any) =>
+        {
+            if (!suppressOutput)
+            {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                vscode.window.showWarningMessage(`The .NET Runtime may be out of date. An error occurred while checking for updates: ${e?.message ?? JSON.stringify(e)}.`);
+            }
+        });
+    }
 
     // Setting up command-shared classes for Runtime & SDK Acquisition
     const existingPathConfigWorker = new ExtensionConfigurationWorker(extensionConfiguration, configKeys.existingPath, configKeys.existingSharedPath);
 
     // Creating API Surfaces
     const dotnetAcquireRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquire}`, async (commandContext: IDotnetAcquireContext): Promise<IDotnetAcquireResult | undefined> =>
+    {
+        return acquireLocal(commandContext);
+    });
+
+    async function acquireLocal(commandContext: IDotnetAcquireContext, ignorePathSetting = false): Promise<IDotnetAcquireResult | undefined>
     {
         const worker = getAcquisitionWorker();
         commandContext.mode = commandContext.mode ?? 'runtime' as DotnetInstallMode;
@@ -203,21 +246,37 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                     `Cannot acquire .NET version "${commandContext.version}". Please provide a valid version.`);
             }
 
-            const existingPath = await resolveExistingPathIfExists(existingPathConfigWorker, commandContext, workerContext, utilContext);
-            if (existingPath)
+            if (!ignorePathSetting)
             {
-                return existingPath;
+                const existingPath = await resolveExistingPathIfExists(existingPathConfigWorker, commandContext, workerContext, utilContext);
+                if (existingPath)
+                {
+                    return existingPath;
+                }
             }
 
-            const existingOfflinePath = await getExistingInstallIfOffline(worker, workerContext);
-            if (existingOfflinePath)
+            // If a fully specified version (e.g., 8.0.19) is requested and forceUpdate is undefined,
+            // set forceUpdate to true to skip the existing installation check and install the specific version requested.
+            if (commandContext.version.split('.').length > 2 && commandContext.forceUpdate === undefined)
             {
-                return Promise.resolve(existingOfflinePath);
+                commandContext.forceUpdate = true;
+            }
+
+            const isOffline = !(await WebRequestWorkerSingleton.getInstance().isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream));
+            if (!commandContext.forceUpdate || isOffline)
+            {
+                // 3.0 Breaking Change: Don't always return latest .NET runtime by default
+                // Always use offline install matching the major.minor if it exists, unless forceUpdate is set (forceUpdate enables the legacy behavior of always returning the latest .NET runtime)
+                const existingOfflinePath = await getExistingInstallOffline(worker, workerContext);
+                if (existingOfflinePath)
+                {
+                    return Promise.resolve(existingOfflinePath);
+                }
             }
 
             // Note: This will impact the context object given to the worker and error handler since objects own a copy of a reference in JS.
             const runtimeVersionResolver = new VersionResolver(workerContext);
-            commandContext.version = await runtimeVersionResolver.getFullVersion(commandContext.version, mode);
+            commandContext.version = commandContext.version.split('.')?.length > 2 ? commandContext.version : await runtimeVersionResolver.getFullVersion(commandContext.version, mode);
 
             const acquisitionInvoker = new AcquisitionInvoker(workerContext, utilContext);
             return mode === 'aspnetcore' ? worker.acquireLocalASPNET(workerContext, acquisitionInvoker) : worker.acquireLocalRuntime(workerContext, acquisitionInvoker);
@@ -236,7 +295,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
         loggingObserver.dispose();
         return dotnetPath;
-    });
+    }
 
     const dotnetAcquireGlobalSDKRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquireGlobalSDK}`, async (commandContext: IDotnetAcquireContext): Promise<IDotnetAcquireResult | undefined> =>
     {
@@ -280,7 +339,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             commandContext.version = fullyResolvedVersion;
             telemetryObserver?.setAcquisitionContext(workerContext, commandContext);
 
-            outputChannel.show(true);
+            outputChannelObserver.showOutput();
             const dotnetPath = await worker.acquireGlobalSDK(workerContext, globalInstallerResolver);
 
             new CommandExecutor(workerContext, utilContext).setPathEnvVar(dotnetPath.dotnetPath, moreInfoUrl, displayWorker, vsCodeExtensionContext, true);
@@ -381,23 +440,93 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     {
         const pathResult = await callWithErrorHandling(async () =>
         {
-            const mode = commandContext.mode ?? 'runtime' as DotnetInstallMode;
+            commandContext.mode ??= 'runtime' as DotnetInstallMode;
+            commandContext.architecture ??= DotnetCoreAcquisitionWorker.defaultArchitecture();
+            commandContext.installType ??= 'local' as DotnetInstallType;
+            commandContext.requestingExtensionId ??= 'unspecified';
             const worker = getAcquisitionWorker();
-            const workerContext = getAcquisitionWorkerContext(mode, commandContext);
+            const workerContext = getAcquisitionWorkerContext(commandContext.mode, commandContext);
 
             globalEventStream.post(new DotnetAcquisitionStatusRequested(commandContext.version, commandContext.requestingExtensionId));
+
+            // Caveat : acquireStatus expects only a major.minor, so fully specified versions won't be checked here
+
+            const existingOfflinePath = await getExistingInstallOffline(worker, workerContext);
+            if (existingOfflinePath)
+            {
+                return Promise.resolve(existingOfflinePath);
+            }
+
             const runtimeVersionResolver = new VersionResolver(workerContext);
-            const resolvedVersion = await runtimeVersionResolver.getFullVersion(commandContext.version, mode);
+            const resolvedVersion = await runtimeVersionResolver.getFullVersion(commandContext.version, commandContext.mode);
             commandContext.version = resolvedVersion;
-            const dotnetPath = await worker.acquireStatus(workerContext, mode);
+            const dotnetPath = await worker.acquireStatus(workerContext, commandContext.mode);
             return dotnetPath;
         }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, 'acquireStatus'));
         return pathResult;
     });
 
+    const dotnetAvailableInstallsRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.availableInstalls}`,
+        async (commandContext: IDotnetSearchContext): Promise<IDotnetSearchResult[]> =>
+        {
+            if (commandContext.mode === undefined || commandContext.requestingExtensionId === undefined)
+            {
+                throw new EventCancellationError('BadContextualAvailbleInstallsError', `The dotnet.availableInstalls API request was missing either a mode or requestingExtensionId. Please provide this.`);
+            }
+
+            const dotnetExecutablePath = commandContext.dotnetExecutablePath ?? 'dotnet';
+            const installs = await callWithErrorHandling(async () =>
+            {
+                // Bad design: An acquire context is needed to setup the state, but don't want to untangle that in this change.
+                const fakeAcquireContext = {
+                    version: 'notApplicable',
+                    requestingExtensionId: commandContext.requestingExtensionId,
+                    architecture: commandContext.architecture,
+                    mode: commandContext.mode,
+                    installType: 'local' as DotnetInstallType, // does not matter as we search based on the host path
+                    errorConfiguration: commandContext.errorConfiguration
+                } as IDotnetAcquireContext;
+                const workerContext = getAcquisitionWorkerContext(commandContext.mode, fakeAcquireContext);
+
+                const dotnetResolver = new DotnetResolver(workerContext, utilContext);
+                const installsInListForm: IDotnetListInfo[] = await dotnetResolver.getDotnetInstalls(dotnetExecutablePath, commandContext.mode, commandContext.architecture);
+
+                return installsInListForm.map((installInfo: IDotnetListInfo) =>
+                {
+                    return {
+                        mode: installInfo.mode,
+                        version: installInfo.version,
+                        directory: installInfo.directory,
+                        architecture: installInfo.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(),
+                    } as IDotnetSearchResult;
+                });
+            }, getIssueContext(existingPathConfigWorker)(commandContext?.errorConfiguration, commandKeys.availableInstalls));
+
+            if ((installs?.length ?? 0) > 0)
+            {
+                await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).markInstallAsInUse(dotnetExecutablePath);
+            }
+
+            return installs ?? [];
+        });
+
+    const resetDataPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.resetData}`, async () =>
+    {
+        const uninstallContext: IDotnetUninstallContext = {
+            errorConfiguration: UninstallErrorConfiguration.DisplayAllErrorPopups,
+        };
+        return uninstallAll(uninstallContext);
+    });
+
+    const resetUpdateTimerInternalRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.resetUpdateTimerInternal}`, async () =>
+    {
+        await vsCodeContext.globalState.update('dotnet.latestUpdateDate', undefined);
+        return vsCodeContext.globalState.get<Date>('dotnet.latestUpdateDate');
+    });
+
     const dotnetUninstallPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallPublic}`, async () =>
     {
-        const existingInstalls = await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).getExistingInstalls('installed', directoryProviderFactory(
+        const existingInstalls: InstallRecord[] = await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).getExistingInstalls(directoryProviderFactory(
             'runtime', vsCodeContext.globalStoragePath));
 
         const menuItems = existingInstalls?.sort(
@@ -438,7 +567,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             const selectedInstall: DotnetInstall = installRecord.dotnetInstall;
             let canContinue = true;
-            const uninstallWillBreakSomething = !(await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).canUninstall('installed', selectedInstall, directoryProviderFactory(
+            const uninstallWillBreakSomething = !(await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).installHasNoDependents(selectedInstall, directoryProviderFactory(
                 'runtime', vsCodeContext.globalStoragePath), true));
 
             const yes = `Continue`;
@@ -464,7 +593,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 requestingExtensionId: 'user'
             }
 
-            outputChannel.show(true);
+            outputChannelObserver.showOutput();
             return uninstall(commandContext, true);
         }
     });
@@ -475,6 +604,11 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
     const dotnetUninstallRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstall}`, async (commandContext: IDotnetAcquireContext | undefined): Promise<string> =>
     {
         return uninstall(commandContext);
+    });
+
+    const dotnetForceUpdateRegistration = vscode.commands.registerCommand(`${commandPrefix}.forceUpdate`, async (commandContext: IDotnetAcquireContext): Promise<void> =>
+    {
+        return automaticUpdater.ManageInstalls(0).catch((e: any) => {});
     });
 
     /**
@@ -498,6 +632,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         {
             throw new EventCancellationError('BadContextualFindPathError', `The find path request was missing required information: a mode, version, architecture, and requestingExtensionId.`);
         }
+        const requestedArchitecture = commandContext.acquireContext.architecture;
 
         globalEventStream.post(new DotnetFindPathLookupSetting(`Looking up vscode setting.`));
         const workerContext = getAcquisitionWorkerContext(commandContext.acquireContext.mode, commandContext.acquireContext);
@@ -506,16 +641,16 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         // The setting is not intended to be used as the SDK, only the runtime for extensions to run on. Ex: PowerShell policy doesn't allow us to install the runtime, let users set the path manually.
         if (existingPath && commandContext.acquireContext.mode !== 'sdk')
         {
-            // We don't need to validate the existing path as it gets validated in the lookup logic already.
+            // We don't need to validate the existing path as it gets validated + tracked in the lookup logic already.
             globalEventStream.post(new DotnetFindPathSettingFound(`Found vscode setting.`));
             loggingObserver.dispose();
             return existingPath;
         }
 
         const validator = new DotnetConditionValidator(workerContext, utilContext);
-        const finder = new DotnetPathFinder(workerContext, utilContext);
+        const finder = new DotnetHostPathFinder(workerContext, utilContext);
 
-        const dotnetOnShellSpawn = (await finder.findDotnetFastFromListOnly())?.[0] ?? '';
+        const dotnetOnShellSpawn = (await finder.findDotnetFastFromListOnly(requestedArchitecture)) ?? '';
         if (dotnetOnShellSpawn)
         {
             const validatedShellSpawn = await getPathIfValid(dotnetOnShellSpawn, validator, commandContext);
@@ -526,7 +661,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             }
         }
 
-        const dotnetsOnPATH = await finder.findRawPathEnvironmentSetting();
+        const dotnetsOnPATH = await finder.findRawPathEnvironmentSetting(true, requestedArchitecture);
         for (const dotnetPath of dotnetsOnPATH ?? [])
         {
             const validatedPATH = await getPathIfValid(dotnetPath, validator, commandContext);
@@ -537,7 +672,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             }
         }
 
-        const dotnetsOnRealPATH = await finder.findRealPathEnvironmentSetting();
+        const dotnetsOnRealPATH = await finder.findRealPathEnvironmentSetting(true, requestedArchitecture);
         for (const dotnetPath of dotnetsOnRealPATH ?? [])
         {
             const validatedRealPATH = await getPathIfValid(dotnetPath, validator, commandContext);
@@ -554,6 +689,21 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         {
             loggingObserver.dispose();
             return { dotnetPath: validatedRoot };
+        }
+
+        if (commandContext.acquireContext.mode !== 'sdk' && !commandContext.disableLocalLookup)
+        {
+            const extensionManagedRuntimeRecordPaths = await finder.findExtensionManagedRuntimes();
+            const filteredExtensionManagedRuntimeRecordPaths = validator.filterValidPaths(extensionManagedRuntimeRecordPaths, commandContext);
+            for (const dotnetPath of filteredExtensionManagedRuntimeRecordPaths ?? [])
+            {
+                const validatedExistingManagedPath = await getPathIfValid(dotnetPath.path, validator, commandContext);
+                if (validatedExistingManagedPath)
+                {
+                    loggingObserver.dispose();
+                    return { dotnetPath: dotnetPath.path };
+                }
+            }
         }
 
         const dotnetOnHostfxrRecord = await finder.findHostInstallPaths(commandContext.acquireContext.architecture);
@@ -588,6 +738,7 @@ ${JSON.stringify(commandContext)}`));
             if (validated)
             {
                 globalEventStream.post(new DotnetFindPathMetCondition(`${path} met the conditions.`));
+                await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).markInstallAsInUse(path);
                 return path;
             }
         }
@@ -595,7 +746,7 @@ ${JSON.stringify(commandContext)}`));
         return undefined;
     }
 
-    async function uninstall(commandContext: IDotnetAcquireContext | undefined, force = false): Promise<string>
+    async function uninstall(commandContext: IDotnetAcquireContext | undefined, force = false, onlyCheckLiveDependents = false): Promise<string>
     {
         let result = '1';
         await callWithErrorHandling(async () =>
@@ -612,7 +763,7 @@ ${JSON.stringify(commandContext)}`));
                 const worker = getAcquisitionWorker();
                 const workerContext = getAcquisitionWorkerContext(commandContext.mode, commandContext);
 
-                if (commandContext.installType === 'local' && !force) // if using force mode, we are also using the UI, which passes the fully specified version to uninstall only
+                if (commandContext.installType === 'local' && !force && !(onlyCheckLiveDependents && commandContext.version.split('.').length > 1)) // if using force mode, we are also using the UI, which passes the fully specified version to uninstall only
                 {
                     const versionResolver = new VersionResolver(workerContext);
                     const resolvedVersion = await versionResolver.getFullVersion(commandContext.version, commandContext.mode);
@@ -627,7 +778,7 @@ ${JSON.stringify(commandContext)}`));
 
                 if (commandContext.installType === 'local')
                 {
-                    result = await worker.uninstallLocal(workerContext, install, force);
+                    result = await worker.uninstallLocal(workerContext, install, force, false, onlyCheckLiveDependents);
                 }
                 else
                 {
@@ -642,6 +793,11 @@ ${JSON.stringify(commandContext)}`));
 
     const dotnetUninstallAllRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallAll}`, async (commandContext: IDotnetUninstallContext | undefined) =>
     {
+        return uninstallAll(commandContext);
+    });
+
+    async function uninstallAll(commandContext: IDotnetUninstallContext | undefined): Promise<number>
+    {
         await callWithErrorHandling(async () =>
         {
             const mode = 'runtime' as DotnetInstallMode;
@@ -652,9 +808,11 @@ ${JSON.stringify(commandContext)}`));
         },
             getIssueContext(existingPathConfigWorker)(commandContext ? commandContext.errorConfiguration : undefined, 'uninstallAll')
         );
-    });
 
-    const showOutputChannelRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.showAcquisitionLog}`, () => outputChannel.show(/* preserveFocus */ false));
+        return Promise.resolve(0);
+    }
+
+    const showOutputChannelRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.showAcquisitionLog}`, () => outputChannelObserver.showOutput());
 
     const ensureDependenciesRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.ensureDotnetDependencies}`, async (commandContext: IDotnetEnsureDependenciesContext) =>
     {
@@ -808,18 +966,28 @@ ${JSON.stringify(commandContext)}`));
 
     async function getExistingInstallIfOffline(worker: DotnetCoreAcquisitionWorker, workerContext: IAcquisitionWorkerContext): Promise<IDotnetAcquireResult | null>
     {
-        if (!(await WebRequestWorkerSingleton.getInstance().isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream)))
+        const isOffline = !(await WebRequestWorkerSingleton.getInstance().isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream));
+        if (isOffline)
         {
-            workerContext.acquisitionContext.architecture ??= DotnetCoreAcquisitionWorker.defaultArchitecture();
-            const existingOfflinePath = await worker.getSimilarExistingInstall(workerContext);
-            if (existingOfflinePath?.dotnetPath)
+            return getExistingInstallOffline(worker, workerContext);
+        }
+        return null;
+    }
+
+    async function getExistingInstallOffline(worker: DotnetCoreAcquisitionWorker, workerContext: IAcquisitionWorkerContext): Promise<IDotnetAcquireResult | null>
+    {
+        workerContext.acquisitionContext.architecture ??= DotnetCoreAcquisitionWorker.defaultArchitecture();
+        const existingOfflinePath = await worker.getSimilarExistingInstall(workerContext);
+        if (existingOfflinePath?.dotnetPath)
+        {
+            return Promise.resolve(existingOfflinePath);
+        }
+        else
+        {
+            if (!(await WebRequestWorkerSingleton.getInstance().isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream)))
             {
-                return Promise.resolve(existingOfflinePath);
-            }
-            else
-            {
-                globalEventStream.post(new DotnetOfflineWarning(`It looks like you may be offline (can you connect to www.microsoft.com?) and have no installations of .NET for VS Code.
-We will try to install .NET, but are unlikely to be able to connect to the server. Installation will timeout in ${timeoutValue} seconds.`))
+                globalEventStream.post(new DotnetOfflineWarning(`It looks like you may be offline (can you connect to www.microsoft.com?) and have no compatible installations of .NET ${workerContext.acquisitionContext.version} for ${workerContext.acquisitionContext.requestingExtensionId ?? 'user'}.
+Installation will timeout in ${timeoutValue} seconds.`))
             }
         }
 
@@ -834,6 +1002,7 @@ We will try to install .NET, but are unlikely to be able to connect to the serve
         dotnetAcquireRegistration,
         dotnetAcquireStatusRegistration,
         dotnetAcquireGlobalSDKRegistration,
+        dotnetAvailableInstallsRegistration,
         acquireGlobalSDKPublicRegistration,
         dotnetFindPathRegistration,
         dotnetListVersionsRegistration,
@@ -841,10 +1010,17 @@ We will try to install .NET, but are unlikely to be able to connect to the serve
         dotnetUninstallRegistration,
         dotnetUninstallPublicRegistration,
         dotnetUninstallAllRegistration,
+        dotnetForceUpdateRegistration,
         showOutputChannelRegistration,
         ensureDependenciesRegistration,
         reportIssueRegistration,
+        resetUpdateTimerInternalRegistration,
         ...eventStreamObservers);
+
+    if (showResetDataCommand)
+    {
+        vsCodeContext.subscriptions.push(resetDataPublicRegistration);
+    }
 }
 
 export function ReEnableActivationForManualActivation()

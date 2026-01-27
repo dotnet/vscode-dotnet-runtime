@@ -7,7 +7,7 @@
 		"url": "https://github.com/dotnet/vscode-dotnet-runtime.git"
 	},
 	"license": "MIT",
-	"version": "2.3.3",
+	"version": "3.0.0",
 	"publisher": "ms-dotnettools",
 	"engines": {
 		"vscode": "^1.75.0"
@@ -52,7 +52,7 @@
 			},
 			{
 				"command": "sample.dotnet.concurrentTest",
-				"title": "Concurrently acquire all 2.X .NET Core runtimes",
+				"title": "Concurrently acquire .NET runtimes (8.0, 9.0, 10.0)",
 				"category": "Sample"
 			},
 			{
@@ -73,6 +73,11 @@
 			{
 				"command": "sample.dotnet.findPath",
 				"title": "Find the .NET on the PATH",
+				"category": "Sample"
+			},
+			{
+				"command": "sample.dotnet.availableInstalls",
+				"title": "Find the .NET installs on the PATH",
 				"category": "Sample"
 			},
 			{
@@ -109,6 +114,21 @@
 				"command": "sample.dotnet-sdk.recommendedVersion",
 				"title": "Show the recommended version of the SDK to install.",
 				"category": "Sample"
+			},
+			{
+				"command": "sample.dotnet.forceUpdate",
+				"title": "Force update of .NET runtimes",
+				"category": "Sample"
+			},
+			{
+				"command": "sample.dotnet.acquireNoForce",
+				"title": "Acquire .NET runtimes without forcing updates",
+				"category": "Sample"
+			},
+			{
+				"command": "sample.dotnet.resetUpdateTimer",
+				"title": "Reset the update timer for .NET",
+				"category": "Sample"
 			}
 		]
 	},
@@ -117,7 +137,7 @@
 		"compile": "npm run clean && tsc -p ./",
 		"watch": "npm run clean && tsc -watch -p ./",
 		"test": "npm run compile && node ./node_modules/vscode/bin/test",
-		"clean": "rimraf out"
+		"clean": "npx rimraf out"
 	},
 	"dependencies": {
 		"@vscode/vsce": "^2.19.0",
@@ -133,7 +153,7 @@
 		"@types/rimraf": "3.0.2",
 		"@types/source-map-support": "^0.5.10",
 		"@types/vscode": "1.74.0",
-		"mocha": "^9.2.2",
+		"mocha": "^11.7.0",
 		"rimraf": "3.0.2",
 		"tslint": "5.20.1",
 		"typescript": "4.4.4"

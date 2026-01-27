@@ -36,7 +36,7 @@ export interface IEventStreamContext
 }
 
 export function registerEventStream(context: IEventStreamContext, extensionContext: IVSCodeExtensionContext,
-    utilityContext: IUtilityContext): [EventStream, vscode.OutputChannel, LoggingObserver, IEventStreamObserver[], TelemetryObserver | null, ModalEventRepublisher]
+    utilityContext: IUtilityContext, suppressOutput = false, highVerbosity = false): [EventStream, OutputChannelObserver, LoggingObserver, IEventStreamObserver[], TelemetryObserver | null, ModalEventRepublisher]
 {
     const outputChannel = vscode.window.createOutputChannel(context.displayChannelName);
     if (!fs.existsSync(context.logPath))
@@ -46,10 +46,11 @@ export function registerEventStream(context: IEventStreamContext, extensionConte
 
     const logFile = path.join(context.logPath, `DotNetAcquisition-${context.extensionId}-${new Date().getTime()}.txt`);
     const loggingObserver = new LoggingObserver(logFile);
+    const outputChannelObserver = new OutputChannelObserver(outputChannel, suppressOutput, highVerbosity);
     const eventStreamObservers: IEventStreamObserver[] =
         [
             new StatusBarObserver(vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, Number.MIN_VALUE), context.showLogCommand),
-            new OutputChannelObserver(outputChannel),
+            outputChannelObserver,
             loggingObserver
         ];
 
@@ -69,7 +70,7 @@ export function registerEventStream(context: IEventStreamContext, extensionConte
     const modalEventObserver = new ModalEventRepublisher(eventStream);
     eventStream.subscribe(event => modalEventObserver.post(event));
 
-    return [eventStream, outputChannel, loggingObserver, eventStreamObservers, telemetryObserver, modalEventObserver];
+    return [eventStream, outputChannelObserver, loggingObserver, eventStreamObservers, telemetryObserver, modalEventObserver];
 }
 
 export function enableExtensionTelemetry(extensionConfiguration: IExtensionConfiguration, enableTelemetryKey: string): boolean

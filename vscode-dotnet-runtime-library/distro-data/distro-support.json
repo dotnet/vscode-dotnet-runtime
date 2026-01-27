@@ -213,6 +213,18 @@
                 "aspnetcore": [
                     "aspnetcore-runtime-9.0"
                 ]
+            },
+            {
+                "version": "10.0",
+                "sdk": [
+                    "dotnet-sdk-10.0"
+                ],
+                "runtime": [
+                    "dotnet-runtime-10.0"
+                ],
+                "aspnetcore": [
+                    "aspnetcore-runtime-10.0"
+                ]
             }
         ],
         "versions": [
@@ -407,6 +419,104 @@
             },
             {
                 "version": "12",
+                "preInstallCommands": [
+                    {
+                        "runUnderSudo": true,
+                        "commandRoot": "apt-get",
+                        "commandParts": [
+                            "-o",
+                            "DPkg::Lock::Timeout=180",
+                            "update"
+                        ]
+                    },
+                    {
+                        "runUnderSudo": true,
+                        "commandRoot": "apt-get",
+                        "commandParts": [
+                            "install",
+                            "-y",
+                            "wget"
+                        ]
+                    },
+                    {
+                        "runUnderSudo": true,
+                        "commandRoot": "wget",
+                        "commandParts": [
+                            "https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb",
+                            "-O",
+                            "packages-microsoft-prod.deb"
+                        ]
+                    },
+                    {
+                        "runUnderSudo": true,
+                        "commandRoot": "dpkg",
+                        "commandParts": [
+                            "-i",
+                            "packages-microsoft-prod.deb"
+                        ]
+                    },
+                    {
+                        "runUnderSudo": true,
+                        "commandRoot": "apt-get",
+                        "commandParts": [
+                            "-o",
+                            "DPkg::Lock::Timeout=180",
+                            "update"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "13",
+                "preInstallCommands": [
+                    {
+                        "runUnderSudo": true,
+                        "commandRoot": "apt-get",
+                        "commandParts": [
+                            "-o",
+                            "DPkg::Lock::Timeout=180",
+                            "update"
+                        ]
+                    },
+                    {
+                        "runUnderSudo": true,
+                        "commandRoot": "apt-get",
+                        "commandParts": [
+                            "install",
+                            "-y",
+                            "wget"
+                        ]
+                    },
+                    {
+                        "runUnderSudo": true,
+                        "commandRoot": "wget",
+                        "commandParts": [
+                            "https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb",
+                            "-O",
+                            "packages-microsoft-prod.deb"
+                        ]
+                    },
+                    {
+                        "runUnderSudo": true,
+                        "commandRoot": "dpkg",
+                        "commandParts": [
+                            "-i",
+                            "packages-microsoft-prod.deb"
+                        ]
+                    },
+                    {
+                        "runUnderSudo": true,
+                        "commandRoot": "apt-get",
+                        "commandParts": [
+                            "-o",
+                            "DPkg::Lock::Timeout=180",
+                            "update"
+                        ]
+                    }
+                ]
+            },
+            {
+                "version": "14",
                 "preInstallCommands": [
                     {
                         "runUnderSudo": true,
@@ -669,6 +779,18 @@
                 "aspnetcore": [
                     "aspnetcore-runtime-9.0"
                 ]
+            },
+            {
+                "version": "10.0",
+                "sdk": [
+                    "dotnet-sdk-10.0"
+                ],
+                "runtime": [
+                    "dotnet-runtime-10.0"
+                ],
+                "aspnetcore": [
+                    "aspnetcore-runtime-10.0"
+                ]
             }
         ],
         "versions": [
@@ -759,6 +881,15 @@
             },
             {
                 "version": "23.04"
+            },
+            {
+                "version": "24.04"
+            },
+            {
+                "version": "25.04"
+            },
+            {
+                "version": "26.04"
             }
         ]
     },
@@ -799,7 +930,7 @@
         "searchCommand": [
             {
                 "runUnderSudo": false,
-                "commandRoot": "yum",
+                "commandRoot": "dnf",
                 "commandParts": [
                     "search",
                     "{packageName}",
@@ -822,7 +953,7 @@
         "packageLookupCommand": [
             {
                 "runUnderSudo": false,
-                "commandRoot": "yum",
+                "commandRoot": "dnf",
                 "commandParts": [
                     "list",
                     "install",
@@ -927,6 +1058,18 @@
                 "aspnetcore": [
                     "aspnetcore-runtime-9.0"
                 ]
+            },
+            {
+                "version": "10.0",
+                "sdk": [
+                    "dotnet-sdk-10.0"
+                ],
+                "runtime": [
+                    "dotnet-runtime-10.0"
+                ],
+                "aspnetcore": [
+                    "aspnetcore-runtime-10.0"
+                ]
             }
         ],
         "versions": [
@@ -935,6 +1078,12 @@
             },
             {
                 "version": "9.0"
+            },
+            {
+                "version": "10.0"
+            },
+            {
+                "version": "11.0"
             }
         ]
     }

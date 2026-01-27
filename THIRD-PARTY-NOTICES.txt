@@ -235,6 +235,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
+-------------------------------
+
+License notice for shelljs, minimatch, js-yaml
+https://github.com/jslicense/BlueOak-1.0.0/blob/main/BlueOak-1.0.0.md
+
+-------------------------------
+
+https://blueoakcouncil.org/license/1.0.0
 
 -------------------------------
 

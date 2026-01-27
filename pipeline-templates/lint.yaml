@@ -4,16 +4,13 @@ parameters:
 jobs:
   - job: ESLint
     pool:
-      ${{ if eq(parameters.useOneEngineeringPool, 'true') }}:
-        ${{ parameters.pool }}
-      ${{ else }}:
-        vmImage: ${{ parameters.pool.vmImage }}
+      ${{ parameters.pool }}
     displayName: '🧶 ESLint'
     steps:
     - template: install-node.yaml
-    - script: ./build.sh
-      displayName: 🐧 Build To Install Deps
+    - script: build.cmd
+      displayName: 💻 Build Windows to Install Deps
     - bash: |
-        npm ci eslint@^8.57.0 @typescript-eslint/parser@^8.0.0 @typescript-eslint/eslint-plugin@^8.0.0 --save-dev
+        npm ci eslint@8.57.0 @typescript-eslint/parser@8.0.0 @typescript-eslint/eslint-plugin@8.0.0 --save-dev
         npm run lint
       displayName: 🧶 Run Lint

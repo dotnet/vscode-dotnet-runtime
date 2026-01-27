@@ -26,7 +26,7 @@ suite('LoggingObserver Unit Tests', () =>
         // Create a fake event and call the post/dispose function
         const fakeEvent = new DotnetUninstallAllStarted();
         loggingObserver.post(fakeEvent);
-        loggingObserver.dispose();
+        await loggingObserver.disposeAsync();
 
         // Check if the log file content is same as expected content
         fs.readdirSync(tempPath).forEach(file =>
@@ -35,5 +35,21 @@ suite('LoggingObserver Unit Tests', () =>
             assert.include(logContent, fakeEvent.eventName, 'The log file does not contain the expected content that should be written to it');
         });
 
+    }).timeout(10000 * 2);
+
+    test('It retains existing log when new log is smaller', async () =>
+    {
+        const existingLogDir = path.join(tempPath, `retain-${Date.now()}`);
+        fs.mkdirSync(existingLogDir, { recursive: true });
+
+        const logPath = path.join(existingLogDir, 'logTest.txt');
+        const existingContent = 'existing-log-contents-should-remain';
+        fs.writeFileSync(logPath, existingContent);
+
+        const loggingObserver = new LoggingObserver(logPath);
+        await loggingObserver.disposeAsync();
+
+        const finalContent = fs.readFileSync(logPath).toString();
+        assert.equal(finalContent, existingContent, 'Existing larger log should not be replaced by a smaller new log');
     }).timeout(10000 * 2);
 });

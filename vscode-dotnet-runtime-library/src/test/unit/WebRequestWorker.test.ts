@@ -19,15 +19,12 @@ import
     ErrorAcquisitionInvoker,
     MockEventStream,
     MockInstallScriptWorker,
+    MockInstallTracker,
     MockTrackingWebRequestWorker,
     MockVSCodeExtensionContext,
 } from '../mocks/MockObjects';
 
 import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
-import
-{
-    Debugging
-} from '../../Utils/Debugging';
 import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
 import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 
@@ -53,7 +50,16 @@ suite('WebRequestWorker Unit Tests', function ()
         const mockContext = getMockAcquisitionContext('runtime', '1.0', undefined, eventStream);
         const acquisitionWorker = new DotnetCoreAcquisitionWorker(getMockUtilityContext(), new MockVSCodeExtensionContext());
         const invoker = new ErrorAcquisitionInvoker(eventStream);
-        assert.isRejected(acquisitionWorker.acquireLocalRuntime(mockContext, invoker), Error, '.NET Acquisition Failed');
+        const tracker = new MockInstallTracker(eventStream, mockContext.extensionState);
+
+        try
+        {
+            await assert.isRejected(acquisitionWorker.acquireLocalRuntime(mockContext, invoker), Error, 'Command Failed');
+        }
+        finally
+        {
+            await tracker.endAnySingletonTrackingSessions();
+        }
     }).timeout(maxTimeoutTime);
 
     test('Install Script Request Failure', async () =>
@@ -66,19 +72,14 @@ suite('WebRequestWorker Unit Tests', function ()
 
     test('Install Script Request Failure With Fallback Install Script', async () =>
     {
-        Debugging.log('Get Test Context.');
         const eventStream = new MockEventStream();
 
-        Debugging.log('Instantiate Install Script Worker.');
         const installScriptWorker: IInstallScriptAcquisitionWorker = new MockInstallScriptWorker(getMockAcquisitionContext('runtime', '', undefined, eventStream), true, true);
 
-        Debugging.log('Request the install script path.');
         const scriptPath = await installScriptWorker.getDotnetInstallScriptPath();
 
-        Debugging.log('Asserting the path is as expected.');
         assert.equal(scriptPath, path.join(__dirname, '..'));
 
-        Debugging.log('Scan the event stream events.');
         assert.exists(eventStream.events.find(event => event instanceof DotnetInstallScriptAcquisitionError));
         assert.exists(eventStream.events.find(event => event instanceof DotnetFallbackInstallScriptUsed));
     });

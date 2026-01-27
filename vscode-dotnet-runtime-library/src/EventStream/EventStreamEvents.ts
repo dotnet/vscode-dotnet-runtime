@@ -331,16 +331,19 @@ abstract class DotnetAcquisitionFinalErrorBase extends DotnetAcquisitionError
 export class DotnetGlobalSDKAcquisitionError extends DotnetAcquisitionFinalErrorBase
 {
     public eventName = 'DotnetGlobalSDKAcquisitionError';
+    public verboseOutputOnly = true;
 }
 
 export class DotnetRuntimeFinalAcquisitionError extends DotnetAcquisitionFinalErrorBase
 {
     public eventName = 'DotnetRuntimeFinalAcquisitionError';
+    public verboseOutputOnly = true;
 }
 
 export class DotnetASPNetRuntimeFinalAcquisitionError extends DotnetAcquisitionFinalErrorBase
 {
     public eventName = 'DotnetASPNetRuntimeFinalAcquisitionError';
+    public verboseOutputOnly = true;
 }
 
 export abstract class DotnetNonAcquisitionError extends IEvent
@@ -571,7 +574,6 @@ export class DotnetWSLSecurityError extends DotnetInstallExpectedAbort
     public readonly eventName = 'DotnetWSLSecurityError';
 }
 
-
 export abstract class DotnetAcquisitionVersionError extends DotnetAcquisitionError
 {
     constructor(error: Error, public readonly install: DotnetInstall | null)
@@ -623,22 +625,7 @@ export class DotnetInstallCancelledByUserError extends DotnetInstallExpectedAbor
     public readonly eventName = 'DotnetInstallCancelledByUserError';
 }
 
-export class DotnetDebuggingMessage extends IEvent
-{
-    public readonly eventName = 'DotnetDebuggingMessage';
-    public readonly type = EventType.DotnetDebuggingMessage;
 
-    constructor(public readonly message: string)
-    {
-        super();
-        this.message = message;
-    }
-
-    public getProperties()
-    {
-        return { message: this.message };
-    }
-}
 
 export class DotnetNonZeroInstallerExitCodeError extends DotnetAcquisitionError
 {
@@ -843,6 +830,7 @@ export class DotnetInstallScriptAcquisitionCompleted extends DotnetAcquisitionSu
 export class DotnetExistingPathResolutionCompleted extends DotnetAcquisitionSuccessEvent
 {
     public readonly eventName = 'DotnetExistingPathResolutionCompleted';
+    public verboseOutputOnly = true;
 
     constructor(public readonly resolvedPath: string) { super(); }
 
@@ -859,6 +847,36 @@ export abstract class DotnetAcquisitionMessage extends IEvent
     public getProperties(): { [id: string]: string } | undefined
     {
         return {};
+    }
+}
+
+export class SessionMutexAcquired extends DotnetAcquisitionMessage
+{
+    public eventName = 'SessionMutexAcquired';
+
+    constructor(public readonly message: string)
+    {
+        super();
+    }
+}
+
+export class SessionMutexAcquisitionFailed extends DotnetAcquisitionMessage
+{
+    public eventName = 'SessionMutexAcquisitionFailed';
+
+    constructor(public readonly message: string)
+    {
+        super();
+    }
+}
+
+export class SessionMutexReleased extends DotnetAcquisitionMessage
+{
+    public eventName = 'SessionMutexReleased';
+
+    constructor(public readonly message: string)
+    {
+        super();
     }
 }
 
@@ -903,6 +921,31 @@ export class DotnetUnableToCheckPATHArchitecture extends DotnetVisibleWarningEve
     public readonly eventName = 'DotnetUnableToCheckPATHArchitecture';
 }
 
+export class UtilizingExistingInstallPromise extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'UtilizingExistingInstallPromise';
+}
+
+export class FileIsBusy extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'FileIsBusy';
+
+    public getProperties()
+    {
+        return { ...super.getProperties(), ...getDisabledTelemetryOnChance(1) };
+    }
+}
+
+export class FileIsNotBusy extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'FileIsNotBusy';
+
+    public getProperties()
+    {
+        return { ...super.getProperties(), ...getDisabledTelemetryOnChance(1) };
+    }
+}
+
 export class DotnetVersionCategorizedEvent extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'DotnetVersionCategorizedEvent';
@@ -938,6 +981,21 @@ export abstract class WebRequestTimer extends DotnetCustomMessageEvent
     }
 }
 
+export class CommandExecutionTimer extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'CommandExecutionTimer';
+
+    constructor(public readonly eventMessage: string, public readonly durationMs: string, public readonly commandRoot: string, public readonly fullCommandString: string) { super(eventMessage); }
+
+    public getProperties()
+    {
+        return {
+            ...super.getProperties(), DurationMs: this.durationMs, CommandRoot: TelemetryUtilities.HashAllPaths(this.fullCommandString),
+            HashedFullCommand: TelemetryUtilities.HashData(this.commandRoot)
+        };
+    }
+}
+
 export class WebRequestTime extends WebRequestTimer
 {
     public readonly eventName = 'WebRequestTime';
@@ -966,6 +1024,11 @@ export class ProxyUsed extends DotnetCustomMessageEvent
 export class FileToWipe extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'FileToWipe';
+
+    public getProperties()
+    {
+        return { ...getDisabledTelemetryOnChance(1), ...super.getProperties() };
+    }
 }
 
 export class TriedToExitMasterSudoProcess extends DotnetCustomMessageEvent
@@ -1001,9 +1064,21 @@ export class DotnetUninstallFailed extends DotnetCustomMessageEvent
     public type = EventType.DotnetUninstallMessage;
 }
 
+
+export class DotnetUninstallSkipped extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'DotnetUninstallSkipped';
+    public type = EventType.DotnetUninstallMessage;
+}
+
 export class NoExtensionIdProvided extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'NoExtensionIdProvided';
+
+    public getProperties()
+    {
+        return { ...getDisabledTelemetryOnChance(1), ...super.getProperties() };
+    }
 }
 
 export class ConvertingLegacyInstallRecord extends DotnetCustomMessageEvent
@@ -1094,11 +1169,21 @@ export class DotnetFindPathCommandInvoked extends DotnetCustomMessageEvent
 export class WebCacheClearEvent extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'WebCacheClearEvent';
+
+    public getProperties()
+    {
+        return { ...getDisabledTelemetryOnChance(1), ...super.getProperties() };
+    }
 }
 
 export class CacheClearEvent extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'CacheClearEvent';
+
+    public getProperties()
+    {
+        return { ...getDisabledTelemetryOnChance(1), ...super.getProperties() };
+    }
 }
 
 export class CachePutEvent extends DotnetCustomMessageEvent
@@ -1128,6 +1213,44 @@ export class DotnetFindPathLookupSetting extends DotnetCustomMessageEvent
     public readonly eventName = 'DotnetFindPathLookupSetting';
 }
 
+export class LiveDependentInUse extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'LiveDependentInUse';
+}
+
+export class DependentIsDead extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'DependentIsDead';
+}
+
+export class ProcessEnvironmentCheck extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'ProcessEnvironmentCheck';
+}
+
+export class MarkedInstallInUse extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'MarkedInstallInUse';
+}
+
+export class CanIgnoreLiveDependents extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'CanIgnoreLiveDependents';
+}
+export class SearchingLiveDependents extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'SearchingLiveDependents';
+}
+
+export class CacheAliasCreated extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'CacheAliasCreated';
+    public getProperties()
+    {
+        return { Message: this.eventMessage, ...getDisabledTelemetryOnChance(1) };
+    };
+}
+
 export class DotnetFindPathSettingFound extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'DotnetFindPathSettingFound';
@@ -1151,6 +1274,16 @@ export class DotnetFindPathLookupRealPATH extends DotnetCustomMessageEvent
 export class DotnetFindPathRealPATHFound extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'DotnetFindPathRealPATHFound';
+}
+
+export class DotnetConditionsValidated extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'DotnetConditionsValidated';
+
+    public getProperties()
+    {
+        return { ...getDisabledTelemetryOnChance(1), ...super.getProperties() };
+    }
 }
 
 export class DotnetFindPathHostFxrResolutionLookup extends DotnetCustomMessageEvent
@@ -1233,6 +1366,29 @@ export class DotnetTelemetrySettingEvent extends DotnetCustomMessageEvent
     public readonly eventName = 'DotnetTelemetrySettingEvent';
 }
 
+export class MacInstallerFailure extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'MacInstallerFailure';
+
+    constructor(message: string, private readonly status: string, private readonly stdout: string, private readonly stderr: string)
+    {
+        super(message);
+    }
+    public getProperties()
+    {
+        return { Status: this.status, Stdout: this.stdout, StdErr: this.stderr, ...super.getProperties() };
+    }
+}
+
+export class MacInstallerBackupSuccess extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'MacInstallerBackupSuccess';
+}
+
+export class MacInstallerBackupFailure extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'MacInstallerBackupSuccess';
+}
 
 export class DistroSupport extends DotnetCustomMessageEvent
 {
@@ -1326,6 +1482,21 @@ export class CommandExecutionStdOut extends DotnetCustomMessageEvent
     public readonly eventName = 'CommandExecutionStdOut';
 }
 
+export class UninstallingOutdatedInstalls extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'UninstallingOutdatedInstalls';
+}
+
+export class AutomaticUpdateCheck extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'AutomaticUpdateCheck';
+}
+
+export class UpdatingInstallGroups extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'UpdatingInstallGroups';
+}
+
 export class NoMatchingInstallToStopTracking extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'NoMatchingInstallToStopTracking';
@@ -1374,15 +1545,6 @@ export class DotnetCompletedGlobalInstallerExecution extends DotnetCustomMessage
 export class DotnetGlobalAcquisitionCompletionEvent extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'DotnetGlobalAcquisitionCompletionEvent';
-}
-export class DotnetInstallGraveyardEvent extends DotnetCustomMessageEvent
-{
-    public readonly eventName = 'DotnetInstallGraveyardEvent';
-
-    public getProperties()
-    {
-        return { suppressTelemetry: 'true', ...super.getProperties() };
-    }
 }
 
 export class DotnetAlternativeCommandFoundEvent extends DotnetCustomMessageEvent
@@ -1488,6 +1650,10 @@ export class CommandExecutionUserCompletedDialogueEvent extends DotnetCustomMess
 export class CommandExecutionUnderSudoEvent extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'CommandExecutionUnderSudoEvent';
+    public getProperties()
+    {
+        return { ...getDisabledTelemetryOnChance(1), ...super.getProperties() };
+    }
 }
 
 export class CommandExecutionUserRejectedPasswordRequest extends DotnetInstallExpectedAbort
@@ -1607,9 +1773,17 @@ export class DotnetAcquisitionPartialInstallation extends DotnetAcquisitionMessa
 export class DotnetAcquisitionInProgress extends IEvent
 {
     public readonly type = EventType.DotnetAcquisitionInProgress;
+    public verboseOutputOnly = true;
 
     public readonly eventName = 'DotnetAcquisitionInProgress';
-    constructor(public readonly install: DotnetInstall, public readonly requestingExtensionId: string | null) { super(); }
+    constructor(public readonly install: DotnetInstall, public readonly requestingExtensionId: string | null)
+    {
+        super();
+        if (requestingExtensionId === 'user')
+        {
+            this.verboseOutputOnly = false;
+        }
+    }
 
     public getProperties()
     {
@@ -1625,8 +1799,15 @@ export class DotnetAcquisitionAlreadyInstalled extends IEvent
 {
     public readonly eventName = 'DotnetAcquisitionAlreadyInstalled';
     public readonly type = EventType.DotnetAcquisitionAlreadyInstalled;
-
-    constructor(public readonly install: DotnetInstall, public readonly requestingExtensionId: string | null) { super(); }
+    public verboseOutputOnly = true;
+    constructor(public readonly install: DotnetInstall, public readonly requestingExtensionId: string | null)
+    {
+        super();
+        if (requestingExtensionId === 'user')
+        {
+            this.verboseOutputOnly = false;
+        }
+    }
 
     public getProperties()
     {
@@ -1642,6 +1823,10 @@ export class DotnetAcquisitionMissingLinuxDependencies extends DotnetAcquisition
     public readonly eventName = 'DotnetAcquisitionMissingLinuxDependencies';
 }
 
+export class DotnetAcquisitionThoughtInstalledButNot extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'DotnetAcquisitionThoughtInstalledButNot';
+}
 
 export class DotnetAcquisitionScriptOutput extends DotnetAcquisitionMessage
 {
