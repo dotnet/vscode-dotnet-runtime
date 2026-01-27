@@ -27,7 +27,7 @@ icacls "./vscode-dotnet-runtime-library/install scripts/dotnet-install.ps1" /gra
 icacls "./vscode-dotnet-runtime-library/install scripts/dotnet-install.sh" /grant:r "users:(RX)" /C
 
 #################### Compile library ####################
-pushd vscode-dotnet-runtime-library
+Push-Location vscode-dotnet-runtime-library
 if (Test-Path node_modules) { rm -r -force node_modules }
 npm ci
 npm run compile
