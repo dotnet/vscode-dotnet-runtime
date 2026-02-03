@@ -8,23 +8,34 @@ function DownloadInstallScripts() {
     Invoke-WebRequest https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh -OutFile "./vscode-dotnet-runtime-library/install scripts/dotnet-install.sh"
 }
 
-try
-{
+try {
     DownloadInstallScripts
 }
-catch
-{
+catch {
     $exceptionMessage = $_.Exception.Message
     Write-Host "Failed to install scripts, retrying: $exceptionMessage"
     DownloadInstallScripts
 }
 if ($?) {
     Write-Host "`nBundled dotnet-install scripts" -ForegroundColor $successColor
-} else {
+}
+else {
     Write-Host "`nFailed to bundle dotnet-install scripts" -ForegroundColor $errorColor
 }
 icacls "./vscode-dotnet-runtime-library/install scripts/dotnet-install.ps1" /grant:r "users:(RX)" /C
 icacls "./vscode-dotnet-runtime-library/install scripts/dotnet-install.sh" /grant:r "users:(RX)" /C
+
+#################### Compile types package (must be before library) ####################
+pushd vscode-dotnet-runtime-types
+if (Test-Path node_modules) { rm -r -force node_modules }
+npm ci
+npm run build
+
+if (! $?) {
+    Write-Host "`nTypes package build failed!" -ForegroundColor $errorColor
+    exit 1
+}
+popd
 
 #################### Compile library ####################
 pushd vscode-dotnet-runtime-library
@@ -32,8 +43,7 @@ if (Test-Path node_modules) { rm -r -force node_modules }
 npm ci
 npm run compile
 
-if (! $?)
-{
+if (! $?) {
     Write-Host "`nBuild failed!" -ForegroundColor $errorColor
     exit 1
 }
@@ -45,8 +55,7 @@ if (Test-Path node_modules) { rm -r -force node_modules }
 npm ci
 npm run compile
 
-if (! $?)
-{
+if (! $?) {
     Write-Host "`nBuild failed!" -ForegroundColor $errorColor
     exit 1
 }
@@ -58,8 +67,7 @@ if (Test-Path node_modules) { rm -r -force node_modules }
 npm ci
 npm run compile
 
-if (! $?)
-{
+if (! $?) {
     Write-Host "`nBuild failed!" -ForegroundColor $errorColor
     exit 1
 }
@@ -71,8 +79,7 @@ if (Test-Path node_modules) { rm -r -force node_modules }
 npm ci
 npm run compile
 
-if (! $?)
-{
+if (! $?) {
     Write-Host "`nBuild failed!" -ForegroundColor $errorColor
     exit 1
 }
@@ -85,21 +92,20 @@ Write-Host "Build Succeeded" -ForegroundColor $successColor
 
 #################### Install Signing Tool ####################
 
-try
-{
+try {
     $InstallNuGetPkgScriptPath = ".\signing\Install-NuGetPackage.ps1"
     $nugetVerbosity = 'quiet'
     if ($Verbose) { $nugetVerbosity = 'normal' }
     $MicroBuildPackageSource = 'https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json'
-    if ($Signing)
-    {
+    if ($Signing) {
         Write-Host "Installing MicroBuild signing plugin" -ForegroundColor $successColor
         Invoke-Expression "& `"$InstallNuGetPkgScriptPath`" MicroBuild.Plugins.Signing -source $MicroBuildPackageSource -Verbosity $nugetVerbosity"
         $EnvVars['SignType'] = "Test"
     }
 
     & ".\signing\Set-EnvVars.ps1" -Variables $EnvVars -PrependPath $PrependPath | Out-Null
-} catch {
+}
+catch {
     Write-Host "Failed to install signing tool" -ForegroundColor $errorColor
     Write-Host $_.Exception.Message
 }

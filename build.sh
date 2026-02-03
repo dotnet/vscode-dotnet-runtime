@@ -20,6 +20,22 @@ chmod +x "./vscode-dotnet-runtime-library/install scripts/dotnet-install.ps1"
 chmod +x "./vscode-dotnet-runtime-library/install scripts/dotnet-install.sh"
 
 echo ""
+echo "----------- Compiling vscode-dotnet-runtime-types (must be before library) -----------"
+echo ""
+pushd vscode-dotnet-runtime-types
+rm -rf node_modules
+npm ci
+npm run build
+
+if [ $? -ne 0 ];
+then
+    echo ""
+    echo "${RED}Types package build failed!${NC}"
+    exit 1
+fi
+popd
+
+echo ""
 echo "----------- Compiling vscode-dotnet-runtime-library -----------"
 echo ""
 pushd vscode-dotnet-runtime-library

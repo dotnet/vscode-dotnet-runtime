@@ -2,41 +2,27 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
+import { AcquireErrorConfiguration, EnsureDependenciesErrorConfiguration, UninstallErrorConfiguration } from '@dotnet/vscode-dotnet-runtime-types';
 import * as fs from 'fs';
 import * as open from 'open';
 import { DotnetCoreAcquisitionWorker } from '../Acquisition/DotnetCoreAcquisitionWorker';
 import { GetDotnetInstallInfo } from '../Acquisition/DotnetInstall';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import
-{
-    DotnetAcquisitionFinalError,
-    DotnetCommandFailed,
-    DotnetCommandSucceeded,
-    DotnetInstallExpectedAbort,
-    DotnetNotInstallRelatedCommandFailed,
-    EventCancellationError
-} from '../EventStream/EventStreamEvents';
+    {
+        DotnetAcquisitionFinalError,
+        DotnetCommandFailed,
+        DotnetCommandSucceeded,
+        DotnetInstallExpectedAbort,
+        DotnetNotInstallRelatedCommandFailed,
+        EventCancellationError
+    } from '../EventStream/EventStreamEvents';
 import { IIssueContext } from './IIssueContext';
 import { getInstallFromContext } from './InstallIdUtilities';
 import { formatIssueUrl } from './IssueReporter';
 
-export enum AcquireErrorConfiguration
-{
-    DisplayAllErrorPopups = 0,
-    DisableErrorPopups = 1,
-}
-
-export enum UninstallErrorConfiguration
-{
-    DisplayAllErrorPopups = 0,
-    DisableErrorPopups = 1,
-}
-
-export enum EnsureDependenciesErrorConfiguration
-{
-    DisplayAllErrorPopups = 0,
-    DisableErrorPopups = 1,
-}
+// Re-export from the types package
+export { AcquireErrorConfiguration, EnsureDependenciesErrorConfiguration, UninstallErrorConfiguration } from '@dotnet/vscode-dotnet-runtime-types';
 
 export type ErrorConfiguration = AcquireErrorConfiguration | UninstallErrorConfiguration | EnsureDependenciesErrorConfiguration;
 

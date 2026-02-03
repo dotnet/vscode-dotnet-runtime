@@ -3,7 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-// Re-export from the types package
-export { DotnetInstallMode } from '@dotnet/vscode-dotnet-runtime-types';
-
-export const DOTNET_INSTALL_MODE_LIST = ['sdk', 'runtime', 'aspnetcore'];
+/**
+ * Defines if an install should be global on the machine or local to a specific local folder/user.
+ */
+export type DotnetInstallType = 'local' | 'global';
