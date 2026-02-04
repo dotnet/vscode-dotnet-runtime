@@ -7,9 +7,9 @@
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@babel/runtime/-/runtime-7.28.4.tgz"
   integrity sha1-pwImAW+r4lxXg7LyLT4cm8XKMyY=
 
-"@dotnet/vscode-dotnet-runtime-types@file:../vscode-dotnet-types":
+"@dotnet/vscode-dotnet-runtime-types@file:../vscode-dotnet-runtime-types":
   version "3.0.0"
-  resolved "file:../vscode-dotnet-types"
+  resolved "file:../vscode-dotnet-runtime-types"
 
 "@isaacs/balanced-match@^4.0.1":
   version "4.0.1"
