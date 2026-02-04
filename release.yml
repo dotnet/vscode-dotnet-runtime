@@ -51,6 +51,10 @@ extends:
             pipeline: officialBuildCI
             artifactName: package_files
             destinationPath: $(Pipeline.Workspace)/package_files
+          - input: pipelineArtifact
+            pipeline: officialBuildCI
+            artifactName: types_package
+            destinationPath: $(Pipeline.Workspace)/types_package
         strategy:
           runOnce:
             deploy:
@@ -140,4 +144,51 @@ extends:
                       if ($LASTEXITCODE -ne 0) {
                         throw "vsce publish failed with exit code $LASTEXITCODE."
                       }
+                    }
+              - pwsh: |
+                  $ErrorActionPreference = 'Stop'
+
+                  $typesPackageDir = Join-Path '$(Pipeline.Workspace)' 'types_package'
+
+                  if (-not (Test-Path $typesPackageDir)) {
+                    throw "types_package artifact was not downloaded to $typesPackageDir"
+                  }
+
+                  # Find the .tgz file
+                  $tgzFile = Get-ChildItem -Path $typesPackageDir -Filter '*.tgz' | Select-Object -First 1
+                  if (-not $tgzFile) {
+                    throw "No .tgz file found in $typesPackageDir"
+                  }
+
+                  Write-Host "Found types package: $($tgzFile.FullName)"
+                  Write-Host "##vso[task.setvariable variable=typesPackagePath]$($tgzFile.FullName)"
+                displayName: '📦 Locate Types Package Artifact'
+              - task: AzureCLI@2
+                displayName: '🚀 Publish Types Package to npm'
+                inputs:
+                  azureSubscription: 'VSCode Marketplace Publishing'
+                  scriptType: "pscore"
+                  scriptLocation: 'inlineScript'
+                  workingDirectory: '$(Pipeline.Workspace)/types_package'
+                  inlineScript: |
+                    $ErrorActionPreference = 'Stop'
+
+                    $version = '$(GetVersion.version)'
+                    $packagePath = '$(typesPackagePath)'
+
+                    Write-Host "Publishing @dotnet/vscode-dotnet-runtime-types version $version to npm"
+                    Write-Host "Package file: $packagePath"
+
+                    Write-Host "Do real publish? test parameter: ${{ parameters.test }}"
+                    If ("${{ parameters.test }}" -eq "true") {
+                      Write-Host "With a test build, the command to publish is printed instead of run."
+                      Write-Host "##[command]npm publish $packagePath --access public"
+                    }
+                    Else {
+                      # Requires NPM_TOKEN secret in variable group or Azure DevOps service connection
+                      npm publish $packagePath --access public
+                      if ($LASTEXITCODE -ne 0) {
+                        throw "npm publish failed with exit code $LASTEXITCODE."
+                      }
+                      Write-Host "Successfully published @dotnet/vscode-dotnet-runtime-types@$version to npm"
                     }

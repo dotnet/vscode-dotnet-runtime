@@ -3,8 +3,5 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-import { UninstallErrorConfiguration } from './Utils/ErrorHandler';
-
-export interface IDotnetUninstallContext {
-    errorConfiguration?: UninstallErrorConfiguration;
-}
+// Re-export from the types package
+export { IDotnetUninstallContext } from '@dotnet/vscode-dotnet-runtime-types';

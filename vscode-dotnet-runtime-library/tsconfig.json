@@ -6,6 +6,10 @@
 		"lib": [
 			"es6"
 		],
+		"types": [
+			"node",
+			"mocha"
+		],
 		"skipLibCheck": true,
         "sourceMap": true,
         "declaration": true,

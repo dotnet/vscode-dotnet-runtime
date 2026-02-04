@@ -23,6 +23,10 @@ jobs:
       displayName: '🗂️ Publish Package Files'
       targetPath: '$(Build.ArtifactStagingDirectory)/package_files'
       artifactName: 'package_files'
+    - output: pipelineArtifact
+      displayName: '📦 Publish Types Package'
+      targetPath: '$(Build.ArtifactStagingDirectory)/types_package'
+      artifactName: 'types_package'
   steps:
   - template: install-node.yaml
   - bash: |
@@ -88,6 +92,33 @@ jobs:
         }
       }
     displayName: '📁 Stage Package Files for Consumption to Enable NPM CI'
+  - pwsh: |
+      $ErrorActionPreference = 'Stop'
+
+      $version = '$(GetVersion.version)'
+      $typesDir = Join-Path '$(Build.SourcesDirectory)' 'vscode-dotnet-runtime-types'
+      $targetDir = Join-Path '$(Build.ArtifactStagingDirectory)' 'types_package'
+
+      if (-not (Test-Path $targetDir)) {
+        New-Item -ItemType Directory -Path $targetDir | Out-Null
+      }
+
+      Push-Location $typesDir
+      try {
+        # Types package is already built by build.ps1/build.sh - just set version and pack
+        npm version $version --allow-same-version
+        if ($LASTEXITCODE -ne 0) { throw "npm version failed" }
+
+        # Pack the pre-built package
+        $packOutput = npm pack --pack-destination $targetDir
+        if ($LASTEXITCODE -ne 0) { throw "npm pack failed" }
+
+        Write-Host "Types package staged: $packOutput"
+      }
+      finally {
+        Pop-Location
+      }
+    displayName: '📦 Stage Types Package'
   - script: dotnet build msbuild/signVsix -v:normal
     displayName: 🖊️ Sign VSIXes
     env:

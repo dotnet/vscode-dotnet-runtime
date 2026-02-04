@@ -3,6 +3,5 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-export interface IDotnetAcquireResult {
-    dotnetPath: string;
-}
+// Re-export from the types package
+export { IDotnetAcquireResult } from '@dotnet/vscode-dotnet-runtime-types';

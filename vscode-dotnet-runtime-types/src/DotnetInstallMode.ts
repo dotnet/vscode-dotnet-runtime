@@ -3,7 +3,10 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-// Re-export from the types package
-export { DotnetInstallMode } from '@dotnet/vscode-dotnet-runtime-types';
-
-export const DOTNET_INSTALL_MODE_LIST = ['sdk', 'runtime', 'aspnetcore'];
+/**
+ * The type of .NET installation to acquire.
+ * - 'sdk': The full .NET SDK (includes runtime + build tools)
+ * - 'runtime': The .NET Runtime only
+ * - 'aspnetcore': The ASP.NET Core Runtime
+ */
+export type DotnetInstallMode = 'sdk' | 'runtime' | 'aspnetcore';

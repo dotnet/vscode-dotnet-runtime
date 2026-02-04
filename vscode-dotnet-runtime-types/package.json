@@ -1,0 +1,40 @@
+{
+	"name": "@dotnet/vscode-dotnet-runtime-types",
+	"version": "3.0.0",
+	"description": "TypeScript type definitions for the VS Code .NET Install Tool extension API",
+	"author": "Microsoft Corporation",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/dotnet/vscode-dotnet-runtime.git",
+		"directory": "vscode-dotnet-runtime-types"
+	},
+	"bugs": {
+		"url": "https://github.com/dotnet/vscode-dotnet-runtime/issues"
+	},
+	"homepage": "https://github.com/dotnet/vscode-dotnet-runtime#readme",
+	"keywords": [
+		".NET",
+		"dotnet",
+		"vscode",
+		"types",
+		"typescript",
+		"runtime",
+		"sdk"
+	],
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"files": [
+		"dist"
+	],
+	"publishConfig": {
+		"access": "public",
+		"registry": "https://registry.npmjs.org/"
+	},
+	"scripts": {
+		"build": "tsc -p ./"
+	},
+	"devDependencies": {
+		"typescript": "^5.5.4"
+	}
+}

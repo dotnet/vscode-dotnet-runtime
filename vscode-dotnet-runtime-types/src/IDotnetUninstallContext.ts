@@ -3,7 +3,14 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
-// Re-export from the types package
-export { DotnetInstallMode } from '@dotnet/vscode-dotnet-runtime-types';
+import { UninstallErrorConfiguration } from './ErrorConfiguration';
 
-export const DOTNET_INSTALL_MODE_LIST = ['sdk', 'runtime', 'aspnetcore'];
+/**
+ * The context/parameters for uninstalling a .NET installation.
+ */
+export interface IDotnetUninstallContext {
+    /**
+     * Configuration for error handling during uninstallation.
+     */
+    errorConfiguration?: UninstallErrorConfiguration;
+}
