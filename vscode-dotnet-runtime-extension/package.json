@@ -150,7 +150,7 @@
         "@types/chai-as-promised": "^7.1.8",
         "@vscode/test-electron": "^2.3.9",
         "axios": "^1.7.4",
-        "axios-cache-interceptor": "^1.0.1",
+        "axios-cache-interceptor": "^1.11.2",
         "axios-retry": "^3.4.0",
         "chai": "4.3.4",
         "glob": "^7.2.0",

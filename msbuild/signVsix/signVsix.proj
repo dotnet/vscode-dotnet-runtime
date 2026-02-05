@@ -6,8 +6,15 @@
     <MicroBuild_DoNotStrongNameSign>true</MicroBuild_DoNotStrongNameSign>
     <IsPackable>false</IsPackable>
     <OutDir>$(RepoRoot)packages\</OutDir>
+    <ShouldSign>true</ShouldSign>
   </PropertyGroup>
-  <ItemGroup>
+
+  <PropertyGroup Condition="$([System.String]::Equals('$(TestBuild)', 'true', StringComparison.OrdinalIgnoreCase))">
+    <ShouldSign>false</ShouldSign>
+    <MicroBuild_SigningEnabled>false</MicroBuild_SigningEnabled>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(ShouldSign)' == 'true'">
     <FilesToSign Include="$(OutDir)*.signature.p7s">
       <Authenticode>VSCodePublisher</Authenticode>
     </FilesToSign>
