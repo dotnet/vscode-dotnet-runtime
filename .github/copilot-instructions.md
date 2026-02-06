@@ -124,6 +124,9 @@ cd ..
 When version bumping IS requested:
 - Run `npm version patch` in `vscode-dotnet-runtime-extension` after its updates
 - Run `npm version patch` in `sample` after its updates
+- Update the corresponding CHANGELOG.md file with the new version and changes:
+  - `vscode-dotnet-runtime-extension/CHANGELOG.md` for runtime extension
+  - `vscode-dotnet-sdk-extension/CHANGELOG.md` for SDK extension
 
 ### Fixing a Bug
 
