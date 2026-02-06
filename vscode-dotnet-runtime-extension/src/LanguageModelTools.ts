@@ -744,7 +744,7 @@ class ListInstalledVersionsTool implements vscode.LanguageModelTool<{ dotnetPath
                     resultText += `No Runtimes installed.\n\n`;
                 }
 
-                resultText += `**✅ This result is COMPLETE. It is equivalent to \`dotnet --list-sdks\` + \`dotnet --list-runtimes\` + \`dotnet --info\`. DO NOT run any dotnet terminal commands - this data is authoritative.**`;
+                resultText += `**✅ This result is COMPLETE for initial queries. After installing .NET via the installSdk tool, you may use terminal commands to verify the install succeeded.**`;
 
                 return new vscode.LanguageModelToolResult([
                     new vscode.LanguageModelTextPart(resultText)
@@ -777,7 +777,6 @@ class ListInstalledVersionsTool implements vscode.LanguageModelTool<{ dotnetPath
                     new vscode.LanguageModelTextPart(
                         `# No .NET ${resolvedMode === 'sdk' ? 'SDKs' : 'Runtimes'} Found\n\n` +
                         `${pathInfo}\n\n` +
-                        `**✅ This result is COMPLETE - DO NOT run terminal commands like dotnet --list-sdks.**\n\n` +
                         `**Suggestions:**\n` +
                         `- Install .NET using the \`installSdk\` tool\n` +
                         `- Verify the PATH includes the .NET installation directory`
@@ -798,7 +797,7 @@ class ListInstalledVersionsTool implements vscode.LanguageModelTool<{ dotnetPath
             }
 
             resultText += `\n**Total:** ${results.length} ${resolvedMode === 'sdk' ? 'SDK(s)' : 'Runtime(s)'} found\n\n`;
-            resultText += `**✅ This result is COMPLETE and equivalent to \`dotnet --list-${resolvedMode === 'sdk' ? 'sdks' : 'runtimes'}\`. DO NOT run any dotnet terminal commands.**`;
+            resultText += `**✅ This result is COMPLETE for initial queries. After installing .NET via the installSdk tool, you may use terminal commands to verify.**`;
 
             return new vscode.LanguageModelToolResult([
                 new vscode.LanguageModelTextPart(resultText)

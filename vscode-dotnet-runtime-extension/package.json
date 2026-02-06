@@ -161,7 +161,7 @@
                 "toolReferenceName": "listInstalledDotNetVersions",
                 "icon": "$(list-tree)",
                 "userDescription": "Lists .NET SDK or Runtime versions that are currently installed on the system",
-                "modelDescription": "USE THIS TOOL INSTEAD of running 'dotnet --list-sdks', 'dotnet --list-runtimes', 'dotnet --info', or 'dotnet --version' in terminal. This tool does NOT require user permission and provides the same information. By DEFAULT (no mode specified), returns BOTH SDKs AND Runtimes - equivalent to 'dotnet --info'. DO NOT run dotnet terminal commands after calling this tool - the result is complete and authoritative. Set mode='sdk' for only SDKs, mode='runtime' for only runtimes.",
+                "modelDescription": "USE THIS TOOL INSTEAD of running 'dotnet --list-sdks', 'dotnet --list-runtimes', 'dotnet --info', or 'dotnet --version' in terminal for INITIAL queries. This tool does NOT require user permission. By DEFAULT (no mode specified), returns BOTH SDKs AND Runtimes. EXCEPTION: After installing .NET via the installSdk tool, you MAY use terminal commands like 'dotnet --version' to verify the install succeeded and PATH is updated, since extension results are cached for ~9 seconds. Set mode='sdk' for only SDKs, mode='runtime' for only runtimes.",
                 "parametersSchema": {
                     "type": "object",
                     "properties": {
@@ -309,7 +309,7 @@
     "devDependencies": {
         "@types/chai": "^4.3.5",
         "@types/mocha": "^9.0.0",
-        "@types/node": "^22.15.1",
+        "@types/node": "^22.19.9",
         "@types/rimraf": "3.0.2",
         "@types/source-map-support": "^0.5.10",
         "@types/vscode": "^1.101.0",

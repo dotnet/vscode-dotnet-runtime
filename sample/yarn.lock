@@ -194,8 +194,6 @@
 
 "@types/glob@*":
   version "8.1.0"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/glob/-/glob-8.1.0.tgz"
-  integrity sha1-tj5wFVORsFhNzkTn6iUZC7w48vw=
   dependencies:
     "@types/minimatch" "^5.1.2"
     "@types/node" "*"
@@ -207,8 +205,6 @@
 
 "@types/minimatch@^5.1.2":
   version "5.1.2"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/minimatch/-/minimatch-5.1.2.tgz"
-  integrity sha1-B1CLRXl8uB7D8nMBGwVM0HVe3co=
 
 "@types/mocha@9.0.0":
   version "9.0.0"
@@ -237,10 +233,10 @@
   dependencies:
     source-map "^0.6.0"
 
-"@types/vscode@1.74.0":
-  version "1.74.0"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/vscode/-/vscode-1.74.0.tgz"
-  integrity sha1-StwhtOf1J7iT3jQYwhqR8eUDvc0=
+"@types/vscode@^1.101.0":
+  version "1.109.0"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/vscode/-/vscode-1.109.0.tgz"
+  integrity sha1-Bi393199+c82A46QCuZ0Ia5pCRs=
 
 "@typespec/ts-http-runtime@^0.3.0":
   version "0.3.3"
@@ -2263,10 +2259,10 @@ typed-rest-client@^1.8.4:
     tunnel "0.0.6"
     underscore "^1.12.1"
 
-"typescript@>=2.1.0 || >=2.1.0-dev || >=2.2.0-dev || >=2.3.0-dev || >=2.4.0-dev || >=2.5.0-dev || >=2.6.0-dev || >=2.7.0-dev || >=2.8.0-dev || >=2.9.0-dev || >= 3.0.0-dev || >= 3.1.0-dev", "typescript@>=2.3.0-dev || >=2.4.0-dev || >=2.5.0-dev || >=2.6.0-dev || >=2.7.0-dev || >=2.8.0-dev || >=2.9.0-dev || >=3.0.0-dev || >= 3.1.0-dev || >= 3.2.0-dev", typescript@4.4.4:
-  version "4.4.4"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/typescript/-/typescript-4.4.4.tgz"
-  integrity sha1-LNAaGh8WBwTTEB/VpY/w+fy4Aww=
+typescript@^5.5.4, "typescript@>=2.1.0 || >=2.1.0-dev || >=2.2.0-dev || >=2.3.0-dev || >=2.4.0-dev || >=2.5.0-dev || >=2.6.0-dev || >=2.7.0-dev || >=2.8.0-dev || >=2.9.0-dev || >= 3.0.0-dev || >= 3.1.0-dev", "typescript@>=2.3.0-dev || >=2.4.0-dev || >=2.5.0-dev || >=2.6.0-dev || >=2.7.0-dev || >=2.8.0-dev || >=2.9.0-dev || >=3.0.0-dev || >= 3.1.0-dev || >= 3.2.0-dev":
+  version "5.9.3"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/typescript/-/typescript-5.9.3.tgz"
+  integrity sha1-W09Z4VMQqxeiFvXWz1PuR27eZw8=
 
 uc.micro@^1.0.1, uc.micro@^1.0.5:
   version "1.0.6"
@@ -2389,7 +2385,7 @@ uuid@^8.3.0:
     shelljs "^0.8.5"
     source-map-support "^0.5.21"
     ts-loader "^9.5.1"
-    typescript "^4.4.4"
+    typescript "^5.5.4"
     vscode-dotnet-runtime-library "file:../vscode-dotnet-runtime-library"
 
 watchpack@^2.5.1:

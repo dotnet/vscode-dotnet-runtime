@@ -1983,10 +1983,10 @@ type-detect@^4.0.0, type-detect@^4.0.5:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/type-detect/-/type-detect-4.1.0.tgz"
   integrity sha1-3rJFPo8I3K566YxiaxPd2wFVkGw=
 
-typescript@*, typescript@^4.4.4:
-  version "4.9.5"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/typescript/-/typescript-4.9.5.tgz"
-  integrity sha1-CVl5+bzA0J2jJNWNA86Pg3TL5lo=
+typescript@*, typescript@^5.5.4:
+  version "5.9.3"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/typescript/-/typescript-5.9.3.tgz"
+  integrity sha1-W09Z4VMQqxeiFvXWz1PuR27eZw8=
 
 undici-types@~6.21.0:
   version "6.21.0"
