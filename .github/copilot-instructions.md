@@ -71,7 +71,7 @@ npx mocha --bail -u tdd -- dist/test/unit/LocalInstallUpdateService.test.js
 
 - Library tests: Open `vscode-dotnet-runtime-library` workspace, use VS Code test runner
 - Extension tests: Open extension workspace, use debug launch configurations
-- Breakpoint in compiled code: Set in TypeScript first, then add to generated `.js` files
+- Add logging statements to understand test failures; compiled JS is in `dist/` directory
 
 ## Linting and Code Style
 
