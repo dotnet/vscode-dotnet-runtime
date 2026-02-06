@@ -324,8 +324,8 @@ class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string }>
 
             if (result?.dotnetPath)
             {
-                const os = process.platform;
-                const installMethod = os === 'win32' ? 'MSI installer' : os === 'darwin' ? 'PKG installer' : 'package manager';
+                const platform = process.platform;
+                const installMethod = platform === 'win32' ? 'MSI installer' : platform === 'darwin' ? 'PKG installer' : 'package manager';
                 return new vscode.LanguageModelToolResult([
                     new vscode.LanguageModelTextPart(
                         `Successfully installed .NET SDK ${resolvedVersion} using the ${installMethod}.\n\n` +
@@ -624,10 +624,10 @@ class UninstallTool implements vscode.LanguageModelTool<{ version?: string; mode
  */
 class GetSettingsInfoTool implements vscode.LanguageModelTool<Record<string, never>>
 {
-    async invoke(
+    invoke(
         options: vscode.LanguageModelToolInvocationOptions<Record<string, never>>,
         token: vscode.CancellationToken
-    ): Promise<vscode.LanguageModelToolResult>
+    ): vscode.LanguageModelToolResult
     {
         // Also include current settings values for context
         const config = vscode.workspace.getConfiguration('dotnetAcquisitionExtension');
@@ -663,10 +663,10 @@ class GetSettingsInfoTool implements vscode.LanguageModelTool<Record<string, nev
  */
 class ListInstalledVersionsTool implements vscode.LanguageModelTool<{ dotnetPath?: string; mode?: string }>
 {
-    async prepareInvocation(
+    prepareInvocation(
         options: vscode.LanguageModelToolInvocationPrepareOptions<{ dotnetPath?: string; mode?: string }>,
         token: vscode.CancellationToken
-    ): Promise<vscode.PreparedToolInvocation>
+    ): vscode.PreparedToolInvocation
     {
         return {
             invocationMessage: 'Querying installed .NET SDKs and Runtimes (this replaces dotnet --list-sdks and dotnet --list-runtimes - no terminal needed)',
@@ -785,22 +785,22 @@ class ListInstalledVersionsTool implements vscode.LanguageModelTool<{ dotnetPath
             }
 
             // Format the results
-            let resultText = `# Installed .NET ${resolvedMode === 'sdk' ? 'SDKs' : 'Runtimes'}\n\n`;
-            resultText += `${pathInfo}\n\n`;
+            let singleModeResultText = `# Installed .NET ${resolvedMode === 'sdk' ? 'SDKs' : 'Runtimes'}\n\n`;
+            singleModeResultText += `${pathInfo}\n\n`;
 
-            resultText += '| Version | Architecture | Directory |\n';
-            resultText += '|---------|--------------|----------|\n';
+            singleModeResultText += '| Version | Architecture | Directory |\n';
+            singleModeResultText += '|---------|--------------|----------|\n';
 
             for (const install of results)
             {
-                resultText += `| ${install.version} | ${install.architecture || 'unknown'} | \`${install.directory}\` |\n`;
+                singleModeResultText += `| ${install.version} | ${install.architecture || 'unknown'} | \`${install.directory}\` |\n`;
             }
 
-            resultText += `\n**Total:** ${results.length} ${resolvedMode === 'sdk' ? 'SDK(s)' : 'Runtime(s)'} found\n\n`;
-            resultText += `**✅ This result is COMPLETE for initial queries. After installing .NET via the installSdk tool, you may use terminal commands to verify.**`;
+            singleModeResultText += `\n**Total:** ${results.length} ${resolvedMode === 'sdk' ? 'SDK(s)' : 'Runtime(s)'} found\n\n`;
+            singleModeResultText += `**✅ This result is COMPLETE for initial queries. After installing .NET via the installSdk tool, you may use terminal commands to verify.**`;
 
             return new vscode.LanguageModelToolResult([
-                new vscode.LanguageModelTextPart(resultText)
+                new vscode.LanguageModelTextPart(singleModeResultText)
             ]);
         } catch (error)
         {
