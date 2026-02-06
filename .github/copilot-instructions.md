@@ -93,7 +93,7 @@ npm run lint  # From repository root (ESLint + TypeScript + auto-fix)
 
 When asked to update dependencies, follow this process:
 
-```powershell
+```bash
 # Update all components in order
 cd <repo-root>
 npm update && yarn install && yarn upgrade
@@ -114,7 +114,7 @@ cd ../vscode-dotnet-sdk-extension
 npm update && yarn upgrade
 
 cd ..
-./build.cmd  # or ./build.sh
+./build.sh  # or build.cmd on Windows
 ```
 
 ### Version Bumping
