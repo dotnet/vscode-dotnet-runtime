@@ -69,6 +69,7 @@ import
     InvalidUninstallRequest,
     IUtilityContext,
     JsonInstaller,
+    LanguageModelToolsRegistrationError,
     LinuxVersionResolver,
     LocalInstallUpdateService,
     LocalMemoryCacheSingleton,
@@ -87,6 +88,7 @@ import
 } from 'vscode-dotnet-runtime-library';
 import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
+import { registerLanguageModelTools } from './LanguageModelTools';
 import open = require('open');
 
 const packageJson = require('../package.json');
@@ -996,6 +998,16 @@ Installation will timeout in ${timeoutValue} seconds.`))
 
     // Preemptively install .NET for extensions who tell us to in their package.json
     const jsonInstaller = new JsonInstaller(globalEventStream, vsCodeExtensionContext);
+
+    // Register Language Model Tools for AI agent integration (GitHub Copilot, etc.)
+    try {
+        registerLanguageModelTools(vsCodeContext);
+    } catch (e) {
+        // Language Model Tools API may not be available in older VS Code versions
+        // Log telemetry for the failure but continue - extension works without AI tool integration
+        const error = e instanceof Error ? e : new Error(String(e));
+        globalEventStream.post(new LanguageModelToolsRegistrationError(error));
+    }
 
     // Exposing API Endpoints
     vsCodeContext.subscriptions.push(

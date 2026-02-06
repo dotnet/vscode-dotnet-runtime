@@ -11,12 +11,17 @@ export function run(): Promise<void> {
   const mocha = new Mocha({
     ui: 'tdd',
     color: true,
+    // Support filtering tests by grep pattern via environment variable
+    grep: process.env.TEST_GREP ? new RegExp(process.env.TEST_GREP) : undefined,
   });
 
   const testsRoot = path.resolve(__dirname, '..');
 
+  // Support filtering test files via environment variable (e.g., "LanguageModelTools" to only run that file)
+  const testFilePattern = process.env.TEST_FILE_PATTERN || '**/functional/**.test.js';
+
   return new Promise((c, e) => {
-    glob('**/functional/**.test.js', { cwd: testsRoot }, (err, files) => {
+    glob(testFilePattern, { cwd: testsRoot }, (err, files) => {
       if (err) {
         return e(err);
       }
