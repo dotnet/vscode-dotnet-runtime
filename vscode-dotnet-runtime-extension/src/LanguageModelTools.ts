@@ -16,7 +16,10 @@ import
     IDotnetListVersionsResult,
     IDotnetSearchContext,
     IDotnetSearchResult,
-    IDotnetVersion
+    IDotnetVersion,
+    IEventStream,
+    LanguageModelToolInvoked,
+    LanguageModelToolPrepareInvocation
 } from 'vscode-dotnet-runtime-library';
 
 /**
@@ -239,7 +242,7 @@ So if a user needs ".NET 8 runtime", you can install the .NET 8 SDK and they'll 
  * Registers all Language Model Tools for the .NET Install Tool extension.
  * These tools enable AI agents (like GitHub Copilot) to help users manage .NET installations.
  */
-export function registerLanguageModelTools(context: vscode.ExtensionContext): void
+export function registerLanguageModelTools(context: vscode.ExtensionContext, eventStream: IEventStream): void
 {
     // Install SDK Tool
     context.subscriptions.push(
@@ -268,7 +271,7 @@ export function registerLanguageModelTools(context: vscode.ExtensionContext): vo
 
     // List Installed Versions Tool
     context.subscriptions.push(
-        vscode.lm.registerTool(ToolNames.listInstalledVersions, new ListInstalledVersionsTool())
+        vscode.lm.registerTool(ToolNames.listInstalledVersions, new ListInstalledVersionsTool(eventStream))
     );
 }
 
@@ -663,13 +666,16 @@ class GetSettingsInfoTool implements vscode.LanguageModelTool<Record<string, nev
  */
 class ListInstalledVersionsTool implements vscode.LanguageModelTool<{ dotnetPath?: string; mode?: string }>
 {
+    constructor(private readonly eventStream: IEventStream) {}
+
     prepareInvocation(
         options: vscode.LanguageModelToolInvocationPrepareOptions<{ dotnetPath?: string; mode?: string }>,
         token: vscode.CancellationToken
     ): vscode.PreparedToolInvocation
     {
+        this.eventStream.post(new LanguageModelToolPrepareInvocation(ToolNames.listInstalledVersions, JSON.stringify(options.input)));
         return {
-            invocationMessage: 'Querying installed .NET SDKs and Runtimes (this replaces dotnet --list-sdks and dotnet --list-runtimes - no terminal needed)',
+            invocationMessage: 'Querying installed .NET SDKs and Runtimes via extension API (no terminal command needed)',
         };
     }
 
@@ -678,6 +684,7 @@ class ListInstalledVersionsTool implements vscode.LanguageModelTool<{ dotnetPath
         token: vscode.CancellationToken
     ): Promise<vscode.LanguageModelToolResult>
     {
+        this.eventStream.post(new LanguageModelToolInvoked(ToolNames.listInstalledVersions, JSON.stringify(options.input)));
         const { dotnetPath, mode } = options.input;
 
         try

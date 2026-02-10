@@ -3,14 +3,15 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
-import * as vscode from 'vscode';
 import * as path from 'path';
-import {
+import * as vscode from 'vscode';
+import
+{
+    MockEnvironmentVariableCollection,
     MockExtensionConfiguration,
     MockExtensionContext,
     MockTelemetryReporter,
-    MockWindowDisplayWorker,
-    MockEnvironmentVariableCollection
+    MockWindowDisplayWorker
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { ToolNames } from '../../LanguageModelTools';
@@ -22,7 +23,8 @@ const networkTimeoutTime = 60000; // Longer timeout for network-dependent tests
 /**
  * Helper to extract text content from a LanguageModelToolResult
  */
-function extractTextContent(result: vscode.LanguageModelToolResult): string {
+function extractTextContent(result: vscode.LanguageModelToolResult): string
+{
     return result.content
         .filter((part: any) => part instanceof vscode.LanguageModelTextPart)
         .map((part: any) => part.value)
@@ -35,7 +37,8 @@ function extractTextContent(result: vscode.LanguageModelToolResult): string {
  * NOTE FOR AI AGENTS: When iterating on Language Model Tools (LanguageModelTools.ts),
  * use `npm run test:lm-tools` for faster feedback (~30 seconds vs ~7 minutes for full suite).
  */
-suite('LanguageModelTools Tests', function () {
+suite('LanguageModelTools Tests', function ()
+{
     this.retries(1);
 
     const storagePath = path.join(__dirname, 'tmp-lm-tools');
@@ -46,10 +49,17 @@ suite('LanguageModelTools Tests', function () {
     let extensionContext: vscode.ExtensionContext;
     const environmentVariableCollection = new MockEnvironmentVariableCollection();
 
-    this.beforeAll(async () => {
-        // Only activate if not already activated by prior test suites
-        // This allows running LM tools tests in isolation with `npm run test:lm-tools`
-        try {
+    this.beforeAll(async () =>
+    {
+        // Only activate if not already activated by prior test suites.
+        // Check if the extension's commands are already registered to avoid double activation.
+        const commands = await vscode.commands.getCommands(true);
+        const alreadyActivated = commands.includes('dotnet.acquire');
+
+        if (alreadyActivated)
+        {
+            // Extension was already activated by prior tests (e.g., DotnetCoreAcquisitionExtension.test.ts)
+            // The Language Model Tools should already be registered, so we just need a mock context for cleanup.
             extensionContext = {
                 subscriptions: [],
                 globalStoragePath: storagePath,
@@ -58,22 +68,32 @@ suite('LanguageModelTools Tests', function () {
                 logPath,
                 environmentVariableCollection
             } as any;
-
-            process.env.DOTNET_INSTALL_TOOL_UNDER_TEST = 'true';
-            extension.ReEnableActivationForManualActivation();
-            extension.activate(extensionContext, {
-                telemetryReporter: new MockTelemetryReporter(),
-                extensionConfiguration: new MockExtensionConfiguration([], true, ''),
-                displayWorker: mockDisplayWorker,
-            });
-        } catch (e) {
-            // Extension may already be activated by prior tests - that's fine
-            console.log('Extension already activated or activation failed (expected in full test suite):', e);
+            return;
         }
+
+        // Running in isolation (e.g., `npm run test:lm-tools`) - need to activate the extension
+        extensionContext = {
+            subscriptions: [],
+            globalStoragePath: storagePath,
+            globalState: mockState,
+            extensionPath,
+            logPath,
+            environmentVariableCollection
+        } as any;
+
+        process.env.DOTNET_INSTALL_TOOL_UNDER_TEST = 'true';
+        extension.ReEnableActivationForManualActivation();
+        extension.activate(extensionContext, {
+            telemetryReporter: new MockTelemetryReporter(),
+            extensionConfiguration: new MockExtensionConfiguration([], true, ''),
+            displayWorker: mockDisplayWorker,
+        });
     });
 
-    suite('Tool Registration', function () {
-        test('All six Language Model Tools are registered after activation', async () => {
+    suite('Tool Registration', function ()
+    {
+        test('All six Language Model Tools are registered after activation', async () =>
+        {
             const tools = vscode.lm.tools;
 
             // Check that our tools are registered
@@ -86,7 +106,8 @@ suite('LanguageModelTools Tests', function () {
                 ToolNames.getSettingsInfo
             ];
 
-            for (const toolName of toolNames) {
+            for (const toolName of toolNames)
+            {
                 const tool = tools.find(t => t.name === toolName);
                 assert.exists(tool, `Tool ${toolName} should be registered`);
             }
@@ -96,7 +117,8 @@ suite('LanguageModelTools Tests', function () {
             assert.equal(ourTools.length, 6, 'Should have exactly 6 dotnet-install-tool tools registered');
         }).timeout(standardTimeoutTime);
 
-        test('Tool names match package.json definitions', async () => {
+        test('Tool names match package.json definitions', async () =>
+        {
             assert.equal(ToolNames.installSdk, 'dotnet-install-tool_installSdk');
             assert.equal(ToolNames.listVersions, 'dotnet-install-tool_listVersions');
             assert.equal(ToolNames.listInstalledVersions, 'dotnet-install-tool_listInstalledVersions');
@@ -105,22 +127,28 @@ suite('LanguageModelTools Tests', function () {
             assert.equal(ToolNames.getSettingsInfo, 'dotnet-install-tool_getSettingsInfo');
         }).timeout(standardTimeoutTime);
 
-        test('Tool names follow expected naming convention', async () => {
+        test('Tool names follow expected naming convention', async () =>
+        {
             const tools = vscode.lm.tools.filter(t => t.name.startsWith('dotnet-install-tool_'));
 
-            for (const tool of tools) {
+            for (const tool of tools)
+            {
                 // Name should be prefixed with extension identifier
                 assert.match(tool.name, /^dotnet-install-tool_[a-zA-Z]+$/, `Tool name ${tool.name} should follow naming convention`);
             }
         }).timeout(standardTimeoutTime);
     });
 
-    suite('Tool Metadata', function () {
-        test('All registered tools have meaningful descriptions', async () => {
+    suite('Tool Metadata', function ()
+    {
+        test('All registered tools have meaningful descriptions', async () =>
+        {
             const tools = vscode.lm.tools;
 
-            for (const tool of tools) {
-                if (tool.name.startsWith('dotnet-install-tool_')) {
+            for (const tool of tools)
+            {
+                if (tool.name.startsWith('dotnet-install-tool_'))
+                {
                     assert.exists(tool.description, `Tool ${tool.name} should have a description`);
                     assert.isString(tool.description, `Tool ${tool.name} description should be a string`);
                     assert.isAbove(tool.description.length, 20, `Tool ${tool.name} description should be meaningful (at least 20 chars)`);
@@ -128,7 +156,8 @@ suite('LanguageModelTools Tests', function () {
             }
         }).timeout(standardTimeoutTime);
 
-        test('Tools have display names accessible via vscode.lm.tools', async () => {
+        test('Tools have display names accessible via vscode.lm.tools', async () =>
+        {
             const tools = vscode.lm.tools;
             const ourTools = tools.filter(t => t.name.startsWith('dotnet-install-tool_'));
 
@@ -137,8 +166,10 @@ suite('LanguageModelTools Tests', function () {
         }).timeout(standardTimeoutTime);
     });
 
-    suite('GetSettingsInfo Tool', function () {
-        test('Returns comprehensive guide content', async () => {
+    suite('GetSettingsInfo Tool', function ()
+    {
+        test('Returns comprehensive guide content', async () =>
+        {
             const result = await vscode.lm.invokeTool(
                 ToolNames.getSettingsInfo,
                 { input: {}, toolInvocationToken: undefined },
@@ -159,7 +190,8 @@ suite('LanguageModelTools Tests', function () {
             assert.include(textContent, 'PATH', 'Content should mention PATH');
         }).timeout(standardTimeoutTime);
 
-        test('Explains installation types (local vs global)', async () => {
+        test('Explains installation types (local vs global)', async () =>
+        {
             const result = await vscode.lm.invokeTool(
                 ToolNames.getSettingsInfo,
                 { input: {}, toolInvocationToken: undefined },
@@ -174,7 +206,8 @@ suite('LanguageModelTools Tests', function () {
             assert.include(textContent, 'Program Files', 'Should mention Program Files for Windows');
         }).timeout(standardTimeoutTime);
 
-        test('Explains global.json handling', async () => {
+        test('Explains global.json handling', async () =>
+        {
             const result = await vscode.lm.invokeTool(
                 ToolNames.getSettingsInfo,
                 { input: {}, toolInvocationToken: undefined },
@@ -188,7 +221,8 @@ suite('LanguageModelTools Tests', function () {
             assert.include(textContent, 'sdk', 'Should mention SDK context');
         }).timeout(standardTimeoutTime);
 
-        test('Includes current settings values', async () => {
+        test('Includes current settings values', async () =>
+        {
             const result = await vscode.lm.invokeTool(
                 ToolNames.getSettingsInfo,
                 { input: {}, toolInvocationToken: undefined },
@@ -201,7 +235,8 @@ suite('LanguageModelTools Tests', function () {
             assert.include(textContent, 'Current Settings', 'Should have current settings section');
         }).timeout(standardTimeoutTime);
 
-        test('Explains SDK vs Runtime versioning', async () => {
+        test('Explains SDK vs Runtime versioning', async () =>
+        {
             const result = await vscode.lm.invokeTool(
                 ToolNames.getSettingsInfo,
                 { input: {}, toolInvocationToken: undefined },
@@ -216,8 +251,10 @@ suite('LanguageModelTools Tests', function () {
         }).timeout(standardTimeoutTime);
     });
 
-    suite('ListVersions Tool', function () {
-        test('Returns SDK versions when listRuntimes is false', async () => {
+    suite('ListVersions Tool', function ()
+    {
+        test('Returns SDK versions when listRuntimes is false', async () =>
+        {
             const result = await vscode.lm.invokeTool(
                 ToolNames.listVersions,
                 { input: { listRuntimes: false }, toolInvocationToken: undefined },
@@ -236,7 +273,8 @@ suite('LanguageModelTools Tests', function () {
             assert.isTrue(hasVersionInfo, 'Content should contain version information or network error');
         }).timeout(networkTimeoutTime);
 
-        test('Returns Runtime versions when listRuntimes is true', async () => {
+        test('Returns Runtime versions when listRuntimes is true', async () =>
+        {
             const result = await vscode.lm.invokeTool(
                 ToolNames.listVersions,
                 { input: { listRuntimes: true }, toolInvocationToken: undefined },
@@ -253,7 +291,8 @@ suite('LanguageModelTools Tests', function () {
             assert.isTrue(hasVersionInfo, 'Content should contain version information or network error');
         }).timeout(networkTimeoutTime);
 
-        test('Defaults to SDK versions when no input provided', async () => {
+        test('Defaults to SDK versions when no input provided', async () =>
+        {
             const result = await vscode.lm.invokeTool(
                 ToolNames.listVersions,
                 { input: {}, toolInvocationToken: undefined },
@@ -264,7 +303,8 @@ suite('LanguageModelTools Tests', function () {
             assert.exists(result.content, 'Result should have content');
         }).timeout(networkTimeoutTime);
 
-        test('Groups versions by support phase when available', async () => {
+        test('Groups versions by support phase when available', async () =>
+        {
             const result = await vscode.lm.invokeTool(
                 ToolNames.listVersions,
                 { input: { listRuntimes: false }, toolInvocationToken: undefined },
@@ -274,18 +314,21 @@ suite('LanguageModelTools Tests', function () {
             const textContent = extractTextContent(result);
 
             // If we got versions (not a network error), should have support phase grouping
-            if (textContent.includes('Available')) {
+            if (textContent.includes('Available'))
+            {
                 // Should group by support phase (Active, Maintenance, EOL)
                 const hasGrouping = textContent.includes('Active') ||
-                                    textContent.includes('Maintenance') ||
-                                    textContent.includes('Recommended');
+                    textContent.includes('Maintenance') ||
+                    textContent.includes('Recommended');
                 assert.isTrue(hasGrouping, 'Should group versions by support phase or have recommendation');
             }
         }).timeout(networkTimeoutTime);
     });
 
-    suite('FindPath Tool', function () {
-        test('Requires version parameter', async () => {
+    suite('FindPath Tool', function ()
+    {
+        test('Requires version parameter', async () =>
+        {
             const result = await vscode.lm.invokeTool(
                 ToolNames.findPath,
                 { input: {}, toolInvocationToken: undefined },
@@ -298,7 +341,8 @@ suite('LanguageModelTools Tests', function () {
             assert.include(textContent.toLowerCase(), 'version', 'Should mention version requirement');
         }).timeout(standardTimeoutTime);
 
-        test('Searches for .NET with valid version input', async () => {
+        test('Searches for .NET with valid version input', async () =>
+        {
             const result = await vscode.lm.invokeTool(
                 ToolNames.findPath,
                 { input: { version: '8.0' }, toolInvocationToken: undefined },
@@ -312,14 +356,15 @@ suite('LanguageModelTools Tests', function () {
 
             // Should either find .NET or report not found
             const hasResult = textContent.includes('Found') ||
-                              textContent.includes('Not Found') ||
-                              textContent.includes('Path') ||
-                              textContent.includes('not found') ||
-                              textContent.includes('resolve');
+                textContent.includes('Not Found') ||
+                textContent.includes('Path') ||
+                textContent.includes('not found') ||
+                textContent.includes('resolve');
             assert.isTrue(hasResult, 'Should report whether .NET was found or not');
         }).timeout(standardTimeoutTime);
 
-        test('Accepts mode parameter (sdk vs runtime)', async () => {
+        test('Accepts mode parameter (sdk vs runtime)', async () =>
+        {
             const result = await vscode.lm.invokeTool(
                 ToolNames.findPath,
                 { input: { version: '8.0', mode: 'sdk' }, toolInvocationToken: undefined },
@@ -335,7 +380,8 @@ suite('LanguageModelTools Tests', function () {
             assert.isTrue(mentionsSdk, 'Response should reference SDK mode');
         }).timeout(standardTimeoutTime);
 
-        test('Accepts architecture parameter', async () => {
+        test('Accepts architecture parameter', async () =>
+        {
             const result = await vscode.lm.invokeTool(
                 ToolNames.findPath,
                 { input: { version: '8.0', architecture: 'x64' }, toolInvocationToken: undefined },
@@ -350,7 +396,8 @@ suite('LanguageModelTools Tests', function () {
             assert.include(textContent, 'x64', 'Response should mention the architecture');
         }).timeout(standardTimeoutTime);
 
-        test('Explains search locations when .NET not found', async () => {
+        test('Explains search locations when .NET not found', async () =>
+        {
             // Use a version that likely doesn't exist
             const result = await vscode.lm.invokeTool(
                 ToolNames.findPath,
@@ -361,17 +408,20 @@ suite('LanguageModelTools Tests', function () {
             const textContent = extractTextContent(result);
 
             // Should explain where we searched
-            if (textContent.includes('Not Found') || textContent.includes('not found')) {
+            if (textContent.includes('Not Found') || textContent.includes('not found'))
+            {
                 const explainedLocations = textContent.includes('PATH') ||
-                                           textContent.includes('DOTNET_ROOT') ||
-                                           textContent.includes('existingDotnetPath');
+                    textContent.includes('DOTNET_ROOT') ||
+                    textContent.includes('existingDotnetPath');
                 assert.isTrue(explainedLocations, 'Should explain search locations when not found');
             }
         }).timeout(standardTimeoutTime);
     });
 
-    suite('ListInstalledVersions Tool', function () {
-        test('Can be invoked without parameters (uses PATH)', async () => {
+    suite('ListInstalledVersions Tool', function ()
+    {
+        test('Can be invoked without parameters (uses PATH)', async () =>
+        {
             const result = await vscode.lm.invokeTool(
                 ToolNames.listInstalledVersions,
                 { input: {}, toolInvocationToken: undefined },
@@ -385,13 +435,14 @@ suite('LanguageModelTools Tests', function () {
 
             // Should either list versions or explain none found
             const hasResult = textContent.includes('Installed') ||
-                              textContent.includes('found') ||
-                              textContent.includes('SDK') ||
-                              textContent.includes('No .NET');
+                textContent.includes('found') ||
+                textContent.includes('SDK') ||
+                textContent.includes('No .NET');
             assert.isTrue(hasResult, 'Should report installed versions or indicate none found');
         }).timeout(standardTimeoutTime);
 
-        test('Accepts optional dotnetPath parameter', async () => {
+        test('Accepts optional dotnetPath parameter', async () =>
+        {
             // Provide a path (may or may not exist)
             const result = await vscode.lm.invokeTool(
                 ToolNames.listInstalledVersions,
@@ -403,7 +454,8 @@ suite('LanguageModelTools Tests', function () {
             assert.exists(result.content, 'Result should have content');
         }).timeout(standardTimeoutTime);
 
-        test('Accepts mode parameter (sdk vs runtime)', async () => {
+        test('Accepts mode parameter (sdk vs runtime)', async () =>
+        {
             const result = await vscode.lm.invokeTool(
                 ToolNames.listInstalledVersions,
                 { input: { mode: 'runtime' }, toolInvocationToken: undefined },
@@ -419,7 +471,8 @@ suite('LanguageModelTools Tests', function () {
             assert.isTrue(mentionsRuntime, 'Response should reference runtime mode');
         }).timeout(standardTimeoutTime);
 
-        test('Returns table format with version details', async () => {
+        test('Returns table format with version details', async () =>
+        {
             const result = await vscode.lm.invokeTool(
                 ToolNames.listInstalledVersions,
                 { input: {}, toolInvocationToken: undefined },
@@ -429,15 +482,18 @@ suite('LanguageModelTools Tests', function () {
             const textContent = extractTextContent(result);
 
             // If versions are found, should have table format
-            if (textContent.includes('|') && textContent.includes('Version')) {
+            if (textContent.includes('|') && textContent.includes('Version'))
+            {
                 assert.include(textContent, 'Architecture', 'Table should include Architecture column');
                 assert.include(textContent, 'Directory', 'Table should include Directory column');
             }
         }).timeout(standardTimeoutTime);
     });
 
-    suite('Uninstall Tool', function () {
-        test('Can be invoked without parameters (launches interactive picker)', async () => {
+    suite('Uninstall Tool', function ()
+    {
+        test('Can be invoked without parameters (launches interactive picker)', async () =>
+        {
             const result = await vscode.lm.invokeTool(
                 ToolNames.uninstall,
                 { input: {}, toolInvocationToken: undefined },
@@ -451,13 +507,14 @@ suite('LanguageModelTools Tests', function () {
 
             // Should mention interactive dialog or selection
             const mentionsInteractive = textContent.includes('interactive') ||
-                                        textContent.includes('dialog') ||
-                                        textContent.includes('select') ||
-                                        textContent.includes('dropdown');
+                textContent.includes('dialog') ||
+                textContent.includes('select') ||
+                textContent.includes('dropdown');
             assert.isTrue(mentionsInteractive, 'Should mention interactive uninstall when no version provided');
         }).timeout(standardTimeoutTime);
 
-        test('Accepts version parameter', async () => {
+        test('Accepts version parameter', async () =>
+        {
             // This won't actually uninstall anything, but should accept the parameter
             const result = await vscode.lm.invokeTool(
                 ToolNames.uninstall,
@@ -469,7 +526,8 @@ suite('LanguageModelTools Tests', function () {
             assert.exists(result.content, 'Result should have content');
         }).timeout(standardTimeoutTime);
 
-        test('Accepts mode parameter', async () => {
+        test('Accepts mode parameter', async () =>
+        {
             const result = await vscode.lm.invokeTool(
                 ToolNames.uninstall,
                 { input: { version: '6.0.0', mode: 'sdk' }, toolInvocationToken: undefined },
@@ -479,7 +537,8 @@ suite('LanguageModelTools Tests', function () {
             assert.exists(result, 'Tool should return a result');
         }).timeout(standardTimeoutTime);
 
-        test('Accepts global parameter', async () => {
+        test('Accepts global parameter', async () =>
+        {
             const result = await vscode.lm.invokeTool(
                 ToolNames.uninstall,
                 { input: { version: '6.0.0', global: true }, toolInvocationToken: undefined },
@@ -490,11 +549,13 @@ suite('LanguageModelTools Tests', function () {
         }).timeout(standardTimeoutTime);
     });
 
-    suite('InstallSdk Tool (Validation Only)', function () {
+    suite('InstallSdk Tool (Validation Only)', function ()
+    {
         // Note: We don't actually install in tests to avoid side effects
         // These tests validate the tool accepts parameters correctly
 
-        test('Tool is registered and can be found', async () => {
+        test('Tool is registered and can be found', async () =>
+        {
             const tools = vscode.lm.tools;
             const installTool = tools.find(t => t.name === ToolNames.installSdk);
 
@@ -502,7 +563,8 @@ suite('LanguageModelTools Tests', function () {
             assert.exists(installTool?.description, 'Install SDK tool should have a description');
         }).timeout(standardTimeoutTime);
 
-        test('Tool description mentions global/system-wide installation', async () => {
+        test('Tool description mentions global/system-wide installation', async () =>
+        {
             const tools = vscode.lm.tools;
             const installTool = tools.find(t => t.name === ToolNames.installSdk);
 
@@ -512,8 +574,10 @@ suite('LanguageModelTools Tests', function () {
         }).timeout(standardTimeoutTime);
     });
 
-    suite('Tool Error Handling', function () {
-        test('FindPath handles missing version gracefully', async () => {
+    suite('Tool Error Handling', function ()
+    {
+        test('FindPath handles missing version gracefully', async () =>
+        {
             const result = await vscode.lm.invokeTool(
                 ToolNames.findPath,
                 { input: {}, toolInvocationToken: undefined },
@@ -526,7 +590,8 @@ suite('LanguageModelTools Tests', function () {
             assert.include(textContent.toLowerCase(), 'version', 'Should mention version is needed');
         }).timeout(standardTimeoutTime);
 
-        test('FindPath handles non-existent version gracefully', async () => {
+        test('FindPath handles non-existent version gracefully', async () =>
+        {
             const result = await vscode.lm.invokeTool(
                 ToolNames.findPath,
                 { input: { version: '999.999' }, toolInvocationToken: undefined },
@@ -538,12 +603,13 @@ suite('LanguageModelTools Tests', function () {
             // Should return not found, not throw
             assert.exists(result, 'Should return a result, not throw');
             const hasNotFoundMsg = textContent.includes('Not Found') ||
-                                   textContent.includes('not found') ||
-                                   textContent.includes('No .NET');
+                textContent.includes('not found') ||
+                textContent.includes('No .NET');
             assert.isTrue(hasNotFoundMsg, 'Should indicate version was not found');
         }).timeout(standardTimeoutTime);
 
-        test('ListInstalledVersions handles invalid path gracefully', async () => {
+        test('ListInstalledVersions handles invalid path gracefully', async () =>
+        {
             const result = await vscode.lm.invokeTool(
                 ToolNames.listInstalledVersions,
                 { input: { dotnetPath: '/nonexistent/path/dotnet' }, toolInvocationToken: undefined },
@@ -553,7 +619,8 @@ suite('LanguageModelTools Tests', function () {
             assert.exists(result, 'Should return a result, not throw');
         }).timeout(standardTimeoutTime);
 
-        test('All tools return LanguageModelToolResult with content array', async () => {
+        test('All tools return LanguageModelToolResult with content array', async () =>
+        {
             const toolsToTest = [
                 { name: ToolNames.getSettingsInfo, input: {} },
                 { name: ToolNames.findPath, input: { version: '8.0' } },
@@ -561,7 +628,8 @@ suite('LanguageModelTools Tests', function () {
                 { name: ToolNames.uninstall, input: {} }
             ];
 
-            for (const toolTest of toolsToTest) {
+            for (const toolTest of toolsToTest)
+            {
                 const result = await vscode.lm.invokeTool(
                     toolTest.name,
                     { input: toolTest.input, toolInvocationToken: undefined },
@@ -575,8 +643,10 @@ suite('LanguageModelTools Tests', function () {
         }).timeout(networkTimeoutTime);
     });
 
-    suite('Cancellation Token Support', function () {
-        test('Tools accept cancellation token without error', async () => {
+    suite('Cancellation Token Support', function ()
+    {
+        test('Tools accept cancellation token without error', async () =>
+        {
             const cts = new vscode.CancellationTokenSource();
 
             // Don't cancel, just verify token is accepted

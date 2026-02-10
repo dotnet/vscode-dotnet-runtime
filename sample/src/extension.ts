@@ -8,14 +8,14 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 // import * as runtimeExtension from 'vscode-dotnet-runtime'; // comment this out when packing the extension
 import
-{
-    DotnetInstallMode,
-    DotnetVersionSpecRequirement,
-    IDotnetAcquireContext,
-    IDotnetAcquireResult,
-    IDotnetFindPathContext,
-    IDotnetListVersionsResult,
-} from 'vscode-dotnet-runtime-library';
+    {
+        DotnetInstallMode,
+        DotnetVersionSpecRequirement,
+        IDotnetAcquireContext,
+        IDotnetAcquireResult,
+        IDotnetFindPathContext,
+        IDotnetListVersionsResult,
+    } from 'vscode-dotnet-runtime-library';
 
 export function activate(context: vscode.ExtensionContext)
 {

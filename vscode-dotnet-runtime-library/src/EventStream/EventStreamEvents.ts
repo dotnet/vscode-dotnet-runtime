@@ -1991,6 +1991,50 @@ export class TestAcquireCalled extends IEvent
 }
 
 /**
+ * Event for when a Language Model Tool is invoked by an AI agent.
+ * This provides visibility into AI tool usage in the logs.
+ */
+export class LanguageModelToolInvoked extends DotnetAcquisitionMessage
+{
+    public readonly eventName = 'LanguageModelToolInvoked';
+
+    constructor(public readonly toolName: string, public readonly input: string)
+    {
+        super();
+    }
+
+    public getProperties(telemetry = false): { [id: string]: string } | undefined
+    {
+        return {
+            ToolName: this.toolName,
+            // Don't include full input in telemetry to avoid PII, but include in local logs
+            Input: telemetry ? 'Redacted' : this.input
+        };
+    }
+}
+
+/**
+ * Event for when a Language Model Tool prepares for invocation.
+ */
+export class LanguageModelToolPrepareInvocation extends DotnetAcquisitionMessage
+{
+    public readonly eventName = 'LanguageModelToolPrepareInvocation';
+
+    constructor(public readonly toolName: string, public readonly input: string)
+    {
+        super();
+    }
+
+    public getProperties(telemetry = false): { [id: string]: string } | undefined
+    {
+        return {
+            ToolName: this.toolName,
+            Input: telemetry ? 'Redacted' : this.input
+        };
+    }
+}
+
+/**
  * Event for when Language Model Tools registration fails.
  * This is a non-fatal error - the extension continues to work without AI tool integration.
  */

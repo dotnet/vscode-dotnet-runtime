@@ -1000,9 +1000,11 @@ Installation will timeout in ${timeoutValue} seconds.`))
     const jsonInstaller = new JsonInstaller(globalEventStream, vsCodeExtensionContext);
 
     // Register Language Model Tools for AI agent integration (GitHub Copilot, etc.)
-    try {
-        registerLanguageModelTools(vsCodeContext);
-    } catch (e) {
+    try
+    {
+        registerLanguageModelTools(vsCodeContext, globalEventStream);
+    } catch (e)
+    {
         // Language Model Tools API may not be available in older VS Code versions
         // Log telemetry for the failure but continue - extension works without AI tool integration
         const error = e instanceof Error ? e : new Error(String(e));

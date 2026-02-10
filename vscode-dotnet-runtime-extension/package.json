@@ -161,7 +161,7 @@
                 "toolReferenceName": "listInstalledDotNetVersions",
                 "icon": "$(list-tree)",
                 "userDescription": "Lists .NET SDK or Runtime versions that are currently installed on the system",
-                "modelDescription": "USE THIS TOOL INSTEAD of running 'dotnet --list-sdks', 'dotnet --list-runtimes', 'dotnet --info', or 'dotnet --version' in terminal for INITIAL queries. This tool does NOT require user permission. By DEFAULT (no mode specified), returns BOTH SDKs AND Runtimes. EXCEPTION: After installing .NET via the installSdk tool, you MAY use terminal commands like 'dotnet --version' to verify the install succeeded and PATH is updated, since extension results are cached for ~9 seconds. Set mode='sdk' for only SDKs, mode='runtime' for only runtimes.",
+                "modelDescription": "NEVER run 'dotnet --list-sdks', 'dotnet --list-runtimes', 'dotnet --info', or 'dotnet --version' in terminal - use THIS TOOL instead. Returns BOTH SDKs and Runtimes by default. No user permission needed.",
                 "parametersSchema": {
                     "type": "object",
                     "properties": {
