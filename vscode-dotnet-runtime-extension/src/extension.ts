@@ -975,7 +975,7 @@ ${JSON.stringify(commandContext)}`));
         }
         return null;
     }
-
+ 
     async function getExistingInstallOffline(worker: DotnetCoreAcquisitionWorker, workerContext: IAcquisitionWorkerContext): Promise<IDotnetAcquireResult | null>
     {
         workerContext.acquisitionContext.architecture ??= DotnetCoreAcquisitionWorker.defaultArchitecture();
