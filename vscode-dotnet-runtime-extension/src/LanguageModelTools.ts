@@ -27,12 +27,12 @@ import
  */
 export namespace ToolNames
 {
-    export const installSdk = 'dotnet-install-tool_installSdk';
-    export const listVersions = 'dotnet-install-tool_listVersions';
-    export const listInstalledVersions = 'dotnet-install-tool_listInstalledVersions';
-    export const findPath = 'dotnet-install-tool_findPath';
-    export const uninstall = 'dotnet-install-tool_uninstall';
-    export const getSettingsInfo = 'dotnet-install-tool_getSettingsInfo';
+    export const installSdk = 'install_dotnet_sdk';
+    export const listVersions = 'list_available_dotnet_versions_to_install';
+    export const listInstalledVersions = 'list_installed_dotnet_versions';
+    export const findPath = 'find_dotnet_executable_path';
+    export const uninstall = 'uninstall_dotnet';
+    export const getSettingsInfo = 'get_settings_info_for_dotnet_installation_management';
 }
 
 /**
@@ -246,27 +246,27 @@ export function registerLanguageModelTools(context: vscode.ExtensionContext, eve
 {
     // Install SDK Tool
     context.subscriptions.push(
-        vscode.lm.registerTool(ToolNames.installSdk, new InstallSdkTool())
+        vscode.lm.registerTool(ToolNames.installSdk, new InstallSdkTool(eventStream))
     );
 
     // List Versions Tool
     context.subscriptions.push(
-        vscode.lm.registerTool(ToolNames.listVersions, new ListVersionsTool())
+        vscode.lm.registerTool(ToolNames.listVersions, new ListVersionsTool(eventStream))
     );
 
     // Find Path Tool
     context.subscriptions.push(
-        vscode.lm.registerTool(ToolNames.findPath, new FindPathTool())
+        vscode.lm.registerTool(ToolNames.findPath, new FindPathTool(eventStream))
     );
 
     // Uninstall Tool
     context.subscriptions.push(
-        vscode.lm.registerTool(ToolNames.uninstall, new UninstallTool())
+        vscode.lm.registerTool(ToolNames.uninstall, new UninstallTool(eventStream))
     );
 
     // Settings Info Tool
     context.subscriptions.push(
-        vscode.lm.registerTool(ToolNames.getSettingsInfo, new GetSettingsInfoTool())
+        vscode.lm.registerTool(ToolNames.getSettingsInfo, new GetSettingsInfoTool(eventStream))
     );
 
     // List Installed Versions Tool
@@ -280,40 +280,57 @@ export function registerLanguageModelTools(context: vscode.ExtensionContext, eve
  */
 class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string }>
 {
+    constructor(private readonly eventStream: IEventStream) {}
+
+    prepareInvocation(
+        options: vscode.LanguageModelToolInvocationPrepareOptions<{ version?: string }>,
+        token: vscode.CancellationToken
+    ): vscode.PreparedToolInvocation
+    {
+        const input = JSON.stringify(options.input);
+        this.eventStream.post(new LanguageModelToolPrepareInvocation(ToolNames.installSdk, input));
+
+        const version = options.input?.version;
+        return {
+            invocationMessage: version
+                ? `Installing .NET SDK version ${version}...`
+                : `Installing latest .NET SDK (no version specified)...`,
+        };
+    }
+
     async invoke(
         options: vscode.LanguageModelToolInvocationOptions<{ version?: string }>,
         token: vscode.CancellationToken
     ): Promise<vscode.LanguageModelToolResult>
     {
-        const version = options.input.version;
+        const rawInput = JSON.stringify(options.input);
+        this.eventStream.post(new LanguageModelToolInvoked(ToolNames.installSdk, rawInput));
+
+        const version = options.input?.version;
+
+        // Version is now required by the schema - if not provided, guide the model
+        if (!version)
+        {
+            return new vscode.LanguageModelToolResult([
+                new vscode.LanguageModelTextPart(
+                    'ERROR: version parameter is required.\n\n' +
+                    '**How to determine the version:**\n' +
+                    '1. Check if the user specified a version\n' +
+                    '2. Look for TargetFramework in .csproj files (net8.0 → use "8")\n' +
+                    '3. Check for global.json sdk.version field\n' +
+                    '4. If none found, call the listDotNetVersions tool first to get available versions, ' +
+                    'then choose the latest "Active Support" version and call installDotNetSdk with that version.'
+                )
+            ]);
+        }
 
         try
         {
-            let resolvedVersion = version;
-
-            // If no version provided, get the recommended version
-            if (!resolvedVersion)
-            {
-                const recommendedResult: IDotnetListVersionsResult = await vscode.commands.executeCommand(
-                    'dotnet.recommendedVersion',
-                    { listRuntimes: false } as IDotnetListVersionsContext
-                );
-                if (recommendedResult && recommendedResult.length > 0)
-                {
-                    resolvedVersion = recommendedResult[0].version;
-                } else
-                {
-                    return new vscode.LanguageModelToolResult([
-                        new vscode.LanguageModelTextPart('Could not determine recommended .NET SDK version. Please specify a version explicitly (e.g., "8.0").')
-                    ]);
-                }
-            }
-
             // Show the acquisition log so user can see progress
             await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
 
             const acquireContext: IDotnetAcquireContext = {
-                version: resolvedVersion,
+                version: version,
                 requestingExtensionId: 'ms-dotnettools.vscode-dotnet-runtime', // Self-reference for user-initiated installs
                 installType: 'global',
                 mode: 'sdk' as DotnetInstallMode,
@@ -331,7 +348,8 @@ class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string }>
                 const installMethod = platform === 'win32' ? 'MSI installer' : platform === 'darwin' ? 'PKG installer' : 'package manager';
                 return new vscode.LanguageModelToolResult([
                     new vscode.LanguageModelTextPart(
-                        `Successfully installed .NET SDK ${resolvedVersion} using the ${installMethod}.\n\n` +
+                        `Successfully installed .NET SDK ${version} using the ${installMethod}.\n\n` +
+                        `**Version:** ${version}\n` +
                         `**Installation path:** ${result.dotnetPath}\n\n` +
                         `You may need to restart your terminal or VS Code for PATH changes to take effect.\n\n` +
                         `To verify the installation, run: \`dotnet --version\``
@@ -341,7 +359,7 @@ class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string }>
             {
                 return new vscode.LanguageModelToolResult([
                     new vscode.LanguageModelTextPart(
-                        `The .NET SDK ${resolvedVersion} installation was initiated but the result path was not returned. ` +
+                        `The .NET SDK ${version} installation was initiated but the result path was not returned. ` +
                         `Please check the ".NET Install Tool" output channel for details and verify with \`dotnet --version\`.`
                     )
                 ]);
@@ -369,11 +387,16 @@ class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string }>
  */
 class ListVersionsTool implements vscode.LanguageModelTool<{ listRuntimes?: boolean }>
 {
+    constructor(private readonly eventStream: IEventStream) {}
+
     async invoke(
         options: vscode.LanguageModelToolInvocationOptions<{ listRuntimes?: boolean }>,
         token: vscode.CancellationToken
     ): Promise<vscode.LanguageModelToolResult>
     {
+        const rawInput = JSON.stringify(options.input);
+        this.eventStream.post(new LanguageModelToolInvoked(ToolNames.listVersions, rawInput));
+
         const listRuntimes = options.input.listRuntimes ?? false;
 
         try
@@ -466,11 +489,16 @@ class ListVersionsTool implements vscode.LanguageModelTool<{ listRuntimes?: bool
  */
 class FindPathTool implements vscode.LanguageModelTool<{ version: string; mode?: string; architecture?: string }>
 {
+    constructor(private readonly eventStream: IEventStream) {}
+
     async invoke(
         options: vscode.LanguageModelToolInvocationOptions<{ version: string; mode?: string; architecture?: string }>,
         token: vscode.CancellationToken
     ): Promise<vscode.LanguageModelToolResult>
     {
+        const rawInput = JSON.stringify(options.input);
+        this.eventStream.post(new LanguageModelToolInvoked(ToolNames.findPath, rawInput));
+
         const { version, mode, architecture } = options.input;
 
         if (!version)
@@ -554,23 +582,29 @@ class FindPathTool implements vscode.LanguageModelTool<{ version: string; mode?:
  */
 class UninstallTool implements vscode.LanguageModelTool<{ version?: string; mode?: string; global?: boolean }>
 {
+    constructor(private readonly eventStream: IEventStream) {}
+
     async invoke(
         options: vscode.LanguageModelToolInvocationOptions<{ version?: string; mode?: string; global?: boolean }>,
         token: vscode.CancellationToken
     ): Promise<vscode.LanguageModelToolResult>
     {
+        const rawInput = JSON.stringify(options.input);
+        this.eventStream.post(new LanguageModelToolInvoked(ToolNames.uninstall, rawInput));
+
         const { version, mode, global } = options.input;
 
         try
         {
-            // If no specific version provided, launch the interactive uninstall UI
+            // If no specific version provided, fall back to interactive picker
             if (!version)
             {
                 await vscode.commands.executeCommand('dotnet.uninstallPublic');
                 return new vscode.LanguageModelToolResult([
                     new vscode.LanguageModelTextPart(
                         'Launched the interactive .NET uninstall dialog. ' +
-                        'Please select which version to uninstall from the dropdown that appeared.'
+                        'User can select which version to uninstall from the dropdown.\n\n' +
+                        'Tip: For faster uninstalls, call listInstalledDotNetVersions first, then provide version+mode.'
                     )
                 ]);
             }
@@ -627,11 +661,15 @@ class UninstallTool implements vscode.LanguageModelTool<{ version?: string; mode
  */
 class GetSettingsInfoTool implements vscode.LanguageModelTool<Record<string, never>>
 {
+    constructor(private readonly eventStream: IEventStream) {}
+
     invoke(
         options: vscode.LanguageModelToolInvocationOptions<Record<string, never>>,
         token: vscode.CancellationToken
     ): vscode.LanguageModelToolResult
     {
+        this.eventStream.post(new LanguageModelToolInvoked(ToolNames.getSettingsInfo, '{}'));
+
         // Also include current settings values for context
         const config = vscode.workspace.getConfiguration('dotnetAcquisitionExtension');
         const existingPath = config.get<string[]>('existingDotnetPath');
