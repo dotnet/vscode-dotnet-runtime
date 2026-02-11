@@ -42,7 +42,7 @@
 		"@vscode/extension-telemetry": "^0.9.7",
 		"@vscode/sudo-prompt": "^9.3.1",
 		"@vscode/test-electron": "^2.4.1",
-		"axios": "^1.7.4",
+		"axios": "^1.13.5",
 		"axios-cache-interceptor": "^1.5.3",
 		"axios-retry": "^3.4.0",
 		"chai": "4.3.4",
