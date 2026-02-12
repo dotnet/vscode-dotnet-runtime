@@ -7,12 +7,12 @@ import { DotnetCommandSucceeded, DotnetNotInstallRelatedCommandFailed } from '..
 import { ExistingPathKeys, IExistingPaths } from '../../IExtensionContext';
 import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
 import
-{
-    callWithErrorHandling,
-    errorConstants,
-    timeoutConstants,
-    UninstallErrorConfiguration,
-} from '../../Utils/ErrorHandler';
+    {
+        callWithErrorHandling,
+        errorConstants,
+        timeoutConstants,
+        UninstallErrorConfiguration,
+    } from '../../Utils/ErrorHandler';
 import { IIssueContext } from '../../Utils/IIssueContext';
 import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
 import { MockExtensionConfigurationWorker } from '../mocks/MockExtensionConfigurationWorker';

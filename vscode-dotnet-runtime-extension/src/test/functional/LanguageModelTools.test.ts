@@ -6,13 +6,13 @@ import * as chai from 'chai';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import
-{
-    MockEnvironmentVariableCollection,
-    MockExtensionConfiguration,
-    MockExtensionContext,
-    MockTelemetryReporter,
-    MockWindowDisplayWorker
-} from 'vscode-dotnet-runtime-library';
+    {
+        MockEnvironmentVariableCollection,
+        MockExtensionConfiguration,
+        MockExtensionContext,
+        MockTelemetryReporter,
+        MockWindowDisplayWorker
+    } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { ToolNames } from '../../LanguageModelTools';
 
@@ -674,7 +674,7 @@ suite('LanguageModelTools Tests', function ()
             // but we can verify the tool handles the case when version is missing
             const result = await vscode.lm.invokeTool(
                 ToolNames.installSdk,
-                { input: {} /* no version */ , toolInvocationToken: undefined },
+                { input: {} /* no version */, toolInvocationToken: undefined },
                 new vscode.CancellationTokenSource().token
             );
 
@@ -744,7 +744,7 @@ suite('LanguageModelTools Tests', function ()
             // Test that error responses contain enough context for the LLM to help the user
             const result = await vscode.lm.invokeTool(
                 ToolNames.installSdk,
-                { input: {} /* missing required version */ , toolInvocationToken: undefined },
+                { input: {} /* missing required version */, toolInvocationToken: undefined },
                 new vscode.CancellationTokenSource().token
             );
 

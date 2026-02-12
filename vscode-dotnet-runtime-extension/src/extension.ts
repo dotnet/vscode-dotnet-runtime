@@ -753,9 +753,19 @@ ${JSON.stringify(commandContext)}`));
         let result = '1';
 
         // Create workerContext early if we have enough info (for error handling context)
-        const workerContext = commandContext?.mode && commandContext?.requestingExtensionId
-            ? getAcquisitionWorkerContext(commandContext.mode, commandContext)
-            : undefined;
+        // Wrapped in try-catch to avoid unhandled exceptions if context creation fails
+        let workerContext: IAcquisitionWorkerContext | undefined;
+        try
+        {
+            workerContext = commandContext?.mode && commandContext?.requestingExtensionId
+                ? getAcquisitionWorkerContext(commandContext.mode, commandContext)
+                : undefined;
+        }
+        catch
+        {
+            // If context creation fails, continue without it - errors will still be handled
+            workerContext = undefined;
+        }
 
         await callWithErrorHandling(async () =>
         {

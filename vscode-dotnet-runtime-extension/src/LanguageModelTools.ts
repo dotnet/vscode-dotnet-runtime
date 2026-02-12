@@ -6,21 +6,21 @@
 import * as os from 'os';
 import * as vscode from 'vscode';
 import
-    {
-        AcquireErrorConfiguration,
-        DotnetInstallMode,
-        IDotnetAcquireContext,
-        IDotnetAcquireResult,
-        IDotnetFindPathContext,
-        IDotnetListVersionsContext,
-        IDotnetListVersionsResult,
-        IDotnetSearchContext,
-        IDotnetSearchResult,
-        IDotnetVersion,
-        IEventStream,
-        LanguageModelToolInvoked,
-        LanguageModelToolPrepareInvocation
-    } from 'vscode-dotnet-runtime-library';
+{
+    AcquireErrorConfiguration,
+    DotnetInstallMode,
+    IDotnetAcquireContext,
+    IDotnetAcquireResult,
+    IDotnetFindPathContext,
+    IDotnetListVersionsContext,
+    IDotnetListVersionsResult,
+    IDotnetSearchContext,
+    IDotnetSearchResult,
+    IDotnetVersion,
+    IEventStream,
+    LanguageModelToolInvoked,
+    LanguageModelToolPrepareInvocation
+} from 'vscode-dotnet-runtime-library';
 
 /**
  * Tool name constants matching those in package.json
