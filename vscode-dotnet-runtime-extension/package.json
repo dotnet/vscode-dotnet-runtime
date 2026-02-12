@@ -48,7 +48,7 @@
                 "canBeReferencedInPrompt": true,
                 "icon": "$(tools)",
                 "userDescription": "Installs a .NET SDK system-wide for building and running .NET projects",
-                "modelDescription": "Installs .NET SDK GLOBALLY. ALWAYS RESPECT USER'S VERSION CHOICE - install exactly what they ask for, even if EOL/unsupported. Users have valid reasons (legacy projects, compatibility). VERSION SOURCES: (1) User's explicit request (HIGHEST PRIORITY). (2) TargetFramework (net6.0→'6'). (3) global.json. (4) Call getRecommendedDotNetVersion if none specified. Formats: '6', '6.0', '6.0.1xx'. LIMITATIONS: No WSL/preview. Requires admin.",
+                "modelDescription": "Installs .NET SDK GLOBALLY. UNSUPPORTED: WSL and Linux distros other than Ubuntu, Debian, Red Hat (RHEL/Fedora/CentOS). Do NOT use on WSL or unsupported distros - instead read https://learn.microsoft.com/dotnet/core/install/linux and guide user through install steps. ALWAYS RESPECT USER'S VERSION CHOICE - install exactly what they ask for, even if EOL/unsupported. VERSION SOURCES: (1) User's explicit request (HIGHEST PRIORITY). (2) TargetFramework (net6.0→'6'). (3) global.json. (4) Call getRecommendedDotNetVersion if none specified. Formats: '6', '6.0', '6.0.1xx'. Requires admin.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -126,7 +126,7 @@
                 "canBeReferencedInPrompt": true,
                 "icon": "$(trash)",
                 "userDescription": "Uninstalls a .NET SDK or Runtime version",
-                "modelDescription": "Uninstalls .NET versions. REQUIRED: Call listInstalledDotNetVersions first to get installed versions, then provide version+mode. Only extension-managed installs appear by default. To uninstall a global SDK: first call installDotNetSdk with same version (registers it), then uninstall. Global uninstalls require admin.",
+                "modelDescription": "Uninstalls .NET versions. SDK UNINSTALL UNSUPPORTED: WSL and Linux distros other than Ubuntu, Debian, Red Hat (RHEL/Fedora/CentOS). Do NOT use for SDK uninstall on WSL or unsupported distros - instead read https://learn.microsoft.com/dotnet/core/install/linux and guide user through uninstall steps. Runtime uninstall works on all platforms. REQUIRED: Call listInstalledDotNetVersions first to get installed versions, then provide version+mode. Only extension-managed installs appear by default. Global uninstalls require admin.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
