@@ -463,7 +463,6 @@ class ListVersionsTool implements vscode.LanguageModelTool<{ listRuntimes?: bool
             {
                 responseText += `## ⚠️ End of Life\n`;
                 responseText += `These versions no longer receive updates. Upgrade recommended.\n\n`;
-                if (eolVersions.length > 5)
                 for (const v of eolVersions)
                 {
                     responseText += `- ${v.version}${v.channelVersion ? ` (Channel: ${v.channelVersion})` : ''}\n`;
