@@ -783,34 +783,36 @@ class ListInstalledVersionsTool implements vscode.LanguageModelTool<{ dotnetPath
                     resultText += `No SDKs installed.\n\n`;
                 }
 
-                // Runtimes section - group by runtime type for compact display
+                // Runtimes section - group by mode for compact display
                 resultText += `\n## Runtimes\n\n`;
                 if (runtimeResults && runtimeResults.length > 0)
                 {
-                    // Group runtimes by type (extracted from directory path)
-                    const runtimesByType = new Map<string, string[]>();
+                    // Group runtimes by their mode (each result already has mode set to 'runtime' or 'aspnetcore')
+                    const runtimesByMode = new Map<string, string[]>();
                     for (const install of runtimeResults)
                     {
-                        // Extract runtime type from directory path (e.g., "shared/Microsoft.NETCore.App/8.0.21" -> "Microsoft.NETCore.App")
-                        const pathParts = install.directory.replace(/\\/g, '/').split('/');
-                        const versionIndex = pathParts.findIndex(p => /^\d+\.\d+/.test(p));
-                        const runtimeType = versionIndex > 0 ? pathParts[versionIndex - 1] : 'Runtime';
-
-                        if (!runtimesByType.has(runtimeType))
+                        const modeKey = install.mode ?? 'runtime';
+                        if (!runtimesByMode.has(modeKey))
                         {
-                            runtimesByType.set(runtimeType, []);
+                            runtimesByMode.set(modeKey, []);
                         }
-                        runtimesByType.get(runtimeType)!.push(install.version);
+                        runtimesByMode.get(modeKey)!.push(install.version);
                     }
 
-                    // Display grouped runtimes
+                    // Display grouped runtimes with friendly names
+                    const modeDisplayNames: Record<string, string> = {
+                        'runtime': 'Microsoft.NETCore.App (.NET Runtime)',
+                        'aspnetcore': 'Microsoft.AspNetCore.App (ASP.NET Core Runtime)',
+                    };
+
                     resultText += '| Runtime | Versions |\n';
                     resultText += '|---------|----------|\n';
-                    for (const [runtimeType, versions] of runtimesByType)
+                    for (const [modeKey, versions] of runtimesByMode)
                     {
+                        const displayName = modeDisplayNames[modeKey] ?? modeKey;
                         // Sort versions and join with commas
                         const sortedVersions = versions.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-                        resultText += `| ${runtimeType} | ${sortedVersions.join(', ')} |\n`;
+                        resultText += `| ${displayName} | ${sortedVersions.join(', ')} |\n`;
                     }
                 }
                 else
@@ -827,9 +829,23 @@ class ListInstalledVersionsTool implements vscode.LanguageModelTool<{ dotnetPath
                 ]);
             }
 
+            // Guard against unsupported modes (e.g. 'windowsdesktop')
+            const lowerMode = mode?.toLowerCase();
+            if (lowerMode && lowerMode !== 'sdk' && lowerMode !== 'runtime' && lowerMode !== 'aspnetcore')
+            {
+                return new vscode.LanguageModelToolResult([
+                    new vscode.LanguageModelTextPart(
+                        `The mode '${mode}' is not supported by this tool.\n\n` +
+                        `**Supported modes:** sdk, runtime, aspnetcore\n\n` +
+                        `**Note:** Windows Desktop Runtime (Microsoft.WindowsDesktop.App) is not tracked by this extension. ` +
+                        `To check installed Windows Desktop Runtimes, run \`dotnet --list-runtimes\` in the terminal and look for 'Microsoft.WindowsDesktop.App' entries.`
+                    )
+                ]);
+            }
+
             // Specific mode requested
-            const resolvedMode: DotnetInstallMode = (mode?.toLowerCase() === 'runtime' || mode?.toLowerCase() === 'aspnetcore')
-                ? mode.toLowerCase() as DotnetInstallMode
+            const resolvedMode: DotnetInstallMode = (lowerMode === 'runtime' || lowerMode === 'aspnetcore')
+                ? lowerMode as DotnetInstallMode
                 : 'sdk';
 
             const searchContext: IDotnetSearchContext = {
