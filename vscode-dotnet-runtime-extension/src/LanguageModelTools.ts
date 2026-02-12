@@ -783,15 +783,34 @@ class ListInstalledVersionsTool implements vscode.LanguageModelTool<{ dotnetPath
                     resultText += `No SDKs installed.\n\n`;
                 }
 
-                // Runtimes section
+                // Runtimes section - group by runtime type for compact display
                 resultText += `\n## Runtimes\n\n`;
                 if (runtimeResults && runtimeResults.length > 0)
                 {
-                    resultText += '| Version | Architecture |\n';
-                    resultText += '|---------|--------------|\n';
+                    // Group runtimes by type (extracted from directory path)
+                    const runtimesByType = new Map<string, string[]>();
                     for (const install of runtimeResults)
                     {
-                        resultText += `| ${install.version} | ${install.architecture || 'unknown'} |\n`;
+                        // Extract runtime type from directory path (e.g., "shared/Microsoft.NETCore.App/8.0.21" -> "Microsoft.NETCore.App")
+                        const pathParts = install.directory.replace(/\\/g, '/').split('/');
+                        const versionIndex = pathParts.findIndex(p => /^\d+\.\d+/.test(p));
+                        const runtimeType = versionIndex > 0 ? pathParts[versionIndex - 1] : 'Runtime';
+
+                        if (!runtimesByType.has(runtimeType))
+                        {
+                            runtimesByType.set(runtimeType, []);
+                        }
+                        runtimesByType.get(runtimeType)!.push(install.version);
+                    }
+
+                    // Display grouped runtimes
+                    resultText += '| Runtime | Versions |\n';
+                    resultText += '|---------|----------|\n';
+                    for (const [runtimeType, versions] of runtimesByType)
+                    {
+                        // Sort versions and join with commas
+                        const sortedVersions = versions.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+                        resultText += `| ${runtimeType} | ${sortedVersions.join(', ')} |\n`;
                     }
                 }
                 else
