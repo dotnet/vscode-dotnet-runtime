@@ -463,18 +463,18 @@ class ListVersionsTool implements vscode.LanguageModelTool<{ listRuntimes?: bool
             {
                 responseText += `## ⚠️ End of Life\n`;
                 responseText += `These versions no longer receive updates. Upgrade recommended.\n\n`;
-                for (const v of eolVersions.slice(0, 5))
-                { // Limit EOL versions shown
-                    responseText += `- ${v.version}${v.channelVersion ? ` (Channel: ${v.channelVersion})` : ''}\n`;
-                }
                 if (eolVersions.length > 5)
+                for (const v of eolVersions)
                 {
-                    responseText += `- ... and ${eolVersions.length - 5} more EOL versions\n`;
+                    responseText += `- ${v.version}${v.channelVersion ? ` (Channel: ${v.channelVersion})` : ''}\n`;
                 }
                 responseText += '\n';
             }
 
-            responseText += `\n**Recommendation:** Install an "Active Support" version for the best experience with regular updates and features.`;
+            responseText += `\n**Recommendation:** Install an "Active Support" version for the best experience.\n\n`;
+            responseText += `---\n`;
+            responseText += `**⚠️ IMPORTANT FOR AI AGENT:** Present ALL versions from every category to the user. `;
+            responseText += `Do NOT summarize or truncate ANY version list. Users need complete version details to choose correctly.`;
 
             return new vscode.LanguageModelToolResult([
                 new vscode.LanguageModelTextPart(responseText)
@@ -772,13 +772,12 @@ class ListInstalledVersionsTool implements vscode.LanguageModelTool<{ dotnetPath
                 resultText += `## SDKs\n\n`;
                 if (sdkResults && sdkResults.length > 0)
                 {
-                    resultText += '| Version | Architecture | Directory |\n';
-                    resultText += '|---------|--------------|----------|\n';
+                    resultText += '| Version | Architecture |\n';
+                    resultText += '|---------|--------------|\n';
                     for (const install of sdkResults)
                     {
-                        resultText += `| ${install.version} | ${install.architecture || 'unknown'} | \`${install.directory}\` |\n`;
+                        resultText += `| ${install.version} | ${install.architecture || 'unknown'} |\n`;
                     }
-                    resultText += `\n**Total:** ${sdkResults.length} SDK(s) found\n\n`;
                 }
                 else
                 {
@@ -786,23 +785,24 @@ class ListInstalledVersionsTool implements vscode.LanguageModelTool<{ dotnetPath
                 }
 
                 // Runtimes section
-                resultText += `## Runtimes\n\n`;
+                resultText += `\n## Runtimes\n\n`;
                 if (runtimeResults && runtimeResults.length > 0)
                 {
-                    resultText += '| Version | Architecture | Directory |\n';
-                    resultText += '|---------|--------------|----------|\n';
+                    resultText += '| Version | Architecture |\n';
+                    resultText += '|---------|--------------|\n';
                     for (const install of runtimeResults)
                     {
-                        resultText += `| ${install.version} | ${install.architecture || 'unknown'} | \`${install.directory}\` |\n`;
+                        resultText += `| ${install.version} | ${install.architecture || 'unknown'} |\n`;
                     }
-                    resultText += `\n**Total:** ${runtimeResults.length} Runtime(s) found\n\n`;
                 }
                 else
                 {
                     resultText += `No Runtimes installed.\n\n`;
                 }
 
-                resultText += `**✅ This result is COMPLETE for initial queries. After installing .NET via the installSdk tool, you may use terminal commands to verify the install succeeded.**`;
+                resultText += `\n---\n`;
+                resultText += `**⚠️ IMPORTANT FOR AI AGENT:** Present ALL SDK and Runtime versions listed above to the user. `;
+                resultText += `Do NOT summarize or truncate the version lists. Users need to see every installed version to make informed decisions.`;
 
                 return new vscode.LanguageModelToolResult([
                     new vscode.LanguageModelTextPart(resultText)
@@ -854,8 +854,9 @@ class ListInstalledVersionsTool implements vscode.LanguageModelTool<{ dotnetPath
                 singleModeResultText += `| ${install.version} | ${install.architecture || 'unknown'} | \`${install.directory}\` |\n`;
             }
 
-            singleModeResultText += `\n**Total:** ${results.length} ${resolvedMode === 'sdk' ? 'SDK(s)' : 'Runtime(s)'} found\n\n`;
-            singleModeResultText += `**✅ This result is COMPLETE for initial queries. After installing .NET via the installSdk tool, you may use terminal commands to verify.**`;
+            singleModeResultText += `\n---\n`;
+            singleModeResultText += `**⚠️ IMPORTANT FOR AI AGENT:** Present ALL ${results.length} versions listed above to the user. `;
+            singleModeResultText += `Do NOT summarize or truncate. Users need complete version information.`;
 
             return new vscode.LanguageModelToolResult([
                 new vscode.LanguageModelTextPart(singleModeResultText)

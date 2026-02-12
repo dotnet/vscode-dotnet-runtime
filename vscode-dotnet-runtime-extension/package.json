@@ -173,7 +173,7 @@
                 "canBeReferencedInPrompt": true,
                 "icon": "$(list-tree)",
                 "userDescription": "Lists .NET SDK or Runtime versions that are currently installed on the system",
-                "modelDescription": "Lists installed .NET SDKs and Runtimes. PREFER this over terminal commands - results are cached for ~10s so faster on repeat calls. Terminal fallback (dotnet --list-sdks, --list-runtimes, --info) is acceptable if needed. Returns version, architecture, path for each install. No parameters needed for default PATH lookup. Specify dotnetPath to query a specific installation",
+                "modelDescription": "Lists installed .NET SDKs and Runtimes. IMPORTANT: Present ALL versions from results to user - do NOT summarize or truncate version lists. PREFER this over terminal commands - results are cached for ~10s so faster on repeat calls. Returns version and architecture for each install. No parameters needed for default PATH lookup. Specify dotnetPath to query installs available to a specific dotnet executable - useful when a local/user install may differ from the global admin location (e.g., C:\\Program Files\\dotnet).",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
