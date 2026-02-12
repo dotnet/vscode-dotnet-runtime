@@ -6,21 +6,21 @@
 import * as os from 'os';
 import * as vscode from 'vscode';
 import
-{
-    AcquireErrorConfiguration,
-    DotnetInstallMode,
-    IDotnetAcquireContext,
-    IDotnetAcquireResult,
-    IDotnetFindPathContext,
-    IDotnetListVersionsContext,
-    IDotnetListVersionsResult,
-    IDotnetSearchContext,
-    IDotnetSearchResult,
-    IDotnetVersion,
-    IEventStream,
-    LanguageModelToolInvoked,
-    LanguageModelToolPrepareInvocation
-} from 'vscode-dotnet-runtime-library';
+    {
+        AcquireErrorConfiguration,
+        DotnetInstallMode,
+        IDotnetAcquireContext,
+        IDotnetAcquireResult,
+        IDotnetFindPathContext,
+        IDotnetListVersionsContext,
+        IDotnetListVersionsResult,
+        IDotnetSearchContext,
+        IDotnetSearchResult,
+        IDotnetVersion,
+        IEventStream,
+        LanguageModelToolInvoked,
+        LanguageModelToolPrepareInvocation
+    } from 'vscode-dotnet-runtime-library';
 
 /**
  * Tool name constants matching those in package.json
@@ -334,7 +334,8 @@ class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string }>
                 requestingExtensionId: 'ms-dotnettools.vscode-dotnet-runtime', // Self-reference for user-initiated installs
                 installType: 'global',
                 mode: 'sdk' as DotnetInstallMode,
-                errorConfiguration: AcquireErrorConfiguration.DisplayAllErrorPopups
+                errorConfiguration: AcquireErrorConfiguration.DisplayAllErrorPopups,
+                rethrowError: true // Rethrow errors so the LLM tool can capture the actual error message
             };
 
             const result: IDotnetAcquireResult | undefined = await vscode.commands.executeCommand(
@@ -357,10 +358,17 @@ class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string }>
                 ]);
             } else
             {
+                // No path returned means installation failed or was cancelled by the user
                 return new vscode.LanguageModelToolResult([
                     new vscode.LanguageModelTextPart(
-                        `The .NET SDK ${version} installation was initiated but the result path was not returned. ` +
-                        `Please check the ".NET Install Tool" output channel for details and verify with \`dotnet --version\`.`
+                        `ERROR: The .NET SDK ${version} installation did NOT complete successfully.\n\n` +
+                        `**The installation was either cancelled by the user or failed.** ` +
+                        `This commonly happens when:\n` +
+                        `- The user declined the administrator/elevation prompt\n` +
+                        `- The user cancelled the installer dialog\n` +
+                        `- The installation was interrupted\n\n` +
+                        `**The SDK is NOT installed.** Please check the ".NET Install Tool" output channel for details.\n\n` +
+                        `If the user wants to try again, they need to accept all prompts (including any admin/elevation dialogs).`
                     )
                 ]);
             }
@@ -603,8 +611,10 @@ class UninstallTool implements vscode.LanguageModelTool<{ version?: string; mode
                 return new vscode.LanguageModelToolResult([
                     new vscode.LanguageModelTextPart(
                         'Launched the interactive .NET uninstall dialog. ' +
-                        'User can select which version to uninstall from the dropdown.\n\n' +
-                        'Tip: For faster uninstalls, call listInstalledDotNetVersions first, then provide version+mode.'
+                        'The user was shown a dropdown to select which version to uninstall.\n\n' +
+                        '**IMPORTANT:** The outcome is unknown - the user may have selected a version to uninstall, ' +
+                        'or they may have cancelled the dialog. Ask the user if the uninstall succeeded.\n\n' +
+                        'Tip: For faster uninstalls with known outcomes, call listInstalledDotNetVersions first, then provide version+mode.'
                     )
                 ]);
             }
@@ -617,7 +627,8 @@ class UninstallTool implements vscode.LanguageModelTool<{ version?: string; mode
                 version: version,
                 mode: resolvedMode,
                 installType: isGlobal ? 'global' : 'local',
-                requestingExtensionId: 'ms-dotnettools.vscode-dotnet-runtime'
+                requestingExtensionId: 'ms-dotnettools.vscode-dotnet-runtime',
+                rethrowError: true // Rethrow errors so the LLM tool can capture the actual error message
             };
 
             const result: string = await vscode.commands.executeCommand('dotnet.uninstall', acquireContext);
@@ -632,9 +643,11 @@ class UninstallTool implements vscode.LanguageModelTool<{ version?: string; mode
                 ]);
             } else
             {
+                // Non-zero or unexpected result - likely an error or cancellation
                 return new vscode.LanguageModelToolResult([
                     new vscode.LanguageModelTextPart(
-                        `Uninstall of .NET ${version} completed with message: ${result}\n\n` +
+                        `WARNING: Uninstall of .NET ${version} returned an unexpected result: ${result}\n\n` +
+                        `**The uninstall may not have completed successfully.** ` +
                         `Check the ".NET Install Tool" output channel for details.`
                     )
                 ]);

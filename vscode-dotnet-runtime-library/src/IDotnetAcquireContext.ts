@@ -42,6 +42,10 @@ export interface IDotnetAcquireContext
      * Instead, it will automatically update local runtimes that it manages over time.
      * If a runtime has a breaking change or a security update, we recommend setting forceUpdate to true to ensure the latest major.minor requested is used.
      * If you want to have the same behavior as before 3.0.0, please set forceUpdate to true. The default will assume false if it's undefined.
+     *
+     * @property rethrowError - If true, errors will be rethrown after being handled (popups shown, telemetry sent, etc.)
+     * This allows callers (like LLM tools) to catch the actual exception and get the error message.
+     * Default is false for backward compatibility.
      */
     version: string;
     requestingExtensionId?: string;
@@ -50,6 +54,7 @@ export interface IDotnetAcquireContext
     architecture?: string | null | undefined;
     mode?: DotnetInstallMode;
     forceUpdate?: boolean;
+    rethrowError?: boolean;
 }
 
 /**

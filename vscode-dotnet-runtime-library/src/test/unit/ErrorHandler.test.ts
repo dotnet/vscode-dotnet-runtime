@@ -147,4 +147,87 @@ suite('ErrorHandler Unit Tests', function ()
 
         assert.exists(eventStream.events.find(event => event instanceof DotnetNotInstallRelatedCommandFailed));
     });
+
+    test('Error is rethrown when rethrowError is true', async () =>
+    {
+        const errorString = 'Test error for rethrow';
+        const displayWorker = new MockWindowDisplayWorker();
+        const eventStream = new MockEventStream();
+
+        let caughtError: Error | null = null;
+        try
+        {
+            await callWithErrorHandling<string>(() =>
+            {
+                throw new Error(errorString);
+            }, issueContext(displayWorker, eventStream), 'MockId', undefined, true /* rethrowError */);
+        }
+        catch (error)
+        {
+            caughtError = error as Error;
+        }
+
+        // Verify error was rethrown
+        assert.isNotNull(caughtError, 'Error should have been rethrown');
+        assert.include(caughtError!.message, errorString, 'Rethrown error should contain original message');
+
+        // Verify error popup was still shown (error handling still happened before rethrow)
+        assert.include(displayWorker.errorMessage, errorString, 'Error popup should still be displayed');
+
+        // Verify event was still posted
+        assert.exists(eventStream.events.find(event => event instanceof DotnetNotInstallRelatedCommandFailed));
+    });
+
+    test('Error is NOT rethrown when rethrowError is false (default behavior)', async () =>
+    {
+        const errorString = 'Test error no rethrow';
+        const displayWorker = new MockWindowDisplayWorker();
+        const eventStream = new MockEventStream();
+
+        let caughtError: Error | null = null;
+        let result: string | undefined;
+        try
+        {
+            result = await callWithErrorHandling<string>(() =>
+            {
+                throw new Error(errorString);
+            }, issueContext(displayWorker, eventStream), 'MockId', undefined, false /* rethrowError */);
+        }
+        catch (error)
+        {
+            caughtError = error as Error;
+        }
+
+        // Verify error was NOT rethrown
+        assert.isNull(caughtError, 'Error should NOT have been rethrown');
+        assert.isUndefined(result, 'Result should be undefined on error');
+
+        // Verify error popup was still shown
+        assert.include(displayWorker.errorMessage, errorString, 'Error popup should still be displayed');
+    });
+
+    test('Error is NOT rethrown when rethrowError is undefined (backward compatibility)', async () =>
+    {
+        const errorString = 'Test error undefined rethrow';
+        const displayWorker = new MockWindowDisplayWorker();
+        const eventStream = new MockEventStream();
+
+        let caughtError: Error | null = null;
+        let result: string | undefined;
+        try
+        {
+            result = await callWithErrorHandling<string>(() =>
+            {
+                throw new Error(errorString);
+            }, issueContext(displayWorker, eventStream), 'MockId' /* rethrowError not specified */);
+        }
+        catch (error)
+        {
+            caughtError = error as Error;
+        }
+
+        // Verify error was NOT rethrown (backward compatible default)
+        assert.isNull(caughtError, 'Error should NOT have been rethrown when rethrowError is undefined');
+        assert.isUndefined(result, 'Result should be undefined on error');
+    });
 });

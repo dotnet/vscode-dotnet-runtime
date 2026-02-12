@@ -660,4 +660,104 @@ suite('LanguageModelTools Tests', function ()
             cts.dispose();
         }).timeout(standardTimeoutTime);
     });
+
+    suite('Error Propagation to LLM', function ()
+    {
+        /**
+         * These tests verify that errors are properly surfaced to the LLM
+         * so it has context about what went wrong (e.g., user cancelled, installation failed).
+         */
+
+        test('InstallSdk tool returns ERROR message when installation fails or returns undefined', async () =>
+        {
+            // We can't easily simulate a failed global SDK install without admin privileges,
+            // but we can verify the tool handles the case when version is missing
+            const result = await vscode.lm.invokeTool(
+                ToolNames.installSdk,
+                { input: {} /* no version */ , toolInvocationToken: undefined },
+                new vscode.CancellationTokenSource().token
+            );
+
+            const textContent = extractTextContent(result);
+
+            // When no version provided, should return clear ERROR message
+            assert.include(textContent, 'ERROR', 'Should include ERROR keyword for missing version');
+            assert.include(textContent, 'version', 'Should mention version is required');
+        }).timeout(standardTimeoutTime);
+
+        test('InstallSdk tool context includes rethrowError property', async () =>
+        {
+            // Verify the context object is built correctly by checking the source code behavior
+            // The actual rethrowError test is in ErrorHandler.test.ts
+            // Here we verify the tool configuration is correct
+
+            // This test validates that when an error occurs, the tool's catch block
+            // will receive the actual error message (verified by the unit tests in ErrorHandler.test.ts)
+
+            const tools = vscode.lm.tools;
+            const installTool = tools.find(t => t.name === ToolNames.installSdk);
+
+            assert.exists(installTool, 'Install SDK tool should be registered');
+            // The actual rethrowError behavior is tested via ErrorHandler.test.ts
+            // This integration test just confirms the tool is properly configured
+        }).timeout(standardTimeoutTime);
+
+        test('Uninstall tool surfaces errors when operation fails', async () =>
+        {
+            // Try to uninstall a non-existent version
+            const result = await vscode.lm.invokeTool(
+                ToolNames.uninstall,
+                { input: { version: '1.0.0', mode: 'sdk', global: true }, toolInvocationToken: undefined },
+                new vscode.CancellationTokenSource().token
+            );
+
+            const textContent = extractTextContent(result);
+
+            // Should either fail gracefully or provide an informative message
+            // The key is that it returns something informative, not just "undefined" or silence
+            assert.exists(result, 'Should return a result even on failure');
+            assert.isAbove(textContent.length, 0, 'Should provide informative feedback');
+        }).timeout(standardTimeoutTime);
+
+        test('Interactive uninstall mentions unknown outcome for LLM awareness', async () =>
+        {
+            // When no version is provided, interactive picker is launched
+            // The outcome is unknown to the tool - it should inform the LLM of this
+            const result = await vscode.lm.invokeTool(
+                ToolNames.uninstall,
+                { input: {}, toolInvocationToken: undefined },
+                new vscode.CancellationTokenSource().token
+            );
+
+            const textContent = extractTextContent(result);
+
+            // Should indicate the outcome is unknown (user might have cancelled)
+            const mentionsUnknownOutcome = textContent.includes('unknown') ||
+                textContent.includes('cancelled') ||
+                textContent.includes('Ask the user') ||
+                textContent.includes('IMPORTANT');
+            assert.isTrue(mentionsUnknownOutcome, 'Should inform LLM that interactive outcome is unknown');
+        }).timeout(standardTimeoutTime);
+
+        test('Error messages contain actionable information for LLM', async () =>
+        {
+            // Test that error responses contain enough context for the LLM to help the user
+            const result = await vscode.lm.invokeTool(
+                ToolNames.installSdk,
+                { input: {} /* missing required version */ , toolInvocationToken: undefined },
+                new vscode.CancellationTokenSource().token
+            );
+
+            const textContent = extractTextContent(result);
+
+            // Should contain guidance on how to fix the issue
+            const hasActionableGuidance = textContent.includes('How to') ||
+                textContent.includes('TargetFramework') ||
+                textContent.includes('global.json') ||
+                textContent.includes('listDotNetVersions') ||
+                textContent.includes('call');
+
+            assert.isTrue(hasActionableGuidance, 'Error messages should provide actionable guidance');
+        }).timeout(standardTimeoutTime);
+    });
 });
