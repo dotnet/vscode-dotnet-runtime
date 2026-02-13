@@ -96,6 +96,8 @@ Controls which .NET runtime VS Code **extensions** use to run their internal com
 3. Air-gapped machines without internet access or powershell script execution restrictions
 4. User wants extensions to use a specific pre-installed .NET version
 
+**IMPORTANT:** If a user wants to pin which SDK their PROJECT uses (for \`dotnet build\`, \`dotnet run\`, etc.), existingDotnetPath is the WRONG setting. They should use \`global.json\` instead — see the "I want to use a local/repo-specific SDK" scenario below.
+
 ### Correct Format
 \`\`\`json
 "dotnetAcquisitionExtension.existingDotnetPath": [
@@ -208,6 +210,27 @@ So if a user needs ".NET 8 runtime", you can install the .NET 8 SDK and they'll 
   1. Create global.json in project root: \`{ "sdk": { "version": "8.0.100" } }\`
   2. Install the desired SDK version globally
   3. Modify PATH to prioritize a specific dotnet installation
+
+### "I want to use a local/repo-specific SDK (not a global install)"
+→ This is NOT about existingDotnetPath! existingDotnetPath only controls which runtime VS Code extensions use internally.
+→ Use the \`paths\` property in global.json (.NET 10 SDK+ required):
+  1. Ensure .NET 10 SDK or later is installed (the host \`dotnet\` must be 10+)
+  2. Place or install the desired SDK in a folder relative to the repo (e.g. \`.dotnet/\`)
+  3. Create or modify \`global.json\` in the repo root:
+\`\`\`json
+{
+  "sdk": {
+    "version": "10.0.100",
+    "paths": [ ".dotnet", "$host$" ],
+    "errorMessage": "Required .NET SDK not found. Please run ./install.sh to install it."
+  }
+}
+\`\`\`
+  - \`paths\` lists directories to search for SDKs, in order. Paths are relative to the global.json location.
+  - \`$host$\` is a special value meaning the location of the running \`dotnet\` executable (i.e. the global install).
+  - The first matching SDK found wins.
+  - This ONLY works with SDK commands (\`dotnet run\`, \`dotnet build\`, etc.), NOT with native apphost (\`app.exe\`) or \`dotnet app.dll\`.
+→ Reference: https://learn.microsoft.com/en-us/dotnet/core/tools/global-json#paths
 
 ### "How do I know which dotnet the C# extension is using?"
 → Use the "Find .NET Path" tool - it searches in priority order:
