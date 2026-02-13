@@ -6,13 +6,13 @@ import * as chai from 'chai';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import
-    {
-        MockEnvironmentVariableCollection,
-        MockExtensionConfiguration,
-        MockExtensionContext,
-        MockTelemetryReporter,
-        MockWindowDisplayWorker
-    } from 'vscode-dotnet-runtime-library';
+{
+    MockEnvironmentVariableCollection,
+    MockExtensionConfiguration,
+    MockExtensionContext,
+    MockTelemetryReporter,
+    MockWindowDisplayWorker
+} from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
 import { ToolNames } from '../../LanguageModelTools';
 
@@ -112,29 +112,45 @@ suite('LanguageModelTools Tests', function ()
                 assert.exists(tool, `Tool ${toolName} should be registered`);
             }
 
-            // Verify we have exactly 6 tools with our prefix
-            const ourTools = tools.filter(t => t.name.startsWith('dotnet-install-tool_'));
-            assert.equal(ourTools.length, 6, 'Should have exactly 6 dotnet-install-tool tools registered');
+            // Verify we have exactly 6 tools matching our tool names
+            const expectedNames = [
+                ToolNames.installSdk,
+                ToolNames.listVersions,
+                ToolNames.listInstalledVersions,
+                ToolNames.findPath,
+                ToolNames.uninstall,
+                ToolNames.getSettingsInfo
+            ];
+            const ourTools = tools.filter(t => expectedNames.some(name => t.name.endsWith(name)));
+            assert.equal(ourTools.length, 6, 'Should have exactly 6 .NET Install Tool tools registered');
         }).timeout(standardTimeoutTime);
 
         test('Tool names match package.json definitions', async () =>
         {
-            assert.equal(ToolNames.installSdk, 'dotnet-install-tool_installSdk');
-            assert.equal(ToolNames.listVersions, 'dotnet-install-tool_listVersions');
-            assert.equal(ToolNames.listInstalledVersions, 'dotnet-install-tool_listInstalledVersions');
-            assert.equal(ToolNames.findPath, 'dotnet-install-tool_findPath');
-            assert.equal(ToolNames.uninstall, 'dotnet-install-tool_uninstall');
-            assert.equal(ToolNames.getSettingsInfo, 'dotnet-install-tool_getSettingsInfo');
+            assert.equal(ToolNames.installSdk, 'install_dotnet_sdk');
+            assert.equal(ToolNames.listVersions, 'list_available_dotnet_versions_to_install');
+            assert.equal(ToolNames.listInstalledVersions, 'list_installed_dotnet_versions');
+            assert.equal(ToolNames.findPath, 'find_dotnet_executable_path');
+            assert.equal(ToolNames.uninstall, 'uninstall_dotnet');
+            assert.equal(ToolNames.getSettingsInfo, 'get_settings_info_for_dotnet_installation_management');
         }).timeout(standardTimeoutTime);
 
         test('Tool names follow expected naming convention', async () =>
         {
-            const tools = vscode.lm.tools.filter(t => t.name.startsWith('dotnet-install-tool_'));
+            const expectedNames = [
+                ToolNames.installSdk,
+                ToolNames.listVersions,
+                ToolNames.listInstalledVersions,
+                ToolNames.findPath,
+                ToolNames.uninstall,
+                ToolNames.getSettingsInfo
+            ];
+            const tools = vscode.lm.tools.filter(t => expectedNames.some(name => t.name.endsWith(name)));
 
             for (const tool of tools)
             {
-                // Name should be prefixed with extension identifier
-                assert.match(tool.name, /^dotnet-install-tool_[a-zA-Z]+$/, `Tool name ${tool.name} should follow naming convention`);
+                // Name should contain an underscore-separated identifier
+                assert.match(tool.name, /_[a-z_]+$/, `Tool name ${tool.name} should follow naming convention`);
             }
         }).timeout(standardTimeoutTime);
     });
@@ -147,7 +163,15 @@ suite('LanguageModelTools Tests', function ()
 
             for (const tool of tools)
             {
-                if (tool.name.startsWith('dotnet-install-tool_'))
+                const expectedNames = [
+                    ToolNames.installSdk,
+                    ToolNames.listVersions,
+                    ToolNames.listInstalledVersions,
+                    ToolNames.findPath,
+                    ToolNames.uninstall,
+                    ToolNames.getSettingsInfo
+                ];
+                if (expectedNames.some(name => tool.name.endsWith(name)))
                 {
                     assert.exists(tool.description, `Tool ${tool.name} should have a description`);
                     assert.isString(tool.description, `Tool ${tool.name} description should be a string`);
@@ -159,7 +183,15 @@ suite('LanguageModelTools Tests', function ()
         test('Tools have display names accessible via vscode.lm.tools', async () =>
         {
             const tools = vscode.lm.tools;
-            const ourTools = tools.filter(t => t.name.startsWith('dotnet-install-tool_'));
+            const expectedNames = [
+                ToolNames.installSdk,
+                ToolNames.listVersions,
+                ToolNames.listInstalledVersions,
+                ToolNames.findPath,
+                ToolNames.uninstall,
+                ToolNames.getSettingsInfo
+            ];
+            const ourTools = tools.filter(t => expectedNames.some(name => t.name.endsWith(name)));
 
             // All our tools should be retrievable
             assert.isAbove(ourTools.length, 0, 'Should find our tools in vscode.lm.tools');
@@ -484,8 +516,8 @@ suite('LanguageModelTools Tests', function ()
             // If versions are found, should have table format
             if (textContent.includes('|') && textContent.includes('Version'))
             {
+                // SDKs table has Architecture column; Runtimes are grouped by mode
                 assert.include(textContent, 'Architecture', 'Table should include Architecture column');
-                assert.include(textContent, 'Directory', 'Table should include Directory column');
             }
         }).timeout(standardTimeoutTime);
     });
