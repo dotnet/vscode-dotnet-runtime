@@ -31,7 +31,7 @@ parameters:
     os: windows
     emoji: 🪟
   - name: NetCore-Public
-    demands: ImageOverride -equals 1es-ubuntu-2004-open
+    demands: ImageOverride -equals build.ubuntu.2204.amd64
     os: linux
     emoji: 🐧
   - name: Azure Pipelines
