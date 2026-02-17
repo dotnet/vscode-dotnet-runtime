@@ -156,3 +156,4 @@ This project may contain trademarks or logos for projects, products, or services
 [.NET MAUI]: https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.dotnet-maui
 [CMake]: https://marketplace.visualstudio.com/items?itemName=josetr.cmake-language-support-vscode
 [Bicep]: https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-bicep
+
