@@ -5,7 +5,6 @@
 
 import * as os from 'os';
 import * as vscode from 'vscode';
-import { settingsInfoContent } from './SettingsInfoContent';
 import
 {
     AcquireErrorConfiguration,
@@ -22,6 +21,7 @@ import
     LanguageModelToolInvoked,
     LanguageModelToolPrepareInvocation
 } from 'vscode-dotnet-runtime-library';
+import { settingsInfoContent } from './SettingsInfoContent';
 
 /**
  * Tool name constants matching those in package.json
