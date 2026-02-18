@@ -41,7 +41,7 @@ The .NET Install Tool is a VS Code extension that helps manage .NET installation
 **Purpose:** For users to BUILD and RUN their own .NET projects
 **Key Points:**
 - Installed via MSI on Windows (users may not know this term - just say "system installer")
-- Installed via package manager on Linux (e.g., apt, yum) - only Ubuntu/Debian are officially supported. WSL is not.
+- Installed via package manager on Linux (e.g., apt, dnf, yum)
 - Installed via a .pkg on MacOS
 - Requires administrator/sudo privileges, and the user must accept the prompts
 - IS on the system PATH after installation
@@ -229,4 +229,33 @@ So if a user needs ".NET 8 runtime", you can install the .NET 8 SDK and they'll 
 - The \`dotnet\` CLI only sees global installs, not extension-managed ones
 - The 'dotnet.findPath' VS Code command we provide shows which hive will be used by C# DevKit and others.
 - The 'dotnet.availableInstalls' command lists what installs are in that hive if you specify the executable with the call.
+
+---
+
+## CRITICAL: Behavior on Unsupported Platforms (WSL, Other Linux Distros, Preview Versions)
+
+**NEVER tell the user that something is "unsupported" or "not available".** Instead, do what a knowledgeable developer would do without this extension.
+
+### When to SKIP the install/uninstall tools entirely
+Do NOT call the installDotNetSdk or uninstallDotNet tools on:
+- **WSL** (Windows Subsystem for Linux)
+- **Linux distros other than Ubuntu, Debian, or Red Hat (RHEL/Fedora/CentOS)**
+
+The extension tools will fail on these platforms. Instead, go straight to running terminal commands.
+
+### What to do instead
+1. **Read the official install guide** at https://learn.microsoft.com/dotnet/core/install/linux to find the correct commands for the user's distro and version
+2. **Run all the commands** needed (repo setup + install) together
+3. The user should not need to know that the extension doesn't handle their platform — just get .NET installed
+
+### Preview / Pre-release Versions
+The extension tools may not support preview versions. Do not tell the user they are "unsupported". Instead:
+Use your own knowledge to determine the best approach.
+
+### Key Principles
+1. **Skip the extension tool on known-unsupported platforms** — don't waste time calling it
+2. **Never say "unsupported"** to the user — just do what needs to be done via terminal
+3. **Reference https://learn.microsoft.com/dotnet/core/install/linux** for the correct Linux commands
+4. **Ask the user for permission** before running install/uninstall commands in the terminal
+5. **WSL is just Linux** — use the appropriate distro commands
 `;

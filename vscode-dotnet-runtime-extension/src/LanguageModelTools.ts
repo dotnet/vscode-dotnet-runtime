@@ -174,15 +174,33 @@ class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string }>
         } catch (error)
         {
             const errorMessage = error instanceof Error ? error.message : String(error);
+            const isUserCancellation = /cancel|user rejected|user denied|password request/i.test(errorMessage);
+
+            if (isUserCancellation)
+            {
+                return new vscode.LanguageModelToolResult([
+                    new vscode.LanguageModelTextPart(
+                        `The install of .NET SDK${version ? ` ${version}` : ''} was cancelled or rejected by the user.\n\n` +
+                        `**Error:** ${errorMessage}\n\n` +
+                        `Ask the user if they would like to try again. ` +
+                        `If so, call this tool again with the same parameters. ` +
+                        `They will need to accept all prompts (including any admin/elevation dialogs).`
+                    )
+                ]);
+            }
+
             return new vscode.LanguageModelToolResult([
                 new vscode.LanguageModelTextPart(
-                    `Failed to install .NET SDK${version ? ` ${version}` : ''}.\n\n` +
+                    `The extension-based install of .NET SDK${version ? ` ${version}` : ''} did not succeed.\n\n` +
                     `**Error:** ${errorMessage}\n\n` +
-                    `**Troubleshooting:**\n` +
+                    `**Troubleshooting steps:**\n` +
+                    `- Check the ".NET Install Tool" output channel for detailed logs\n` +
                     `- Ensure you have administrator/sudo privileges\n` +
                     `- Check your internet connection\n` +
-                    `- Check the ".NET Install Tool" output channel for detailed logs\n` +
-                    `- Try running the "Install the .NET SDK System-Wide" command from the Command Palette`
+                    `- Try running the "Install the .NET SDK System-Wide" command from the Command Palette\n\n` +
+                    `If the above steps do not resolve the issue, **DO NOT tell the user this is unsupported.** Instead, install .NET via terminal commands.\n` +
+                    `Look up the correct install commands for the user's platform at: https://learn.microsoft.com/dotnet/core/install/linux (for Linux) or use your own knowledge for other platforms.\n\n` +
+                    `Run the appropriate command(s) in the terminal for the user's platform.`
                 )
             ]);
         }
@@ -453,14 +471,32 @@ class UninstallTool implements vscode.LanguageModelTool<{ version?: string; mode
         } catch (error)
         {
             const errorMessage = error instanceof Error ? error.message : String(error);
+            const isUserCancellation = /cancel|user rejected|user denied|password request/i.test(errorMessage);
+
+            if (isUserCancellation)
+            {
+                return new vscode.LanguageModelToolResult([
+                    new vscode.LanguageModelTextPart(
+                        `The uninstall of .NET${version ? ` ${version}` : ''} was cancelled or rejected by the user.\n\n` +
+                        `**Error:** ${errorMessage}\n\n` +
+                        `Ask the user if they would like to try again. ` +
+                        `If so, call this tool again with the same parameters. ` +
+                        `They will need to accept all prompts (including any admin/elevation dialogs).`
+                    )
+                ]);
+            }
+
             return new vscode.LanguageModelToolResult([
                 new vscode.LanguageModelTextPart(
-                    `Failed to uninstall .NET${version ? ` ${version}` : ''}.\n\n` +
+                    `The extension-based uninstall of .NET${version ? ` ${version}` : ''} did not succeed.\n\n` +
                     `**Error:** ${errorMessage}\n\n` +
-                    `**Troubleshooting:**\n` +
-                    `- For global installs, ensure you have administrator/sudo privileges\n` +
-                    `- The version may be in use by other extensions - try closing VS Code first\n` +
-                    `- Use the interactive command: run "Uninstall .NET" from the Command Palette`
+                    `**Troubleshooting steps:**\n` +
+                    `- Check the ".NET Install Tool" output channel for detailed logs\n` +
+                    `- Ensure you have administrator/sudo privileges\n` +
+                    `- Check your internet connection\n\n` +
+                    `If the above steps do not resolve the issue, **DO NOT tell the user this is unsupported.** Instead, uninstall .NET via terminal commands.\n` +
+                    `Look up the correct uninstall commands for the user's platform at: https://learn.microsoft.com/dotnet/core/install/linux (for Linux) or use your own knowledge for other platforms.\n\n` +
+                    `Run the appropriate command in the terminal for the user's platform.`
                 )
             ]);
         }
