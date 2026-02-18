@@ -26,14 +26,15 @@ import { VersionResolver } from './VersionResolver';
 import * as versionUtils from './VersionUtilities';
 
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
+import { DotnetInstallMode } from './DotnetInstallMode';
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
 
 /**
  * @remarks
  * This is similar to the version resolver but accepts a wider range of inputs such as '6', '6.1', or '6.0.3xx' or '6.0.301'.
- * It currently only is used for SDK Global acquisition to prevent breaking existing behaviors.
- * Throws various errors in the event that a version is incorrectly formatted, the sdk server is unavailable, etc.
+ * It is used for global acquisition of SDKs, runtimes, and ASP.NET Core runtimes.
+ * Throws various errors in the event that a version is incorrectly formatted, the server is unavailable, etc.
  */
 export class GlobalInstallerResolver
 {
@@ -62,13 +63,18 @@ export class GlobalInstallerResolver
         * Your version was resolved to: `;
     private releasesJsonKey = 'releases';
     private releasesSdksKey = 'sdks';
-    private releasesSdkRidKey = 'rid';
-    private releasesSdkFileKey = 'files';
-    private releasesSdkVersionKey = 'version';
-    private releasesSdkNameKey = 'name';
+    private releasesRidKey = 'rid';
+    private releasesFileKey = 'files';
+    private releasesVersionKey = 'version';
+    private releasesNameKey = 'name';
     private releasesUrlKey = 'url';
     private releasesHashKey = 'hash';
     private releasesLatestSdkKey = 'latest-sdk';
+    private releasesLatestRuntimeKey = 'latest-runtime';
+    private releasesRuntimeKey = 'runtime';
+    private releasesAspNetCoreRuntimeKey = 'aspnetcore-runtime';
+
+    private installMode: DotnetInstallMode;
 
     /**
      * @remarks Do NOT set this unless you are testing.
@@ -80,6 +86,7 @@ export class GlobalInstallerResolver
         (
             private readonly context: IAcquisitionWorkerContext,
             requestedVersion: string,
+            mode: DotnetInstallMode = 'sdk',
         )
     {
         this.requestedVersion = requestedVersion;
@@ -88,6 +95,7 @@ export class GlobalInstallerResolver
         this.expectedInstallerHash = '';
         this.versionResolver = new VersionResolver(context);
         this.fileUtilities = new FileUtilities();
+        this.installMode = mode;
     }
 
 
@@ -132,7 +140,46 @@ export class GlobalInstallerResolver
 
     /**
      *
-     * @remarks this function maps the input version to a singular, specific and correct format based on the accepted version formats for global sdk installs.
+     * @returns The releases JSON key used to find the latest version for the current install mode.
+     * For SDKs this is 'latest-sdk', for runtimes/aspnetcore this is 'latest-runtime'.
+     */
+    private getLatestVersionKey(): string
+    {
+        return this.installMode === 'sdk' ? this.releasesLatestSdkKey : this.releasesLatestRuntimeKey;
+    }
+
+    /**
+     *
+     * @returns The releases JSON key used to find product entries (with version and files) for the current install mode.
+     * For SDKs this is 'sdks' (an array), for runtime it is 'runtime' (an object), for aspnetcore it is 'aspnetcore-runtime' (an object).
+     */
+    private getReleasesProductKey(): string
+    {
+        switch (this.installMode)
+        {
+            case 'runtime':
+                return this.releasesRuntimeKey;
+            case 'aspnetcore':
+                return this.releasesAspNetCoreRuntimeKey;
+            case 'sdk':
+            default:
+                return this.releasesSdksKey;
+        }
+    }
+
+    /**
+     *
+     * @returns Whether the current install mode uses a singular product object per release (runtime, aspnetcore-runtime)
+     * vs an array of products per release (sdks).
+     */
+    private isProductSingularPerRelease(): boolean
+    {
+        return this.installMode === 'runtime' || this.installMode === 'aspnetcore';
+    }
+
+    /**
+     *
+     * @remarks this function maps the input version to a singular, specific and correct format based on the accepted version formats for global installs.
      * @param version The requested version given to the API.
      * @returns The installer download URL for the correct OS, Architecture, & Specific Version based on the given input version, and then the resolved version we determined to install,
      * ... followed by the expected hash.
@@ -145,11 +192,11 @@ export class GlobalInstallerResolver
             const numberOfPeriods = version.split('.').length - 1;
             const indexUrl = this.getIndexUrl(numberOfPeriods === 0 ? `${version}.0` : version);
             const indexJsonData = await this.fetchJsonObjectFromUrl(indexUrl);
-            const fullySpecifiedVersionRequested = indexJsonData![(this.releasesLatestSdkKey as any)];
+            const fullySpecifiedVersionRequested = indexJsonData![(this.getLatestVersionKey() as any)];
             const installerUrlAndHash = await this.findCorrectInstallerUrlAndHash(fullySpecifiedVersionRequested, indexUrl);
             return [installerUrlAndHash[0], fullySpecifiedVersionRequested, installerUrlAndHash[1]];
         }
-        else if (versionUtils.isNonSpecificFeatureBandedVersion(version))
+        else if (this.installMode === 'sdk' && versionUtils.isNonSpecificFeatureBandedVersion(version))
         {
             this.context.eventStream.post(new DotnetVersionCategorizedEvent(`The VersionResolver resolved the version ${version} to be a N.Y.XXX version.`));
             const fullySpecifiedVersion = await this.getNewestSpecificVersionFromFeatureBand(version);
@@ -221,24 +268,38 @@ export class GlobalInstallerResolver
             throw jsonErr.error;
         }
 
-        const sdks: any[] = [];
-        const releasesKeyAlias = this.releasesSdksKey; // the forEach creates a separate 'this', so we introduce this copy to reduce ambiguity to the compiler
+        const products: any[] = [];
+        const productKey = this.getReleasesProductKey();
+        const isSingular = this.isProductSingularPerRelease();
 
         releases.forEach(function (release: any)
         {
-            // eslint-disable-next-line prefer-spread
-            sdks.push.apply(sdks, release[releasesKeyAlias]);
+            const productData = release[productKey];
+            if (productData)
+            {
+                if (isSingular)
+                {
+                    // runtime and aspnetcore-runtime are single objects per release
+                    products.push(productData);
+                }
+                else
+                {
+                    // sdks is an array of objects per release
+                    // eslint-disable-next-line prefer-spread
+                    products.push.apply(products, productData);
+                }
+            }
         });
 
-        for (const sdk of sdks)
+        for (const product of products)
         {
-            const thisSDKVersion: string = sdk[this.releasesSdkVersionKey];
-            if (thisSDKVersion === specificVersion) // NOTE that this will not catch things like -preview or build number suffixed versions.
+            const thisProductVersion: string = product[this.releasesVersionKey];
+            if (thisProductVersion === specificVersion) // NOTE that this will not catch things like -preview or build number suffixed versions.
             {
-                const thisSDKFiles = sdk[this.releasesSdkFileKey];
-                for (const installer of thisSDKFiles)
+                const thisProductFiles = product[this.releasesFileKey];
+                for (const installer of thisProductFiles)
                 {
-                    if (installer[this.releasesSdkRidKey] === desiredRidPackage && this.installerMatchesDesiredFileExtension(specificVersion, installer, convertedOs))
+                    if (installer[this.releasesRidKey] === desiredRidPackage && this.installerMatchesDesiredFileExtension(specificVersion, installer, convertedOs))
                     {
                         const installerUrl = installer[this.releasesUrlKey];
                         if (installerUrl === undefined)
@@ -277,7 +338,7 @@ Please report this issue so it can be remedied or investigated.`), getInstallFro
                 }
 
                 const installerErr = new DotnetNoInstallerFileExistsError(new EventBasedError('DotnetNoInstallerFileExistsError',
-                    `An installer for the runtime ${desiredRidPackage} could not be found for version ${specificVersion}.`),
+                    `An installer for the ${this.installMode} ${desiredRidPackage} could not be found for version ${specificVersion}.`),
                     getInstallFromContext(this.context));
                 this.context.eventStream.post(installerErr);
                 throw installerErr.error;
@@ -285,7 +346,7 @@ Please report this issue so it can be remedied or investigated.`), getInstallFro
         }
 
         const fileErr = new DotnetNoInstallerFileExistsError(new EventBasedError('DotnetNoInstallerFileExistsError',
-            `The SDK installation files for version ${specificVersion} running on ${desiredRidPackage} couldn't be found.
+            `The .NET ${this.installMode} installation files for version ${specificVersion} running on ${desiredRidPackage} couldn't be found.
 Is the version in support? Note that -preview versions or versions with build numbers aren't yet supported.
 Visit https://dotnet.microsoft.com/platform/support/policy/dotnet-core for support information.`), getInstallFromContext(this.context));
         this.context.eventStream.post(fileErr);
@@ -311,13 +372,13 @@ Visit https://dotnet.microsoft.com/platform/support/policy/dotnet-core for suppo
      */
     private installerMatchesDesiredFileExtension(version: string, installerJson: any, operatingSystemInDotnetFormat: string): boolean
     {
-        const installerFileName = installerJson[this.releasesSdkNameKey];
+        const installerFileName = installerJson[this.releasesNameKey];
         if (installerFileName === undefined)
         {
             const err = new DotnetInvalidReleasesJSONError(new EventBasedError('DotnetInvalidReleasesJSONError',
                 `${this.releasesJsonErrorString}
                 ${this.getIndexUrl(versionUtils.getMajorMinor(version, this.context.eventStream, this.context))}.
-The json does not have the parameter ${this.releasesSdkNameKey} which means the API publisher has published invalid dotnet release data.
+The json does not have the parameter ${this.releasesNameKey} which means the API publisher has published invalid dotnet release data.
 Please file an issue at https://github.com/dotnet/vscode-dotnet-runtime.`), getInstallFromContext(this.context));
             this.context.eventStream.post(err);
             throw err.error;
@@ -380,14 +441,14 @@ Your architecture: ${os.arch()}. Your OS: ${os.platform()}.`), getInstallFromCon
         {
             // The SDKs in the index should be in-order, so we can rely on that property.
             // The first one we find with the given feature band will also be the 'newest.'
-            const thisSDKVersion: string = sdk[this.releasesSdkVersionKey];
+            const thisSDKVersion: string = sdk[this.releasesVersionKey];
             if (versionUtils.getFeatureBandFromVersion(thisSDKVersion, this.context.eventStream, this.context) === band)
             {
                 return thisSDKVersion;
             }
         }
 
-        const availableBands: string[] = Array.from(new Set(sdks.map((x: any) => versionUtils.getFeatureBandFromVersion(x[this.releasesSdkVersionKey], this.context.eventStream, this.context))));
+        const availableBands: string[] = Array.from(new Set(sdks.map((x: any) => versionUtils.getFeatureBandFromVersion(x[this.releasesVersionKey], this.context.eventStream, this.context))));
         const err = new DotnetFeatureBandDoesNotExistError(new EventBasedError('DotnetFeatureBandDoesNotExistError',
             `The feature band '${band}' doesn't exist for the SDK major version '${version}'.
 Available feature bands for this SDK version are ${availableBands}.`), getInstallFromContext(this.context));
