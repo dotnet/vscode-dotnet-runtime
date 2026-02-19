@@ -43,6 +43,7 @@
         "languageModelTools": [
             {
                 "name": "install_dotnet_sdk",
+                "when": "config.dotnetAcquisitionExtension.enableLanguageModelTools",
                 "displayName": "Install .NET SDK",
                 "toolReferenceName": "installDotNetSdk",
                 "canBeReferencedInPrompt": true,
@@ -64,6 +65,7 @@
             },
             {
                 "name": "list_available_dotnet_versions_to_install",
+                "when": "config.dotnetAcquisitionExtension.enableLanguageModelTools",
                 "displayName": "List Available .NET Versions",
                 "toolReferenceName": "listDotNetVersions",
                 "canBeReferencedInPrompt": true,
@@ -82,6 +84,7 @@
             },
             {
                 "name": "find_dotnet_executable_path",
+                "when": "config.dotnetAcquisitionExtension.enableLanguageModelTools",
                 "displayName": "Find .NET Path",
                 "toolReferenceName": "findDotNetPath",
                 "canBeReferencedInPrompt": true,
@@ -121,6 +124,7 @@
             },
             {
                 "name": "uninstall_dotnet",
+                "when": "config.dotnetAcquisitionExtension.enableLanguageModelTools",
                 "displayName": "Uninstall .NET",
                 "toolReferenceName": "uninstallDotNet",
                 "canBeReferencedInPrompt": true,
@@ -155,6 +159,7 @@
             },
             {
                 "name": "get_settings_info_for_dotnet_installation_management",
+                "when": "config.dotnetAcquisitionExtension.enableLanguageModelTools",
                 "displayName": "Get .NET Install Tool Guide",
                 "toolReferenceName": "getDotNetSettingsInfo",
                 "canBeReferencedInPrompt": true,
@@ -168,6 +173,7 @@
             },
             {
                 "name": "list_installed_dotnet_versions",
+                "when": "config.dotnetAcquisitionExtension.enableLanguageModelTools",
                 "displayName": "List Installed .NET Versions",
                 "toolReferenceName": "listInstalledDotNetVersions",
                 "canBeReferencedInPrompt": true,
@@ -220,6 +226,11 @@
         "configuration": {
             "title": ".NET Install Tool",
             "properties": {
+                "dotnetAcquisitionExtension.enableLanguageModelTools": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable AI-powered language model tools for .NET management (install, uninstall, list versions, etc.) in GitHub Copilot and agent mode. Set to false to hide all .NET tools from the LLM. Restart VS Code to apply changes."
+                },
                 "dotnetAcquisitionExtension.enableTelemetry": {
                     "type": "boolean",
                     "default": true,

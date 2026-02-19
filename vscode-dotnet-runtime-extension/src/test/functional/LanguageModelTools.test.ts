@@ -792,4 +792,65 @@ suite('LanguageModelTools Tests', function ()
             assert.isTrue(hasActionableGuidance, 'Error messages should provide actionable guidance');
         }).timeout(standardTimeoutTime);
     });
+
+    suite('Enable/Disable Setting', function ()
+    {
+        test('enableLanguageModelTools setting exists and defaults to true', async () =>
+        {
+            const config = vscode.workspace.getConfiguration('dotnetAcquisitionExtension');
+            const value = config.get<boolean>('enableLanguageModelTools');
+            // The default in package.json is true, so unless explicitly overridden it should be true
+            assert.isTrue(value, 'enableLanguageModelTools should default to true');
+        }).timeout(standardTimeoutTime);
+
+        test('Tools are registered when enableLanguageModelTools is true (default)', async () =>
+        {
+            // Since the extension activated with the default (true), all tools should be present
+            const expectedNames = [
+                ToolNames.installSdk,
+                ToolNames.listVersions,
+                ToolNames.listInstalledVersions,
+                ToolNames.findPath,
+                ToolNames.uninstall,
+                ToolNames.getSettingsInfo
+            ];
+            const tools = vscode.lm.tools;
+            for (const name of expectedNames)
+            {
+                const tool = tools.find(t => t.name === name);
+                assert.exists(tool, `Tool ${name} should be registered when setting is true`);
+            }
+        }).timeout(standardTimeoutTime);
+
+        test('Tools are visible when enableLanguageModelTools setting is true (default)', async () =>
+        {
+            // With the config.* when clause, VS Code reads the setting directly.
+            // Since the default is true, tools should be visible and registered.
+            const tool = vscode.lm.tools.find(t => t.name === ToolNames.installSdk);
+            assert.exists(tool, 'Tools should be available when setting is true');
+        }).timeout(standardTimeoutTime);
+
+        test('package.json tools all have when clause for enableLanguageModelTools', async () =>
+        {
+            // Read the package.json to verify all tools have the when clause.
+            // This is a structural test to prevent regressions - if someone adds a new tool
+            // without a when clause, the disable setting won't fully work.
+            const fs = await import('fs');
+            const packageJsonPath = path.join(extensionPath, 'package.json');
+            const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+            const tools = packageJson?.contributes?.languageModelTools;
+            assert.isArray(tools, 'package.json should have languageModelTools');
+            assert.isAbove(tools.length, 0, 'Should have at least one tool defined');
+
+            for (const tool of tools)
+            {
+                assert.property(tool, 'when', `Tool "${tool.name}" should have a "when" clause`);
+                assert.include(
+                    tool.when,
+                    'config.dotnetAcquisitionExtension.enableLanguageModelTools',
+                    `Tool "${tool.name}" when clause should reference config.dotnetAcquisitionExtension.enableLanguageModelTools`
+                );
+            }
+        }).timeout(standardTimeoutTime);
+    });
 });

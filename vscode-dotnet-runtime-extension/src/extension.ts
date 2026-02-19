@@ -107,6 +107,7 @@ namespace configKeys
     export const suppressOutput = 'suppressOutput';
     export const highVerbosity = 'highVerbosity';
     export const runtimeUpdateDelaySeconds = 'runtimeUpdateDelaySeconds';
+    export const enableLanguageModelTools = 'enableLanguageModelTools';
 }
 
 namespace commandKeys
@@ -1017,15 +1018,20 @@ Installation will timeout in ${timeoutValue} seconds.`))
     const jsonInstaller = new JsonInstaller(globalEventStream, vsCodeExtensionContext);
 
     // Register Language Model Tools for AI agent integration (GitHub Copilot, etc.)
-    try
+    const enableLanguageModelTools = extensionConfiguration.get<boolean>(configKeys.enableLanguageModelTools) ?? true;
+
+    if (enableLanguageModelTools)
     {
-        registerLanguageModelTools(vsCodeContext, globalEventStream);
-    } catch (e)
-    {
-        // Language Model Tools API may not be available in older VS Code versions
-        // Log telemetry for the failure but continue - extension works without AI tool integration
-        const error = e instanceof Error ? e : new Error(String(e));
-        globalEventStream.post(new LanguageModelToolsRegistrationError(error));
+        try
+        {
+            registerLanguageModelTools(vsCodeContext, globalEventStream);
+        } catch (e)
+        {
+            // Language Model Tools API may not be available in older VS Code versions
+            // Log telemetry for the failure but continue - extension works without AI tool integration
+            const error = e instanceof Error ? e : new Error(String(e));
+            globalEventStream.post(new LanguageModelToolsRegistrationError(error));
+        }
     }
 
     // Exposing API Endpoints
