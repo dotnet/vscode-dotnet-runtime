@@ -40,6 +40,7 @@ import open = require('open');
 
 import { GlobalInstallerResolver } from 'vscode-dotnet-runtime-library/dist/Acquisition/GlobalInstallerResolver';
 import { IAcquisitionWorkerContext } from 'vscode-dotnet-runtime-library/dist/Acquisition/IAcquisitionWorkerContext';
+import { EventStreamTaggingDecorator } from 'vscode-dotnet-runtime-library/dist/EventStream/EventStreamTaggingDecorator';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 
 const packageJson = require('../package.json');
@@ -217,11 +218,12 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 
     function getContext(commandContext: IDotnetAcquireContext | null): IAcquisitionWorkerContext
     {
+        const taggedEventStream = new EventStreamTaggingDecorator(eventStream);
         const acquisitionContext: IAcquisitionWorkerContext = {
             storagePath,
             extensionState: context.globalState,
-            eventStream,
-            installationValidator: new InstallationValidator(eventStream),
+            eventStream: taggedEventStream,
+            installationValidator: new InstallationValidator(taggedEventStream),
             timeoutSeconds: resolvedTimeoutSeconds,
             installDirectoryProvider: new SdkInstallationDirectoryProvider(storagePath),
             acquisitionContext: commandContext ?? { // See runtime extension for more details on this fake context.
