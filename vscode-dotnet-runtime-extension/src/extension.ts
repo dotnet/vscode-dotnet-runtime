@@ -526,8 +526,10 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
     const dotnetUninstallPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallPublic}`, async () =>
     {
-        const existingInstalls: InstallRecord[] = await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).getExistingInstalls(directoryProviderFactory(
-            'runtime', vsCodeContext.globalStoragePath));
+        const dirProvider = directoryProviderFactory('runtime', vsCodeContext.globalStoragePath);
+        const tracker = InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState);
+        await tracker.pruneStaleInstalls(dirProvider);
+        const existingInstalls: InstallRecord[] = await tracker.getExistingInstalls(dirProvider);
 
         const menuItems = existingInstalls?.sort(
             function (x: InstallRecord, y: InstallRecord): number

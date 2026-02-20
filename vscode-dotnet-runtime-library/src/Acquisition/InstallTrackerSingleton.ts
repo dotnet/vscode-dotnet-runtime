@@ -3,6 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as crypto from 'crypto';
+import * as fs from 'fs';
 import * as path from 'path';
 import { IEventStream } from '../EventStream/EventStream';
 import
@@ -22,7 +23,8 @@ import
     SearchingLiveDependents,
     SessionMutexAcquisitionFailed,
     SessionMutexReleased,
-    SkipAddingInstallEvent
+    SkipAddingInstallEvent,
+    StaleDotnetInstallRemovedEvent
 } from '../EventStream/EventStreamEvents';
 import { IExtensionState } from '../IExtensionState';
 import { EventStreamNodeIPCMutexLoggerWrapper } from '../Utils/EventStreamNodeIPCMutexWrapper';
@@ -407,6 +409,38 @@ export class InstallTrackerSingleton
                         ${convertedInstalls.map(x => `${JSON.stringify(x.dotnetInstall)} owned by ${x.installingExtensions.map(owner => owner ?? 'null').join(', ')}\n`)}`));
             return convertedInstalls;
         }, 'installed');
+    }
+
+    /**
+     * Validates tracked local installations against disk and removes any whose install directories
+     * no longer exist. This should be called before showing the list of installed runtimes to the user
+     * (e.g., in the uninstall UI) to ensure stale entries are cleaned up.
+     * Global installs are managed by the system and are not validated here.
+     * @param dirProvider The directory provider used to resolve each install's path on disk.
+     */
+    public async pruneStaleInstalls(dirProvider: IInstallationDirectoryProvider): Promise<void>
+    {
+        return executeWithLock(this.eventStream, false, this.getLockFilePathForKey(dirProvider, 'installed'), 5, 200000,
+            async (installState: InstallState) =>
+            {
+                const existingInstalls = await this.getExistingInstalls(dirProvider, true);
+                const validInstalls = existingInstalls.filter(install =>
+                {
+                    if (install.dotnetInstall.isGlobal)
+                    {
+                        return true;
+                    }
+                    const installDir = dirProvider.getInstallDir(install.dotnetInstall.installId);
+                    const existsOnDisk = fs.existsSync(installDir);
+                    if (!existsOnDisk)
+                    {
+                        this.eventStream.post(new StaleDotnetInstallRemovedEvent(
+                            `Removing stale install record for ${JSON.stringify(install.dotnetInstall)} because its directory ${installDir} no longer exists on disk.`));
+                    }
+                    return existsOnDisk;
+                });
+                await this.extensionState.update(installState, validInstalls);
+            }, 'installed');
     }
 
     public async untrackInstalledVersion(context: IAcquisitionWorkerContext, install: DotnetInstall, force = false)
