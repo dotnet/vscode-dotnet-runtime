@@ -16,8 +16,8 @@ export class LoggingObserver implements ILoggingObserver
 
     public post(event: IEvent): void
     {
-        const commandIdSegment = event.commandId ? ` [${event.commandId}]` : '';
-        this.writeLine(`${new Date().toLocaleString()} ${new Date().getMilliseconds()}${commandIdSegment} ${event.eventName}`);
+        const actionIdSegment = event.actionId ? ` [${event.actionId}]` : '';
+        this.writeLine(`${new Date().toLocaleString()} ${new Date().getMilliseconds()}${actionIdSegment} ${event.eventName}`);
         const properties = event.getProperties();
         if (properties)
         {

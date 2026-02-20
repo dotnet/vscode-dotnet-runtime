@@ -7,22 +7,22 @@ import { IEventStream } from './EventStream';
 import { IEvent } from './IEvent';
 
 /**
- * An IEventStream wrapper that tags every posted event with a fixed commandId.
+ * An IEventStream wrapper that tags every posted event with a fixed actionId.
  * Use this to correlate all events that belong to the same acquisition action flow,
  * especially when multiple concurrent flows are interleaved in the log.
  */
 export class EventStreamTaggingDecorator implements IEventStream
 {
-    public readonly commandId: string;
+    public readonly actionId: string;
 
-    constructor(private readonly inner: IEventStream, commandId?: string)
+    constructor(private readonly inner: IEventStream, actionId?: string)
     {
-        this.commandId = commandId ?? crypto.randomUUID();
+        this.actionId = actionId ?? crypto.randomUUID();
     }
 
     public post(event: IEvent): void
     {
-        event.commandId = this.commandId;
+        event.actionId = this.actionId;
         this.inner.post(event);
     }
 }

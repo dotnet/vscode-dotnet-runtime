@@ -55,7 +55,7 @@ suite('LoggingObserver Unit Tests', () =>
         assert.equal(finalContent, existingContent, 'Existing larger log should not be replaced by a smaller new log');
     }).timeout(10000 * 2);
 
-    test('Log includes commandId when event is tagged via EventStreamTaggingDecorator', async () =>
+    test('Log includes actionId when event is tagged via EventStreamTaggingDecorator', async () =>
     {
         const taggedLogDir = path.join(tempPath, `tagged-${Date.now()}`);
         fs.mkdirSync(taggedLogDir, { recursive: true });
@@ -67,7 +67,7 @@ suite('LoggingObserver Unit Tests', () =>
         const mockStream = new MockEventStream();
         const decorator = new EventStreamTaggingDecorator(mockStream);
 
-        // Post the event through the decorator; the event will be tagged with the commandId
+        // Post the event through the decorator; the event will be tagged with the actionId
         const fakeEvent = new DotnetUninstallAllStarted();
         decorator.post(fakeEvent);
 
@@ -76,27 +76,27 @@ suite('LoggingObserver Unit Tests', () =>
         await loggingObserver.disposeAsync();
 
         const logContent = fs.readFileSync(logPath).toString();
-        assert.include(logContent, decorator.commandId, 'The log file should contain the commandId from the EventStreamTaggingDecorator');
+        assert.include(logContent, decorator.actionId, 'The log file should contain the actionId from the EventStreamTaggingDecorator');
         assert.include(logContent, fakeEvent.eventName, 'The log file should contain the event name');
     }).timeout(10000 * 2);
 
-    test('EventStreamTaggingDecorator generates unique commandIds', () =>
+    test('EventStreamTaggingDecorator generates unique actionIds', () =>
     {
         const mockStream = new MockEventStream();
         const decorator1 = new EventStreamTaggingDecorator(mockStream);
         const decorator2 = new EventStreamTaggingDecorator(mockStream);
-        assert.notEqual(decorator1.commandId, decorator2.commandId, 'Each decorator should have a unique commandId');
+        assert.notEqual(decorator1.actionId, decorator2.actionId, 'Each decorator should have a unique actionId');
     });
 
-    test('EventStreamTaggingDecorator accepts an explicit commandId', () =>
+    test('EventStreamTaggingDecorator accepts an explicit actionId', () =>
     {
         const mockStream = new MockEventStream();
-        const explicitId = 'my-explicit-command-id';
+        const explicitId = 'my-explicit-action-id';
         const decorator = new EventStreamTaggingDecorator(mockStream, explicitId);
-        assert.equal(decorator.commandId, explicitId, 'Decorator should use the provided commandId');
+        assert.equal(decorator.actionId, explicitId, 'Decorator should use the provided actionId');
     });
 
-    test('Events without a tagged decorator have empty commandId in log', async () =>
+    test('Events without a tagged decorator have empty actionId in log', async () =>
     {
         const untaggedLogDir = path.join(tempPath, `untagged-${Date.now()}`);
         fs.mkdirSync(untaggedLogDir, { recursive: true });
@@ -109,6 +109,6 @@ suite('LoggingObserver Unit Tests', () =>
         await loggingObserver.disposeAsync();
 
         const logContent = fs.readFileSync(logPath).toString();
-        assert.notInclude(logContent, '[', 'Events without a commandId should not include brackets in the log line');
+        assert.notInclude(logContent, '[', 'Events without an actionId should not include brackets in the log line');
     }).timeout(10000 * 2);
 });

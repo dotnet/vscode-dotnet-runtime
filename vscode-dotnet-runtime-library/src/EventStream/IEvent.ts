@@ -13,7 +13,7 @@ export abstract class IEvent {
 
     public isError = false;
 
-    public commandId = '';
+    public actionId = '';
 
     public abstract getProperties(telemetry?: boolean): { [key: string]: string } | undefined;
 
