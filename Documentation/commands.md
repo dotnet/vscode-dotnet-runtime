@@ -134,7 +134,7 @@ This is a **user-facing** command that opens a pre-populated GitHub issue in the
 
 ### dotnet.resetData
 
-This is a **user-facing** command that uninstalls all .NET installations managed by this extension and resets extension state. It does not accept parameters and has a void return type. Equivalent to calling `dotnet.uninstallAll` with `DisplayAllErrorPopups` error configuration.
+This is a **user-facing** command that uninstalls all extension-managed local .NET installations and resets extension state. It does not remove machine-wide/global .NET SDK installations. It does not accept parameters and has a void return type. Equivalent to calling `dotnet.uninstallAll` with `DisplayAllErrorPopups` error configuration.
 
 ---
 
