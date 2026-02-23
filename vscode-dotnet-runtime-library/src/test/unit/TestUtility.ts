@@ -147,11 +147,7 @@ export async function getLinuxSupportedDotnetSDKVersion(context: IAcquisitionWor
     {
         if (distroInfo.version < '22.04')
         {
-            return '9.0.100';
-        }
-        if (distroInfo.version < '22.06')
-        {
-            return '9.0.100';
+            return '7.0.100';
         }
         if (distroInfo.version < '24.04')
         {
