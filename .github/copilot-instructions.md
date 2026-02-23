@@ -135,6 +135,14 @@ When version bumping IS requested:
 3. Verify: `npx mocha --bail -u tdd -- dist/test/unit/AffectedFile.test.js`
 4. Run full test suite to ensure no regressions
 
+### Adding a New Command
+
+When registering a new `vscode.commands.registerCommand` in an extension:
+1. Add the command key to the `commandKeys` namespace in the extension's `extension.ts`
+2. Document the command in [`Documentation/commands.md`](../Documentation/commands.md) — include the accepted context type, return type, offline behavior, and version format restrictions
+3. Add a sample invocation in [`sample/src/extension.ts`](../sample/src/extension.ts) if the command is intended for use by other extensions
+4. Register the command in the extension's `package.json` under `contributes.commands` if it should be user-facing
+
 ### Making Library Changes
 
 Since both extensions depend on the library:
