@@ -12,7 +12,9 @@ This article outlines the commands exposed by the .NET Install Tool. To see thes
 
 > **Sample:** See [`sample.helloworld`](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/sample/src/extension.ts) and [`sample.dotnet.acquire`](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/sample/src/extension.ts) for usage examples.
 
-This command will install a .NET runtime at a user-level folder. It accepts a [IDotnetAcquireContext](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/vscode-dotnet-runtime-library/src/IDotnetAcquireContext.ts) object and returns a [IDotnetAcquireResult](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/vscode-dotnet-runtime-library/src/IDotnetAcquireResult.ts), which contains the path to the .NET runtime executable. Note that the version value in IDotnetAcquireContext must be a valid major.minor runtime version, for example 3.1. The extension will automatically identify and install the latest patch of the provided version. It is generally recommended that extension authors call this command immediately on every extension start up to ensure that the .NET runtime has been installed and is ready to use.
+This command will install a .NET runtime at a user-level folder. It accepts a [IDotnetAcquireContext](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/vscode-dotnet-runtime-library/src/IDotnetAcquireContext.ts) object and returns a [IDotnetAcquireResult](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/vscode-dotnet-runtime-library/src/IDotnetAcquireResult.ts), which contains the path to the .NET runtime executable. The extension will automatically identify and install the latest patch of the provided version. It is generally recommended that extension authors call this command immediately on every extension start up to ensure that the .NET runtime has been installed and is ready to use.
+
+The `version` must be a major.minor version (e.g. `8.0`).
 
 **Offline behavior:** If the machine is offline (or `forceUpdate` is not set), the extension will return an existing compatible installation matching the requested major.minor version instead of contacting the network. If no compatible install exists while offline, a warning is posted and the install attempt will eventually time out.
 
@@ -23,6 +25,12 @@ This command will install a .NET runtime at a user-level folder. It accepts a [I
 > **Sample:** See [`sample.dotnet.acquireGlobalSDK`](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/sample/src/extension.ts) for a usage example.
 
 This command will install a .NET SDK in a system-level location. It accepts a [IDotnetAcquireContext](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/vscode-dotnet-runtime-library/src/IDotnetAcquireContext.ts) object and returns a [IDotnetAcquireResult](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/vscode-dotnet-runtime-library/src/IDotnetAcquireResult.ts).
+
+The `version` accepts multiple formats:
+- Major only: `6`
+- Major.minor: `6.0`
+- Feature band: `6.0.4xx` (resolves to the newest patch within that band)
+- Fully specified: `6.0.402`
 
 **Offline behavior:** If the machine is offline, the extension will attempt to find a compatible existing installation that it previously managed. In practice this rarely helps for global SDK installs, since externally installed SDKs are not tracked by the extension. If no compatible managed install is found while offline, a warning is posted and the install will time out.
 
