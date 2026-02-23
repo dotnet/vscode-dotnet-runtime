@@ -1054,13 +1054,13 @@ export class DotnetUninstallStarted extends DotnetCustomMessageEvent
 
 export class DotnetUninstallCompleted extends DotnetCustomMessageEvent
 {
-    public readonly eventName = 'DotnetUninstallStarted';
+    public readonly eventName = 'DotnetUninstallCompleted';
     public type = EventType.DotnetUninstallMessage;
 }
 
 export class DotnetUninstallFailed extends DotnetCustomMessageEvent
 {
-    public readonly eventName = 'DotnetUninstallStarted';
+    public readonly eventName = 'DotnetUninstallFailed';
     public type = EventType.DotnetUninstallMessage;
 }
 

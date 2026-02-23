@@ -6,21 +6,28 @@
 import * as os from 'os';
 import * as vscode from 'vscode';
 import
-{
-    AcquireErrorConfiguration,
-    DotnetInstallMode,
-    IDotnetAcquireContext,
-    IDotnetAcquireResult,
-    IDotnetFindPathContext,
-    IDotnetListVersionsContext,
-    IDotnetListVersionsResult,
-    IDotnetSearchContext,
-    IDotnetSearchResult,
-    IDotnetVersion,
-    IEventStream,
-    LanguageModelToolInvoked,
-    LanguageModelToolPrepareInvocation
-} from 'vscode-dotnet-runtime-library';
+    {
+        AcquireErrorConfiguration,
+        DotnetAcquisitionCompleted,
+        DotnetAcquisitionStarted,
+        DotnetBeginGlobalInstallerExecution,
+        DotnetInstallMode,
+        DotnetUninstallCompleted,
+        DotnetUninstallFailed,
+        DotnetUninstallStarted,
+        EventStream,
+        IDotnetAcquireContext,
+        IDotnetAcquireResult,
+        IDotnetFindPathContext,
+        IDotnetListVersionsContext,
+        IDotnetListVersionsResult,
+        IDotnetSearchContext,
+        IDotnetSearchResult,
+        IDotnetVersion,
+        IEventStream,
+        LanguageModelToolInvoked,
+        LanguageModelToolPrepareInvocation
+    } from 'vscode-dotnet-runtime-library';
 import { settingsInfoContent } from './SettingsInfoContent';
 
 /**
@@ -41,7 +48,7 @@ export namespace ToolNames
  * Registers all Language Model Tools for the .NET Install Tool extension.
  * These tools enable AI agents (like GitHub Copilot) to help users manage .NET installations.
  */
-export function registerLanguageModelTools(context: vscode.ExtensionContext, eventStream: IEventStream): void
+export function registerLanguageModelTools(context: vscode.ExtensionContext, eventStream: EventStream): void
 {
     // Install SDK Tool
     context.subscriptions.push(
@@ -79,7 +86,7 @@ export function registerLanguageModelTools(context: vscode.ExtensionContext, eve
  */
 class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string }>
 {
-    constructor(private readonly eventStream: IEventStream) {}
+    constructor(private readonly eventStream: EventStream) {}
 
     prepareInvocation(
         options: vscode.LanguageModelToolInvocationPrepareOptions<{ version?: string }>,
@@ -137,9 +144,44 @@ class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string }>
                 rethrowError: true // Rethrow errors so the LLM tool can capture the actual error message
             };
 
-            const result: IDotnetAcquireResult | undefined = await vscode.commands.executeCommand(
-                'dotnet.acquireGlobalSDK',
-                acquireContext
+            const result: IDotnetAcquireResult | undefined = await vscode.window.withProgress(
+                {
+                    location: vscode.ProgressLocation.Notification,
+                    title: `Installing .NET SDK ${version}`,
+                    cancellable: false
+                },
+                async (progress) =>
+                {
+                    progress.report({ message: 'Preparing...' });
+
+                    const subscription = this.eventStream.subscribe(event =>
+                    {
+                        if (event instanceof DotnetAcquisitionStarted)
+                        {
+                            progress.report({ message: 'Downloading installer...', increment: 20 });
+                        }
+                        else if (event instanceof DotnetBeginGlobalInstallerExecution)
+                        {
+                            progress.report({ message: 'Running installer (this may require elevation)...', increment: 30 });
+                        }
+                        else if (event instanceof DotnetAcquisitionCompleted)
+                        {
+                            progress.report({ message: 'Installation complete.', increment: 50 });
+                        }
+                    });
+
+                    try
+                    {
+                        return await vscode.commands.executeCommand<IDotnetAcquireResult | undefined>(
+                            'dotnet.acquireGlobalSDK',
+                            acquireContext
+                        );
+                    }
+                    finally
+                    {
+                        subscription.dispose();
+                    }
+                }
             );
 
             if (result?.dotnetPath)
@@ -406,7 +448,7 @@ class FindPathTool implements vscode.LanguageModelTool<{ version: string; mode?:
  */
 class UninstallTool implements vscode.LanguageModelTool<{ version?: string; mode?: string; global?: boolean }>
 {
-    constructor(private readonly eventStream: IEventStream) {}
+    constructor(private readonly eventStream: EventStream) {}
 
     async invoke(
         options: vscode.LanguageModelToolInvocationOptions<{ version?: string; mode?: string; global?: boolean }>,
@@ -447,7 +489,42 @@ class UninstallTool implements vscode.LanguageModelTool<{ version?: string; mode
                 rethrowError: true // Rethrow errors so the LLM tool can capture the actual error message
             };
 
-            const result: string = await vscode.commands.executeCommand('dotnet.uninstall', acquireContext);
+            const result: string = await vscode.window.withProgress(
+                {
+                    location: vscode.ProgressLocation.Notification,
+                    title: `Uninstalling .NET ${resolvedMode === 'sdk' ? 'SDK' : 'Runtime'} ${version}`,
+                    cancellable: false
+                },
+                async (progress) =>
+                {
+                    progress.report({ message: 'Preparing...' });
+
+                    const subscription = this.eventStream.subscribe(event =>
+                    {
+                        if (event instanceof DotnetUninstallStarted)
+                        {
+                            progress.report({ message: 'Downloading uninstall tool...', increment: 25 });
+                        }
+                        else if (event instanceof DotnetUninstallCompleted)
+                        {
+                            progress.report({ message: 'Uninstall complete.', increment: 75 });
+                        }
+                        else if (event instanceof DotnetUninstallFailed)
+                        {
+                            progress.report({ message: 'Uninstall failed.' });
+                        }
+                    });
+
+                    try
+                    {
+                        return await vscode.commands.executeCommand<string>('dotnet.uninstall', acquireContext);
+                    }
+                    finally
+                    {
+                        subscription.dispose();
+                    }
+                }
+            );
 
             if (result === '0' || result === '')
             {
