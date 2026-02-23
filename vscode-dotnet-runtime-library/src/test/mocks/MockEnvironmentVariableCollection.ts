@@ -7,6 +7,7 @@ import * as vscode from 'vscode';
 export class MockEnvironmentVariableCollection implements vscode.EnvironmentVariableCollection {
 
     public persistent =  true;
+    public description: string | vscode.MarkdownString | undefined = undefined;
     public variables: {[variable: string]: string} = {};
 
     public append(variable: string, value: string): void {
