@@ -21,7 +21,7 @@ const standardTimeoutTime = 100000;
 const mockVersion = '8.0.103';
 const acquisitionContext = getMockAcquisitionContext('sdk', mockVersion);
 const mockExecutor = new MockCommandExecutor(acquisitionContext, getMockUtilityContext());
-const pair: DistroVersionPair = { distro: UBUNTU_DISTRO_INFO_KEY, version: '24.04' };
+const pair: DistroVersionPair = { distro: UBUNTU_DISTRO_INFO_KEY, version: '22.04' };
 const provider: GenericDistroSDKProvider = new GenericDistroSDKProvider(pair, acquisitionContext, getMockUtilityContext(), mockExecutor);
 const shouldRun = os.platform() === 'linux';
 const installType: DotnetInstallMode = 'sdk';
