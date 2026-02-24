@@ -69,6 +69,7 @@ import
     InvalidUninstallRequest,
     IUtilityContext,
     JsonInstaller,
+    LanguageModelToolsRegistrationError,
     LinuxVersionResolver,
     LocalInstallUpdateService,
     LocalMemoryCacheSingleton,
@@ -87,6 +88,7 @@ import
 } from 'vscode-dotnet-runtime-library';
 import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
+import { registerLanguageModelTools } from './LanguageModelTools';
 import open = require('open');
 
 const packageJson = require('../package.json');
@@ -105,6 +107,7 @@ namespace configKeys
     export const suppressOutput = 'suppressOutput';
     export const highVerbosity = 'highVerbosity';
     export const runtimeUpdateDelaySeconds = 'runtimeUpdateDelaySeconds';
+    export const enableLanguageModelTools = 'enableLanguageModelTools';
 }
 
 namespace commandKeys
@@ -344,7 +347,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             new CommandExecutor(workerContext, utilContext).setPathEnvVar(dotnetPath.dotnetPath, moreInfoUrl, displayWorker, vsCodeExtensionContext, true);
             return dotnetPath;
-        }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, commandKeys.acquireGlobalSDK), commandContext.requestingExtensionId, workerContext);
+        }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, commandKeys.acquireGlobalSDK), commandContext.requestingExtensionId, workerContext, commandContext.rethrowError);
 
         const installationId = getInstallIdCustomArchitecture(commandContext.version, commandContext.architecture, commandContext.mode, 'global');
         const install = {
@@ -749,6 +752,22 @@ ${JSON.stringify(commandContext)}`));
     async function uninstall(commandContext: IDotnetAcquireContext | undefined, force = false, onlyCheckLiveDependents = false): Promise<string>
     {
         let result = '1';
+
+        // Create workerContext early if we have enough info (for error handling context)
+        // Wrapped in try-catch to avoid unhandled exceptions if context creation fails
+        let workerContext: IAcquisitionWorkerContext | undefined;
+        try
+        {
+            workerContext = commandContext?.mode && commandContext?.requestingExtensionId
+                ? getAcquisitionWorkerContext(commandContext.mode, commandContext)
+                : undefined;
+        }
+        catch
+        {
+            // If context creation fails, continue without it - errors will still be handled
+            workerContext = undefined;
+        }
+
         await callWithErrorHandling(async () =>
         {
             if (!commandContext?.version || !commandContext?.installType || !commandContext?.mode || !commandContext?.requestingExtensionId)
@@ -761,11 +780,12 @@ ${JSON.stringify(commandContext)}`));
             else
             {
                 const worker = getAcquisitionWorker();
-                const workerContext = getAcquisitionWorkerContext(commandContext.mode, commandContext);
+                // Use the pre-created workerContext if available, otherwise create it
+                const ctx = workerContext ?? getAcquisitionWorkerContext(commandContext.mode, commandContext);
 
                 if (commandContext.installType === 'local' && !force && !(onlyCheckLiveDependents && commandContext.version.split('.').length > 1)) // if using force mode, we are also using the UI, which passes the fully specified version to uninstall only
                 {
-                    const versionResolver = new VersionResolver(workerContext);
+                    const versionResolver = new VersionResolver(ctx);
                     const resolvedVersion = await versionResolver.getFullVersion(commandContext.version, commandContext.mode);
                     commandContext.version = resolvedVersion;
                 }
@@ -778,15 +798,15 @@ ${JSON.stringify(commandContext)}`));
 
                 if (commandContext.installType === 'local')
                 {
-                    result = await worker.uninstallLocal(workerContext, install, force, false, onlyCheckLiveDependents);
+                    result = await worker.uninstallLocal(ctx, install, force, false, onlyCheckLiveDependents);
                 }
                 else
                 {
-                    const globalInstallerResolver = new GlobalInstallerResolver(workerContext, commandContext.version);
-                    result = await worker.uninstallGlobal(workerContext, install, globalInstallerResolver, force);
+                    const globalInstallerResolver = new GlobalInstallerResolver(ctx, commandContext.version);
+                    result = await worker.uninstallGlobal(ctx, install, globalInstallerResolver, force);
                 }
             }
-        }, getIssueContext(existingPathConfigWorker)(commandContext?.errorConfiguration, 'uninstall'));
+        }, getIssueContext(existingPathConfigWorker)(commandContext?.errorConfiguration, 'uninstall'), commandContext?.requestingExtensionId, workerContext, commandContext?.rethrowError);
 
         return result;
     }
@@ -996,6 +1016,23 @@ Installation will timeout in ${timeoutValue} seconds.`))
 
     // Preemptively install .NET for extensions who tell us to in their package.json
     const jsonInstaller = new JsonInstaller(globalEventStream, vsCodeExtensionContext);
+
+    // Register Language Model Tools for AI agent integration (GitHub Copilot, etc.)
+    const enableLanguageModelTools = extensionConfiguration.get<boolean>(configKeys.enableLanguageModelTools) ?? true;
+
+    if (enableLanguageModelTools)
+    {
+        try
+        {
+            registerLanguageModelTools(vsCodeContext, globalEventStream);
+        } catch (e)
+        {
+            // Language Model Tools API may not be available in older VS Code versions
+            // Log telemetry for the failure but continue - extension works without AI tool integration
+            const error = e instanceof Error ? e : new Error(String(e));
+            globalEventStream.post(new LanguageModelToolsRegistrationError(error));
+        }
+    }
 
     // Exposing API Endpoints
     vsCodeContext.subscriptions.push(
