@@ -10,3 +10,4 @@ packages/
 msbuild/**
 global.json
 nuget.config
+tsconfig.json
