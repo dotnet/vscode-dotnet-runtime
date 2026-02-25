@@ -775,4 +775,117 @@ suite('InstallTracker Session Mutex Tests', function ()
         }
     }).timeout(testTimeoutTime);
 
+    test('pruneStaleSessions removes dead sessions from state', async () =>
+    {
+        const extensionState = new MockExtensionContext();
+        const tracker = new MockInstallTracker(new MockEventStream(), extensionState);
+        const staleSession1 = generateRandomSessionId();
+        const staleSession2 = generateRandomSessionId();
+        const installExePath = path.join(getRandomValidFakeDir(), getDotnetExecutable());
+
+        try
+        {
+            // Seed two stale sessions (no process holding their mutex)
+            await tracker.markInstallAsInUseBySession(staleSession1, installExePath);
+            await tracker.markInstallAsInUseBySession(staleSession2, installExePath);
+
+            const storedBefore = extensionState.get<Record<string, string[]>>('dotnet.returnedInstallDirectories', {});
+            assert.isDefined(storedBefore[staleSession1], 'Stale session 1 should exist before prune');
+            assert.isDefined(storedBefore[staleSession2], 'Stale session 2 should exist before prune');
+
+            await tracker.pruneStaleSessions();
+
+            const storedAfter = extensionState.get<Record<string, string[]>>('dotnet.returnedInstallDirectories', {});
+            assert.isUndefined(storedAfter[staleSession1], 'Stale session 1 should be removed after prune');
+            assert.isUndefined(storedAfter[staleSession2], 'Stale session 2 should be removed after prune');
+        }
+        finally
+        {
+            await tracker.endAnySingletonTrackingSessions();
+        }
+    }).timeout(testTimeoutTime);
+
+    test('pruneStaleSessions preserves live sessions', async () =>
+    {
+        const extensionState = new MockExtensionContext();
+        const tracker = new MockInstallTracker(new MockEventStream(), extensionState);
+        const liveSessionId = generateRandomSessionId();
+        const staleSessionId = generateRandomSessionId();
+        const installExePath = path.join(getRandomValidFakeDir(), getDotnetExecutable());
+        const processes: { child: ChildProcess, sessionId: string }[] = [];
+
+        try
+        {
+            // Spawn a process that holds the mutex for the live session
+            const { child } = await spawnMutexHolderProcess(liveSessionId);
+            processes.push({ child, sessionId: liveSessionId });
+
+            await tracker.markInstallAsInUseBySession(liveSessionId, installExePath);
+            await tracker.markInstallAsInUseBySession(staleSessionId, installExePath);
+
+            await tracker.pruneStaleSessions();
+
+            const storedAfter = extensionState.get<Record<string, string[]>>('dotnet.returnedInstallDirectories', {});
+            assert.isDefined(storedAfter[liveSessionId], 'Live session should be preserved after prune');
+            assert.isUndefined(storedAfter[staleSessionId], 'Stale session should be removed after prune');
+        }
+        finally
+        {
+            await cleanupMutexHolders(processes);
+            await tracker.endAnySingletonTrackingSessions();
+        }
+    }).timeout(testTimeoutTime);
+
+    test('pruneStaleSessions does not remove the current session', async () =>
+    {
+        const extensionState = new MockExtensionContext();
+        const tracker = new MockInstallTracker(new MockEventStream(), extensionState);
+        const currentSessionId = tracker.getSessionId();
+        const installExePath = path.join(getRandomValidFakeDir(), getDotnetExecutable());
+
+        try
+        {
+            await tracker.markInstallAsInUseBySession(currentSessionId, installExePath);
+
+            await tracker.pruneStaleSessions();
+
+            const storedAfter = extensionState.get<Record<string, string[]>>('dotnet.returnedInstallDirectories', {});
+            assert.isDefined(storedAfter[currentSessionId], 'Current session should be preserved after prune');
+        }
+        finally
+        {
+            await tracker.endAnySingletonTrackingSessions();
+        }
+    }).timeout(testTimeoutTime);
+
+    test('removeCurrentSession removes only the current session from state', async () =>
+    {
+        const extensionState = new MockExtensionContext();
+        const tracker = new MockInstallTracker(new MockEventStream(), extensionState);
+        const currentSessionId = tracker.getSessionId();
+        const otherSessionId = generateRandomSessionId();
+        const installExePath = path.join(getRandomValidFakeDir(), getDotnetExecutable());
+        const processes: { child: ChildProcess, sessionId: string }[] = [];
+
+        try
+        {
+            const { child } = await spawnMutexHolderProcess(otherSessionId);
+            processes.push({ child, sessionId: otherSessionId });
+
+            await tracker.markInstallAsInUseBySession(currentSessionId, installExePath);
+            await tracker.markInstallAsInUseBySession(otherSessionId, installExePath);
+
+            await tracker.removeCurrentSession();
+
+            const storedAfter = extensionState.get<Record<string, string[]>>('dotnet.returnedInstallDirectories', {});
+            assert.isUndefined(storedAfter[currentSessionId], 'Current session should be removed after deactivation');
+            assert.isDefined(storedAfter[otherSessionId], 'Other session should be preserved');
+        }
+        finally
+        {
+            await cleanupMutexHolders(processes);
+            await tracker.endAnySingletonTrackingSessions();
+        }
+    }).timeout(testTimeoutTime);
+
 });

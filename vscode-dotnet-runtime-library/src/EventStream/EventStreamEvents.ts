@@ -1242,6 +1242,16 @@ export class SearchingLiveDependents extends DotnetCustomMessageEvent
     public readonly eventName = 'SearchingLiveDependents';
 }
 
+export class PrunedStaleSessions extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'PrunedStaleSessions';
+}
+
+export class RemovingCurrentSession extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'RemovingCurrentSession';
+}
+
 export class CacheAliasCreated extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'CacheAliasCreated';
