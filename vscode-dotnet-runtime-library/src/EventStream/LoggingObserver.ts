@@ -22,8 +22,8 @@ export class LoggingObserver implements ILoggingObserver
      * Serializes all flush operations so concurrent flush()/dispose() calls
      * don't race on file I/O. Each flush appends to the chain.
      * Safe because JS is single-threaded for synchronous code:
-     *   - The buffer swap (this.log = []) is atomic w.r.t. post() calls.
-     *   - The promise chain ensures only one appendFile is in-flight at a time.
+     * The buffer swap (this.log = []) is atomic w.r.t. post() calls.
+     * The promise chain ensures only one appendFile is in-flight at a time.
      */
     private flushChain: Promise<void> = Promise.resolve();
 
@@ -77,7 +77,7 @@ export class LoggingObserver implements ILoggingObserver
         const writePromise = this.flushChain.then(async () =>
         {
             await this.ensureDirectory();
-            await fs.promises.appendFile(this.logFilePath, toWrite.join('\n') + '\n');
+            await fs.promises.appendFile(this.logFilePath, `${toWrite.join('\n')  }\n`);
         }).catch(() => {});
 
         this.flushChain = writePromise;
