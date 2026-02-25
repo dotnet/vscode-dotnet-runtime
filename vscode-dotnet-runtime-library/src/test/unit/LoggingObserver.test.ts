@@ -6,7 +6,9 @@ import * as chai from 'chai';
 import * as fs from 'fs';
 import * as path from 'path';
 import { DotnetUninstallAllStarted } from '../../EventStream/EventStreamEvents';
+import { EventStreamTaggingDecorator } from '../../EventStream/EventStreamTaggingDecorator';
 import { LoggingObserver } from '../../EventStream/LoggingObserver';
+import { MockEventStream } from '../mocks/MockObjects';
 const assert = chai.assert;
 
 suite('LoggingObserver Unit Tests', () =>
@@ -106,5 +108,62 @@ suite('LoggingObserver Unit Tests', () =>
         assert.equal(occurrences, 2, 'Events posted after dispose() should still be logged');
 
         await loggingObserver.shutdown();
+    }).timeout(10000 * 2);
+
+    test('Log includes actionId when event is tagged via EventStreamTaggingDecorator', async () =>
+    {
+        const taggedLogDir = path.join(tempPath, `tagged-${Date.now()}`);
+        fs.mkdirSync(taggedLogDir, { recursive: true });
+
+        const logPath = path.join(taggedLogDir, 'taggedLogTest.txt');
+        const loggingObserver = new LoggingObserver(logPath);
+
+        // Use the decorator wrapping a mock stream that forwards to the observer
+        const mockStream = new MockEventStream();
+        const decorator = new EventStreamTaggingDecorator(mockStream);
+
+        // Post the event through the decorator; the event will be tagged with the actionId
+        const fakeEvent = new DotnetUninstallAllStarted();
+        decorator.post(fakeEvent);
+
+        // The event was tagged by the decorator, so now post the tagged event to the observer
+        loggingObserver.post(fakeEvent);
+        await loggingObserver.disposeAsync();
+
+        const logContent = fs.readFileSync(logPath).toString();
+        assert.include(logContent, decorator.actionId, 'The log file should contain the actionId from the EventStreamTaggingDecorator');
+        assert.include(logContent, fakeEvent.eventName, 'The log file should contain the event name');
+    }).timeout(10000 * 2);
+
+    test('EventStreamTaggingDecorator generates unique actionIds', () =>
+    {
+        const mockStream = new MockEventStream();
+        const decorator1 = new EventStreamTaggingDecorator(mockStream);
+        const decorator2 = new EventStreamTaggingDecorator(mockStream);
+        assert.notEqual(decorator1.actionId, decorator2.actionId, 'Each decorator should have a unique actionId');
+    });
+
+    test('EventStreamTaggingDecorator accepts an explicit actionId', () =>
+    {
+        const mockStream = new MockEventStream();
+        const explicitId = 'my-explicit-action-id';
+        const decorator = new EventStreamTaggingDecorator(mockStream, explicitId);
+        assert.equal(decorator.actionId, explicitId, 'Decorator should use the provided actionId');
+    });
+
+    test('Events without a tagged decorator have empty actionId in log', async () =>
+    {
+        const untaggedLogDir = path.join(tempPath, `untagged-${Date.now()}`);
+        fs.mkdirSync(untaggedLogDir, { recursive: true });
+
+        const logPath = path.join(untaggedLogDir, 'untaggedLogTest.txt');
+        const loggingObserver = new LoggingObserver(logPath);
+
+        const fakeEvent = new DotnetUninstallAllStarted();
+        loggingObserver.post(fakeEvent);
+        await loggingObserver.disposeAsync();
+
+        const logContent = fs.readFileSync(logPath).toString();
+        assert.notInclude(logContent, '[', 'Events without an actionId should not include brackets in the log line');
     }).timeout(10000 * 2);
 });
