@@ -147,34 +147,34 @@
         "webpack": "webpack --mode development"
     },
     "dependencies": {
-        "@types/chai-as-promised": "^7.1.8",
-        "@vscode/test-electron": "^2.3.9",
         "axios": "^1.7.4",
         "axios-cache-interceptor": "^1.11.2",
         "axios-retry": "^3.4.0",
-        "chai": "4.3.4",
-        "glob": "^7.2.0",
         "https-proxy-agent": "^7.0.2",
-        "mocha": "^11.7.0",
         "open": "^8.4.0",
         "shelljs": "^0.8.5",
-        "ts-loader": "^9.5.1",
-        "typescript": "^5.5.4",
-        "vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library",
-        "webpack-permissions-plugin": "^1.0.9"
+        "vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library"
     },
     "devDependencies": {
         "@types/chai": "^4.3.5",
+        "@types/chai-as-promised": "^7.1.8",
         "@types/mocha": "^9.0.0",
         "@types/node": "^20.0.0",
         "@types/rimraf": "3.0.2",
         "@types/source-map-support": "^0.5.10",
         "@types/vscode": "1.74.0",
+        "@vscode/test-electron": "^2.3.9",
         "@vscode/vsce": "^3.7.1",
+        "chai": "4.3.4",
         "copy-webpack-plugin": "^9.0.1",
+        "glob": "^7.2.0",
+        "mocha": "^11.7.0",
         "rimraf": "^6.1.2",
+        "ts-loader": "^9.5.1",
+        "typescript": "^5.5.4",
         "webpack": "^5.88.2",
-        "webpack-cli": "^4.9.1"
+        "webpack-cli": "^4.9.1",
+        "webpack-permissions-plugin": "^1.0.9"
     },
     "__metadata": {
         "id": "1aab81a1-b3d9-4aef-976b-577d5d90fe3f",
