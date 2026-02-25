@@ -61,6 +61,7 @@ import
     IDotnetSearchResult,
     IDotnetUninstallContext,
     IDotnetVersion,
+    IEventStream,
     IEventStreamContext,
     IExtensionContext,
     IIssueContext,
