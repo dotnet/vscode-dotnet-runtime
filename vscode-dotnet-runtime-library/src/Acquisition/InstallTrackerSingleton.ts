@@ -526,6 +526,7 @@ export class InstallTrackerSingleton
         const logger = new EventStreamNodeIPCMutexLoggerWrapper(this.eventStream, sessionId);
         const mutex = new NodeIPCMutex(sessionId, logger, '');
 
+        // eslint-disable-next-line @typescript-eslint/require-await
         return mutex.acquire(async () =>
         {
             this.eventStream.post(new DependentIsDead(`Session ${sessionId} is no longer live.`));
