@@ -86,6 +86,7 @@ import
     WindowDisplayWorker
 } from 'vscode-dotnet-runtime-library';
 import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
+import { EventStreamTaggingDecorator } from 'vscode-dotnet-runtime-library/dist/EventStream/EventStreamTaggingDecorator';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 import open = require('open');
 
@@ -927,11 +928,12 @@ ${JSON.stringify(commandContext)}`));
 
     function getAcquisitionWorkerContext(mode: DotnetInstallMode, acquiringContext: IDotnetAcquireContext): IAcquisitionWorkerContext
     {
+        const taggedEventStream = new EventStreamTaggingDecorator(globalEventStream);
         return {
             storagePath: vsCodeContext.globalStoragePath,
             extensionState: vsCodeContext.globalState,
-            eventStream: globalEventStream,
-            installationValidator: new InstallationValidator(globalEventStream),
+            eventStream: taggedEventStream,
+            installationValidator: new InstallationValidator(taggedEventStream),
             timeoutSeconds: resolvedTimeoutSeconds,
             acquisitionContext: acquiringContext,
             installDirectoryProvider: directoryProviderFactory(mode, vsCodeContext.globalStoragePath),
