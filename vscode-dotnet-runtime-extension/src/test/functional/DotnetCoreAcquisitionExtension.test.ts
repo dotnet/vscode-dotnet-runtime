@@ -926,4 +926,38 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
         assert.exists(result2!.dotnetPath, 'Second install should return a path');
         assert.include(result2!.dotnetPath, '9.0.0', 'Path should include the fully specified version 9.0.0');
     }).timeout(standardTimeoutTime);
+
+    test('Deactivate cleans up current session and prunes stale sessions from state', async () =>
+    {
+        const sessionStateKey = 'dotnet.returnedInstallDirectories';
+
+        // Step 1: Install a runtime so the current session is tracked in state
+        await installRuntime('9.0', 'runtime');
+
+        // Verify the current session was registered
+        const stateAfterInstall = mockState.get<Record<string, string[]>>(sessionStateKey, {});
+        const sessionIds = Object.keys(stateAfterInstall);
+        assert.isAtLeast(sessionIds.length, 1, 'At least one session should be tracked after install');
+
+        // Step 2: Seed a fake dead session (no process holds its mutex)
+        const fakeDeadSessionId = 'session-deadbeef00';
+        stateAfterInstall[fakeDeadSessionId] = ['/fake/path/dotnet'];
+        await mockState.update(sessionStateKey, stateAfterInstall);
+
+        const stateWithFake = mockState.get<Record<string, string[]>>(sessionStateKey, {});
+        assert.property(stateWithFake, fakeDeadSessionId, 'Fake dead session should be present in state before deactivate');
+
+        // Step 3: Call deactivate — should prune the dead session AND remove the current session
+        await extension.deactivate();
+
+        // Step 4: Verify the state is cleaned up
+        const stateAfterDeactivate = mockState.get<Record<string, string[]>>(sessionStateKey, {});
+        assert.notProperty(stateAfterDeactivate, fakeDeadSessionId, 'Fake dead session should have been pruned by deactivate');
+
+        // The current session should also be removed
+        for (const id of sessionIds)
+        {
+            assert.notProperty(stateAfterDeactivate, id, `Current session ${id} should have been removed by deactivate`);
+        }
+    }).timeout(standardTimeoutTime);
 });

@@ -134,6 +134,8 @@ const displayChannelName = '.NET Install Tool';
 const defaultTimeoutValue = 600;
 const moreInfoUrl = 'https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md';
 let disableActivationUnderTest = true;
+let extensionEventStream: IEventStream | undefined;
+let extensionGlobalState: vscode.Memento | undefined;
 
 export function activate(vsCodeContext: vscode.ExtensionContext, extensionContext?: IExtensionContext)
 {
@@ -999,6 +1001,10 @@ Installation will timeout in ${timeoutValue} seconds.`))
     // Preemptively install .NET for extensions who tell us to in their package.json
     const jsonInstaller = new JsonInstaller(globalEventStream, vsCodeExtensionContext);
 
+    // Store references for deactivate()
+    extensionEventStream = globalEventStream;
+    extensionGlobalState = vsCodeContext.globalState;
+
     // Exposing API Endpoints
     vsCodeContext.subscriptions.push(
         dotnetAcquireRegistration,
@@ -1028,4 +1034,14 @@ Installation will timeout in ${timeoutValue} seconds.`))
 export function ReEnableActivationForManualActivation()
 {
     disableActivationUnderTest = false;
+}
+
+export async function deactivate(): Promise<void>
+{
+    if (extensionEventStream && extensionGlobalState)
+    {
+        const tracker = InstallTrackerSingleton.getInstance(extensionEventStream, extensionGlobalState);
+        await tracker.pruneStaleSessions();
+        await tracker.removeCurrentSession();
+    }
 }
