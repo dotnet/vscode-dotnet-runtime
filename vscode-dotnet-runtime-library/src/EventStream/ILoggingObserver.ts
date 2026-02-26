@@ -5,8 +5,10 @@
 import { IEvent } from './IEvent';
 import { IEventStreamObserver } from './IEventStreamObserver';
 
-export interface ILoggingObserver extends IEventStreamObserver {
+export interface ILoggingObserver extends IEventStreamObserver
+{
     post(event: IEvent): void;
     dispose(): void;
+    flush(): Promise<void>;
     getFileLocation(): string;
 }
