@@ -30,6 +30,7 @@ import { CommandExecutor } from '../Utils/CommandExecutor';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 import { WebRequestWorkerSingleton } from '../Utils/WebRequestWorkerSingleton';
+import { DotnetInstallMode } from './DotnetInstallMode';
 import { VersionResolver } from './VersionResolver';
 import * as versionUtils from './VersionUtilities';
 
@@ -66,6 +67,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller
     private installerUrl: string;
     private installingVersion: string;
     private installerHash: string;
+    private mode: DotnetInstallMode;
     protected commandRunner: ICommandExecutor;
     protected registry: IRegistryReader;
     public cleanupInstallFiles = true;
@@ -76,12 +78,14 @@ export class WinMacGlobalInstaller extends IGlobalInstaller
 We cannot verify our .NET file host at this time. Please try again later or install the SDK manually.`;
 
     constructor(context: IAcquisitionWorkerContext, utilContext: IUtilityContext, installingVersion: string, installerUrl: string,
-        installerHash: string, executor: ICommandExecutor | null = null, registryReader: IRegistryReader | null = null)
+        installerHash: string, executor: ICommandExecutor | null = null, registryReader: IRegistryReader | null = null,
+        mode: DotnetInstallMode = 'sdk')
     {
         super(context, utilContext);
         this.installerUrl = installerUrl;
         this.installingVersion = installingVersion;
         this.installerHash = installerHash;
+        this.mode = mode;
         this.commandRunner = executor ?? new CommandExecutor(context, utilContext);
         this.versionResolver = new VersionResolver(context);
         this.file = new FileUtilities();
@@ -138,11 +142,16 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
 
     public async installSDK(installation: DotnetInstall): Promise<string>
     {
+        return this.installGlobal(installation);
+    }
+
+    public override async installGlobal(installation: DotnetInstall): Promise<string>
+    {
         return executeWithLock(this.acquisitionContext.eventStream, false, GLOBAL_INSTALL_STATE_MODIFIER_LOCK(this.acquisitionContext.installDirectoryProvider, installation), GLOBAL_LOCK_PING_DURATION_MS, this.acquisitionContext.timeoutSeconds * 1000,
             async (install: DotnetInstall) =>
             {
-                // Check for conflicting windows installs
-                if (os.platform() === 'win32')
+                // Check for conflicting windows installs (SDK-specific)
+                if (os.platform() === 'win32' && this.mode === 'sdk')
                 {
                     const conflictingVersion = await this.GlobalWindowsInstallWithConflictingVersionAlreadyExists(this.installingVersion);
                     if (conflictingVersion !== '')
@@ -214,6 +223,11 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
 
     public async uninstallSDK(installation: DotnetInstall): Promise<string>
     {
+        return this.uninstallGlobal(installation);
+    }
+
+    public override async uninstallGlobal(installation: DotnetInstall): Promise<string>
+    {
         if (os.platform() === 'win32')
         {
             const installerFile: string = await this.downloadInstaller(this.installerUrl);
@@ -236,13 +250,36 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         else
         {
             const macPath = await this.getMacPath();
-            const command = CommandExecutor.makeCommand(`rm`, [`-rf`, `${path.join(path.dirname(macPath), 'sdk', installation.version)}`, `&&`,
-                `rm`, `-rf`, `${path.join(path.dirname(macPath), 'sdk-manifests', installation.version)}`], true);
+            const subdirectories = this.getProductSubdirectories();
+            const rmArgs: string[] = [];
+            for (const subdir of subdirectories)
+            {
+                if (rmArgs.length > 0) { rmArgs.push('&&', 'rm', '-rf'); }
+                rmArgs.push(`${path.join(path.dirname(macPath), subdir, installation.version)}`);
+            }
+            const command = CommandExecutor.makeCommand(`rm`, [`-rf`, ...rmArgs], true);
 
             const commandResult = await this.commandRunner.execute(command, { timeout: this.acquisitionContext.timeoutSeconds * 1000 }, false);
             this.handleTimeout(commandResult);
 
             return commandResult.status;
+        }
+    }
+
+    /**
+     * Returns the subdirectories within the dotnet root that contain files for this product type.
+     */
+    private getProductSubdirectories(): string[]
+    {
+        switch (this.mode)
+        {
+            case 'runtime':
+                return ['shared/Microsoft.NETCore.App'];
+            case 'aspnetcore':
+                return ['shared/Microsoft.AspNetCore.App'];
+            case 'sdk':
+            default:
+                return ['sdk', 'sdk-manifests'];
         }
     }
 

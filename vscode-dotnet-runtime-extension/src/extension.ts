@@ -113,6 +113,7 @@ namespace commandKeys
 {
     export const acquire = 'acquire';
     export const acquireGlobalSDK = 'acquireGlobalSDK';
+    export const acquireGlobalRuntime = 'acquireGlobalRuntime';
     export const acquireStatus = 'acquireStatus';
     export const uninstall = 'uninstall';
     export const findPath = 'findPath';
@@ -361,6 +362,67 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         }
 
         void loggingObserver.flush();
+        return pathResult;
+    });
+
+    const dotnetAcquireGlobalRuntimeRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.acquireGlobalRuntime}`, async (commandContext: IDotnetAcquireContext): Promise<IDotnetAcquireResult | undefined> =>
+    {
+        const mode: DotnetInstallMode = commandContext.mode === 'aspnetcore' ? 'aspnetcore' : 'runtime';
+
+        if (commandContext.requestingExtensionId === undefined)
+        {
+            return Promise.reject(new Error('No requesting extension id was provided.'));
+        }
+
+        let fullyResolvedVersion = '';
+        const workerContext = getAcquisitionWorkerContext(mode, commandContext);
+        const worker = getAcquisitionWorker();
+
+        const pathResult = await callWithErrorHandling(async () =>
+        {
+            telemetryObserver?.setAcquisitionContext(workerContext, commandContext);
+
+            if (commandContext.version === '' || !commandContext.version)
+            {
+                throw new EventCancellationError('BadContextualRuntimeVersionError',
+                    `No version was defined to install.`);
+            }
+
+            globalEventStream.post(new DotnetAcquisitionRequested(commandContext.version, commandContext.requestingExtensionId ?? 'notProvided', mode, commandContext.installType ?? 'global'));
+
+            const existingOfflinePath = await getExistingInstallIfOffline(worker, workerContext);
+            if (existingOfflinePath)
+            {
+                return Promise.resolve(existingOfflinePath);
+            }
+
+            const globalInstallerResolver = new GlobalInstallerResolver(workerContext, commandContext.version, mode);
+            fullyResolvedVersion = await globalInstallerResolver.getFullySpecifiedVersion();
+
+            commandContext.version = fullyResolvedVersion;
+            telemetryObserver?.setAcquisitionContext(workerContext, commandContext);
+
+            outputChannelObserver.showOutput();
+            const dotnetPath = mode === 'aspnetcore'
+                ? await worker.acquireGlobalASPNET(workerContext, globalInstallerResolver)
+                : await worker.acquireGlobalRuntime(workerContext, globalInstallerResolver);
+
+            new CommandExecutor(workerContext, utilContext).setPathEnvVar(dotnetPath.dotnetPath, moreInfoUrl, displayWorker, vsCodeExtensionContext, true);
+            return dotnetPath;
+        }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, commandKeys.acquireGlobalRuntime), commandContext.requestingExtensionId, workerContext);
+
+        const installationId = getInstallIdCustomArchitecture(commandContext.version, commandContext.architecture, mode, 'global');
+        const install = {
+            installId: installationId, version: commandContext.version, installMode: mode, isGlobal: true,
+            architecture: commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture()
+        } as DotnetInstall;
+
+        if (pathResult !== undefined && pathResult?.dotnetPath)
+        {
+            globalEventStream.post(new DotnetAcquisitionTotalSuccessEvent(commandContext.version, install, commandContext.requestingExtensionId ?? '', pathResult.dotnetPath));
+        }
+
+        loggingObserver.dispose();
         return pathResult;
     });
 
@@ -1006,6 +1068,7 @@ Installation will timeout in ${timeoutValue} seconds.`))
         dotnetAcquireRegistration,
         dotnetAcquireStatusRegistration,
         dotnetAcquireGlobalSDKRegistration,
+        dotnetAcquireGlobalRuntimeRegistration,
         dotnetAvailableInstallsRegistration,
         acquireGlobalSDKPublicRegistration,
         dotnetFindPathRegistration,
