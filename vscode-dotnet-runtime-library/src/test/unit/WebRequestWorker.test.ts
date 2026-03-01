@@ -135,5 +135,21 @@ suite('WebRequestWorker Unit Tests', function ()
         assert.isTrue(Number(timerEvents?.durationMs) > 0, 'The timed event time is > 0');
         assert.isTrue(String(timerEvents?.status).startsWith('2'), 'The timed event has a status 2XX');
     });
+
+    test('Custom User-Agent header is set correctly', async () =>
+    {
+        const webWorker = WebRequestWorkerSingleton.getInstance();
+        const client = webWorker.getClient();
+        
+        // Verify the client has the custom User-Agent header
+        assert.exists(client, 'Axios client should be initialized');
+        if (client && client.defaults && client.defaults.headers)
+        {
+            // Check if User-Agent is set in the default headers
+            const headers = client.defaults.headers;
+            const userAgent = 'User-Agent' in headers ? headers['User-Agent'] : undefined;
+            assert.equal(userAgent, 'vscode-dotnet-runtime', 'User-Agent header should be set to vscode-dotnet-runtime');
+        }
+    });
 });
 
