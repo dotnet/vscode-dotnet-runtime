@@ -99,66 +99,87 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                     }
                 }
 
-                cp.exec(winOS ? windowsFullCommand : installCommand,
-                    { cwd: process.cwd(), maxBuffer: 500 * 1024, timeout: 1000 * this.workerContext.timeoutSeconds, killSignal: 'SIGKILL' },
-                    async (error, stdout, stderr) =>
-                    {
-                        if (stdout)
+                const execOptions = { cwd: process.cwd(), maxBuffer: 500 * 1024, timeout: 1000 * this.workerContext.timeoutSeconds, killSignal: 'SIGKILL' as const };
+
+                // Inner helper that runs the install command and retries once via the slow PowerShell
+                // probe path if the process itself could not be launched (e.g. the fast-path file
+                // exists but the binary is bad / inaccessible on this particular system).
+                const runInstall = (cmd: string, psRef: string, isRetry: boolean): void =>
+                {
+                    cp.exec(cmd, execOptions,
+                        async (error, stdout, stderr) =>
                         {
-                            this.eventStream.post(new DotnetAcquisitionScriptOutput(install, TelemetryUtilities.HashAllPaths(stdout)));
-                        }
-                        if (stderr)
-                        {
-                            this.eventStream.post(new DotnetAcquisitionScriptOutput(install, `STDERR: ${TelemetryUtilities.HashAllPaths(stderr)}`));
-                        }
-                        if (this.looksLikeBadExecutionPolicyError(stderr))
-                        {
-                            const badPolicyError = new EventBasedError('PowershellBadExecutionPolicy', `Your powershell execution policy does not allow script execution, so we can't automate the installation.
-Please read more at https://go.microsoft.com/fwlink/?LinkID=135170`);
-                            this.eventStream.post(new PowershellBadExecutionPolicy(badPolicyError, install));
-                            reject(badPolicyError);
-                        }
-                        if ((this.looksLikeBadLanguageModeError(stderr) || error?.code === 1) && await this.badLanguageModeSet(powershellReference))
-                        {
-                            const badModeError = new EventBasedError('PowershellBadLanguageMode', `Your Language Mode disables PowerShell language features needed to install .NET. Read more at: https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_language_modes.
-If you cannot change this flag, try setting a custom existingDotnetPath via the instructions here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`);
-                            this.eventStream.post(new PowershellBadLanguageMode(badModeError, install));
-                            reject(badModeError);
-                        }
-                        if (error)
-                        {
-                            if (!(await WebRequestWorkerSingleton.getInstance().isOnline(this.workerContext.timeoutSeconds, this.eventStream)))
+                            if (stdout)
                             {
-                                const offlineError = new EventBasedError('DotnetOfflineFailure', 'No internet connection detected: Cannot install .NET');
-                                this.eventStream.post(new DotnetOfflineFailure(offlineError, install));
-                                reject(offlineError);
+                                this.eventStream.post(new DotnetAcquisitionScriptOutput(install, TelemetryUtilities.HashAllPaths(stdout)));
                             }
-                            else if (error.signal === 'SIGKILL')
+                            if (stderr)
                             {
-                                const newError = new EventBasedError('DotnetAcquisitionTimeoutError',
-                                    `${timeoutConstants.timeoutMessage}, MESSAGE: ${error.message}, CODE: ${error.code}, KILLED: ${error.killed}`, error.stack);
-                                this.eventStream.post(new DotnetAcquisitionTimeoutError(error, install, this.workerContext.timeoutSeconds));
-                                reject(newError);
+                                this.eventStream.post(new DotnetAcquisitionScriptOutput(install, `STDERR: ${TelemetryUtilities.HashAllPaths(stderr)}`));
+                            }
+                            if (this.looksLikeBadExecutionPolicyError(stderr))
+                            {
+                                const badPolicyError = new EventBasedError('PowershellBadExecutionPolicy', `Your powershell execution policy does not allow script execution, so we can't automate the installation.
+Please read more at https://go.microsoft.com/fwlink/?LinkID=135170`);
+                                this.eventStream.post(new PowershellBadExecutionPolicy(badPolicyError, install));
+                                reject(badPolicyError);
+                            }
+                            if ((this.looksLikeBadLanguageModeError(stderr) || error?.code === 1) && await this.badLanguageModeSet(psRef))
+                            {
+                                const badModeError = new EventBasedError('PowershellBadLanguageMode', `Your Language Mode disables PowerShell language features needed to install .NET. Read more at: https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_language_modes.
+If you cannot change this flag, try setting a custom existingDotnetPath via the instructions here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`);
+                                this.eventStream.post(new PowershellBadLanguageMode(badModeError, install));
+                                reject(badModeError);
+                            }
+                            if (error)
+                            {
+                                // If the fast-path PowerShell reference couldn't be launched at all (e.g. the
+                                // binary is corrupt or the path is stale), try once more with a path discovered
+                                // via the slow probe so we don't permanently surface a confusing install error.
+                                if (!isRetry && winOS && this.looksLikePowershellProcessNotFound(stderr, error))
+                                {
+                                    this.findWorkingPowershellViaProbing(install).then(newPsRef =>
+                                    {
+                                        const newCmd = cmd.replace(psRef, newPsRef);
+                                        runInstall(newCmd, newPsRef, true);
+                                    }).catch(psErr => reject(psErr));
+                                    return;
+                                }
+                                if (!(await WebRequestWorkerSingleton.getInstance().isOnline(this.workerContext.timeoutSeconds, this.eventStream)))
+                                {
+                                    const offlineError = new EventBasedError('DotnetOfflineFailure', 'No internet connection detected: Cannot install .NET');
+                                    this.eventStream.post(new DotnetOfflineFailure(offlineError, install));
+                                    reject(offlineError);
+                                }
+                                else if (error.signal === 'SIGKILL')
+                                {
+                                    const newError = new EventBasedError('DotnetAcquisitionTimeoutError',
+                                        `${timeoutConstants.timeoutMessage}, MESSAGE: ${error.message}, CODE: ${error.code}, KILLED: ${error.killed}`, error.stack);
+                                    this.eventStream.post(new DotnetAcquisitionTimeoutError(error, install, this.workerContext.timeoutSeconds));
+                                    reject(newError);
+                                }
+                                else
+                                {
+                                    const newError = new EventBasedError('DotnetAcquisitionInstallError',
+                                        `${timeoutConstants.timeoutMessage}, MESSAGE: ${error.message}, CODE: ${error.code}, SIGNAL: ${error.signal}`, error.stack);
+                                    this.eventStream.post(new DotnetAcquisitionInstallError(newError, install));
+                                    reject(newError);
+                                }
+                            }
+                            else if ((stderr?.length ?? 0) > 0)
+                            {
+                                this.eventStream.post(new DotnetAcquisitionCompleted(install, dotnetPath, this.workerContext.acquisitionContext.version));
+                                resolve();
                             }
                             else
                             {
-                                const newError = new EventBasedError('DotnetAcquisitionInstallError',
-                                    `${timeoutConstants.timeoutMessage}, MESSAGE: ${error.message}, CODE: ${error.code}, SIGNAL: ${error.signal}`, error.stack);
-                                this.eventStream.post(new DotnetAcquisitionInstallError(newError, install));
-                                reject(newError);
+                                this.eventStream.post(new DotnetAcquisitionCompleted(install, dotnetPath, this.workerContext.acquisitionContext.version));
+                                resolve();
                             }
-                        }
-                        else if ((stderr?.length ?? 0) > 0)
-                        {
-                            this.eventStream.post(new DotnetAcquisitionCompleted(install, dotnetPath, this.workerContext.acquisitionContext.version));
-                            resolve();
-                        }
-                        else
-                        {
-                            this.eventStream.post(new DotnetAcquisitionCompleted(install, dotnetPath, this.workerContext.acquisitionContext.version));
-                            resolve();
-                        }
-                    });
+                        });
+                };
+
+                runInstall(winOS ? windowsFullCommand : installCommand, powershellReference, false);
             }
             catch (error: any)
             {
@@ -264,31 +285,28 @@ At dotnet-install.ps1:1189 char:5
      */
     private async verifyPowershellCanRun(installId: DotnetInstall): Promise<string>
     {
-        // Fast path: if powershell.exe exists at the well-known absolute path, try a quick execution
-        // test using it directly. This avoids the slower tryFindWorkingCommand probe (which spawns
-        // multiple processes) on systems where PowerShell is at its standard location.
-        // If the quick test fails (e.g. ENOENT, bad/non-PowerShell executable), we fall through
-        // to the full validation below which tries all alternative paths.
+        // Fast path: check if the PowerShell executable exists at the well-known absolute path
+        // without spawning any process. If the file exists, assume it works and return it.
+        // If the assumption is wrong (e.g. the binary is corrupt or inaccessible), the installation
+        // attempt will fail and looksLikePowershellProcessNotFound() will trigger a recovery via
+        // findWorkingPowershellViaProbing() at that point.
         const systemRoot = process.env.SystemRoot ?? process.env.SYSTEMROOT ?? 'C:\\Windows';
         const defaultPowershellPath = `${systemRoot}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`;
         if (await this.fileUtilities.exists(defaultPowershellPath))
         {
-            try
-            {
-                const testResult = await new CommandExecutor(this.workerContext, this.utilityContext)
-                    .execute(CommandExecutor.makeCommand('0', []), { shell: defaultPowershellPath }, false);
-                if (testResult.status === '0')
-                {
-                    return defaultPowershellPath;
-                }
-            }
-            catch (err)
-            {
-                // Fast path execution failed (e.g. ENOENT, bad or non-PowerShell executable).
-                // Fall through to the full validation below.
-            }
+            return defaultPowershellPath;
         }
 
+        // Fast path failed (no file at default location); run full validation.
+        return this.findWorkingPowershellViaProbing(installId);
+    }
+
+    /**
+     * @remarks Discovers a working PowerShell path by probing each candidate via process execution.
+     * This is the slow path used when the well-known default path is not present or known to be broken.
+     */
+    private async findWorkingPowershellViaProbing(installId: DotnetInstall): Promise<string>
+    {
         let knownError = false;
         let error = null;
         let command = null;
@@ -334,5 +352,16 @@ At dotnet-install.ps1:1189 char:5
         }
 
         return possiblePowershellPaths.at(Number(command!.commandRoot))?.shell ?? 'powershell.exe';
+    }
+
+    private looksLikePowershellProcessNotFound(stderr: string, error: cp.ExecException): boolean
+    {
+        // These patterns are emitted by cmd.exe (the Windows shell) when it cannot find or launch
+        // the specified executable — as opposed to PowerShell starting successfully but the install
+        // script itself failing. Detecting them lets us retry with a probed path.
+        return !!error && !!stderr && (
+            stderr.includes('is not recognized as an internal or external command') ||
+            stderr.includes('The system cannot find the path specified')
+        );
     }
 }
