@@ -52,6 +52,33 @@ jobs:
     - template: prepare-signing.yaml
       parameters:
         SignType: ${{ parameters.SignType }}
+  - pwsh: |
+      $installScriptsDir = 'vscode-dotnet-runtime-library/install scripts'
+      $scriptUrls = @{
+        'dotnet-install.ps1' = 'https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.ps1'
+        'dotnet-install.sh'  = 'https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh'
+      }
+      foreach ($fileName in $scriptUrls.Keys) {
+        $url = $scriptUrls[$fileName]
+        $outPath = Join-Path $installScriptsDir $fileName
+        $downloaded = $false
+        for ($attempt = 1; $attempt -le 3; $attempt++) {
+          try {
+            Invoke-WebRequest -Uri $url -OutFile $outPath -UseBasicParsing
+            $downloaded = $true
+            Write-Host "✅ Downloaded $fileName (attempt $attempt)"
+            break
+          } catch {
+            Write-Host "⚠️ Attempt $attempt failed for $fileName`: $($_.Exception.Message)"
+          }
+        }
+        if (-not $downloaded) {
+          Write-Error "❌ Failed to download $fileName after 3 attempts. Cannot bundle install scripts."
+          exit 1
+        }
+      }
+      Write-Host "✅ Install scripts bundled successfully."
+    displayName: '📥 Download and Bundle Install Scripts'
   - bash: |
       npm ci rimraf --registry=https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/
       npm ci @vscode/vsce --registry=https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/
@@ -71,6 +98,44 @@ jobs:
     env:
       SignType: ${{ parameters.SignType }}
       TestBuild: ${{ parameters.TestBuild }}
+  - pwsh: |
+      Add-Type -AssemblyName System.IO.Compression.FileSystem
+      $packagesDir = '../packages'
+      $installScriptsDirInVsix = 'extension/dist/install scripts'
+      $requiredScripts = @(
+        "$installScriptsDirInVsix/dotnet-install.ps1",
+        "$installScriptsDirInVsix/dotnet-install.sh"
+      )
+      $vsixFiles = Get-ChildItem -Path $packagesDir -Filter '*.vsix' -Recurse
+      if ($vsixFiles.Count -eq 0) {
+        Write-Error "❌ No VSIX files found in $packagesDir."
+        exit 1
+      }
+      $anyFailed = $false
+      foreach ($vsix in $vsixFiles) {
+        Write-Host "🔍 Verifying install scripts in: $($vsix.Name)"
+        $zip = [System.IO.Compression.ZipFile]::OpenRead($vsix.FullName)
+        try {
+          $vsixEntries = $zip.Entries | ForEach-Object { $_.FullName }
+          foreach ($script in $requiredScripts) {
+            if ($vsixEntries -contains $script) {
+              Write-Host "  ✅ Found: $script"
+            } else {
+              Write-Host "  ❌ Missing: $script"
+              $anyFailed = $true
+            }
+          }
+        } finally {
+          $zip.Dispose()
+        }
+      }
+      if ($anyFailed) {
+        Write-Error "❌ One or more install scripts are missing from the VSIX. The extension will not be able to fall back to bundled scripts."
+        exit 1
+      }
+      Write-Host "✅ All install scripts are present in the VSIX."
+    displayName: '🔍 Verify Install Scripts are Bundled in VSIX'
+    workingDirectory: $(dir-name)
   - template: list-file-structure.yaml
   - pwsh: |
       $target = Join-Path '$(Build.ArtifactStagingDirectory)' 'package_files'
