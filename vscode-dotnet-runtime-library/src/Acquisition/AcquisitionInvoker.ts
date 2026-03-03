@@ -264,6 +264,15 @@ At dotnet-install.ps1:1189 char:5
      */
     private async verifyPowershellCanRun(installId: DotnetInstall): Promise<string>
     {
+        // Fast path: check if the PowerShell executable exists at the well-known absolute path before
+        // spawning processes to validate, as process-based validation can take several seconds on some systems.
+        const systemRoot = process.env.SystemRoot ?? process.env.SYSTEMROOT ?? 'C:\\Windows';
+        const defaultPowershellPath = `${systemRoot}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`;
+        if (await this.fileUtilities.exists(defaultPowershellPath))
+        {
+            return defaultPowershellPath;
+        }
+
         let knownError = false;
         let error = null;
         let command = null;
