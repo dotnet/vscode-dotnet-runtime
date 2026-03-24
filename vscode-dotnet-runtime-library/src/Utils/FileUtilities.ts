@@ -244,6 +244,16 @@ export class FileUtilities extends IFileUtilities
 
     public static async fileIsOpen(filePath: string, eventStream?: IEventStream): Promise<boolean>
     {
+        try
+        {
+            await fs.promises.access(filePath, fs.constants.F_OK);
+        }
+        catch
+        {
+            eventStream?.post(new FileIsNotBusy(`The file ${filePath} does not exist, so it is not busy.`));
+            return false;
+        }
+
         let fileHandle: fs.promises.FileHandle | null = null;
         if (os.platform() === 'win32')
         {
@@ -270,12 +280,6 @@ export class FileUtilities extends IFileUtilities
         }
         else
         {
-            if (!fs.existsSync(filePath))
-            {
-                eventStream?.post(new FileIsNotBusy(`The file ${filePath} does not exist, so it is not busy.`));
-                return false;
-            }
-
             try
             {
                 // 10s timeout: targeted lsof queries complete in <1s on normal systems.

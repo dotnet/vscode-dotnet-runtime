@@ -17,8 +17,8 @@ suite('FileUtilities Unit Tests', function ()
     {
         test('returns false for a non-existent file path', async function ()
         {
-            // Non-existent files hit the fs.existsSync guard and return false
-            // immediately without spawning lsof.
+            // Non-existent files hit the async fs.promises.access guard
+            // and return false without spawning lsof or opening a handle.
             const result = await FileUtilities.fileIsOpen('/tmp/dotnet-test-nonexistent-file-abc123xyz');
             assert.isFalse(result, 'fileIsOpen should return false for a file that does not exist');
         });
@@ -53,8 +53,8 @@ suite('FileUtilities Unit Tests', function ()
             {
                 this.skip();
             }
-            // On Windows, fileIsOpen uses fs.promises.open which throws ENOENT
-            // for non-existent files, caught by the finally block.
+            // On Windows, non-existent files are now caught by the
+            // platform-agnostic fs.promises.access guard at the top.
             const result = await FileUtilities.fileIsOpen('C:\\nonexistent\\dotnet-test-abc123.exe');
             assert.isFalse(result, 'fileIsOpen should return false for a non-existent file on Windows');
         });
