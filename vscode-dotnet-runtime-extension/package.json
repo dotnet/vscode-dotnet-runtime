@@ -49,13 +49,13 @@
                 "canBeReferencedInPrompt": true,
                 "icon": "$(tools)",
                 "userDescription": "Installs a .NET SDK system-wide for building and running .NET projects",
-                "modelDescription": "Installs .NET SDK GLOBALLY. Works on Windows, macOS, and supported Linux distros (Ubuntu, Debian, Red Hat Enterprise Linux). DO NOT call this tool on WSL or other Linux distros — it will not work there. Instead, skip this tool entirely and run the install commands from https://learn.microsoft.com/dotnet/core/install/linux in the terminal. NEVER tell the user something is 'unsupported' — just run the right commands. For preview versions, use your own knowledge to determine the best install approach for the user's platform. ALWAYS RESPECT USER'S VERSION CHOICE - install exactly what they ask for, even if EOL/preview. VERSION SOURCES: (1) User's explicit request (HIGHEST PRIORITY). (2) TargetFramework (net6.0→'6'). (3) global.json. (4) Call getRecommendedDotNetVersion if none specified. Formats: '6', '6.0', '6.0.1xx'. Requires admin.",
+                "modelDescription": "Installs .NET SDK at system level (requires admin). Supported: Windows, macOS, Ubuntu, Debian, RHEL. NOT supported on WSL or other Linux — use terminal commands from https://learn.microsoft.com/dotnet/core/install/linux instead; never say 'unsupported'. Install exactly what user requests, even EOL/preview. Version resolution: (1) user's explicit request, (2) TargetFramework (net8.0→'8'), (3) global.json, (4) call listDotNetVersions. Formats: '6', '6.0', '6.0.1xx'.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
                         "version": {
                             "type": "string",
-                            "description": "REQUIRED. The .NET SDK version to install. If user says 'install .NET 6', pass version='6'. Do NOT refuse or suggest alternatives for EOL versions - install what the user asks for."
+                            "description": "The .NET SDK version. Examples: '6', '6.0', '6.0.1xx'. Install exactly what user requests, even if EOL."
                         }
                     },
                     "required": [
@@ -71,13 +71,13 @@
                 "canBeReferencedInPrompt": true,
                 "icon": "$(list-unordered)",
                 "userDescription": "Lists available .NET SDK and Runtime versions that can be installed",
-                "modelDescription": "Lists .NET versions available from Microsoft. Returns version numbers with support phase (active/maintenance/eol). Respect user's version choice even if EOL - they may have valid compatibility reasons. Call with listRuntimes=false for SDKs (default), listRuntimes=true for runtimes only.",
+                "modelDescription": "Lists .NET versions from Microsoft with support phase (active/maintenance/eol). Respect user's version choice even if EOL. Default: SDKs. Set listRuntimes=true for runtimes.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
                         "listRuntimes": {
                             "type": "boolean",
-                            "description": "If true, lists runtime versions. If false or omitted, lists SDK versions."
+                            "description": "If true, lists runtime versions. Default: SDK versions."
                         }
                     }
                 }
@@ -90,13 +90,13 @@
                 "canBeReferencedInPrompt": true,
                 "icon": "$(search)",
                 "userDescription": "Finds the path to a .NET installation that meets specified requirements",
-                "modelDescription": "Finds .NET installation matching version/architecture requirements. Use to verify .NET is installed before suggesting installation. Searches: existingDotnetPath setting → PATH → DOTNET_ROOT → extension-managed installs. Returns dotnet.exe path if found. Note: Extension-managed local installs (runtime installs) are NOT on PATH and not visible from the terminal via dotnet --version.",
+                "modelDescription": "Finds installed .NET matching version/architecture. Use before suggesting installation. Search order: existingDotnetPath → PATH → DOTNET_ROOT → extension-managed installs. Returns dotnet executable path. Extension-managed local installs are NOT on PATH or visible via 'dotnet --version'.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
                         "version": {
                             "type": "string",
-                            "description": "The minimum .NET version required (major.minor format, e.g., '8.0')"
+                            "description": "Minimum .NET version required (e.g., '8.0')"
                         },
                         "mode": {
                             "type": "string",
@@ -105,7 +105,7 @@
                                 "runtime",
                                 "aspnetcore"
                             ],
-                            "description": "Whether to find an SDK or runtime installation. Defaults to 'runtime'."
+                            "description": "SDK or runtime. Default: 'runtime'."
                         },
                         "architecture": {
                             "type": "string",
@@ -114,7 +114,7 @@
                                 "x86",
                                 "arm64"
                             ],
-                            "description": "The CPU architecture. Defaults to the current system architecture."
+                            "description": "CPU architecture. Default: current system architecture."
                         }
                     },
                     "required": [
@@ -130,13 +130,13 @@
                 "canBeReferencedInPrompt": true,
                 "icon": "$(trash)",
                 "userDescription": "Uninstalls a .NET SDK or Runtime version",
-                "modelDescription": "Uninstalls .NET versions. Works on Windows, macOS, and supported Linux distros (Ubuntu, Debian, Red Hat Enterprise Linux). DO NOT call this tool for SDK uninstall on WSL or other Linux distros — it will not work there. Instead, skip this tool and run the appropriate uninstall commands from https://learn.microsoft.com/dotnet/core/install/linux in the terminal. NEVER tell the user something is 'unsupported' — just run the right commands. Runtime uninstall works on all platforms. REQUIRED: Call listInstalledDotNetVersions first to get installed versions, then provide version+mode. Only extension-managed installs appear by default. Global uninstalls require admin.",
+                "modelDescription": "Uninstalls .NET. SDK uninstall supported on Windows, macOS, Ubuntu, Debian, RHEL only — use terminal for WSL/other Linux (never say 'unsupported': Instead, run uninstall commands from https://learn.microsoft.com/dotnet/core/install/linux in the terminal). Runtime uninstall works everywhere. Call listInstalledDotNetVersions first for version+mode (only shows vscode managed installs though.) Global uninstalls require admin.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
                         "version": {
                             "type": "string",
-                            "description": "REQUIRED: The .NET version to uninstall. Call listInstalledDotNetVersions first to get available versions."
+                            "description": "The .NET version to uninstall. Call listInstalledDotNetVersions first."
                         },
                         "mode": {
                             "type": "string",
@@ -145,11 +145,11 @@
                                 "runtime",
                                 "aspnetcore"
                             ],
-                            "description": "Whether to uninstall an SDK or runtime"
+                            "description": "SDK or runtime to uninstall."
                         },
                         "global": {
                             "type": "boolean",
-                            "description": "If true, uninstalls a global/system-wide installation. If false, uninstalls a VS Code-managed local installation."
+                            "description": "True: global/system-wide. False: VS Code-managed local."
                         }
                     },
                     "required": [
@@ -164,8 +164,8 @@
                 "toolReferenceName": "getDotNetSettingsInfo",
                 "canBeReferencedInPrompt": true,
                 "icon": "$(info)",
-                "userDescription": "Get comprehensive information about .NET Install Tool settings, installation types, and troubleshooting",
-                "modelDescription": "Call FIRST for .NET installation questions, settings confusion, or troubleshooting. Returns guide explaining: existingDotnetPath (for extensions, NOT user code), local vs global installs, why extension installs aren't on PATH, and common fixes. Essential context before diagnosing .NET issues.",
+                "userDescription": "Get information about .NET Install Tool settings, installation types, and troubleshooting",
+                "modelDescription": "Call FIRST for .NET installation questions or troubleshooting. Returns guide on: existingDotnetPath (controls extension runtime, NOT user code), local vs global installs, settings, common fixes. Essential before diagnosing .NET issues.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {}
@@ -179,13 +179,13 @@
                 "canBeReferencedInPrompt": true,
                 "icon": "$(list-tree)",
                 "userDescription": "Lists .NET SDK or Runtime versions that are currently installed on the system",
-                "modelDescription": "Lists installed .NET SDKs and Runtimes. IMPORTANT: Present ALL versions from results to user - do NOT summarize or truncate version lists. PREFER this over terminal commands - results are cached for ~10s so faster on repeat calls. Returns version and architecture for each install. No parameters needed for default PATH lookup. Specify dotnetPath to query installs available to a specific dotnet executable - useful when a local/user install may differ from the global admin location (e.g., C:\\Program Files\\dotnet). NOTE: Windows Desktop Runtime (Microsoft.WindowsDesktop.App) is NOT tracked by this tool. If the user asks about Windows Desktop Runtime, run 'dotnet --list-runtimes' instead.",
+                "modelDescription": "Lists installed .NET SDKs and Runtimes. Present ALL versions to user — do not truncate. Prefer over terminal commands (cached ~10s). Returns version and architecture. Default: queries PATH. Set dotnetPath for a specific executable. Windows Desktop Runtime not tracked — use 'dotnet --list-runtimes' for that.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
                         "dotnetPath": {
                             "type": "string",
-                            "description": "Optional path to a specific dotnet executable to query. If not provided, uses the dotnet on PATH (global install). Example: 'C:\\Program Files\\dotnet\\dotnet.exe'"
+                            "description": "Path to dotnet executable to query. Default: PATH lookup."
                         },
                         "mode": {
                             "type": "string",
@@ -194,7 +194,7 @@
                                 "runtime",
                                 "aspnetcore"
                             ],
-                            "description": "If omitted, returns BOTH SDKs and Runtimes. Set to 'sdk' for only SDKs, 'runtime' for only runtimes."
+                            "description": "Omit for both SDKs and Runtimes. Set to filter."
                         }
                     }
                 }
