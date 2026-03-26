@@ -22,7 +22,7 @@
 		"watch": "npm run clean && tsc -watch -p ./",
 		"test": "npm run compile --silent && npm run copyTestAssets && npm run unit-test",
 		"unit-test": "mocha -u tdd -- dist/test/unit/**.test.js",
-		"clean": "rimraf dist"
+		"clean": "npx rimraf dist"
 	},
 	"devDependencies": {
 		"@types/chai": "4.2.22",

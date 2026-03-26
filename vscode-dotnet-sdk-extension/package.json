@@ -81,7 +81,7 @@
 		"mockPack:win32": "pushd .. && @powershell -NoProfile -ExecutionPolicy Unrestricted -Command ./mock-webpack.ps1 && popd",
 		"watch": "npm run compile && tsc -watch -p ./",
 		"test": "npm run compile --silent && node ./dist/test/functional/runTest.js",
-		"clean": "rimraf dist",
+		"clean": "npx rimraf dist",
 		"compile-all": "cd ../vscode-dotnet-runtime-library && npm install && npm run compile && cd ../vscode-dotnet-sdk-extension && npm install && npm run compile",
 		"lint": "npx eslint@^8.57.0 -c .eslintrc.js --ext=.ts vscode-dotnet-runtime-library/src/**/*.ts vscode-dotnet-runtime-extension/src/**/*.ts --ignore-pattern \"**/test/\" --fix",
 		"webpack": "webpack --mode development"
