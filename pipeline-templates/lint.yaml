@@ -11,6 +11,6 @@ jobs:
     - script: build.cmd
       displayName: 💻 Build Windows to Install Deps
     - bash: |
-        npm install eslint@8.57.0 @typescript-eslint/parser@8.0.0 @typescript-eslint/eslint-plugin@8.0.0 eslint-plugin-header@3.1.1 --save-dev
+        npm ci eslint@8.57.0 @typescript-eslint/parser@8.0.0 @typescript-eslint/eslint-plugin@8.0.0 eslint-plugin-header@3.1.1 --save-dev
         npm run lint
       displayName: 🧶 Run Lint
