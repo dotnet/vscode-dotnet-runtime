@@ -10,76 +10,60 @@
  * Extracted into its own file to keep LanguageModelTools.ts focused on tool logic.
  */
 export const settingsInfoContent = `
-# .NET Install Tool - Complete Guide for AI Agents
+# .NET Install Tool - Guide
 
 ## Overview
-The .NET Install Tool is a VS Code extension that helps manage .NET installations. It serves TWO distinct purposes:
-1. **For VS Code Extensions**: Automatically installs .NET runtimes that OTHER extensions (like C#, C# DevKit) need to run
+The .NET Install Tool is a VS Code extension that manages .NET installations. It serves two distinct purposes:
+1. **For VS Code Extensions**: Automatically installs .NET runtimes that other extensions (C#, C# DevKit, Unity, Bicep, etc.) need to run their internal components
 2. **For Users**: Provides commands to install .NET SDKs system-wide for development
 
 ---
 
-## CRITICAL: Understanding Installation Types
+## Installation Types
 
-### 1. LOCAL Runtime Installs (Extension-Managed)
-**What:** Small, isolated .NET runtime installations managed by this extension
-**Where:** Stored in VS Code's extension data folder (NOT in Program Files, NOT on PATH)
-**Purpose:** Used by VS Code extensions (C#, C# DevKit, Unity, Bicep, Etc) to run their internal components
-**Key Points:**
-- These are NOT visible via \`dotnet --list-runtimes\` in terminal
-- These are NOT on the system PATH
-- Users should NOT use these for their own projects
-- The extension auto-manages these - users rarely need to interact with them
-- Uninstall list ONLY shows these local installs for runtimes
+### LOCAL (Extension-Managed) Runtime Installs
+- Small, isolated .NET runtime installs stored in VS Code's extension data folder
+- NOT on the system PATH, NOT visible via \`dotnet --list-runtimes\`
+- Used solely by VS Code extensions to run their internal components
+- Auto-managed; users rarely need to interact with these
+- The extension's uninstall list ONLY shows these local installs for runtimes
 
-### 2. GLOBAL/Admin SDK Installs
-**What:** System-wide .NET SDK installations (includes runtimes)
-**Where:**
-  - Windows: \`C:\\Program Files\\dotnet\` (requires admin/elevated privileges)
-  - macOS: \`/usr/local/share/dotnet\`
-  - Linux: \`/usr/lib/dotnet\` or \`/usr/share/dotnet\`
-**Purpose:** For users to BUILD and RUN their own .NET projects
-**Key Points:**
-- Installed via MSI on Windows (users may not know this term - just say "system installer")
-- Installed via package manager on Linux (e.g., apt, dnf, yum)
-- Installed via a .pkg on MacOS
-- Requires administrator/sudo privileges, and the user must accept the prompts
+### GLOBAL/Admin SDK Installs (system-wide)
+- System-wide .NET SDK installs (includes runtimes)
+- Locations: Windows: \`C:\\Program Files\\dotnet\` (admin required) | macOS: \`/usr/local/share/dotnet\` (.pkg) | Linux: \`/usr/lib/dotnet\` or \`/usr/share/dotnet\` (package manager, officially Ubuntu/Debian only; WSL is not supported)
+- Requires administrator/sudo privileges; users must accept elevation prompts
 - IS on the system PATH after installation
 - Visible via \`dotnet --list-sdks\` and \`dotnet --list-runtimes\`
 - Use "Install .NET SDK System-Wide" command for this
 
 ---
 
-## The existingDotnetPath Setting (COMMONLY MISUNDERSTOOD!)
+## existingDotnetPath Setting (Commonly Misunderstood)
 
-### What It Actually Does
+### What It Does
 Controls which .NET runtime VS Code **extensions** use to run their internal components.
 
 ### What It Does NOT Do
-- Does NOT change what .NET your CODE runs on
+- Does NOT change what .NET the user's code runs on
 - Does NOT affect \`dotnet build\` or \`dotnet run\` commands
-- Does NOT change your project's target framework
+- Does NOT change a project's target framework
 
-### When Users Need This Setting
-1. Extensions fail to start with "could not find .NET runtime" errors
-2. Corporate/restricted environments where the extension cannot auto-download .NET
-3. Air-gapped machines without internet access or powershell script execution restrictions
-4. User wants extensions to use a specific pre-installed .NET version
+### When Users Need This
+- Extensions fail to start with "could not find .NET runtime" errors
+- Corporate/restricted environments where the extension cannot auto-download .NET
+- Air-gapped machines without internet or PowerShell script execution restrictions
+- User wants extensions to use a specific pre-installed .NET version
 
 **IMPORTANT:** If a user wants to pin which SDK their PROJECT uses (for \`dotnet build\`, \`dotnet run\`, etc.), existingDotnetPath is the WRONG setting. They should use \`global.json\` instead — see the "I want to use a local/repo-specific SDK" scenario below.
 
-### Correct Format
+Format:
 \`\`\`json
 "dotnetAcquisitionExtension.existingDotnetPath": [
-  {
-    "extensionId": "ms-dotnettools.csharp",
-    "path": "C:\\\\Program Files\\\\dotnet\\\\dotnet.exe"
-  }
+  { "extensionId": "ms-dotnettools.csharp", "path": "C:\\\\Program Files\\\\dotnet\\\\dotnet.exe" }
 ]
 \`\`\`
 
-### sharedExistingDotnetPath
-Same purpose but applies to ALL extensions at once (simpler):
+**sharedExistingDotnetPath** applies to ALL extensions at once:
 \`\`\`json
 "dotnetAcquisitionExtension.sharedExistingDotnetPath": "C:\\\\Program Files\\\\dotnet\\\\dotnet.exe"
 \`\`\`
@@ -88,174 +72,86 @@ Same purpose but applies to ALL extensions at once (simpler):
 
 ## How to See What's Installed
 
-### Extension-Managed Local Installs
-- Run the "Uninstall .NET" command - the dropdown shows all extension-managed installs
-- These are the ONLY installs the extension's uninstall feature directly manages
+**Extension-Managed Local Installs:** Run the "Uninstall .NET" command — the dropdown shows all extension-managed installs.
 
-### System-Wide Global Installs
-- Run in terminal: \`dotnet --list-sdks\` (shows SDKs)
-- Run in terminal: \`dotnet --list-runtimes\` (shows runtimes)
-- Use the "Find .NET Path" tool to locate installations
-- **Use the "List Installed Versions" tool** - queries what's installed for a given dotnet host
+**System-Wide Global Installs:** Run \`dotnet --list-sdks\` and \`dotnet --list-runtimes\` in terminal, or use the listInstalledVersions tool.
 
-### Using the listInstalledVersions Tool
-This tool calls \`dotnet.availableInstalls\` to scan what SDKs/runtimes are installed for a specific dotnet executable.
-- If no path provided: Uses PATH (i.e., the global install)
-- Returns version, architecture, and directory for each install
-- Great for checking what's ALREADY installed before installing more
+**listInstalledVersions Tool:** Calls \`dotnet.availableInstalls\` to scan SDKs/runtimes for a given dotnet executable. If no path provided, it uses PATH (the global install). Returns version, architecture, and directory for each install.
 
 ---
 
-## Uninstall Tricks & Tips
+## Uninstall Notes
 
-### The Uninstall List Only Shows Extension-Managed Installs
-The extension's uninstall command only lists .NET versions that IT installed locally.
-
-### TRICK: Uninstalling a Global SDK Not in the List
-If a user wants to uninstall a system-wide SDK (like one in C:\\Program Files) that's not showing in the uninstall list:
-1. Use the "Install .NET SDK System-Wide" command with the SAME version
-2. The extension will detect it's already installed and REGISTER it
-3. Now it will appear in the uninstall list and can be removed
-
-### Global SDK Uninstall Requires Admin
-Uninstalling global SDKs requires the same admin/elevated privileges as installing them.
+- The uninstall list only shows extension-managed installs, not system-wide ones
+- **Trick:** To uninstall a global SDK not in the list, first install the SAME version via the extension (this registers it), then it appears in the uninstall list
+- Global SDK uninstall requires the same admin/elevated privileges as installing
 
 ---
 
-## Choosing Which Version to Install
+## Version Selection
 
-### Check for global.json First!
-Before installing .NET, ALWAYS check if the project has a \`global.json\` file in the project root. This file pins the SDK version the project requires:
+Always check for \`global.json\` first — if present, install the version in \`sdk.version\` (respecting rollForward policy). If absent, install the latest LTS version.
 
-\`\`\`json
-{
-  "sdk": {
-    "version": "8.0.100",
-    "rollForward": "latestFeature"
-  }
-}
-\`\`\`
+### SDK vs Runtime Versioning
+SDK and Runtime versions share the same **major.minor** but differ in patch:
 
-**If global.json exists:** Install the version specified in the \`sdk.version\` field (or a compatible one based on rollForward policy).
+| SDK Version | Includes Runtime |
+|-------------|-----------------|
+| 8.0.100     | 8.0.0           |
+| 8.0.204     | 8.0.4           |
+| 9.0.100     | 9.0.0           |
 
-**If no global.json:** Install the latest LTS (Long Term Support) version, or ask the user which version they prefer.
-
-### SDK vs Runtime Versioning (IMPORTANT!)
-SDK and Runtime versions do NOT match exactly, but they DO share the same **major.minor** version:
-
-| SDK Version | Includes Runtime Version |
-|-------------|-------------------------|
-| 8.0.100     | 8.0.0                   |
-| 8.0.204     | 8.0.4                   |
-| 9.0.100     | 9.0.0                   |
-
-**Key insight:** Installing an SDK **always includes** the corresponding runtime for that major.minor version.
-
-So if a user needs ".NET 8 runtime", you can install the .NET 8 SDK and they'll get both:
-- The SDK (for building)
-- The runtime (for running)
-
-### When User Asks for "Runtime Only"
-- If they just want to RUN .NET apps (not build): They technically only need the runtime
-- But the SDK includes the runtime, so installing the SDK works fine
-- The global "Install .NET SDK System-Wide" command installs the SDK (which includes runtimes)
-- Extension-managed LOCAL installs can be runtime-only (for extension use)
+Installing an SDK always includes the corresponding runtime. If a user needs ".NET 8 runtime," installing the .NET 8 SDK provides both.
 
 ---
 
-## Common User Scenarios
+## global.json paths (.NET 10+)
 
-### "I want to develop .NET applications"
-→ Install an SDK globally: Use "Install .NET SDK System-Wide" command
-→ This gives them \`dotnet\` CLI access for build, run, test, publish
-
-### "C# extension won't start / can't find .NET"
-→ First check if .NET is installed: \`dotnet --version\` in terminal
-→ If not installed: Install SDK globally
-→ If installed but not detected: Set existingDotnetPath or sharedExistingDotnetPath
-
-### "I want to use a different .NET version for my project"
-→ This is NOT about existingDotnetPath!
-→ Options:
-  1. Create global.json in project root: \`{ "sdk": { "version": "8.0.100" } }\`
-  2. Install the desired SDK version globally
-  3. Modify PATH to prioritize a specific dotnet installation
-
-### "I want to use a local/repo-specific SDK (not a global install)"
-→ This is NOT about existingDotnetPath! existingDotnetPath only controls which runtime VS Code extensions use internally.
-→ Use the \`paths\` property in global.json (.NET 10 SDK+ required):
-  1. Ensure .NET 10 SDK or later is installed (the host \`dotnet\` must be 10+)
-  2. Place or install the desired SDK in a folder relative to the repo (e.g. \`.dotnet/\`)
-  3. Create or modify \`global.json\` in the repo root:
+For repo-local SDK resolution, use the \`paths\` property in global.json:
 \`\`\`json
 {
   "sdk": {
     "version": "10.0.100",
     "paths": [ ".dotnet", "$host$" ],
-    "errorMessage": "Required .NET SDK not found. Please run ./install.sh to install it."
+    "errorMessage": "Required .NET SDK not found. Run ./install.sh to install."
   }
 }
 \`\`\`
-  - \`paths\` lists directories to search for SDKs, in order. Paths are relative to the global.json location.
-  - \`$host$\` is a special value meaning the location of the running \`dotnet\` executable (i.e. the global install).
-  - The first matching SDK found wins.
-  - This ONLY works with SDK commands (\`dotnet run\`, \`dotnet build\`, etc.), NOT with native apphost (\`app.exe\`) or \`dotnet app.dll\`.
-→ Reference: https://learn.microsoft.com/en-us/dotnet/core/tools/global-json#paths
-
-### "How do I know which dotnet the C# extension is using?"
-→ Use the "Find .NET Path" tool - it searches in priority order:
-  1. existingDotnetPath setting
-  2. PATH environment variable
-  3. DOTNET_ROOT environment variable
-  4. Extension-managed local installs
-
-### "The extension installed .NET but I can't use it in terminal"
-→ Extension-managed installs are LOCAL and not on PATH
-→ For terminal/CLI usage, install globally with "Install .NET SDK System-Wide"
+- \`paths\` lists directories to search for SDKs, in order (relative to global.json location)
+- \`$host$\` = location of the running \`dotnet\` executable (i.e., the global install)
+- First matching SDK wins
+- Only works with SDK commands (\`dotnet run\`, \`dotnet build\`), NOT with native apphost
+- The host \`dotnet\` must be .NET 10+
+- Ref: https://learn.microsoft.com/en-us/dotnet/core/tools/global-json#paths
 
 ---
 
-## Other Useful Settings
+## Common Scenarios
+
+- **"I want to develop .NET applications"** \u2192 Install an SDK globally via "Install .NET SDK System-Wide." This provides the \`dotnet\` CLI for build, run, test, and publish.
+- **"C# extension won't start / can't find .NET"** \u2192 Check \`dotnet --version\` in terminal. If missing, install SDK globally. If installed but not detected, set existingDotnetPath or sharedExistingDotnetPath.
+- **"Extension installed .NET but I can't use it in terminal"** \u2192 Extension-managed installs are LOCAL and not on PATH. For terminal/CLI usage, install globally.
+- **"I want to use a different .NET version for my project"** \u2192 NOT existingDotnetPath. Create \`global.json\` in the project root or install the desired SDK globally.
+- **"I want a local/repo-specific SDK (not global)"** \u2192 NOT existingDotnetPath. Use the \`paths\` property in global.json (.NET 10+ required) — see section above.
+- **"Which dotnet does the C# extension use?"** \u2192 Use the findDotNetPath tool. It searches in order: existingDotnetPath setting \u2192 PATH \u2192 DOTNET_ROOT \u2192 extension-managed local installs.
+
+---
+
+## Other Settings
 
 - **installTimeoutValue**: Seconds to wait for downloads (default: 600). Increase for slow connections.
-- **proxyUrl**: HTTP proxy URL if behind a corporate firewall
+- **proxyUrl**: HTTP proxy URL for corporate firewalls.
 
 ---
 
-## Architecture Note: .NET "Hives"
-.NET supports multiple installation "hives" (locations). The extension manages its own hive separate from global installs. This is why:
-- Extension installs don't conflict with system installs
-- Users can have both extension-managed runtimes AND global SDKs
+## .NET Hives Architecture
+.NET supports multiple installation "hives" (locations). The extension manages its own hive separate from global installs:
+- Extension installs do not conflict with system installs; users can have both extension-managed runtimes AND global SDKs
 - The \`dotnet\` CLI only sees global installs, not extension-managed ones
-- The 'dotnet.findPath' VS Code command we provide shows which hive will be used by C# DevKit and others.
-- The 'dotnet.availableInstalls' command lists what installs are in that hive if you specify the executable with the call.
+- \`dotnet.findPath\` shows which hive C# DevKit and others will use
+- \`dotnet.availableInstalls\` lists installs in a specific hive when given an executable path
 
----
+## Unsupported Platforms
 
-## CRITICAL: Behavior on Unsupported Platforms (WSL, Other Linux Distros, Preview Versions)
-
-**NEVER tell the user that something is "unsupported" or "not available".** Instead, do what a knowledgeable developer would do without this extension.
-
-### When to SKIP the install/uninstall tools entirely
-Do NOT call the installDotNetSdk or uninstallDotNet tools on:
-- **WSL** (Windows Subsystem for Linux)
-- **Linux distros other than Ubuntu, Debian, or Red Hat (RHEL/Fedora/CentOS)**
-
-The extension tools will fail on these platforms. Instead, go straight to running terminal commands.
-
-### What to do instead
-1. **Read the official install guide** at https://learn.microsoft.com/dotnet/core/install/linux to find the correct commands for the user's distro and version
-2. **Run all the commands** needed (repo setup + install) together
-3. The user should not need to know that the extension doesn't handle their platform — just get .NET installed
-
-### Preview / Pre-release Versions
-The extension tools may not support preview versions. Do not tell the user they are "unsupported". Instead:
-Use your own knowledge to determine the best approach.
-
-### Key Principles
-1. **Skip the extension tool on known-unsupported platforms** — don't waste time calling it
-2. **Never say "unsupported"** to the user — just do what needs to be done via terminal
-3. **Reference https://learn.microsoft.com/dotnet/core/install/linux** for the correct Linux commands
-4. **Ask the user for permission** before running install/uninstall commands in the terminal
-5. **WSL is just Linux** — use the appropriate distro commands
+NEVER say "unsupported." On WSL or unsupported Linux distros, SKIP system level extension tools and use terminal commands from https://learn.microsoft.com/dotnet/core/install/linux. For preview versions, use your own knowledge.
 `;
