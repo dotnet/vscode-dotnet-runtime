@@ -56,16 +56,14 @@ Controls which .NET runtime VS Code **extensions** use to run their internal com
 
 **IMPORTANT:** If a user wants to pin which SDK their PROJECT uses (for \`dotnet build\`, \`dotnet run\`, etc.), existingDotnetPath is the WRONG setting. They should use \`global.json\` instead — see the "I want to use a local/repo-specific SDK" scenario below.
 
-Format:
+Setting names and formats:
+- \`dotnetAcquisitionExtension.existingDotnetPath\` — per-extension:
 \`\`\`json
-"dotnetAcquisitionExtension.existingDotnetPath": [
-  { "extensionId": "ms-dotnettools.csharp", "path": "C:\\\\Program Files\\\\dotnet\\\\dotnet.exe" }
-]
+[{ "extensionId": "ms-dotnettools.csharp", "path": "C:\\\\Program Files\\\\dotnet\\\\dotnet.exe" }]
 \`\`\`
-
-**sharedExistingDotnetPath** applies to ALL extensions at once:
+- \`dotnetAcquisitionExtension.sharedExistingDotnetPath\` — all extensions:
 \`\`\`json
-"dotnetAcquisitionExtension.sharedExistingDotnetPath": "C:\\\\Program Files\\\\dotnet\\\\dotnet.exe"
+"C:\\\\Program Files\\\\dotnet\\\\dotnet.exe"
 \`\`\`
 
 ---
@@ -90,18 +88,16 @@ Format:
 
 ## Version Selection
 
-Always check for \`global.json\` first — if present, install the version in \`sdk.version\` (respecting rollForward policy). If absent, install the latest LTS version.
+Check \`global.json\` first — if present, install \`sdk.version\` (respecting rollForward). Otherwise, latest LTS.
 
-### SDK vs Runtime Versioning
-SDK and Runtime versions share the same **major.minor** but differ in patch:
+SDK and runtime share major.minor but differ in patch:
 
-| SDK Version | Includes Runtime |
-|-------------|-----------------|
-| 8.0.100     | 8.0.0           |
-| 8.0.204     | 8.0.4           |
-| 9.0.100     | 9.0.0           |
+| SDK     | Includes Runtime |
+|---------|-----------------|
+| 8.0.100 | 8.0.0           |
+| 8.0.204 | 8.0.4           |
 
-Installing an SDK always includes the corresponding runtime. If a user needs ".NET 8 runtime," installing the .NET 8 SDK provides both.
+Installing an SDK always includes the corresponding runtime.
 
 ---
 
@@ -115,10 +111,8 @@ For repo-local SDK resolution, use the \`paths\` property in global.json:
     "paths": [ ".dotnet", "$host$" ],
     "errorMessage": "Required .NET SDK not found. Run ./install.sh to install."
   }
-}
+{ "sdk": { "version": "10.0.100", "paths": [".dotnet", "$host$"] } }
 \`\`\`
-- \`paths\` lists directories to search for SDKs, in order (relative to global.json location)
-- \`$host$\` = location of the running \`dotnet\` executable (i.e., the global install)
 - First matching SDK wins
 - Only works with SDK commands (\`dotnet run\`, \`dotnet build\`), NOT with native apphost
 - The host \`dotnet\` must be .NET 10+
@@ -137,7 +131,7 @@ For repo-local SDK resolution, use the \`paths\` property in global.json:
 
 ---
 
-## Other Settings
+## Common Scenarios
 
 - **installTimeoutValue**: Seconds to wait for downloads (default: 600). Increase for slow connections.
 - **proxyUrl**: HTTP proxy URL for corporate firewalls.
@@ -153,5 +147,5 @@ For repo-local SDK resolution, use the \`paths\` property in global.json:
 
 ## Unsupported Platforms
 
-NEVER say "unsupported." On WSL or unsupported Linux distros, SKIP system level extension tools and use terminal commands from https://learn.microsoft.com/dotnet/core/install/linux. For preview versions, use your own knowledge.
+On WSL or unsupported Linux distros, do not call install/uninstall tools (they will fail). Instead, fetch the install commands from https://learn.microsoft.com/dotnet/core/install/linux and run them in the terminal directly.
 `;

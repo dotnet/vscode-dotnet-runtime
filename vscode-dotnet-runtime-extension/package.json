@@ -49,7 +49,7 @@
                 "canBeReferencedInPrompt": true,
                 "icon": "$(tools)",
                 "userDescription": "Installs a .NET SDK system-wide for building and running .NET projects",
-                "modelDescription": "Installs .NET SDK at system level (requires admin). Supported: Windows, macOS, Ubuntu, Debian, RHEL. NOT supported on WSL or other Linux — use terminal commands from https://learn.microsoft.com/dotnet/core/install/linux instead; never say 'unsupported'. Install exactly what user requests, even EOL/preview. Version resolution: (1) user's explicit request, (2) TargetFramework (net8.0→'8'), (3) global.json, (4) call listDotNetVersions. Formats: '6', '6.0', '6.0.1xx'.",
+                "modelDescription": "Installs .NET SDK system-wide (requires admin). Supported: Windows, macOS, Ubuntu, Debian, RHEL. On WSL or other Linux distros, do NOT call this tool — it will fail. Instead, fetch install commands from https://learn.microsoft.com/dotnet/core/install/linux and run them in the terminal. Install exactly what user requests, even EOL/preview. Version resolution: (1) user request, (2) TargetFramework, (3) global.json, (4) listDotNetVersions. Formats: '6', '6.0', '6.0.1xx'.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -130,7 +130,7 @@
                 "canBeReferencedInPrompt": true,
                 "icon": "$(trash)",
                 "userDescription": "Uninstalls a .NET SDK or Runtime version",
-                "modelDescription": "Uninstalls .NET. SDK uninstall supported on Windows, macOS, Ubuntu, Debian, RHEL only — use terminal for WSL/other Linux (never say 'unsupported': Instead, run uninstall commands from https://learn.microsoft.com/dotnet/core/install/linux in the terminal). Runtime uninstall works everywhere. Call listInstalledDotNetVersions first for version+mode (only shows vscode managed installs though.) Global uninstalls require admin.",
+                "modelDescription": "Uninstalls .NET SDK or runtime. SDK uninstall: Windows, macOS, Ubuntu, Debian, RHEL only. On WSL or other Linux distros, do NOT call this tool — it will fail. Instead, fetch uninstall commands from https://learn.microsoft.com/dotnet/core/install/linux and run them in the terminal. Call listInstalledDotNetVersions first for version+mode. Global uninstalls require admin.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -165,7 +165,7 @@
                 "canBeReferencedInPrompt": true,
                 "icon": "$(info)",
                 "userDescription": "Get information about .NET Install Tool settings, installation types, and troubleshooting",
-                "modelDescription": "Call FIRST for .NET installation questions or troubleshooting. Returns guide on: existingDotnetPath (controls extension runtime, NOT user code), local vs global installs, settings, common fixes. Essential before diagnosing .NET issues.",
+                "modelDescription": "Returns the .NET Install Tool guide. Call first for installation questions or troubleshooting. Covers: existingDotnetPath/sharedExistingDotnetPath (extension runtime only, not project SDK — use global.json for that), local vs global installs, version selection, common fixes.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {}
@@ -179,13 +179,13 @@
                 "canBeReferencedInPrompt": true,
                 "icon": "$(list-tree)",
                 "userDescription": "Lists .NET SDK or Runtime versions that are currently installed on the system",
-                "modelDescription": "Lists installed .NET SDKs and Runtimes. Present ALL versions to user — do not truncate. Prefer over terminal commands (cached ~10s). Returns version and architecture. Default: queries PATH. Set dotnetPath for a specific executable. Windows Desktop Runtime not tracked — use 'dotnet --list-runtimes' for that.",
+                "modelDescription": "Lists installed .NET SDKs and runtimes. Show all versions to user. Default: queries PATH. Pass dotnetPath to query a specific executable. Windows Desktop Runtime not tracked — use 'dotnet --list-runtimes' for that.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
                         "dotnetPath": {
                             "type": "string",
-                            "description": "Path to dotnet executable to query. Default: PATH lookup."
+                            "description": "Path to a dotnet executable to query. Default: PATH lookup."
                         },
                         "mode": {
                             "type": "string",
@@ -258,7 +258,7 @@
                 },
                 "dotnetAcquisitionExtension.sharedExistingDotnetPath": {
                     "type": "string",
-                    "description": "The path of the preexisting .NET Runtime you'd like to use for ALL extensions. Restart VS Code to apply changes.",
+                    "description": "The path of a preexisting .NET Runtime for ALL VS Code extensions to use for their internal components. This does NOT control the SDK or runtime used by your projects. Restart VS Code to apply changes.",
                     "examples": [
                         "C:\\Program Files\\dotnet\\dotnet.exe",
                         "/usr/local/share/dotnet/dotnet",
