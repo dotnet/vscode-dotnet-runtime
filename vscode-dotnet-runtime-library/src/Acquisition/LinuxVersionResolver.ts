@@ -3,7 +3,9 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
+import * as os from 'os';
 import * as path from 'path';
+import { IEventStream } from '../EventStream/EventStream';
 import
 {
     DotnetAcquisitionDistroUnknownError,
@@ -11,6 +13,7 @@ import
     DotnetCustomLinuxInstallExistsError,
     DotnetInstallLinuxChecks,
     DotnetUpgradedEvent,
+    DotnetWSLCheckEvent,
     EventBasedError,
     EventCancellationError
 } from '../EventStream/EventStreamEvents';
@@ -95,8 +98,121 @@ Follow the instructions here to download the .NET SDK: https://learn.microsoft.c
 Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from https://access.redhat.com/downloads/;`
     protected acquireCtx: IDotnetAcquireContext | null | undefined;
 
-    // This includes all distros that we officially support for this tool as a company. If a distro is not in this list, it can still have community member support.
-    public microsoftSupportedDistroIds = [RED_HAT_DISTRO_INFO_KEY, UBUNTU_DISTRO_INFO_KEY];
+    // All distros that we officially support for this tool. If a distro is not in this list, it can still have community member support.
+    public static readonly microsoftSupportedDistroIds = [RED_HAT_DISTRO_INFO_KEY, UBUNTU_DISTRO_INFO_KEY];
+
+    /**
+     * Checks if the system is running under WSL.
+     * Checks env vars first, then falls back to /proc/version.
+     * @param eventStream Optional event stream for diagnostic logging.
+     */
+    public static async isWSL(eventStream?: IEventStream): Promise<boolean>
+    {
+        eventStream?.post(new DotnetWSLCheckEvent(`Checking if system is WSL. OS: ${os.platform()}`));
+
+        if (os.platform() !== 'linux')
+        {
+            return false;
+        }
+
+        if (process.env.WSL_DISTRO_NAME || process.env.WSLENV)
+        {
+            return true;
+        }
+
+        try
+        {
+            const procVersion = await new FileUtilities().read('/proc/version');
+            return procVersion.toLowerCase().includes('microsoft');
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /**
+     * Detects the Linux distro and version from /etc/os-release.
+     * @param eventStream Optional event stream for diagnostic logging.
+     * @returns The distro name and version, or null if it can't be determined.
+     */
+    public static async getRunningDistro(eventStream?: IEventStream): Promise<DistroVersionPair | null>
+    {
+        if (os.platform() !== 'linux')
+        {
+            return null;
+        }
+
+        const mainOSDeclarationFile = `/etc/os-release`;
+        // Some distros may not include the os-release file specified by system d: https://0pointer.de/blog/projects/os-release
+        // This is a recommended fallback: https://man7.org/linux/man-pages/man5/os-release.5.html
+        const backupOSDeclarationFile = `/usr/lib/os-release`;
+        const fileUtils = new FileUtilities();
+        const osDeclarationFile = await fileUtils.exists(mainOSDeclarationFile) ? mainOSDeclarationFile : backupOSDeclarationFile;
+
+        try
+        {
+            const osInfo = (await fileUtils.read(osDeclarationFile)).split('\n');
+            const infoWithQuotesRemoved = osInfo.map(x => x.replace('"', ''));
+            const infoWithSeparatedKeyValues = infoWithQuotesRemoved.map(x => x.split('='));
+            const keyValueMap = Object.fromEntries(infoWithSeparatedKeyValues.map(x => [x[0], x[1]]));
+
+            const distroName: string = keyValueMap.NAME?.replace('"', '') ?? '';
+            const distroVersion: string = keyValueMap.VERSION_ID?.replace('"', '') ?? '';
+
+            if (distroName === '' || distroVersion === '')
+            {
+                return null;
+            }
+
+            return { distro: distroName, version: distroVersion };
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /**
+     * Checks if the given distro (or the current running distro) is in microsoftSupportedDistroIds.
+     * Returns false if the distro can't be determined.
+     * @param distro Optional distro to check. If not provided, detects the current distro.
+     * @param eventStream Optional event stream for diagnostic logging.
+     */
+    public static async isDistroSupported(distro?: DistroVersionPair | null, eventStream?: IEventStream): Promise<boolean>
+    {
+        const resolvedDistro = distro ?? await LinuxVersionResolver.getRunningDistro(eventStream);
+        if (!resolvedDistro)
+        {
+            return false;
+        }
+        return LinuxVersionResolver.microsoftSupportedDistroIds.includes(resolvedDistro.distro);
+    }
+
+    /**
+     * Checks for WSL or unsupported Linux distro.
+     * Returns { isUnsupported: true, reason } if on WSL or an unsupported distro.
+     * @param eventStream Optional event stream for diagnostic logging.
+     */
+    public static async checkForUnsupportedLinux(eventStream?: IEventStream): Promise<{ isUnsupported: boolean; reason?: string }>
+    {
+        if (os.platform() !== 'linux')
+        {
+            return { isUnsupported: false };
+        }
+
+        if (await LinuxVersionResolver.isWSL(eventStream))
+        {
+            return { isUnsupported: true, reason: 'WSL' };
+        }
+
+        if (!await LinuxVersionResolver.isDistroSupported(undefined, eventStream))
+        {
+            return { isUnsupported: true, reason: 'this Linux distro' };
+        }
+
+        return { isUnsupported: false };
+    }
 
     constructor(private readonly workerContext: IAcquisitionWorkerContext, private readonly utilityContext: IUtilityContext,
         executor: ICommandExecutor | null = null, distroProvider: IDistroDotnetSDKProvider | null = null)
@@ -112,48 +228,19 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
     }
 
     /**
+     * Instance method that delegates to the static getRunningDistro, adding error events and caching.
      * @remarks relies on /etc/os-release currently. public for testing purposes.
-     * @returns The linux distro and version thats running this app. Should only ever be ran on linux.
+     * @returns The linux distro and version. Throws if it cannot be determined.
      */
-    public async getRunningDistro(): Promise<DistroVersionPair>
+    public async getRunningDistroInstance(): Promise<DistroVersionPair>
     {
         if (this.distro)
         {
             return this.distro;
         }
 
-        const mainOSDeclarationFile = `/etc/os-release`;
-        // Some distros may not include the os-release file specified by system d, https://0pointer.de/blog/projects/os-release and this is a recommended fallback https://man7.org/linux/man-pages/man5/os-release.5.html
-        const backupOSDeclarationFile = `/usr/lib/os-release`;
-        const osDeclarationFile = await new FileUtilities().exists(mainOSDeclarationFile) ? mainOSDeclarationFile : backupOSDeclarationFile;
-
-        const distroNameKey = 'NAME';
-        const distroVersionKey = 'VERSION_ID';
-        try
-        {
-            const osInfo = (await new FileUtilities().read(osDeclarationFile)).split('\n');
-            // We need to remove the quotes from the KEY="VALUE"\n pairs returned by the command stdout, and then turn it into a dictionary. We can't use replaceAll for older browsers.
-            // Replace only replaces one quote, so we remove the 2nd one later.
-            const infoWithQuotesRemoved = osInfo.map(x => x.replace('"', ''));
-            const infoWithSeparatedKeyValues = infoWithQuotesRemoved.map(x => x.split('='));
-            const keyValueMap = Object.fromEntries(infoWithSeparatedKeyValues.map(x => [x[0], x[1]]));
-
-            // Remove the 2nd quotes.
-            const distroName: string = keyValueMap[distroNameKey]?.replace('"', '') ?? '';
-            const distroVersion: string = keyValueMap[distroVersionKey]?.replace('"', '') ?? '';
-
-            if (distroName === '' || distroVersion === '')
-            {
-                const error = new DotnetAcquisitionDistroUnknownError(new EventCancellationError('DotnetAcquisitionDistroUnknownError',
-                    this.baseUnsupportedDistroErrorMessage), getInstallFromContext(this.workerContext));
-                this.workerContext.eventStream.post(error);
-                throw error.error;
-            }
-
-            const pair: DistroVersionPair = { distro: distroName, version: distroVersion };
-            return pair;
-        }
-        catch (error)
+        const result = await LinuxVersionResolver.getRunningDistro(this.workerContext.eventStream);
+        if (!result)
         {
             const err = new DotnetAcquisitionDistroUnknownError(new EventCancellationError('DotnetAcquisitionDistroUnknownError',
                 `${this.baseUnsupportedDistroErrorMessage} ... does /etc/os-release or /usr/lib/os-release exist?`),
@@ -161,6 +248,9 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
             this.workerContext.eventStream.post(err);
             throw err.error;
         }
+
+        this.distro = result;
+        return this.distro;
     }
 
 
@@ -173,7 +263,7 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
     {
         if (!this.distro)
         {
-            this.distro = await this.getRunningDistro();
+            this.distro = await this.getRunningDistroInstance();
         }
 
         if (!this.distroSDKProvider)
@@ -192,7 +282,7 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
         }
         else
         {
-            if (!this.microsoftSupportedDistroIds.includes(this.distro.distro))
+            if (!LinuxVersionResolver.microsoftSupportedDistroIds.includes(this.distro.distro))
             {
                 // UX: Could eventually add a 'Go away' button via the callback:
                 this.utilityContext.ui.showInformationMessage(`Automated SDK installation for the distro ${this.distro.distro} is not officially supported, except for community implemented and Microsoft approved support.
