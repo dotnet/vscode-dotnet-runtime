@@ -4,17 +4,11 @@
 *--------------------------------------------------------------------------------------------*/
 import * as os from 'os';
 import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from '../Acquisition/CacheTimeConstants';
-import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { IEventStream } from '../EventStream/EventStream';
-import
-{
-    DotnetWSLCheckEvent
-} from '../EventStream/EventStreamEvents';
 import { IEvent } from '../EventStream/IEvent';
 import { CommandExecutor } from './CommandExecutor';
 import { EventStreamNodeIPCMutexLoggerWrapper } from './EventStreamNodeIPCMutexWrapper';
 import { ICommandExecutor } from './ICommandExecutor';
-import { IUtilityContext } from './IUtilityContext';
 import { NodeIPCMutex } from './NodeIPCMutex';
 
 export async function loopWithTimeoutOnCond(sampleRatePerMs: number, durationToWaitBeforeTimeoutMs: number, conditionToStop: () => boolean, doAfterStop: () => void,
@@ -31,32 +25,6 @@ export async function loopWithTimeoutOnCond(sampleRatePerMs: number, durationToW
         await new Promise(waitAndResolve => setTimeout(waitAndResolve, sampleRatePerMs));
     }
     throw new Error(`The promise timed out at ${durationToWaitBeforeTimeoutMs}.`);
-}
-
-/**
- * Returns true if the linux agent is running under WSL, else false.
- */
-export async function isRunningUnderWSL(acquisitionContext: IAcquisitionWorkerContext, utilityContext: IUtilityContext, executor?: ICommandExecutor): Promise<boolean>
-{
-    // See https://github.com/microsoft/WSL/issues/4071 for evidence that we can rely on this behavior.
-
-    acquisitionContext.eventStream?.post(new DotnetWSLCheckEvent(`Checking if system is WSL. OS: ${os.platform()}`));
-
-    if (os.platform() !== 'linux')
-    {
-        return false;
-    }
-
-    const command = CommandExecutor.makeCommand('grep', ['-i', 'Microsoft', '/proc/version']);
-    executor ??= new CommandExecutor(acquisitionContext, utilityContext);
-    const commandResult = await executor.execute(command, {}, false);
-
-    if (!commandResult || !commandResult.stdout)
-    {
-        return false;
-    }
-
-    return true;
 }
 
 export async function executeWithLock<A extends any[], R>(eventStream: IEventStream, alreadyHoldingLock: boolean, lockId: string, retryTimeMs: number, timeoutTimeMs: number, f: (...args: A) => R, ...args: A): Promise<R>

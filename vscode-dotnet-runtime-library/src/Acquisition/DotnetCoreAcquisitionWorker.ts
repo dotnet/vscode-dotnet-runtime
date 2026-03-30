@@ -49,7 +49,7 @@ import { FileUtilities } from '../Utils/FileUtilities';
 import { IFileUtilities } from '../Utils/IFileUtilities';
 import { getInstallFromContext, getInstallIdCustomArchitecture } from '../Utils/InstallIdUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { executeWithLock, getDotnetExecutable, isRunningUnderWSL } from '../Utils/TypescriptUtilities';
+import { executeWithLock, getDotnetExecutable } from '../Utils/TypescriptUtilities';
 import { DOTNET_INFORMATION_CACHE_DURATION_MS, GLOBAL_LOCK_PING_DURATION_MS, LOCAL_LOCK_PING_DURATION_MS } from './CacheTimeConstants';
 import { directoryProviderFactory } from './DirectoryProviderFactory';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
@@ -71,6 +71,7 @@ import
 } from './InstallRecord';
 import { InstallTrackerSingleton } from './InstallTrackerSingleton';
 import { LinuxGlobalInstaller } from './LinuxGlobalInstaller';
+import { LinuxVersionResolver } from './LinuxVersionResolver';
 import { GLOBAL_INSTALL_STATE_MODIFIER_LOCK } from './StringConstants';
 import { WinMacGlobalInstaller } from './WinMacGlobalInstaller';
 
@@ -415,7 +416,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
     private async acquireGlobalCore(context: IAcquisitionWorkerContext, globalInstallerResolver: GlobalInstallerResolver, install: DotnetInstall): Promise<string>
     {
-        if (await isRunningUnderWSL(context, this.utilityContext))
+        if (await LinuxVersionResolver.isWSL(context.eventStream))
         {
             const err = new DotnetWSLSecurityError(new EventCancellationError('DotnetWSLSecurityError',
                 `Automatic .NET SDK Installation is not yet supported in WSL due to VS Code & WSL limitations.

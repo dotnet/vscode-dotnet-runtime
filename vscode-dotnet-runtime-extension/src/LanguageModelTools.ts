@@ -6,28 +6,29 @@
 import * as os from 'os';
 import * as vscode from 'vscode';
 import
-    {
-        AcquireErrorConfiguration,
-        DotnetAcquisitionCompleted,
-        DotnetAcquisitionStarted,
-        DotnetBeginGlobalInstallerExecution,
-        DotnetInstallMode,
-        DotnetUninstallCompleted,
-        DotnetUninstallFailed,
-        DotnetUninstallStarted,
-        EventStream,
-        IDotnetAcquireContext,
-        IDotnetAcquireResult,
-        IDotnetFindPathContext,
-        IDotnetListVersionsContext,
-        IDotnetListVersionsResult,
-        IDotnetSearchContext,
-        IDotnetSearchResult,
-        IDotnetVersion,
-        IEventStream,
-        LanguageModelToolInvoked,
-        LanguageModelToolPrepareInvocation
-    } from 'vscode-dotnet-runtime-library';
+{
+    AcquireErrorConfiguration,
+    DotnetAcquisitionCompleted,
+    DotnetAcquisitionStarted,
+    DotnetBeginGlobalInstallerExecution,
+    DotnetInstallMode,
+    DotnetUninstallCompleted,
+    DotnetUninstallFailed,
+    DotnetUninstallStarted,
+    EventStream,
+    IDotnetAcquireContext,
+    IDotnetAcquireResult,
+    IDotnetFindPathContext,
+    IDotnetListVersionsContext,
+    IDotnetListVersionsResult,
+    IDotnetSearchContext,
+    IDotnetSearchResult,
+    IDotnetVersion,
+    IEventStream,
+    LanguageModelToolInvoked,
+    LanguageModelToolPrepareInvocation,
+    LinuxVersionResolver
+} from 'vscode-dotnet-runtime-library';
 import { settingsInfoContent } from './SettingsInfoContent';
 
 /**
@@ -111,6 +112,21 @@ class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string }>
     {
         const rawInput = JSON.stringify(options.input);
         this.eventStream.post(new LanguageModelToolInvoked(ToolNames.installSdk, rawInput));
+
+        // Early exit on WSL or unsupported Linux — this tool cannot install there.
+        const linuxCheck = await LinuxVersionResolver.checkForUnsupportedLinux();
+        if (linuxCheck.isUnsupported)
+        {
+            return new vscode.LanguageModelToolResult([
+                new vscode.LanguageModelTextPart(
+                    `.NET is not yet installed on ${linuxCheck.reason}.\n` +
+                    `To install .NET:\n` +
+                    `1. Use a web fetch tool to read https://learn.microsoft.com/dotnet/core/install/linux\n` +
+                    `2. Find the install commands for the user's distro\n` +
+                    `3. Run those commands in the terminal`
+                )
+            ]);
+        }
 
         const version = options.input?.version;
 
@@ -224,8 +240,8 @@ class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string }>
                     `Extension-based install of .NET SDK${version ? ` ${version}` : ''} failed.\n` +
                     `Error: ${errorMessage}\n\n` +
                     `Check ".NET Install Tool" output channel. Verify admin privileges and internet.\n` +
-                    `If unresolved, DO NOT say unsupported. Instead install via terminal commands ` +
-                    `for user's platform (see https://learn.microsoft.com/dotnet/core/install/linux for Linux).`
+                    `If unresolved, use a web fetch tool to read https://learn.microsoft.com/dotnet/core/install/linux, ` +
+                    `find the install commands for the user's distro, and run them in the terminal.`
                 )
             ]);
         }
@@ -264,10 +280,10 @@ class ListVersionsTool implements vscode.LanguageModelTool<{ listRuntimes?: bool
             if (!versions || versions.length === 0)
             {
                 return new vscode.LanguageModelToolResult([
-                new vscode.LanguageModelTextPart(
-                    `No ${listRuntimes ? 'runtime' : 'SDK'} versions retrieved. Check internet connection.`
-                )
-            ]);
+                    new vscode.LanguageModelTextPart(
+                        `No ${listRuntimes ? 'runtime' : 'SDK'} versions retrieved. Check internet connection.`
+                    )
+                ]);
             }
 
             const versionType = listRuntimes ? 'Runtime' : 'SDK';
@@ -424,6 +440,21 @@ class UninstallTool implements vscode.LanguageModelTool<{ version?: string; mode
         const rawInput = JSON.stringify(options.input);
         this.eventStream.post(new LanguageModelToolInvoked(ToolNames.uninstall, rawInput));
 
+        // Early exit on WSL or unsupported Linux — this tool cannot uninstall there.
+        const linuxCheck = await LinuxVersionResolver.checkForUnsupportedLinux();
+        if (linuxCheck.isUnsupported)
+        {
+            return new vscode.LanguageModelToolResult([
+                new vscode.LanguageModelTextPart(
+                    `.NET is not yet uninstalled on ${linuxCheck.reason}.\n` +
+                    `To uninstall .NET:\n` +
+                    `1. Use a web fetch tool to read https://learn.microsoft.com/dotnet/core/install/linux\n` +
+                    `2. Find the uninstall commands for the user's distro\n` +
+                    `3. Run those commands in the terminal`
+                )
+            ]);
+        }
+
         const { version, mode, global } = options.input;
 
         try
@@ -528,8 +559,8 @@ class UninstallTool implements vscode.LanguageModelTool<{ version?: string; mode
                     `Extension-based uninstall of .NET${version ? ` ${version}` : ''} failed.\n` +
                     `Error: ${errorMessage}\n\n` +
                     `Check ".NET Install Tool" output channel. Verify admin privileges and internet.\n` +
-                    `If unresolved, DO NOT say unsupported. Instead uninstall via terminal commands ` +
-                    `for user's platform (see https://learn.microsoft.com/dotnet/core/install/linux for Linux).`
+                    `If unresolved, use a web fetch tool to read https://learn.microsoft.com/dotnet/core/install/linux, ` +
+                    `find the uninstall commands for the user's distro, and run them in the terminal.`
                 )
             ]);
         }

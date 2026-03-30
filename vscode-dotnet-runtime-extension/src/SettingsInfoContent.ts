@@ -145,7 +145,7 @@ For repo-local SDK resolution, use the \`paths\` property in global.json:
 - \`dotnet.findPath\` shows which hive C# DevKit and others will use
 - \`dotnet.availableInstalls\` lists installs in a specific hive when given an executable path
 
-## Unsupported Platforms
+## WSL and Other Linux Distros
 
-On WSL or unsupported Linux distros, do not call install/uninstall tools (they will fail). Instead, fetch the install commands from https://learn.microsoft.com/dotnet/core/install/linux and run them in the terminal directly.
+On WSL or unsupported Linux distros, the install/uninstall tools will detect this and return instructions. Follow those instructions: use a web fetch tool to read https://learn.microsoft.com/dotnet/core/install/linux, find the distro-specific commands, and run them in the terminal.
 `;

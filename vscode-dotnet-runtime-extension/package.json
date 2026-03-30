@@ -49,7 +49,7 @@
                 "canBeReferencedInPrompt": true,
                 "icon": "$(tools)",
                 "userDescription": "Installs a .NET SDK system-wide for building and running .NET projects",
-                "modelDescription": "Installs .NET SDK system-wide (requires admin). Supported: Windows, macOS, Ubuntu, Debian, RHEL. On WSL or other Linux distros, do NOT call this tool — it will fail. Instead, fetch install commands from https://learn.microsoft.com/dotnet/core/install/linux and run them in the terminal. Install exactly what user requests, even EOL/preview. Version resolution: (1) user request, (2) TargetFramework, (3) global.json, (4) listDotNetVersions. Formats: '6', '6.0', '6.0.1xx'.",
+                "modelDescription": "Installs .NET SDK system-wide (requires admin) on Windows, macOS, Ubuntu, Debian, RHEL. On WSL or other Linux distros, this tool will return terminal-based install instructions — always follow those instructions. Install exactly what user requests, even EOL/preview. Version resolution: (1) user request, (2) TargetFramework in .csproj, (3) global.json, (4) listDotNetVersions. Formats: '6', '6.0', '6.0.1xx'.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -130,7 +130,7 @@
                 "canBeReferencedInPrompt": true,
                 "icon": "$(trash)",
                 "userDescription": "Uninstalls a .NET SDK or Runtime version",
-                "modelDescription": "Uninstalls .NET SDK or runtime. SDK uninstall: Windows, macOS, Ubuntu, Debian, RHEL only. On WSL or other Linux distros, do NOT call this tool — it will fail. Instead, fetch uninstall commands from https://learn.microsoft.com/dotnet/core/install/linux and run them in the terminal. Call listInstalledDotNetVersions first for version+mode. Global uninstalls require admin.",
+                "modelDescription": "Uninstalls .NET SDK or runtime on Windows, macOS, Ubuntu, Debian, RHEL. On WSL or other Linux distros, this tool will return terminal-based uninstall instructions — always follow those instructions. Call listInstalledDotNetVersions first for version+mode. Global uninstalls require admin.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {

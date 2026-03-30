@@ -42,7 +42,7 @@ suite('Linux Version Resolver Tests', function ()
     {
         if (shouldRun)
         {
-            const distroVersion = await resolver.getRunningDistro();
+            const distroVersion = await resolver.getRunningDistroInstance();
             assert.exists(distroVersion.distro);
             assert.exists(distroVersion.version);
         }

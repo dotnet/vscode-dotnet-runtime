@@ -210,7 +210,7 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
 
         if (!await LinuxVersionResolver.isDistroSupported(undefined, eventStream))
         {
-            return { isUnsupported: true, reason: 'Unofficially Supported Linux Distro' };
+            return { isUnsupported: true, reason: 'Linux Distro' };
         }
 
         return { isUnsupported: false };

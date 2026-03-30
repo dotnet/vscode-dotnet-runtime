@@ -49,6 +49,7 @@ import { getInstallFromContext } from './InstallIdUtilities';
 
 import { SUDO_LOCK_PING_DURATION_MS } from '../Acquisition/CacheTimeConstants';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
+import { LinuxVersionResolver } from '../Acquisition/LinuxVersionResolver';
 import { RUN_UNDER_SUDO_LOCK } from '../Acquisition/StringConstants';
 import { IEventStream } from '../EventStream/EventStream';
 import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
@@ -60,7 +61,7 @@ import { ICommandExecutor } from './ICommandExecutor';
 import { IFileUtilities } from './IFileUtilities';
 import { IUtilityContext } from './IUtilityContext';
 import { LockUsedByThisInstanceSingleton } from './LockUsedByThisInstanceSingleton';
-import { executeWithLock, isRunningUnderWSL, loopWithTimeoutOnCond, minimizeEnvironment } from './TypescriptUtilities';
+import { executeWithLock, loopWithTimeoutOnCond, minimizeEnvironment } from './TypescriptUtilities';
 
 export class CommandExecutor extends ICommandExecutor
 {
@@ -117,7 +118,7 @@ export class CommandExecutor extends ICommandExecutor
             }
         }
 
-        if (await isRunningUnderWSL(this.context, this.utilityContext, this))
+        if (await LinuxVersionResolver.isWSL(this.context?.eventStream))
         {
             // For WSL, vscode/sudo-prompt does not work.
             // This is because it relies on pkexec or a GUI app to popup and request sudo privilege.
