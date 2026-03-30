@@ -204,7 +204,7 @@ export class InstallTrackerSingleton
 
                     const shouldContinue = await mutex.acquire(async () =>
                     {
-                        // eslint-disable-next-line no-return-await
+
                         this.eventStream.post(new DependentIsDead(`Dependent Session ${sessionId} is no longer live - continue searching dependents.`))
                         existingSessionsWithUsedExecutablePaths.delete(sessionId);
                         await this.extensionState.update(this.sessionInstallsKey, serializeMapOfSets(existingSessionsWithUsedExecutablePaths));

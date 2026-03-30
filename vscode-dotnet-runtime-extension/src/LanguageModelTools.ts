@@ -8,6 +8,7 @@ import * as vscode from 'vscode';
 import
 {
     AcquireErrorConfiguration,
+    checkForUnsupportedLinux,
     DotnetAcquisitionCompleted,
     DotnetAcquisitionStarted,
     DotnetBeginGlobalInstallerExecution,
@@ -26,8 +27,7 @@ import
     IDotnetVersion,
     IEventStream,
     LanguageModelToolInvoked,
-    LanguageModelToolPrepareInvocation,
-    LinuxVersionResolver
+    LanguageModelToolPrepareInvocation
 } from 'vscode-dotnet-runtime-library';
 import { settingsInfoContent } from './SettingsInfoContent';
 
@@ -114,7 +114,7 @@ class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string }>
         this.eventStream.post(new LanguageModelToolInvoked(ToolNames.installSdk, rawInput));
 
         // Early exit on WSL or unsupported Linux — this tool cannot install there.
-        const linuxCheck = await LinuxVersionResolver.checkForUnsupportedLinux();
+        const linuxCheck = await checkForUnsupportedLinux();
         if (linuxCheck.isUnsupported)
         {
             return new vscode.LanguageModelToolResult([
@@ -148,7 +148,7 @@ class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string }>
             await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
 
             const acquireContext: IDotnetAcquireContext = {
-                version: version,
+                version,
                 requestingExtensionId: 'ms-dotnettools.vscode-dotnet-runtime', // Self-reference for user-initiated installs
                 installType: 'global',
                 mode: 'sdk' as DotnetInstallMode,
@@ -268,7 +268,7 @@ class ListVersionsTool implements vscode.LanguageModelTool<{ listRuntimes?: bool
         try
         {
             const listContext: IDotnetListVersionsContext = {
-                listRuntimes: listRuntimes
+                listRuntimes
             };
 
             const versions: IDotnetListVersionsResult | undefined = await vscode.commands.executeCommand(
@@ -374,7 +374,7 @@ class FindPathTool implements vscode.LanguageModelTool<{ version: string; mode?:
 
             const findContext: IDotnetFindPathContext = {
                 acquireContext: {
-                    version: version,
+                    version,
                     requestingExtensionId: 'ms-dotnettools.vscode-dotnet-runtime',
                     mode: resolvedMode,
                     architecture: resolvedArchitecture
@@ -441,7 +441,7 @@ class UninstallTool implements vscode.LanguageModelTool<{ version?: string; mode
         this.eventStream.post(new LanguageModelToolInvoked(ToolNames.uninstall, rawInput));
 
         // Early exit on WSL or unsupported Linux — this tool cannot uninstall there.
-        const linuxCheck = await LinuxVersionResolver.checkForUnsupportedLinux();
+        const linuxCheck = await checkForUnsupportedLinux();
         if (linuxCheck.isUnsupported)
         {
             return new vscode.LanguageModelToolResult([
@@ -477,7 +477,7 @@ class UninstallTool implements vscode.LanguageModelTool<{ version?: string; mode
             const isGlobal = global ?? true;
 
             const acquireContext: IDotnetAcquireContext = {
-                version: version,
+                version,
                 mode: resolvedMode,
                 installType: isGlobal ? 'global' : 'local',
                 requestingExtensionId: 'ms-dotnettools.vscode-dotnet-runtime',
