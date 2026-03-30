@@ -182,7 +182,7 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
     public static async isDistroSupported(distro?: DistroVersionPair | null, eventStream?: IEventStream): Promise<boolean>
     {
         const resolvedDistro = distro ?? await LinuxVersionResolver.getRunningDistro(eventStream);
-        if (!resolvedDistro)
+        if (!resolvedDistro || resolvedDistro.distro === '')
         {
             return false;
         }
@@ -190,8 +190,10 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
     }
 
     /**
-     * Checks for WSL or unsupported Linux distro.
-     * Returns { isUnsupported: true, reason } if on WSL or an unsupported distro.
+     * Checks for WSL or non-Microsoft-supported Linux distro.
+     * Returns { isUnsupported: true, reason } if on WSL or a community/unsupported distro.
+     * Note: the extension itself can still install on community distros (e.g. Debian via DebianDistroSDKProvider).
+     * This method is intended for LM tools that should not attempt community-support installs.
      * @param eventStream Optional event stream for diagnostic logging.
      */
     public static async checkForUnsupportedLinux(eventStream?: IEventStream): Promise<{ isUnsupported: boolean; reason?: string }>
@@ -208,7 +210,7 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
 
         if (!await LinuxVersionResolver.isDistroSupported(undefined, eventStream))
         {
-            return { isUnsupported: true, reason: 'this Linux distro' };
+            return { isUnsupported: true, reason: 'Unofficially Supported Linux Distro' };
         }
 
         return { isUnsupported: false };
@@ -240,7 +242,8 @@ Or, install Red Hat Enterprise Linux 8.0 or Red Hat Enterprise Linux 9.0 from ht
         }
 
         const result = await LinuxVersionResolver.getRunningDistro(this.workerContext.eventStream);
-        if (!result)
+
+        if (!result || result.distro === '' || result.version === '')
         {
             const err = new DotnetAcquisitionDistroUnknownError(new EventCancellationError('DotnetAcquisitionDistroUnknownError',
                 `${this.baseUnsupportedDistroErrorMessage} ... does /etc/os-release or /usr/lib/os-release exist?`),
