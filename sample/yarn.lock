@@ -460,9 +460,9 @@ ajv-keywords@^5.1.0:
     fast-deep-equal "^3.1.3"
 
 ajv@^8.0.0, ajv@^8.8.2, ajv@^8.9.0:
-  version "8.17.1"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/ajv/-/ajv-8.17.1.tgz"
-  integrity sha1-N9mlx3ava8ktf0+VEOukwKYNEaY=
+  version "8.18.0"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/ajv/-/ajv-8.18.0.tgz"
+  integrity sha1-iGQYa2c40APrOpMxcrs4M+EM77w=
   dependencies:
     fast-deep-equal "^3.1.3"
     fast-uri "^3.0.1"
@@ -560,17 +560,17 @@ boolbase@^1.0.0:
   integrity sha1-aN/1++YMUes3cl6p4+0xDcwed24=
 
 brace-expansion@^1.1.7:
-  version "1.1.12"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/brace-expansion/-/brace-expansion-1.1.12.tgz"
-  integrity sha1-q5tFRGblqMw6GHvqrVgEEqnFuEM=
+  version "1.1.13"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/brace-expansion/-/brace-expansion-1.1.13.tgz"
+  integrity sha1-03h1wB3J7/mI3UnREqV8tntU7+Y=
   dependencies:
     balanced-match "^1.0.0"
     concat-map "0.0.1"
 
-brace-expansion@^2.0.1:
-  version "2.0.2"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/brace-expansion/-/brace-expansion-2.0.2.tgz"
-  integrity sha1-VPxTI3phPYVMe9N0Y6rRffhyFOc=
+brace-expansion@^2.0.2:
+  version "2.0.3"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/brace-expansion/-/brace-expansion-2.0.3.tgz"
+  integrity sha1-BJMzi91Y4xmxA5xnz37kOYksAdk=
   dependencies:
     balanced-match "^1.0.0"
 
@@ -1586,18 +1586,18 @@ mimic-response@^3.1.0:
   integrity sha1-LR1Zr5wbEpgVrMwsRqAipc4fo8k=
 
 minimatch@^3.0.3, minimatch@^3.0.4, minimatch@^3.1.1:
-  version "3.1.2"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/minimatch/-/minimatch-3.1.2.tgz"
-  integrity sha1-Gc0ZS/0+Qo8EmnCBfAONiatL41s=
+  version "3.1.5"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/minimatch/-/minimatch-3.1.5.tgz"
+  integrity sha1-WAyI+NVEXyvWqo88re+g3nn71p4=
   dependencies:
     brace-expansion "^1.1.7"
 
 minimatch@^9.0.4, minimatch@^9.0.5:
-  version "9.0.5"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/minimatch/-/minimatch-9.0.5.tgz"
-  integrity sha1-10+d1rV9g9jpjPuCEzsDl4vJKeU=
+  version "9.0.9"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/minimatch/-/minimatch-9.0.9.tgz"
+  integrity sha1-mwy5/LeAh/b9fqur4lEcTT1gV04=
   dependencies:
-    brace-expansion "^2.0.1"
+    brace-expansion "^2.0.2"
 
 minimist@^1.2.0, minimist@^1.2.3, minimist@^1.2.6:
   version "1.2.8"
@@ -1836,9 +1836,9 @@ pump@^3.0.0:
     once "^1.3.1"
 
 qs@^6.9.1:
-  version "6.14.1"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/qs/-/qs-6.14.1.tgz"
-  integrity sha1-pB2FudOQLzHSeGF5BQYpSIGHEVk=
+  version "6.15.0"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/qs/-/qs-6.15.0.tgz"
+  integrity sha1-24/V0bHS1rWzOtr4dCmAXxkJ57M=
   dependencies:
     side-channel "^1.1.0"
 
@@ -2172,14 +2172,13 @@ tar-stream@^2.1.4:
     readable-stream "^3.1.1"
 
 terser-webpack-plugin@^5.3.16:
-  version "5.3.16"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/terser-webpack-plugin/-/terser-webpack-plugin-5.3.16.tgz"
-  integrity sha1-dB5EjMP5PYAm6+T3755K+s/VYzA=
+  version "5.4.0"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/terser-webpack-plugin/-/terser-webpack-plugin-5.4.0.tgz"
+  integrity sha1-lfxM9EN+WHvhHs830IY2CJF012s=
   dependencies:
     "@jridgewell/trace-mapping" "^0.3.25"
     jest-worker "^27.4.5"
     schema-utils "^4.3.0"
-    serialize-javascript "^6.0.2"
     terser "^5.31.1"
 
 terser@^5.31.1:
@@ -2270,9 +2269,9 @@ uc.micro@^1.0.1, uc.micro@^1.0.5:
   integrity sha1-nEEagCpAmpH8bPdAgbq6NLJEmaw=
 
 underscore@^1.12.1:
-  version "1.13.7"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/underscore/-/underscore-1.13.7.tgz"
-  integrity sha1-lw4zljr5p92iKPF+voOZ5fvmOhA=
+  version "1.13.8"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/underscore/-/underscore-1.13.8.tgz"
+  integrity sha1-qTohGGwEnb8OhHSW26cre9jB6Ss=
 
 undici-types@~6.21.0:
   version "6.21.0"
@@ -2280,9 +2279,9 @@ undici-types@~6.21.0:
   integrity sha1-aR0ArzkJvpOn+qE75hs6W1DvEss=
 
 undici@^7.19.0:
-  version "7.20.0"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/undici/-/undici-7.20.0.tgz"
-  integrity sha1-Yq8Gmi6ufPzL6FD/EfROBL53aOc=
+  version "7.24.6"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/undici/-/undici-7.24.6.tgz"
+  integrity sha1-t+l34bq1PQqrP6VyL8Hv/wk6pek=
 
 update-browserslist-db@^1.2.0:
   version "1.2.3"
