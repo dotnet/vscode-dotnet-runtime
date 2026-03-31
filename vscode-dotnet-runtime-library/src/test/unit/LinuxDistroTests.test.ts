@@ -140,7 +140,10 @@ Microsoft.NETCore.App 7.0.5 [/usr/lib/dotnet/shared/Microsoft.NETCore.App]`, std
     {
         if (shouldRun)
         {
+            mockExecutor.otherCommandPatternsToMock = ['which dotnet'];
+            mockExecutor.otherCommandsReturnValues = [{ stdout: '/usr/bin/dotnet', stderr: '', status: '0' }];
             await provider.getInstalledGlobalDotnetPathIfExists(installType);
+            mockExecutor.resetReturnValues();
             assert.equal(mockExecutor.attemptedCommand, 'readlink -f /usr/bin/dotnet');
         }
     }).timeout(standardTimeoutTime);
