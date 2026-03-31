@@ -22,7 +22,7 @@
 		"watch": "npm run clean && tsc -watch -p ./",
 		"test": "npm run compile --silent && npm run copyTestAssets && npm run unit-test",
 		"unit-test": "mocha -u tdd -- dist/test/unit/**.test.js",
-		"clean": "rimraf dist"
+		"clean": "npx rimraf dist"
 	},
 	"devDependencies": {
 		"@types/chai": "4.2.22",
@@ -43,7 +43,7 @@
 		"@vscode/sudo-prompt": "^9.3.1",
 		"@vscode/test-electron": "^2.4.1",
 		"axios": "1.13.6",
-		"axios-cache-interceptor": "1.11.4 ",
+		"axios-cache-interceptor": "1.11.4",
 		"axios-retry": "3.9.1",
 		"chai": "4.3.4",
 		"chai-as-promised": "^7.1.1",
