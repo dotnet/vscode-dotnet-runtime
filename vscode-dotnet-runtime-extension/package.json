@@ -49,7 +49,7 @@
                 "canBeReferencedInPrompt": true,
                 "icon": "$(tools)",
                 "userDescription": "Installs a .NET SDK system-wide for building and running .NET projects",
-                "modelDescription": "Installs .NET SDK system-wide (requires admin) on Windows, macOS, Ubuntu, Debian, RHEL. On WSL or other Linux distros, this tool will return terminal-based install instructions — always follow those instructions. Install exactly what user requests, even EOL/preview. Version resolution: (1) user request, (2) TargetFramework in .csproj, (3) global.json, (4) listDotNetVersions. Formats: '6', '6.0', '6.0.1xx'.",
+                "modelDescription": "Installs .NET SDK system-wide (requires admin). Use when user wants to install, set up, or add .NET. Supports Windows, macOS, Ubuntu, Debian, RHEL; returns manual instructions for unsupported platforms. Install exactly what user requests, even EOL/preview. Version resolution: (1) user request, (2) TargetFramework in .csproj (net8.0→'8'), (3) global.json, (4) call listDotNetVersions. Formats: '6', '6.0', '6.0.1xx'.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -71,7 +71,7 @@
                 "canBeReferencedInPrompt": true,
                 "icon": "$(list-unordered)",
                 "userDescription": "Lists available .NET SDK and Runtime versions that can be installed",
-                "modelDescription": "Lists .NET versions from Microsoft with support phase (active/maintenance/eol). Respect user's version choice even if EOL. Default: SDKs. Set listRuntimes=true for runtimes.",
+                "modelDescription": "Lists .NET SDK or Runtime versions available from Microsoft with support phase (active/maintenance/eol). Use when user asks what versions exist, which to install, or needs to pick a version. Default: SDKs. Set listRuntimes=true for runtimes.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -90,7 +90,7 @@
                 "canBeReferencedInPrompt": true,
                 "icon": "$(search)",
                 "userDescription": "Finds the path to a .NET installation that meets specified requirements",
-                "modelDescription": "Finds installed .NET matching version/architecture. Use before suggesting installation. Search order: existingDotnetPath → PATH → DOTNET_ROOT → extension-managed installs. Returns dotnet executable path. Extension-managed local installs are NOT on PATH or visible via 'dotnet --version'.",
+                "modelDescription": "Checks if .NET is already installed before suggesting installation. Use when user asks 'is .NET installed?', 'where is dotnet?', or before calling installDotNetSdk. Searches: existingDotnetPath → PATH → DOTNET_ROOT → extension-managed installs. Extension-managed local installs are NOT on PATH.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -130,7 +130,7 @@
                 "canBeReferencedInPrompt": true,
                 "icon": "$(trash)",
                 "userDescription": "Uninstalls a .NET SDK or Runtime version",
-                "modelDescription": "Uninstalls .NET SDK or runtime on Windows, macOS, Ubuntu, Debian, RHEL. On WSL or other Linux distros, this tool will return terminal-based uninstall instructions — always follow those instructions. Call listInstalledDotNetVersions first for version+mode. Global uninstalls require admin.",
+                "modelDescription": "Uninstalls a .NET SDK or runtime. Use when user wants to remove, uninstall, or clean up .NET. Supports Windows, macOS, Ubuntu, Debian, RHEL; returns manual instructions for unsupported platforms. Call listInstalledDotNetVersions first to get exact version+mode. Global uninstalls require admin.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -165,7 +165,7 @@
                 "canBeReferencedInPrompt": true,
                 "icon": "$(info)",
                 "userDescription": "Get information about .NET Install Tool settings, installation types, and troubleshooting",
-                "modelDescription": "Returns the .NET Install Tool guide. Call first for installation questions or troubleshooting. Covers: existingDotnetPath/sharedExistingDotnetPath (extension runtime only, not project SDK — use global.json for that), local vs global installs, version selection, common fixes.",
+                "modelDescription": "Returns .NET Install Tool settings guide and current config. Use when user asks about .NET settings, troubleshooting, existingDotnetPath, 'C# extension can't find .NET', or extension configuration. Covers: existingDotnetPath (extension runtime only — NOT project SDK, use global.json), local vs global installs, common fixes.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {}
@@ -179,7 +179,7 @@
                 "canBeReferencedInPrompt": true,
                 "icon": "$(list-tree)",
                 "userDescription": "Lists .NET SDK or Runtime versions that are currently installed on the system",
-                "modelDescription": "Lists installed .NET SDKs and runtimes. Show all versions to user. Default: queries PATH. Pass dotnetPath to query a specific executable. Windows Desktop Runtime not tracked — use 'dotnet --list-runtimes' for that.",
+                "modelDescription": "Lists .NET SDKs and runtimes currently installed on the system. Use when user asks 'what .NET do I have?', 'which versions are installed?', or before uninstall. Default: queries PATH. Pass dotnetPath for a specific executable. Windows Desktop Runtime not tracked — use 'dotnet --list-runtimes' in terminal if needed for that.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {

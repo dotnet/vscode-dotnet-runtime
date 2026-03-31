@@ -108,10 +108,10 @@ For repo-local SDK resolution, use the \`paths\` property in global.json:
 {
   "sdk": {
     "version": "10.0.100",
-    "paths": [ ".dotnet", "$host$" ],
+    "paths": [".dotnet", "$host$"],
     "errorMessage": "Required .NET SDK not found. Run ./install.sh to install."
   }
-{ "sdk": { "version": "10.0.100", "paths": [".dotnet", "$host$"] } }
+}
 \`\`\`
 - First matching SDK wins
 - Only works with SDK commands (\`dotnet run\`, \`dotnet build\`), NOT with native apphost
@@ -131,7 +131,7 @@ For repo-local SDK resolution, use the \`paths\` property in global.json:
 
 ---
 
-## Common Scenarios
+## Additional Settings
 
 - **installTimeoutValue**: Seconds to wait for downloads (default: 600). Increase for slow connections.
 - **proxyUrl**: HTTP proxy URL for corporate firewalls.
@@ -139,13 +139,8 @@ For repo-local SDK resolution, use the \`paths\` property in global.json:
 ---
 
 ## .NET Hives Architecture
-.NET supports multiple installation "hives" (locations). The extension manages its own hive separate from global installs:
-- Extension installs do not conflict with system installs; users can have both extension-managed runtimes AND global SDKs
+.NET supports multiple installation "hives" (locations). Extension-managed local installs do not conflict with global system installs.
 - The \`dotnet\` CLI only sees global installs, not extension-managed ones
-- \`dotnet.findPath\` shows which hive C# DevKit and others will use
+- \`dotnet.findPath\` shows which hive extensions like C# DevKit will use
 - \`dotnet.availableInstalls\` lists installs in a specific hive when given an executable path
-
-## WSL and Other Linux Distros
-
-On WSL or unsupported Linux distros, the install/uninstall tools will detect this and return instructions. Follow those instructions: use a web fetch tool to read https://learn.microsoft.com/dotnet/core/install/linux, find the distro-specific commands, and run them in the terminal.
 `;

@@ -2348,7 +2348,6 @@ uuid@^8.3.0:
     axios-cache-interceptor "1.11.4"
     axios-retry "3.9.1"
     https-proxy-agent "^7.0.2"
-    mocha "^11.7.0"
     open "^8.4.0"
     shelljs "^0.8.5"
     vscode-dotnet-runtime-library "file:../vscode-dotnet-runtime-library"
