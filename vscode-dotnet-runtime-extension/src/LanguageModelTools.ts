@@ -6,29 +6,29 @@
 import * as os from 'os';
 import * as vscode from 'vscode';
 import
-{
-    AcquireErrorConfiguration,
-    checkForUnsupportedLinux,
-    DotnetAcquisitionCompleted,
-    DotnetAcquisitionStarted,
-    DotnetBeginGlobalInstallerExecution,
-    DotnetInstallMode,
-    DotnetUninstallCompleted,
-    DotnetUninstallFailed,
-    DotnetUninstallStarted,
-    EventStream,
-    IDotnetAcquireContext,
-    IDotnetAcquireResult,
-    IDotnetFindPathContext,
-    IDotnetListVersionsContext,
-    IDotnetListVersionsResult,
-    IDotnetSearchContext,
-    IDotnetSearchResult,
-    IDotnetVersion,
-    IEventStream,
-    LanguageModelToolInvoked,
-    LanguageModelToolPrepareInvocation
-} from 'vscode-dotnet-runtime-library';
+    {
+        AcquireErrorConfiguration,
+        checkForUnsupportedLinux,
+        DotnetAcquisitionCompleted,
+        DotnetAcquisitionStarted,
+        DotnetBeginGlobalInstallerExecution,
+        DotnetInstallMode,
+        DotnetUninstallCompleted,
+        DotnetUninstallFailed,
+        DotnetUninstallStarted,
+        EventStream,
+        IDotnetAcquireContext,
+        IDotnetAcquireResult,
+        IDotnetFindPathContext,
+        IDotnetListVersionsContext,
+        IDotnetListVersionsResult,
+        IDotnetSearchContext,
+        IDotnetSearchResult,
+        IDotnetVersion,
+        IEventStream,
+        LanguageModelToolInvoked,
+        LanguageModelToolPrepareInvocation
+    } from 'vscode-dotnet-runtime-library';
 import { settingsInfoContent } from './SettingsInfoContent';
 
 /**
@@ -53,8 +53,7 @@ function unsupportedPlatformResult(action: string, reason: string): vscode.Langu
 {
     return new vscode.LanguageModelToolResult([
         new vscode.LanguageModelTextPart(
-            `This tool cannot automatically ${action} .NET on this platform: ${reason}.\n` +
-            `To ${action}, see https://learn.microsoft.com/dotnet/core/install/linux for distro-specific commands and run them in the terminal.`
+            `To ${action}, it is essential to read https://learn.microsoft.com/dotnet/core/install/linux to find distro-specific ${action} commands. Then run those commands in the terminal. Do NOT use dotnet-install.sh.`
         )
     ]);
 }
