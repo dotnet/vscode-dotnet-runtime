@@ -4,6 +4,12 @@
 *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
+import {
+    DotnetAcquisitionCompleted,
+    DotnetAcquisitionFinalError,
+    DotnetAcquisitionStarted,
+    DotnetInstallExpectedAbort,
+} from './EventStreamEvents';
 import { EventType } from './EventType';
 import { IEvent } from './IEvent';
 import { IEventStreamObserver } from './IEventStreamObserver';
@@ -14,17 +20,38 @@ enum StatusBarColors {
 }
 
 export class StatusBarObserver implements IEventStreamObserver {
+    private readonly inProgressDownloads: string[] = [];
+
     constructor(private readonly statusBarItem: vscode.StatusBarItem, private readonly showLogCommand: string) {
     }
 
     public post(event: IEvent): void {
         switch (event.type) {
             case EventType.DotnetAcquisitionStart:
+                const acquisitionStarted = event as DotnetAcquisitionStarted;
+                this.inProgressDownloads.push(acquisitionStarted.install.installId);
                 this.setAndShowStatusBar('$(cloud-download) Downloading .NET...', this.showLogCommand, '', 'Downloading .NET...');
                 break;
             case EventType.DotnetAcquisitionCompleted:
+                const acquisitionCompleted = event as DotnetAcquisitionCompleted;
+                this.removeFromInProgress(acquisitionCompleted.install.installId);
+                if (this.inProgressDownloads.length === 0) {
+                    this.resetAndHideStatusBar();
+                }
+                break;
             case EventType.DotnetInstallExpectedAbort:
-                this.resetAndHideStatusBar();
+                const abortEvent = event as DotnetInstallExpectedAbort;
+                this.removeFromInProgress(abortEvent.install?.installId);
+                if (this.inProgressDownloads.length === 0) {
+                    this.resetAndHideStatusBar();
+                }
+                break;
+            case EventType.DotnetAcquisitionFinalError:
+                const finalError = event as DotnetAcquisitionFinalError;
+                this.removeFromInProgress(finalError.install?.installId);
+                if (this.inProgressDownloads.length === 0) {
+                    this.resetAndHideStatusBar();
+                }
                 break;
             case EventType.DotnetAcquisitionError:
                 this.setAndShowStatusBar('$(alert) Error acquiring .NET!', this.showLogCommand, StatusBarColors.Red, 'Error acquiring .NET');
@@ -51,5 +78,16 @@ export class StatusBarObserver implements IEventStreamObserver {
         this.statusBarItem.color = undefined;
         this.statusBarItem.tooltip = undefined;
         this.statusBarItem.hide();
+    }
+
+    private removeFromInProgress(installId: string | null | undefined): void {
+        if (installId)
+        {
+            const index = this.inProgressDownloads.indexOf(installId);
+            if (index >= 0)
+            {
+                this.inProgressDownloads.splice(index, 1);
+            }
+        }
     }
 }
