@@ -306,6 +306,7 @@
         "compile": "npm run clean && tsc -p ./",
         "watch": "npm run compile && tsc -watch -p ./",
         "test": "npm run compile --silent && node ./dist/test/functional/runTest.js",
+        "test:lm-tools": "npm run compile --silent && node ./dist/test/functional/runLmToolsTest.js",
         "clean": "npx rimraf dist",
         "compile-all": "cd ../vscode-dotnet-runtime-library && npm install && npm run compile && cd ../vscode-dotnet-runtime-extension && npm install && npm run compile",
         "lint": "eslint -c .eslintrc.js --ext=.ts vscode-dotnet-runtime-library/src/**/*.ts vscode-dotnet-runtime-extension/src/**/*.ts --ignore-pattern \"**/test/\" --fix",

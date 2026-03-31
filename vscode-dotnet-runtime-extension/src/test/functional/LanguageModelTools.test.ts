@@ -108,7 +108,7 @@ suite('LanguageModelTools Tests', function ()
 
             for (const toolName of toolNames)
             {
-                const tool = tools.find(t => t.name === toolName);
+                const tool = tools.find((t: vscode.LanguageModelToolInformation) => t.name === toolName);
                 assert.exists(tool, `Tool ${toolName} should be registered`);
             }
 
@@ -589,7 +589,7 @@ suite('LanguageModelTools Tests', function ()
         test('Tool is registered and can be found', async () =>
         {
             const tools = vscode.lm.tools;
-            const installTool = tools.find(t => t.name === ToolNames.installSdk);
+            const installTool = tools.find((t: vscode.LanguageModelToolInformation) => t.name === ToolNames.installSdk);
 
             assert.exists(installTool, 'Install SDK tool should be registered');
             assert.exists(installTool?.description, 'Install SDK tool should have a description');
@@ -598,7 +598,7 @@ suite('LanguageModelTools Tests', function ()
         test('Tool description mentions global/system-wide installation', async () =>
         {
             const tools = vscode.lm.tools;
-            const installTool = tools.find(t => t.name === ToolNames.installSdk);
+            const installTool = tools.find((t: vscode.LanguageModelToolInformation) => t.name === ToolNames.installSdk);
 
             const description = installTool?.description?.toLowerCase() || '';
             const mentionsGlobal = description.includes('global') || description.includes('system');
@@ -817,7 +817,7 @@ suite('LanguageModelTools Tests', function ()
             const tools = vscode.lm.tools;
             for (const name of expectedNames)
             {
-                const tool = tools.find(t => t.name === name);
+                const tool = tools.find((t: vscode.LanguageModelToolInformation) => t.name === name);
                 assert.exists(tool, `Tool ${name} should be registered when setting is true`);
             }
         }).timeout(standardTimeoutTime);
@@ -826,7 +826,7 @@ suite('LanguageModelTools Tests', function ()
         {
             // With the config.* when clause, VS Code reads the setting directly.
             // Since the default is true, tools should be visible and registered.
-            const tool = vscode.lm.tools.find(t => t.name === ToolNames.installSdk);
+            const tool = vscode.lm.tools.find((t: vscode.LanguageModelToolInformation) => t.name === ToolNames.installSdk);
             assert.exists(tool, 'Tools should be available when setting is true');
         }).timeout(standardTimeoutTime);
 
