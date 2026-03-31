@@ -52,6 +52,7 @@ import { IUtilityContext } from '../Utils/IUtilityContext';
 import { executeWithLock, getDotnetExecutable, isRunningUnderWSL } from '../Utils/TypescriptUtilities';
 import { DOTNET_INFORMATION_CACHE_DURATION_MS, GLOBAL_LOCK_PING_DURATION_MS, LOCAL_LOCK_PING_DURATION_MS } from './CacheTimeConstants';
 import { directoryProviderFactory } from './DirectoryProviderFactory';
+import { LocalMemoryCacheSingleton } from '../LocalMemoryCacheSingleton';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
 import
 {
@@ -296,6 +297,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
                     throw reason; // This will get handled and cast into an event based error by its caller.
                 });
 
+                LocalMemoryCacheSingleton.getInstance().invalidateEntriesContaining(dotnetInstallDir, context);
                 context.installationValidator.validateDotnetInstall(install, dotnetPath);
                 await this.removeMatchingLegacyInstall(context, installedVersions, version, true);
                 await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).trackInstalledVersion(context, install, dotnetPath);
@@ -478,6 +480,7 @@ ${interpretedMessage}`;
 
         context.installationValidator.validateDotnetInstall(install, dotnetExePath, os.platform() === 'darwin', os.platform() !== 'darwin');
 
+        LocalMemoryCacheSingleton.getInstance().invalidateEntriesContaining('dotnet', context);
         context.eventStream.post(new DotnetAcquisitionCompleted(install, dotnetExePath, installingVersion));
 
         await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).trackInstalledVersion(context, install, dotnetExePath);
@@ -573,6 +576,7 @@ ${interpretedMessage}`;
                     {
                         context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install.installId}.`));
                         await this.file.wipeDirectory(dotnetInstallDir, context.eventStream, undefined, true,);
+                        LocalMemoryCacheSingleton.getInstance().invalidateEntriesContaining(dotnetInstallDir, context);
                         await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).reportSuccessfulUninstall(context, install, force);
                         context.eventStream.post(new DotnetUninstallCompleted(`Uninstalled .NET ${install.installId}.`));
                     }
@@ -620,6 +624,7 @@ Other dependents remain.`));
                         await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream);
                         if (ok === '0')
                         {
+                            LocalMemoryCacheSingleton.getInstance().invalidateEntriesContaining('dotnet', context);
                             await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).reportSuccessfulUninstall(context, install, force);
                             context.eventStream.post(new DotnetUninstallCompleted(`Uninstalled .NET ${install.installId}.`));
                             return '0';

@@ -139,6 +139,9 @@ let extensionEventStream: IEventStream | undefined;
 
 export function activate(vsCodeContext: vscode.ExtensionContext, extensionContext?: IExtensionContext)
 {
+    // All globalState keys are machine-specific (install paths, session tracking, etc.)
+    // and must not be synced to other machines or dev containers via Settings Sync.
+    vsCodeContext.globalState.setKeysForSync?.([]);
 
     if ((process.env.DOTNET_INSTALL_TOOL_UNDER_TEST === 'true' || (vsCodeContext?.extensionMode === vscode.ExtensionMode.Test)) && disableActivationUnderTest)
     {
