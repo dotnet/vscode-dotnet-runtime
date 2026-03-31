@@ -443,7 +443,7 @@ axios-cache-interceptor@^1.0.1:
     object-code "^2.0.0"
     try "^1.0.3"
 
-axios-retry@^3.4.0:
+axios-retry@3.9.1:
   version "3.9.1"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/axios-retry/-/axios-retry-3.9.1.tgz"
   integrity sha1-yJJKh4HI4KLFJEq/dz3rdWazgw0=
@@ -451,7 +451,7 @@ axios-retry@^3.4.0:
     "@babel/runtime" "^7.15.4"
     is-retry-allowed "^2.2.0"
 
-axios@^1, axios@^1.7.4:
+axios@1.13.4:
   version "1.13.4"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/axios/-/axios-1.13.4.tgz"
   integrity sha1-FdEJpIF/uC9zrqkQ1BoshWBgdrw=
@@ -2027,8 +2027,8 @@ util-deprecate@~1.0.1:
     "@vscode/extension-telemetry" "^0.9.7"
     "@vscode/sudo-prompt" "^9.3.1"
     "@vscode/test-electron" "^2.4.1"
-    axios "^1.7.4"
-    axios-cache-interceptor "^1.5.3"
+    axios "1.13.4"
+    axios-cache-interceptor "1.11.4 "
     axios-retry "^3.4.0"
     chai "4.3.4"
     chai-as-promised "^7.1.1"
