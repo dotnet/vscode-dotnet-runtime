@@ -147,9 +147,9 @@
         "webpack": "webpack --mode development"
     },
     "dependencies": {
-        "axios": "^1.7.4",
-        "axios-cache-interceptor": "^1.11.2",
-        "axios-retry": "^3.4.0",
+        "axios": "1.13.6",
+        "axios-cache-interceptor": "1.11.2",
+        "axios-retry": "3.9.1",
         "https-proxy-agent": "^7.0.2",
         "open": "^8.4.0",
         "shelljs": "^0.8.5",
