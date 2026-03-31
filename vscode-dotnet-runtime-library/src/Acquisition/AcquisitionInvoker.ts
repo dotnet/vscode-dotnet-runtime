@@ -29,10 +29,10 @@ import { timeoutConstants } from '../Utils/ErrorHandler';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker';
 
+import { LocalMemoryCacheSingleton } from '../LocalMemoryCacheSingleton';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { getDotnetExecutable } from '../Utils/TypescriptUtilities';
 import { WebRequestWorkerSingleton } from '../Utils/WebRequestWorkerSingleton';
-import { LocalMemoryCacheSingleton } from '../LocalMemoryCacheSingleton';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
 import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { DotnetInstall } from './DotnetInstall';
@@ -81,6 +81,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                 {
                     if (await this.fileUtilities.exists(dotnetPath))
                     {
+                        LocalMemoryCacheSingleton.getInstance().invalidateEntriesContaining(installDir);
                         const validator = new DotnetConditionValidator(this.workerContext, this.utilityContext);
                         const meetsRequirement = await validator.dotnetMeetsRequirement(dotnetPath, { acquireContext: this.workerContext.acquisitionContext, versionSpecRequirement: 'equal' });
                         if (meetsRequirement)
@@ -93,7 +94,6 @@ You will need to restart VS Code after these changes. If PowerShell is still not
                     try
                     {
                         await this.fileUtilities.wipeDirectory(installDir, this.eventStream, undefined, true);
-                        LocalMemoryCacheSingleton.getInstance().invalidateEntriesContaining(installDir);
                     }
                     catch (err: any)
                     {

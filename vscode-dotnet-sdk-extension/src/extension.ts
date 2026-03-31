@@ -72,7 +72,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
 {
     // All globalState keys are machine-specific (install paths, session tracking, etc.)
     // and must not be synced to other machines or dev containers via Settings Sync.
-    context.globalState.setKeysForSync([]);
+    context.globalState.setKeysForSync?.([]);
 
     const extensionConfiguration = extensionContext !== undefined && extensionContext.extensionConfiguration ?
         extensionContext.extensionConfiguration :
