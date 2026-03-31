@@ -354,7 +354,7 @@ Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.m
     }
 
     // async is needed to match the interface even if we don't use await.
-    // eslint-disable-next-line @typescript-eslint/require-await
+
     public async getExpectedGlobalSDKPath(specificSDKVersionInstalled: string, installedArch: string, macPathShouldExist = true): Promise<string>
     {
         if (os.platform() === 'win32')

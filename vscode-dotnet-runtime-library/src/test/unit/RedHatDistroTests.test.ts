@@ -46,7 +46,7 @@ suite('Red Hat For Linux Distro Logic Unit Tests', function ()
 
     test('Package Check Succeeds', async () =>
     {
-        shouldRun = os.platform() === 'linux' && (await versionResolver.getRunningDistro()).distro === RED_HAT_DISTRO_INFO_KEY;
+        shouldRun = os.platform() === 'linux' && (await versionResolver.getRunningDistroInstance()).distro === RED_HAT_DISTRO_INFO_KEY;
 
         if (shouldRun)
         {

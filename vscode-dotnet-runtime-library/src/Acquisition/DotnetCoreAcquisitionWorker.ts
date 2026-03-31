@@ -415,7 +415,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
     private async acquireGlobalCore(context: IAcquisitionWorkerContext, globalInstallerResolver: GlobalInstallerResolver, install: DotnetInstall): Promise<string>
     {
-        if (await isRunningUnderWSL(context, this.utilityContext))
+        if (await isRunningUnderWSL(context.eventStream))
         {
             const err = new DotnetWSLSecurityError(new EventCancellationError('DotnetWSLSecurityError',
                 `Automatic .NET SDK Installation is not yet supported in WSL due to VS Code & WSL limitations.

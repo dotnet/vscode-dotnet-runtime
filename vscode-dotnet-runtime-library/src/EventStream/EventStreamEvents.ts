@@ -1054,13 +1054,13 @@ export class DotnetUninstallStarted extends DotnetCustomMessageEvent
 
 export class DotnetUninstallCompleted extends DotnetCustomMessageEvent
 {
-    public readonly eventName = 'DotnetUninstallStarted';
+    public readonly eventName = 'DotnetUninstallCompleted';
     public type = EventType.DotnetUninstallMessage;
 }
 
 export class DotnetUninstallFailed extends DotnetCustomMessageEvent
 {
-    public readonly eventName = 'DotnetUninstallStarted';
+    public readonly eventName = 'DotnetUninstallFailed';
     public type = EventType.DotnetUninstallMessage;
 }
 
@@ -1987,6 +1987,76 @@ export class TestAcquireCalled extends IEvent
     public getProperties()
     {
         return undefined;
+    }
+}
+
+/**
+ * Event for when a Language Model Tool is invoked by an AI agent.
+ * This provides visibility into AI tool usage in the logs.
+ */
+export class LanguageModelToolInvoked extends DotnetAcquisitionMessage
+{
+    public readonly eventName = 'LanguageModelToolInvoked';
+
+    constructor(public readonly toolName: string, public readonly input: string)
+    {
+        super();
+    }
+
+    public getProperties(telemetry = false): { [id: string]: string } | undefined
+    {
+        return {
+            ToolName: this.toolName,
+            // Don't include full input in telemetry to avoid PII, but include in local logs
+            Input: telemetry ? 'Redacted' : this.input
+        };
+    }
+}
+
+/**
+ * Event for when a Language Model Tool prepares for invocation.
+ */
+export class LanguageModelToolPrepareInvocation extends DotnetAcquisitionMessage
+{
+    public readonly eventName = 'LanguageModelToolPrepareInvocation';
+
+    constructor(public readonly toolName: string, public readonly input: string)
+    {
+        super();
+    }
+
+    public getProperties(telemetry = false): { [id: string]: string } | undefined
+    {
+        return {
+            ToolName: this.toolName,
+            Input: telemetry ? 'Redacted' : this.input
+        };
+    }
+}
+
+/**
+ * Event for when Language Model Tools registration fails.
+ * This is a non-fatal error - the extension continues to work without AI tool integration.
+ */
+export class LanguageModelToolsRegistrationError extends DotnetNonAcquisitionError
+{
+    public readonly eventName = 'LanguageModelToolsRegistrationError';
+
+    constructor(error: Error)
+    {
+        super(error);
+    }
+
+    public getProperties(telemetry = false): { [id: string]: string } | undefined
+    {
+        // Only capture error name and a sanitized message - avoid PII like paths
+        return {
+            ErrorName: this.error.name ?? 'UnknownError',
+            // Only capture error code if present, not the full message which might contain paths
+            ErrorCode: (this.error as NodeJS.ErrnoException).code ?? 'NoCode',
+            // Use hashed stack trace to avoid path PII
+            StackTrace: this.error.stack ? TelemetryUtilities.HashAllPaths(this.error.stack) : ''
+        };
     }
 }
 

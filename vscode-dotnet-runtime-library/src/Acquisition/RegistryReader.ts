@@ -13,7 +13,7 @@ import { DOTNET_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IRegistryReader } from "./IRegistryReader";
 
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
 
 export class RegistryReader extends IRegistryReader
 {

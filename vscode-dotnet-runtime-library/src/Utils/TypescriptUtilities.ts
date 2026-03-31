@@ -4,17 +4,15 @@
 *--------------------------------------------------------------------------------------------*/
 import * as os from 'os';
 import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from '../Acquisition/CacheTimeConstants';
-import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
+import type { DistroVersionPair } from '../Acquisition/LinuxVersionResolver';
+import { RED_HAT_DISTRO_INFO_KEY, UBUNTU_DISTRO_INFO_KEY } from '../Acquisition/StringConstants';
 import { IEventStream } from '../EventStream/EventStream';
-import
-{
-    DotnetWSLCheckEvent
-} from '../EventStream/EventStreamEvents';
+import { DotnetWSLCheckEvent } from '../EventStream/EventStreamEvents';
 import { IEvent } from '../EventStream/IEvent';
 import { CommandExecutor } from './CommandExecutor';
 import { EventStreamNodeIPCMutexLoggerWrapper } from './EventStreamNodeIPCMutexWrapper';
+import { FileUtilities } from './FileUtilities';
 import { ICommandExecutor } from './ICommandExecutor';
-import { IUtilityContext } from './IUtilityContext';
 import { NodeIPCMutex } from './NodeIPCMutex';
 
 export async function loopWithTimeoutOnCond(sampleRatePerMs: number, durationToWaitBeforeTimeoutMs: number, conditionToStop: () => boolean, doAfterStop: () => void,
@@ -33,39 +31,13 @@ export async function loopWithTimeoutOnCond(sampleRatePerMs: number, durationToW
     throw new Error(`The promise timed out at ${durationToWaitBeforeTimeoutMs}.`);
 }
 
-/**
- * Returns true if the linux agent is running under WSL, else false.
- */
-export async function isRunningUnderWSL(acquisitionContext: IAcquisitionWorkerContext, utilityContext: IUtilityContext, executor?: ICommandExecutor): Promise<boolean>
-{
-    // See https://github.com/microsoft/WSL/issues/4071 for evidence that we can rely on this behavior.
-
-    acquisitionContext.eventStream?.post(new DotnetWSLCheckEvent(`Checking if system is WSL. OS: ${os.platform()}`));
-
-    if (os.platform() !== 'linux')
-    {
-        return false;
-    }
-
-    const command = CommandExecutor.makeCommand('grep', ['-i', 'Microsoft', '/proc/version']);
-    executor ??= new CommandExecutor(acquisitionContext, utilityContext);
-    const commandResult = await executor.execute(command, {}, false);
-
-    if (!commandResult || !commandResult.stdout)
-    {
-        return false;
-    }
-
-    return true;
-}
-
 export async function executeWithLock<A extends any[], R>(eventStream: IEventStream, alreadyHoldingLock: boolean, lockId: string, retryTimeMs: number, timeoutTimeMs: number, f: (...args: A) => R, ...args: A): Promise<R>
 {
     // Are we in a mutex-relevant inner function call, that is called by a parent function that already holds the lock?
     // If so, we don't need to acquire the lock again and we also shouldn't release it as the parent function will do that.
     if (alreadyHoldingLock || process.env.VSCODE_DOTNET_RUNTIME_DISABLE_MUTEX === 'true')
     {
-        // eslint-disable-next-line @typescript-eslint/await-thenable
+
         return f(...(args));
     }
     else
@@ -83,7 +55,7 @@ Report this issue to our vscode-dotnet-runtime GitHub for help.`
         const result = await mutex.acquire(async () =>
         {
             // await must be used to make the linter allow f to be async, which it must be.
-            // eslint-disable-next-line no-return-await, @typescript-eslint/await-thenable
+
             return await f(...(args));
         }, retryTimeMs, timeoutTimeMs, `${lockId}-${crypto.randomUUID()}`);
         return result;
@@ -180,4 +152,120 @@ export function EnvironmentVariableIsDefined(variable: any): boolean
 export function getPathSeparator(): string
 {
     return os.platform() === 'win32' ? ';' : ':';
+}
+
+// All distros that Microsoft officially supports for this tool. Community distros (e.g. Debian) are not in this list.
+export const microsoftSupportedDistroIds = [RED_HAT_DISTRO_INFO_KEY, UBUNTU_DISTRO_INFO_KEY];
+
+/**
+ * Checks if the system is running under WSL.
+ * Checks env vars first, then falls back to /proc/version.
+ * @param eventStream Optional event stream for diagnostic logging.
+ */
+export async function isRunningUnderWSL(eventStream?: IEventStream): Promise<boolean>
+{
+    eventStream?.post(new DotnetWSLCheckEvent(`Checking if system is WSL. OS: ${os.platform()}`));
+
+    if (os.platform() !== 'linux')
+    {
+        return false;
+    }
+
+    if (process.env.WSL_DISTRO_NAME || process.env.WSLENV)
+    {
+        return true;
+    }
+
+    try
+    {
+        const procVersion = await new FileUtilities().read('/proc/version');
+        return procVersion.toLowerCase().includes('microsoft');
+    }
+    catch
+    {
+        return false;
+    }
+}
+
+/**
+ * Detects the Linux distro and version from /etc/os-release.
+ * @param eventStream Optional event stream for diagnostic logging.
+ * @returns The distro name and version, or null if it can't be determined.
+ */
+export async function getRunningDistro(eventStream?: IEventStream): Promise<DistroVersionPair | null>
+{
+    if (os.platform() !== 'linux')
+    {
+        return null;
+    }
+
+    const mainOSDeclarationFile = `/etc/os-release`;
+    // Fallback per https://man7.org/linux/man-pages/man5/os-release.5.html
+    const backupOSDeclarationFile = `/usr/lib/os-release`;
+    const fileUtils = new FileUtilities();
+    const osDeclarationFile = await fileUtils.exists(mainOSDeclarationFile) ? mainOSDeclarationFile : backupOSDeclarationFile;
+
+    try
+    {
+        const osInfo = (await fileUtils.read(osDeclarationFile)).split('\n');
+        const infoWithQuotesRemoved = osInfo.map(x => x.replace('"', ''));
+        const infoWithSeparatedKeyValues = infoWithQuotesRemoved.map(x => x.split('='));
+        const keyValueMap = Object.fromEntries(infoWithSeparatedKeyValues.map(x => [x[0], x[1]]));
+
+        const distroName: string = keyValueMap.NAME?.replace('"', '') ?? '';
+        const distroVersion: string = keyValueMap.VERSION_ID?.replace('"', '') ?? '';
+
+        if (distroName === '' || distroVersion === '')
+        {
+            return null;
+        }
+
+        return { distro: distroName, version: distroVersion };
+    }
+    catch
+    {
+        return null;
+    }
+}
+
+/**
+ * Checks if the given distro (or the current running distro) is in microsoftSupportedDistroIds.
+ * @param distro Optional distro to check. If not provided, detects the current distro.
+ * @param eventStream Optional event stream for diagnostic logging.
+ */
+export async function isDistroSupported(distro?: DistroVersionPair | null, eventStream?: IEventStream): Promise<boolean>
+{
+    const resolvedDistro = distro ?? await getRunningDistro(eventStream);
+    if (!resolvedDistro || resolvedDistro.distro === '')
+    {
+        return false;
+    }
+    return microsoftSupportedDistroIds.includes(resolvedDistro.distro);
+}
+
+/**
+ * Checks for WSL or non-Microsoft-supported Linux distro.
+ * Returns { isUnsupported: true, reason } if on WSL or a community/unsupported distro.
+ * Note: the extension itself can still install on community distros (e.g. Debian via DebianDistroSDKProvider).
+ * This method is intended for LM tools that should not attempt community-support installs.
+ * @param eventStream Optional event stream for diagnostic logging.
+ */
+export async function checkForUnsupportedLinux(eventStream?: IEventStream): Promise<{ isUnsupported: boolean; reason?: string }>
+{
+    if (os.platform() !== 'linux')
+    {
+        return { isUnsupported: false };
+    }
+
+    if (await isRunningUnderWSL(eventStream))
+    {
+        return { isUnsupported: true, reason: 'WSL' };
+    }
+
+    if (!await isDistroSupported(undefined, eventStream))
+    {
+        return { isUnsupported: true, reason: 'Linux Distro' };
+    }
+
+    return { isUnsupported: false };
 }

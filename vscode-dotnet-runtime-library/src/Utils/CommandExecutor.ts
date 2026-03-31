@@ -117,7 +117,7 @@ export class CommandExecutor extends ICommandExecutor
             }
         }
 
-        if (await isRunningUnderWSL(this.context, this.utilityContext, this))
+        if (await isRunningUnderWSL(this.context?.eventStream))
         {
             // For WSL, vscode/sudo-prompt does not work.
             // This is because it relies on pkexec or a GUI app to popup and request sudo privilege.
@@ -433,7 +433,7 @@ ${stderr}`));
         const fullCommandString = `${command.commandRoot} ${command.commandParts.join(' ')}`;
         let useCache = false;
         // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+
         if (options)
         {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access

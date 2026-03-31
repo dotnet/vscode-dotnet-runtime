@@ -230,7 +230,7 @@ export class DotnetResolver implements IDotnetResolver
      *
      * @remarks Will return '' if the architecture cannot be determined for some peculiar reason (e.g. dotnet --info is broken or changed).
      */
-    // eslint-disable-next-line @typescript-eslint/require-await
+
     private async getHostArchitectureViaInfo(hostPath: string, expectedArchitecture?: string | null): Promise<string>
     {
         // dotnet --info is not machine-readable and subject to breaking changes. See https://github.com/dotnet/sdk/issues/33697 and https://github.com/dotnet/runtime/issues/98735/

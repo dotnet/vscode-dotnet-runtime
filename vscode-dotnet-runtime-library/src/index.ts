@@ -32,6 +32,7 @@ export * from './Acquisition/LinuxVersionResolver';
 export * from './Acquisition/LocalInstallUpdateService';
 export * from './Acquisition/RuntimeInstallationDirectoryProvider';
 export * from './Acquisition/SdkInstallationDirectoryProvider';
+export * from './Acquisition/StringConstants';
 export * from './Acquisition/VersionResolver';
 export * from './Acquisition/VersionUtilities';
 export * from './Acquisition/WinMacGlobalInstaller';
