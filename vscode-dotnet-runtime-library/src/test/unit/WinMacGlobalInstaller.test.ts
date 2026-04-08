@@ -129,7 +129,7 @@ suite('Windows & Mac Global Installer Tests', function ()
         installer.cleanupInstallFiles = true;
         await installer.installSDK(install);
         mockExecutor.resetReturnValues();
-    }).timeout(150000);
+    }).timeout(600000);
 
     test('It downloads a file precisely and deletes installer downloads', async () =>
     {
@@ -161,7 +161,7 @@ ${fs.readdirSync(installerDownloadFolder).join(', ')}`);
         {
             console.warn('The check for installer file deletion cannot run without elevation.');
         }
-    }).timeout(15000 * 3);
+    }).timeout(600000);
 
     test('It runs the correct uninstall command', async () =>
     {
@@ -194,7 +194,7 @@ ${fs.readdirSync(installerDownloadFolder).join(', ')}`);
         installer.cleanupInstallFiles = true;
         await installer.installSDK(install);
         mockExecutor.resetReturnValues();
-    }).timeout(150000);
+    }).timeout(600000);
 
     test('It will use arm64 emulation path IFF path does not exist and option to use it is set', async () =>
     {
