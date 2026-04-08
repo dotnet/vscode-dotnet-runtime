@@ -297,7 +297,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             globalEventStream.post(new DotnetAcquisitionTotalSuccessEvent(commandContext.version, install, commandContext.requestingExtensionId ?? '', dotnetPath.dotnetPath));
         }
 
-        loggingObserver.dispose();
+        void loggingObserver.flush();
         return dotnetPath;
     }
 
@@ -361,7 +361,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             globalEventStream.post(new DotnetAcquisitionTotalSuccessEvent(commandContext.version, install, commandContext.requestingExtensionId ?? '', pathResult.dotnetPath));
         }
 
-        loggingObserver.dispose();
+        void loggingObserver.flush();
         return pathResult;
     });
 
@@ -647,7 +647,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         {
             // We don't need to validate the existing path as it gets validated + tracked in the lookup logic already.
             globalEventStream.post(new DotnetFindPathSettingFound(`Found vscode setting.`));
-            loggingObserver.dispose();
+            void loggingObserver.flush();
             return existingPath;
         }
 
@@ -660,7 +660,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             const validatedShellSpawn = await getPathIfValid(dotnetOnShellSpawn, validator, commandContext);
             if (validatedShellSpawn)
             {
-                loggingObserver.dispose();
+                void loggingObserver.flush();
                 return { dotnetPath: validatedShellSpawn };
             }
         }
@@ -671,7 +671,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             const validatedPATH = await getPathIfValid(dotnetPath, validator, commandContext);
             if (validatedPATH)
             {
-                loggingObserver.dispose();
+                void loggingObserver.flush();
                 return { dotnetPath: validatedPATH };
             }
         }
@@ -682,7 +682,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             const validatedRealPATH = await getPathIfValid(dotnetPath, validator, commandContext);
             if (validatedRealPATH)
             {
-                loggingObserver.dispose();
+                void loggingObserver.flush();
                 return { dotnetPath: validatedRealPATH };
             }
         }
@@ -691,7 +691,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
         const validatedRoot = await getPathIfValid(dotnetOnROOT, validator, commandContext);
         if (validatedRoot)
         {
-            loggingObserver.dispose();
+            void loggingObserver.flush();
             return { dotnetPath: validatedRoot };
         }
 
@@ -704,7 +704,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 const validatedExistingManagedPath = await getPathIfValid(dotnetPath.path, validator, commandContext);
                 if (validatedExistingManagedPath)
                 {
-                    loggingObserver.dispose();
+                    void loggingObserver.flush();
                     return { dotnetPath: dotnetPath.path };
                 }
             }
@@ -716,12 +716,12 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             const validatedHostfxr = await getPathIfValid(dotnetPath, validator, commandContext);
             if (validatedHostfxr && process.env.DOTNET_INSTALL_TOOL_SKIP_HOSTFXR !== 'true')
             {
-                loggingObserver.dispose();
+                void loggingObserver.flush();
                 return { dotnetPath: validatedHostfxr };
             }
         }
 
-        loggingObserver.dispose();
+        void loggingObserver.flush();
         globalEventStream.post(new DotnetFindPathNoPathMetCondition(`Could not find a single host path that met the conditions.
 existingPath : ${existingPath?.dotnetPath}
 onPath : ${JSON.stringify(dotnetsOnPATH)}

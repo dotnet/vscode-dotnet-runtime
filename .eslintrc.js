@@ -17,7 +17,7 @@ module.exports = {
         "eslint-plugin-jsdoc",
         "eslint-plugin-prefer-arrow",
         "@typescript-eslint",
-        "@typescript-eslint/tslint",
+        "header",
     ],
     "root": true,
     "rules": {
@@ -173,16 +173,10 @@ module.exports = {
         "radix": "error",
         "use-isnan": "error",
         "valid-typeof": "off",
-        "@typescript-eslint/tslint/config": [
+        "header/header": [
             "error",
-            {
-                "rules": {
-                    "file-header": [
-                        true,
-                        "------"
-                    ]
-                }
-            }
+            "block",
+            {"pattern": "-{6,}"}
         ]
     },
     "settings": {

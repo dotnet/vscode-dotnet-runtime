@@ -684,6 +684,11 @@ export class MockLoggingObserver implements ILoggingObserver
         // Nothing to dispose
     }
 
+    public async flush(): Promise<void>
+    {
+        // Nothing to flush
+    }
+
     public getFileLocation(): string
     {
         return 'Mock file location';
