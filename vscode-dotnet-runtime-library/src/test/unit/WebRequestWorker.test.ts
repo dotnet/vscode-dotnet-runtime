@@ -5,6 +5,9 @@
 import * as chai from 'chai';
 
 import * as chaiAsPromised from 'chai-as-promised';
+import * as http from 'http';
+import * as https from 'https';
+import * as dns from 'dns';
 import * as path from 'path';
 import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
 import { IInstallScriptAcquisitionWorker } from '../../Acquisition/IInstallScriptAcquisitionWorker';
@@ -12,6 +15,7 @@ import
 {
     DotnetFallbackInstallScriptUsed,
     DotnetInstallScriptAcquisitionError,
+    OfflineDetectionLogicTriggered,
     WebRequestTime,
 } from '../../EventStream/EventStreamEvents';
 import
@@ -127,3 +131,148 @@ suite('WebRequestWorker Unit Tests', function ()
     });
 });
 
+/**
+ * Helper that intercepts all outbound HTTP/HTTPS requests and DNS lookups to simulate a fully offline machine.
+ * Blocks at the http/https.request level which is what axios uses internally.
+ * Returns a restore function that undoes the patching.
+ */
+function simulateOffline(): () => void
+{
+    const originalHttpsRequest = https.request;
+    const originalHttpRequest = http.request;
+    const originalDnsResolve = dns.promises.Resolver.prototype.resolve;
+
+    // Block all HTTPS requests
+    (https as any).request = function (...args: any[])
+    {
+        const req = new http.ClientRequest('https://localhost:1');
+        process.nextTick(() => req.destroy(new Error('simulateOffline: HTTPS request blocked')));
+        return req;
+    };
+
+    // Block all HTTP requests
+    (http as any).request = function (...args: any[])
+    {
+        const req = new http.ClientRequest('http://localhost:1');
+        process.nextTick(() => req.destroy(new Error('simulateOffline: HTTP request blocked')));
+        return req;
+    };
+
+    // Block DNS resolution
+    dns.promises.Resolver.prototype.resolve = function ()
+    {
+        return Promise.reject(new Error('simulateOffline: DNS blocked'));
+    } as any;
+
+    return () =>
+    {
+        (https as any).request = originalHttpsRequest;
+        (http as any).request = originalHttpRequest;
+        dns.promises.Resolver.prototype.resolve = originalDnsResolve;
+    };
+}
+
+/**
+ * Helper that blocks only DNS resolution but allows TCP/TLS connections through.
+ * Simulates a proxy environment where DNS doesn't resolve locally but HTTP works.
+ */
+function simulateDnsOnlyFailure(): () => void
+{
+    const originalDnsResolve = dns.promises.Resolver.prototype.resolve;
+
+    dns.promises.Resolver.prototype.resolve = function ()
+    {
+        return Promise.reject(new Error('simulateDnsOnlyFailure: DNS blocked'));
+    } as any;
+
+    return () =>
+    {
+        dns.promises.Resolver.prototype.resolve = originalDnsResolve;
+    };
+}
+
+suite('isOnline Connectivity Detection Tests', function ()
+{
+    this.afterEach(async () =>
+    {
+        // Reset the singleton so each test gets a fresh instance
+        (WebRequestWorkerSingleton as any).instance = undefined;
+    });
+
+    test('isOnline returns false when fully offline (DNS + HTTP both blocked)', async () =>
+    {
+        const eventStream = new MockEventStream();
+
+        // Reset singleton so the new instance is created while network is blocked
+        (WebRequestWorkerSingleton as any).instance = undefined;
+
+        const restoreNetwork = simulateOffline();
+        try
+        {
+            const result = await WebRequestWorkerSingleton.getInstance().isOnline(5, eventStream);
+            assert.isFalse(result, 'Should report offline when all network is blocked');
+
+            const offlineEvent = eventStream.events.find(event => event instanceof OfflineDetectionLogicTriggered);
+            assert.exists(offlineEvent, 'Should log an offline detection event for the DNS failure');
+        }
+        finally
+        {
+            restoreNetwork();
+        }
+    }).timeout(15000);
+
+    test('isOnline returns true when DNS fails but HTTP succeeds (proxy environment)', async () =>
+    {
+        const eventStream = new MockEventStream();
+        const restoreNetwork = simulateDnsOnlyFailure();
+        try
+        {
+            const result = await WebRequestWorkerSingleton.getInstance().isOnline(5, eventStream);
+            assert.isTrue(result, 'Should report online when DNS fails but HTTP HEAD succeeds');
+
+            const dnsFailEvent = eventStream.events.find(event =>
+                event instanceof OfflineDetectionLogicTriggered &&
+                event.supplementalMessage.includes('DNS resolution failed'));
+            assert.exists(dnsFailEvent, 'Should log a DNS failure event');
+
+            const httpSuccessEvent = eventStream.events.find(event =>
+                event instanceof OfflineDetectionLogicTriggered &&
+                event.supplementalMessage.includes('HTTP connectivity confirmed'));
+            assert.exists(httpSuccessEvent, 'Should log that HTTP fallback succeeded');
+        }
+        finally
+        {
+            restoreNetwork();
+        }
+    }).timeout(15000);
+
+    test('isOnline returns true when DNS succeeds (normal environment)', async () =>
+    {
+        const eventStream = new MockEventStream();
+        const result = await WebRequestWorkerSingleton.getInstance().isOnline(5, eventStream);
+        assert.isTrue(result, 'Should report online when DNS resolves successfully');
+    }).timeout(15000);
+
+    test('isOnline returns false when DOTNET_INSTALL_TOOL_OFFLINE env var is set', async () =>
+    {
+        const eventStream = new MockEventStream();
+        const originalEnv = process.env.DOTNET_INSTALL_TOOL_OFFLINE;
+        process.env.DOTNET_INSTALL_TOOL_OFFLINE = '1';
+        try
+        {
+            const result = await WebRequestWorkerSingleton.getInstance().isOnline(5, eventStream);
+            assert.isFalse(result, 'Should report offline when DOTNET_INSTALL_TOOL_OFFLINE=1');
+        }
+        finally
+        {
+            if (originalEnv === undefined)
+            {
+                delete process.env.DOTNET_INSTALL_TOOL_OFFLINE;
+            }
+            else
+            {
+                process.env.DOTNET_INSTALL_TOOL_OFFLINE = originalEnv;
+            }
+        }
+    }).timeout(5000);
+});
