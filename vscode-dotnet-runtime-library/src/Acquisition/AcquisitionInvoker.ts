@@ -290,7 +290,9 @@ At dotnet-install.ps1:1189 char:5
         // If the assumption is wrong (e.g. the binary is corrupt or inaccessible), the installation
         // attempt will fail and looksLikePowershellProcessNotFound() will trigger a recovery via
         // findWorkingPowershellViaProbing() at that point.
-        const systemRoot = process.env.SystemRoot ?? process.env.SYSTEMROOT ?? 'C:\\Windows';
+        // Node.js on Windows provides case-insensitive env var access, so a single lookup suffices.
+        // The 'C:\Windows' fallback covers edge cases where SystemRoot is unset (e.g. minimal containers).
+        const systemRoot = process.env.SystemRoot ?? 'C:\\Windows';
         const defaultPowershellPath = `${systemRoot}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`;
         if (await this.fileUtilities.exists(defaultPowershellPath))
         {
@@ -356,12 +358,30 @@ At dotnet-install.ps1:1189 char:5
 
     private looksLikePowershellProcessNotFound(stderr: string, error: cp.ExecException): boolean
     {
-        // These patterns are emitted by cmd.exe (the Windows shell) when it cannot find or launch
-        // the specified executable — as opposed to PowerShell starting successfully but the install
-        // script itself failing. Detecting them lets us retry with a probed path.
-        return !!error && !!stderr && (
-            stderr.includes('is not recognized as an internal or external command') ||
-            stderr.includes('The system cannot find the path specified')
-        );
+        if (!error || error.signal)
+        {
+            return false;
+        }
+
+        // Use locale-independent error codes instead of matching English stderr messages
+        // (cmd.exe error messages are localized and differ across Windows display languages).
+
+        // Node.js may set a string error code for OS-level spawn failures
+        // (e.g. 'ENOENT' if the executable path does not exist at all).
+        // ExecException types code as number, but at runtime it can be a string for OS errors.
+        const code = error.code as unknown;
+        if (typeof code === 'string')
+        {
+            return code === 'ENOENT' || code === 'EACCES' || code === 'EPERM';
+        }
+
+        // cmd.exe returns numeric exit code 9009 when the specified program is
+        // not recognized as an internal or external command. This is locale-independent.
+        if (code === 9009)
+        {
+            return true;
+        }
+
+        return false;
     }
 }
