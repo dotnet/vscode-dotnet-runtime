@@ -478,11 +478,9 @@ ${interpretedMessage}`;
         dotnetExePath = await installer.getExpectedGlobalSDKPath(installingVersion,
             context.acquisitionContext.architecture ?? this.getDefaultInternalArchitecture(context.acquisitionContext.architecture));
 
-        context.installationValidator.validateDotnetInstall(install, dotnetExePath, os.platform() === 'darwin', os.platform() !== 'darwin');
-
         LocalMemoryCacheSingleton.getInstance().invalidateEntriesContaining('dotnet', context);
+        context.installationValidator.validateDotnetInstall(install, dotnetExePath, os.platform() === 'darwin', os.platform() !== 'darwin');
         context.eventStream.post(new DotnetAcquisitionCompleted(install, dotnetExePath, installingVersion));
-
         await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).trackInstalledVersion(context, install, dotnetExePath);
 
         await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream);
@@ -621,10 +619,10 @@ Other dependents remain.`));
 
                         systemInstallPath = await installer.getExpectedGlobalSDKPath(installingVersion, install.architecture);
                         const ok = await installer.uninstallSDK(install);
+                        LocalMemoryCacheSingleton.getInstance().invalidateEntriesContaining('dotnet', context);
                         await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream);
                         if (ok === '0')
                         {
-                            LocalMemoryCacheSingleton.getInstance().invalidateEntriesContaining('dotnet', context);
                             await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).reportSuccessfulUninstall(context, install, force);
                             context.eventStream.post(new DotnetUninstallCompleted(`Uninstalled .NET ${install.installId}.`));
                             return '0';
