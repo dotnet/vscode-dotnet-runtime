@@ -181,3 +181,34 @@ export function getPathSeparator(): string
 {
     return os.platform() === 'win32' ? ';' : ':';
 }
+
+/*
+* @remarks Node.js child_process rejects environment variable names that contain certain characters (such as parentheses).
+* On Windows, some environment variables like CommonProgramFiles(x86) and ProgramFiles(x86) contain parentheses,
+* which are valid in Windows but cause Node.js to throw an error when passed in options.env.
+* This function filters out any environment variable whose name contains characters that Node.js does not accept.
+*/
+export function filterEnvVars(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv
+{
+    const filtered: NodeJS.ProcessEnv = {};
+    for (const key of Object.keys(env))
+    {
+        if (isValidEnvironmentVariableName(key))
+        {
+            filtered[key] = env[key];
+        }
+    }
+    return filtered;
+}
+
+/*
+* @remarks Checks if an environment variable name is valid for passing to Node.js child_process options.env.
+* Node.js rejects names that contain characters such as parentheses.
+*/
+export function isValidEnvironmentVariableName(name: string): boolean
+{
+    // Node.js child_process rejects env var names with parentheses and other non-standard characters.
+    // Valid names should only contain letters, digits, and underscores per POSIX,
+    // though Windows also allows some other characters (but not parentheses).
+    return !/[()]/u.test(name);
+}
