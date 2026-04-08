@@ -244,6 +244,16 @@ export class FileUtilities extends IFileUtilities
 
     public static async fileIsOpen(filePath: string, eventStream?: IEventStream): Promise<boolean>
     {
+        try
+        {
+            await fs.promises.access(filePath, fs.constants.F_OK);
+        }
+        catch
+        {
+            eventStream?.post(new FileIsNotBusy(`The file ${filePath} does not exist, so it is not busy.`));
+            return false;
+        }
+
         let fileHandle: fs.promises.FileHandle | null = null;
         if (os.platform() === 'win32')
         {
@@ -272,7 +282,10 @@ export class FileUtilities extends IFileUtilities
         {
             try
             {
-                return promisify(exec)(`lsof ${filePath}`).then(
+                // 10s timeout: targeted lsof queries complete in <1s on normal systems.
+                // Timeout acts as a safety net for heavily loaded systems (300+ processes).
+                // If killed, we assume file is busy to prevent deleting in-use runtimes.
+                return promisify(exec)(`lsof -n ${filePath}`, { timeout: 10000 }).then(
                     fulfilled =>
                     {
                         const lines = fulfilled?.stdout?.toString().split('\n');
@@ -283,19 +296,28 @@ export class FileUtilities extends IFileUtilities
                         }
                         else
                         {
-                            eventStream?.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle as lsof is empty`));
+                            eventStream?.post(new FileIsNotBusy(`The file ${filePath} is not busy as lsof output is empty`));
                             return Promise.resolve(false);
                         }
                     },
                     rejected =>
                     {
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                        if (rejected?.code?.toString() === 'EACCESS')
+                        if (rejected?.killed || rejected?.signal)
                         {
-                            eventStream?.post(new FileIsBusy(`The file ${filePath} is presumed busy due to EACCESS`));
+                            // lsof was killed by timeout — cannot determine file status.
+                            // Err on the side of caution: assume file is busy to prevent
+                            // deleting a potentially in-use .NET runtime.
+                            eventStream?.post(new FileIsBusy(`The file ${filePath} is presumed busy because lsof timed out`));
                             return Promise.resolve(true);
                         }
-                        return Promise.resolve(false); // lsof returns a non-zero exit code if the file is not open by any process. EACCESS is thrown if the user does not have permission to run lsof on that file.
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                        if (rejected?.code?.toString() === 'EACCES')
+                        {
+                            eventStream?.post(new FileIsBusy(`The file ${filePath} is presumed busy due to EACCES`));
+                            return Promise.resolve(true);
+                        }
+                        return Promise.resolve(false); // lsof returns a non-zero exit code if the file is not open by any process.
                         // ENOENT or others may be thrown if the file DNE, but we only care if its open.
                     }).finally(() => { return false; });
             }
