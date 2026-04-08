@@ -139,4 +139,55 @@ suite('StatusBarObserver Unit Tests', function ()
 
         assert.isTrue(mockStatusBarItem.isVisible, 'Status bar should remain visible when one download fails but another is still in progress');
     }).timeout(defaultTimeoutTime);
+
+    test('Status bar hides correctly when same installId is started twice (duplicate request)', () =>
+    {
+        // Simulates the global SDK path where DotnetAcquisitionStarted fires before the inner lock,
+        // so two extensions requesting the same version can each trigger a start event.
+        const install = makeInstall('8.0~x64');
+        observer.post(new DotnetAcquisitionStarted(install, 'ext-csharp'));
+        observer.post(new DotnetAcquisitionStarted(install, 'ext-csharpdk'));
+
+        assert.isTrue(mockStatusBarItem.isVisible, 'Status bar should be visible after duplicate starts');
+
+        // Only one completion fires (the actual install)
+        observer.post(new DotnetAcquisitionCompleted(install, '/path/to/dotnet', '8.0'));
+
+        assert.isFalse(mockStatusBarItem.isVisible, 'Status bar should hide after completion even with duplicate starts');
+    }).timeout(defaultTimeoutTime);
+
+    test('Status bar handles completion for unknown installId gracefully', () =>
+    {
+        const installA = makeInstall('8.0~x64');
+        const installB = makeInstall('9.0~x64');
+
+        // Only start A
+        observer.post(new DotnetAcquisitionStarted(installA, 'test-ext'));
+
+        // Complete B (never started) - should not crash or affect status bar
+        observer.post(new DotnetAcquisitionCompleted(installB, '/path/to/dotnet', '9.0'));
+
+        assert.isTrue(mockStatusBarItem.isVisible, 'Status bar should remain visible since A is still in progress');
+    }).timeout(defaultTimeoutTime);
+
+    test('Status bar handles duplicate start with mixed completion and error', () =>
+    {
+        const install = makeInstall('8.0~x64');
+        const otherInstall = makeInstall('9.0~x64');
+
+        observer.post(new DotnetAcquisitionStarted(install, 'ext-a'));
+        observer.post(new DotnetAcquisitionStarted(install, 'ext-b'));
+        observer.post(new DotnetAcquisitionStarted(otherInstall, 'ext-c'));
+
+        // Error on the duplicate - should remove it from tracking
+        const finalError = new DotnetAcquisitionFinalError(new EventBasedError('TestError', 'Failed'), 'TestEvent', install);
+        observer.post(finalError);
+
+        assert.isTrue(mockStatusBarItem.isVisible, 'Status bar should remain visible since 9.0 is still in progress');
+
+        // Complete the other install
+        observer.post(new DotnetAcquisitionCompleted(otherInstall, '/path/to/dotnet', '9.0'));
+
+        assert.isFalse(mockStatusBarItem.isVisible, 'Status bar should hide after all unique installs complete');
+    }).timeout(defaultTimeoutTime);
 });

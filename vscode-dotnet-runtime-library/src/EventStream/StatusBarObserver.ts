@@ -20,7 +20,9 @@ enum StatusBarColors {
 }
 
 export class StatusBarObserver implements IEventStreamObserver {
-    private readonly inProgressDownloads: string[] = [];
+    // Use a Set so duplicate start events for the same installId (possible in the global SDK path,
+    // where DotnetAcquisitionStarted fires before the inner installer lock) are naturally deduplicated.
+    private readonly inProgressDownloads: Set<string> = new Set<string>();
 
     constructor(private readonly statusBarItem: vscode.StatusBarItem, private readonly showLogCommand: string) {
     }
@@ -29,27 +31,27 @@ export class StatusBarObserver implements IEventStreamObserver {
         switch (event.type) {
             case EventType.DotnetAcquisitionStart:
                 const acquisitionStarted = event as DotnetAcquisitionStarted;
-                this.inProgressDownloads.push(acquisitionStarted.install.installId);
+                this.inProgressDownloads.add(acquisitionStarted.install.installId);
                 this.setAndShowStatusBar('$(cloud-download) Downloading .NET...', this.showLogCommand, '', 'Downloading .NET...');
                 break;
             case EventType.DotnetAcquisitionCompleted:
                 const acquisitionCompleted = event as DotnetAcquisitionCompleted;
                 this.removeFromInProgress(acquisitionCompleted.install.installId);
-                if (this.inProgressDownloads.length === 0) {
+                if (this.inProgressDownloads.size === 0) {
                     this.resetAndHideStatusBar();
                 }
                 break;
             case EventType.DotnetInstallExpectedAbort:
                 const abortEvent = event as DotnetInstallExpectedAbort;
                 this.removeFromInProgress(abortEvent.install?.installId);
-                if (this.inProgressDownloads.length === 0) {
+                if (this.inProgressDownloads.size === 0) {
                     this.resetAndHideStatusBar();
                 }
                 break;
             case EventType.DotnetAcquisitionFinalError:
                 const finalError = event as DotnetAcquisitionFinalError;
                 this.removeFromInProgress(finalError.install?.installId);
-                if (this.inProgressDownloads.length === 0) {
+                if (this.inProgressDownloads.size === 0) {
                     this.resetAndHideStatusBar();
                 }
                 break;
@@ -83,11 +85,7 @@ export class StatusBarObserver implements IEventStreamObserver {
     private removeFromInProgress(installId: string | null | undefined): void {
         if (installId)
         {
-            const index = this.inProgressDownloads.indexOf(installId);
-            if (index >= 0)
-            {
-                this.inProgressDownloads.splice(index, 1);
-            }
+            this.inProgressDownloads.delete(installId);
         }
     }
 }
