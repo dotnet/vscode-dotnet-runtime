@@ -318,15 +318,12 @@ At dotnet-install.ps1:1189 char:5
                 CommandExecutor.makeCommand('0', []),
                 CommandExecutor.makeCommand('1', []),
                 CommandExecutor.makeCommand('2', []),
-                CommandExecutor.makeCommand('3', []),
-                CommandExecutor.makeCommand('4', []),
             ];
         const possiblePowershellPaths =
             [ // use shell as powershell and see if it passes or not. This is faster than doing it with the default shell, as that spawns a cmd to spawn a pwsh
+                { shell: `${process.env.SystemRoot}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe` },
                 { shell: `powershell.exe` },
-                { shell: `%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe` },
                 { shell: `pwsh` },
-                { shell: `powershell` }
             ]
         try
         {
