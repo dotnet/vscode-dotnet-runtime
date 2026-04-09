@@ -184,7 +184,7 @@ export function getPathSeparator(): string
 
 /*
 * @remarks @vscode/sudo-prompt rejects env var names not matching /^[a-zA-Z_][a-zA-Z0-9_]*$/.
-* See: https://github.com/jorangreef/sudo-prompt/blob/master/index.js
+* See: https://github.com/bpasero/sudo-prompt/blob/master/index.js#L96
 * Windows has vars like ProgramFiles(x86) that violate this, so we filter them out.
 */
 export function filterEnvVars(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv
@@ -205,6 +205,6 @@ export function filterEnvVars(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv
 */
 export function isValidEnvironmentVariableName(name: string): boolean
 {
-    // https://github.com/jorangreef/sudo-prompt/blob/master/index.js
+    // https://github.com/bpasero/sudo-prompt/blob/master/index.js#L96
     return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name);
 }
