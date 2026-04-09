@@ -30,6 +30,7 @@ import { FileUtilities } from '../Utils/FileUtilities';
 import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker';
 
 import { IUtilityContext } from '../Utils/IUtilityContext';
+import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { getDotnetExecutable } from '../Utils/TypescriptUtilities';
 import { WebRequestWorkerSingleton } from '../Utils/WebRequestWorkerSingleton';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
@@ -48,12 +49,13 @@ export class AcquisitionInvoker extends IAcquisitionInvoker
 
 You will need to restart VS Code after these changes. If PowerShell is still not discoverable, try setting a custom existingDotnetPath following our instructions here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md.`
 
-    constructor(private readonly workerContext: IAcquisitionWorkerContext, private readonly utilityContext: IUtilityContext)
+    constructor(private readonly workerContext: IAcquisitionWorkerContext, private readonly utilityContext: IUtilityContext, private commandExecutor?: ICommandExecutor)
     {
 
         super(workerContext.eventStream);
         this.scriptWorker = new InstallScriptAcquisitionWorker(workerContext);
         this.fileUtilities = new FileUtilities();
+        this.commandExecutor ??= new CommandExecutor(this.workerContext, this.utilityContext);
     }
 
     public async installDotnet(install: DotnetInstall): Promise<void>
@@ -283,7 +285,7 @@ At dotnet-install.ps1:1189 char:5
      * @remarks Some users have reported not having powershell.exe or having execution policy that fails property evaluation functions in powershell install scripts.
      * We use this function to throw better errors if powershell is not configured correctly.
      */
-    private async verifyPowershellCanRun(installId: DotnetInstall): Promise<string>
+    protected async verifyPowershellCanRun(installId: DotnetInstall): Promise<string>
     {
         // Fast path: check if the PowerShell executable exists at the well-known absolute path
         // without spawning any process. If the file exists, assume it works and return it.
@@ -305,7 +307,7 @@ At dotnet-install.ps1:1189 char:5
      * @remarks Discovers a working PowerShell path by probing each candidate via process execution.
      * This is the slow path used when the well-known default path is not present or known to be broken.
      */
-    private async findWorkingPowershellViaProbing(installId: DotnetInstall): Promise<string>
+    protected async findWorkingPowershellViaProbing(installId: DotnetInstall): Promise<string>
     {
         let knownError = false;
         let error = null;
@@ -324,7 +326,7 @@ At dotnet-install.ps1:1189 char:5
         try
         {
             // Check if PowerShell exists and is on the path.
-            command = await new CommandExecutor(this.workerContext, this.utilityContext).tryFindWorkingCommand(possibleCommands, possiblePowershellPaths);
+            command = await this.commandExecutor!.tryFindWorkingCommand(possibleCommands, possiblePowershellPaths);
             if (!command)
             {
                 knownError = true;
