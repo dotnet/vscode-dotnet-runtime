@@ -287,13 +287,11 @@ At dotnet-install.ps1:1189 char:5
     {
         // Fast path: check if the PowerShell executable exists at the well-known absolute path
         // without spawning any process. If the file exists, assume it works and return it.
-        // If the assumption is wrong (e.g. the binary is corrupt or inaccessible), the installation
+        // If the assumption is wrong (e.g. the binary is corrupt/blocked/inaccessible), the installation
         // attempt will fail and looksLikePowershellProcessNotFound() will trigger a recovery via
         // findWorkingPowershellViaProbing() at that point.
-        // Node.js on Windows provides case-insensitive env var access, so a single lookup suffices.
-        // The 'C:\Windows' fallback covers edge cases where SystemRoot is unset (e.g. minimal containers).
-        const systemRoot = process.env.SystemRoot ?? 'C:\\Windows';
-        const defaultPowershellPath = `${systemRoot}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`;
+
+        const defaultPowershellPath = `${process.env.SystemRoot}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`;
         if (await this.fileUtilities.exists(defaultPowershellPath))
         {
             return defaultPowershellPath;
@@ -317,13 +315,11 @@ At dotnet-install.ps1:1189 char:5
             [
                 CommandExecutor.makeCommand('0', []),
                 CommandExecutor.makeCommand('1', []),
-                CommandExecutor.makeCommand('2', []),
             ];
         const possiblePowershellPaths =
             [ // use shell as powershell and see if it passes or not. This is faster than doing it with the default shell, as that spawns a cmd to spawn a pwsh
-                { shell: `${process.env.SystemRoot}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe` },
-                { shell: `powershell.exe` },
-                { shell: `pwsh` },
+                { shell: `powershell.exe` }, // 95% of users covered by these 2 cases
+                { shell: `pwsh` }, // roughly another 1.3% of users have pwsh but not the windows powershell
             ]
         try
         {
