@@ -183,10 +183,11 @@ export function getPathSeparator(): string
 }
 
 /*
-* @remarks Node.js child_process rejects environment variable names that contain certain characters (such as parentheses).
+* @remarks The @vscode/sudo-prompt library validates environment variable names against POSIX standards
+* (regex: /^[a-zA-Z_][a-zA-Z0-9_]*$/) and rejects names containing parentheses, hyphens, dots, spaces, etc.
 * On Windows, some environment variables like CommonProgramFiles(x86) and ProgramFiles(x86) contain parentheses,
-* which are valid in Windows but cause Node.js to throw an error when passed in options.env.
-* This function filters out any environment variable whose name contains characters that Node.js does not accept.
+* which are valid in Windows but cause @vscode/sudo-prompt to throw when passed in options.env.
+* This function filters out any environment variable whose name does not conform to POSIX naming rules.
 */
 export function filterEnvVars(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv
 {
@@ -202,13 +203,12 @@ export function filterEnvVars(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv
 }
 
 /*
-* @remarks Checks if an environment variable name is valid for passing to Node.js child_process options.env.
-* Node.js rejects names that contain characters such as parentheses.
+* @remarks Checks if an environment variable name is valid for passing to @vscode/sudo-prompt options.env.
+* The sudo-prompt library enforces POSIX naming: must start with a letter or underscore,
+* followed by letters, digits, or underscores only. Characters like parentheses, hyphens, and dots are rejected.
 */
 export function isValidEnvironmentVariableName(name: string): boolean
 {
-    // Node.js child_process rejects env var names with parentheses and other non-standard characters.
-    // Valid names should only contain letters, digits, and underscores per POSIX,
-    // though Windows also allows some other characters (but not parentheses).
-    return !/[()]/u.test(name);
+    // Match the POSIX validation used by @vscode/sudo-prompt: /^[a-zA-Z_][a-zA-Z0-9_]*$/
+    return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name);
 }
