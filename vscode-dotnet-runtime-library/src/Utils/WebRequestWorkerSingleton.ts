@@ -373,7 +373,7 @@ export class WebRequestWorkerSingleton
     {
         try
         {
-            const hasManualProxy = manualProxyUrl ? manualProxyUrl !== '""' : false;
+            const hasManualProxy = this.proxySettingConfiguredManually(manualProxyUrl);
 
             let discoveredProxy = '';
             if (!hasManualProxy)
@@ -534,6 +534,11 @@ If you're on a proxy and disable registry access, you must set the proxy in our 
             }
             return undefined;
         }
+    }
+
+    private proxySettingConfiguredManually(proxyUrl?: string): boolean
+    {
+        return proxyUrl ? proxyUrl !== '""' : false;
     }
 
     private timeoutMsFromCtx(ctx: IAcquisitionWorkerContext): number
