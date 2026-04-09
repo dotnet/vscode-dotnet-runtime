@@ -8,14 +8,14 @@ import { DotnetCoreAcquisitionWorker } from '../Acquisition/DotnetCoreAcquisitio
 import { GetDotnetInstallInfo } from '../Acquisition/DotnetInstall';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import
-{
-    DotnetAcquisitionFinalError,
-    DotnetCommandFailed,
-    DotnetCommandSucceeded,
-    DotnetInstallExpectedAbort,
-    DotnetNotInstallRelatedCommandFailed,
-    EventCancellationError
-} from '../EventStream/EventStreamEvents';
+    {
+        DotnetAcquisitionFinalError,
+        DotnetCommandFailed,
+        DotnetCommandSucceeded,
+        DotnetInstallExpectedAbort,
+        DotnetNotInstallRelatedCommandFailed,
+        EventCancellationError
+    } from '../EventStream/EventStreamEvents';
 import { IIssueContext } from './IIssueContext';
 import { getInstallFromContext } from './InstallIdUtilities';
 import { formatIssueUrl } from './IssueReporter';
@@ -59,12 +59,12 @@ Our CDN may be blocked in China or experience significant slowdown, in which cas
 
 let showMessage = true;
 
-export async function callWithErrorHandling<T>(callback: () => T, context: IIssueContext, requestingExtensionId?: string, acquireContext?: IAcquisitionWorkerContext): Promise<T | undefined>
+export async function callWithErrorHandling<T>(callback: () => T, context: IIssueContext, requestingExtensionId?: string, acquireContext?: IAcquisitionWorkerContext, rethrowError?: boolean): Promise<T | undefined>
 {
     const isAcquisitionError = acquireContext ? true : false;
     try
     {
-        /* eslint-disable @typescript-eslint/await-thenable */
+
         const result = await callback();
         context.eventStream.post(new DotnetCommandSucceeded(context.commandName));
         return result;
@@ -138,6 +138,13 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
                     }, ...errorOptions);
             }
         }
+
+        // If rethrowError is true, rethrow the error so the caller can handle it (useful for LLM tools)
+        if (rethrowError)
+        {
+            throw error;
+        }
+
         return undefined;
     }
     finally

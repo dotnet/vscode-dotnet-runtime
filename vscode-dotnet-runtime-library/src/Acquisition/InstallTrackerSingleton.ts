@@ -203,6 +203,8 @@ export class InstallTrackerSingleton
                     const isDead = await this.isSessionDead(sessionId);
                     if (isDead)
                     {
+
+                        this.eventStream.post(new DependentIsDead(`Dependent Session ${sessionId} is no longer live - continue searching dependents.`))
                         existingSessionsWithUsedExecutablePaths.delete(sessionId);
                         await this.extensionState.update(this.sessionInstallsKey, serializeMapOfSets(existingSessionsWithUsedExecutablePaths));
                     }

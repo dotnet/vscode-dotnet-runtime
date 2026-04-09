@@ -327,7 +327,7 @@ export class DotnetHostPathFinder implements IDotnetPathFinder
                     paths.push(path.join(realPath, getDotnetExecutable()));
                 }
             }
-            catch (error: any) // eslint-disable-line @typescript-eslint/no-explicit-any
+            catch (error: any)
             {
                 // readfile throws if the file gets deleted in between the existing check and now
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
