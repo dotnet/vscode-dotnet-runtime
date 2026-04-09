@@ -16,6 +16,8 @@ import
     LiveDependentInUse,
     MarkedInstallInUse,
     ProcessEnvironmentCheck,
+    PrunedStaleSessions,
+    RemovingCurrentSession,
     RemovingExtensionFromList,
     RemovingOwnerFromList,
     RemovingVersionFromExtensionState,
@@ -198,22 +200,16 @@ export class InstallTrackerSingleton
                         return false; // Our session must be live if this code is running.
                     }
 
-                    // See if the session is still 'live' - there is no way to ensure we remove it on exit/os crash
-                    const logger = new EventStreamNodeIPCMutexLoggerWrapper(this.eventStream, sessionId);
-                    const mutex = new NodeIPCMutex(sessionId, logger, ``);
-
-                    const shouldContinue = await mutex.acquire(async () =>
+                    const isDead = await this.isSessionDead(sessionId);
+                    if (isDead)
                     {
-                        // eslint-disable-next-line no-return-await
-                        this.eventStream.post(new DependentIsDead(`Dependent Session ${sessionId} is no longer live - continue searching dependents.`))
                         existingSessionsWithUsedExecutablePaths.delete(sessionId);
                         await this.extensionState.update(this.sessionInstallsKey, serializeMapOfSets(existingSessionsWithUsedExecutablePaths));
-                        return Promise.resolve(true);
-                    }, 10, 30, `${sessionId}-${crypto.randomUUID()}`).catch(() => { return false; });
-                    if (!shouldContinue && exePaths.has(installExePath))
+                    }
+                    else if (exePaths.has(installExePath))
                     {
                         this.eventStream.post(new LiveDependentInUse(`Install ${installExePath} is in use by session ${sessionId}, so we can't uninstall it.`))
-                        return false; // We couldn't acquire the mutex, so the session must be live
+                        return false;
                     }
                 }
 
@@ -462,6 +458,80 @@ export class InstallTrackerSingleton
     public markInstallAsInUse(installExePath: string)
     {
         return this.markInstallAsInUseWithInstallLock(installExePath, false, InstallTrackerSingleton.sessionId);
+    }
+
+    /**
+     * Removes sessions from the persisted state whose IPC mutex is no longer held,
+     * indicating the owning VS Code process has exited or crashed.
+     * Should be called once on extension startup to avoid unbounded growth of the session map.
+     */
+    public async pruneStaleSessions(): Promise<void>
+    {
+        await executeWithLock(this.eventStream, false, this.getLockFilePathForKeySimple('installed'), 5, 200000,
+            async () =>
+            {
+                const serializedData = this.extensionState.get<Record<string, string[]>>(this.sessionInstallsKey, {});
+                const existingSessions = deserializeMapOfSets<string, string>(serializedData);
+                const initialCount = existingSessions.size;
+                let pruned = 0;
+
+                for (const sessionId of Array.from(existingSessions.keys()))
+                {
+                    if (sessionId === InstallTrackerSingleton.sessionId)
+                    {
+                        continue;
+                    }
+
+                    if (await this.isSessionDead(sessionId))
+                    {
+                        existingSessions.delete(sessionId);
+                        pruned++;
+                    }
+                }
+
+                if (pruned > 0)
+                {
+                    await this.extensionState.update(this.sessionInstallsKey, serializeMapOfSets(existingSessions));
+                    this.eventStream.post(new PrunedStaleSessions(`Pruned ${pruned} stale sessions out of ${initialCount}. Remaining: ${existingSessions.size}.`));
+                }
+            });
+    }
+
+    /**
+     * Removes the current session from the persisted state.
+     * Intended for clean shutdown via the extension's deactivate() export.
+     */
+    public async removeCurrentSession(): Promise<void>
+    {
+        await executeWithLock(this.eventStream, false, this.getLockFilePathForKeySimple('installed'), 5, 200000,
+            async () =>
+            {
+                const serializedData = this.extensionState.get<Record<string, string[]>>(this.sessionInstallsKey, {});
+                const existingSessions = deserializeMapOfSets<string, string>(serializedData);
+
+                if (existingSessions.delete(InstallTrackerSingleton.sessionId))
+                {
+                    await this.extensionState.update(this.sessionInstallsKey, serializeMapOfSets(existingSessions));
+                    this.eventStream.post(new RemovingCurrentSession(`Removed session ${InstallTrackerSingleton.sessionId} from state during deactivation.`));
+                }
+            });
+    }
+
+    /**
+     * Checks whether a session's IPC mutex can be acquired, meaning the process that held it has exited.
+     * @returns true if the session is dead (mutex was acquirable), false if still alive.
+     */
+    private async isSessionDead(sessionId: string): Promise<boolean>
+    {
+        const logger = new EventStreamNodeIPCMutexLoggerWrapper(this.eventStream, sessionId);
+        const mutex = new NodeIPCMutex(sessionId, logger, '');
+
+        // eslint-disable-next-line @typescript-eslint/require-await
+        return mutex.acquire(async () =>
+        {
+            this.eventStream.post(new DependentIsDead(`Session ${sessionId} is no longer live.`));
+            return true;
+        }, 10, 30, `${sessionId}-${crypto.randomUUID()}`).catch(() => false);
     }
 
     protected markInstallAsInUseWithInstallLock(installExePath: string, alreadyHoldingLock: boolean, sessionId: string)
