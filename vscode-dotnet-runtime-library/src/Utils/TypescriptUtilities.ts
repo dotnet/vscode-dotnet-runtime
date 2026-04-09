@@ -183,11 +183,9 @@ export function getPathSeparator(): string
 }
 
 /*
-* @remarks The @vscode/sudo-prompt library validates environment variable names against POSIX standards
-* (regex: /^[a-zA-Z_][a-zA-Z0-9_]*$/) and rejects names containing parentheses, hyphens, dots, spaces, etc.
-* On Windows, some environment variables like CommonProgramFiles(x86) and ProgramFiles(x86) contain parentheses,
-* which are valid in Windows but cause @vscode/sudo-prompt to throw when passed in options.env.
-* This function filters out any environment variable whose name does not conform to POSIX naming rules.
+* @remarks @vscode/sudo-prompt rejects env var names not matching /^[a-zA-Z_][a-zA-Z0-9_]*$/.
+* See: https://github.com/jorangreef/sudo-prompt/blob/master/index.js
+* Windows has vars like ProgramFiles(x86) that violate this, so we filter them out.
 */
 export function filterEnvVars(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv
 {
@@ -203,12 +201,10 @@ export function filterEnvVars(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv
 }
 
 /*
-* @remarks Checks if an environment variable name is valid for passing to @vscode/sudo-prompt options.env.
-* The sudo-prompt library enforces POSIX naming: must start with a letter or underscore,
-* followed by letters, digits, or underscores only. Characters like parentheses, hyphens, and dots are rejected.
+* @remarks Matches the POSIX validation enforced by @vscode/sudo-prompt.
 */
 export function isValidEnvironmentVariableName(name: string): boolean
 {
-    // Match the POSIX validation used by @vscode/sudo-prompt: /^[a-zA-Z_][a-zA-Z0-9_]*$/
+    // https://github.com/jorangreef/sudo-prompt/blob/master/index.js
     return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name);
 }
