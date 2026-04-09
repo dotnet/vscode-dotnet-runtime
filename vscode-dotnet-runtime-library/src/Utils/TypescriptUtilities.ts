@@ -8,14 +8,14 @@ import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerCont
 import { IEventStream } from '../EventStream/EventStream';
 import
 {
-    DotnetWSLCheckEvent,
-    GenericDotnetLockEvent
+    DotnetWSLCheckEvent
 } from '../EventStream/EventStreamEvents';
 import { IEvent } from '../EventStream/IEvent';
 import { CommandExecutor } from './CommandExecutor';
+import { EventStreamNodeIPCMutexLoggerWrapper } from './EventStreamNodeIPCMutexWrapper';
 import { ICommandExecutor } from './ICommandExecutor';
 import { IUtilityContext } from './IUtilityContext';
-import { INodeIPCMutexLogger, NodeIPCMutex } from './NodeIPCMutex';
+import { NodeIPCMutex } from './NodeIPCMutex';
 
 export async function loopWithTimeoutOnCond(sampleRatePerMs: number, durationToWaitBeforeTimeoutMs: number, conditionToStop: () => boolean, doAfterStop: () => void,
     eventStream: IEventStream | null, waitEvent: IEvent): Promise<void>
@@ -70,19 +70,7 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
     }
     else
     {
-        class NodeIPCMutexLoggerWrapper extends INodeIPCMutexLogger
-        {
-            constructor(private readonly loggerEventStream: IEventStream)
-            {
-                super();
-            }
-            public log(message: string)
-            {
-                this.loggerEventStream.post(new GenericDotnetLockEvent(message, new Date().toISOString(), lockId, lockId));
-            }
-        }
-
-        const logger = new NodeIPCMutexLoggerWrapper(eventStream);
+        const logger = new EventStreamNodeIPCMutexLoggerWrapper(eventStream, lockId);
         const mutex = new NodeIPCMutex(lockId, logger, `The lock may be held by another process or instance of vscode. Try restarting your machine, deleting the lock, and or increasing the timeout time in the extension settings.
 
 Increase your OS path length limit to at least 256 characters.
@@ -95,7 +83,7 @@ Report this issue to our vscode-dotnet-runtime GitHub for help.`
         const result = await mutex.acquire(async () =>
         {
             // await must be used to make the linter allow f to be async, which it must be.
-            // eslint-disable-next-line no-return-await
+            // eslint-disable-next-line no-return-await, @typescript-eslint/await-thenable
             return await f(...(args));
         }, retryTimeMs, timeoutTimeMs, `${lockId}-${crypto.randomUUID()}`);
         return result;

@@ -1,7 +1,7 @@
 parameters:
   pool: ''
   SignType: ''
-  PRERELEASE: false
+  TestBuild: 'false'
 
 jobs:
 - job: ${{ parameters.pool.os }}_Package
@@ -19,6 +19,10 @@ jobs:
       displayName: '📂 Publish .VSIX'
       targetPath: '$(Build.ArtifactStagingDirectory)'
       artifactName: '$(dir-name)'
+    - output: pipelineArtifact
+      displayName: '🗂️ Publish Package Files'
+      targetPath: '$(Build.ArtifactStagingDirectory)/package_files'
+      artifactName: 'package_files'
   steps:
   - template: install-node.yaml
   - bash: |
@@ -30,39 +34,176 @@ jobs:
       fi
       npm version $VERSION --allow-same-version
       echo "##vso[task.setvariable variable=version;isOutput=true]$VERSION"
+
+      # Calculate if this should be prerelease based on patch version (odd = prerelease)
+      PATCH_VERSION="${VERSION##*.}"  # Gets everything after the last dot
+      IS_ODD=$((PATCH_VERSION % 2))
+      if [ $IS_ODD -eq 1 ]; then
+        echo "##vso[task.setvariable variable=isPrerelease;isOutput=true]true"
+        echo "Version $VERSION has odd patch number ($PATCH_VERSION) - will be marked as prerelease"
+      else
+        echo "##vso[task.setvariable variable=isPrerelease;isOutput=true]false"
+        echo "Version $VERSION has even patch number ($PATCH_VERSION) - will be marked as stable release"
+      fi
     name: GetVersion
-    displayName: '❓ Get Version'
+    displayName: '❓ Get Version and Determine Prerelease Status'
     workingDirectory: $(dir-name)
   - ${{ if eq(parameters.useOneEngineeringPool, 'true') }}:
     - template: prepare-signing.yaml
       parameters:
         SignType: ${{ parameters.SignType }}
+  - pwsh: |
+      $installScriptsDir = 'vscode-dotnet-runtime-library/install scripts'
+      $scriptUrls = @{
+        'dotnet-install.ps1' = 'https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.ps1'
+        'dotnet-install.sh'  = 'https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh'
+      }
+      foreach ($fileName in $scriptUrls.Keys) {
+        $url = $scriptUrls[$fileName]
+        $outPath = Join-Path $installScriptsDir $fileName
+        $downloaded = $false
+        for ($attempt = 1; $attempt -le 3; $attempt++) {
+          try {
+            Invoke-WebRequest -Uri $url -OutFile $outPath -UseBasicParsing
+            $downloaded = $true
+            Write-Host "✅ Downloaded $fileName (attempt $attempt)"
+            break
+          } catch {
+            Write-Host "⚠️ Attempt $attempt failed for $fileName`: $($_.Exception.Message)"
+          }
+        }
+        if (-not $downloaded) {
+          Write-Error "❌ Failed to download $fileName after 3 attempts. Cannot bundle install scripts."
+          exit 1
+        }
+      }
+      Write-Host "✅ Install scripts bundled successfully."
+    displayName: '📥 Download and Bundle Install Scripts'
   - bash: |
-      npm i -g rimraf
-      npm i -g @vscode/vsce
-      if [ "${{ parameters.PRERELEASE }}" = "true" ]; then
-        vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn --pre-release
+      npm ci rimraf --registry=https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/
+      npm ci @vscode/vsce --registry=https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/
+      if [ "$(GetVersion.isPrerelease)" = "true" ]; then
+        echo "Packaging as prerelease..."
+        npx vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn --pre-release
       else
-        vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
+        echo "Packaging as stable release..."
+        npx vsce package -o $(package-name)-$(GetVersion.version).vsix --ignoreFile ../.vscodeignore --yarn
       fi
+      npx vsce generate-manifest -i $(package-name)-$(GetVersion.version).vsix -o $(package-name)-$(GetVersion.version).manifest
       cp $(package-name)-$(GetVersion.version).vsix ../packages/$(package-name)-$(GetVersion.version).vsix
+      cp $(package-name)-$(GetVersion.version).manifest ../packages/$(package-name)-$(GetVersion.version).manifest
+      cp $(package-name)-$(GetVersion.version).manifest ../packages/$(package-name)-$(GetVersion.version).signature.p7s
     displayName: 📦 Package Artifact
     workingDirectory: $(dir-name)
     env:
       SignType: ${{ parameters.SignType }}
+      TestBuild: ${{ parameters.TestBuild }}
+  - pwsh: |
+      Add-Type -AssemblyName System.IO.Compression.FileSystem
+      $packagesDir = '../packages'
+      $installScriptsDirInVsix = 'extension/dist/install scripts'
+      $requiredScripts = @(
+        "$installScriptsDirInVsix/dotnet-install.ps1",
+        "$installScriptsDirInVsix/dotnet-install.sh"
+      )
+      $vsixFiles = Get-ChildItem -Path $packagesDir -Filter '*.vsix' -Recurse
+      if ($vsixFiles.Count -eq 0) {
+        Write-Error "❌ No VSIX files found in $packagesDir."
+        exit 1
+      }
+      $anyFailed = $false
+      foreach ($vsix in $vsixFiles) {
+        Write-Host "🔍 Verifying install scripts in: $($vsix.Name)"
+        $zip = [System.IO.Compression.ZipFile]::OpenRead($vsix.FullName)
+        try {
+          $vsixEntries = $zip.Entries | ForEach-Object { $_.FullName }
+          foreach ($script in $requiredScripts) {
+            if ($vsixEntries -contains $script) {
+              Write-Host "  ✅ Found: $script"
+            } else {
+              Write-Host "  ❌ Missing: $script"
+              $anyFailed = $true
+            }
+          }
+        } finally {
+          $zip.Dispose()
+        }
+      }
+      if ($anyFailed) {
+        Write-Error "❌ One or more install scripts are missing from the VSIX. The extension will not be able to fall back to bundled scripts."
+        exit 1
+      }
+      Write-Host "✅ All install scripts are present in the VSIX."
+    displayName: '🔍 Verify Install Scripts are Bundled in VSIX'
+    workingDirectory: $(dir-name)
+  - template: list-file-structure.yaml
+  - pwsh: |
+      $target = Join-Path '$(Build.ArtifactStagingDirectory)' 'package_files'
+      if (-not (Test-Path $target)) {
+        New-Item -ItemType Directory -Path $target | Out-Null
+      }
+
+      $source = Join-Path '$(Build.SourcesDirectory)' '$(dir-name)'
+      $files = @('package.json', 'package-lock.json', '.npmrc', 'yarn.lock', '.yarnrc')
+
+      foreach ($file in $files) {
+        $sourcePath = Join-Path $source $file
+        if (Test-Path $sourcePath) {
+          Copy-Item -Path $sourcePath -Destination (Join-Path $target $file) -Force
+        }
+      }
+    displayName: '📁 Stage Package Files for Consumption to Enable NPM CI'
   - script: dotnet build msbuild/signVsix -v:normal
     displayName: 🖊️ Sign VSIXes
     env:
       SignType: ${{ parameters.SignType }}
-  - task: CmdLine@2
-    displayName: 🤌 Rename Signed VSIX
-    inputs:
-      script: rename ".\packages\$(package-name)-$(GetVersion.version).vsix" $(package-name)-$(GetVersion.version)-signed.vsix
+      TestBuild: ${{ parameters.TestBuild }}
+  - ${{ if eq(variables['Build.Reason'], 'IndividualCI') }}:
+    - pwsh: |
+        Function Spawn-Tool($command, $commandArgs, $retryCount=0) {
+          Write-Host "$pwd >"
+          for (; $retryCount -ge 0; $retryCount--) {
+            Write-Host "##[command]$command $commandArgs"
+            $output = Invoke-Expression "$command $commandArgs" # Do not use @commandArgs because it quotes '-Target', breaking the script.
+            if ($LASTEXITCODE -eq 0) { break }
+            Write-Host "Task failed with exit code $LASTEXITCODE. $retryCount retries left."
+          }
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          return $output
+        }
+
+        $anyFailed = $false
+        $vsixes = Get-ChildItem -Path ../packages -Filter *.vsix -Recurse
+        foreach ($vsix in $vsixes) {
+          $baseName = "$($vsix.DirectoryName)\$($vsix.BaseName)"
+          $manifestFile = $baseName + ".manifest"
+          $signatureFile = $baseName + ".signature.p7s"
+
+          $vsceVerifyArgs = '@vscode/vsce','verify-signature','--packagePath',$vsix,'--manifestPath',$manifestFile,'--signaturePath',$signatureFile
+          $output = Spawn-Tool 'npx' $vsceVerifyArgs
+
+          # This is a brittle check but the command does not return a non-zero exit code for failed validation.
+          # Opened https://github.com/microsoft/vscode-vsce/issues/1192 to track this.
+          if ($output.Contains('Signature verification result: Success')) {
+            Write-Host "Signature verification succeeded for $vsix"
+          } else {
+            Write-Host ($output | Out-String)
+            Write-Host "##[error]Signature verification failed for $vsix"
+            $anyFailed = $true
+          }
+        }
+
+        if ($anyFailed) {
+            exit 1
+        }
+      displayName: 🔑 Verify VSIX Signature Files
+      workingDirectory: $(dir-name)
   - task: CopyFiles@2
     displayName: '📩 Copy Artifact'
     inputs:
       SourceFolder: '$(Build.SourcesDirectory)'
-      Contents: '**\*.vsix'
+      Contents: '**\$(package-name)-$(GetVersion.version)*.*'
       TargetFolder: '$(Build.ArtifactStagingDirectory)'
       flattenFolders: true
   - task: CopyFiles@2
@@ -72,10 +213,3 @@ jobs:
       Contents: '**\*.binlog'
       TargetFolder: '$(Build.ArtifactStagingDirectory)'
       flattenFolders: false
-- ${{ if eq(parameters.useOneEngineeringPool, 'true') }}:
-  - template: publish.yaml
-    parameters:
-      pool: ${{ parameters.pool }}
-      SignType: ${{ parameters.SignType }}
-      version: $(GetVersion.version)
-      useOneEngineeringPool: true

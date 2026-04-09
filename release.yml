@@ -1,0 +1,143 @@
+trigger: none
+pr: none
+
+parameters:
+- name: test
+  type: boolean
+  default: true
+
+variables:
+# This is expected to provide the PAT used to tag the release.
+- group: DncEng-Partners-Tokens
+
+resources:
+  repositories:
+  - repository: 1ESPipelineTemplates
+    type: git
+    name: 1ESPipelineTemplates/1ESPipelineTemplates
+    ref: refs/tags/release
+  pipelines:
+  - pipeline: officialBuildCI
+    source: dotnet-vscode-dotnet-runtime
+    branch: main
+extends:
+  template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
+  parameters:
+    pool:
+      name: NetCore1ESPool-Internal
+      image: 1es-windows-2022
+      os: windows
+    customBuildTags:
+    - ES365AIMigrationTooling
+    stages:
+    - stage: PublishStage
+      jobs:
+      - deployment: PublishToMarketplace
+        displayName: PublishToMarketplace
+        environment: vscode-dotnetcore-extension-releases
+        pool:
+          name: NetCore1ESPool-Internal
+          image: 1es-windows-2022
+          os: windows
+        templateContext:
+          type: releaseJob
+          isProduction: true
+          inputs:
+          - input: pipelineArtifact
+            pipeline: officialBuildCI
+            artifactName: vscode-dotnet-runtime-extension
+            destinationPath: $(Pipeline.Workspace)
+          - input: pipelineArtifact
+            pipeline: officialBuildCI
+            artifactName: package_files
+            destinationPath: $(Pipeline.Workspace)/package_files
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+              - template: pipeline-templates/install-node.yaml@self
+              - template: pipeline-templates/list-file-structure.yaml@self
+              - pwsh: |
+                  $ErrorActionPreference = 'Stop'
+
+                  $artifactDir = '$(Pipeline.Workspace)'
+                  $vsix = Get-ChildItem -Path $artifactDir -Filter 'vscode-dotnet-runtime-*.vsix' -File -Recurse | Sort-Object FullName | Select-Object -First 1
+                  if (-not $vsix) {
+                    throw "Unable to locate vscode-dotnet-runtime-*.vsix under $artifactDir"
+                  }
+
+                  $version = $vsix.BaseName -replace '^vscode-dotnet-runtime-',''
+
+                  Write-Host "Using version $version derived from artifact $($vsix.Name)"
+
+                  $packageFilesDir = Join-Path $artifactDir 'package_files'
+                  $packageJsonPath = Join-Path $packageFilesDir 'package.json'
+                  if (Test-Path $packageJsonPath) {
+                    Push-Location $packageFilesDir
+                    try {
+                      npm version $version --allow-same-version | Out-String | Write-Verbose
+                      if ($LASTEXITCODE -ne 0) {
+                        throw "npm version failed with exit code $LASTEXITCODE."
+                      }
+                    }
+                    finally {
+                      Pop-Location
+                    }
+                  }
+
+                  Write-Host "##vso[task.setvariable variable=version;isOutput=true]$version"
+                name: GetVersion
+                displayName: '❓ Get Version'
+              - pwsh: |
+                  $ErrorActionPreference = 'Stop'
+
+                  $packageFilesDir = Join-Path '$(Pipeline.Workspace)' 'package_files'
+                  if (-not (Test-Path $packageFilesDir)) {
+                    throw "package_files artifact was not downloaded."
+                  }
+
+                  Push-Location $packageFilesDir
+                  try {
+                    npm ci
+                    if ($LASTEXITCODE -ne 0) {
+                      throw "npm ci failed with exit code $LASTEXITCODE."
+                    }
+                  }
+                  finally {
+                    Pop-Location
+                  }
+                displayName: '⬇️ Restore Node Dependencies'
+              - task: AzureCLI@2
+                displayName: '🚀 Publish to Marketplace'
+                inputs:
+                  azureSubscription: 'VSCode Marketplace Publishing'
+                  scriptType: "pscore"
+                  scriptLocation: 'inlineScript'
+                  workingDirectory: '$(Pipeline.Workspace)/package_files'
+                  inlineScript: |
+                    $ErrorActionPreference = 'Stop'
+
+                    $packagePath = Join-Path '$(Pipeline.Workspace)' 'vscode-dotnet-runtime-$(GetVersion.version).vsix'
+                    $manifestPath = Join-Path '$(Pipeline.Workspace)' 'vscode-dotnet-runtime-$(GetVersion.version).manifest'
+                    $signaturePath = Join-Path '$(Pipeline.Workspace)' 'vscode-dotnet-runtime-$(GetVersion.version).signature.p7s'
+
+                    $publishArgs = @('publish', '--azure-credential', '--packagePath', $packagePath, '--manifestPath', $manifestPath, '--signaturePath', $signaturePath)
+                    $publishArgsString = $publishArgs -join ' '
+                    Write-Host "Do real publish? test parameter: ${{ parameters.test }}"
+                    If ("${{ parameters.test }}" -eq "true") {
+                      Write-Host "With a test-signed build, the command to publish is printed instead of run."
+                      Write-Host "##[command]npx vsce $publishArgsString"
+
+                      Write-Host "🔒 Verify PAT."
+                      npx vsce verify-pat --azure-credential ms-dotnettools
+                      if ($LASTEXITCODE -ne 0) {
+                        throw "vsce verify-pat failed with exit code $LASTEXITCODE."
+                      }
+                    }
+                    Else {
+                      Write-Host "##[command]npx vsce $publishArgsString"
+                      npx vsce @publishArgs
+                      if ($LASTEXITCODE -ne 0) {
+                        throw "vsce publish failed with exit code $LASTEXITCODE."
+                      }
+                    }

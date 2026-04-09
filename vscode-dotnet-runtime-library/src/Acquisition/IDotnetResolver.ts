@@ -9,6 +9,6 @@ import { IDotnetListInfo } from './IDotnetListInfo';
 export interface IDotnetResolver
 {
     getDotnetInstalls(dotnetExecutablePath: string, mode: DotnetInstallMode, requestedArchitecture: string | undefined | null): Promise<IDotnetListInfo[]>
-    getSDKs(existingPath: string, requestedArchitecture: string, knownArchitecture: boolean): Promise<IDotnetListInfo[]>
-    getRuntimes(existingPath: string, requestedArchitecture: string | null, knownArchitecture: boolean): Promise<IDotnetListInfo[]>
+    resolveTruePath(tentativePath: string, suggestedArchitecture: string | null): Promise<string | null>
+    resolveTruePaths(tentativePaths: string[], suggestedArchitecture: string | null): Promise<string[]>
 }

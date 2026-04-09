@@ -12,7 +12,7 @@ import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
 import { CommandExecutorResult } from '../../Utils/CommandExecutorResult';
 import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
 import { MockExtensionConfigurationWorker } from '../mocks/MockExtensionConfigurationWorker';
-import { MockCommandExecutor, MockExtensionConfiguration, MockExtensionContext } from '../mocks/MockObjects';
+import { MockCommandExecutor, MockEventStream, MockExtensionConfiguration, MockExtensionContext, MockInstallTracker } from '../mocks/MockObjects';
 import { MockWindowDisplayWorker } from '../mocks/MockWindowDisplayWorker';
 import { getMockAcquisitionContext, getMockAcquisitionWorkerContext, getMockUtilityContext } from './TestUtility';
 const assert = chai.assert;
@@ -71,6 +71,9 @@ suite('ExistingPathResolver Unit Tests', function ()
     // Tear down tmp storage for fresh run
     WebRequestWorkerSingleton.getInstance().destroy();
     LocalMemoryCacheSingleton.getInstance().invalidate();
+
+    const trackerSingletonMockAccess = new MockInstallTracker(new MockEventStream(), new MockExtensionContext());
+    trackerSingletonMockAccess.endAnySingletonTrackingSessions();
   });
 
   test('Use Shared Existing Path Setting over Individual Setting when no Extension Id is Provided', async () =>

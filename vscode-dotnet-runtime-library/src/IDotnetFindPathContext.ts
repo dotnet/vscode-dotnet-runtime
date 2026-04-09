@@ -11,4 +11,5 @@ export interface IDotnetFindPathContext
     acquireContext: IDotnetAcquireContext;
     versionSpecRequirement: DotnetVersionSpecRequirement;
     rejectPreviews?: boolean;
+    disableLocalLookup?: boolean // Set to true to not find local vscode-managed installs. Default/undefined is 'false'
 }

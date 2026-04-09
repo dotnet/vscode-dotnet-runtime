@@ -27,3 +27,7 @@ export const UNABLE_TO_ACQUIRE_GLOBAL_LOCK_ERR = '898998';
 export const UBUNTU_DISTRO_INFO_KEY = 'Ubuntu';
 export const RED_HAT_DISTRO_INFO_KEY = 'Red Hat Enterprise Linux';
 export const DEBIAN_DISTRO_INFO_KEY = 'Debian GNU/Linux';
+
+export const BAD_VERSION = '0.0';
+
+export const AUTOMATIC_UPDATE_EXTENSION_ID = 'dotnet-runtime-library';

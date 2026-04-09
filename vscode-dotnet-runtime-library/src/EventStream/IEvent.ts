@@ -13,6 +13,8 @@ export abstract class IEvent {
 
     public isError = false;
 
+    public actionId = '';
+
     public abstract getProperties(telemetry?: boolean): { [key: string]: string } | undefined;
 
     public getSanitizedProperties(): { [key: string]: string } | undefined {

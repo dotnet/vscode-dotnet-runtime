@@ -7,13 +7,25 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-## [3.0.0] - 2025-8
+An option to enforce local SDK selection, similar to 'existingDotnetPath' which only applies to runtime selection.
+
+## [3.0.0] - 2025-12
+
+Includes the same content as 2.4.1 but as an official release instead of a prerelease.
+Dependency updates.
+
+## [2.4.1] - 2025-12-1
 
 Breaking change: No longer download the latest runtime per every single request with `acquire`.
-Instead, update periodically, to prevent slow down on startup when new tooling must be acquired to be secure.
-Add setting to specify a local .NET SDK.
+Instead, update periodically, to prevent slow down on startup when new tooling must be acquired to be secure. Please see https://github.com/dotnet/docs/issues/49127 for more details.
+`uninstall` also no longer allows uninstall for installs which other extensions claim they are dependent upon in a running session.
+Options were added to revert to the legacy behavior for API dependents.
+Various Bug Fixes were also included.
 
-## [2.3.8] - 2025-8-3 (Prerelease)
+This will be released as 3.0.0 in a non-prerelease version.
+2.4.0 was not released.
+
+## [2.3.9] - 2025-8-3 (Prerelease, Skipping 2.3.8)
 
 No longer takes focus in suppressed output mode.
 Extension is less verbose by default and adds a highVerbosity setting to bring back messages.
@@ -22,7 +34,7 @@ Improved reliability when offline.
 Adds 'dotnet.availableVersions' API to get available sdks or runtimes to a specific host or dotnet.exe. This shares a cache and performance improvements for other extensions.
 Updated to a new signing certificate, thanks @joerobich!
 
-## [2.3.7] - 2025-7-28 (Prerelease)
+## [2.3.7] - 2025-7-28
 
 Improve error messages and output minimization.
 Add setting to disable all messages.

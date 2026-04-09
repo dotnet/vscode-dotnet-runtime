@@ -9,7 +9,7 @@ import { DotnetConditionValidator } from '../../Acquisition/DotnetConditionValid
 import { IDotnetFindPathContext } from '../../IDotnetFindPathContext';
 import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
 import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
-import { MockCommandExecutor } from '../mocks/MockObjects';
+import { MockCommandExecutor, MockEventStream, MockExtensionContext, MockInstallTracker } from '../mocks/MockObjects';
 import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 const assert = chai.assert;
 
@@ -47,6 +47,9 @@ suite('DotnetConditionValidator Unit Tests', function ()
         // Tear down tmp storage for fresh run
         WebRequestWorkerSingleton.getInstance().destroy();
         LocalMemoryCacheSingleton.getInstance().invalidate();
+
+        const trackerSingletonMockAccess = new MockInstallTracker(new MockEventStream(), new MockExtensionContext());
+        trackerSingletonMockAccess.endAnySingletonTrackingSessions();
     });
 
     test('It respects the skip preview flag correctly', async () =>

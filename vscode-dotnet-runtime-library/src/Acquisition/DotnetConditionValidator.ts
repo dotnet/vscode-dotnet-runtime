@@ -66,9 +66,6 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
         return false;
     }
 
-
-
-
     public stringVersionMeetsRequirement(availableVersion: string, requestedVersion: string, requirement: IDotnetFindPathContext): boolean
     {
         const availableMajor = Number(versionUtils.getMajor(availableVersion, this.workerContext.eventStream, this.workerContext));

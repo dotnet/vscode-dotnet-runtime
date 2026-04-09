@@ -1,0 +1,105 @@
+parameters:
+  - name: paths
+    type: object
+    default:
+      - path: $(System.DefaultWorkingDirectory)
+        title: "🏠 SYSTEM DEFAULT WORKING DIRECTORY"
+      - path: $(Build.ArtifactStagingDirectory)
+        title: "🎯 BUILD ARTIFACT STAGING DIRECTORY"
+      - path: $(Pipeline.Workspace)
+        title: "🔧 PIPELINE WORKSPACE"
+  - name: displayName
+    type: string
+    default: '📋 List All Files Recursively'
+
+steps:
+  - ${{ each pathConfig in parameters.paths }}:
+    - pwsh: |
+        Write-Host "====================== FILE STRUCTURE OVERVIEW ======================"
+        Write-Host ""
+
+        function Show-DirectoryTree {
+          param(
+            [string]$Path,
+            [string]$Title
+          )
+
+          Write-Host "$Title" -ForegroundColor Cyan
+          Write-Host "Path: $Path" -ForegroundColor Yellow
+          Write-Host ""
+
+          if (Test-Path $Path) {
+            try {
+              $items = Get-ChildItem -Path $Path -Recurse -ErrorAction SilentlyContinue | Sort-Object FullName
+              $totalFiles = ($items | Where-Object { -not $_.PSIsContainer }).Count
+              $totalDirs = ($items | Where-Object { $_.PSIsContainer }).Count
+
+              Write-Host "📊 Summary: $totalDirs directories, $totalFiles files" -ForegroundColor Green
+              Write-Host ""
+
+              if ($items.Count -eq 0) {
+                Write-Host "📭 Directory is empty" -ForegroundColor Gray
+                Write-Host ""
+                return
+              }
+
+              # Group by directory for better structure
+              $directories = $items | Where-Object { $_.PSIsContainer } | Sort-Object FullName
+              $files = $items | Where-Object { -not $_.PSIsContainer } | Sort-Object FullName
+
+              # Show directory structure first
+              if ($directories.Count -gt 0) {
+                Write-Host "📁 Directory Structure:" -ForegroundColor Magenta
+                foreach ($dir in $directories) {
+                  $relativePath = $dir.FullName.Replace($Path, "").TrimStart('\', '/')
+                  if ($relativePath) {
+                    $depth = ($relativePath.Split([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar) | Where-Object { $_ -ne "" }).Count
+                    $indent = "  " * $depth + "├── "
+                    Write-Host "$indent$($dir.Name)/" -ForegroundColor Blue
+                  }
+                }
+                Write-Host ""
+              }
+
+              # Show files grouped by directory
+              if ($files.Count -gt 0) {
+                Write-Host "📄 Files:" -ForegroundColor Magenta
+                $filesByDir = $files | Group-Object { Split-Path $_.FullName -Parent } | Sort-Object Name
+
+                foreach ($group in $filesByDir) {
+                  $relativeDirPath = $group.Name.Replace($Path, "").TrimStart('\', '/')
+                  if ($relativeDirPath -eq "") {
+                    Write-Host "  📂 Root:" -ForegroundColor Yellow
+                  } else {
+                    Write-Host "  📂 ${relativeDirPath}:" -ForegroundColor Yellow
+                  }
+
+                  foreach ($file in ($group.Group | Sort-Object Name)) {
+                    try {
+                      $size = if ($file.Length -lt 1KB) { "$($file.Length) B" }
+                             elseif ($file.Length -lt 1MB) { "{0:N1} KB" -f ($file.Length / 1KB) }
+                             else { "{0:N1} MB" -f ($file.Length / 1MB) }
+
+                      Write-Host "    ├── $($file.Name) ($size)" -ForegroundColor White
+                    }
+                    catch {
+                      Write-Host "    ├── $($file.Name) (size unknown)" -ForegroundColor Gray
+                    }
+                  }
+                  Write-Host ""
+                }
+              }
+            }
+            catch {
+              Write-Host "❌ Error accessing directory: $($_.Exception.Message)" -ForegroundColor Red
+            }
+          } else {
+            Write-Host "❌ Directory does not exist: $Path" -ForegroundColor Red
+          }
+          Write-Host "=================================================================" -ForegroundColor Cyan
+          Write-Host ""
+        }
+
+        Show-DirectoryTree -Path "${{ pathConfig.path }}" -Title "${{ pathConfig.title }}"
+
+      displayName: '${{ parameters.displayName }} - ${{ pathConfig.title }}'

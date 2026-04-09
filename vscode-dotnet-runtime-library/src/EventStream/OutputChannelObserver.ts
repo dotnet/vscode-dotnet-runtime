@@ -2,6 +2,7 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
+import { AUTOMATIC_UPDATE_EXTENSION_ID } from '../Acquisition/StringConstants';
 import
 {
     DotnetAcquisitionAlreadyInstalled,
@@ -26,12 +27,12 @@ export class OutputChannelObserver implements IEventStreamObserver
 {
     private readonly inProgressDownloads: string[] = [];
     private downloadProgressInterval: NodeJS.Timeout | undefined;
-    private hasContent: boolean = false;
+    private hasContent = false;
 
     constructor(
         private readonly outputChannel: IOutputChannel,
-        private readonly suppressOutput: boolean = false,
-        private readonly highVerbosity: boolean = false,
+        private readonly suppressOutput = false,
+        private readonly highVerbosity = false,
     )
     {
     }
@@ -105,9 +106,12 @@ export class OutputChannelObserver implements IEventStreamObserver
             case EventType.DotnetAcquisitionAlreadyInstalled:
                 if (event instanceof DotnetAcquisitionAlreadyInstalled)
                 {
-                    this.appendOutput(`${(event as DotnetAcquisitionAlreadyInstalled).requestingExtensionId
-                        }: Trying to install .NET ${(event as DotnetAcquisitionAlreadyInstalled).install.installId
-                        } but it already exists. No downloads or changes were made.\n`);
+                    const extensionId = (event as DotnetAcquisitionAlreadyInstalled).requestingExtensionId;
+                    if (extensionId !== AUTOMATIC_UPDATE_EXTENSION_ID) // automatic update will try to update existing installs - no need to print the message.
+                    {
+                        this.appendOutput(`${extensionId}: Trying to install .NET ${(event as DotnetAcquisitionAlreadyInstalled).install.installId
+                            } but it already exists. No downloads or changes were made.\n`);
+                    }
                 }
                 break;
             case EventType.DotnetAcquisitionInProgress:
@@ -174,7 +178,7 @@ export class OutputChannelObserver implements IEventStreamObserver
         this.hasContent = true;
     }
 
-    public showOutput(preserveFocus: boolean = true): void
+    public showOutput(preserveFocus = true): void
     {
         if (this.hasContent)
         {

@@ -84,7 +84,7 @@ ${stderr}`);
         }
     });
 
-    async function callAcquireAPI(version: string | undefined, installMode: DotnetInstallMode | undefined)
+    async function callAcquireAPI(version: string | undefined, installMode: DotnetInstallMode | undefined, forceUpdates = true)
     {
         if (!version)
         {
@@ -98,7 +98,7 @@ ${stderr}`);
         try
         {
             await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
-            await vscode.commands.executeCommand('dotnet.acquire', { version, requestingExtensionId, mode: installMode });
+            await vscode.commands.executeCommand('dotnet.acquire', { version, requestingExtensionId, mode: installMode, forceUpdate: forceUpdates });
         }
         catch (error)
         {
@@ -114,6 +114,17 @@ ${stderr}`);
     const sampleAcquireASPNETRegistration = vscode.commands.registerCommand('sample.dotnet.acquireASPNET', async (version) =>
     {
         await callAcquireAPI(version, 'aspnetcore');
+    });
+
+    const sampleAcquireNoForceRegistration = vscode.commands.registerCommand('sample.dotnet.acquireNoForce', async (version) =>
+    {
+        const mode = await vscode.window.showInputBox({
+            placeHolder: 'runtime',
+            value: 'runtime',
+            prompt: '.NET mode to acquire, e.g. runtime or aspnetcore',
+        });
+
+        await callAcquireAPI(undefined, mode as DotnetInstallMode, false);
     });
 
     const sampleAcquireStatusRegistration = vscode.commands.registerCommand('sample.dotnet.acquireStatus', async (version) =>
@@ -152,6 +163,20 @@ ${stderr}`);
         }
     });
 
+    const sampleResetUpdateSuccessTime = vscode.commands.registerCommand('sample.dotnet.resetUpdateTimer', async () =>
+    {
+        try
+        {
+            const resetResult = await vscode.commands.executeCommand<Date | undefined>('dotnet._resetUpdateTimer');
+            const resetDisplay = resetResult ? new Date(resetResult).toString() : 'undefined';
+            vscode.window.showInformationMessage(`.NET update timer reset to: ${resetDisplay}`);
+        }
+        catch (error)
+        {
+            vscode.window.showErrorMessage((error as Error).toString());
+        }
+    });
+
     async function acquireConcurrent(versions: [string, string, string], installMode?: DotnetInstallMode)
     {
         try
@@ -176,13 +201,13 @@ ${stderr}`);
 
     const sampleConcurrentTest = vscode.commands.registerCommand('sample.dotnet.concurrentTest', async () =>
     {
-        await acquireConcurrent(['2.0', '2.1', '2.2'], 'runtime');
+        await acquireConcurrent(['8.0', '9.0', '10.0'], 'runtime');
     });
 
     const sampleConcurrentASPNETTest = vscode.commands.registerCommand('sample.dotnet.concurrentASPNETTest', async () =>
     {
-        acquireConcurrent(['6.0', '8.0', '7.0'], 'runtime') // start this so we test concurrent types of runtime installs
-        await acquireConcurrent(['6.0', '8.0', '7.0'], 'aspnetcore');
+        acquireConcurrent(['8.0', '9.0', '10.0'], 'runtime') // start this so we test concurrent types of runtime installs
+        await acquireConcurrent(['8.0', '9.0', '10.0'], 'aspnetcore');
     });
 
     const sampleShowAcquisitionLogRegistration = vscode.commands.registerCommand('sample.dotnet.showAcquisitionLog', async () =>
@@ -445,6 +470,19 @@ ${JSON.stringify(result) ?? 'undefined'}`);
         }
     });
 
+    const sampleForceUpdateRegistration = vscode.commands.registerCommand('sample.dotnet.forceUpdate', async () =>
+    {
+        try
+        {
+            // Call the forceUpdate command from the runtime extension
+            await vscode.commands.executeCommand('dotnet.forceUpdate', { requestingExtensionId });
+        }
+        catch (error)
+        {
+            vscode.window.showErrorMessage((error as Error).toString());
+        }
+    });
+
     context.subscriptions.push(
         sampleSDKAcquireRegistration,
         sampleSDKGlobalAcquireRegistration,
@@ -453,5 +491,8 @@ ${JSON.stringify(result) ?? 'undefined'}`);
         sampleSDKrecommendedVersion,
         sampleSDKDotnetUninstallAllRegistration,
         sampleSDKShowAcquisitionLogRegistration,
-        sampleGlobalSDKFromRuntimeRegistration);
+        sampleForceUpdateRegistration,
+        sampleGlobalSDKFromRuntimeRegistration,
+        sampleResetUpdateSuccessTime,
+        sampleAcquireNoForceRegistration);
 }
