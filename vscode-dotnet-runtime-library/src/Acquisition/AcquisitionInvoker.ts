@@ -138,7 +138,7 @@ If you cannot change this flag, try setting a custom existingDotnetPath via the 
                                 // If the fast-path PowerShell reference couldn't be launched at all (e.g. the
                                 // binary is corrupt or the path is stale), try once more with a path discovered
                                 // via the slow probe so we don't permanently surface a confusing install error.
-                                if (!isRetry && winOS && this.looksLikePowershellProcessNotFound(stderr, error))
+                                if (!isRetry && winOS && this.mightBePowershellNotFound(stderr, error))
                                 {
                                     this.findWorkingPowershellViaProbing(install).then(newPsRef =>
                                     {
@@ -351,15 +351,12 @@ At dotnet-install.ps1:1189 char:5
         return possiblePowershellPaths.at(Number(command!.commandRoot))?.shell ?? 'powershell.exe';
     }
 
-    private looksLikePowershellProcessNotFound(stderr: string, error: cp.ExecException): boolean
+    protected mightBePowershellNotFound(stderr: string, error: cp.ExecException): boolean
     {
         if (!error || error.signal)
         {
             return false;
         }
-
-        // Use locale-independent error codes instead of matching English stderr messages
-        // (cmd.exe error messages are localized and differ across Windows display languages).
 
         // Node.js may set a string error code for OS-level spawn failures
         // (e.g. 'ENOENT' if the executable path does not exist at all).
@@ -370,9 +367,7 @@ At dotnet-install.ps1:1189 char:5
             return code === 'ENOENT' || code === 'EACCES' || code === 'EPERM';
         }
 
-        // cmd.exe returns numeric exit code 9009 when the specified program is
-        // not recognized as an internal or external command. This is locale-independent.
-        if (code === 9009)
+        if (code === 1)
         {
             return true;
         }

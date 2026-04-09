@@ -3,6 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
+import * as cp from 'child_process';
 import { test } from 'mocha';
 import { AcquisitionInvoker } from '../../Acquisition/AcquisitionInvoker';
 import { DotnetInstall } from '../../Acquisition/DotnetInstall';
@@ -44,6 +45,11 @@ class TestableAcquisitionInvoker extends AcquisitionInvoker
     public async testFindWorkingPowershellViaProbing(installId: DotnetInstall): Promise<string>
     {
         return this.findWorkingPowershellViaProbing(installId);
+    }
+
+    public testLooksLikePowershellProcessNotFound(stderr: string, error: cp.ExecException): boolean
+    {
+        return this.mightBePowershellNotFound(stderr, error);
     }
 }
 
@@ -128,5 +134,42 @@ suite('AcquisitionInvoker PowerShell Verification Tests', function ()
                 'Index 1 should map to pwsh, not powershell.exe');
         });
 
+    });
+
+    suite('mightBePowershellNotFound detects real cp.exec failures', function ()
+    {
+        test('non-existent shell option produces ENOENT that is detected', function (done)
+        {
+            cp.exec('echo hello', { shell: 'C:\\definitely-not-real\\powershell.exe' }, (error, stdout, stderr) =>
+            {
+                assert.isNotNull(error, 'cp.exec should fail with a non-existent shell');
+                assert.isTrue(invoker.testLooksLikePowershellProcessNotFound(stderr, error!),
+                    `Should detect error code ${(error as any)?.code} as a missing PowerShell`);
+                done();
+            });
+        });
+
+        test('detection + probing recovery works end-to-end', function (done)
+        {
+            mockExecutor.workingCommandIndex = 1;
+
+            cp.exec('echo hello', { shell: 'C:\\definitely-not-real\\powershell.exe' }, async (error, stdout, stderr) =>
+            {
+                try
+                {
+                    assert.isTrue(invoker.testLooksLikePowershellProcessNotFound(stderr, error!),
+                        'Should detect the error');
+
+                    const recovered = await invoker.testFindWorkingPowershellViaProbing(mockInstall);
+                    assert.strictEqual(recovered, 'pwsh',
+                        'Probing should recover by finding pwsh');
+                    done();
+                }
+                catch (err)
+                {
+                    done(err);
+                }
+            });
+        });
     });
 });
