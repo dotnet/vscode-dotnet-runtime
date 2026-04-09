@@ -158,7 +158,7 @@ export class WebRequestWorkerSingleton
         {
             timeoutCancelTokenHook.abort();
             ctx.eventStream.post(new WebRequestTime(`Timer for request:`, String(this.timeoutMsFromCtx(ctx)), 'false', url, '777')); // 777 for custom abort status. arbitrary
-            if (!(await this.isOnline(ctx.timeoutSeconds, ctx.eventStream)))
+            if (!(await this.isOnline(ctx.timeoutSeconds, ctx.eventStream, ctx.proxyUrl)))
             {
                 const offlineError = new EventBasedError('DotnetOfflineFailure', 'No internet connection detected: Cannot install .NET');
                 ctx.eventStream.post(new DotnetOfflineFailure(offlineError, null));
@@ -269,7 +269,7 @@ export class WebRequestWorkerSingleton
         }
     }
 
-    public async isOnline(timeoutSec: number, eventStream: IEventStream): Promise<boolean>
+    public async isOnline(timeoutSec: number, eventStream: IEventStream, proxyUrl?: string): Promise<boolean>
     {
         if (process.env.DOTNET_INSTALL_TOOL_OFFLINE === '1')
         {
@@ -300,7 +300,7 @@ export class WebRequestWorkerSingleton
         if (this.client)
         {
             const httpFallbackTimeoutMs = Math.max(timeoutSec * 1000, 2000);
-            const proxyAgent = await this.getProxyAgent(undefined, eventStream);
+            const proxyAgent = await this.getProxyAgent(proxyUrl, eventStream);
 
             const headOptions: object = {
                 timeout: httpFallbackTimeoutMs,
@@ -391,7 +391,7 @@ export class WebRequestWorkerSingleton
 
             if (hasManualProxy || discoveredProxy)
             {
-                const finalProxy = manualProxyUrl && manualProxyUrl !== '""' && manualProxyUrl !== '' ? manualProxyUrl : discoveredProxy;
+                const finalProxy = hasManualProxy ? manualProxyUrl! : discoveredProxy;
                 eventStream?.post(new ProxyUsed(`Utilizing the Proxy : Manual ? ${manualProxyUrl}, Automatic: ${discoveredProxy}, Decision : ${finalProxy}`))
                 const proxyAgent = new HttpsProxyAgent(finalProxy);
                 return proxyAgent;
@@ -538,7 +538,7 @@ If you're on a proxy and disable registry access, you must set the proxy in our 
 
     private proxySettingConfiguredManually(proxyUrl?: string): boolean
     {
-        return proxyUrl ? proxyUrl !== '""' : false;
+        return proxyUrl ? proxyUrl !== '""' && proxyUrl !== '' : false;
     }
 
     private timeoutMsFromCtx(ctx: IAcquisitionWorkerContext): number
