@@ -143,7 +143,8 @@ suite('WebRequestWorker Unit Tests', function ()
 
 /**
  * Helper that intercepts all outbound HTTP/HTTPS requests and DNS lookups to simulate a fully offline machine.
- * Blocks at the http/https.request level which is what axios uses internally.
+ * Error codes match real observed behavior when a firewall blocks node.exe outbound traffic:
+ *   DNS: ETIMEOUT, Axios: EACCES with no response.
  * Returns a restore function that undoes the patching.
  */
 function simulateOffline(): () => void
@@ -152,11 +153,15 @@ function simulateOffline(): () => void
     const originalHttpRequest = http.request;
     const originalDnsResolve = dns.promises.Resolver.prototype.resolve;
 
-    // Block all HTTPS requests
+    // Block all HTTPS requests — emit EACCES matching real firewall behavior
     (https as any).request = function (...args: any[])
     {
         const req = new http.ClientRequest('https://localhost:1');
-        process.nextTick(() => req.destroy(new Error('simulateOffline: HTTPS request blocked')));
+        const err: NodeJS.ErrnoException = new Error('connect EACCES');
+        err.code = 'EACCES';
+        err.errno = -4092;
+        err.syscall = 'connect';
+        process.nextTick(() => req.destroy(err));
         return req;
     };
 
@@ -164,14 +169,20 @@ function simulateOffline(): () => void
     (http as any).request = function (...args: any[])
     {
         const req = new http.ClientRequest('http://localhost:1');
-        process.nextTick(() => req.destroy(new Error('simulateOffline: HTTP request blocked')));
+        const err: NodeJS.ErrnoException = new Error('connect EACCES');
+        err.code = 'EACCES';
+        err.errno = -4092;
+        err.syscall = 'connect';
+        process.nextTick(() => req.destroy(err));
         return req;
     };
 
-    // Block DNS resolution
+    // Block DNS resolution — emit ETIMEOUT matching real offline behavior
     dns.promises.Resolver.prototype.resolve = function ()
     {
-        return Promise.reject(new Error('simulateOffline: DNS blocked'));
+        const err: NodeJS.ErrnoException = new Error('queryA ETIMEOUT www.microsoft.com');
+        err.code = 'ETIMEOUT';
+        return Promise.reject(err);
     } as any;
 
     return () =>
@@ -192,7 +203,9 @@ function simulateDnsOnlyFailure(): () => void
 
     dns.promises.Resolver.prototype.resolve = function ()
     {
-        return Promise.reject(new Error('simulateDnsOnlyFailure: DNS blocked'));
+        const err: NodeJS.ErrnoException = new Error('queryA ETIMEOUT www.microsoft.com');
+        err.code = 'ETIMEOUT';
+        return Promise.reject(err);
     } as any;
 
     return () =>
