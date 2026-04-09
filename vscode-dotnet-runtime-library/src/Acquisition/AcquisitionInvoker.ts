@@ -29,8 +29,8 @@ import { timeoutConstants } from '../Utils/ErrorHandler';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker';
 
-import { IUtilityContext } from '../Utils/IUtilityContext';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
+import { IUtilityContext } from '../Utils/IUtilityContext';
 import { getDotnetExecutable } from '../Utils/TypescriptUtilities';
 import { WebRequestWorkerSingleton } from '../Utils/WebRequestWorkerSingleton';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
@@ -367,7 +367,8 @@ At dotnet-install.ps1:1189 char:5
             return code === 'ENOENT' || code === 'EACCES' || code === 'EPERM';
         }
 
-        if (code === 1)
+        if (code === 1) // this can also happen - this is why the function is 'might'
+        // we'd rather retry and try to get a success when we can as opposed to being less optimistic
         {
             return true;
         }
