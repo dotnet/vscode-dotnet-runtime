@@ -181,3 +181,30 @@ export function getPathSeparator(): string
 {
     return os.platform() === 'win32' ? ';' : ':';
 }
+
+/*
+* @remarks @vscode/sudo-prompt rejects env var names not matching /^[a-zA-Z_][a-zA-Z0-9_]*$/.
+* See: https://github.com/microsoft/vscode-sudo-prompt/blob/main/index.js#L104
+* Windows has vars like ProgramFiles(x86) that violate this, so we filter them out.
+*/
+export function filterEnvVars(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv
+{
+    const filtered: NodeJS.ProcessEnv = {};
+    for (const key of Object.keys(env))
+    {
+        if (isValidEnvironmentVariableName(key))
+        {
+            filtered[key] = env[key];
+        }
+    }
+    return filtered;
+}
+
+/*
+* @remarks Matches the POSIX validation enforced by @vscode/sudo-prompt.
+*/
+export function isValidEnvironmentVariableName(name: string): boolean
+{
+    // https://github.com/microsoft/vscode-sudo-prompt/blob/main/index.js#L104
+    return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name);
+}
