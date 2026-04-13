@@ -15,7 +15,7 @@ export const settingsInfoContent = `
 ## Overview
 The .NET Install Tool is a VS Code extension that manages .NET installations. It serves two distinct purposes:
 1. **For VS Code Extensions**: Automatically installs .NET runtimes that other extensions (C#, C# DevKit, Unity, Bicep, etc.) need to run their internal components
-2. **For Users**: Provides commands to install .NET SDKs system-wide for development
+2. **For Users**: Provides commands to find and install .NET SDKs system-wide for development
 
 ---
 
@@ -30,7 +30,7 @@ The .NET Install Tool is a VS Code extension that manages .NET installations. It
 
 ### GLOBAL/Admin SDK Installs (system-wide)
 - System-wide .NET SDK installs (includes runtimes)
-- Locations: Windows: \`C:\\Program Files\\dotnet\` (admin required) | macOS: \`/usr/local/share/dotnet\` (.pkg) | Linux: \`/usr/lib/dotnet\` or \`/usr/share/dotnet\` (package manager, officially Ubuntu/Debian only; WSL is not supported)
+- Typical Locations: Windows: \`%ProgramFiles%\\dotnet\` (admin required) | macOS: \`/usr/local/share/dotnet\` (.pkg) | Linux: \`/usr/lib/dotnet\` or \`/usr/share/dotnet\` (package manager, officially Ubuntu/Debian only; WSL is not supported)
 - Requires administrator/sudo privileges; users must accept elevation prompts
 - IS on the system PATH after installation
 - Visible via \`dotnet --list-sdks\` and \`dotnet --list-runtimes\`
@@ -74,7 +74,7 @@ Setting names and formats:
 
 **System-Wide Global Installs:** Run \`dotnet --list-sdks\` and \`dotnet --list-runtimes\` in terminal, or use the listInstalledVersions tool.
 
-**listInstalledVersions Tool:** Calls \`dotnet.availableInstalls\` to scan SDKs/runtimes for a given dotnet executable. If no path provided, it uses PATH (the global install). Returns version, architecture, and directory for each install.
+**listInstalledVersions Tool:** Calls \`dotnet.availableInstalls\` to scan SDKs/runtimes for a given dotnet executable. If no path provided, it uses PATH (typically global install). Returns version, architecture, and directory for each install.
 
 ---
 
@@ -109,14 +109,13 @@ For repo-local SDK resolution, use the \`paths\` property in global.json:
   "sdk": {
     "version": "10.0.100",
     "paths": [".dotnet", "$host$"],
-    "errorMessage": "Required .NET SDK not found. Run ./install.sh to install."
   }
 }
 \`\`\`
 - First matching SDK wins
 - Only works with SDK commands (\`dotnet run\`, \`dotnet build\`), NOT with native apphost
 - The host \`dotnet\` must be .NET 10+
-- Ref: https://learn.microsoft.com/en-us/dotnet/core/tools/global-json#paths
+- Ref: https://learn.microsoft.com/dotnet/core/tools/global-json#paths
 
 ---
 
@@ -124,7 +123,7 @@ For repo-local SDK resolution, use the \`paths\` property in global.json:
 
 - **"I want to develop .NET applications"** \u2192 Install an SDK globally via "Install .NET SDK System-Wide." This provides the \`dotnet\` CLI for build, run, test, and publish.
 - **"C# extension won't start / can't find .NET"** \u2192 Check \`dotnet --version\` in terminal. If missing, install SDK globally. If installed but not detected, set existingDotnetPath or sharedExistingDotnetPath.
-- **"Extension installed .NET but I can't use it in terminal"** \u2192 Extension-managed installs are LOCAL and not on PATH. For terminal/CLI usage, install globally.
+- **"Extension installed .NET but I can't use it in terminal"** \u2192 Extension-managed runtimes are LOCAL and not on PATH. For terminal/CLI usage, install globally.
 - **"I want to use a different .NET version for my project"** \u2192 NOT existingDotnetPath. Create \`global.json\` in the project root or install the desired SDK globally.
 - **"I want a local/repo-specific SDK (not global)"** \u2192 NOT existingDotnetPath. Use the \`paths\` property in global.json (.NET 10+ required) — see section above.
 - **"Which dotnet does the C# extension use?"** \u2192 Use the findDotNetPath tool. It searches in order: existingDotnetPath setting \u2192 PATH \u2192 DOTNET_ROOT \u2192 extension-managed local installs.
@@ -140,7 +139,7 @@ For repo-local SDK resolution, use the \`paths\` property in global.json:
 
 ## .NET Hives Architecture
 .NET supports multiple installation "hives" (locations). Extension-managed local installs do not conflict with global system installs.
-- The \`dotnet\` CLI only sees global installs, not extension-managed ones
+- The \`dotnet\` executable typically only sees installs in its own folder
 - \`dotnet.findPath\` shows which hive extensions like C# DevKit will use
 - \`dotnet.availableInstalls\` lists installs in a specific hive when given an executable path
 `;
