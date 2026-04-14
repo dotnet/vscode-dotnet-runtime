@@ -389,6 +389,9 @@ export class MockCommandExecutor extends ICommandExecutor
     // We will check for an includes match and not an exact match!
     public otherCommandPatternsToMock: string[] = [];
     public otherCommandsReturnValues: CommandExecutorResult[] = [];
+    public workingCommandIndex: number | null = 0;
+    public capturedCommands: CommandExecutorCommand[] = [];
+    public capturedOptions: any;
 
     constructor(acquisitionContext: IAcquisitionWorkerContext, utilContext: IUtilityContext)
     {
@@ -440,9 +443,15 @@ export class MockCommandExecutor extends ICommandExecutor
         return result;
     }
 
-    public async tryFindWorkingCommand(commands: CommandExecutorCommand[]): Promise<CommandExecutorCommand>
+    public async tryFindWorkingCommand(commands: CommandExecutorCommand[], options?: any): Promise<CommandExecutorCommand | null>
     {
-        return commands[0];
+        this.capturedCommands = commands;
+        this.capturedOptions = options;
+        if (this.workingCommandIndex === null)
+        {
+            return null;
+        }
+        return commands[this.workingCommandIndex];
     }
 
     /**
@@ -460,6 +469,9 @@ export class MockCommandExecutor extends ICommandExecutor
         this.attemptedCommand = '';
         this.otherCommandPatternsToMock = [];
         this.otherCommandsReturnValues = [];
+        this.workingCommandIndex = 0;
+        this.capturedCommands = [];
+        this.capturedOptions = undefined;
     }
 
     public async setEnvironmentVariable(variable: string, value: string, vscodeContext: IVSCodeExtensionContext, failureWarningMessage?: string, nonWinFailureMessage?: string)
