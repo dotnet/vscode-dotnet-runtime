@@ -29,8 +29,8 @@ import { timeoutConstants } from '../Utils/ErrorHandler';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { InstallScriptAcquisitionWorker } from './InstallScriptAcquisitionWorker';
 
-import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { LocalMemoryCacheSingleton } from '../LocalMemoryCacheSingleton';
+import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { getDotnetExecutable } from '../Utils/TypescriptUtilities';
 import { WebRequestWorkerSingleton } from '../Utils/WebRequestWorkerSingleton';
