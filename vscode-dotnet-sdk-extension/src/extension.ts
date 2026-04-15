@@ -70,6 +70,10 @@ const knownExtensionIds = ['ms-dotnettools.sample-extension', 'ms-dotnettools.vs
 
 export function activate(context: vscode.ExtensionContext, extensionContext?: IExtensionContext)
 {
+    // All globalState keys are machine-specific (install paths, session tracking, etc.)
+    // and must not be synced to other machines or dev containers via Settings Sync.
+    context.globalState.setKeysForSync?.([]);
+
     const extensionConfiguration = extensionContext !== undefined && extensionContext.extensionConfiguration ?
         extensionContext.extensionConfiguration :
         vscode.workspace.getConfiguration(configPrefix);
