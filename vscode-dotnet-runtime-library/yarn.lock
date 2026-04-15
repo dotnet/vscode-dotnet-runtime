@@ -24,7 +24,7 @@
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@isaacs/cliui/-/cliui-9.0.0.tgz"
   integrity sha1-TQo/EnBYBDvy5+4Wnq8w7ZATAvM=
 
-"@microsoft/1ds-core-js@^4.3.4":
+"@microsoft/1ds-core-js@^4.3.10":
   version "4.4.1"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@microsoft/1ds-core-js/-/1ds-core-js-4.4.1.tgz"
   integrity sha1-RcjkCzxS6RMkDRHjrv57/QUuxPg=
@@ -35,7 +35,7 @@
     "@nevware21/ts-async" ">= 0.5.5 < 2.x"
     "@nevware21/ts-utils" ">= 0.12.6 < 2.x"
 
-"@microsoft/1ds-post-js@^4.3.4":
+"@microsoft/1ds-post-js@^4.3.10":
   version "4.4.1"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@microsoft/1ds-post-js/-/1ds-post-js-4.4.1.tgz"
   integrity sha1-khJrFhQ5ftB3qzuPXbdyb0yNmCY=
@@ -74,7 +74,7 @@
   dependencies:
     "@nevware21/ts-utils" ">= 0.9.4 < 2.x"
 
-"@microsoft/applicationinsights-web-basic@^3.3.4":
+"@microsoft/applicationinsights-web-basic@^3.3.10":
   version "3.4.1"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@microsoft/applicationinsights-web-basic/-/applicationinsights-web-basic-3.4.1.tgz"
   integrity sha1-SbICUBpTCGMcFUSkdCh0oSMeElo=
@@ -190,14 +190,14 @@
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/vscode/-/vscode-1.115.0.tgz"
   integrity sha1-QovvcKA8cNvp92Q49LS39WmWIwM=
 
-"@vscode/extension-telemetry@^0.9.7":
-  version "0.9.9"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/extension-telemetry/-/extension-telemetry-0.9.9.tgz"
-  integrity sha1-WIROcqx4YOsEl4mFRcLE9YCWRl4=
+"@vscode/extension-telemetry@^1.5.1":
+  version "1.5.1"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/extension-telemetry/-/extension-telemetry-1.5.1.tgz"
+  integrity sha1-4zbEBLFCSTlRa5E+X3I6nfcOkHs=
   dependencies:
-    "@microsoft/1ds-core-js" "^4.3.4"
-    "@microsoft/1ds-post-js" "^4.3.4"
-    "@microsoft/applicationinsights-web-basic" "^3.3.4"
+    "@microsoft/1ds-core-js" "^4.3.10"
+    "@microsoft/1ds-post-js" "^4.3.10"
+    "@microsoft/applicationinsights-web-basic" "^3.3.10"
 
 "@vscode/sudo-prompt@^9.3.2":
   version "9.3.2"

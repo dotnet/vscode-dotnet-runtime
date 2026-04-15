@@ -674,7 +674,7 @@ export class MockTelemetryReporter implements ITelemetryReporter
         MockTelemetryReporter.telemetryEvents = MockTelemetryReporter.telemetryEvents.concat({ eventName, properties, measures });
     }
 
-    public sendTelemetryErrorEvent(eventName: string, properties?: { [key: string]: string }, measures?: { [key: string]: number }, errorProps?: string[]): void
+    public sendTelemetryErrorEvent(eventName: string, properties?: { [key: string]: string }, measures?: { [key: string]: number }): void
     {
         eventName = `[ERROR]:${eventName}`;
         MockTelemetryReporter.telemetryEvents = MockTelemetryReporter.telemetryEvents.concat({ eventName, properties, measures });

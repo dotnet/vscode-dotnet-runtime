@@ -2,7 +2,7 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
-import TelemetryReporter from '@vscode/extension-telemetry';
+import { TelemetryReporter } from '@vscode/extension-telemetry';
 import * as vscode from 'vscode';
 
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
@@ -17,7 +17,7 @@ import { TelemetryUtilities } from './TelemetryUtilities';
 export interface ITelemetryReporter
 {
     sendTelemetryEvent(eventName: string, properties?: { [key: string]: string }, measures?: { [key: string]: number }): void;
-    sendTelemetryErrorEvent(eventName: string, properties?: { [key: string]: string }, measurements?: { [key: string]: number }, errorProps?: string[]): void;
+    sendTelemetryErrorEvent(eventName: string, properties?: { [key: string]: string }, measurements?: { [key: string]: number }): void;
     dispose(): Promise<void>;
 }
 
