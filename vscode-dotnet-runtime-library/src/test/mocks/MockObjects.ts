@@ -44,6 +44,7 @@ const testDefaultTimeoutTimeMs = 60000;
 export class MockExtensionContext implements IExtensionState
 {
     private values: { [n: string]: any; } = {};
+    public syncedKeys: readonly string[] | undefined = undefined;
 
     public get<T>(key: string): T | undefined;
     public get<T>(key: string, defaultValue: T): T;
@@ -59,6 +60,10 @@ export class MockExtensionContext implements IExtensionState
     public update(key: string, value: any): Thenable<void>
     {
         return this.values[key] = value;
+    }
+    public setKeysForSync(keys: readonly string[]): void
+    {
+        this.syncedKeys = keys;
     }
     public clear()
     {

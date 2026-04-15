@@ -132,6 +132,13 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
         assert.isAbove(extensionContext.subscriptions.length, 0);
     }).timeout(standardTimeoutTime);
 
+    test('GlobalState keys are not synced across machines', async () =>
+    {
+        // setKeysForSync should have been called with an empty array during activation
+        // to prevent machine-specific install tracking state from leaking to dev containers
+        assert.deepEqual((mockState as any).syncedKeys, [], 'setKeysForSync should be called with empty array to prevent syncing install state');
+    }).timeout(standardTimeoutTime);
+
     async function installRuntime(dotnetVersion: string, installMode: DotnetInstallMode, arch?: string)
     {
         let context: IDotnetAcquireContext = { version: dotnetVersion, requestingExtensionId, mode: installMode };

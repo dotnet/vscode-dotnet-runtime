@@ -144,4 +144,102 @@ suite('LocalMemoryCacheSingleton Unit Tests', function ()
         assert.deepEqual(LocalMemoryCacheSingleton.getInstance().getCommand(reorderedCommand, mockContext), outputValue, 'The reordered command should return the same cached value.');
         assert.equal(LocalMemoryCacheSingleton.getInstance().getCommand(differentCommand, mockContext), undefined, 'A command with different options values should not be cached');
     });
+
+    test('It invalidates only entries containing a specific substring', async () =>
+    {
+        const installPath = '/home/user/.dotnet/10.0.5~x64~aspnetcore';
+        const globalPath = '/usr/share/dotnet';
+
+        // Cache entries for the local install path
+        LocalMemoryCacheSingleton.getInstance().put(
+            `"${installPath}/dotnet" --list-runtimes --arch x64{"env":"..."}`,
+            { stdout: '', stderr: 'not found', status: '127' },
+            { ttlMs: cacheTime },
+            mockContext
+        );
+
+        // Cache entries for the global dotnet
+        LocalMemoryCacheSingleton.getInstance().put(
+            `"${globalPath}/dotnet" --list-runtimes --arch x64{"env":"..."}`,
+            { stdout: 'Microsoft.NETCore.App 10.0.4', stderr: '', status: '0' },
+            { ttlMs: cacheTime },
+            mockContext
+        );
+
+        // Invalidate only the local install path entries
+        LocalMemoryCacheSingleton.getInstance().invalidateEntriesContaining(installPath, mockContext);
+
+        // Local path entry should be gone
+        const localResult = LocalMemoryCacheSingleton.getInstance().get(
+            `"${installPath}/dotnet" --list-runtimes --arch x64{"env":"..."}`,
+            mockContext
+        );
+        assert.isUndefined(localResult, 'The local install path cache entry should be invalidated');
+
+        // Global path entry should still exist
+        const globalResult = LocalMemoryCacheSingleton.getInstance().get(
+            `"${globalPath}/dotnet" --list-runtimes --arch x64{"env":"..."}`,
+            mockContext
+        );
+        assert.isDefined(globalResult, 'The global dotnet cache entry should not be invalidated');
+    });
+
+    test('It invalidates all dotnet entries for global install/uninstall', async () =>
+    {
+        // Cache entries for multiple dotnet paths
+        LocalMemoryCacheSingleton.getInstance().put(
+            `"dotnet" --list-runtimes --arch x64{"env":"..."}`,
+            { stdout: 'Microsoft.NETCore.App 10.0.4', stderr: '', status: '0' },
+            { ttlMs: cacheTime },
+            mockContext
+        );
+
+        LocalMemoryCacheSingleton.getInstance().put(
+            `"/usr/share/dotnet/dotnet" --list-sdks --arch x64{"env":"..."}`,
+            { stdout: '10.0.200 [/usr/share/dotnet/sdk]', stderr: '', status: '0' },
+            { ttlMs: cacheTime },
+            mockContext
+        );
+
+        // Also cache a non-dotnet entry
+        LocalMemoryCacheSingleton.getInstance().put(
+            `which which{"env":"..."}`,
+            { stdout: '/usr/bin/which', stderr: '', status: '0' },
+            { ttlMs: cacheTime },
+            mockContext
+        );
+
+        // Invalidate with 'dotnet' substring (simulating global install/uninstall)
+        LocalMemoryCacheSingleton.getInstance().invalidateEntriesContaining('dotnet', mockContext);
+
+        // Both dotnet entries should be gone
+        assert.isUndefined(
+            LocalMemoryCacheSingleton.getInstance().get(`"dotnet" --list-runtimes --arch x64{"env":"..."}`, mockContext),
+            'The bare dotnet cache entry should be invalidated'
+        );
+        assert.isUndefined(
+            LocalMemoryCacheSingleton.getInstance().get(`"/usr/share/dotnet/dotnet" --list-sdks --arch x64{"env":"..."}`, mockContext),
+            'The full-path dotnet cache entry should be invalidated'
+        );
+
+        // Non-dotnet entry should survive
+        assert.isDefined(
+            LocalMemoryCacheSingleton.getInstance().get(`which which{"env":"..."}`, mockContext),
+            'The non-dotnet cache entry should not be invalidated'
+        );
+    });
+
+    test('It does nothing when no entries match the substring', async () =>
+    {
+        LocalMemoryCacheSingleton.getInstance().put('some-key', 'some-value', { ttlMs: cacheTime }, mockContext);
+
+        // Invalidate with a substring that matches nothing
+        LocalMemoryCacheSingleton.getInstance().invalidateEntriesContaining('/nonexistent/path', mockContext);
+
+        assert.equal(
+            LocalMemoryCacheSingleton.getInstance().get('some-key', mockContext),
+            'some-value',
+            'Unrelated cache entries should not be affected'
+        );
+    });
 });
