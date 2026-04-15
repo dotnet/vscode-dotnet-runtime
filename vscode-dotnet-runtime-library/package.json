@@ -29,7 +29,8 @@
 		"@types/lodash": "^4.17.13",
 		"@types/proper-lockfile": "^4.1.2",
 		"copyfiles": "^2.4.1",
-		"glob": "^7.2.0"
+		"glob": "^7.2.0",
+		"rimraf": "^6.1.3"
 	},
 	"dependencies": {
 		"@types/chai-as-promised": "^7.1.4",
@@ -42,9 +43,9 @@
 		"@vscode/extension-telemetry": "^0.9.7",
 		"@vscode/sudo-prompt": "^9.3.2",
 		"@vscode/test-electron": "^2.4.1",
-		"axios": "1.13.6",
-		"axios-cache-interceptor": "1.11.4",
-		"axios-retry": "3.9.1",
+		"axios": "^1.13.6",
+		"axios-cache-interceptor": "^1.11.4",
+		"axios-retry": "^3.9.1",
 		"chai": "4.3.4",
 		"chai-as-promised": "^7.1.1",
 		"eol": "^0.9.1",
@@ -54,7 +55,6 @@
 		"mocha": "^11.7.0",
 		"node-cache": "^5.1.2",
 		"open": "^8.4.0",
-		"rimraf": "3.0.2",
 		"run-script-os": "^1.1.6",
 		"semver": "^7.6.2",
 		"shelljs": "^0.8.5",
