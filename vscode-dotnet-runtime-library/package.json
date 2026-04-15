@@ -40,6 +40,7 @@
 		"@types/semver": "^7.3.9",
 		"@types/shelljs": "^0.8.9",
 		"@types/vscode": "^1.101.0",
+		"@microsoft/applicationinsights-common": "^3.4.1",
 		"@vscode/extension-telemetry": "^1.5.1",
 		"@vscode/sudo-prompt": "^9.3.2",
 		"@vscode/test-electron": "^2.4.1",
