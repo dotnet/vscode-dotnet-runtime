@@ -123,7 +123,7 @@ Microsoft.NETCore.App 8.0.6 [/usr/lib64/dotnet/shared/Microsoft.NETCore.App]`, s
         // Rocky Linux 8.10 -> version key "8.0" in distro-support.json
         if (shouldRun)
         {
-            const packageName = await provider.getExpectedDotnetPackageNameForVersion(mockVersion, installType);
+            const packageName = await (provider as any).myDotnetVersionPackageName(mockVersion, installType);
             assert.equal(packageName, 'dotnet-sdk-8.0');
         }
     }).timeout(standardTimeoutTime);
