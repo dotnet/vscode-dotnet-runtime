@@ -211,7 +211,7 @@
     "@microsoft/1ds-post-js" "^4.3.4"
     "@microsoft/applicationinsights-web-basic" "^3.3.4"
 
-"@vscode/sudo-prompt@^9.3.2":
+"@vscode/sudo-prompt@^9.3.1":
   version "9.3.2"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/sudo-prompt/-/sudo-prompt-9.3.2.tgz"
   integrity sha1-aSujjfQL01AszE6fCZ+7rtvV8E4=
