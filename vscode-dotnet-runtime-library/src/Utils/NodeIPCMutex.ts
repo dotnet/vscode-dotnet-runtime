@@ -263,10 +263,12 @@ export class NodeIPCMutex
                 return true; // We can acquire the lock, and delete the file handle.
             }
 
-            // Expected errors:
-            // - ENOENT: The file descriptor doesn't exist, which means the process holding it has died.
-            //   Technically stale, but the only action would be to delete it, and it already is deleted.
-            // - EACCES / EPERM: We can't access the socket due- might be a OS policy like SELinux but haven't tested, might be changing user accounts
+            // Expected errors (non-stale):
+            // - ENOENT: The socket file doesn't exist. Technically stale, but the only action
+            //   would be to delete it, and it already is deleted.
+            // - EACCES / EPERM: We can't access the socket. Possible causes include a restrictive
+            //   parent directory, socket file owned by another user, or an OS policy denial. Not
+            //   evidence of staleness, so we cannot safely delete the file.
 
             this.logger.log(`Action: ${actionId} Unable to acquire lock: ${JSON.stringify(error ?? '')}.`);
             return false; // We don't know what happened, but we can't acquire the lock.
@@ -279,7 +281,7 @@ export class NodeIPCMutex
         {
             const socket = createConnection(this.lockPath, () =>
             {
-              try
+                try
                 {
                     socket.removeListener('error', reject); // Ignore other errors : we were able to connect, that's all that matters.
                     this.logger.log(`Action: ${actionId} Connected to existing lock.`);
