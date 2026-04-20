@@ -90,6 +90,29 @@ Report this issue to our vscode-dotnet-runtime GitHub for help.`
     }
 }
 
+/**
+ * Acquires a mutex with manual release semantics, but respects VSCODE_DOTNET_RUNTIME_DISABLE_MUTEX.
+ * When the env var is set, returns a no-op releaser immediately.
+ */
+export async function acquireWithManualReleaseOrDisabled(
+    eventStream: IEventStream,
+    lockId: string,
+    actionId: string,
+    retryDelayMs: number,
+    timeoutTimeMs: number,
+    lockFailureErrorMessage = ''
+): Promise<(() => void) | undefined>
+{
+    if (process.env.VSCODE_DOTNET_RUNTIME_DISABLE_MUTEX === 'true')
+    {
+        return () => { /* no-op: mutex disabled */ };
+    }
+
+    const logger = new EventStreamNodeIPCMutexLoggerWrapper(eventStream, lockId);
+    const mutex = new NodeIPCMutex(lockId, logger, lockFailureErrorMessage);
+    return mutex.acquireWithManualRelease(actionId, retryDelayMs, timeoutTimeMs);
+}
+
 const possiblyUsefulUpperCaseEnvVars = new Set<string>([ // This is a local variable instead of in the function so it doesn't get recreated every time the function is called. I looked at compiled JS and didn't see it get optimized.
     'COMMONPROGRAMFILES',
     'COMMONPROGRAMFILES(x86)',
@@ -135,6 +158,9 @@ const possiblyUsefulUpperCaseEnvVars = new Set<string>([ // This is a local vari
     'DOTNET_ROLL_FORWARD',
     'DOTNET_ROLL_FORWARD_TO_PRERELEASE',
     'DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX',
+    'VSCODE_DOTNET_RUNTIME_DISABLE_MUTEX',
+    'XDG_RUNTIME_DIR',
+    'TMPDIR',
 ]);
 
 /*
