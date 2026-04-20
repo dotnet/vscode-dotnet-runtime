@@ -122,6 +122,7 @@ namespace commandKeys
     export const recommendedVersion = 'recommendedVersion'
     export const globalAcquireSDKPublic = 'acquireGlobalSDKPublic';
     export const showAcquisitionLog = 'showAcquisitionLog';
+    export const getAcquisitionLog = 'getAcquisitionLog';
     export const ensureDotnetDependencies = 'ensureDotnetDependencies';
     export const reportIssue = 'reportIssue';
     export const resetData = 'resetData';
@@ -821,6 +822,28 @@ ${JSON.stringify(commandContext)}`));
 
     const showOutputChannelRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.showAcquisitionLog}`, () => outputChannelObserver.showOutput());
 
+    const getAcquisitionLogRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.getAcquisitionLog}`, async (): Promise<string> =>
+    {
+        // Flush any buffered log entries so the file on disk reflects the latest state.
+        await loggingObserver.flush();
+
+        const logFilePath = loggingObserver.getFileLocation();
+
+        // If a sibling `.tmp` file exists, the log is in the middle of being atomically
+        // replaced. Briefly wait for the rename to complete so the caller reads the
+        // up-to-date log rather than a stale or transient copy.
+        const tmpLogFilePath = `${logFilePath}.tmp`;
+        const waitStartMs = Date.now();
+        const maxWaitMs = 5000;
+        const pollIntervalMs = 50;
+        while (fs.existsSync(tmpLogFilePath) && Date.now() - waitStartMs < maxWaitMs)
+        {
+            await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
+        }
+
+        return logFilePath;
+    });
+
     const ensureDependenciesRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.ensureDotnetDependencies}`, async (commandContext: IDotnetEnsureDependenciesContext) =>
     {
         await callWithErrorHandling(async () =>
@@ -1024,6 +1047,7 @@ Installation will timeout in ${timeoutValue} seconds.`))
         dotnetUninstallAllRegistration,
         dotnetForceUpdateRegistration,
         showOutputChannelRegistration,
+        getAcquisitionLogRegistration,
         ensureDependenciesRegistration,
         reportIssueRegistration,
         resetUpdateTimerInternalRegistration,

@@ -222,6 +222,19 @@ ${stderr}`);
         }
     });
 
+    const sampleGetAcquisitionLogRegistration = vscode.commands.registerCommand('sample.dotnet.getAcquisitionLog', async () =>
+    {
+        try
+        {
+            const logPath = await vscode.commands.executeCommand<string>('dotnet.getAcquisitionLog');
+            vscode.window.showInformationMessage(`.NET acquisition log path: ${logPath ?? 'undefined'}`);
+        }
+        catch (error)
+        {
+            vscode.window.showErrorMessage((error as Error).toString());
+        }
+    });
+
     const sampleGlobalSDKFromRuntimeRegistration = vscode.commands.registerCommand('sample.dotnet.acquireGlobalSDK', async (version) =>
     {
         if (!version)
@@ -334,6 +347,7 @@ ${JSON.stringify(result) ?? 'undefined'}`);
         sampleConcurrentTest,
         sampleConcurrentASPNETTest,
         sampleShowAcquisitionLogRegistration,
+        sampleGetAcquisitionLogRegistration,
         sampleFindPathRegistration,
         sampleAvailableInstallsRegistration
     );

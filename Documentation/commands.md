@@ -124,6 +124,14 @@ This is a **user-facing** command that opens an input box pre-filled with the re
 
 This command surfaces an output channel to the user which provides status messages during extension commands. It does not accept parameters and has a void return type.
 
+### dotnet.getAcquisitionLog
+
+This command returns the full path (as a `string`) to the log file that the currently running instance of the extension is writing to. It does not accept parameters. Before returning, it flushes any buffered log entries to disk so the file reflects the latest state, and waits briefly for any in-progress atomic log replacement (a sibling `.tmp` file) to complete.
+
+Note: Each VS Code window gets its own extension host log folder, so the returned path only points to the log for the current window. Other concurrent VS Code instances (for example VS Code Insiders versus VS Code) maintain their own logs and must invoke this command separately.
+
+**Offline behavior:** Works offline.
+
 ### dotnet.ensureDotnetDependencies
 
 This command is only applicable to Linux machines. It attempts to ensure that .NET dependencies are present and, if they are not, installs them or prompts the user to do so. It accepts a [IDotnetEnsureDependenciesContext](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/vscode-dotnet-runtime-library/src/IDotnetEnsureDependenciesContext.ts) object and has a void return type. It is no longer supported but remains to support legacy behavior.

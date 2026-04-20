@@ -139,6 +139,22 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
         assert.deepEqual((mockState as any).syncedKeys, [], 'setKeysForSync should be called with empty array to prevent syncing install state');
     }).timeout(standardTimeoutTime);
 
+    test('dotnet.getAcquisitionLog returns the path to the current log file', async () =>
+    {
+        const logFilePath = await vscode.commands.executeCommand<string>('dotnet.getAcquisitionLog');
+        assert.exists(logFilePath, 'dotnet.getAcquisitionLog returns a value');
+        assert.isString(logFilePath, 'dotnet.getAcquisitionLog returns a string');
+        assert.isTrue(logFilePath!.length > 0, 'dotnet.getAcquisitionLog returns a non-empty path');
+        // The log file is named like `DotNetAcquisition-<extensionId>-<timestamp>.txt`
+        // (see EventStreamRegistration.ts). Validate the filename shape so callers know
+        // they are being handed the acquisition log rather than some other file.
+        assert.include(path.basename(logFilePath!), 'DotNetAcquisition', 'Returned path points at a DotNetAcquisition log file');
+        assert.isTrue(logFilePath!.endsWith('.txt'), 'Returned log file has a .txt extension');
+        // The directory containing the log should exist after activation even if no log
+        // lines have been flushed yet; ensureDirectory is invoked on flush.
+        assert.isTrue(fs.existsSync(path.dirname(logFilePath!)), 'Log directory exists');
+    }).timeout(standardTimeoutTime);
+
     async function installRuntime(dotnetVersion: string, installMode: DotnetInstallMode, arch?: string)
     {
         let context: IDotnetAcquireContext = { version: dotnetVersion, requestingExtensionId, mode: installMode };
