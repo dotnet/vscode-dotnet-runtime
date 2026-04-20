@@ -5,11 +5,11 @@
 import * as chai from 'chai';
 import { fork } from 'child_process';
 import * as fs from 'fs';
+import { createServer } from 'net';
 import * as os from 'os';
 import * as path from 'path';
 import { executeWithLock } from '../../Utils/TypescriptUtilities';
-import { NodeIPCMutex } from '../../Utils/NodeIPCMutex';
-import { MockEventStream } from '../mocks/MockObjects';
+import { MockEventStream, MockNodeIPCMutex } from '../mocks/MockObjects';
 import { acquiredText, INodeIPCTestLogger, printWithLock, releasedText, wait } from './TestUtility';
 const assert = chai.assert;
 
@@ -29,6 +29,58 @@ const randomLockPrefix = randomTextPrefixes.join(''); // If the code is wrong an
 suite('NodeIPCMutex Unit Tests', function ()
 {
     this.retries(0);
+
+    /**
+     * Probes the real-world scenario where the parent directory of the socket path is not writable
+     * by the current process: `server.listen()` throws EACCES because bind() cannot create the
+     * socket inode in an unwritable directory.
+     *
+     * This is what actually happens with `/run/user/<uid>/vscd-*.sock` when:
+     *   - The process's effective uid differs from the owner of /run/user/<uid>/ (sudo/su, container
+     *     uid mismatch, WSL uid mapping).
+     *   - The logind session was torn down but XDG_RUNTIME_DIR is still inherited.
+     *   - Any other cause of a stale/inaccessible XDG_RUNTIME_DIR.
+     *
+     * See the caveat documented in NodeIPCMutex.getIPCDirectory().
+     *
+     * Empirically verified on Linux (Node 20+): chmod 0500 on the parent dir produces `EACCES`
+     * from server.listen() (exactly matching observed user crash logs) and `ENOENT` from
+     * createConnection (since no file was ever created).
+     */
+    async function probeListenErrnoOnUnwritableParent(): Promise<string>
+    {
+        const probeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nodeipc-parent-'));
+        const probePath = path.join(probeDir, 'probe.sock');
+
+        // Read+execute but NOT write on the parent directory -> bind() can resolve the path but
+        // cannot create a new inode -> EACCES.
+        fs.chmodSync(probeDir, 0o500);
+
+        try
+        {
+            return await new Promise<string>((resolve) =>
+            {
+                const server = createServer();
+                server.once('error', (err: NodeJS.ErrnoException) => resolve(err.code ?? 'UNEXPECTED'));
+                server.once('listening', () =>
+                {
+                    server.close();
+                    resolve('LISTEN_SUCCEEDED');
+                });
+                try { server.listen(probePath); }
+                catch (err: any)
+                {
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    resolve((err?.code as string) ?? 'UNEXPECTED');
+                }
+            });
+        }
+        finally
+        {
+            try { fs.chmodSync(probeDir, 0o755); } catch { /* best effort */ }
+            try { fs.rmdirSync(probeDir); } catch { /* best effort */ }
+        }
+    }
 
     function firstComesBeforeSecond(arr: string[], first: string, second: string): boolean
     {
@@ -215,73 +267,15 @@ suite('NodeIPCMutex Unit Tests', function ()
     }).timeout(testTimeoutMs);
 
     /**
-     * EACCES recovery test (Linux/macOS only).
+     * Preflight: independently confirm that chmod 0500 on the parent directory causes
+     * `server.listen()` to emit EACCES. This reproduces the real-world failure mode observed in
+     * user crash logs, where `listen EACCES: permission denied /run/user/<uid>/vscd-*.sock` bubbled
+     * up from a logind-managed XDG_RUNTIME_DIR that the current process could no longer write to.
      *
-     * Creates a .sock file at the lock path, then chmod 000 it so that server.listen() will get EACCES.
-     * The mutex should detect this as a retryable error, call isLockStale → connectToExistingLock (which also gets EACCES),
-     * then call cleanupStaleLock (rm with force:true bypasses permissions on the directory level),
-     * and eventually acquire the lock successfully.
-     *
-     * This test verifies the fix for the EACCESS→EACCES typo bug that previously caused an unrecoverable crash.
+     * If this probe ever stops producing EACCES, the assumptions behind the listen-EACCES-handling
+     * test below are invalid.
      */
-    test('It recovers from EACCES on a stale socket file', async function ()
-    {
-        if (os.platform() === 'win32')
-        {
-            this.skip(); // Named pipes on Windows don't use file permissions; EACCES doesn't apply.
-            return;
-        }
-
-        const logger = new INodeIPCTestLogger();
-        const myLock = `${randomLockPrefix}-EA`;
-        const mutex = new NodeIPCMutex(myLock, logger);
-
-        // Derive the socket path the same way the mutex does internally
-        const ipcPathDir = os.platform() === 'linux' && process.env.XDG_RUNTIME_DIR
-            ? process.env.XDG_RUNTIME_DIR
-            : os.tmpdir();
-        const sockPath = path.join(ipcPathDir, `vscd-${myLock}.sock`);
-
-        // Create a file at the socket path and make it inaccessible
-        fs.writeFileSync(sockPath, '');
-        fs.chmodSync(sockPath, 0o000);
-
-        try
-        {
-            let acquired = false;
-
-            // The mutex should retry on EACCES, detect the stale lock, clean it up, and acquire.
-            // Give it enough time/retries to do so.
-            await mutex.acquire(async () =>
-            {
-                acquired = true;
-                return 'done';
-            }, 50, 5000 * delayFactor, `${myLock}-eacces-test`);
-
-            assert(acquired, `${logger.logs}\nThe mutex should have acquired the lock after recovering from EACCES.`);
-            assert(logger.logs.some(l => l.includes('Lock acquired')), `${logger.logs}\nExpected a 'Lock acquired' log entry.`);
-        }
-        finally
-        {
-            // Clean up: restore permissions and remove if it still exists
-            try { fs.chmodSync(sockPath, 0o644); } catch { /* may already be removed */ }
-            try { fs.unlinkSync(sockPath); } catch { /* may already be removed */ }
-        }
-    }).timeout(testTimeoutMs);
-
-    /**
-     * EPERM recovery test (Linux/macOS only).
-     *
-     * Similar to the EACCES test but simulates EPERM by creating a socket file in a directory
-     * where the sticky bit and ownership would cause EPERM on bind.
-     * In practice, on most Linux systems chmod 000 on a socket file produces EACCES from server.listen(),
-     * so this test verifies that even if the code path encounters EPERM (e.g. from SELinux/AppArmor),
-     * it is treated as retryable and recovers the same way.
-     *
-     * We test this by verifying the mutex handles a stale inaccessible socket the same way regardless
-     * of whether the specific errno is EACCES or EPERM — the recovery path is identical.
-     */
-    test('It recovers from EPERM-like conditions on a stale socket file', async function ()
+    test('Preflight: unwritable parent directory causes server.listen() to emit EACCES', async function ()
     {
         if (os.platform() === 'win32')
         {
@@ -289,39 +283,159 @@ suite('NodeIPCMutex Unit Tests', function ()
             return;
         }
 
+        const code = await probeListenErrnoOnUnwritableParent();
+
+        if (code === 'LISTEN_SUCCEEDED')
+        {
+            // Happens when running as root: DAC is bypassed. Skip rather than falsely pass downstream.
+            this.skip();
+            return;
+        }
+
+        assert.strictEqual(code, 'EACCES',
+            `Expected server.listen() on a path in an unwritable parent directory to emit EACCES, ` +
+            `but got '${code}'. This invalidates the unwritable-parent-directory test's assumption. ` +
+            `User-reported crash logs showed EACCES from this code path in real deployments.`);
+    }).timeout(testTimeoutMs);
+
+    /**
+     * Real-world unwritable-XDG_RUNTIME_DIR scenario test (Linux/macOS only).
+     *
+     * Reproduces the crash observed in user logs:
+     *   Error: listen EACCES: permission denied /run/user/<uid>/vscd-installedLk.sock
+     *
+     * Root cause in the field: `XDG_RUNTIME_DIR` points at a directory the current process cannot
+     * write to (stale session, uid mismatch from sudo/su, container/WSL uid mapping, logind
+     * teardown while VS Code process still running). bind() cannot create the socket inode there,
+     * so the kernel returns EACCES on `server.listen()`.
+     *
+     * Before the fix, the mutex rethrew immediately because of the EACCESS->EACCES typo in the
+     * retryable set, producing the ugly libuv stack trace visible in user logs.
+     *
+     * After the fix, the mutex catches EACCES, classifies it as retryable, tries isLockStale (which
+     * also fails due to the unwritable directory), and tries cleanupStaleLock (which also fails).
+     * Unable to recover — because the environment itself is broken — the mutex times out and throws
+     * a meaningful "Failed to acquire lock after N retries" error instead of the raw libuv trace.
+     *
+     * This test verifies the new behavior: no immediate crash with libuv internals; instead a
+     * graceful, retry-bounded timeout with an actionable error message.
+     */
+    test('It does not crash immediately when server.listen throws EACCES (unwritable parent directory)', async function ()
+    {
+        if (os.platform() === 'win32')
+        {
+            this.skip();
+            return;
+        }
+
+        const probeCode = await probeListenErrnoOnUnwritableParent();
+        if (probeCode !== 'EACCES')
+        {
+            this.skip();
+            return;
+        }
+
         const logger = new INodeIPCTestLogger();
-        const myLock = `${randomLockPrefix}-EP`;
-        const mutex = new NodeIPCMutex(myLock, logger);
+        const myLock = `${randomLockPrefix}-UP`;
 
-        const ipcPathDir = os.platform() === 'linux' && process.env.XDG_RUNTIME_DIR
-            ? process.env.XDG_RUNTIME_DIR
-            : os.tmpdir();
-        const sockPath = path.join(ipcPathDir, `vscd-${myLock}.sock`);
+        // Build a read+execute-only parent directory. bind() in server.listen() will fail with
+        // EACCES because it cannot create the socket inode.
+        const testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nodeipc-unwritable-'));
+        fs.chmodSync(testDir, 0o500);
 
-        // Create a stale socket file and remove all permissions
-        fs.writeFileSync(sockPath, '');
-        fs.chmodSync(sockPath, 0o000);
+        const mutex = new MockNodeIPCMutex(myLock, logger, testDir);
 
+        let caught: any;
+        let acquired = false;
         try
         {
-            let acquired = false;
-
+            // Give it a short budget: we EXPECT the mutex to eventually time out gracefully, since
+            // the environment is genuinely broken — no real recovery is possible.
             await mutex.acquire(async () =>
             {
                 acquired = true;
                 return 'done';
-            }, 50, 5000 * delayFactor, `${myLock}-eperm-test`);
-
-            assert(acquired, `${logger.logs}\nThe mutex should have acquired the lock after recovering from permission errors.`);
-
-            // Verify the stale lock detection + cleanup path was exercised
-            assert(logger.logs.some(l => l.includes('Stale lock') || l.includes('Cleaning up stale lock')),
-                `${logger.logs}\nExpected stale lock detection/cleanup log entries.`);
+            }, 50, 500, `${myLock}-unwritable-parent-test`);
+        }
+        catch (err)
+        {
+            caught = err;
         }
         finally
         {
-            try { fs.chmodSync(sockPath, 0o644); } catch { /* may already be removed */ }
-            try { fs.unlinkSync(sockPath); } catch { /* may already be removed */ }
+            try { fs.chmodSync(testDir, 0o755); } catch { /* best effort */ }
+            try { fs.rmdirSync(testDir); } catch { /* best effort */ }
         }
+
+        assert(!acquired, `The mutex should NOT have acquired the lock in a permanently-broken environment.`);
+        assert(caught, `${logger.logs}\nThe mutex should have thrown a meaningful timeout error after retries were exhausted.`);
+        // The message must be the graceful timeout, NOT the raw libuv "listen EACCES" stack trace.
+        // This is the crux of the user-visible improvement.
+        const msg = String(caught?.message ?? '');
+        assert(msg.includes('Failed to acquire lock'),
+            `Expected the final error to be the graceful "Failed to acquire lock after N retries" ` +
+            `message, but got: ${msg}\nLogs: ${logger.logs}`);
+        assert(!msg.startsWith('listen EACCES'),
+            `The mutex should NOT surface the raw libuv "listen EACCES" error to callers — ` +
+            `that was the bug. Got: ${msg}`);
+        // The EACCES must have been observed in the logs during retries. This is the direct proof
+        // that the retryable-set fix engaged: pre-fix, EACCES was rethrown immediately and never
+        // reached the "Unable to acquire lock" logging path in isLockStale's fallthrough branch.
+        assert(logger.logs.some(l => l.includes('EACCES')),
+            `${logger.logs}\nExpected EACCES to appear in the retry-loop logs, proving the ` +
+            `retryable-code fix engaged. If this fails, the EACCES was swallowed silently or the ` +
+            `retry loop never ran.`);
+    }).timeout(testTimeoutMs);
+
+    /**
+     * Independent real-EACCES test using the filesystem root "/".
+     *
+     * On Unix, `server.listen('/vscd-probe.sock')` as a non-root user produces EACCES from bind()
+     * because the process lacks write permission on "/". No chmod setup, no mkdtemp, no cleanup is
+     * needed: the kernel rejects the bind before any inode is created.
+     *
+     * This is a second independent witness for the same code path as the unwritable-parent test.
+     * If one test regresses (e.g. a future refactor changes how chmod is handled, or Node changes
+     * errno mapping), the other remains as a check.
+     *
+     * Skipped under root (bind would succeed and leak a socket file in /) and on Windows.
+     */
+    test('It does not crash immediately when server.listen throws real EACCES (root directory primitive)', async function ()
+    {
+        if (os.platform() === 'win32' || (typeof process.getuid === 'function' && process.getuid() === 0))
+        {
+            this.skip();
+            return;
+        }
+
+        const logger = new INodeIPCTestLogger();
+        const myLock = `${randomLockPrefix}-RD`;
+        // Override the IPC directory to "/" — bind into "/" fails with EACCES for non-root.
+        const mutex = new MockNodeIPCMutex(myLock, logger, '/');
+
+        let caught: any;
+        let acquired = false;
+        try
+        {
+            await mutex.acquire(async () =>
+            {
+                acquired = true;
+                return 'done';
+            }, 50, 400, `${myLock}-rootdir-test`);
+        }
+        catch (err)
+        {
+            caught = err;
+        }
+
+        assert(!acquired, `The mutex should NOT acquire a lock when "/" is unwritable.`);
+        assert(caught, `${logger.logs}\nThe mutex should time out gracefully, not hang.`);
+        const msg = String(caught?.message ?? '');
+        assert(msg.includes('Failed to acquire lock'),
+            `Expected graceful "Failed to acquire lock" timeout, got: ${msg}\nLogs: ${logger.logs}`);
+        assert(!msg.startsWith('listen EACCES'),
+            `Raw libuv EACCES must not be surfaced to callers. Got: ${msg}`);
+        assert(logger.logs.some(l => l.includes('EACCES')),
+            `${logger.logs}\nExpected EACCES in the retry-loop logs.`);
     }).timeout(testTimeoutMs);
 });

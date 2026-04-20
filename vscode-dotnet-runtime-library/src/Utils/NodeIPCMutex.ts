@@ -34,7 +34,7 @@ export class INodeIPCMutexLogger
  */
 export class NodeIPCMutex
 {
-    private readonly lockPath: string;
+    protected readonly lockPath: string;
     private readonly supplementalErrorInfo: string;
     private server?: Server;
     private hasCleanedUpBefore = false;
@@ -51,26 +51,34 @@ export class NodeIPCMutex
         this.lockPath = this.getIPCHandlePath(lockId);
     }
 
+    /**
+     * @remarks Resolves the directory to hold the IPC handle in. Extracted as a protected method so tests
+     * can override it to use a directory they fully control (e.g. for simulating permission errors).
+     *
+     * On Unix, A file descriptor in /temp/ is a good option to hold this sock.
+     * In Linux, The user or system may set XDG_RUNTIME_DIR to set our applications temporary directory, so use this instead of /temp/
+     * On Unix, Access to /tmp/ may be restricted, but all processes must use the same directory, so we can't condition to use another dir based on the permissions for it.
+     *
+     * CAVEAT: XDG_RUNTIME_DIR (typically /run/user/<uid>/) is set by pam_systemd during login sessions.
+     * It is NOT set when SSH is configured without PAM (UsePAM no), when using su/sudo -u, inside containers
+     * without systemd, in cron jobs, or in CI/CD environments. If one VS Code process has XDG_RUNTIME_DIR
+     * set and another doesn't, they will create sockets in different directories (/run/user/<uid>/ vs /tmp/),
+     * silently breaking cross-process mutex isolation. VS Code's own IPC code has the same limitation:
+     * https://github.com/microsoft/vscode/blob/main/src/vs/base/parts/ipc/node/ipc.net.ts
+     *
+     * On Windows, '\\\\.\\pipe\\` is a Special File System to get a Named Pipe (File Descriptors won't work)
+     * https://nodejs.org/docs/latest/api/net.html#ipc-support:~:text=On%20Windows%2C%20the,owning%20process%20exits.
+     */
+    protected getIPCDirectory(): string
+    {
+        return os.platform() === 'win32' ? `\\\\.\\pipe\\` :
+            os.platform() === 'linux' && process.env.XDG_RUNTIME_DIR ? process.env.XDG_RUNTIME_DIR as string : os.tmpdir();
+    }
+
     private getIPCHandlePath(id: string): string
     {
         const lengthLimit = os.platform() === 'win32' ? 256 : 104; // Mac 10.9 and FreeBSD have their own length limit.
-
-        // On Unix, A file descriptor in /temp/ is a good option to hold this sock.
-        // In Linux, The user or system may set XDG_RUNTIME_DIR to set our applications temporary directory, so use this instead of /temp/
-        // On Unix, Access to /tmp/ may be restricted, but all processes must use the same directory, so we can't condition to use another dir based on the permissions for it.
-
-        // CAVEAT: XDG_RUNTIME_DIR (typically /run/user/<uid>/) is set by pam_systemd during login sessions.
-        // It is NOT set when SSH is configured without PAM (UsePAM no), when using su/sudo -u, inside containers
-        // without systemd, in cron jobs, or in CI/CD environments. If one VS Code process has XDG_RUNTIME_DIR
-        // set and another doesn't, they will create sockets in different directories (/run/user/<uid>/ vs /tmp/),
-        // silently breaking cross-process mutex isolation. VS Code's own IPC code has the same limitation:
-        // https://github.com/microsoft/vscode/blob/main/src/vs/base/parts/ipc/node/ipc.net.ts
-
-        // On Windows, '\\\\.\\pipe\\` is a Special File System to get a Named Pipe (File Descriptors won't work)
-        // https://nodejs.org/docs/latest/api/net.html#ipc-support:~:text=On%20Windows%2C%20the,owning%20process%20exits.
-
-        const ipcPathDir = os.platform() === 'win32' ? `\\\\.\\pipe\\` :
-            os.platform() === 'linux' && process.env.XDG_RUNTIME_DIR ? process.env.XDG_RUNTIME_DIR as string : os.tmpdir();
+        const ipcPathDir = this.getIPCDirectory();
 
         if (id.length > (lengthLimit - ipcPathDir.length))
         {
@@ -122,15 +130,23 @@ export class NodeIPCMutex
                 // These are the retryable error codes from server.listen():
                 // - EADDRINUSE: Another process or async task in this process is currently listening on the socket path. The lock is held.
                 // - EEXIST: The socket file already exists on disk (stale leftover from a dead process on some OS/filesystem combos).
-                // - EACCES: Permission denied creating/binding the socket — e.g. /run/user/<uid>/ permissions changed, or stale socket owned by another session.
+                // - EACCES: Permission denied creating/binding the socket — e.g. /run/user/<uid>/ permissions changed,
+                //   stale XDG_RUNTIME_DIR after a uid mismatch / session teardown, or parent directory not writable
                 // - EPERM: Operation not permitted — similar to EACCES but from kernel-level policy (SELinux, AppArmor, or elevated-permission mismatch).
                 //   VS Code's main process also handles EPERM alongside EACCES: https://github.com/microsoft/vscode/blob/main/src/vs/code/electron-main/main.ts
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                if (error?.code === 'EADDRINUSE' || error?.code === 'EEXIST' || error?.code === 'EACCES' || error?.code === 'EPERM')
+                const errorCode = error?.code;
+                if (errorCode === 'EADDRINUSE' || errorCode === 'EEXIST' || errorCode === 'EACCES' || errorCode === 'EPERM')
                 {
+                    // Log the errno on every retry. This is essential for diagnosing field issues
+                    // where the raw libuv trace gives no actionable signal. Keep the payload small
+                    // to avoid flooding logs.
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    this.logger.log(`Action: ${actionId} Lock acquire retryable error: ${errorCode} (${String(error?.message ?? '')}) retry ${retries + 1}/${maxRetryCountToEndAtRoughlyTimeoutTime}`);
+
                     if (retries >= maxRetryCountToEndAtRoughlyTimeoutTime)
                     {
-                        throw new Error(`Action: ${actionId} Failed to acquire lock ${this.lockPath} after ${retries} retries out of ${maxRetryCountToEndAtRoughlyTimeoutTime} total available attempts.\n${this.supplementalErrorInfo}`);
+                        throw new Error(`Action: ${actionId} Failed to acquire lock ${this.lockPath} after ${retries} retries out of ${maxRetryCountToEndAtRoughlyTimeoutTime} total available attempts. Last error: ${errorCode}.\n${this.supplementalErrorInfo}`);
                     }
 
                     if (await this.isLockStale(actionId))
@@ -249,10 +265,9 @@ export class NodeIPCMutex
 
             // Expected errors:
             // - ENOENT: The file descriptor doesn't exist, which means the process holding it has died.
-            // -> Technically, this means it's stale, but the only action to do if it's stale is delete it, but it already is deleted.
+            //   Technically stale, but the only action would be to delete it, and it already is deleted.
+            // - EACCES / EPERM: We can't access the socket due- might be a OS policy like SELinux but haven't tested, might be changing user accounts
 
-            // - EPERM / EACCES: The file descriptor exists, but we don't have permission to access it. This is expected if the process holding it is still alive and running it under elevated permissions (chmod failed)
-            // - EPIPE: This might be possible, but I haven't seen it happen yet.
             this.logger.log(`Action: ${actionId} Unable to acquire lock: ${JSON.stringify(error ?? '')}.`);
             return false; // We don't know what happened, but we can't acquire the lock.
         }
@@ -264,7 +279,7 @@ export class NodeIPCMutex
         {
             const socket = createConnection(this.lockPath, () =>
             {
-                try
+              try
                 {
                     socket.removeListener('error', reject); // Ignore other errors : we were able to connect, that's all that matters.
                     this.logger.log(`Action: ${actionId} Connected to existing lock.`);
