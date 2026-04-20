@@ -59,6 +59,13 @@ export class NodeIPCMutex
         // In Linux, The user or system may set XDG_RUNTIME_DIR to set our applications temporary directory, so use this instead of /temp/
         // On Unix, Access to /tmp/ may be restricted, but all processes must use the same directory, so we can't condition to use another dir based on the permissions for it.
 
+        // CAVEAT: XDG_RUNTIME_DIR (typically /run/user/<uid>/) is set by pam_systemd during login sessions.
+        // It is NOT set when SSH is configured without PAM (UsePAM no), when using su/sudo -u, inside containers
+        // without systemd, in cron jobs, or in CI/CD environments. If one VS Code process has XDG_RUNTIME_DIR
+        // set and another doesn't, they will create sockets in different directories (/run/user/<uid>/ vs /tmp/),
+        // silently breaking cross-process mutex isolation. VS Code's own IPC code has the same limitation:
+        // https://github.com/microsoft/vscode/blob/main/src/vs/base/parts/ipc/node/ipc.net.ts
+
         // On Windows, '\\\\.\\pipe\\` is a Special File System to get a Named Pipe (File Descriptors won't work)
         // https://nodejs.org/docs/latest/api/net.html#ipc-support:~:text=On%20Windows%2C%20the,owning%20process%20exits.
 
