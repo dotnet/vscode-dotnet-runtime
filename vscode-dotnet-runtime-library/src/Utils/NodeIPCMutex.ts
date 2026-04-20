@@ -242,6 +242,7 @@ export class NodeIPCMutex
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             if (error?.code === 'ECONNREFUSED' || error?.code === 'ECONNRESET') // The process is dead - it may have been pkilled and did not drop the file handle, or died mid-handshake.
             {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 this.logger.log(`Action: ${actionId} found Lock is stale, as ${error?.code} detected.`);
                 return true; // We can acquire the lock, and delete the file handle.
             }
