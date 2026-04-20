@@ -153,6 +153,11 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
         // The directory containing the log should exist after activation even if no log
         // lines have been flushed yet; ensureDirectory is invoked on flush.
         assert.isTrue(fs.existsSync(path.dirname(logFilePath!)), 'Log directory exists');
+        // Activation performs JSON scanning which should always produce at least one
+        // log entry, so the file should exist and be non-empty after awaiting flush.
+        assert.isTrue(fs.existsSync(logFilePath!), 'Log file exists on disk');
+        const logContents = fs.readFileSync(logFilePath!, 'utf8');
+        assert.isTrue(logContents.length > 0, 'Log file is non-empty after activation');
     }).timeout(standardTimeoutTime);
 
     async function installRuntime(dotnetVersion: string, installMode: DotnetInstallMode, arch?: string)
