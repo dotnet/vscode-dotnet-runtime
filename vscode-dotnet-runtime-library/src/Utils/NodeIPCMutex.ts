@@ -112,8 +112,14 @@ export class NodeIPCMutex
             }
             catch (error: any)
             {
+                // These are the retryable error codes from server.listen():
+                // - EADDRINUSE: Another process or async task in this process is currently listening on the socket path. The lock is held.
+                // - EEXIST: The socket file already exists on disk (stale leftover from a dead process on some OS/filesystem combos).
+                // - EACCES: Permission denied creating/binding the socket — e.g. /run/user/<uid>/ permissions changed, or stale socket owned by another session.
+                // - EPERM: Operation not permitted — similar to EACCES but from kernel-level policy (SELinux, AppArmor, or elevated-permission mismatch).
+                //   VS Code's main process also handles EPERM alongside EACCES: https://github.com/microsoft/vscode/blob/main/src/vs/code/electron-main/main.ts
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                if (error?.code === 'EADDRINUSE' || error?.code === 'EEXIST' || error?.code === 'EACCESS')
+                if (error?.code === 'EADDRINUSE' || error?.code === 'EEXIST' || error?.code === 'EACCES' || error?.code === 'EPERM')
                 {
                     if (retries >= maxRetryCountToEndAtRoughlyTimeoutTime)
                     {
@@ -227,9 +233,9 @@ export class NodeIPCMutex
         catch (error: any) // Handle synchronous errors from the socket connection.
         {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            if (error?.code === 'ECONNREFUSED') // The process is dead - it may have been pkilled and did not drop the file handle.
+            if (error?.code === 'ECONNREFUSED' || error?.code === 'ECONNRESET') // The process is dead - it may have been pkilled and did not drop the file handle, or died mid-handshake.
             {
-                this.logger.log(`Action: ${actionId} found Lock is stale, as ECONNREFUSED detected.`);
+                this.logger.log(`Action: ${actionId} found Lock is stale, as ${error?.code} detected.`);
                 return true; // We can acquire the lock, and delete the file handle.
             }
 
@@ -237,7 +243,7 @@ export class NodeIPCMutex
             // - ENOENT: The file descriptor doesn't exist, which means the process holding it has died.
             // -> Technically, this means it's stale, but the only action to do if it's stale is delete it, but it already is deleted.
 
-            // - EPERM / EACCESS: The file descriptor exists, but we don't have permission to access it. This is expected if the process holding it is still alive and running it under elevated permissions (chmod failed)
+            // - EPERM / EACCES: The file descriptor exists, but we don't have permission to access it. This is expected if the process holding it is still alive and running it under elevated permissions (chmod failed)
             // - EPIPE: This might be possible, but I haven't seen it happen yet.
             this.logger.log(`Action: ${actionId} Unable to acquire lock: ${JSON.stringify(error ?? '')}.`);
             return false; // We don't know what happened, but we can't acquire the lock.
