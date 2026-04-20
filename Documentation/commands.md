@@ -128,7 +128,7 @@ This command surfaces an output channel to the user which provides status messag
 
 This command returns the full path (as a `string`) to the log file that the currently running instance of the extension is writing to. It does not accept parameters. Before returning, it flushes any buffered log entries to disk so the file reflects the latest state.
 
-Note: Each VS Code window gets its own extension host log folder, so the returned path only points to the log for the current window. Other concurrent VS Code instances (for example VS Code Insiders versus VS Code) maintain their own logs and must invoke this command separately. Currently, there is also a bug where VS Code in WSL returns the windows content when you run `Developer: open extensions log folder` but I don't know if `vsCodeContext.logPath` actually works with this.
+Note: Each VS Code window gets its own extension host log folder, so the returned path only points to the log for the current window. Other concurrent VS Code instances (for example VS Code Insiders versus VS Code) maintain their own logs and must invoke this command separately. The path is derived from `ExtensionContext.logPath`, which [VS Code constructs from the log URI's `fsPath`](https://github.com/microsoft/vscode/blob/a837f16fbe459f3a067aa94da0ddb9b9ae04ebe0/src/vs/workbench/api/common/extHostExtensionService.ts#L538), so it should reflect the remote/WSL extension host when the extension runs there; this has not yet been verified on WSL.
 
 **Offline behavior:** Works offline.
 
