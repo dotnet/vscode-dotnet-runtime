@@ -2,7 +2,7 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
-import { rm } from 'fs/promises';
+import { rm, stat } from 'fs/promises';
 import { createConnection, createServer, Server } from 'net';
 import * as os from 'os';
 import * as path from 'path';
@@ -147,7 +147,8 @@ export class NodeIPCMutex
 
                     if (retries >= maxRetryCountToEndAtRoughlyTimeoutTime)
                     {
-                        throw new Error(`Action: ${actionId} Failed to acquire lock ${this.lockPath} after ${retries} retries out of ${maxRetryCountToEndAtRoughlyTimeoutTime} total available attempts. Last error: ${errorCode}.\n${this.supplementalErrorInfo}`);
+                        const diagnostic = await this.crossUidDiagnostic(actionId);
+                        throw new Error(`Action: ${actionId} Failed to acquire lock ${this.lockPath} after ${retries} retries out of ${maxRetryCountToEndAtRoughlyTimeoutTime} total available attempts. Last error: ${errorCode}.${diagnostic}\n${this.supplementalErrorInfo}`);
                     }
 
                     if (await this.isLockStale(actionId))
@@ -327,6 +328,53 @@ export class NodeIPCMutex
     {
         // Could implement exponential back-off here if we wanted to.
         return new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+
+    /**
+     * When we give up acquiring the lock, add a diagnostic hint if the socket on disk is owned
+     * by a different uid than the current process. This is a common silent cause of permanent
+     * lock contention: a process that ran under `sudo` created a root-owned socket, crashed
+     * without unlinking it, and now non-elevated processes cannot connect (EACCES) nor unlink
+     * (EPERM on sticky-bit /tmp). `fs.stat` works cross-uid because it only requires read/search
+     * on the parent directory, not on the socket file itself. Unix only; Windows named pipes
+     * do not have POSIX uid ownership.
+     *
+     * This is a best-effort diagnostic: any failure here (missing socket, unreadable parent dir,
+     * unexpected platform, stat ENOTSUP on exotic filesystems) must not mask the original
+     * acquisition failure. Errors are logged at debug level and swallowed.
+     */
+    private async crossUidDiagnostic(actionId: string): Promise<string>
+    {
+        if (os.platform() === 'win32')
+        {
+            // Named pipes on Windows have no POSIX uid ownership.
+            return '';
+        }
+
+        const selfUid = process.getuid!();
+
+        try
+        {
+            const st = await stat(this.lockPath);
+            if (st.uid !== selfUid)
+            {
+                return ` Socket at ${this.lockPath} is owned by uid=${st.uid}, current uid=${selfUid}. A previous process (likely run under sudo) may have left a stale socket that cannot be cleaned up automatically. Remove it manually with: sudo rm ${this.lockPath}`;
+            }
+        }
+        catch (err: any)
+        {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            const code = err?.code ?? 'UNKNOWN';
+            // ENOENT: socket was unlinked between acquisition failure and diagnostic; benign.
+            // EACCES / EPERM: parent directory denies search; we can't classify, fall through silently.
+            // Anything else: still not worth failing over; log so it's visible if someone investigates.
+            if (code !== 'ENOENT')
+            {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                this.logger.log(`Action: ${actionId} crossUidDiagnostic stat failed: ${code} (${String(err?.message ?? '')})`);
+            }
+        }
+        return '';
     }
 }
 

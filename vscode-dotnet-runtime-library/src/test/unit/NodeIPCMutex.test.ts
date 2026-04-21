@@ -425,4 +425,61 @@ suite('NodeIPCMutex Unit Tests', function ()
         assert(logger.logs.some(l => l.includes('EACCES') || l.includes('EROFS')),
             `${logger.logs}\nExpected EACCES or EROFS in the retry-loop logs.`);
     }).timeout(testTimeoutMs);
+
+    /**
+     * When acquisition times out and the socket on disk is owned by a different uid than the
+     * current process, the final error must include a diagnostic pointing at the cross-uid
+     * ownership mismatch (the real-world cause: a prior `sudo` run left a root-owned socket).
+     *
+     * We cannot chown a file to another uid without root, so we stub `process.getuid` to return
+     * a value different from the file's real owner. A held mutex (via acquireWithManualRelease)
+     * provides a live listening socket so connect succeeds -> isLockStale returns false ->
+     * the second mutex retries until timeout -> the final-error path runs the diagnostic.
+     */
+    test('Final error includes cross-uid diagnostic when socket is owned by a different uid', async function ()
+    {
+        if (os.platform() === 'win32')
+        {
+            this.skip();
+        }
+
+        const holderLogger = new INodeIPCTestLogger();
+        const contenderLogger = new INodeIPCTestLogger();
+        const myLock = `${randomLockPrefix}-XU`;
+        const testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nodeipc-crossuid-'));
+
+        const holder = new MockNodeIPCMutex(myLock, holderLogger, testDir);
+        const contender = new MockNodeIPCMutex(myLock, contenderLogger, testDir);
+        const sockPath = holder.getLockPathForTest();
+
+        const realGetuid = process.getuid!.bind(process);
+        const realUid = realGetuid();
+
+        const release = await holder.acquireWithManualRelease(`${myLock}-holder`, 50, 2000);
+        process.getuid = () => realUid + 1; // pretend we are a different uid
+
+        let caught: any;
+        try
+        {
+            await contender.acquire(async () => 'done', 50, 300, `${myLock}-crossuid-test`);
+        }
+        catch (err)
+        {
+            caught = err;
+        }
+        finally
+        {
+            process.getuid = realGetuid;
+            release();
+            try { fs.unlinkSync(sockPath); } catch { /* best effort */ }
+            try { fs.rmdirSync(testDir); } catch { /* best effort */ }
+        }
+
+        assert(caught, `${contenderLogger.logs}\nThe mutex should have timed out.`);
+        const msg = String(caught?.message ?? '');
+        assert(msg.includes('Failed to acquire lock'), `Expected graceful timeout, got: ${msg}`);
+        assert(msg.includes(`owned by uid=${realUid}`), `Expected diagnostic to name the real owner uid. Got: ${msg}`);
+        assert(msg.includes(`current uid=${realUid + 1}`), `Expected diagnostic to name the current (stubbed) uid. Got: ${msg}`);
+        assert(msg.includes('sudo rm'), `Expected remediation hint. Got: ${msg}`);
+    }).timeout(testTimeoutMs);
 });
