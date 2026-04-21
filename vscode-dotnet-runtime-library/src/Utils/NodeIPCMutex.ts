@@ -55,8 +55,8 @@ export class NodeIPCMutex
      * @remarks Resolves the directory to hold the IPC handle in. Extracted as a protected method so tests
      * can override it to use a directory they fully control (e.g. for simulating permission errors).
      *
-     * On Unix, A file descriptor in /temp/ is a good option to hold this sock.
-     * In Linux, The user or system may set XDG_RUNTIME_DIR to set our applications temporary directory, so use this instead of /temp/
+     * On Unix, A file descriptor in /tmp/ is a good option to hold this sock.
+     * In Linux, The user or system may set XDG_RUNTIME_DIR to set our applications temporary directory, so use this instead of /tmp/
      * On Unix, Access to /tmp/ may be restricted, but all processes must use the same directory, so we can't condition to use another dir based on the permissions for it.
      *
      * CAVEAT: XDG_RUNTIME_DIR (typically /run/user/<uid>/) is set by pam_systemd during login sessions.
