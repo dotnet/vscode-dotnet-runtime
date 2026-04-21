@@ -15,6 +15,7 @@ import
     IDotnetAcquireResult,
     IDotnetFindPathContext,
     IDotnetListVersionsResult,
+    IDotnetLogResult,
 } from 'vscode-dotnet-runtime-library';
 
 export function activate(context: vscode.ExtensionContext)
@@ -226,8 +227,8 @@ ${stderr}`);
     {
         try
         {
-            const logPath = await vscode.commands.executeCommand<string>('dotnet.getAcquisitionLog');
-            vscode.window.showInformationMessage(`.NET acquisition log path: ${logPath ?? 'undefined'}`);
+            const result = await vscode.commands.executeCommand<IDotnetLogResult>('dotnet.getAcquisitionLog');
+            vscode.window.showInformationMessage(`.NET acquisition log path: ${result?.logPath ?? 'undefined'}`);
         }
         catch (error)
         {

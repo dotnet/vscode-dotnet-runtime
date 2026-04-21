@@ -31,6 +31,7 @@ import
     IDotnetFindPathContext,
     IDotnetListVersionsContext,
     IDotnetListVersionsResult,
+    IDotnetLogResult,
     IDotnetSearchContext,
     IDotnetSearchResult,
     IExistingPaths,
@@ -141,22 +142,23 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
 
     test('dotnet.getAcquisitionLog returns the path to the current log file', async () =>
     {
-        const logFilePath = await vscode.commands.executeCommand<string>('dotnet.getAcquisitionLog');
-        assert.exists(logFilePath, 'dotnet.getAcquisitionLog returns a value');
-        assert.isString(logFilePath, 'dotnet.getAcquisitionLog returns a string');
-        assert.isTrue(logFilePath!.length > 0, 'dotnet.getAcquisitionLog returns a non-empty path');
+        const result = await vscode.commands.executeCommand<IDotnetLogResult>('dotnet.getAcquisitionLog');
+        assert.exists(result, 'dotnet.getAcquisitionLog returns a value');
+        assert.exists(result!.logPath, 'dotnet.getAcquisitionLog result contains logPath');
+        assert.isString(result!.logPath, 'dotnet.getAcquisitionLog returns a string logPath');
+        assert.isTrue(result!.logPath.length > 0, 'dotnet.getAcquisitionLog returns a non-empty path');
         // The log file is named like `DotNetAcquisition-<extensionId>-<timestamp>.txt`
         // (see EventStreamRegistration.ts). Validate the filename shape so callers know
         // they are being handed the acquisition log rather than some other file.
-        assert.include(path.basename(logFilePath!), 'DotNetAcquisition', 'Returned path points at a DotNetAcquisition log file');
-        assert.isTrue(logFilePath!.endsWith('.txt'), 'Returned log file has a .txt extension');
+        assert.include(path.basename(result!.logPath), 'DotNetAcquisition', 'Returned path points at a DotNetAcquisition log file');
+        assert.isTrue(result!.logPath.endsWith('.txt'), 'Returned log file has a .txt extension');
         // The directory containing the log should exist after activation even if no log
         // lines have been flushed yet; ensureDirectory is invoked on flush.
-        assert.isTrue(fs.existsSync(path.dirname(logFilePath!)), 'Log directory exists');
+        assert.isTrue(fs.existsSync(path.dirname(result!.logPath)), 'Log directory exists');
         // Activation performs JSON scanning which should always produce at least one
         // log entry, so the file should exist and be non-empty after awaiting flush.
-        assert.isTrue(fs.existsSync(logFilePath!), 'Log file exists on disk');
-        const logContents = fs.readFileSync(logFilePath!, 'utf8');
+        assert.isTrue(fs.existsSync(result!.logPath), 'Log file exists on disk');
+        const logContents = fs.readFileSync(result!.logPath, 'utf8');
         assert.isTrue(logContents.length > 0, 'Log file is non-empty after activation');
     }).timeout(standardTimeoutTime);
 

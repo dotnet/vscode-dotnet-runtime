@@ -57,6 +57,7 @@ import
     IDotnetListInfo,
     IDotnetListVersionsContext,
     IDotnetListVersionsResult,
+    IDotnetLogResult,
     IDotnetSearchContext,
     IDotnetSearchResult,
     IDotnetUninstallContext,
@@ -822,11 +823,11 @@ ${JSON.stringify(commandContext)}`));
 
     const showOutputChannelRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.showAcquisitionLog}`, () => outputChannelObserver.showOutput());
 
-    const getAcquisitionLogRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.getAcquisitionLog}`, async (): Promise<string> =>
+    const getAcquisitionLogRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.getAcquisitionLog}`, async (): Promise<IDotnetLogResult> =>
     {
         // Flush any buffered log entries so the file on disk reflects the latest state.
         await loggingObserver.flush();
-        return loggingObserver.getFileLocation();
+        return { logPath: loggingObserver.getFileLocation() };
     });
 
     const ensureDependenciesRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.ensureDotnetDependencies}`, async (commandContext: IDotnetEnsureDependenciesContext) =>
