@@ -134,9 +134,10 @@ export class NodeIPCMutex
                 //   stale XDG_RUNTIME_DIR after a uid mismatch / session teardown, or parent directory not writable
                 // - EPERM: Operation not permitted — similar to EACCES but from kernel-level policy (SELinux, AppArmor, or elevated-permission mismatch).
                 //   VS Code's main process also handles EPERM alongside EACCES: https://github.com/microsoft/vscode/blob/main/src/vs/code/electron-main/main.ts
+                // - EROFS: Read-only file system — e.g. macOS Signed System Volume where "/" is mounted read-only.
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 const errorCode = error?.code;
-                if (errorCode === 'EADDRINUSE' || errorCode === 'EEXIST' || errorCode === 'EACCES' || errorCode === 'EPERM')
+                if (errorCode === 'EADDRINUSE' || errorCode === 'EEXIST' || errorCode === 'EACCES' || errorCode === 'EPERM' || errorCode === 'EROFS')
                 {
                     // Log the errno on every retry. This is essential for diagnosing field issues
                     // where the raw libuv trace gives no actionable signal. Keep the payload small

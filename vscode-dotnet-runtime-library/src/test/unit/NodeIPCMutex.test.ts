@@ -382,9 +382,9 @@ suite('NodeIPCMutex Unit Tests', function ()
     }).timeout(testTimeoutMs);
 
     /**
-     * Independent real-EACCES witness using filesystem root "/". A non-root process cannot bind
-     * in "/", so `server.listen()` emits EACCES with no chmod/mkdtemp setup required.
-     * Skipped under root and on Windows.
+     * Independent real-EACCES/EROFS witness using filesystem root "/". A non-root process cannot
+     * bind in "/", so `server.listen()` emits EACCES or EROFS (macOS read-only system volume)
+     * with no chmod/mkdtemp setup required. Skipped under root and on Windows.
      */
     test('It does not crash immediately when server.listen throws real EACCES (root directory primitive)', async function ()
     {
@@ -421,8 +421,8 @@ suite('NodeIPCMutex Unit Tests', function ()
         assert(caught, `${logger.logs}\nThe mutex should time out, not hang.`);
         const msg = String(caught?.message ?? '');
         assert(msg.includes('Failed to acquire lock'), `Expected graceful timeout, got: ${msg}`);
-        assert(!msg.startsWith('listen EACCES'), `Raw libuv EACCES should not be surfaced. Got: ${msg}`);
-        assert(logger.logs.some(l => l.includes('EACCES')),
-            `${logger.logs}\nExpected EACCES in the retry-loop logs.`);
+        assert(!msg.startsWith('listen EACCES') && !msg.startsWith('listen EROFS'), `Raw libuv error should not be surfaced. Got: ${msg}`);
+        assert(logger.logs.some(l => l.includes('EACCES') || l.includes('EROFS')),
+            `${logger.logs}\nExpected EACCES or EROFS in the retry-loop logs.`);
     }).timeout(testTimeoutMs);
 });
