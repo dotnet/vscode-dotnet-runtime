@@ -358,7 +358,7 @@ export class NodeIPCMutex
             const st = await stat(this.lockPath);
             if (st.uid !== selfUid)
             {
-                return ` Socket at ${this.lockPath} is owned by uid=${st.uid}, current uid=${selfUid}. A previous process (likely run under sudo) may have left a stale socket that cannot be cleaned up automatically. Remove it manually with: sudo rm ${this.lockPath}`;
+                return ` Socket at ${this.lockPath} is owned by uid=${st.uid}, current uid=${selfUid}. Another process running under a different user may still be holding this lock, or a previous process (likely run under sudo) may have left a stale socket that cannot be cleaned up automatically. If no other processes are using this lock and you believe the socket is stale, you may need to remove it manually with elevated permissions, for example: sudo rm ${this.lockPath}`;
             }
         }
         catch (err: any)
