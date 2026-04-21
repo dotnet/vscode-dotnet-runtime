@@ -8,9 +8,10 @@ import * as fs from 'fs';
 import { createServer } from 'net';
 import * as os from 'os';
 import * as path from 'path';
+import { FileUtilities } from '../../Utils/FileUtilities';
 import { executeWithLock } from '../../Utils/TypescriptUtilities';
 import { MockEventStream, MockNodeIPCMutex } from '../mocks/MockObjects';
-import { acquiredText, INodeIPCTestLogger, printWithLock, releasedText, wait } from './TestUtility';
+import { acquiredText, getMockAcquisitionContext, getMockUtilityContext, INodeIPCTestLogger, printWithLock, releasedText, wait } from './TestUtility';
 const assert = chai.assert;
 
 const taskAText = 'Task A';
@@ -264,16 +265,14 @@ suite('NodeIPCMutex Unit Tests', function ()
         if (os.platform() === 'win32')
         {
             this.skip();
-            return;
         }
 
         const code = await probeListenErrnoOnUnwritableParent();
 
-        if (code === 'LISTEN_SUCCEEDED')
+        if (code === 'LISTEN_SUCCEEDED' && await new FileUtilities().isElevated(getMockAcquisitionContext('runtime', ''), getMockUtilityContext()))
         {
-            // Happens when running as root: DAC is bypassed. Skip rather than falsely pass downstream.
+            // Happens when running as root: Skip rather than falsely pass downstream.
             this.skip();
-            return;
         }
 
         assert.strictEqual(code, 'EACCES',
@@ -290,14 +289,6 @@ suite('NodeIPCMutex Unit Tests', function ()
         if (os.platform() === 'win32')
         {
             this.skip();
-            return;
-        }
-
-        const probeCode = await probeListenErrnoOnUnwritableParent();
-        if (probeCode !== 'EACCES')
-        {
-            this.skip();
-            return;
         }
 
         const logger = new INodeIPCTestLogger();
@@ -345,14 +336,6 @@ suite('NodeIPCMutex Unit Tests', function ()
         if (os.platform() === 'win32')
         {
             this.skip();
-            return;
-        }
-
-        const probeCode = await probeListenErrnoOnUnwritableParent();
-        if (probeCode !== 'EACCES')
-        {
-            this.skip();
-            return;
         }
 
         const logger = new INodeIPCTestLogger();
@@ -405,10 +388,14 @@ suite('NodeIPCMutex Unit Tests', function ()
      */
     test('It does not crash immediately when server.listen throws real EACCES (root directory primitive)', async function ()
     {
-        if (os.platform() === 'win32' || (typeof process.getuid === 'function' && process.getuid() === 0))
+        if (os.platform() === 'win32')
         {
             this.skip();
-            return;
+        }
+        // Skip when running elevated: root can bind in '/' and would leak a socket file there.
+        if (await new FileUtilities().isElevated(getMockAcquisitionContext('runtime', ''), getMockUtilityContext()))
+        {
+            this.skip();
         }
 
         const logger = new INodeIPCTestLogger();
