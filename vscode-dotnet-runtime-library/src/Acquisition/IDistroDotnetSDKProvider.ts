@@ -347,7 +347,8 @@ If you would like to contribute to the list of supported distros, please visit: 
 
         for (const command of sudoCommands)
         {
-            if (command.commandParts.slice(-1)[0] !== this.missingPackageNameKey)
+            if (!command.commandParts.some(part => part.includes(this.missingPackageNameKey)) &&
+                !command.commandRoot.includes(this.missingPackageNameKey))
             {
                 validCommands.push(`"${CommandExecutor.prettifyCommandExecutorCommand(command, false)}"`);
             }
