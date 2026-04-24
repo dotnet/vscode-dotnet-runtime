@@ -18,7 +18,7 @@ Optimizations on Windows for resolving the correct install mechanisms.
 Fixes for removed installs/cleanup of installs.
 Fixes for online/offline detection with proxies.
 Improvements to logging/diagnostic information.
-Better cleanup of stale mutex and inter and intraprocess caching for installs.
+Better cleanup of stale mutex and inter/intra-process caching for installs.
 Dependency updates.
 Fixes for windows environment variables when further elevation is required to install the SDK.
 
