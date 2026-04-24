@@ -35,11 +35,46 @@ import { ICommandExecutor } from '../../Utils/ICommandExecutor';
 import { IFileUtilities } from '../../Utils/IFileUtilities';
 import { IUtilityContext } from '../../Utils/IUtilityContext';
 import { IVSCodeEnvironment } from '../../Utils/IVSCodeEnvironment';
+import { INodeIPCMutexLogger, NodeIPCMutex } from '../../Utils/NodeIPCMutex';
 import { getDotnetExecutable } from '../../Utils/TypescriptUtilities';
 import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
 import { getMockUtilityContext } from '../unit/TestUtility';
 
 const testDefaultTimeoutTimeMs = 60000;
+
+/**
+ * A NodeIPCMutex that lets tests override the IPC directory so they can use a directory they fully
+ * own and can chmod freely (or an unwritable one like "/") to produce REAL bind/listen errors from
+ * the kernel — no synthetic error injection.
+ */
+export class MockNodeIPCMutex extends NodeIPCMutex
+{
+    private readonly customDirectory?: string;
+
+    constructor(lockId: string, logger: INodeIPCMutexLogger, customDirectory?: string, lockFailureErrorMessage?: string)
+    {
+        // Temporarily stash the directory so the parent ctor (which resolves the lock path before any
+        // subclass field is set) can read it via our overridden getIPCDirectory().
+        // We cannot set `this.customDirectory` before `super()` in TypeScript, so route through a module-level holder.
+        MockNodeIPCMutex.pendingDirectory = customDirectory;
+        super(lockId, logger, lockFailureErrorMessage);
+        this.customDirectory = customDirectory;
+        MockNodeIPCMutex.pendingDirectory = undefined;
+    }
+
+    private static pendingDirectory: string | undefined;
+
+    protected override getIPCDirectory(): string
+    {
+        const dir = this.customDirectory ?? MockNodeIPCMutex.pendingDirectory;
+        return dir ?? super.getIPCDirectory();
+    }
+
+    public getLockPathForTest(): string
+    {
+        return this.lockPath;
+    }
+}
 
 export class MockExtensionContext implements IExtensionState
 {

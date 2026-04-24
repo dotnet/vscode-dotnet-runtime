@@ -66,6 +66,11 @@
 				"category": "Sample"
 			},
 			{
+				"command": "sample.dotnet.getAcquisitionLog",
+				"title": "Get the .NET runtime acquisition log file path",
+				"category": "Sample"
+			},
+			{
 				"command": "sample.dotnet.acquireGlobalSDK",
 				"title": "Install .NET SDK Globally via .NET Install Tool (Former Runtime Extension)",
 				"category": "Sample"
