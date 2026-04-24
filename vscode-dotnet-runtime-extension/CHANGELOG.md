@@ -16,7 +16,6 @@ Reduced CPU consumption on Linux when updating installs in certain scenarios - t
 Reduced memory usage and extension size.
 Optimizations on Windows for resolving the correct install mechanisms.
 Fixes for removed installs/cleanup of installs.
-Fixes for online/offline detection with proxies.
 Improvements to logging/diagnostic information.
 Better cleanup of stale mutex and inter/intra-process caching for installs.
 Dependency updates.
