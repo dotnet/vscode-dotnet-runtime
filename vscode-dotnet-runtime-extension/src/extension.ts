@@ -271,7 +271,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 commandContext.forceUpdate = true;
             }
 
-            const isOffline = !(await WebRequestWorkerSingleton.getInstance().isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream));
+            const isOffline = !(await WebRequestWorkerSingleton.getInstance().isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream, workerContext.proxyUrl));
             if (!commandContext.forceUpdate || isOffline)
             {
                 // 3.0 Breaking Change: Don't always return latest .NET runtime by default
@@ -983,7 +983,7 @@ ${JSON.stringify(commandContext)}`));
 
     async function getExistingInstallIfOffline(worker: DotnetCoreAcquisitionWorker, workerContext: IAcquisitionWorkerContext): Promise<IDotnetAcquireResult | null>
     {
-        const isOffline = !(await WebRequestWorkerSingleton.getInstance().isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream));
+        const isOffline = !(await WebRequestWorkerSingleton.getInstance().isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream, workerContext.proxyUrl));
         if (isOffline)
         {
             return getExistingInstallOffline(worker, workerContext);
@@ -1001,7 +1001,7 @@ ${JSON.stringify(commandContext)}`));
         }
         else
         {
-            if (!(await WebRequestWorkerSingleton.getInstance().isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream)))
+            if (!(await WebRequestWorkerSingleton.getInstance().isOnline(timeoutValue ?? defaultTimeoutValue, globalEventStream, workerContext.proxyUrl)))
             {
                 globalEventStream.post(new DotnetOfflineWarning(`It looks like you may be offline (can you connect to www.microsoft.com?) and have no compatible installations of .NET ${workerContext.acquisitionContext.version} for ${workerContext.acquisitionContext.requestingExtensionId ?? 'user'}.
 Installation will timeout in ${timeoutValue} seconds.`))
