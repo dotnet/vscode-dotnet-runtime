@@ -7,7 +7,7 @@ import { warn } from 'console';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import * as rimraf from 'rimraf';
+import { rimrafSync } from 'rimraf';
 import { promisify } from 'util';
 import * as vscode from 'vscode';
 import
@@ -360,7 +360,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
         const installPath = await installRuntime('9.0', 'runtime');
         assert.isTrue(fs.existsSync(installPath), 'The path exists after install');
         // remove the install executable but not the folder to simulate a corrupt install
-        rimraf.sync(installPath);
+        rimrafSync(installPath);
         assert.isFalse(fs.existsSync(installPath), 'The path does not exist after uninstall');
         // try to acquire again, and it should succeed
         const _ = await installRuntime('9.0', 'runtime');

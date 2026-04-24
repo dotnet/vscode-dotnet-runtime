@@ -29,15 +29,14 @@
 		"@types/lodash": "^4.17.13",
 		"@types/proper-lockfile": "^4.1.2",
 		"copyfiles": "^2.4.1",
-		"glob": "^7.2.0",
-		"rimraf": "^6.1.3"
+		"glob": "^7.2.0"
 	},
 	"dependencies": {
 		"@types/chai-as-promised": "^7.1.4",
 		"@types/mocha": "^9.0.0",
 		"@types/node": "^22.15.1",
 		"@types/rimraf": "3.0.2",
-		"@types/semver": "^7.3.9",
+		"rimraf": "^6.1.3",
 		"@types/shelljs": "^0.8.9",
 		"@types/vscode": "^1.101.0",
 		"@microsoft/applicationinsights-common": "^3.4.1",
