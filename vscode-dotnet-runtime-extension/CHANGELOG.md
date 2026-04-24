@@ -20,6 +20,8 @@ Fixes for online/offline detection with proxies.
 Improvements to logging/diagnostic information.
 Better cleanup of stale mutex and inter/intra-process caching for installs.
 Dependency updates.
+Improvements to mutex handling on unix.
+Adds `dotnet.getAcquisitionLog` command for extensions to call to expose our log.
 Fixes for windows environment variables when further elevation is required to install the SDK.
 
 ## [3.0.0] - 2025-12-8
