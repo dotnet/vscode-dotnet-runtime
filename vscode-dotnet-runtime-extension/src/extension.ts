@@ -635,99 +635,101 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
      */
     const dotnetFindPathRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.findPath}`, async (commandContext: IDotnetFindPathContext): Promise<IDotnetAcquireResult | undefined> =>
     {
-        globalEventStream.post(new DotnetFindPathCommandInvoked(`The find path command was invoked.`, commandContext));
-
-        if (!commandContext.acquireContext.mode || !commandContext.acquireContext.requestingExtensionId || !commandContext.acquireContext.version || !commandContext.acquireContext.architecture)
+        const findPathResult = await callWithErrorHandling<Promise<IDotnetAcquireResult | undefined>>(async () =>
         {
-            throw new EventCancellationError('BadContextualFindPathError', `The find path request was missing required information: a mode, version, architecture, and requestingExtensionId.`);
-        }
-        const requestedArchitecture = commandContext.acquireContext.architecture;
+            globalEventStream.post(new DotnetFindPathCommandInvoked(`The find path command was invoked.`, commandContext));
 
-        globalEventStream.post(new DotnetFindPathLookupSetting(`Looking up vscode setting.`));
-        const workerContext = getAcquisitionWorkerContext(commandContext.acquireContext.mode, commandContext.acquireContext);
-        const existingPath = await resolveExistingPathIfExists(existingPathConfigWorker, commandContext.acquireContext, workerContext, utilContext, commandContext.versionSpecRequirement);
-
-        // The setting is not intended to be used as the SDK, only the runtime for extensions to run on. Ex: PowerShell policy doesn't allow us to install the runtime, let users set the path manually.
-        if (existingPath && commandContext.acquireContext.mode !== 'sdk')
-        {
-            // We don't need to validate the existing path as it gets validated + tracked in the lookup logic already.
-            globalEventStream.post(new DotnetFindPathSettingFound(`Found vscode setting.`));
-            void loggingObserver.flush();
-            return existingPath;
-        }
-
-        const validator = new DotnetConditionValidator(workerContext, utilContext);
-        const finder = new DotnetHostPathFinder(workerContext, utilContext);
-
-        const dotnetOnShellSpawn = (await finder.findDotnetFastFromListOnly(requestedArchitecture)) ?? '';
-        if (dotnetOnShellSpawn)
-        {
-            const validatedShellSpawn = await getPathIfValid(dotnetOnShellSpawn, validator, commandContext);
-            if (validatedShellSpawn)
+            if (!commandContext.acquireContext.mode || !commandContext.acquireContext.requestingExtensionId || !commandContext.acquireContext.version || !commandContext.acquireContext.architecture)
             {
-                void loggingObserver.flush();
-                return { dotnetPath: validatedShellSpawn };
+                throw new EventCancellationError('BadContextualFindPathError', `The find path request was missing required information: a mode, version, architecture, and requestingExtensionId.`);
             }
-        }
+            const requestedArchitecture = commandContext.acquireContext.architecture;
 
-        const dotnetsOnPATH = await finder.findRawPathEnvironmentSetting(true, requestedArchitecture);
-        for (const dotnetPath of dotnetsOnPATH ?? [])
-        {
-            const validatedPATH = await getPathIfValid(dotnetPath, validator, commandContext);
-            if (validatedPATH)
+            globalEventStream.post(new DotnetFindPathLookupSetting(`Looking up vscode setting.`));
+            const workerContext = getAcquisitionWorkerContext(commandContext.acquireContext.mode, commandContext.acquireContext);
+            const existingPath = await resolveExistingPathIfExists(existingPathConfigWorker, commandContext.acquireContext, workerContext, utilContext, commandContext.versionSpecRequirement);
+
+            // The setting is not intended to be used as the SDK, only the runtime for extensions to run on. Ex: PowerShell policy doesn't allow us to install the runtime, let users set the path manually.
+            if (existingPath && commandContext.acquireContext.mode !== 'sdk')
             {
+                // We don't need to validate the existing path as it gets validated + tracked in the lookup logic already.
+                globalEventStream.post(new DotnetFindPathSettingFound(`Found vscode setting.`));
                 void loggingObserver.flush();
-                return { dotnetPath: validatedPATH };
+                return existingPath;
             }
-        }
 
-        const dotnetsOnRealPATH = await finder.findRealPathEnvironmentSetting(true, requestedArchitecture);
-        for (const dotnetPath of dotnetsOnRealPATH ?? [])
-        {
-            const validatedRealPATH = await getPathIfValid(dotnetPath, validator, commandContext);
-            if (validatedRealPATH)
+            const validator = new DotnetConditionValidator(workerContext, utilContext);
+            const finder = new DotnetHostPathFinder(workerContext, utilContext);
+
+            const dotnetOnShellSpawn = (await finder.findDotnetFastFromListOnly(requestedArchitecture)) ?? '';
+            if (dotnetOnShellSpawn)
             {
-                void loggingObserver.flush();
-                return { dotnetPath: validatedRealPATH };
-            }
-        }
-
-        const dotnetOnROOT = await finder.findDotnetRootPath(commandContext.acquireContext.architecture);
-        const validatedRoot = await getPathIfValid(dotnetOnROOT, validator, commandContext);
-        if (validatedRoot)
-        {
-            void loggingObserver.flush();
-            return { dotnetPath: validatedRoot };
-        }
-
-        if (commandContext.acquireContext.mode !== 'sdk' && !commandContext.disableLocalLookup)
-        {
-            const extensionManagedRuntimeRecordPaths = await finder.findExtensionManagedRuntimes();
-            const filteredExtensionManagedRuntimeRecordPaths = validator.filterValidPaths(extensionManagedRuntimeRecordPaths, commandContext);
-            for (const dotnetPath of filteredExtensionManagedRuntimeRecordPaths ?? [])
-            {
-                const validatedExistingManagedPath = await getPathIfValid(dotnetPath.path, validator, commandContext);
-                if (validatedExistingManagedPath)
+                const validatedShellSpawn = await getPathIfValid(dotnetOnShellSpawn, validator, commandContext);
+                if (validatedShellSpawn)
                 {
                     void loggingObserver.flush();
-                    return { dotnetPath: dotnetPath.path };
+                    return { dotnetPath: validatedShellSpawn };
                 }
             }
-        }
 
-        const dotnetOnHostfxrRecord = await finder.findHostInstallPaths(commandContext.acquireContext.architecture);
-        for (const dotnetPath of dotnetOnHostfxrRecord ?? [])
-        {
-            const validatedHostfxr = await getPathIfValid(dotnetPath, validator, commandContext);
-            if (validatedHostfxr && process.env.DOTNET_INSTALL_TOOL_SKIP_HOSTFXR !== 'true')
+            const dotnetsOnPATH = await finder.findRawPathEnvironmentSetting(true, requestedArchitecture);
+            for (const dotnetPath of dotnetsOnPATH ?? [])
+            {
+                const validatedPATH = await getPathIfValid(dotnetPath, validator, commandContext);
+                if (validatedPATH)
+                {
+                    void loggingObserver.flush();
+                    return { dotnetPath: validatedPATH };
+                }
+            }
+
+            const dotnetsOnRealPATH = await finder.findRealPathEnvironmentSetting(true, requestedArchitecture);
+            for (const dotnetPath of dotnetsOnRealPATH ?? [])
+            {
+                const validatedRealPATH = await getPathIfValid(dotnetPath, validator, commandContext);
+                if (validatedRealPATH)
+                {
+                    void loggingObserver.flush();
+                    return { dotnetPath: validatedRealPATH };
+                }
+            }
+
+            const dotnetOnROOT = await finder.findDotnetRootPath(commandContext.acquireContext.architecture);
+            const validatedRoot = await getPathIfValid(dotnetOnROOT, validator, commandContext);
+            if (validatedRoot)
             {
                 void loggingObserver.flush();
-                return { dotnetPath: validatedHostfxr };
+                return { dotnetPath: validatedRoot };
             }
-        }
 
-        void loggingObserver.flush();
-        globalEventStream.post(new DotnetFindPathNoPathMetCondition(`Could not find a single host path that met the conditions.
+            if (commandContext.acquireContext.mode !== 'sdk' && !commandContext.disableLocalLookup)
+            {
+                const extensionManagedRuntimeRecordPaths = await finder.findExtensionManagedRuntimes();
+                const filteredExtensionManagedRuntimeRecordPaths = validator.filterValidPaths(extensionManagedRuntimeRecordPaths, commandContext);
+                for (const dotnetPath of filteredExtensionManagedRuntimeRecordPaths ?? [])
+                {
+                    const validatedExistingManagedPath = await getPathIfValid(dotnetPath.path, validator, commandContext);
+                    if (validatedExistingManagedPath)
+                    {
+                        void loggingObserver.flush();
+                        return { dotnetPath: dotnetPath.path };
+                    }
+                }
+            }
+
+            const dotnetOnHostfxrRecord = await finder.findHostInstallPaths(commandContext.acquireContext.architecture);
+            for (const dotnetPath of dotnetOnHostfxrRecord ?? [])
+            {
+                const validatedHostfxr = await getPathIfValid(dotnetPath, validator, commandContext);
+                if (validatedHostfxr && process.env.DOTNET_INSTALL_TOOL_SKIP_HOSTFXR !== 'true')
+                {
+                    void loggingObserver.flush();
+                    return { dotnetPath: validatedHostfxr };
+                }
+            }
+
+            void loggingObserver.flush();
+            globalEventStream.post(new DotnetFindPathNoPathMetCondition(`Could not find a single host path that met the conditions.
 existingPath : ${existingPath?.dotnetPath}
 onPath : ${JSON.stringify(dotnetsOnPATH)}
 onRealPath : ${JSON.stringify(dotnetsOnRealPATH)}
@@ -736,7 +738,10 @@ onHostfxrRecord : ${JSON.stringify(dotnetOnHostfxrRecord)}
 
 Requirement:
 ${JSON.stringify(commandContext)}`));
-        return undefined;
+            return undefined;
+        }, getIssueContext(existingPathConfigWorker)(commandContext?.acquireContext?.errorConfiguration, commandKeys.findPath));
+
+        return findPathResult;
     });
 
     async function getPathIfValid(path: string | undefined, validator: IDotnetConditionValidator, commandContext: IDotnetFindPathContext): Promise<string | undefined>

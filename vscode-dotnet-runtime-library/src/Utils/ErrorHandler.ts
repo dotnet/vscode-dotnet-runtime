@@ -3,7 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as fs from 'fs';
-import * as open from 'open';
+import open = require('open');
 import { DotnetCoreAcquisitionWorker } from '../Acquisition/DotnetCoreAcquisitionWorker';
 import { GetDotnetInstallInfo } from '../Acquisition/DotnetInstall';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';

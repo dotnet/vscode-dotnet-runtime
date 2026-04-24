@@ -2,7 +2,7 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
-import { rm } from 'fs/promises';
+import { rm, stat } from 'fs/promises';
 import { createConnection, createServer, Server } from 'net';
 import * as os from 'os';
 import * as path from 'path';
@@ -34,7 +34,7 @@ export class INodeIPCMutexLogger
  */
 export class NodeIPCMutex
 {
-    private readonly lockPath: string;
+    protected readonly lockPath: string;
     private readonly supplementalErrorInfo: string;
     private server?: Server;
     private hasCleanedUpBefore = false;
@@ -51,19 +51,34 @@ export class NodeIPCMutex
         this.lockPath = this.getIPCHandlePath(lockId);
     }
 
+    /**
+     * @remarks Resolves the directory to hold the IPC handle in. Extracted as a protected method so tests
+     * can override it to use a directory they fully control (e.g. for simulating permission errors).
+     *
+     * On Unix, A file descriptor in /tmp/ is a good option to hold this sock.
+     * In Linux, The user or system may set XDG_RUNTIME_DIR to set our applications temporary directory, so use this instead of /tmp/
+     * On Unix, Access to /tmp/ may be restricted, but all processes must use the same directory, so we can't condition to use another dir based on the permissions for it.
+     *
+     * CAVEAT: XDG_RUNTIME_DIR (typically /run/user/<uid>/) is set by pam_systemd during login sessions.
+     * It is NOT set when SSH is configured without PAM (UsePAM no), when using su/sudo -u, inside containers
+     * without systemd, in cron jobs, or in CI/CD environments. If one VS Code process has XDG_RUNTIME_DIR
+     * set and another doesn't, they will create sockets in different directories (/run/user/<uid>/ vs /tmp/),
+     * silently breaking cross-process mutex isolation. VS Code's own IPC code has the same limitation:
+     * https://github.com/microsoft/vscode/blob/main/src/vs/base/parts/ipc/node/ipc.net.ts
+     *
+     * On Windows, '\\\\.\\pipe\\` is a Special File System to get a Named Pipe (File Descriptors won't work)
+     * https://nodejs.org/docs/latest/api/net.html#ipc-support:~:text=On%20Windows%2C%20the,owning%20process%20exits.
+     */
+    protected getIPCDirectory(): string
+    {
+        return os.platform() === 'win32' ? `\\\\.\\pipe\\` :
+            os.platform() === 'linux' && process.env.XDG_RUNTIME_DIR ? process.env.XDG_RUNTIME_DIR as string : os.tmpdir();
+    }
+
     private getIPCHandlePath(id: string): string
     {
         const lengthLimit = os.platform() === 'win32' ? 256 : 104; // Mac 10.9 and FreeBSD have their own length limit.
-
-        // On Unix, A file descriptor in /temp/ is a good option to hold this sock.
-        // In Linux, The user or system may set XDG_RUNTIME_DIR to set our applications temporary directory, so use this instead of /temp/
-        // On Unix, Access to /tmp/ may be restricted, but all processes must use the same directory, so we can't condition to use another dir based on the permissions for it.
-
-        // On Windows, '\\\\.\\pipe\\` is a Special File System to get a Named Pipe (File Descriptors won't work)
-        // https://nodejs.org/docs/latest/api/net.html#ipc-support:~:text=On%20Windows%2C%20the,owning%20process%20exits.
-
-        const ipcPathDir = os.platform() === 'win32' ? `\\\\.\\pipe\\` :
-            os.platform() === 'linux' && process.env.XDG_RUNTIME_DIR ? process.env.XDG_RUNTIME_DIR as string : os.tmpdir();
+        const ipcPathDir = this.getIPCDirectory();
 
         if (id.length > (lengthLimit - ipcPathDir.length))
         {
@@ -112,12 +127,28 @@ export class NodeIPCMutex
             }
             catch (error: any)
             {
+                // These are the retryable error codes from server.listen():
+                // - EADDRINUSE: Another process or async task in this process is currently listening on the socket path. The lock is held.
+                // - EEXIST: The socket file already exists on disk (stale leftover from a dead process on some OS/filesystem combos).
+                // - EACCES: Permission denied creating/binding the socket — e.g. /run/user/<uid>/ permissions changed,
+                //   stale XDG_RUNTIME_DIR after a uid mismatch / session teardown, or parent directory not writable
+                // - EPERM: Operation not permitted — similar to EACCES but from kernel-level policy (SELinux, AppArmor, or elevated-permission mismatch).
+                //   VS Code's main process also handles EPERM alongside EACCES: https://github.com/microsoft/vscode/blob/main/src/vs/code/electron-main/main.ts
+                // - EROFS: Read-only file system — e.g. macOS Signed System Volume where "/" is mounted read-only.
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                if (error?.code === 'EADDRINUSE' || error?.code === 'EEXIST' || error?.code === 'EACCESS')
+                const errorCode = error?.code;
+                if (errorCode === 'EADDRINUSE' || errorCode === 'EEXIST' || errorCode === 'EACCES' || errorCode === 'EPERM' || errorCode === 'EROFS')
                 {
+                    // Log the errno on every retry. This is essential for diagnosing field issues
+                    // where the raw libuv trace gives no actionable signal. Keep the payload small
+                    // to avoid flooding logs.
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    this.logger.log(`Action: ${actionId} Lock acquire retryable error: ${errorCode} (${String(error?.message ?? '')}) retry ${retries + 1}/${maxRetryCountToEndAtRoughlyTimeoutTime}`);
+
                     if (retries >= maxRetryCountToEndAtRoughlyTimeoutTime)
                     {
-                        throw new Error(`Action: ${actionId} Failed to acquire lock ${this.lockPath} after ${retries} retries out of ${maxRetryCountToEndAtRoughlyTimeoutTime} total available attempts.\n${this.supplementalErrorInfo}`);
+                        const diagnostic = await this.crossUidDiagnostic(actionId);
+                        throw new Error(`Action: ${actionId} Failed to acquire lock ${this.lockPath} after ${retries} retries out of ${maxRetryCountToEndAtRoughlyTimeoutTime} total available attempts. Last error: ${errorCode}.${diagnostic}\n${this.supplementalErrorInfo}`);
                     }
 
                     if (await this.isLockStale(actionId))
@@ -227,18 +258,20 @@ export class NodeIPCMutex
         catch (error: any) // Handle synchronous errors from the socket connection.
         {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            if (error?.code === 'ECONNREFUSED') // The process is dead - it may have been pkilled and did not drop the file handle.
+            if (error?.code === 'ECONNREFUSED' || error?.code === 'ECONNRESET') // The process is dead - it may have been pkilled and did not drop the file handle, or died mid-handshake.
             {
-                this.logger.log(`Action: ${actionId} found Lock is stale, as ECONNREFUSED detected.`);
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                this.logger.log(`Action: ${actionId} found Lock is stale, as ${error?.code} detected.`);
                 return true; // We can acquire the lock, and delete the file handle.
             }
 
-            // Expected errors:
-            // - ENOENT: The file descriptor doesn't exist, which means the process holding it has died.
-            // -> Technically, this means it's stale, but the only action to do if it's stale is delete it, but it already is deleted.
+            // Expected errors (non-stale):
+            // - ENOENT: The socket file doesn't exist. Technically stale, but the only action
+            //   would be to delete it, and it already is deleted.
+            // - EACCES / EPERM: We can't access the socket. Possible causes include a restrictive
+            //   parent directory, socket file owned by another user, or an OS policy denial. Not
+            //   evidence of staleness, so we cannot safely delete the file.
 
-            // - EPERM / EACCESS: The file descriptor exists, but we don't have permission to access it. This is expected if the process holding it is still alive and running it under elevated permissions (chmod failed)
-            // - EPIPE: This might be possible, but I haven't seen it happen yet.
             this.logger.log(`Action: ${actionId} Unable to acquire lock: ${JSON.stringify(error ?? '')}.`);
             return false; // We don't know what happened, but we can't acquire the lock.
         }
@@ -295,6 +328,55 @@ export class NodeIPCMutex
     {
         // Could implement exponential back-off here if we wanted to.
         return new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+
+    /**
+     * When we give up acquiring the lock, add a diagnostic hint if the socket on disk is owned
+     * by a different uid than the current process. This is a common silent cause of permanent
+     * lock contention: a process that ran under `sudo` created a root-owned socket, crashed
+     * without unlinking it, and now non-elevated processes cannot connect (EACCES) nor unlink
+     * (EPERM on sticky-bit /tmp). `fs.stat` works cross-uid because it only requires read/search
+     * on the parent directory, not on the socket file itself. Unix only; Windows named pipes
+     * do not have POSIX uid ownership.
+     *
+     * This is a best-effort diagnostic: any failure here (missing socket, unreadable parent dir,
+     * unexpected platform, stat ENOTSUP on exotic filesystems) must not mask the original
+     * acquisition failure. Errors are logged at debug level and swallowed.
+     */
+    private async crossUidDiagnostic(actionId: string): Promise<string>
+    {
+        if (os.platform() === 'win32')
+        {
+            // Named pipes on Windows have no POSIX uid ownership.
+            return '';
+        }
+
+        const selfUid = process.getuid!();
+
+        try
+        {
+            const st = await stat(this.lockPath);
+            if (st.uid !== selfUid)
+            {
+                return ` Socket at ${this.lockPath} is owned by uid=${st.uid}, current uid=${selfUid}.
+Another process running under a different user may still be holding this lock, or a previous process (likely run under sudo) may have left a stale socket that cannot be cleaned up automatically.
+If no other processes are using this lock and you believe the socket is stale, you may need to remove it manually with elevated permissions, for example: sudo rm ${this.lockPath}`;
+            }
+        }
+        catch (err: any)
+        {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            const code = err?.code ?? 'UNKNOWN';
+            // ENOENT: socket was unlinked between acquisition failure and diagnostic; benign.
+            // EACCES / EPERM: parent directory denies search; we can't classify, fall through silently.
+            // Anything else: still not worth failing over; log so it's visible if someone investigates.
+            if (code !== 'ENOENT')
+            {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                this.logger.log(`Action: ${actionId} crossUidDiagnostic stat failed: ${code} (${String(err?.message ?? '')})`);
+            }
+        }
+        return '';
     }
 }
 

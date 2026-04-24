@@ -31,7 +31,7 @@ import { EventStreamNodeIPCMutexLoggerWrapper } from '../Utils/EventStreamNodeIP
 import { getAssumedInstallInfo } from '../Utils/InstallIdUtilities';
 import { NodeIPCMutex } from '../Utils/NodeIPCMutex';
 import { deserializeMapOfSets, serializeMapOfSets } from '../Utils/SerializationHelpers';
-import { executeWithLock, getDotnetExecutable } from '../Utils/TypescriptUtilities';
+import { acquireWithManualReleaseOrDisabled, executeWithLock, getDotnetExecutable } from '../Utils/TypescriptUtilities';
 import
 {
     DotnetInstall,
@@ -78,10 +78,13 @@ export class InstallTrackerSingleton
      */
     protected acquirePermanentSessionMutex(): void
     {
-        const logger = new EventStreamNodeIPCMutexLoggerWrapper(this.eventStream, InstallTrackerSingleton.sessionId);
-        const mutex = new NodeIPCMutex(InstallTrackerSingleton.sessionId, logger, '');
-
-        mutex.acquireWithManualRelease(InstallTrackerSingleton.sessionId, InstallTrackerSingleton.SESSION_MUTEX_PING_DURATION, InstallTrackerSingleton.SESSION_MUTEX_ACQUIRE_TIMEOUT_MS).catch((error) =>
+        acquireWithManualReleaseOrDisabled(
+            this.eventStream,
+            InstallTrackerSingleton.sessionId,
+            InstallTrackerSingleton.sessionId,
+            InstallTrackerSingleton.SESSION_MUTEX_PING_DURATION,
+            InstallTrackerSingleton.SESSION_MUTEX_ACQUIRE_TIMEOUT_MS
+        ).catch((error) =>
         {
             this.eventStream.post(new SessionMutexAcquisitionFailed(`Failed to acquire permanent mutex for session ${InstallTrackerSingleton.sessionId}: ${error}`));
         }).then((resolved) =>

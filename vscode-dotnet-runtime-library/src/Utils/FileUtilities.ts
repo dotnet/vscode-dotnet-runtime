@@ -341,7 +341,9 @@ export class FileUtilities extends IFileUtilities
             try
             {
                 const commandResult = await executor.execute(CommandExecutor.makeCommand('id', ['-u']), { dotnetInstallToolCacheTtlMs: SYSTEM_INFORMATION_CACHE_DURATION_MS }, false);
-                return commandResult.status === '0';
+                // `id -u` exits 0 regardless of uid; its stdout is the effective uid. Root is uid 0.
+                // Require both the command to have succeeded AND the uid stdout to be '0'.
+                return commandResult.status === '0' && commandResult.stdout.trim() === '0';
             }
             catch (error: any)
             {
