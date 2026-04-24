@@ -47,6 +47,7 @@ export * from './IDotnetAcquireContext';
 export * from './IDotnetAcquireResult';
 export * from './IDotnetEnsureDependenciesContext';
 export * from './IDotnetFindPathContext';
+export * from './IDotnetLogResult';
 export * from './IDotnetListVersionsContext';
 export * from './IDotnetSearchContext';
 export * from './IDotnetSearchResult';

@@ -31,6 +31,7 @@ import
     IDotnetFindPathContext,
     IDotnetListVersionsContext,
     IDotnetListVersionsResult,
+    IDotnetLogResult,
     IDotnetSearchContext,
     IDotnetSearchResult,
     IExistingPaths,
@@ -137,6 +138,28 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
         // setKeysForSync should have been called with an empty array during activation
         // to prevent machine-specific install tracking state from leaking to dev containers
         assert.deepEqual((mockState as any).syncedKeys, [], 'setKeysForSync should be called with empty array to prevent syncing install state');
+    }).timeout(standardTimeoutTime);
+
+    test('dotnet.getAcquisitionLog returns the path to the current log file', async () =>
+    {
+        const result = await vscode.commands.executeCommand<IDotnetLogResult>('dotnet.getAcquisitionLog');
+        assert.exists(result, 'dotnet.getAcquisitionLog returns a value');
+        assert.exists(result!.logPath, 'dotnet.getAcquisitionLog result contains logPath');
+        assert.isString(result!.logPath, 'dotnet.getAcquisitionLog returns a string logPath');
+        assert.isTrue(result!.logPath.length > 0, 'dotnet.getAcquisitionLog returns a non-empty path');
+        // The log file is named like `DotNetAcquisition-<extensionId>-<timestamp>.txt`
+        // (see EventStreamRegistration.ts). Validate the filename shape so callers know
+        // they are being handed the acquisition log rather than some other file.
+        assert.include(path.basename(result!.logPath), 'DotNetAcquisition', 'Returned path points at a DotNetAcquisition log file');
+        assert.isTrue(result!.logPath.endsWith('.txt'), 'Returned log file has a .txt extension');
+        // The directory containing the log should exist after activation even if no log
+        // lines have been flushed yet; ensureDirectory is invoked on flush.
+        assert.isTrue(fs.existsSync(path.dirname(result!.logPath)), 'Log directory exists');
+        // Activation performs JSON scanning which should always produce at least one
+        // log entry, so the file should exist and be non-empty after awaiting flush.
+        assert.isTrue(fs.existsSync(result!.logPath), 'Log file exists on disk');
+        const logContents = fs.readFileSync(result!.logPath, 'utf8');
+        assert.isTrue(logContents.length > 0, 'Log file is non-empty after activation');
     }).timeout(standardTimeoutTime);
 
     async function installRuntime(dotnetVersion: string, installMode: DotnetInstallMode, arch?: string)

@@ -57,6 +57,7 @@ import
     IDotnetListInfo,
     IDotnetListVersionsContext,
     IDotnetListVersionsResult,
+    IDotnetLogResult,
     IDotnetSearchContext,
     IDotnetSearchResult,
     IDotnetUninstallContext,
@@ -122,6 +123,7 @@ namespace commandKeys
     export const recommendedVersion = 'recommendedVersion'
     export const globalAcquireSDKPublic = 'acquireGlobalSDKPublic';
     export const showAcquisitionLog = 'showAcquisitionLog';
+    export const getAcquisitionLog = 'getAcquisitionLog';
     export const ensureDotnetDependencies = 'ensureDotnetDependencies';
     export const reportIssue = 'reportIssue';
     export const resetData = 'resetData';
@@ -821,6 +823,13 @@ ${JSON.stringify(commandContext)}`));
 
     const showOutputChannelRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.showAcquisitionLog}`, () => outputChannelObserver.showOutput());
 
+    const getAcquisitionLogRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.getAcquisitionLog}`, async (): Promise<IDotnetLogResult> =>
+    {
+        // Flush any buffered log entries so the file on disk reflects the latest state.
+        await loggingObserver.flush();
+        return { logPath: loggingObserver.getFileLocation() };
+    });
+
     const ensureDependenciesRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.ensureDotnetDependencies}`, async (commandContext: IDotnetEnsureDependenciesContext) =>
     {
         await callWithErrorHandling(async () =>
@@ -1024,6 +1033,7 @@ Installation will timeout in ${timeoutValue} seconds.`))
         dotnetUninstallAllRegistration,
         dotnetForceUpdateRegistration,
         showOutputChannelRegistration,
+        getAcquisitionLogRegistration,
         ensureDependenciesRegistration,
         reportIssueRegistration,
         resetUpdateTimerInternalRegistration,
