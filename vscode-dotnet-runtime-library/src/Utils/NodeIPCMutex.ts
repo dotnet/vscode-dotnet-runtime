@@ -2,7 +2,8 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
-import { rm, stat } from 'fs/promises';
+import { mkdir, rm, stat } from 'fs/promises';
+import { existsSync } from 'fs';
 import { createConnection, createServer, Server } from 'net';
 import * as os from 'os';
 import * as path from 'path';
@@ -149,6 +150,17 @@ export class NodeIPCMutex
                     {
                         const diagnostic = await this.crossUidDiagnostic(actionId);
                         throw new Error(`Action: ${actionId} Failed to acquire lock ${this.lockPath} after ${retries} retries out of ${maxRetryCountToEndAtRoughlyTimeoutTime} total available attempts. Last error: ${errorCode}.${diagnostic}\n${this.supplementalErrorInfo}`);
+                    }
+
+                    // If the parent directory for the socket does not exist (e.g. XDG_RUNTIME_DIR
+                    // points to a path that hasn't been created yet), try to create it before retrying.
+                    // This is a common scenario in containers, SSH sessions without PAM, and CI/CD.
+                    if (await this.ensureIPCDirectoryExists(actionId))
+                    {
+                        // Directory was just created — retry immediately so the next listen()
+                        // attempt can succeed without burning through more retries.
+                        ++retries;
+                        continue;
                     }
 
                     if (await this.isLockStale(actionId))
@@ -331,6 +343,41 @@ export class NodeIPCMutex
     }
 
     /**
+     * If the parent directory of the lock socket does not exist, attempt to create it.
+     * This handles the case where XDG_RUNTIME_DIR is set to a path that hasn't been
+     * created yet (common in containers, SSH sessions without PAM, cron jobs, and CI).
+     *
+     * @returns true if the directory was missing and was successfully created, false otherwise.
+     */
+    private async ensureIPCDirectoryExists(actionId: string): Promise<boolean>
+    {
+        if (os.platform() === 'win32')
+        {
+            return false; // Windows named-pipe paths are virtual; no directory to create.
+        }
+
+        const parentDir = path.dirname(this.lockPath);
+        if (existsSync(parentDir))
+        {
+            return false; // Directory already exists; nothing to do.
+        }
+
+        try
+        {
+            this.logger.log(`Action: ${actionId} IPC directory does not exist, attempting to create: ${parentDir}`);
+            await mkdir(parentDir, { recursive: true, mode: 0o700 });
+            this.logger.log(`Action: ${actionId} Created IPC directory: ${parentDir}`);
+            return true;
+        }
+        catch (mkdirErr: any)
+        {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            this.logger.log(`Action: ${actionId} Failed to create IPC directory ${parentDir}: ${mkdirErr?.code ?? ''} ${String(mkdirErr?.message ?? '')}`);
+            return false;
+        }
+    }
+
+    /**
      * When we give up acquiring the lock, add a diagnostic hint if the socket on disk is owned
      * by a different uid than the current process. This is a common silent cause of permanent
      * lock contention: a process that ran under `sudo` created a root-owned socket, crashed
@@ -379,4 +426,3 @@ If no other processes are using this lock and you believe the socket is stale, y
         return '';
     }
 }
-

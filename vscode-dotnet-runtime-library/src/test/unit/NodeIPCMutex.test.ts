@@ -427,9 +427,104 @@ suite('NodeIPCMutex Unit Tests', function ()
     }).timeout(testTimeoutMs);
 
     /**
-     * When acquisition times out and the socket on disk is owned by a different uid than the
-     * current process, the final error must include a diagnostic pointing at the cross-uid
-     * ownership mismatch (the real-world cause: a prior `sudo` run left a root-owned socket).
+     * When XDG_RUNTIME_DIR points to a directory that does not exist, server.listen() throws
+     * EACCES because the parent directory is missing. The mutex should recover by creating the
+     * missing directory and then successfully acquire the lock.
+     */
+    test('It recovers when XDG_RUNTIME_DIR points to a nonexistent directory by creating it', async function ()
+    {
+        if (os.platform() === 'win32')
+        {
+            this.skip();
+        }
+
+        const logger = new INodeIPCTestLogger();
+        const myLock = `${randomLockPrefix}-XN`;
+        const nonexistentDir = path.join(os.tmpdir(), `nodeipc-xdg-nonexist-${Date.now()}`);
+
+        // Ensure it really doesn't exist
+        try { fs.rmdirSync(nonexistentDir, { recursive: true }); } catch { /* best effort */ }
+        assert(!fs.existsSync(nonexistentDir), `Precondition: ${nonexistentDir} must not exist`);
+
+        const mutex = new MockNodeIPCMutex(myLock, logger, nonexistentDir);
+        const sockPath = mutex.getLockPathForTest();
+
+        let acquired = false;
+        let caught: any;
+        try
+        {
+            await mutex.acquire(async () =>
+            {
+                acquired = true;
+                return 'done';
+            }, 50, 3000, `${myLock}-xdg-nonexist-test`);
+        }
+        catch (err)
+        {
+            caught = err;
+        }
+        finally
+        {
+            try { fs.unlinkSync(sockPath); } catch { /* best effort */ }
+            try { fs.rmdirSync(nonexistentDir); } catch { /* best effort */ }
+        }
+
+        assert(!caught, `${logger.logs}\nThe mutex should have recovered by creating the directory. Error: ${String(caught?.message ?? '')}`);
+        assert(acquired, `${logger.logs}\nThe mutex should have acquired the lock after creating the missing directory.`);
+        assert(logger.logs.some(l => l.includes('IPC directory does not exist')),
+            `${logger.logs}\nExpected log about creating the missing IPC directory.`);
+        assert(logger.logs.some(l => l.includes('Created IPC directory')),
+            `${logger.logs}\nExpected log confirming directory creation.`);
+    }).timeout(testTimeoutMs);
+
+    /**
+     * When XDG_RUNTIME_DIR is undefined on Linux, the mutex should fall back to os.tmpdir()
+     * (typically /tmp) and work correctly.
+     */
+    test('It acquires the lock when XDG_RUNTIME_DIR is undefined (falls back to tmpdir)', async function ()
+    {
+        if (os.platform() === 'win32')
+        {
+            this.skip();
+        }
+
+        const origXDG = process.env.XDG_RUNTIME_DIR;
+        delete process.env.XDG_RUNTIME_DIR;
+
+        const logger = new INodeIPCTestLogger();
+        const myLock = `${randomLockPrefix}-XU`;
+
+        let acquired = false;
+        let caught: any;
+        try
+        {
+            const mutex = new MockNodeIPCMutex(myLock, logger);
+            const lockPath = mutex.getLockPathForTest();
+            assert(lockPath.startsWith(os.tmpdir()), `Lock path should be in tmpdir when XDG is unset, got: ${lockPath}`);
+
+            await mutex.acquire(async () =>
+            {
+                acquired = true;
+                return 'done';
+            }, 50, 3000, `${myLock}-xdg-undef-test`);
+        }
+        catch (err)
+        {
+            caught = err;
+        }
+        finally
+        {
+            if (origXDG !== undefined)
+            {
+                process.env.XDG_RUNTIME_DIR = origXDG;
+            }
+        }
+
+        assert(!caught, `${logger.logs}\nThe mutex should work when XDG_RUNTIME_DIR is undefined. Error: ${String(caught?.message ?? '')}`);
+        assert(acquired, `${logger.logs}\nThe mutex should have acquired the lock using tmpdir fallback.`);
+    }).timeout(testTimeoutMs);
+
+    /**
      *
      * We cannot chown a file to another uid without root, so we stub `process.getuid` to return
      * a value different from the file's real owner. A held mutex (via acquireWithManualRelease)
