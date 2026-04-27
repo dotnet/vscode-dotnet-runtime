@@ -1,0 +1,220 @@
+Arguments: 
+  C:\Program Files\nodejs\node.exe C:\Users\noahgilson\AppData\Roaming\npm\node_modules\yarn\bin\yarn.js install
+
+PATH: 
+  C:\Program Files\PowerShell\7;C:\Python313\Scripts\;C:\Python313\;C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin;C:\Python311\Scripts\;C:\Python311\;C:\Program Files (x86)\VMware\VMware Workstation\bin\;C:\Program Files\Microsoft\jdk-11.0.16.101-hotspot\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files\Microsoft SQL Server\150\Tools\Binn\;C:\Program Files\GitHub CLI\;C:\ProgramData\chocolatey\bin;C:\Program Files\CMake\bin;C:\Program Files\nodejs\;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;C:\Program Files\Microsoft SQL Server\170\Tools\Binn\;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Program Files\Git\cmd;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Program Files\PowerShell\7\;;C:\Program Files\Docker\Docker\resources\bin;C:\Users\noahgilson\AppData\Local\Microsoft\WindowsApps;C:\Users\noahgilson\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\noahgilson\.dotnet\tools;C:\Users\noahgilson\AppData\Local\GitHubDesktop\bin;C:\Program Files\Graphviz\bin;C:\Users\noahgilson\AppData\Local\Programs\AzureAuth\0.8.4;C:\Users\noahgilson\Downloads\PSTools;C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\;C:\Users\noahgilson\AppData\Local\Programs\cursor\resources\app\bin;C:\Users\noahgilson\AppData\Roaming\npm;C:\Users\noahgilson\.dotnet\tools;C:\Users\noahgilson\AppData\Local\Microsoft\WindowsApps;C:\Program Files\dotnet;C:\Users\noahgilson\AppData\Local\Microsoft\WinGet\Packages\max-sixty.worktrunk_Microsoft.Winget.Source_8wekyb3d8bbwe;C:\Users\noahgilson\AppData\Local\Microsoft\WinGet\Packages\GitHub.Copilot_Microsoft.Winget.Source_8wekyb3d8bbwe;C:\Users\noahgilson\AppData\Local\Microsoft\WinGet\Packages\JesseDuffield.lazygit_Microsoft.Winget.Source_8wekyb3d8bbwe;D:\sdk\artifacts\tmp\Debug\testing\.dotnet\tools;D:\w\sdk\nagilson-dnup-walkthrough-ux-This-test-failed-only-on-marc\artifacts\tmp\Debug\testing\.dotnet\tools;D:\w\sdk\dsplaisted-dotnetup-edit-profile-can-you-look-at-the-code\artifacts\tmp\Debug\testing\.dotnet\tools
+
+Yarn version: 
+  1.22.19
+
+Node version: 
+  24.2.0
+
+Platform: 
+  win32 x64
+
+Trace: 
+  Error: https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/caniuse-lite/-/caniuse-lite-1.0.30001791.tgz: Request failed "401 Unauthorized"
+      at ResponseError.ExtendableBuiltin (C:\Users\noahgilson\AppData\Roaming\npm\node_modules\yarn\lib\cli.js:696:66)
+      at new ResponseError (C:\Users\noahgilson\AppData\Roaming\npm\node_modules\yarn\lib\cli.js:802:124)
+      at Request.<anonymous> (C:\Users\noahgilson\AppData\Roaming\npm\node_modules\yarn\lib\cli.js:66215:16)
+      at Request.emit (node:events:507:28)
+      at module.exports.Request.onRequestResponse (C:\Users\noahgilson\AppData\Roaming\npm\node_modules\yarn\lib\cli.js:141767:10)
+      at ClientRequest.emit (node:events:507:28)
+      at HTTPParser.parserOnIncomingClient (node:_http_client:716:27)
+      at HTTPParser.parserOnHeadersComplete (node:_http_common:117:17)
+      at TLSSocket.socketOnData (node:_http_client:558:22)
+      at TLSSocket.emit (node:events:507:28)
+
+npm manifest: 
+  {
+      "name": "vscode-dotnet-runtime",
+      "repository": {
+          "type": "git",
+          "url": "https://github.com/dotnet/vscode-dotnet-runtime.git"
+      },
+      "bugs": {
+          "url": "https://github.com/dotnet/vscode-dotnet-runtime/issues"
+      },
+      "license": "MIT",
+      "author": "Microsoft Corporation",
+      "displayName": ".NET Install Tool",
+      "description": "This extension installs and manages different versions of the .NET SDK and Runtime.",
+      "connectionString": "InstrumentationKey=02dc18e0-7494-43b2-b2a3-18ada5fcb522;IngestionEndpoint=https://westus2-0.in.applicationinsights.azure.com/;LiveEndpoint=https://westus2.livediagnostics.monitor.azure.com/;ApplicationId=e8e56970-a18a-4101-b7d1-1c5dd7c29eeb",
+      "icon": "images/dotnetIcon.png",
+      "version": "3.0.1",
+      "publisher": "ms-dotnettools",
+      "engines": {
+          "vscode": "^1.101.0"
+      },
+      "categories": [
+          "Other"
+      ],
+      "keywords": [
+          ".NET",
+          ".NET Core",
+          "dotnet",
+          "Extension Authoring",
+          "runtime"
+      ],
+      "capabilities": {
+          "untrustedWorkspaces": {
+              "supported": true
+          },
+          "virtualWorkspaces": true
+      },
+      "activationEvents": [
+          "onStartupFinished"
+      ],
+      "main": "./dist/extension.js",
+      "types": "./dist/extension.d.ts",
+      "contributes": {
+          "commands": [
+              {
+                  "command": "dotnet.reportIssue",
+                  "title": "Report an issue with the .NET Install Tool.",
+                  "category": ".NET Install Tool"
+              },
+              {
+                  "command": "dotnet.acquireGlobalSDKPublic",
+                  "title": "Install the .NET SDK System-Wide.",
+                  "category": ".NET Install Tool"
+              },
+              {
+                  "command": "dotnet.uninstallPublic",
+                  "title": "Uninstall .NET.",
+                  "category": ".NET Install Tool"
+              },
+              {
+                  "command": "dotnet.resetData",
+                  "title": "Reset Extension Data (Uninstalls All Installations, Which May Cause Other Extensions To Fail. Uninstall Dependent Extensions First)",
+                  "category": ".NET Install Tool",
+                  "enablement": "config.dotnetAcquisitionExtension.showResetDataCommand"
+              }
+          ],
+          "configuration": {
+              "title": ".NET Install Tool",
+              "properties": {
+                  "dotnetAcquisitionExtension.enableTelemetry": {
+                      "type": "boolean",
+                      "default": true,
+                      "description": "Enable Telemetry for the .NET Install Tool. Restart VS Code to apply changes."
+                  },
+                  "dotnetAcquisitionExtension.enablePreviewFeatures": {
+                      "type": "boolean",
+                      "default": false,
+                      "description": "Enable Preview Features for the Extension. Restart VS Code to apply changes."
+                  },
+                  "dotnetAcquisitionExtension.installTimeoutValue": {
+                      "type": "number",
+                      "default": 600,
+                      "description": "Timeout for installing .NET in seconds."
+                  },
+                  "dotnetAcquisitionExtension.existingDotnetPath": {
+                      "type": "array",
+                      "markdownDescription": "The path to an existing .NET host executable for an extension's code to run under, not for your project to run under.\nRestart VS Code to apply changes.\n\n⚠️ This is NOT the .NET Runtime that your project will use to run. Extensions such as `C#`, `C# DevKit`, and more have components written in .NET. This .NET PATH is the `dotnet.exe` that these extensions will use to run their code, not your code.\n\nUsing a path value in which .NET does not meet the requirements of a specific extension will cause that extension to fail.\n\n🚀 The version of .NET that is used for your project is determined by the .NET host, or dotnet.exe. The .NET host picks a runtime based on your project. To use a specific version of .NET for your project, install the .NET SDK using the `.NET Install Tool - Install SDK System-Wide` command, install .NET manually using [our instructions](https://dotnet.microsoft.com/download), or edit your PATH environment variable to point to a `dotnet.exe` that has an `/sdk/` folder with only one SDK.",
+                      "description": "The path to an existing .NET host executable for an extension's code to run under, not for your project to run under.\nRestart VS Code to apply changes.\n\n⚠️ This is NOT the .NET Runtime that your project will use to run. Extensions such as 'C#', 'C# DevKit', and more have components written in .NET. This .NET PATH is the 'dotnet.exe' that these extensions will use to run their code, not your code.\n\nUsing a path value in which .NET does not meet the requirements of a specific extension will cause that extension to fail.\n\n🚀 The version of .NET that is used for your project is determined by the .NET host, or dotnet.exe. The .NET host picks a runtime based on your project. To use a specific version of .NET for your project, install the .NET SDK using the '.NET Install Tool - Install SDK System-Wide' command, use the instructions at https://dotnet.microsoft.com/download to manually install the .NET SDK, or edit your PATH environment variable to point to a 'dotnet.exe' that has an '/sdk/' folder with only one SDK.",
+                      "examples": [
+                          "C:\\Program Files\\dotnet\\dotnet.exe",
+                          "/usr/local/share/dotnet/dotnet",
+                          "/usr/lib/dotnet/dotnet"
+                      ]
+                  },
+                  "dotnetAcquisitionExtension.sharedExistingDotnetPath": {
+                      "type": "string",
+                      "description": "The path of the preexisting .NET Runtime you'd like to use for ALL extensions. Restart VS Code to apply changes.",
+                      "examples": [
+                          "C:\\Program Files\\dotnet\\dotnet.exe",
+                          "/usr/local/share/dotnet/dotnet",
+                          "/usr/lib/dotnet/dotnet"
+                      ]
+                  },
+                  "dotnetAcquisitionExtension.proxyUrl": {
+                      "type": "string",
+                      "description": "URL to a proxy if you use one, such as: https://proxy:port"
+                  },
+                  "dotnetAcquisitionExtension.allowInvalidPaths": {
+                      "type": "boolean",
+                      "description": "If you'd like to continue using a .NET path that is not meant to be used for an extension and may cause instability (please read above about the existingDotnetPath setting) then set this to true and restart."
+                  },
+                  "dotnetAcquisitionExtension.cacheTimeToLiveMultiplier": {
+                      "type": "number",
+                      "default": 1,
+                      "description": "To improve performance, the results of checking .NET Installations may be cached. If you're facing issues with an install not being detected, try setting this to 0.5, or 0; or increasing the number to improve performance. Restart to change."
+                  },
+                  "dotnetAcquisitionExtension.showResetDataCommand": {
+                      "type": "boolean",
+                      "default": false,
+                      "description": "Show the command to reset extension data in the command palette. Restart VS Code and remove dependent extensions first."
+                  },
+                  "dotnetAcquisitionExtension.suppressOutput": {
+                      "type": "boolean",
+                      "default": false,
+                      "description": "Hide all messages in the output window from our extension. Error pop-ups from APIs that other extensions request we display will still appear."
+                  },
+                  "dotnetAcquisitionExtension.highVerbosity": {
+                      "type": "boolean",
+                      "default": false,
+                      "description": "Enable this to show more detailed output from our extension."
+                  },
+                  "dotnetAcquisitionExtension.runtimeUpdateDelaySeconds": {
+                      "type": "number",
+                      "default": 300,
+                      "description": "The amount of seconds to wait before trying to update the .NET Runtime for the day."
+                  }
+              }
+          }
+      },
+      "scripts": {
+          "vscode:prepublish": "npm run compile-all && npm install && webpack --mode production && dotnet build ../msbuild/signJs --property jsOutputPath=..\\..\\vscode-dotnet-runtime-extension\\dist -bl -v:normal",
+          "compile": "npm run clean && tsc -p ./",
+          "watch": "npm run compile && tsc -watch -p ./",
+          "test": "npm run compile --silent && node ./dist/test/functional/runTest.js",
+          "clean": "npx rimraf dist",
+          "compile-all": "cd ../vscode-dotnet-runtime-library && npm install && npm run compile && cd ../vscode-dotnet-runtime-extension && npm install && npm run compile",
+          "lint": "eslint -c .eslintrc.js --ext=.ts vscode-dotnet-runtime-library/src/**/*.ts vscode-dotnet-runtime-extension/src/**/*.ts --ignore-pattern \"**/test/\" --fix",
+          "webpack": "webpack --mode development"
+      },
+      "dependencies": {
+          "axios": "^1.13.6",
+          "axios-cache-interceptor": "^1.11.4",
+          "axios-retry": "^3.9.1",
+          "https-proxy-agent": "^7.0.2",
+          "open": "^8.4.0",
+          "shelljs": "^0.8.5",
+          "vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library"
+      },
+      "devDependencies": {
+          "@types/chai": "^4.3.5",
+          "@types/chai-as-promised": "^7.1.8",
+          "@types/mocha": "^9.0.0",
+          "@types/node": "^22.19.9",
+          "@types/rimraf": "3.0.2",
+          "@types/source-map-support": "^0.5.10",
+          "@types/vscode": "^1.101.0",
+          "@vscode/test-electron": "^2.3.9",
+          "@vscode/vsce": "^3.7.1",
+          "chai": "4.3.4",
+          "copy-webpack-plugin": "^14.0.0",
+          "glob": "^7.2.0",
+          "mocha": "^11.7.5",
+          "rimraf": "^6.1.2",
+          "ts-loader": "^9.5.1",
+          "typescript": "^5.5.4",
+          "webpack": "^5.88.2",
+          "webpack-cli": "^4.9.1",
+          "webpack-permissions-plugin": "^1.0.9"
+      },
+      "__metadata": {
+          "id": "1aab81a1-b3d9-4aef-976b-577d5d90fe3f",
+          "publisherDisplayName": "Microsoft",
+          "publisherId": "d05e23de-3974-4ff0-8d47-23ee77830092",
+          "isPreReleaseVersion": false
+      }
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile
