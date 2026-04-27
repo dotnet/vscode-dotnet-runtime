@@ -5,7 +5,8 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { rimraf } from 'rimraf';
+import rimraf = require('rimraf');
+import { promisify } from 'util';
 
 import
 {
@@ -666,7 +667,7 @@ Other dependents remain.`));
                 }
                 try
                 {
-                    await rimraf(fullSubDirectoryPath);
+                    await promisify(rimraf)(fullSubDirectoryPath);
                     eventStream.post(new DotnetAcquisitionDeletion(`Deleted .NET folder ${folderPath} when marked for deletion.`));
                 }
                 catch (error: any)

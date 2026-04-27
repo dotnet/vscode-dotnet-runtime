@@ -182,6 +182,11 @@
     "@types/glob" "*"
     "@types/node" "*"
 
+"@types/semver@^7.5.0":
+  version "7.7.1"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/semver/-/semver-7.7.1.tgz"
+  integrity sha1-POOvGlUk7zJ9Lank/YttlcjXBSg=
+
 "@types/shelljs@^0.8.9":
   version "0.8.17"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/shelljs/-/shelljs-0.8.17.tgz"
@@ -637,6 +642,11 @@ fs.realpath@^1.0.0:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/fs.realpath/-/fs.realpath-1.0.0.tgz"
   integrity sha1-FQStJSMVjKpA20onh8sBQRmU6k8=
 
+fsevents@^2.3.3:
+  version "2.3.3"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/fsevents/-/fsevents-2.3.3.tgz"
+  integrity sha1-ysZAd4XQNnWipeGlMFxpezR9kNY=
+
 function-bind@^1.1.2:
   version "1.1.2"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/function-bind/-/function-bind-1.1.2.tgz"
@@ -712,16 +722,7 @@ glob@^11.0.3:
     package-json-from-dist "^1.0.0"
     path-scurry "^2.0.0"
 
-glob@^13.0.3:
-  version "13.0.6"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/glob/-/glob-13.0.6.tgz"
-  integrity sha1-B4ZmVmpCUUfMrPvS4zLetmor5x0=
-  dependencies:
-    minimatch "^10.2.2"
-    minipass "^7.1.3"
-    path-scurry "^2.0.2"
-
-glob@^7.0.0, glob@^7.0.5, glob@^7.2.0:
+glob@^7.0.0, glob@^7.0.5, glob@^7.1.3, glob@^7.2.0:
   version "7.2.3"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/glob/-/glob-7.2.3.tgz"
   integrity sha1-uN8PuAK7+o6JvR2Ti04WV47UTys=
@@ -997,13 +998,6 @@ minimatch@^10.1.1:
   dependencies:
     brace-expansion "^5.0.5"
 
-minimatch@^10.2.2:
-  version "10.2.5"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/minimatch/-/minimatch-10.2.5.tgz"
-  integrity sha1-vUhoegvjjtKWE5kQVgD4MglYYdE=
-  dependencies:
-    brace-expansion "^5.0.5"
-
 minimatch@^3.0.3, minimatch@^3.1.1:
   version "3.1.5"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/minimatch/-/minimatch-3.1.5.tgz"
@@ -1018,7 +1012,7 @@ minimatch@^9.0.4, minimatch@^9.0.5:
   dependencies:
     brace-expansion "^2.0.2"
 
-"minipass@^5.0.0 || ^6.0.2 || ^7.0.0", minipass@^7.1.2, minipass@^7.1.3:
+"minipass@^5.0.0 || ^6.0.2 || ^7.0.0", minipass@^7.1.2:
   version "7.1.3"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/minipass/-/minipass-7.1.3.tgz"
   integrity sha1-eTibTrG7LQA6m7qH1JLyvTe9xls=
@@ -1140,7 +1134,7 @@ p-locate@^5.0.0:
   dependencies:
     p-limit "^3.0.2"
 
-package-json-from-dist@^1.0.0, package-json-from-dist@^1.0.1:
+package-json-from-dist@^1.0.0:
   version "1.0.1"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/package-json-from-dist/-/package-json-from-dist-1.0.1.tgz"
   integrity sha1-TxRxoBCCeob5TP2bByfjbSZ95QU=
@@ -1178,7 +1172,7 @@ path-scurry@^1.11.1:
     lru-cache "^10.2.0"
     minipass "^5.0.0 || ^6.0.2 || ^7.0.0"
 
-path-scurry@^2.0.0, path-scurry@^2.0.2:
+path-scurry@^2.0.0:
   version "2.0.2"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/path-scurry/-/path-scurry-2.0.2.tgz"
   integrity sha1-a+DQ7gKhDZ4N56mLrmXhgskGH4U=
@@ -1281,13 +1275,12 @@ restore-cursor@^5.0.0:
     onetime "^7.0.0"
     signal-exit "^4.1.0"
 
-rimraf@^6.1.3:
-  version "6.1.3"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/rimraf/-/rimraf-6.1.3.tgz"
-  integrity sha1-r77iNrO9K+Mx1OfORJO6wXGJga8=
+rimraf@3.0.2:
+  version "3.0.2"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/rimraf/-/rimraf-3.0.2.tgz"
+  integrity sha1-8aVAK6YiCtUswSgrrBrjqkn9Bho=
   dependencies:
-    glob "^13.0.3"
-    package-json-from-dist "^1.0.1"
+    glob "^7.1.3"
 
 run-script-os@^1.1.6:
   version "1.1.6"
