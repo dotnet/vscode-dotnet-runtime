@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import rimraf = require('rimraf');
+import { promisify } from 'util';
 
 import
 {
@@ -38,7 +39,6 @@ import
 } from '../EventStream/EventStreamEvents';
 import * as versionUtils from './VersionUtilities';
 
-import { promisify } from 'util';
 import { IEventStream } from '../EventStream/EventStream';
 import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';

@@ -64,7 +64,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
     const isAcquisitionError = acquireContext ? true : false;
     try
     {
-        /* eslint-disable @typescript-eslint/await-thenable */
+
         const result = await callback();
         context.eventStream.post(new DotnetCommandSucceeded(context.commandName));
         return result;

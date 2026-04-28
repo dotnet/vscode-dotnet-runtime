@@ -9,7 +9,21 @@ and this project adheres to [Semantic Versioning].
 
 An option to enforce local SDK selection, similar to 'existingDotnetPath' which only applies to runtime selection.
 
-## [3.0.0] - 2025-12
+## [3.0.1] - 2026-4
+
+Bug fixes to support containers or synced machines with different operating systems.
+Reduced CPU consumption on Linux when updating installs in certain scenarios - thank you @thomasxm!
+Reduced memory usage and extension size.
+Optimizations on Windows for resolving the correct install mechanisms.
+Fixes for removed installs/cleanup of installs.
+Improvements to logging/diagnostic information.
+Better cleanup of stale mutex and inter/intra-process caching for installs.
+Dependency updates.
+Improvements to mutex handling on Unix.
+Adds `dotnet.getAcquisitionLog` command for extensions to call to expose our log.
+Fixes for Windows environment variables when further elevation is required to install the SDK.
+
+## [3.0.0] - 2025-12-8
 
 Includes the same content as 2.4.1 but as an official release instead of a prerelease.
 Dependency updates.

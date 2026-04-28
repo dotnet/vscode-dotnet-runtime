@@ -462,7 +462,7 @@ export class WebRequestWorkerSingleton
                 {
                     const axiosBasedError = error as AxiosError;
                     // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+
                     const summarizedError = new EventBasedError('WebRequestFailedFromAxios',
                         `Request to ${url} Failed: ${axiosBasedError?.message}. Aborting.
 ${axiosBasedError.cause ? `Error Cause: ${JSON.stringify(axiosBasedError.cause ?? '')}` : ``}

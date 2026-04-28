@@ -65,7 +65,7 @@ export async function executeWithLock<A extends any[], R>(eventStream: IEventStr
     // If so, we don't need to acquire the lock again and we also shouldn't release it as the parent function will do that.
     if (alreadyHoldingLock || process.env.VSCODE_DOTNET_RUNTIME_DISABLE_MUTEX === 'true')
     {
-        // eslint-disable-next-line @typescript-eslint/await-thenable
+
         return f(...(args));
     }
     else
@@ -83,7 +83,7 @@ Report this issue to our vscode-dotnet-runtime GitHub for help.`
         const result = await mutex.acquire(async () =>
         {
             // await must be used to make the linter allow f to be async, which it must be.
-            // eslint-disable-next-line no-return-await, @typescript-eslint/await-thenable
+
             return await f(...(args));
         }, retryTimeMs, timeoutTimeMs, `${lockId}-${crypto.randomUUID()}`);
         return result;

@@ -80,7 +80,7 @@ export class VersionResolver implements IVersionResolver
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                     if (release?.['release-type'] === 'lts' || release?.['release-type'] === 'sts')
                     {
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+
                         availableVersions?.push({
                             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                             supportStatus: (release?.['release-type'] as DotnetVersionSupportStatus) ?? 'sts',
