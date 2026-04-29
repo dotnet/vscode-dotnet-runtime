@@ -158,7 +158,7 @@ export class WebRequestWorkerSingleton
         {
             timeoutCancelTokenHook.abort();
             ctx.eventStream.post(new WebRequestTime(`Timer for request:`, String(this.timeoutMsFromCtx(ctx)), 'false', url, '777')); // 777 for custom abort status. arbitrary
-            if (!(await this.isOnline(ctx.timeoutSeconds, ctx.eventStream)))
+            if (!(await this.isOnline(ctx.timeoutSeconds, ctx.eventStream, ctx.proxyUrl)))
             {
                 const offlineError = new EventBasedError('DotnetOfflineFailure', 'No internet connection detected: Cannot install .NET');
                 ctx.eventStream.post(new DotnetOfflineFailure(offlineError, null));
@@ -269,7 +269,7 @@ export class WebRequestWorkerSingleton
         }
     }
 
-    public async isOnline(timeoutSec: number, eventStream: IEventStream): Promise<boolean>
+    public async isOnline(timeoutSec: number, eventStream: IEventStream, proxyUrl?: string): Promise<boolean>
     {
         if (process.env.DOTNET_INSTALL_TOOL_OFFLINE === '1')
         {
@@ -281,7 +281,7 @@ export class WebRequestWorkerSingleton
         // ... 100 ms is there as a default to prevent the dns resolver from throwing a runtime error if the user sets timeoutSeconds to 0.
 
         const dnsResolver = new dns.promises.Resolver({ timeout: expectedDNSResolutionTimeMs });
-        const couldConnect = await dnsResolver.resolve(microsoftServerHostName).then(() =>
+        const dnsOnline = await dnsResolver.resolve(microsoftServerHostName).then(() =>
         {
             return true;
         }).catch((error: any) =>
@@ -290,7 +290,47 @@ export class WebRequestWorkerSingleton
             return false;
         });
 
-        return couldConnect;
+        if (dnsOnline)
+        {
+            return true;
+        }
+
+        // DNS failed — but in proxy environments, the proxy handles DNS resolution, so direct DNS lookups may fail
+        // even though HTTP connectivity works fine. Fall back to a lightweight HEAD request through the proxy-configured client.
+        if (this.client)
+        {
+            const httpFallbackTimeoutMs = Math.max(timeoutSec * 1000, 2000);
+            const proxyAgent = await this.getProxyAgent(proxyUrl, eventStream);
+
+            const headOptions: object = {
+                timeout: httpFallbackTimeoutMs,
+                cache: false,
+                validateStatus: () => true, // Any HTTP response means we're online, even 4xx/5xx
+                ...(proxyAgent !== null && { proxy: false }),
+                ...(proxyAgent !== null && { httpsAgent: proxyAgent }),
+            };
+
+            const headOnline = await this.client.head(`https://${microsoftServerHostName}`, headOptions)
+                .then(() =>
+                {
+                    return true; // Any response at all means we have connectivity
+                })
+                .catch(() =>
+                {
+                    return false;
+                });
+
+            if (headOnline)
+            {
+                eventStream.post(new OfflineDetectionLogicTriggered(new EventCancellationError('DnsFailedButHttpSucceeded',
+                    `DNS resolution failed but HTTP HEAD request succeeded. This may indicate a proxy is handling DNS.`),
+                    `DNS failed but HTTP connectivity confirmed via HEAD request to ${microsoftServerHostName}.`));
+            }
+
+            return headOnline;
+        }
+
+        return false;
     }
     /**
      *
@@ -322,10 +362,21 @@ export class WebRequestWorkerSingleton
 
     private async GetProxyAgentIfNeeded(ctx: IAcquisitionWorkerContext): Promise<HttpsProxyAgent<string> | null>
     {
+        return this.getProxyAgent(ctx.proxyUrl, ctx.eventStream);
+    }
+
+    /**
+     * Resolves a proxy agent from the manual proxy URL or auto-detected system proxy settings.
+     * Decoupled from IAcquisitionWorkerContext so it can be used by isOnline and other callers that don't have a full context.
+     */
+    private async getProxyAgent(manualProxyUrl?: string, eventStream?: IEventStream): Promise<HttpsProxyAgent<string> | null>
+    {
         try
         {
+            const hasManualProxy = this.proxySettingConfiguredManually(manualProxyUrl);
+
             let discoveredProxy = '';
-            if (!this.proxySettingConfiguredManually(ctx))
+            if (!hasManualProxy)
             {
                 const autoDetectProxies = await getProxySettings();
                 if (autoDetectProxies?.https)
@@ -338,17 +389,17 @@ export class WebRequestWorkerSingleton
                 }
             }
 
-            if (this.proxySettingConfiguredManually(ctx) || discoveredProxy)
+            if (hasManualProxy || discoveredProxy)
             {
-                const finalProxy = ctx?.proxyUrl && ctx?.proxyUrl !== '""' && ctx?.proxyUrl !== '' ? ctx.proxyUrl : discoveredProxy;
-                ctx.eventStream.post(new ProxyUsed(`Utilizing the Proxy : Manual ? ${ctx?.proxyUrl}, Automatic: ${discoveredProxy}, Decision : ${finalProxy}`))
+                const finalProxy = hasManualProxy ? manualProxyUrl! : discoveredProxy;
+                eventStream?.post(new ProxyUsed(`Utilizing the Proxy : Manual ? ${manualProxyUrl}, Automatic: ${discoveredProxy}, Decision : ${finalProxy}`))
                 const proxyAgent = new HttpsProxyAgent(finalProxy);
                 return proxyAgent;
             }
         }
         catch (error: any)
         {
-            ctx.eventStream.post(new SuppressedAcquisitionError(error, `The proxy lookup failed, most likely due to limited registry access. Skipping automatic proxy lookup.`));
+            eventStream?.post(new SuppressedAcquisitionError(error, `The proxy lookup failed, most likely due to limited registry access. Skipping automatic proxy lookup.`));
         }
 
         return null;
@@ -485,9 +536,9 @@ If you're on a proxy and disable registry access, you must set the proxy in our 
         }
     }
 
-    private proxySettingConfiguredManually(ctx: IAcquisitionWorkerContext): boolean
+    private proxySettingConfiguredManually(proxyUrl?: string): boolean
     {
-        return ctx?.proxyUrl ? ctx?.proxyUrl !== '""' : false;
+        return proxyUrl ? proxyUrl !== '""' && proxyUrl !== '' : false;
     }
 
     private timeoutMsFromCtx(ctx: IAcquisitionWorkerContext): number
