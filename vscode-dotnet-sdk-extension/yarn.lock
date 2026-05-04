@@ -142,9 +142,9 @@
     source-map "^0.6.0"
 
 "@types/vscode@^1.101.0":
-  version "1.116.0"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/vscode/-/vscode-1.116.0.tgz"
-  integrity sha1-iOkJByALXSd2ouv65ft5GDMZPXk=
+  version "1.118.0"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/vscode/-/vscode-1.118.0.tgz"
+  integrity sha1-SiJt34+qEanmszhVVDHE7dMjDko=
 
 "@vscode/test-electron@^2.3.9":
   version "2.5.2"
@@ -335,9 +335,9 @@ ajv-keywords@^5.1.0:
     fast-deep-equal "^3.1.3"
 
 ajv@^8.0.0, ajv@^8.8.2, ajv@^8.9.0:
-  version "8.18.0"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/ajv/-/ajv-8.18.0.tgz"
-  integrity sha1-iGQYa2c40APrOpMxcrs4M+EM77w=
+  version "8.20.0"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/ajv/-/ajv-8.20.0.tgz"
+  integrity sha1-MEs2Nq3Yi6fZNnYN1Q7OAG3qlfk=
   dependencies:
     fast-deep-equal "^3.1.3"
     fast-uri "^3.0.1"
@@ -415,9 +415,9 @@ balanced-match@^1.0.0:
   integrity sha1-6D46fj8wCzTLnYf2FfoMvzV2kO4=
 
 baseline-browser-mapping@^2.10.12:
-  version "2.10.21"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/baseline-browser-mapping/-/baseline-browser-mapping-2.10.21.tgz"
-  integrity sha1-E2+fGB7g18puPtv0LZVZdj0sEUE=
+  version "2.10.27"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/baseline-browser-mapping/-/baseline-browser-mapping-2.10.27.tgz"
+  integrity sha1-/ulBwqC0LN+DxkJ+TIMLHQvassM=
 
 brace-expansion@^1.1.7:
   version "1.1.14"
@@ -481,9 +481,9 @@ camelcase@^6.0.0:
   integrity sha1-VoW5XrIJrJwMF3Rnd4ychN9Yupo=
 
 caniuse-lite@^1.0.30001782:
-  version "1.0.30001790"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/caniuse-lite/-/caniuse-lite-1.0.30001790.tgz"
-  integrity sha1-BGYMfeFfRF2G3RCsiKiTasBpjkU=
+  version "1.0.30001791"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/caniuse-lite/-/caniuse-lite-1.0.30001791.tgz"
+  integrity sha1-37k9hcQK04DFcSPnLhDzxXV4a1E=
 
 chai-as-promised@^7.1.1:
   version "7.1.2"
@@ -679,9 +679,9 @@ eastasianwidth@^0.2.0:
   integrity sha1-aWzi7Aqg5uqTo5f/zySqeEDIJ8s=
 
 electron-to-chromium@^1.5.328:
-  version "1.5.344"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/electron-to-chromium/-/electron-to-chromium-1.5.344.tgz"
-  integrity sha1-ZDfMCKfZuRSpgSDhgvN3k8nq/9Q=
+  version "1.5.349"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/electron-to-chromium/-/electron-to-chromium-1.5.349.tgz"
+  integrity sha1-m5xqbYTREHVXwYqTNgmc4O6JDls=
 
 emoji-regex@^10.3.0:
   version "10.6.0"
@@ -722,9 +722,9 @@ es-errors@^1.3.0:
   integrity sha1-BfdaJdq5jk+x3NXhRywFRtUFfI8=
 
 es-module-lexer@^2.0.0:
-  version "2.0.0"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/es-module-lexer/-/es-module-lexer-2.0.0.tgz"
-  integrity sha1-9lfNepRI3N2pwHCjy3Xl3B6F9bE=
+  version "2.1.0"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/es-module-lexer/-/es-module-lexer-2.1.0.tgz"
+  integrity sha1-Hfy7XqO7+2Pyjh/DZ2w2dtHJYkw=
 
 es-object-atoms@^1.0.0, es-object-atoms@^1.1.1:
   version "1.1.1"
@@ -1192,9 +1192,9 @@ lie@~3.3.0:
     immediate "~3.0.5"
 
 loader-runner@^4.3.1:
-  version "4.3.1"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/loader-runner/-/loader-runner-4.3.1.tgz"
-  integrity sha1-bHbtKbDMzprzeSCCmfB/h23nN+M=
+  version "4.3.2"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/loader-runner/-/loader-runner-4.3.2.tgz"
+  integrity sha1-mRPToVlx+PY1kV5gH7XJ1JXZGOk=
 
 locate-path@^5.0.0:
   version "5.0.0"
@@ -1863,7 +1863,7 @@ util-deprecate@~1.0.1:
   integrity sha1-RQ1Nyfpw3nMnYvvS1KKJgUGaDM8=
 
 "vscode-dotnet-runtime-library@file:../vscode-dotnet-runtime-library":
-  version "1.0.0"
+  version "3.0.2"
   resolved "file:../vscode-dotnet-runtime-library"
   dependencies:
     "@microsoft/applicationinsights-common" "^3.4.1"
@@ -1933,9 +1933,9 @@ webpack-merge@^5.7.3:
     wildcard "^2.0.0"
 
 webpack-sources@^3.3.4:
-  version "3.4.0"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/webpack-sources/-/webpack-sources-3.4.0.tgz"
-  integrity sha1-Z839/zSf8ePnylwe1qKAK4TPbPU=
+  version "3.4.1"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/webpack-sources/-/webpack-sources-3.4.1.tgz"
+  integrity sha1-AJ0RCZnr2fs6b6jTLuxvhNlA5l0=
 
 webpack@^5.0.0, webpack@^5.1.0, webpack@^5.76.0, "webpack@4.x.x || 5.x.x":
   version "5.106.2"
