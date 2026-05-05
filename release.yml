@@ -85,9 +85,18 @@ extends:
                     }
                   }
 
+                  # Calculate if this should be prerelease based on patch version (odd = prerelease)
+                  $patchVersion = [int]($version.Split('.')[-1])
+                  $isPrerelease = ($patchVersion % 2) -eq 1
                   Write-Host "##vso[task.setvariable variable=version;isOutput=true]$version"
+                  Write-Host "##vso[task.setvariable variable=isPrerelease;isOutput=true]$isPrerelease"
+                  if ($isPrerelease) {
+                    Write-Host "Version $version has odd patch number ($patchVersion) - will be published as prerelease"
+                  } else {
+                    Write-Host "Version $version has even patch number ($patchVersion) - will be published as stable release"
+                  }
                 name: GetVersion
-                displayName: '❓ Get Version'
+                displayName: '❓ Get Version and Determine Prerelease Status'
               - pwsh: |
                   $ErrorActionPreference = 'Stop'
 
@@ -122,6 +131,12 @@ extends:
                     $signaturePath = Join-Path '$(Pipeline.Workspace)' 'vscode-dotnet-runtime-$(GetVersion.version).signature.p7s'
 
                     $publishArgs = @('publish', '--azure-credential', '--packagePath', $packagePath, '--manifestPath', $manifestPath, '--signaturePath', $signaturePath)
+                    if ("$(GetVersion.isPrerelease)" -eq "True") {
+                      $publishArgs += '--pre-release'
+                      Write-Host "Publishing as pre-release (odd patch version)."
+                    } else {
+                      Write-Host "Publishing as stable release (even patch version)."
+                    }
                     $publishArgsString = $publishArgs -join ' '
                     Write-Host "Do real publish? test parameter: ${{ parameters.test }}"
                     If ("${{ parameters.test }}" -eq "true") {
