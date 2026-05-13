@@ -96,12 +96,12 @@
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/estree/-/estree-1.0.8.tgz"
   integrity sha1-lYuRyZGxhnztMYvt6g4hXuBQcm4=
 
-"@types/glob@*":
-  version "8.1.0"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/glob/-/glob-8.1.0.tgz"
-  integrity sha1-tj5wFVORsFhNzkTn6iUZC7w48vw=
+"@types/glob@^7.2.0":
+  version "7.2.0"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/glob/-/glob-7.2.0.tgz"
+  integrity sha1-vBtb86qS8lvV3TnzXFc2G9zlsus=
   dependencies:
-    "@types/minimatch" "^5.1.2"
+    "@types/minimatch" "*"
     "@types/node" "*"
 
 "@types/json-schema@*", "@types/json-schema@^7.0.15", "@types/json-schema@^7.0.9":
@@ -109,7 +109,7 @@
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/json-schema/-/json-schema-7.0.15.tgz"
   integrity sha1-WWoXRyM2lNUPatinhp/Lb1bPWEE=
 
-"@types/minimatch@^5.1.2":
+"@types/minimatch@*":
   version "5.1.2"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/minimatch/-/minimatch-5.1.2.tgz"
   integrity sha1-B1CLRXl8uB7D8nMBGwVM0HVe3co=
@@ -125,14 +125,6 @@
   integrity sha1-Cccfs0uiUQ+KyGU2Gx/LlVK4pYE=
   dependencies:
     undici-types "~6.21.0"
-
-"@types/rimraf@3.0.2":
-  version "3.0.2"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/rimraf/-/rimraf-3.0.2.tgz"
-  integrity sha1-pj0XWzMXSOUiCtSMkB17vx9E7vg=
-  dependencies:
-    "@types/glob" "*"
-    "@types/node" "*"
 
 "@types/source-map-support@^0.5.10":
   version "0.5.10"
@@ -414,6 +406,11 @@ balanced-match@^1.0.0:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/balanced-match/-/balanced-match-1.0.2.tgz"
   integrity sha1-6D46fj8wCzTLnYf2FfoMvzV2kO4=
 
+balanced-match@^4.0.2:
+  version "4.0.4"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/balanced-match/-/balanced-match-4.0.4.tgz"
+  integrity sha1-v7EGYv7tgZaixi58aOF3IMJ0F5o=
+
 baseline-browser-mapping@^2.10.12:
   version "2.10.27"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/baseline-browser-mapping/-/baseline-browser-mapping-2.10.27.tgz"
@@ -433,6 +430,13 @@ brace-expansion@^2.0.2:
   integrity sha1-T0GkEZAhbuNgZ+w4FSb+lTnE8K4=
   dependencies:
     balanced-match "^1.0.0"
+
+brace-expansion@^5.0.5:
+  version "5.0.6"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/brace-expansion/-/brace-expansion-5.0.6.tgz"
+  integrity sha1-7Gj+CmQaKdhxFXnK9kHQW64fIoU=
+  dependencies:
+    balanced-match "^4.0.2"
 
 braces@^3.0.3:
   version "3.0.3"
@@ -933,7 +937,16 @@ glob@^10.4.5:
     package-json-from-dist "^1.0.0"
     path-scurry "^1.11.1"
 
-glob@^7.0.0, glob@^7.1.3, glob@^7.2.0:
+glob@^13.0.3:
+  version "13.0.6"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/glob/-/glob-13.0.6.tgz"
+  integrity sha1-B4ZmVmpCUUfMrPvS4zLetmor5x0=
+  dependencies:
+    minimatch "^10.2.2"
+    minipass "^7.1.3"
+    path-scurry "^2.0.2"
+
+glob@^7.0.0, glob@^7.2.0:
   version "7.2.3"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/glob/-/glob-7.2.3.tgz"
   integrity sha1-uN8PuAK7+o6JvR2Ti04WV47UTys=
@@ -1231,6 +1244,11 @@ lru-cache@^10.2.0:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/lru-cache/-/lru-cache-10.4.3.tgz"
   integrity sha1-QQ/IoXtw5ZgBPfJXwkRrfzOD8Rk=
 
+lru-cache@^11.0.0:
+  version "11.3.6"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/lru-cache/-/lru-cache-11.3.6.tgz"
+  integrity sha1-8DBq1unwpdwlsWrrpOj1e37C31U=
+
 math-intrinsics@^1.1.0:
   version "1.1.0"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/math-intrinsics/-/math-intrinsics-1.1.0.tgz"
@@ -1271,6 +1289,13 @@ mimic-function@^5.0.0:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/mimic-function/-/mimic-function-5.0.1.tgz"
   integrity sha1-rL4rM0n5m53qyn+3Dki4PpTmcHY=
 
+minimatch@^10.2.2:
+  version "10.2.5"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/minimatch/-/minimatch-10.2.5.tgz"
+  integrity sha1-vUhoegvjjtKWE5kQVgD4MglYYdE=
+  dependencies:
+    brace-expansion "^5.0.5"
+
 minimatch@^3.1.1:
   version "3.1.5"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/minimatch/-/minimatch-3.1.5.tgz"
@@ -1285,7 +1310,7 @@ minimatch@^9.0.4, minimatch@^9.0.5:
   dependencies:
     brace-expansion "^2.0.2"
 
-"minipass@^5.0.0 || ^6.0.2 || ^7.0.0", minipass@^7.1.2:
+"minipass@^5.0.0 || ^6.0.2 || ^7.0.0", minipass@^7.1.2, minipass@^7.1.3:
   version "7.1.3"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/minipass/-/minipass-7.1.3.tgz"
   integrity sha1-eTibTrG7LQA6m7qH1JLyvTe9xls=
@@ -1413,7 +1438,7 @@ p-try@^2.0.0:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/p-try/-/p-try-2.2.0.tgz"
   integrity sha1-yyhoVA4xPWHeWPr741zpAE1VQOY=
 
-package-json-from-dist@^1.0.0:
+package-json-from-dist@^1.0.0, package-json-from-dist@^1.0.1:
   version "1.0.1"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/package-json-from-dist/-/package-json-from-dist-1.0.1.tgz"
   integrity sha1-TxRxoBCCeob5TP2bByfjbSZ95QU=
@@ -1450,6 +1475,14 @@ path-scurry@^1.11.1:
   dependencies:
     lru-cache "^10.2.0"
     minipass "^5.0.0 || ^6.0.2 || ^7.0.0"
+
+path-scurry@^2.0.2:
+  version "2.0.2"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/path-scurry/-/path-scurry-2.0.2.tgz"
+  integrity sha1-a+DQ7gKhDZ4N56mLrmXhgskGH4U=
+  dependencies:
+    lru-cache "^11.0.0"
+    minipass "^7.1.2"
 
 pathval@^1.1.1:
   version "1.1.1"
@@ -1567,12 +1600,13 @@ restore-cursor@^5.0.0:
     onetime "^7.0.0"
     signal-exit "^4.1.0"
 
-rimraf@3.0.2:
-  version "3.0.2"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/rimraf/-/rimraf-3.0.2.tgz"
-  integrity sha1-8aVAK6YiCtUswSgrrBrjqkn9Bho=
+rimraf@^6.1.3:
+  version "6.1.3"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/rimraf/-/rimraf-6.1.3.tgz"
+  integrity sha1-r77iNrO9K+Mx1OfORJO6wXGJga8=
   dependencies:
-    glob "^7.1.3"
+    glob "^13.0.3"
+    package-json-from-dist "^1.0.1"
 
 run-script-os@^1.1.6:
   version "1.1.6"

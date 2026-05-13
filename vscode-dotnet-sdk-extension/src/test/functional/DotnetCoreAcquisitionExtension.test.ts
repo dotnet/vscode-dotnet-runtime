@@ -9,7 +9,6 @@ import { warn } from 'console';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { promisify } from 'util';
 import * as vscode from 'vscode';
 import
 {
@@ -26,7 +25,6 @@ import
   MockWindowDisplayWorker
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
-import rimraf = require('rimraf');
 
 const standardTimeoutTime = 100000;
 const assert = chai.assert;
@@ -71,7 +69,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
       // Tear down tmp storage for fresh run
       mockState.clear();
       MockTelemetryReporter.telemetryEvents = [];
-      await promisify(rimraf)(storagePath);
+      await fs.promises.rm(storagePath, { recursive: true, force: true });
     });
 
 

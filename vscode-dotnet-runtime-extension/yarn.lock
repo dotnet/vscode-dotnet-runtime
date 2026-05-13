@@ -400,12 +400,12 @@
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/estree/-/estree-1.0.8.tgz"
   integrity sha1-lYuRyZGxhnztMYvt6g4hXuBQcm4=
 
-"@types/glob@*":
-  version "8.1.0"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/glob/-/glob-8.1.0.tgz"
-  integrity sha1-tj5wFVORsFhNzkTn6iUZC7w48vw=
+"@types/glob@^7.2.0":
+  version "7.2.0"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/glob/-/glob-7.2.0.tgz"
+  integrity sha1-vBtb86qS8lvV3TnzXFc2G9zlsus=
   dependencies:
-    "@types/minimatch" "^5.1.2"
+    "@types/minimatch" "*"
     "@types/node" "*"
 
 "@types/json-schema@*", "@types/json-schema@^7.0.15", "@types/json-schema@^7.0.9":
@@ -413,7 +413,7 @@
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/json-schema/-/json-schema-7.0.15.tgz"
   integrity sha1-WWoXRyM2lNUPatinhp/Lb1bPWEE=
 
-"@types/minimatch@^5.1.2":
+"@types/minimatch@*":
   version "5.1.2"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/minimatch/-/minimatch-5.1.2.tgz"
   integrity sha1-B1CLRXl8uB7D8nMBGwVM0HVe3co=
@@ -434,14 +434,6 @@
   version "2.4.4"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/normalize-package-data/-/normalize-package-data-2.4.4.tgz"
   integrity sha1-VuLMJsOXwDj6sOOpF6EtXFkJ6QE=
-
-"@types/rimraf@3.0.2":
-  version "3.0.2"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/rimraf/-/rimraf-3.0.2.tgz"
-  integrity sha1-pj0XWzMXSOUiCtSMkB17vx9E7vg=
-  dependencies:
-    "@types/glob" "*"
-    "@types/node" "*"
 
 "@types/sarif@^2.1.7":
   version "2.1.7"
@@ -479,46 +471,6 @@
     jszip "^3.10.1"
     ora "^8.1.0"
     semver "^7.6.2"
-
-"@vscode/vsce-sign-alpine-arm64@2.0.6":
-  version "2.0.6"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/vsce-sign-alpine-arm64/-/vsce-sign-alpine-arm64-2.0.6.tgz"
-  integrity sha1-LNJEyvXo7FQ/QvuR1N87kzZByPo=
-
-"@vscode/vsce-sign-alpine-x64@2.0.6":
-  version "2.0.6"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/vsce-sign-alpine-x64/-/vsce-sign-alpine-x64-2.0.6.tgz"
-  integrity sha1-sOgKR5IAHGbif+7iwR6CGtH6FoA=
-
-"@vscode/vsce-sign-darwin-arm64@2.0.6":
-  version "2.0.6"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/vsce-sign-darwin-arm64/-/vsce-sign-darwin-arm64-2.0.6.tgz"
-  integrity sha1-S4+hq1XygKmZhb48BvtzDleBDM4=
-
-"@vscode/vsce-sign-darwin-x64@2.0.6":
-  version "2.0.6"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/vsce-sign-darwin-x64/-/vsce-sign-darwin-x64-2.0.6.tgz"
-  integrity sha1-0skYbZUFSYJyy93YODuwOOvPWCA=
-
-"@vscode/vsce-sign-linux-arm@2.0.6":
-  version "2.0.6"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/vsce-sign-linux-arm/-/vsce-sign-linux-arm-2.0.6.tgz"
-  integrity sha1-CifEKkrbN+lu7HjNe/o4jNTp++8=
-
-"@vscode/vsce-sign-linux-arm64@2.0.6":
-  version "2.0.6"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/vsce-sign-linux-arm64/-/vsce-sign-linux-arm64-2.0.6.tgz"
-  integrity sha1-s9hWAUQEC5INjG7dQ3QxS1glVIE=
-
-"@vscode/vsce-sign-linux-x64@2.0.6":
-  version "2.0.6"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/vsce-sign-linux-x64/-/vsce-sign-linux-x64-2.0.6.tgz"
-  integrity sha1-reEcru7VJPwWvWxDykmuoAKV3ow=
-
-"@vscode/vsce-sign-win32-arm64@2.0.6":
-  version "2.0.6"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/vsce-sign-win32-arm64/-/vsce-sign-win32-arm64-2.0.6.tgz"
-  integrity sha1-BoiWgUjgPrOSR5yEkcclBnIb7/w=
 
 "@vscode/vsce-sign-win32-x64@2.0.6":
   version "2.0.6"
@@ -2924,7 +2876,7 @@ reusify@^1.0.4:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/reusify/-/reusify-1.1.0.tgz"
   integrity sha1-D+E7lSLhRz9RtVjueW4I8R+bSJ8=
 
-rimraf@^6.1.2:
+rimraf@^6.1.3:
   version "6.1.3"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/rimraf/-/rimraf-6.1.3.tgz"
   integrity sha1-r77iNrO9K+Mx1OfORJO6wXGJga8=

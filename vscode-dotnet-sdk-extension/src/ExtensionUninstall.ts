@@ -5,7 +5,6 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import rimraf = require('rimraf');
 
 export function uninstallSDKExtension() {
     const installFolderName = process.env._VSCODE_DOTNET_INSTALL_FOLDER || '.dotnet';
@@ -19,7 +18,7 @@ export function uninstallSDKExtension() {
     }
 
     if (fs.existsSync(installPath)) {
-        rimraf.sync(installPath);
+        fs.rmSync(installPath, { recursive: true, force: true });
     }
 }
 
