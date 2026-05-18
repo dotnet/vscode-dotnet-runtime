@@ -315,11 +315,14 @@ ${stderr}`));
                 // Let the rejected promise get handled below. This is required to not make an error from the checking if this promise is alive
             });
 
-        commandOutputJson = {
-            stdout: (await (this.fileUtil as FileUtilities).read(stdoutFile)).trim(),
-            stderr: (await (this.fileUtil as FileUtilities).read(stderrFile)).trim(),
-            status: (await (this.fileUtil as FileUtilities).read(statusFile)).trim()
-        } as CommandExecutorResult;
+        if (fs.existsSync(outputFile))
+        {
+            commandOutputJson = {
+                stdout: (await this.fileUtil.exists(stdoutFile) ? (await (this.fileUtil as FileUtilities).read(stdoutFile)).trim() : ''),
+                stderr: (await this.fileUtil.exists(stderrFile) ? (await (this.fileUtil as FileUtilities).read(stderrFile)).trim() : ''),
+                status: (await this.fileUtil.exists(statusFile) ? (await (this.fileUtil as FileUtilities).read(statusFile)).trim() : noStatusCodeErrorCode)
+            } as CommandExecutorResult;
+        }
 
         this.context?.eventStream.post(new SudoProcCommandExchangeEnd(`Finished or timed out with master process. ${new Date().toISOString()}`));
 
