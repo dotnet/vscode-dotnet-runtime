@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning].
 - Consolidate rimraf usage — thank you @Green00101!
 - Dependency updates.
 
-## [3.0.2] - 2026-5-5
+## [3.0.2] - 2026-5-12
 
 3.0.1, except as a full release and not a prerelease.
 
