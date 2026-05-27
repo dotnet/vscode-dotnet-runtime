@@ -124,6 +124,14 @@ This is a **user-facing** command that opens an input box pre-filled with the re
 
 This command surfaces an output channel to the user which provides status messages during extension commands. It does not accept parameters and has a void return type.
 
+### dotnet.getAcquisitionLog
+
+This command returns the full path to the log file that the currently running instance of the extension is writing to, wrapped in an [`IDotnetLogResult`](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/vscode-dotnet-runtime-library/src/IDotnetLogResult.ts) object (containing a `logPath` string). It does not accept parameters. Before returning, it flushes any buffered log entries to disk so the file reflects the latest state.
+
+Note: Each VS Code window gets its own extension host log folder, so the returned path only points to the log for the current window. Other concurrent VS Code instances (for example VS Code Insiders versus VS Code) maintain their own logs and must invoke this command separately. The path is derived from `ExtensionContext.logPath`, which [VS Code constructs from the log URI's `fsPath`](https://github.com/microsoft/vscode/blob/a837f16fbe459f3a067aa94da0ddb9b9ae04ebe0/src/vs/workbench/api/common/extHostExtensionService.ts#L538), so it should reflect the remote/WSL extension host when the extension runs there; this is the behavior as of 4/21/2026, despite that VS Code's own commands to get the log path return the Windows path on WSL.
+
+**Offline behavior:** Works offline.
+
 ### dotnet.ensureDotnetDependencies
 
 This command is only applicable to Linux machines. It attempts to ensure that .NET dependencies are present and, if they are not, installs them or prompts the user to do so. It accepts a [IDotnetEnsureDependenciesContext](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/vscode-dotnet-runtime-library/src/IDotnetEnsureDependenciesContext.ts) object and has a void return type. It is no longer supported but remains to support legacy behavior.

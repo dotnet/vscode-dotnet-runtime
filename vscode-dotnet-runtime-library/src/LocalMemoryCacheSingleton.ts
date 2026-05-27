@@ -127,6 +127,21 @@ export class LocalMemoryCacheSingleton
         this.cache.flushAll();
     }
 
+    /**
+     * Invalidates all cache entries whose key contains the given substring.
+     * Used to evict stale results after an install or uninstall changes the state of a dotnet path.
+     */
+    public invalidateEntriesContaining(substring: string, context?: IAcquisitionWorkerContext): void
+    {
+        const allKeys = this.cache.keys();
+        const keysToDelete = allKeys.filter(k => k.includes(substring));
+        if (keysToDelete.length > 0)
+        {
+            context?.eventStream.post(new CacheClearEvent(`Invalidating ${keysToDelete.length} cache entries containing '${substring}' at ${new Date().toISOString()}`));
+            this.cache.del(keysToDelete);
+        }
+    }
+
     private cacheableCommandToKey(key: CacheableCommand): string
     {
         // Get all keys sorted

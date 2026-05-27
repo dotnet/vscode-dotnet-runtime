@@ -60,7 +60,7 @@ import { ICommandExecutor } from './ICommandExecutor';
 import { IFileUtilities } from './IFileUtilities';
 import { IUtilityContext } from './IUtilityContext';
 import { LockUsedByThisInstanceSingleton } from './LockUsedByThisInstanceSingleton';
-import { executeWithLock, isRunningUnderWSL, loopWithTimeoutOnCond, minimizeEnvironment } from './TypescriptUtilities';
+import { executeWithLock, filterEnvVars, isRunningUnderWSL, loopWithTimeoutOnCond, minimizeEnvironment } from './TypescriptUtilities';
 
 export class CommandExecutor extends ICommandExecutor
 {
@@ -446,7 +446,7 @@ ${stderr}`));
             options.encoding = 'utf8';
 
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            options.env ??= { ...process.env };
+            options.env ??= filterEnvVars({ ...process.env });
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             options.env.DOTNET_CLI_UI_LANGUAGE ??= 'en-US';
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -456,7 +456,7 @@ ${stderr}`));
         {
             options = {
                 cwd: path.resolve(__dirname), shell: true, encoding: 'utf8', env:
-                    { ...process.env, DOTNET_CLI_UI_LANGUAGE: 'en-US', DOTNET_NOLOGO: 'true' }
+                    { ...filterEnvVars(process.env), DOTNET_CLI_UI_LANGUAGE: 'en-US', DOTNET_NOLOGO: 'true' }
             };
         }
 

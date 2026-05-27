@@ -5,7 +5,6 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import rimraf = require('rimraf');
 
 import
 {
@@ -38,7 +37,6 @@ import
 } from '../EventStream/EventStreamEvents';
 import * as versionUtils from './VersionUtilities';
 
-import { promisify } from 'util';
 import { IEventStream } from '../EventStream/EventStream';
 import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
@@ -52,6 +50,7 @@ import { IUtilityContext } from '../Utils/IUtilityContext';
 import { executeWithLock, getDotnetExecutable, isRunningUnderWSL } from '../Utils/TypescriptUtilities';
 import { DOTNET_INFORMATION_CACHE_DURATION_MS, GLOBAL_LOCK_PING_DURATION_MS, LOCAL_LOCK_PING_DURATION_MS } from './CacheTimeConstants';
 import { directoryProviderFactory } from './DirectoryProviderFactory';
+import { LocalMemoryCacheSingleton } from '../LocalMemoryCacheSingleton';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
 import
 {
@@ -296,6 +295,7 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
                     throw reason; // This will get handled and cast into an event based error by its caller.
                 });
 
+                LocalMemoryCacheSingleton.getInstance().invalidateEntriesContaining(dotnetInstallDir, context);
                 context.installationValidator.validateDotnetInstall(install, dotnetPath);
                 await this.removeMatchingLegacyInstall(context, installedVersions, version, true);
                 await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).trackInstalledVersion(context, install, dotnetPath);
@@ -476,10 +476,9 @@ ${interpretedMessage}`;
         dotnetExePath = await installer.getExpectedGlobalSDKPath(installingVersion,
             context.acquisitionContext.architecture ?? this.getDefaultInternalArchitecture(context.acquisitionContext.architecture));
 
+        LocalMemoryCacheSingleton.getInstance().invalidateEntriesContaining('dotnet', context);
         context.installationValidator.validateDotnetInstall(install, dotnetExePath, os.platform() === 'darwin', os.platform() !== 'darwin');
-
         context.eventStream.post(new DotnetAcquisitionCompleted(install, dotnetExePath, installingVersion));
-
         await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).trackInstalledVersion(context, install, dotnetExePath);
 
         await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream);
@@ -573,6 +572,7 @@ ${interpretedMessage}`;
                     {
                         context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install.installId}.`));
                         await this.file.wipeDirectory(dotnetInstallDir, context.eventStream, undefined, true,);
+                        LocalMemoryCacheSingleton.getInstance().invalidateEntriesContaining(dotnetInstallDir, context);
                         await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).reportSuccessfulUninstall(context, install, force);
                         context.eventStream.post(new DotnetUninstallCompleted(`Uninstalled .NET ${install.installId}.`));
                     }
@@ -617,6 +617,7 @@ Other dependents remain.`));
 
                         systemInstallPath = await installer.getExpectedGlobalSDKPath(installingVersion, install.architecture);
                         const ok = await installer.uninstallSDK(install);
+                        LocalMemoryCacheSingleton.getInstance().invalidateEntriesContaining('dotnet', context);
                         await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream);
                         if (ok === '0')
                         {
@@ -664,7 +665,7 @@ Other dependents remain.`));
                 }
                 try
                 {
-                    await promisify(rimraf)(fullSubDirectoryPath);
+                    await fs.promises.rm(fullSubDirectoryPath, { recursive: true, force: true });
                     eventStream.post(new DotnetAcquisitionDeletion(`Deleted .NET folder ${folderPath} when marked for deletion.`));
                 }
                 catch (error: any)

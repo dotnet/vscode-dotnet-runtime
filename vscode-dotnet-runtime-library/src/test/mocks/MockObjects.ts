@@ -35,15 +35,51 @@ import { ICommandExecutor } from '../../Utils/ICommandExecutor';
 import { IFileUtilities } from '../../Utils/IFileUtilities';
 import { IUtilityContext } from '../../Utils/IUtilityContext';
 import { IVSCodeEnvironment } from '../../Utils/IVSCodeEnvironment';
+import { INodeIPCMutexLogger, NodeIPCMutex } from '../../Utils/NodeIPCMutex';
 import { getDotnetExecutable } from '../../Utils/TypescriptUtilities';
 import { WebRequestWorkerSingleton } from '../../Utils/WebRequestWorkerSingleton';
 import { getMockUtilityContext } from '../unit/TestUtility';
 
 const testDefaultTimeoutTimeMs = 60000;
 
+/**
+ * A NodeIPCMutex that lets tests override the IPC directory so they can use a directory they fully
+ * own and can chmod freely (or an unwritable one like "/") to produce REAL bind/listen errors from
+ * the kernel — no synthetic error injection.
+ */
+export class MockNodeIPCMutex extends NodeIPCMutex
+{
+    private readonly customDirectory?: string;
+
+    constructor(lockId: string, logger: INodeIPCMutexLogger, customDirectory?: string, lockFailureErrorMessage?: string)
+    {
+        // Temporarily stash the directory so the parent ctor (which resolves the lock path before any
+        // subclass field is set) can read it via our overridden getIPCDirectory().
+        // We cannot set `this.customDirectory` before `super()` in TypeScript, so route through a module-level holder.
+        MockNodeIPCMutex.pendingDirectory = customDirectory;
+        super(lockId, logger, lockFailureErrorMessage);
+        this.customDirectory = customDirectory;
+        MockNodeIPCMutex.pendingDirectory = undefined;
+    }
+
+    private static pendingDirectory: string | undefined;
+
+    protected override getIPCDirectory(): string
+    {
+        const dir = this.customDirectory ?? MockNodeIPCMutex.pendingDirectory;
+        return dir ?? super.getIPCDirectory();
+    }
+
+    public getLockPathForTest(): string
+    {
+        return this.lockPath;
+    }
+}
+
 export class MockExtensionContext implements IExtensionState
 {
     private values: { [n: string]: any; } = {};
+    public syncedKeys: readonly string[] | undefined = undefined;
 
     public get<T>(key: string): T | undefined;
     public get<T>(key: string, defaultValue: T): T;
@@ -59,6 +95,10 @@ export class MockExtensionContext implements IExtensionState
     public update(key: string, value: any): Thenable<void>
     {
         return this.values[key] = value;
+    }
+    public setKeysForSync(keys: readonly string[]): void
+    {
+        this.syncedKeys = keys;
     }
     public clear()
     {
@@ -384,6 +424,9 @@ export class MockCommandExecutor extends ICommandExecutor
     // We will check for an includes match and not an exact match!
     public otherCommandPatternsToMock: string[] = [];
     public otherCommandsReturnValues: CommandExecutorResult[] = [];
+    public workingCommandIndex: number | null = 0;
+    public capturedCommands: CommandExecutorCommand[] = [];
+    public capturedOptions: any;
 
     constructor(acquisitionContext: IAcquisitionWorkerContext, utilContext: IUtilityContext)
     {
@@ -435,9 +478,15 @@ export class MockCommandExecutor extends ICommandExecutor
         return result;
     }
 
-    public async tryFindWorkingCommand(commands: CommandExecutorCommand[]): Promise<CommandExecutorCommand>
+    public async tryFindWorkingCommand(commands: CommandExecutorCommand[], options?: any): Promise<CommandExecutorCommand | null>
     {
-        return commands[0];
+        this.capturedCommands = commands;
+        this.capturedOptions = options;
+        if (this.workingCommandIndex === null)
+        {
+            return null;
+        }
+        return commands[this.workingCommandIndex];
     }
 
     /**
@@ -455,6 +504,9 @@ export class MockCommandExecutor extends ICommandExecutor
         this.attemptedCommand = '';
         this.otherCommandPatternsToMock = [];
         this.otherCommandsReturnValues = [];
+        this.workingCommandIndex = 0;
+        this.capturedCommands = [];
+        this.capturedOptions = undefined;
     }
 
     public async setEnvironmentVariable(variable: string, value: string, vscodeContext: IVSCodeExtensionContext, failureWarningMessage?: string, nonWinFailureMessage?: string)
@@ -657,7 +709,7 @@ export class MockTelemetryReporter implements ITelemetryReporter
         MockTelemetryReporter.telemetryEvents = MockTelemetryReporter.telemetryEvents.concat({ eventName, properties, measures });
     }
 
-    public sendTelemetryErrorEvent(eventName: string, properties?: { [key: string]: string }, measures?: { [key: string]: number }, errorProps?: string[]): void
+    public sendTelemetryErrorEvent(eventName: string, properties?: { [key: string]: string }, measures?: { [key: string]: number }): void
     {
         eventName = `[ERROR]:${eventName}`;
         MockTelemetryReporter.telemetryEvents = MockTelemetryReporter.telemetryEvents.concat({ eventName, properties, measures });

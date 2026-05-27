@@ -210,7 +210,7 @@ export class LocalInstallUpdateService extends IInstallManagementService
                     errorConfiguration: AcquireErrorConfiguration.DisableErrorPopups
                 };
 
-                this.uninstallAction(uninstallContext, false, true).catch((e: any) => {});
+                await this.uninstallAction(uninstallContext, false, true).catch((e: any) => {});
             }
 
             processedGroup = true;

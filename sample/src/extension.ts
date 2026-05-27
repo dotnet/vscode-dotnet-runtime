@@ -8,14 +8,15 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 // import * as runtimeExtension from 'vscode-dotnet-runtime'; // comment this out when packing the extension
 import
-    {
-        DotnetInstallMode,
-        DotnetVersionSpecRequirement,
-        IDotnetAcquireContext,
-        IDotnetAcquireResult,
-        IDotnetFindPathContext,
-        IDotnetListVersionsResult,
-    } from 'vscode-dotnet-runtime-library';
+{
+    DotnetInstallMode,
+    DotnetVersionSpecRequirement,
+    IDotnetAcquireContext,
+    IDotnetAcquireResult,
+    IDotnetFindPathContext,
+    IDotnetListVersionsResult,
+    IDotnetLogResult,
+} from 'vscode-dotnet-runtime-library';
 
 export function activate(context: vscode.ExtensionContext)
 {
@@ -222,6 +223,19 @@ ${stderr}`);
         }
     });
 
+    const sampleGetAcquisitionLogRegistration = vscode.commands.registerCommand('sample.dotnet.getAcquisitionLog', async () =>
+    {
+        try
+        {
+            const result = await vscode.commands.executeCommand<IDotnetLogResult>('dotnet.getAcquisitionLog');
+            vscode.window.showInformationMessage(`.NET acquisition log path: ${result?.logPath ?? 'undefined'}`);
+        }
+        catch (error)
+        {
+            vscode.window.showErrorMessage((error as Error).toString());
+        }
+    });
+
     const sampleGlobalSDKFromRuntimeRegistration = vscode.commands.registerCommand('sample.dotnet.acquireGlobalSDK', async (version: string | undefined) =>
     {
         if (!version)
@@ -339,6 +353,7 @@ ${JSON.stringify(result) ?? 'undefined'}`);
         sampleConcurrentTest,
         sampleConcurrentASPNETTest,
         sampleShowAcquisitionLogRegistration,
+        sampleGetAcquisitionLogRegistration,
         sampleFindPathRegistration,
         sampleAvailableInstallsRegistration
     );

@@ -7,7 +7,7 @@
 		"url": "https://github.com/dotnet/vscode-dotnet-runtime.git"
 	},
 	"license": "MIT",
-	"version": "3.0.0",
+	"version": "3.0.2",
 	"publisher": "ms-dotnettools",
 	"engines": {
 		"vscode": "^1.101.0"
@@ -63,6 +63,11 @@
 			{
 				"command": "sample.dotnet.showAcquisitionLog",
 				"title": "Show .NET runtime acquisition log",
+				"category": "Sample"
+			},
+			{
+				"command": "sample.dotnet.getAcquisitionLog",
+				"title": "Get the .NET runtime acquisition log file path",
 				"category": "Sample"
 			},
 			{
@@ -150,11 +155,10 @@
 	"devDependencies": {
 		"@types/mocha": "9.0.0",
 		"@types/node": "^22.15.1",
-		"@types/rimraf": "3.0.2",
 		"@types/source-map-support": "^0.5.10",
 		"@types/vscode": "^1.101.0",
 		"mocha": "^11.7.0",
-		"rimraf": "3.0.2",
+		"rimraf": "^6.1.3",
 		"tslint": "5.20.1",
 		"typescript": "^5.5.4"
 	}

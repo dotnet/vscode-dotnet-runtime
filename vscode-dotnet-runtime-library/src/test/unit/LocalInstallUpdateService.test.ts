@@ -620,4 +620,81 @@ suite('LocalInstallUpdateService Unit Tests', function ()
         assert.lengthOf(ownersAdded, 1, 'Owners should move to the newest runtime install');
         assert.strictEqual(ownersAdded[0].install.installId, latestInstall.dotnetInstall.installId, 'Highest patch runtime should receive owners');
     });
+
+    test('It fully completes uninstalls before ManageInstalls returns so the uninstall list is accurate', async () =>
+    {
+        const onlineStub = {
+            isOnline: async () => true
+        } as unknown as WebRequestWorkerSingleton;
+
+        (WebRequestWorkerSingleton as unknown as { getInstance: () => WebRequestWorkerSingleton }).getInstance = () => onlineStub;
+
+        const eventStream = new MockEventStream();
+        const extensionState = new MockExtensionContext();
+        extensionState.update('dotnet.latestUpdateDate', new Date(0));
+
+        const directoryProvider = new TestInstallationDirectoryProvider('/tmp');
+
+        const legacyInstall = createInstallRecord('10.0.1', 'x64', 'runtime', ['ms-dotnettools.sample-extension']);
+        const latestInstall = createInstallRecord('10.0.5', 'x64', 'runtime', []);
+
+        extensionState.update('installed', [legacyInstall]);
+
+        const tracker = RealLocalUpdateServiceTracker.getInstance(eventStream, extensionState);
+
+        const acquireStub = async (context: IDotnetAcquireContext) =>
+        {
+            const workerContext = getMockAcquisitionContext(context.mode ?? 'runtime', latestInstall.dotnetInstall.version, 5000, eventStream, extensionState, context.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(), directoryProvider);
+            workerContext.acquisitionContext.requestingExtensionId = context.requestingExtensionId;
+
+            const installPath = path.join(directoryProvider.getInstallDir(latestInstall.dotnetInstall.installId), getDotnetExecutable());
+            await tracker.trackInstalledVersion(workerContext, latestInstall.dotnetInstall, installPath);
+            return undefined;
+        };
+
+        const uninstallStub = async (context: IDotnetAcquireContext, force: boolean, onlyCheckLiveDependents: boolean) =>
+        {
+            const uninstallTracker = RealLocalUpdateServiceTracker.getInstance(eventStream, extensionState);
+            const architecture = context.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture();
+            const dotnetInstall: DotnetInstall = {
+                version: context.version!,
+                architecture,
+                installId: `${context.version}~${architecture}~${context.mode}`,
+                installMode: context.mode!,
+                isGlobal: false
+            };
+
+            const workerContext = getMockAcquisitionContext(context.mode ?? 'runtime', context.version!, 5000, eventStream, extensionState, architecture, directoryProvider);
+            workerContext.acquisitionContext.requestingExtensionId = context.requestingExtensionId;
+
+            const installExePath = path.join(directoryProvider.getInstallDir(dotnetInstall.installId), getDotnetExecutable());
+
+            await uninstallTracker.untrackInstalledVersion(workerContext, dotnetInstall, force);
+
+            const noDependents = force ? true : onlyCheckLiveDependents ?
+                await uninstallTracker.installHasNoLiveDependentsBesidesId(installExePath, directoryProvider, context.requestingExtensionId ?? '', dotnetInstall) :
+                await uninstallTracker.installHasNoRegisteredDependentsBesidesId(dotnetInstall, directoryProvider, false, context.requestingExtensionId ?? '');
+
+            if (force || noDependents)
+            {
+                await uninstallTracker.reportSuccessfulUninstall(workerContext, dotnetInstall, force);
+            }
+
+            return '0';
+        };
+
+        const updateService = new LocalInstallUpdateService(eventStream, extensionState, directoryProvider, acquireStub, uninstallStub, new MockLoggingObserver(), RealLocalUpdateServiceTracker);
+
+        await updateService.ManageInstalls(0);
+
+        // Immediately after ManageInstalls returns, the outdated install must already be removed from state.
+        // Previously (before the fix), the uninstall was fire-and-forget so the old version would still appear
+        // in the Uninstall .NET list when queried right after ManageInstalls returned.
+        const remainingInstalls = await tracker.getExistingInstalls(directoryProvider, false);
+        assert.deepEqual(
+            remainingInstalls.map(install => install.dotnetInstall.installId),
+            [latestInstall.dotnetInstall.installId],
+            'Outdated installs must be fully removed from state by the time ManageInstalls returns, not fire-and-forget'
+        );
+    }).timeout(10000);
 });
