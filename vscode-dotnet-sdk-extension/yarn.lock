@@ -1897,14 +1897,13 @@ util-deprecate@~1.0.1:
   integrity sha1-RQ1Nyfpw3nMnYvvS1KKJgUGaDM8=
 
 "vscode-dotnet-runtime-library@file:../vscode-dotnet-runtime-library":
-  version "3.0.2"
+  version "3.1.0"
   resolved "file:../vscode-dotnet-runtime-library"
   dependencies:
     "@microsoft/applicationinsights-common" "^3.4.1"
     "@types/chai-as-promised" "^7.1.4"
     "@types/mocha" "^9.0.0"
     "@types/node" "^22.15.1"
-    "@types/rimraf" "3.0.2"
     "@types/semver" "^7.5.0"
     "@types/shelljs" "^0.8.9"
     "@types/vscode" "^1.101.0"
@@ -1923,7 +1922,6 @@ util-deprecate@~1.0.1:
     mocha "^11.7.0"
     node-cache "^5.1.2"
     open "^8.4.0"
-    rimraf "3.0.2"
     run-script-os "^1.1.6"
     semver "^7.6.2"
     shelljs "^0.8.5"
