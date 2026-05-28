@@ -1507,6 +1507,11 @@ export class UpdatingInstallGroups extends DotnetCustomMessageEvent
     public readonly eventName = 'UpdatingInstallGroups';
 }
 
+export class SkippingIncompatibleArchitectureInstall extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'SkippingIncompatibleArchitectureInstall';
+}
+
 export class NoMatchingInstallToStopTracking extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'NoMatchingInstallToStopTracking';
