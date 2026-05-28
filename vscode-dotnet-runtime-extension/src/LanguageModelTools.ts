@@ -60,7 +60,7 @@ function formatToolError(contextMessage: string, errorContent: string): string
  * Returns a standardized tool result for WSL or unsupported Linux distros.
  * Centralizes the fallback message so install/uninstall tools stay consistent.
  */
-function unsupportedPlatformResult(action: string, reason: string): vscode.LanguageModelToolResult
+function unsupportedPlatformResult(action: string): vscode.LanguageModelToolResult
 {
     return new vscode.LanguageModelToolResult([
         new vscode.LanguageModelTextPart(
@@ -138,10 +138,10 @@ class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string }>
         this.eventStream.post(new LanguageModelToolInvoked(ToolNames.installSdk, rawInput));
 
         // Early exit on WSL or unsupported Linux — this tool cannot install there.
-        const linuxCheck = await checkForUnsupportedLinux();
+        const linuxCheck = await checkForUnsupportedLinux(this.eventStream);
         if (linuxCheck.isUnsupported)
         {
-            return unsupportedPlatformResult('install', linuxCheck.reason ?? 'unsupported Linux distro');
+            return unsupportedPlatformResult('install');
         }
 
         const version = options.input?.version;
@@ -466,10 +466,10 @@ class UninstallTool implements vscode.LanguageModelTool<{ version?: string; mode
         this.eventStream.post(new LanguageModelToolInvoked(ToolNames.uninstall, rawInput));
 
         // Early exit on WSL or unsupported Linux — this tool cannot uninstall there.
-        const linuxCheck = await checkForUnsupportedLinux();
+        const linuxCheck = await checkForUnsupportedLinux(this.eventStream);
         if (linuxCheck.isUnsupported)
         {
-            return unsupportedPlatformResult('uninstall', linuxCheck.reason ?? 'unsupported Linux distro');
+            return unsupportedPlatformResult('uninstall');
         }
 
         const { version, mode, global } = options.input;
