@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-## [3.0.2] - 2026-5
+## [3.1.0] - 2026-5
+
+- Adds Language Model Tools for AI agents (GitHub Copilot) to install, uninstall, list, and find .NET SDKs/Runtimes.
+- Consolidate rimraf usage — thank you @Green00101!
+- Dependency updates.
+
+## [3.0.2] - 2026-5-12
 
 3.0.1, except as a full release and not a prerelease.
 
