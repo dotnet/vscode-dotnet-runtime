@@ -7,7 +7,7 @@ import { SYSTEM_INFORMATION_CACHE_DURATION_MS } from '../Acquisition/CacheTimeCo
 import type { DistroVersionPair } from '../Acquisition/LinuxVersionResolver';
 import { RED_HAT_DISTRO_INFO_KEY, UBUNTU_DISTRO_INFO_KEY } from '../Acquisition/StringConstants';
 import { IEventStream } from '../EventStream/EventStream';
-import { DotnetWSLCheckEvent } from '../EventStream/EventStreamEvents';
+import { DotnetWSLCheckEvent, FoundDistroVersionDetails } from '../EventStream/EventStreamEvents';
 import { IEvent } from '../EventStream/IEvent';
 import { CommandExecutor } from './CommandExecutor';
 import { EventStreamNodeIPCMutexLoggerWrapper } from './EventStreamNodeIPCMutexWrapper';
@@ -243,13 +243,17 @@ export async function getRunningDistro(eventStream?: IEventStream): Promise<Dist
 
         if (distroName === '' || distroVersion === '')
         {
+            eventStream?.post(new FoundDistroVersionDetails(`Failed to determine distro from os-release. NAME='${distroName}', VERSION_ID='${distroVersion}'`));
             return null;
         }
 
-        return { distro: distroName, version: distroVersion };
+        const result = { distro: distroName, version: distroVersion };
+        eventStream?.post(new FoundDistroVersionDetails(`Detected distro: ${result.distro} ${result.version}`));
+        return result;
     }
-    catch
+    catch (err)
     {
+        eventStream?.post(new FoundDistroVersionDetails(`Failed to read os-release file: ${(err as Error)?.message ?? 'unknown error'}`));
         return null;
     }
 }
