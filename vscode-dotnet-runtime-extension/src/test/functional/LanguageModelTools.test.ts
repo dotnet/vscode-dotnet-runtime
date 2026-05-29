@@ -524,27 +524,6 @@ suite('LanguageModelTools Tests', function ()
 
     suite('Uninstall Tool', function ()
     {
-        test('Can be invoked without parameters (launches interactive picker)', async () =>
-        {
-            const result = await vscode.lm.invokeTool(
-                ToolNames.uninstall,
-                { input: {}, toolInvocationToken: undefined },
-                new vscode.CancellationTokenSource().token
-            );
-
-            assert.exists(result, 'Tool should return a result');
-            assert.exists(result.content, 'Result should have content');
-
-            const textContent = extractTextContent(result);
-
-            // Should mention interactive dialog or selection
-            const mentionsInteractive = textContent.includes('interactive') ||
-                textContent.includes('dialog') ||
-                textContent.includes('select') ||
-                textContent.includes('dropdown');
-            assert.isTrue(mentionsInteractive, 'Should mention interactive uninstall when no version provided');
-        }).timeout(standardTimeoutTime);
-
         test('Accepts version parameter', async () =>
         {
             // This won't actually uninstall anything, but should accept the parameter
@@ -749,26 +728,6 @@ suite('LanguageModelTools Tests', function ()
             // The key is that it returns something informative, not just "undefined" or silence
             assert.exists(result, 'Should return a result even on failure');
             assert.isAbove(textContent.length, 0, 'Should provide informative feedback');
-        }).timeout(standardTimeoutTime);
-
-        test('Interactive uninstall mentions unknown outcome for LLM awareness', async () =>
-        {
-            // When no version is provided, interactive picker is launched
-            // The outcome is unknown to the tool - it should inform the LLM of this
-            const result = await vscode.lm.invokeTool(
-                ToolNames.uninstall,
-                { input: {}, toolInvocationToken: undefined },
-                new vscode.CancellationTokenSource().token
-            );
-
-            const textContent = extractTextContent(result);
-
-            // Should indicate the outcome is unknown (user might have cancelled)
-            const mentionsUnknownOutcome = textContent.includes('unknown') ||
-                textContent.includes('cancelled') ||
-                textContent.includes('Ask the user') ||
-                textContent.includes('IMPORTANT');
-            assert.isTrue(mentionsUnknownOutcome, 'Should inform LLM that interactive outcome is unknown');
         }).timeout(standardTimeoutTime);
 
         test('Error messages contain actionable information for LLM', async () =>

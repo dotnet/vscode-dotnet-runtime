@@ -392,7 +392,9 @@ class FindPathTool implements vscode.LanguageModelTool<{ version: string; mode?:
         try
         {
             const resolvedMode = (mode as DotnetInstallMode) || 'runtime';
-            const resolvedArchitecture = architecture || os.arch();
+            const nodeArch = architecture || os.arch();
+            // Normalize Node.js architecture names to .NET architecture names
+            const resolvedArchitecture = nodeArch === 'ia32' ? 'x86' : nodeArch;
 
             const findContext: IDotnetFindPathContext = {
                 acquireContext: {
@@ -453,12 +455,12 @@ class FindPathTool implements vscode.LanguageModelTool<{ version: string; mode?:
 /**
  * Tool to uninstall .NET versions
  */
-class UninstallTool implements vscode.LanguageModelTool<{ version?: string; mode?: string; global?: boolean }>
+class UninstallTool implements vscode.LanguageModelTool<{ version: string; mode?: string; global?: boolean }>
 {
     constructor(private readonly eventStream: EventStream) {}
 
     async invoke(
-        options: vscode.LanguageModelToolInvocationOptions<{ version?: string; mode?: string; global?: boolean }>,
+        options: vscode.LanguageModelToolInvocationOptions<{ version: string; mode?: string; global?: boolean }>,
         token: vscode.CancellationToken
     ): Promise<vscode.LanguageModelToolResult>
     {
@@ -476,20 +478,6 @@ class UninstallTool implements vscode.LanguageModelTool<{ version?: string; mode
 
         try
         {
-            // If no specific version provided, fall back to interactive picker
-            if (!version)
-            {
-                await vscode.commands.executeCommand('dotnet.uninstallPublic');
-                return new vscode.LanguageModelToolResult([
-                    new vscode.LanguageModelTextPart(
-                        'Launched interactive .NET uninstall dialog. ' +
-                        'Outcome unknown — user may have selected a version or cancelled. Ask user for result. ' +
-                        'Tip: call listInstalledDotNetVersions first, then provide version+mode for deterministic uninstall.'
-                    )
-                ]);
-            }
-
-            // Specific version uninstall
             const resolvedMode = (mode as DotnetInstallMode) || 'sdk';
             const isGlobal = global ?? true;
 
@@ -567,7 +555,7 @@ class UninstallTool implements vscode.LanguageModelTool<{ version?: string; mode
                 return new vscode.LanguageModelToolResult([
                     new vscode.LanguageModelTextPart(
                         formatToolError(
-                            `Uninstall of .NET${version ? ` ${version}` : ''} cancelled/rejected by user.\n` +
+                            `Uninstall of .NET ${version} cancelled/rejected by user.\n` +
                             `Ask user to retry — they must accept all prompts including admin/elevation.`,
                             errorMessage
                         )
@@ -578,7 +566,7 @@ class UninstallTool implements vscode.LanguageModelTool<{ version?: string; mode
             return new vscode.LanguageModelToolResult([
                 new vscode.LanguageModelTextPart(
                     formatToolError(
-                        `Extension-based uninstall of .NET${version ? ` ${version}` : ''} failed.\n` +
+                        `Extension-based uninstall of .NET ${version} failed.\n` +
                         `Check ".NET Install Tool" output channel. Verify admin privileges and internet.\n` +
                         `If unresolved, see https://learn.microsoft.com/dotnet/core/install for manual uninstall instructions.`,
                         errorMessage
