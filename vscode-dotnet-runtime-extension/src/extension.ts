@@ -822,6 +822,12 @@ ${JSON.stringify(commandContext)}`));
             }
         }, getIssueContext(existingPathConfigWorker)(commandContext?.errorConfiguration, 'uninstall'), commandContext?.requestingExtensionId, workerContext, commandContext?.rethrowError);
 
+        // If the result indicates failure and rethrowError is requested, throw so callers (like LLM tools) can catch it
+        if (result !== '0' && result !== '' && commandContext?.rethrowError)
+        {
+            throw new Error(`Uninstall of .NET ${commandContext?.version} did not succeed (code ${result}). The uninstaller may have been cancelled, blocked by another install in progress, or require manual removal.`);
+        }
+
         return result;
     }
 
