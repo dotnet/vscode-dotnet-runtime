@@ -6,30 +6,30 @@
 import * as os from 'os';
 import * as vscode from 'vscode';
 import
-    {
-        AcquireErrorConfiguration,
-        checkForUnsupportedLinux,
-        DotnetAcquisitionCompleted,
-        DotnetAcquisitionStarted,
-        DotnetBeginGlobalInstallerExecution,
-        DotnetInstallMode,
-        DotnetUninstallCompleted,
-        DotnetUninstallFailed,
-        DotnetUninstallStarted,
-        EventStream,
-        IDotnetAcquireContext,
-        IDotnetAcquireResult,
-        IDotnetFindPathContext,
-        IDotnetListVersionsContext,
-        IDotnetListVersionsResult,
-        IDotnetSearchContext,
-        IDotnetSearchResult,
-        IDotnetVersion,
-        IEventStream,
-        LanguageModelToolInvoked,
-        LanguageModelToolPrepareInvocation,
-        SuppressedAcquisitionError
-    } from 'vscode-dotnet-runtime-library';
+{
+    AcquireErrorConfiguration,
+    checkForUnsupportedLinux,
+    DotnetAcquisitionCompleted,
+    DotnetAcquisitionStarted,
+    DotnetBeginGlobalInstallerExecution,
+    DotnetInstallMode,
+    DotnetUninstallCompleted,
+    DotnetUninstallFailed,
+    DotnetUninstallStarted,
+    EventStream,
+    IDotnetAcquireContext,
+    IDotnetAcquireResult,
+    IDotnetFindPathContext,
+    IDotnetListVersionsContext,
+    IDotnetListVersionsResult,
+    IDotnetSearchContext,
+    IDotnetSearchResult,
+    IDotnetVersion,
+    IEventStream,
+    LanguageModelToolInvoked,
+    LanguageModelToolPrepareInvocation,
+    SuppressedAcquisitionError
+} from 'vscode-dotnet-runtime-library';
 import { settingsInfoContent } from './SettingsInfoContent';
 
 /**
@@ -454,6 +454,19 @@ class FindPathTool implements vscode.LanguageModelTool<{ version: string; mode?:
 }
 
 /**
+ * Outcome of a single uninstall attempt as observed by the LLM tool.
+ * Populated from the command's return value and any DotnetUninstallFailed / SuppressedAcquisitionError events captured during the call.
+ */
+interface UninstallAttemptOutcome
+{
+    ok: boolean;
+    resultCode: string | null;
+    detail: string;
+    thrownMessage: string | null;
+    isCancellation: boolean;
+}
+
+/**
  * Tool to uninstall .NET versions
  */
 class UninstallTool implements vscode.LanguageModelTool<{ version: string; mode?: string; global?: boolean }>
@@ -476,29 +489,59 @@ class UninstallTool implements vscode.LanguageModelTool<{ version: string; mode?
         }
 
         const { version, mode, global } = options.input;
+        const resolvedMode = (mode as DotnetInstallMode) || 'sdk';
+        const isGlobal = global ?? true;
+        const requestingExtensionId = 'ms-dotnettools.vscode-dotnet-runtime';
+        const nodeArch = os.arch();
+        const resolvedArchitecture = nodeArch === 'ia32' ? 'x86' : nodeArch;
+        const modeDisplay = resolvedMode === 'sdk' ? 'SDK' : 'Runtime';
 
-        // Captured from the event stream during the uninstall; the underlying installer often returns
-        // a bare exit code with no message, but emits a DotnetUninstallFailed or SuppressedAcquisitionError event with the real detail.
-        // Hoisted above try so both the rethrow catch and the non-zero result branch can read it.
-        let capturedFailureDetail = '';
+        const acquireContext: IDotnetAcquireContext = {
+            version,
+            mode: resolvedMode,
+            installType: isGlobal ? 'global' : 'local',
+            architecture: resolvedArchitecture,
+            requestingExtensionId,
+            rethrowError: true // Rethrow errors so the LLM tool can capture the actual error message
+        };
 
+        const firstAttempt = await this.runUninstallAttempt(acquireContext, version, modeDisplay);
+        if (firstAttempt.ok)
+        {
+            return this.buildUninstallSuccessResult(version, modeDisplay);
+        }
+
+        // The extension can only uninstall installs in its install-tracker list. If the install exists on disk but isn't tracked,
+        // registering it via acquireGlobalSDK adds it to the tracker; uninstall then succeeds. Gated on findPath to avoid a wasteful fresh install.
+        // Only attempted for global SDKs that didn't already fail because the user declined elevation.
+        if (!firstAttempt.isCancellation && isGlobal && resolvedMode === 'sdk')
+        {
+            return this.tryRecoverFromUntrackedInstall(acquireContext, version, modeDisplay, requestingExtensionId, resolvedArchitecture, firstAttempt);
+        }
+
+        return this.buildUninstallFailureResult(firstAttempt, version, modeDisplay);
+    }
+
+    private buildUninstallSuccessResult(version: string, modeDisplay: string): vscode.LanguageModelToolResult
+    {
+        return new vscode.LanguageModelToolResult([
+            new vscode.LanguageModelTextPart(`Successfully uninstalled .NET ${modeDisplay} ${version}. Restart terminal for changes.`)
+        ]);
+    }
+
+    /**
+     * Runs a single uninstall attempt with progress UI and captures event-stream detail since the underlying installer
+     * often returns a bare exit code with no message but emits DotnetUninstallFailed / SuppressedAcquisitionError with the real reason.
+     */
+    private async runUninstallAttempt(acquireContext: IDotnetAcquireContext, version: string, modeDisplay: string, titleSuffix = ''): Promise<UninstallAttemptOutcome>
+    {
+        let detail = '';
         try
         {
-            const resolvedMode = (mode as DotnetInstallMode) || 'sdk';
-            const isGlobal = global ?? true;
-
-            const acquireContext: IDotnetAcquireContext = {
-                version,
-                mode: resolvedMode,
-                installType: isGlobal ? 'global' : 'local',
-                requestingExtensionId: 'ms-dotnettools.vscode-dotnet-runtime',
-                rethrowError: true // Rethrow errors so the LLM tool can capture the actual error message
-            };
-
-            const result: string = await vscode.window.withProgress(
+            const result = await vscode.window.withProgress(
                 {
                     location: vscode.ProgressLocation.Notification,
-                    title: `Uninstalling .NET ${resolvedMode === 'sdk' ? 'SDK' : 'Runtime'} ${version}`,
+                    title: `Uninstalling .NET ${modeDisplay} ${version}${titleSuffix}`,
                     cancellable: false
                 },
                 async (progress) =>
@@ -518,83 +561,108 @@ class UninstallTool implements vscode.LanguageModelTool<{ version: string; mode?
                         else if (event instanceof DotnetUninstallFailed)
                         {
                             progress.report({ message: 'Uninstall failed.' });
-                            capturedFailureDetail = event.eventMessage;
+                            detail = event.eventMessage;
                         }
                         else if (event instanceof SuppressedAcquisitionError)
                         {
                             // Last-write-wins: a later SuppressedAcquisitionError is more specific than an earlier one.
-                            capturedFailureDetail = `${event.supplementalMessage} | ${event.error?.message ?? ''}`.trim();
+                            detail = `${event.supplementalMessage} | ${event.error?.message ?? ''}`.trim();
                         }
                     });
 
-                    try
-                    {
-                        return await vscode.commands.executeCommand<string>('dotnet.uninstall', acquireContext);
-                    }
-                    finally
-                    {
-                        subscription.dispose();
-                    }
+                    try { return await vscode.commands.executeCommand<string>('dotnet.uninstall', acquireContext); }
+                    finally { subscription.dispose(); }
                 }
             );
 
-            if (result === '0' || result === '')
-            {
-                return new vscode.LanguageModelToolResult([
-                    new vscode.LanguageModelTextPart(
-                        `Successfully uninstalled .NET ${resolvedMode === 'sdk' ? 'SDK' : 'Runtime'} ${version}. Restart terminal for changes.`
-                    )
-                ]);
-            } else
-            {
-                // Non-zero or unexpected result - likely an error or cancellation
-                const detailLine = capturedFailureDetail
-                    ? `Installer detail: ${capturedFailureDetail}\nInstaller exit code: ${result}`
-                    : `Installer exit code: ${result}`;
-                return new vscode.LanguageModelToolResult([
-                    new vscode.LanguageModelTextPart(
-                        formatToolError(
-                            `ERROR: .NET ${resolvedMode === 'sdk' ? 'SDK' : 'Runtime'} ${version} uninstall did not complete.\n` +
-                            `Likely cancelled by user (declined admin/elevation prompt) or blocked by another install in progress.\n` +
-                            `.NET is still installed. Check ".NET Install Tool" output channel for details.\n` +
-                            `If retrying, user must accept all prompts including admin/elevation dialogs.`,
-                            detailLine
-                        )
-                    )
-                ]);
-            }
+            if (result === '0' || result === '') { return { ok: true, resultCode: result, detail, thrownMessage: null, isCancellation: false }; }
+            return { ok: false, resultCode: result, detail, thrownMessage: null, isCancellation: false };
         } catch (error)
         {
             const baseErrorMessage = error instanceof Error ? error.message : String(error);
-            const errorMessage = capturedFailureDetail
-                ? `${baseErrorMessage}\nInstaller detail: ${capturedFailureDetail}`
-                : baseErrorMessage;
-            const isUserCancellation = /cancel|user rejected|user denied|password request/i.test(errorMessage);
+            const combined = detail ? `${baseErrorMessage}\nInstaller detail: ${detail}` : baseErrorMessage;
+            const isCancellation = /cancel|user rejected|user denied|password request/i.test(combined);
+            return { ok: false, resultCode: null, detail, thrownMessage: baseErrorMessage, isCancellation };
+        }
+    }
 
-            if (isUserCancellation)
+    /**
+     * Tries to recover from a failed uninstall by registering an existing on-disk install with the extension's tracker
+     * and retrying. Recovery is silent: the LLM only sees a normal success or the relevant failure detail.
+     * Falls back to the original failure when findPath finds nothing, when registration throws, or when the retry also fails.
+     */
+    private async tryRecoverFromUntrackedInstall(
+        acquireContext: IDotnetAcquireContext,
+        version: string,
+        modeDisplay: string,
+        requestingExtensionId: string,
+        resolvedArchitecture: string,
+        originalFailure: UninstallAttemptOutcome
+    ): Promise<vscode.LanguageModelToolResult>
+    {
+        try
+        {
+            const findContext: IDotnetFindPathContext = {
+                acquireContext: { version, requestingExtensionId, mode: 'sdk', architecture: resolvedArchitecture },
+                versionSpecRequirement: 'equal'
+            };
+            const findResult: IDotnetAcquireResult | undefined = await vscode.commands.executeCommand('dotnet.findPath', findContext);
+
+            if (!findResult?.dotnetPath)
             {
-                return new vscode.LanguageModelToolResult([
-                    new vscode.LanguageModelTextPart(
-                        formatToolError(
-                            `Uninstall of .NET ${version} cancelled/rejected by user.\n` +
-                            `Ask user to retry — they must accept all prompts including admin/elevation.`,
-                            errorMessage
-                        )
-                    )
-                ]);
+                return this.buildUninstallFailureResult(originalFailure, version, modeDisplay);
             }
 
+            await vscode.commands.executeCommand('dotnet.acquireGlobalSDK', {
+                version,
+                requestingExtensionId,
+                mode: 'sdk',
+                installType: 'global',
+                architecture: resolvedArchitecture
+            } as IDotnetAcquireContext);
+
+            const retry = await this.runUninstallAttempt(acquireContext, version, modeDisplay, ' (retry)');
+            if (retry.ok)
+            {
+                return this.buildUninstallSuccessResult(version, modeDisplay);
+            }
+            return this.buildUninstallFailureResult(retry, version, modeDisplay);
+        } catch
+        {
+            return this.buildUninstallFailureResult(originalFailure, version, modeDisplay);
+        }
+    }
+
+    private buildUninstallFailureResult(outcome: UninstallAttemptOutcome, version: string, modeDisplay: string): vscode.LanguageModelToolResult
+    {
+        const detailLine = outcome.thrownMessage
+            ? (outcome.detail ? `${outcome.thrownMessage}\nInstaller detail: ${outcome.detail}` : outcome.thrownMessage)
+            : (outcome.detail ? `Installer detail: ${outcome.detail}\nInstaller exit code: ${outcome.resultCode}` : `Installer exit code: ${outcome.resultCode}`);
+
+        if (outcome.isCancellation)
+        {
             return new vscode.LanguageModelToolResult([
                 new vscode.LanguageModelTextPart(
                     formatToolError(
-                        `Extension-based uninstall of .NET ${version} failed.\n` +
-                        `Check ".NET Install Tool" output channel. Verify admin privileges and internet.\n` +
-                        `If unresolved, see https://learn.microsoft.com/dotnet/core/install for manual uninstall instructions.`,
-                        errorMessage
+                        `Uninstall of .NET ${version} cancelled/rejected by user.\n` +
+                        `Ask user to retry — they must accept all prompts including admin/elevation.`,
+                        detailLine
                     )
                 )
             ]);
         }
+
+        return new vscode.LanguageModelToolResult([
+            new vscode.LanguageModelTextPart(
+                formatToolError(
+                    `ERROR: .NET ${modeDisplay} ${version} uninstall did not complete.\n` +
+                    `Likely cancelled by user (declined admin/elevation prompt), blocked by another install in progress, or the install is not managed by this extension.\n` +
+                    `.NET may still be installed. Check ".NET Install Tool" output channel for details.\n` +
+                    `If retrying, user must accept all prompts including admin/elevation dialogs.`,
+                    detailLine
+                )
+            )
+        ]);
     }
 }
 
