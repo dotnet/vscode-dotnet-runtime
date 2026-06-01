@@ -866,7 +866,7 @@ class ListInstalledVersionsTool implements vscode.LanguageModelTool<{ dotnetPath
                         `# No .NET ${resolvedMode === 'sdk' ? 'SDKs' : 'Runtimes'} Found\n\n` +
                         `${pathInfo}\n\n` +
                         `**Suggestions:**\n` +
-                        `- Install .NET using the \`installSdk\` tool\n` +
+                        `- Install .NET using the \`installDotNetSdk\` tool\n` +
                         `- Verify the PATH includes the .NET installation directory`
                     )
                 ]);
