@@ -7,6 +7,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import
 {
+    EventBasedError,
     MockEnvironmentVariableCollection,
     MockExtensionConfiguration,
     MockExtensionContext,
@@ -92,7 +93,7 @@ suite('LanguageModelTools Tests', function ()
 
     suite('Tool Registration', function ()
     {
-        test('All six Language Model Tools are registered after activation', async () =>
+        test('All seven Language Model Tools are registered after activation', async () =>
         {
             const tools = vscode.lm.tools;
 
@@ -100,6 +101,7 @@ suite('LanguageModelTools Tests', function ()
             const toolNames = [
                 ToolNames.installSdk,
                 ToolNames.listVersions,
+                ToolNames.recommendedSdkVersion,
                 ToolNames.listInstalledVersions,
                 ToolNames.findPath,
                 ToolNames.uninstall,
@@ -112,23 +114,25 @@ suite('LanguageModelTools Tests', function ()
                 assert.exists(tool, `Tool ${toolName} should be registered`);
             }
 
-            // Verify we have exactly 6 tools matching our tool names
+            // Verify we have exactly 7 tools matching our tool names
             const expectedNames = [
                 ToolNames.installSdk,
                 ToolNames.listVersions,
+                ToolNames.recommendedSdkVersion,
                 ToolNames.listInstalledVersions,
                 ToolNames.findPath,
                 ToolNames.uninstall,
                 ToolNames.getSettingsInfo
             ];
             const ourTools = tools.filter(t => expectedNames.some(name => t.name.endsWith(name)));
-            assert.equal(ourTools.length, 6, 'Should have exactly 6 .NET Install Tool tools registered');
+            assert.equal(ourTools.length, 7, 'Should have exactly 7 .NET Install Tool tools registered');
         }).timeout(standardTimeoutTime);
 
         test('Tool names match package.json definitions', async () =>
         {
             assert.equal(ToolNames.installSdk, 'install_dotnet_sdk');
             assert.equal(ToolNames.listVersions, 'list_available_dotnet_versions_to_install');
+            assert.equal(ToolNames.recommendedSdkVersion, 'recommended_dotnet_sdk_version');
             assert.equal(ToolNames.listInstalledVersions, 'list_installed_dotnet_versions');
             assert.equal(ToolNames.findPath, 'find_dotnet_executable_path');
             assert.equal(ToolNames.uninstall, 'uninstall_dotnet');
@@ -140,6 +144,7 @@ suite('LanguageModelTools Tests', function ()
             const expectedNames = [
                 ToolNames.installSdk,
                 ToolNames.listVersions,
+                ToolNames.recommendedSdkVersion,
                 ToolNames.listInstalledVersions,
                 ToolNames.findPath,
                 ToolNames.uninstall,
@@ -166,6 +171,7 @@ suite('LanguageModelTools Tests', function ()
                 const expectedNames = [
                     ToolNames.installSdk,
                     ToolNames.listVersions,
+                    ToolNames.recommendedSdkVersion,
                     ToolNames.listInstalledVersions,
                     ToolNames.findPath,
                     ToolNames.uninstall,
@@ -186,6 +192,7 @@ suite('LanguageModelTools Tests', function ()
             const expectedNames = [
                 ToolNames.installSdk,
                 ToolNames.listVersions,
+                ToolNames.recommendedSdkVersion,
                 ToolNames.listInstalledVersions,
                 ToolNames.findPath,
                 ToolNames.uninstall,
@@ -741,14 +748,18 @@ suite('LanguageModelTools Tests', function ()
 
             const textContent = extractTextContent(result);
 
-            // Should contain guidance on how to fix the issue
+            // Should contain guidance on how to fix the issue.
+            // We specifically steer the model to recommendedDotNetSdkVersion (not listDotNetVersions),
+            // because the list tool returns feature bands Linux distros do not package.
             const hasActionableGuidance = textContent.includes('How to') ||
                 textContent.includes('TargetFramework') ||
                 textContent.includes('global.json') ||
-                textContent.includes('listDotNetVersions') ||
+                textContent.includes('recommendedDotNetSdkVersion') ||
                 textContent.includes('call');
 
             assert.isTrue(hasActionableGuidance, 'Error messages should provide actionable guidance');
+            assert.include(textContent, 'recommendedDotNetSdkVersion',
+                'Missing-version error must steer the model to recommendedDotNetSdkVersion (Linux-aware), not the raw list tool.');
         }).timeout(standardTimeoutTime);
     });
 
@@ -768,6 +779,7 @@ suite('LanguageModelTools Tests', function ()
             const expectedNames = [
                 ToolNames.installSdk,
                 ToolNames.listVersions,
+                ToolNames.recommendedSdkVersion,
                 ToolNames.listInstalledVersions,
                 ToolNames.findPath,
                 ToolNames.uninstall,
@@ -810,6 +822,84 @@ suite('LanguageModelTools Tests', function ()
                     `Tool "${tool.name}" when clause should reference config.dotnetAcquisitionExtension.enableLanguageModelTools`
                 );
             }
+        }).timeout(standardTimeoutTime);
+    });
+
+    suite('RecommendedSdkVersion Tool', function ()
+    {
+        test('Tool is registered with expected name', async () =>
+        {
+            const tool = vscode.lm.tools.find(t => t.name === ToolNames.recommendedSdkVersion);
+            assert.exists(tool, 'recommended_dotnet_sdk_version tool should be registered');
+            assert.isAbove((tool?.description ?? '').length, 20, 'Tool should have a meaningful description');
+        }).timeout(standardTimeoutTime);
+
+        test('Returns informative content on invocation', async () =>
+        {
+            const result = await vscode.lm.invokeTool(
+                ToolNames.recommendedSdkVersion,
+                { input: {}, toolInvocationToken: undefined },
+                new vscode.CancellationTokenSource().token
+            );
+
+            assert.exists(result, 'Tool should return a result');
+            assert.isArray(result.content, 'Result content should be an array');
+
+            const textContent = extractTextContent(result);
+            assert.isAbove(textContent.length, 0, 'Should return non-empty text');
+
+            // Either a version was determined, or a clear fallback was returned.
+            const hasUsefulOutput =
+                textContent.includes('Recommended .NET SDK version') ||
+                textContent.includes('could not be determined') ||
+                textContent.includes('Failed to determine');
+            assert.isTrue(hasUsefulOutput,
+                'Output must either surface a recommended version or an explicit fallback message');
+        }).timeout(networkTimeoutTime);
+
+        test('On Linux, surfaces distro-packaging note when a version is returned', async () =>
+        {
+            if (process.platform !== 'linux')
+            {
+                // Note is only emitted on Linux; nothing meaningful to assert on Windows/macOS.
+                return;
+            }
+
+            const result = await vscode.lm.invokeTool(
+                ToolNames.recommendedSdkVersion,
+                { input: {}, toolInvocationToken: undefined },
+                new vscode.CancellationTokenSource().token
+            );
+
+            const textContent = extractTextContent(result);
+            if (textContent.includes('Recommended .NET SDK version'))
+            {
+                assert.include(textContent.toLowerCase(), 'distro',
+                    'On Linux the recommended-version output must explain the distro-packaging caveat');
+            }
+        }).timeout(networkTimeoutTime);
+    });
+
+    suite('UnsupportedDistro Error Discriminator (contract)', function ()
+    {
+        /**
+         * The InstallSdk tool maps `EventBasedError` instances whose `eventType === 'UnsupportedDistro'`
+         * to the manual-install fallback. This requires:
+         *   1. EventBasedError to be exported from the library entrypoint, and
+         *   2. `instanceof EventBasedError` to work across the library/extension boundary, and
+         *   3. `eventType` to be a readable public field on the thrown object.
+         * If any of these regress, the tool would silently fall back to the generic error path
+         * and re-introduce the bug where the LLM keeps retrying unsupported feature bands on Linux.
+         */
+        test('EventBasedError exposes eventType and survives instanceof checks', () =>
+        {
+            const err = new EventBasedError('UnsupportedDistro',
+                'The distro Ubuntu 26.04 does not officially support dotnet version 10.0.300.');
+
+            assert.instanceOf(err, Error, 'EventBasedError must be an Error subclass');
+            assert.instanceOf(err, EventBasedError, 'instanceof EventBasedError must hold');
+            assert.equal(err.eventType, 'UnsupportedDistro',
+                'eventType must be readable for the InstallSdk tool to map to the manual-install fallback');
         }).timeout(standardTimeoutTime);
     });
 });

@@ -49,7 +49,7 @@
                 "canBeReferencedInPrompt": true,
                 "icon": "$(tools)",
                 "userDescription": "Installs a .NET SDK system-wide for building and running .NET projects",
-                "modelDescription": "Installs .NET SDK system-wide (requires admin). Use when user wants to install, set up, or add .NET. Supports Windows, macOS, Ubuntu, Debian, RHEL; returns manual instructions for unsupported platforms. Install exactly what user requests, even EOL/preview. Version resolution: (1) user request, (2) TargetFramework in .csproj (net8.0→'8'), (3) global.json, (4) call listDotNetVersions. Formats: '6', '6.0', '6.0.1xx'.",
+                "modelDescription": "Installs .NET SDK system-wide (requires admin). Use when user wants to install, set up, or add .NET. Supports Windows, macOS, Ubuntu, Debian, RHEL; returns manual instructions for unsupported platforms or versions. Install exactly what user requests, even EOL/preview. Version resolution when not specified by user: (1) TargetFramework in .csproj (net8.0→'8'), (2) global.json, (3) call recommendedDotNetSdkVersion. Formats: '6', '6.0', '6.0.1xx'.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -71,7 +71,7 @@
                 "canBeReferencedInPrompt": true,
                 "icon": "$(list-unordered)",
                 "userDescription": "Lists available .NET SDK and Runtime versions that can be installed",
-                "modelDescription": "Lists .NET SDK or Runtime versions available from Microsoft with support phase (active/maintenance/eol). Use when user asks what versions exist, which to install, or needs to pick a version. Default: SDKs. Set listRuntimes=true for runtimes.",
+                "modelDescription": "Lists .NET SDK or Runtime versions available from Microsoft with support phase (active/maintenance/eol). Use when user asks what versions exist. To pick a version to install, prefer recommendedDotNetSdkVersion (Linux-aware). Results from this tool are NOT filtered by what the current Linux distro can actually install. Default: SDKs. Set listRuntimes=true for runtimes.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -80,6 +80,20 @@
                             "description": "If true, lists runtime versions. Default: SDK versions."
                         }
                     }
+                }
+            },
+            {
+                "name": "recommended_dotnet_sdk_version",
+                "when": "config.dotnetAcquisitionExtension.enableLanguageModelTools",
+                "displayName": "Recommended .NET SDK Version",
+                "toolReferenceName": "recommendedDotNetSdkVersion",
+                "canBeReferencedInPrompt": true,
+                "icon": "$(star)",
+                "userDescription": "Returns the recommended .NET SDK version to install for this machine (Linux-aware: returns the feature band the distro actually packages).",
+                "modelDescription": "Returns the recommended .NET SDK version for the current machine. On Linux this returns the feature band the distro packages (e.g. '10.0.1xx'), not necessarily the newest patch on dotnet,microsoft.com.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {}
                 }
             },
             {

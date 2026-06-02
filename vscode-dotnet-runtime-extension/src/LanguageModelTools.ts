@@ -16,6 +16,7 @@ import
     DotnetUninstallCompleted,
     DotnetUninstallFailed,
     DotnetUninstallStarted,
+    EventBasedError,
     EventStream,
     IDotnetAcquireContext,
     IDotnetAcquireResult,
@@ -39,6 +40,7 @@ export namespace ToolNames
 {
     export const installSdk = 'install_dotnet_sdk';
     export const listVersions = 'list_available_dotnet_versions_to_install';
+    export const recommendedSdkVersion = 'recommended_dotnet_sdk_version';
     export const listInstalledVersions = 'list_installed_dotnet_versions';
     export const findPath = 'find_dotnet_executable_path';
     export const uninstall = 'uninstall_dotnet';
@@ -84,6 +86,11 @@ export function registerLanguageModelTools(context: vscode.ExtensionContext, eve
     // List Versions Tool
     context.subscriptions.push(
         vscode.lm.registerTool(ToolNames.listVersions, new ListVersionsTool(eventStream))
+    );
+
+    // Recommended SDK Version Tool (Linux-aware)
+    context.subscriptions.push(
+        vscode.lm.registerTool(ToolNames.recommendedSdkVersion, new RecommendedSdkVersionTool(eventStream))
     );
 
     // Find Path Tool
@@ -154,7 +161,7 @@ class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string }>
                 new vscode.LanguageModelTextPart(
                     'ERROR: version parameter is required.\n\n' +
                     'To determine version: (1) Check user request, (2) TargetFramework in .csproj (net8.0 -> "8"), ' +
-                    '(3) global.json sdk.version, (4) Call listDotNetVersions and pick latest Active Support version.'
+                    '(3) global.json sdk.version, (4) Call recommendedDotNetSdkVersion'
                 )
             ]);
         }
@@ -241,6 +248,13 @@ class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string }>
             const errorMessage = error instanceof Error ? error.message : String(error);
             const isUserCancellation = /cancel|user rejected|user denied|password request/i.test(errorMessage);
 
+            // Distro-supported feature band mismatch (e.g. user asked for 10.0.3xx on Ubuntu, which only packages 10.0.1xx).
+            // EventBasedError carries the discriminator on .eventType (it does not set Error.name), so check that directly.
+            if (error instanceof EventBasedError && error.eventType === 'UnsupportedDistro')
+            {
+                return unsupportedPlatformResult('install');
+            }
+
             if (isUserCancellation)
             {
                 return new vscode.LanguageModelToolResult([
@@ -293,8 +307,7 @@ class ListVersionsTool implements vscode.LanguageModelTool<{ listRuntimes?: bool
 
             const versions: IDotnetListVersionsResult | undefined = await vscode.commands.executeCommand(
                 'dotnet.listVersions',
-                listContext,
-                undefined // customWebWorker
+                listContext
             );
 
             if (!versions || versions.length === 0)
@@ -306,8 +319,39 @@ class ListVersionsTool implements vscode.LanguageModelTool<{ listRuntimes?: bool
                 ]);
             }
 
+            // Also surface the recommended version (Linux-aware) so the model installs that by default
+            // instead of picking the newest entry returned by releases.json.
+            // Only meaningful for SDKs — dotnet.recommendedVersion is SDK-only.
+            let recommended: IDotnetVersion | undefined;
+            if (!listRuntimes)
+            {
+                try
+                {
+                    const recommendedResult: IDotnetListVersionsResult | undefined = await vscode.commands.executeCommand(
+                        'dotnet.recommendedVersion',
+                        { listRuntimes: false } as IDotnetListVersionsContext
+                    );
+                    recommended = recommendedResult?.[0];
+                }
+                catch (error)
+                {
+                    // Non-fatal — fall through and just list available versions.
+                    this.eventStream.post(new SuppressedAcquisitionError(error instanceof Error ? error : new Error(String(error)),
+                        `recommendedDotNetSdkVersion lookup failed while listing versions; continuing without it.`));
+                }
+            }
+
             const versionType = listRuntimes ? 'Runtime' : 'SDK';
             let responseText = `# Available .NET ${versionType} Versions\n\n`;
+
+            if (recommended?.version)
+            {
+                responseText += `## Recommended for This Machine\n`;
+                responseText += `- **${recommended.version}**` +
+                    (recommended.channelVersion ? ` (Channel: ${recommended.channelVersion})` : '') +
+                    (recommended.supportPhase ? ` — ${recommended.supportPhase} support` : '') +
+                    `\n`;
+            }
 
             // Group by support phase for better readability
             const activeVersions = versions.filter((v: IDotnetVersion) => v.supportPhase === 'active');
@@ -356,6 +400,61 @@ class ListVersionsTool implements vscode.LanguageModelTool<{ listRuntimes?: bool
                 new vscode.LanguageModelTextPart(
                     formatToolError(
                         `Failed to list .NET versions. Check internet connection.`,
+                        errorMessage
+                    )
+                )
+            ]);
+        }
+    }
+}
+
+/**
+ * Tool to return the recommended .NET SDK version for this machine.
+ * On Linux this returns the feature band the distro actually packages
+ * (e.g. '10.0.1xx' on Ubuntu 26.04) via LinuxVersionResolver.getRecommendedDotnetVersion.
+ */
+class RecommendedSdkVersionTool implements vscode.LanguageModelTool<{}>
+{
+    constructor(private readonly eventStream: IEventStream) {}
+
+    async invoke(
+        options: vscode.LanguageModelToolInvocationOptions<{}>,
+        token: vscode.CancellationToken
+    ): Promise<vscode.LanguageModelToolResult>
+    {
+        this.eventStream.post(new LanguageModelToolInvoked(ToolNames.recommendedSdkVersion, JSON.stringify(options.input)));
+
+        try
+        {
+            const result: IDotnetListVersionsResult | undefined = await vscode.commands.executeCommand(
+                'dotnet.recommendedVersion',
+                { listRuntimes: false } as IDotnetListVersionsContext
+            );
+
+            const recommended = result?.[0];
+            if (!recommended?.version)
+            {
+                return new vscode.LanguageModelToolResult([
+                    new vscode.LanguageModelTextPart(
+                        'No recommended .NET SDK version could be determined. Check internet connection, then fall back to a major version the user requested (e.g. "8") if needed'
+                    )
+                ]);
+            }
+            return new vscode.LanguageModelToolResult([
+                new vscode.LanguageModelTextPart(
+                    `Recommended .NET SDK version: ${recommended.version}` +
+                    (recommended.channelVersion ? ` (channel ${recommended.channelVersion})` : '') +
+                    (recommended.supportPhase ? ` — support phase: ${recommended.supportPhase}` : '')
+                )
+            ]);
+        }
+        catch (error)
+        {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return new vscode.LanguageModelToolResult([
+                new vscode.LanguageModelTextPart(
+                    formatToolError(
+                        'Failed to determine the recommended .NET SDK version. Check internet connection or decide yourself.',
                         errorMessage
                     )
                 )
@@ -866,7 +965,7 @@ class ListInstalledVersionsTool implements vscode.LanguageModelTool<{ dotnetPath
                         `# No .NET ${resolvedMode === 'sdk' ? 'SDKs' : 'Runtimes'} Found\n\n` +
                         `${pathInfo}\n\n` +
                         `**Suggestions:**\n` +
-                        `- Install .NET using the \`installDotNetSdk\` tool\n` +
+                        `- Install .NET using the \`installDotNetSdk\` tool\n` +
                         `- Verify the PATH includes the .NET installation directory`
                     )
                 ]);
