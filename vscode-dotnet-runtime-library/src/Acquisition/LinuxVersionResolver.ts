@@ -26,7 +26,8 @@ import { GenericDistroSDKProvider } from './GenericDistroSDKProvider';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 import { RedHatDistroSDKProvider } from './RedHatDistroSDKProvider';
-import { DEBIAN_DISTRO_INFO_KEY, RED_HAT_DISTRO_INFO_KEY, UBUNTU_DISTRO_INFO_KEY } from './StringConstants';
+import { RockyLinuxDistroSDKProvider } from './RockyLinuxDistroSDKProvider';
+import { DEBIAN_DISTRO_INFO_KEY, RED_HAT_DISTRO_INFO_KEY, ROCKY_LINUX_DISTRO_INFO_KEY, UBUNTU_DISTRO_INFO_KEY } from './StringConstants';
 import { VersionResolver } from './VersionResolver';
 import * as versionUtils from './VersionUtilities';
 
@@ -236,6 +237,8 @@ If you experience issues, please reach out on https://github.com/dotnet/vscode-d
                 return new RedHatDistroSDKProvider(distroAndVersion, this.workerContext, this.utilityContext);
             case DEBIAN_DISTRO_INFO_KEY:
                 return new DebianDistroSDKProvider(distroAndVersion, this.workerContext, this.utilityContext);
+            case ROCKY_LINUX_DISTRO_INFO_KEY:
+                return new RockyLinuxDistroSDKProvider(distroAndVersion, this.workerContext, this.utilityContext);
             default:
                 return new GenericDistroSDKProvider(distroAndVersion, this.workerContext, this.utilityContext);
         }

@@ -893,6 +893,200 @@
             }
         ]
     },
+    "Rocky Linux": {
+        "installCommand": [
+            {
+                "runUnderSudo": true,
+                "commandRoot": "dnf",
+                "commandParts": [
+                    "install",
+                    "-y",
+                    "{packageName}"
+                ]
+            }
+        ],
+        "uninstallCommand": [
+            {
+                "runUnderSudo": true,
+                "commandRoot": "dnf",
+                "commandParts": [
+                    "remove",
+                    "-y",
+                    "{packageName}"
+                ]
+            }
+        ],
+        "updateCommand": [
+            {
+                "runUnderSudo": true,
+                "commandRoot": "dnf",
+                "commandParts": [
+                    "update",
+                    "-y",
+                    "{packageName}"
+                ]
+            }
+        ],
+        "searchCommand": [
+            {
+                "runUnderSudo": false,
+                "commandRoot": "dnf",
+                "commandParts": [
+                    "search",
+                    "{packageName}",
+                    "-q"
+                ]
+            }
+        ],
+        "isInstalledCommand": [
+            {
+                "runUnderSudo": true,
+                "commandRoot": "dnf",
+                "commandParts": [
+                    "list",
+                    "--installed",
+                    "{packageName}",
+                    "-q"
+                ]
+            }
+        ],
+        "packageLookupCommand": [
+            {
+                "runUnderSudo": false,
+                "commandRoot": "dnf",
+                "commandParts": [
+                    "list",
+                    "install",
+                    "{packageName}",
+                    "-q"
+                ]
+            }
+        ],
+        "readSymLinkCommand": [
+            {
+                "runUnderSudo": false,
+                "commandRoot": "readlink",
+                "commandParts": [
+                    "-f",
+                    "{path}"
+                ]
+            }
+        ],
+        "expectedDistroFeedInstallDirectory": "/usr/lib64/dotnet",
+        "expectedMicrosoftFeedInstallDirectory": "",
+        "installedSDKVersionsCommand": [
+            {
+                "runUnderSudo": false,
+                "commandRoot": "dotnet",
+                "commandParts": [
+                    "--list-sdks"
+                ]
+            }
+        ],
+        "installedRuntimeVersionsCommand": [
+            {
+                "runUnderSudo": false,
+                "commandRoot": "dotnet",
+                "commandParts": [
+                    "--list-runtimes"
+                ]
+            }
+        ],
+        "currentInstallationVersionCommand": [
+            {
+                "runUnderSudo": false,
+                "commandRoot": "dotnet",
+                "commandParts": [
+                    "--version"
+                ]
+            }
+        ],
+        "currentInstallPathCommand": [
+            {
+                "runUnderSudo": false,
+                "commandRoot": "which",
+                "commandParts": [
+                    "dotnet"
+                ]
+            }
+        ],
+        "packages": [
+            {
+                "version": "6.0",
+                "sdk": [
+                    "dotnet-sdk-6.0"
+                ],
+                "runtime": [
+                    "dotnet-runtime-6.0"
+                ],
+                "aspnetcore": [
+                    "aspnetcore-runtime-6.0"
+                ]
+            },
+            {
+                "version": "7.0",
+                "sdk": [
+                    "dotnet-sdk-7.0"
+                ],
+                "runtime": [
+                    "dotnet-runtime-7.0"
+                ],
+                "aspnetcore": [
+                    "aspnetcore-runtime-7.0"
+                ]
+            },
+            {
+                "version": "8.0",
+                "sdk": [
+                    "dotnet-sdk-8.0"
+                ],
+                "runtime": [
+                    "dotnet-runtime-8.0"
+                ],
+                "aspnetcore": [
+                    "aspnetcore-runtime-8.0"
+                ]
+            },
+            {
+                "version": "9.0",
+                "sdk": [
+                    "dotnet-sdk-9.0"
+                ],
+                "runtime": [
+                    "dotnet-runtime-9.0"
+                ],
+                "aspnetcore": [
+                    "aspnetcore-runtime-9.0"
+                ]
+            },
+            {
+                "version": "10.0",
+                "sdk": [
+                    "dotnet-sdk-10.0"
+                ],
+                "runtime": [
+                    "dotnet-runtime-10.0"
+                ],
+                "aspnetcore": [
+                    "aspnetcore-runtime-10.0"
+                ]
+            }
+        ],
+        "versions": [
+            {
+                "version": "8.0"
+            },
+            {
+                "version": "9.0"
+            },
+            {
+                "version": "10.0"
+            },
+            {
+                "version": "11.0"
+            }
+        ]
+    },
     "Red Hat Enterprise Linux": {
         "installCommand": [
             {
