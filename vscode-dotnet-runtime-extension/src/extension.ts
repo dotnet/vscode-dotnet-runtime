@@ -6,6 +6,7 @@
 import * as cp from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import
 {
@@ -354,7 +355,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             outputChannelObserver.showOutput();
             const dotnetPath = await worker.acquireGlobalSDK(workerContext, globalInstallerResolver);
 
-            new CommandExecutor(workerContext, utilContext).setPathEnvVar(dotnetPath.dotnetPath, moreInfoUrl, displayWorker, vsCodeExtensionContext, true);
+            // setPathEnvVar expects the directory holding the dotnet executable, not the executable file itself.
+            new CommandExecutor(workerContext, utilContext).setPathEnvVar(path.dirname(dotnetPath.dotnetPath), moreInfoUrl, displayWorker, vsCodeExtensionContext, true);
             return dotnetPath;
         }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, commandKeys.acquireGlobalSDK), commandContext.requestingExtensionId, workerContext, commandContext.rethrowError);
 
@@ -435,8 +437,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
             const userCommandContext: IDotnetAcquireContext = { version: chosenVersion, requestingExtensionId: 'user', installType: 'global' };
-            const path: IDotnetAcquireResult = await vscode.commands.executeCommand('dotnet.acquireGlobalSDK', userCommandContext);
-            if (path && path?.dotnetPath)
+            const acquireResult: IDotnetAcquireResult = await vscode.commands.executeCommand('dotnet.acquireGlobalSDK', userCommandContext);
             {
                 globalEventStream.post(new UserManualInstallSuccess(`The .NET SDK ${chosenVersion} was successfully installed.`));
             }
@@ -747,16 +748,16 @@ ${JSON.stringify(commandContext)}`));
         return findPathResult;
     });
 
-    async function getPathIfValid(path: string | undefined, validator: IDotnetConditionValidator, commandContext: IDotnetFindPathContext): Promise<string | undefined>
+    async function getPathIfValid(candidatePath: string | undefined, validator: IDotnetConditionValidator, commandContext: IDotnetFindPathContext): Promise<string | undefined>
     {
-        if (path)
+        if (candidatePath)
         {
-            const validated = await validator.dotnetMeetsRequirement(path, commandContext);
+            const validated = await validator.dotnetMeetsRequirement(candidatePath, commandContext);
             if (validated)
             {
-                globalEventStream.post(new DotnetFindPathMetCondition(`${path} met the conditions.`));
-                await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).markInstallAsInUse(path);
-                return path;
+                globalEventStream.post(new DotnetFindPathMetCondition(`${candidatePath} met the conditions.`));
+                await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).markInstallAsInUse(candidatePath);
+                return candidatePath;
             }
         }
 
