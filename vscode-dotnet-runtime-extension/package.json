@@ -99,7 +99,7 @@
                 "canBeReferencedInPrompt": true,
                 "icon": "$(star)",
                 "userDescription": "Returns the recommended .NET SDK version to install for this machine (Linux-aware: returns the feature band the distro actually packages).",
-                "modelDescription": "Returns the recommended .NET SDK version for the current machine. On Linux this returns the feature band the distro packages (e.g. '10.0.1xx'), not necessarily the newest patch on dotnet,microsoft.com.",
+                "modelDescription": "Returns the recommended .NET SDK version for the current machine. On Linux this returns the feature band the distro packages (e.g. '10.0.1xx'), not necessarily the newest patch on dotnet.microsoft.com.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {}
