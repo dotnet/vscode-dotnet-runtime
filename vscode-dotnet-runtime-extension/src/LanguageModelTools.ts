@@ -157,7 +157,10 @@ async function queryAvailableInstalls(mode: DotnetInstallMode, dotnetExecutableP
 {
     const searchContext: IDotnetSearchContext = {
         mode,
-        requestingExtensionId: REQUESTING_EXTENSION_ID
+        requestingExtensionId: REQUESTING_EXTENSION_ID,
+        // Opt in to the findPath fallback so the search still succeeds when the host is not on the PATH
+        // (a common case on macOS GUI launches). Non-LM callers keep the default PATH-only behavior.
+        fallbackToFindPathInstalls: true
     };
     if (dotnetExecutablePath)
     {

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+- The `dotnet.availableInstalls` API now accepts an optional `fallbackToFindPathInstalls` property (default `false`). When `true` and no install is found for the resolved host, it falls back to the `dotnet.findPath` logic to locate a host independently of the PATH and retries the search. This is opt-in (and enabled by the Language Model tools) to avoid a breaking change, since `findPath` may return non system-level paths.
+
 ## [3.1.0] - 2026-5
 
 - Adds Language Model Tools for AI agents (GitHub Copilot) to install, uninstall, list, and find .NET SDKs/Runtimes.

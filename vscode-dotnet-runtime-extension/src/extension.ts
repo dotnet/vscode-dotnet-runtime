@@ -488,33 +488,68 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 throw new EventCancellationError('BadContextualAvailbleInstallsError', `The dotnet.availableInstalls API request was missing either a mode or requestingExtensionId. Please provide this.`);
             }
 
-            const dotnetExecutablePath = commandContext.dotnetExecutablePath ?? 'dotnet';
-            const installs = await callWithErrorHandling(async () =>
-            {
-                // Bad design: An acquire context is needed to setup the state, but don't want to untangle that in this change.
-                const fakeAcquireContext = {
-                    version: 'notApplicable',
-                    requestingExtensionId: commandContext.requestingExtensionId,
-                    architecture: commandContext.architecture,
-                    mode: commandContext.mode,
-                    installType: 'local' as DotnetInstallType, // does not matter as we search based on the host path
-                    errorConfiguration: commandContext.errorConfiguration
-                } as IDotnetAcquireContext;
-                const workerContext = getAcquisitionWorkerContext(commandContext.mode, fakeAcquireContext);
+            const pathWasProvided = (commandContext.dotnetExecutablePath ?? '') !== '';
+            let dotnetExecutablePath = pathWasProvided ? commandContext.dotnetExecutablePath! : 'dotnet';
 
-                const dotnetResolver = new DotnetResolver(workerContext, utilContext);
-                const installsInListForm: IDotnetListInfo[] = await dotnetResolver.getDotnetInstalls(dotnetExecutablePath, commandContext.mode, commandContext.architecture);
-
-                return installsInListForm.map((installInfo: IDotnetListInfo) =>
+            const searchForInstalls = async (hostPath: string): Promise<IDotnetSearchResult[] | undefined> =>
+                callWithErrorHandling(async () =>
                 {
-                    return {
-                        mode: installInfo.mode,
-                        version: installInfo.version,
-                        directory: installInfo.directory,
-                        architecture: installInfo.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(),
-                    } as IDotnetSearchResult;
-                });
-            }, getIssueContext(existingPathConfigWorker)(commandContext?.errorConfiguration, commandKeys.availableInstalls));
+                    // Bad design: An acquire context is needed to setup the state, but don't want to untangle that in this change.
+                    const fakeAcquireContext = {
+                        version: 'notApplicable',
+                        requestingExtensionId: commandContext.requestingExtensionId,
+                        architecture: commandContext.architecture,
+                        mode: commandContext.mode,
+                        installType: 'local' as DotnetInstallType, // does not matter as we search based on the host path
+                        errorConfiguration: commandContext.errorConfiguration
+                    } as IDotnetAcquireContext;
+                    const workerContext = getAcquisitionWorkerContext(commandContext.mode, fakeAcquireContext);
+
+                    const dotnetResolver = new DotnetResolver(workerContext, utilContext);
+                    const installsInListForm: IDotnetListInfo[] = await dotnetResolver.getDotnetInstalls(hostPath, commandContext.mode, commandContext.architecture);
+
+                    return installsInListForm.map((installInfo: IDotnetListInfo) =>
+                    {
+                        return {
+                            mode: installInfo.mode,
+                            version: installInfo.version,
+                            directory: installInfo.directory,
+                            architecture: installInfo.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(),
+                        } as IDotnetSearchResult;
+                    });
+                }, getIssueContext(existingPathConfigWorker)(commandContext?.errorConfiguration, commandKeys.availableInstalls));
+
+            let installs = await searchForInstalls(dotnetExecutablePath);
+
+            // When no host path is provided we default to a bare 'dotnet', which relies on the PATH. On some platforms
+            // (notably macOS GUI launches, where /etc/paths.d is not honored by the extension host process) the host is
+            // not on the PATH even though .NET is installed, so the search finds nothing on the first try. In that case,
+            // reuse the shared dotnet.findPath logic, which locates the host independently of the PATH (e.g. via the
+            // known install locations on disk), and retry the search with the discovered host path. This is opt-in via
+            // fallbackToFindPathInstalls because findPath may return non system-level paths, so enabling it can change
+            // which installs are returned; defaulting it off preserves the original behavior for existing callers.
+            if ((installs?.length ?? 0) === 0 && !pathWasProvided && commandContext.fallbackToFindPathInstalls === true)
+            {
+                const findPathContext: IDotnetFindPathContext = {
+                    acquireContext: {
+                        // We only need *a* host that has installs of the requested mode; accept any version it reports.
+                        version: '1.0',
+                        requestingExtensionId: commandContext.requestingExtensionId,
+                        architecture: commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(),
+                        mode: commandContext.mode,
+                        installType: 'global' as DotnetInstallType,
+                        errorConfiguration: commandContext.errorConfiguration,
+                    } as IDotnetAcquireContext,
+                    versionSpecRequirement: 'greater_than_or_equal',
+                };
+                const foundHost = await vscode.commands.executeCommand<IDotnetAcquireResult | undefined>(`${commandPrefix}.${commandKeys.findPath}`, findPathContext);
+
+                if (foundHost?.dotnetPath && foundHost.dotnetPath !== dotnetExecutablePath)
+                {
+                    dotnetExecutablePath = foundHost.dotnetPath;
+                    installs = await searchForInstalls(dotnetExecutablePath);
+                }
+            }
 
             if ((installs?.length ?? 0) > 0)
             {
