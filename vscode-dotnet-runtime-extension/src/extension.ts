@@ -438,6 +438,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
             const userCommandContext: IDotnetAcquireContext = { version: chosenVersion, requestingExtensionId: 'user', installType: 'global' };
             const acquireResult: IDotnetAcquireResult = await vscode.commands.executeCommand('dotnet.acquireGlobalSDK', userCommandContext);
+            if (acquireResult && acquireResult?.dotnetPath)
             {
                 globalEventStream.post(new UserManualInstallSuccess(`The .NET SDK ${chosenVersion} was successfully installed.`));
             }
