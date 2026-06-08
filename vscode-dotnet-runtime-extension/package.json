@@ -146,33 +146,20 @@
                 }
             },
             {
-                "name": "uninstall_dotnet",
+                "name": "uninstall_system_dotnet_sdk",
                 "when": "config.dotnetAcquisitionExtension.enableLanguageModelTools",
-                "displayName": "Uninstall .NET",
-                "toolReferenceName": "uninstallDotNet",
+                "displayName": "Uninstall System .NET SDK",
+                "toolReferenceName": "uninstallSystemDotNetSdk",
                 "canBeReferencedInPrompt": true,
                 "icon": "$(trash)",
-                "userDescription": "Uninstalls a .NET SDK or Runtime version",
-                "modelDescription": "Uninstalls a .NET SDK or runtime. Use when user wants to remove, uninstall, or clean up .NET. Supports Windows, macOS, Ubuntu, Debian, RHEL; returns manual instructions for unsupported platforms. Call listInstalledDotNetVersions first to get exact version+mode. Global uninstalls require admin.",
+                "userDescription": "Uninstalls a system-wide (machine) .NET SDK version",
+                "modelDescription": "Uninstalls a SYSTEM-WIDE (machine) .NET SDK only. Use ONLY for SDKs installed in system locations such as Windows 'C:\\Program Files\\dotnet', macOS '/usr/local/share/dotnet', or Linux '/usr/lib/dotnet', '/usr/share/dotnet', '/usr/lib64/dotnet'. Do NOT use for runtimes, and do NOT use for VS Code-managed (local) installs under a user directory or an extension '.dotnet' folder — those are not system SDKs. Call listInstalledDotNetVersions first to get the exact version. System-wide uninstalls require admin/root. Supports Windows, macOS, Ubuntu, Debian, RHEL; returns manual instructions for unsupported platforms.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
                         "version": {
                             "type": "string",
-                            "description": "The .NET version to uninstall. Call listInstalledDotNetVersions first."
-                        },
-                        "mode": {
-                            "type": "string",
-                            "enum": [
-                                "sdk",
-                                "runtime",
-                                "aspnetcore"
-                            ],
-                            "description": "SDK or runtime to uninstall."
-                        },
-                        "global": {
-                            "type": "boolean",
-                            "description": "True: global/system-wide. False: VS Code-managed local."
+                            "description": "The system .NET SDK version to uninstall. Call listInstalledDotNetVersions first."
                         },
                         "architecture": {
                             "type": "string",
@@ -182,6 +169,36 @@
                                 "arm64"
                             ],
                             "description": "CPU architecture. Do NOT provide unless the user explicitly requests a specific architecture. Default: current system architecture. Cross-architecture uninstalls are not supported."
+                        }
+                    },
+                    "required": [
+                        "version"
+                    ]
+                }
+            },
+            {
+                "name": "uninstall_vscode_owned_dotnet_runtime",
+                "when": "config.dotnetAcquisitionExtension.enableLanguageModelTools",
+                "displayName": "Uninstall VS Code .NET Runtime",
+                "toolReferenceName": "uninstallVSCodeDotNetRuntime",
+                "canBeReferencedInPrompt": true,
+                "icon": "$(trash)",
+                "userDescription": "Uninstalls a VS Code-managed (local) .NET runtime version",
+                "modelDescription": "Uninstalls a VS Code-managed (local) .NET runtime or ASP.NET Core runtime only. Use when the user wants to remove a runtime that this extension installed locally (under the extension's '.dotnet' folder). Do NOT use for SDKs. Do NOT use for system-wide runtimes — those must be removed via the OS package manager or the installer they came from. Call listInstalledDotNetVersions first to get the exact version and mode.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "version": {
+                            "type": "string",
+                            "description": "The VS Code-managed runtime version to uninstall. Call listInstalledDotNetVersions first."
+                        },
+                        "mode": {
+                            "type": "string",
+                            "enum": [
+                                "runtime",
+                                "aspnetcore"
+                            ],
+                            "description": "runtime (.NET runtime) or aspnetcore (ASP.NET Core runtime). Default: 'runtime'."
                         }
                     },
                     "required": [
