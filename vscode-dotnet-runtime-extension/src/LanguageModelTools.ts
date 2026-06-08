@@ -60,6 +60,41 @@ function formatToolError(contextMessage: string, errorContent: string): string
 }
 
 /**
+ * Normalizes a Node.js architecture name to the .NET architecture naming used by the acquisition library.
+ */
+function normalizeArchitecture(arch: string): string
+{
+    return arch === 'ia32' ? 'x86' : arch;
+}
+
+/**
+ * Returns a tool result telling the model that the requested architecture differs from this machine's architecture
+ * and that it must find another way to perform the action, since cross-architecture scenarios are not yet supported.
+ * Returns undefined when no architecture was requested or when it matches the current system architecture.
+ */
+function crossArchitectureUnsupportedResult(action: 'install' | 'uninstall', requestedArchitecture: string | undefined): vscode.LanguageModelToolResult | undefined
+{
+    if (!requestedArchitecture)
+    {
+        return undefined;
+    }
+
+    const systemArchitecture = normalizeArchitecture(os.arch());
+    if (normalizeArchitecture(requestedArchitecture) === systemArchitecture)
+    {
+        return undefined;
+    }
+
+    return new vscode.LanguageModelToolResult([
+        new vscode.LanguageModelTextPart(
+            `The requested architecture '${requestedArchitecture}' does not match this machine's architecture '${systemArchitecture}'. ` +
+            `This tool does not yet support cross-architecture ${action} scenarios, so it cannot ${action} .NET for '${requestedArchitecture}'. ` +
+            `Find your own way to ${action} the requested .NET (for example, a manual download from https://dotnet.microsoft.com/download or the appropriate package manager).`
+        )
+    ]);
+}
+
+/**
  * Returns a standardized tool result for WSL or unsupported Linux distros.
  * Centralizes the fallback message so install/uninstall tools stay consistent.
  */
@@ -117,12 +152,12 @@ export function registerLanguageModelTools(context: vscode.ExtensionContext, eve
 /**
  * Tool to install .NET SDK system-wide
  */
-class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string }>
+class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string; architecture?: string }>
 {
     constructor(private readonly eventStream: EventStream) {}
 
     prepareInvocation(
-        options: vscode.LanguageModelToolInvocationPrepareOptions<{ version?: string }>,
+        options: vscode.LanguageModelToolInvocationPrepareOptions<{ version?: string; architecture?: string }>,
         token: vscode.CancellationToken
     ): vscode.PreparedToolInvocation
     {
@@ -138,7 +173,7 @@ class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string }>
     }
 
     async invoke(
-        options: vscode.LanguageModelToolInvocationOptions<{ version?: string }>,
+        options: vscode.LanguageModelToolInvocationOptions<{ version?: string; architecture?: string }>,
         token: vscode.CancellationToken
     ): Promise<vscode.LanguageModelToolResult>
     {
@@ -150,6 +185,13 @@ class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string }>
         if (linuxCheck.isUnsupported)
         {
             return unsupportedPlatformResult('install');
+        }
+
+        // Cross-architecture installs are not supported; only proceed when no architecture was requested or it matches the system.
+        const crossArchResult = crossArchitectureUnsupportedResult('install', options.input?.architecture);
+        if (crossArchResult)
+        {
+            return crossArchResult;
         }
 
         const version = options.input?.version;
@@ -568,12 +610,12 @@ interface UninstallAttemptOutcome
 /**
  * Tool to uninstall .NET versions
  */
-class UninstallTool implements vscode.LanguageModelTool<{ version: string; mode?: string; global?: boolean }>
+class UninstallTool implements vscode.LanguageModelTool<{ version: string; mode?: string; global?: boolean; architecture?: string }>
 {
     constructor(private readonly eventStream: EventStream) {}
 
     async invoke(
-        options: vscode.LanguageModelToolInvocationOptions<{ version: string; mode?: string; global?: boolean }>,
+        options: vscode.LanguageModelToolInvocationOptions<{ version: string; mode?: string; global?: boolean; architecture?: string }>,
         token: vscode.CancellationToken
     ): Promise<vscode.LanguageModelToolResult>
     {
@@ -587,12 +629,19 @@ class UninstallTool implements vscode.LanguageModelTool<{ version: string; mode?
             return unsupportedPlatformResult('uninstall');
         }
 
+        // Cross-architecture uninstalls are not supported; only proceed when no architecture was requested or it matches the system.
+        const crossArchResult = crossArchitectureUnsupportedResult('uninstall', options.input?.architecture);
+        if (crossArchResult)
+        {
+            return crossArchResult;
+        }
+
         const { version, mode, global } = options.input;
         const resolvedMode = (mode as DotnetInstallMode) || 'sdk';
         const isGlobal = global ?? true;
         const requestingExtensionId = 'ms-dotnettools.vscode-dotnet-runtime';
         const nodeArch = os.arch();
-        const resolvedArchitecture = nodeArch === 'ia32' ? 'x86' : nodeArch;
+        const resolvedArchitecture = normalizeArchitecture(nodeArch);
         const modeDisplay = resolvedMode === 'sdk' ? 'SDK' : 'Runtime';
 
         const acquireContext: IDotnetAcquireContext = {

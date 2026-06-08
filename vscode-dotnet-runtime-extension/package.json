@@ -56,6 +56,15 @@
                         "version": {
                             "type": "string",
                             "description": "The .NET SDK version. Examples: '6', '6.0', '6.0.1xx'. Install exactly what user requests, even if EOL."
+                        },
+                        "architecture": {
+                            "type": "string",
+                            "enum": [
+                                "x64",
+                                "x86",
+                                "arm64"
+                            ],
+                            "description": "CPU architecture. Do NOT provide unless the user explicitly requests a specific architecture. Default: current system architecture. Cross-architecture installs are not supported."
                         }
                     },
                     "required": [
@@ -164,6 +173,15 @@
                         "global": {
                             "type": "boolean",
                             "description": "True: global/system-wide. False: VS Code-managed local."
+                        },
+                        "architecture": {
+                            "type": "string",
+                            "enum": [
+                                "x64",
+                                "x86",
+                                "arm64"
+                            ],
+                            "description": "CPU architecture. Do NOT provide unless the user explicitly requests a specific architecture. Default: current system architecture. Cross-architecture uninstalls are not supported."
                         }
                     },
                     "required": [
