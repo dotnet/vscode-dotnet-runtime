@@ -108,7 +108,7 @@ For repo-local SDK resolution, use the \`paths\` property in global.json:
 {
   "sdk": {
     "version": "10.0.100",
-    "paths": [".dotnet", "$host$"],
+    "paths": [".dotnet", "$host$"]
   }
 }
 \`\`\`
