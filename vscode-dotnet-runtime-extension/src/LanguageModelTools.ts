@@ -488,8 +488,8 @@ class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string; arc
                 return textResult(
                     `Successfully installed .NET SDK ${version} via ${installMethod}.\n` +
                     `Path: ${result.dotnetPath}\n` +
-                    `Restart terminal or VS Code for PATH changes. Verify: \`dotnet --info\`` +
-                    patchMismatchNote
+                    `Restart terminal or VS Code for PATH changes. Verify: \`dotnet --info\`${
+                    patchMismatchNote}`
                 );
             } else
             {
@@ -599,10 +599,10 @@ class ListVersionsTool implements vscode.LanguageModelTool<{ listRuntimes?: bool
             if (recommended?.version)
             {
                 responseText += `## Recommended for This Machine\n`;
-                responseText += `- **${recommended.version}**` +
-                    (recommended.channelVersion ? ` (Channel: ${recommended.channelVersion})` : '') +
-                    (recommended.supportPhase ? ` — ${recommended.supportPhase} support` : '') +
-                    `\n`;
+                responseText += `- **${recommended.version}**${
+                    recommended.channelVersion ? ` (Channel: ${recommended.channelVersion})` : ''
+                    }${recommended.supportPhase ? ` — ${recommended.supportPhase} support` : ''
+                    }\n`;
             }
 
             // Group by support phase for better readability
@@ -645,12 +645,12 @@ class ListVersionsTool implements vscode.LanguageModelTool<{ listRuntimes?: bool
  * On Linux this returns the feature band the distro actually packages
  * (e.g. '10.0.1xx' on Ubuntu 26.04) via LinuxVersionResolver.getRecommendedDotnetVersion.
  */
-class RecommendedSdkVersionTool implements vscode.LanguageModelTool<{}>
+class RecommendedSdkVersionTool implements vscode.LanguageModelTool<Record<string, never>>
 {
     constructor(private readonly eventStream: IEventStream) {}
 
     async invoke(
-        options: vscode.LanguageModelToolInvocationOptions<{}>,
+        options: vscode.LanguageModelToolInvocationOptions<Record<string, never>>,
         token: vscode.CancellationToken
     ): Promise<vscode.LanguageModelToolResult>
     {
@@ -671,14 +671,14 @@ class RecommendedSdkVersionTool implements vscode.LanguageModelTool<{}>
                 );
             }
             return textResult(
-                `Recommended .NET SDK version: ${recommended.version}` +
-                (recommended.channelVersion ? ` (channel ${recommended.channelVersion})` : '') +
-                (recommended.supportPhase ? ` — support phase: ${recommended.supportPhase}` : '') +
-                (process.platform === 'linux'
+                `Recommended .NET SDK version: ${recommended.version}${
+                recommended.channelVersion ? ` (channel ${recommended.channelVersion})` : ''
+                }${recommended.supportPhase ? ` — support phase: ${recommended.supportPhase}` : ''
+                }${process.platform === 'linux'
                     ? `\n\nNOTE: On Linux this is the feature band the distro's package manager actually packages ` +
                     `(e.g. '${recommended.version}'), which may differ from the newest patch published on dotnet.microsoft.com. ` +
                     `Install this recommended version; the distro package manager only offers the latest patch within that feature band.`
-                    : '')
+                    : ''}`
             );
         }
         catch (error)
