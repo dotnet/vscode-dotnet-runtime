@@ -270,7 +270,7 @@ class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string; arc
                     new vscode.LanguageModelTextPart(
                         `Successfully installed .NET SDK ${version} via ${installMethod}.\n` +
                         `Path: ${result.dotnetPath}\n` +
-                        `Restart terminal or VS Code for PATH changes. Verify: \`dotnet --version\``
+                        `Restart terminal or VS Code for PATH changes. Verify: \`dotnet --info\``
                     )
                 ]);
             } else
