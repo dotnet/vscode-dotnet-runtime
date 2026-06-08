@@ -30,7 +30,8 @@ The .NET Install Tool is a VS Code extension that manages .NET installations. It
 
 ### GLOBAL/Admin SDK Installs (system-wide)
 - System-wide .NET SDK installs (includes runtimes)
-- Typical Locations: Windows: `%ProgramFiles%\\dotnet` (admin required) | macOS: `/usr/local/share/dotnet` (.pkg) | Linux: `/usr/lib/dotnet` or `/usr/share/dotnet` (package manager; officially supported: Ubuntu + RHEL; community distros may work; WSL is not supported)
+- Typical Locations: Windows: \`%ProgramFiles%\\dotnet\` (admin required) | macOS: \`/usr/local/share/dotnet\` (.pkg) | Linux: \`/usr/lib/dotnet\` or \`/usr/share/dotnet\` (package manager; officially supported: Ubuntu + RHEL; community distros may work; WSL is not supported)
+
 - Requires administrator/sudo privileges; users must accept elevation prompts
 - IS on the system PATH after installation
 - Visible via \`dotnet --list-sdks\` and \`dotnet --list-runtimes\`

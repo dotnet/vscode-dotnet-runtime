@@ -42,6 +42,7 @@ import { TelemetryUtilities } from '../EventStream/TelemetryUtilities';
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
 import { IExtensionState } from '../IExtensionState';
 import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
+import { LocalMemoryCacheSingleton } from '../LocalMemoryCacheSingleton';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { IFileUtilities } from '../Utils/IFileUtilities';
@@ -50,7 +51,6 @@ import { IUtilityContext } from '../Utils/IUtilityContext';
 import { executeWithLock, getDotnetExecutable, isRunningUnderWSL } from '../Utils/TypescriptUtilities';
 import { DOTNET_INFORMATION_CACHE_DURATION_MS, GLOBAL_LOCK_PING_DURATION_MS, LOCAL_LOCK_PING_DURATION_MS } from './CacheTimeConstants';
 import { directoryProviderFactory } from './DirectoryProviderFactory';
-import { LocalMemoryCacheSingleton } from '../LocalMemoryCacheSingleton';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
 import
 {
