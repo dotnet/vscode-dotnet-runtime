@@ -68,6 +68,74 @@ function normalizeArchitecture(arch: string): string
 }
 
 /**
+ * Builds the minimal IAcquisitionWorkerContext that the stateless VersionUtilities parsing helpers require.
+ * Those helpers only read `acquisitionContext` (and only when constructing error events for malformed input,
+ * which the callers here pre-validate), so the remaining worker-context fields are intentionally not supplied.
+ */
+function versionParseContext(eventStream: IEventStream, version: string): IAcquisitionWorkerContext
+{
+    return {
+        eventStream,
+        acquisitionContext: {
+            version,
+            mode: 'sdk' as DotnetInstallMode,
+            installType: 'global',
+            requestingExtensionId: 'ms-dotnettools.vscode-dotnet-runtime'
+        } as IDotnetAcquireContext
+    } as IAcquisitionWorkerContext;
+}
+
+/**
+ * Determines whether a version string fully specifies an SDK patch version (e.g. "10.0.106"),
+ * as opposed to a partial version ("10", "10.0"), a feature band ("10.0.1xx"), or a wildcard.
+ * Only fully-specified versions can meaningfully mismatch the patch that actually gets installed.
+ */
+function isFullySpecifiedSdkVersion(version: string | undefined, eventStream: IEventStream): version is string
+{
+    if (!version)
+    {
+        return false;
+    }
+    try
+    {
+        return isFullySpecifiedVersion(version, eventStream, versionParseContext(eventStream, version));
+    }
+    catch
+    {
+        // VersionUtilities throws on certain malformed inputs (e.g. a missing/invalid feature band); treat those as not fully specified.
+        return false;
+    }
+}
+/**
+ * From a list of installed SDK versions, returns the highest fully-specified patch that shares the
+ * same major.minor and feature band as the requested version, or undefined if none match.
+ * This identifies the patch the Linux package manager actually installed when the requested one was unavailable.
+ */
+function highestPatchInSameFeatureBand(requestedVersion: string, installedVersions: string[], eventStream: IEventStream): string | undefined
+{
+    const reqMajorMinor = getMajorMinor(requestedVersion, eventStream, versionParseContext(eventStream, requestedVersion));
+    const reqBand = getFeatureBandFromVersion(requestedVersion, eventStream, versionParseContext(eventStream, requestedVersion), false);
+
+    const sameBand = installedVersions.filter(v =>
+    {
+        if (!isFullySpecifiedSdkVersion(v, eventStream))
+        {
+            return false;
+        }
+        const ctx = versionParseContext(eventStream, v);
+        return getMajorMinor(v, eventStream, ctx) === reqMajorMinor
+            && getFeatureBandFromVersion(v, eventStream, ctx, false) === reqBand;
+    });
+
+    if (sameBand.length === 0)
+    {
+        return undefined;
+    }
+
+    return sameBand.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))[sameBand.length - 1];
+}
+
+/**
  * Returns a tool result telling the model that the requested architecture differs from this machine's architecture
  * and that it must find another way to perform the action, since cross-architecture scenarios are not yet supported.
  * Returns undefined when no architecture was requested or when it matches the current system architecture.
@@ -266,11 +334,32 @@ class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string; arc
             {
                 const platform = process.platform;
                 const installMethod = platform === 'win32' ? 'MSI installer' : platform === 'darwin' ? 'PKG installer' : 'package manager';
+
+                // On Linux the distro package manager installs the latest patch within the requested feature band
+                // (e.g. requesting 10.0.106 yields 10.0.108 when 106 is no longer offered, since lower patches cannot
+                // be installed once a newer one ships). Detect that and tell the model the exact requested patch is not present.
+                let patchMismatchNote = '';
+                if (platform === 'linux' && isFullySpecifiedSdkVersion(version, this.eventStream))
+                {
+                    const installedSdks = await getInstalledSdkVersions(result.dotnetPath, this.eventStream);
+                    if (installedSdks && !installedSdks.includes(version))
+                    {
+                        const actuallyInstalled = highestPatchInSameFeatureBand(version, installedSdks, this.eventStream);
+                        if (actuallyInstalled && actuallyInstalled !== version)
+                        {
+                            patchMismatchNote =
+                                `\n\nNOTE: The exact requested patch ${version} was not available from the Linux package manager, ` +
+                                `so .NET SDK ${actuallyInstalled} was installed.`;
+                        }
+                    }
+                }
+
                 return new vscode.LanguageModelToolResult([
                     new vscode.LanguageModelTextPart(
                         `Successfully installed .NET SDK ${version} via ${installMethod}.\n` +
                         `Path: ${result.dotnetPath}\n` +
-                        `Restart terminal or VS Code for PATH changes. Verify: \`dotnet --info\``
+                        `Restart terminal or VS Code for PATH changes. Verify: \`dotnet --info\`` +
+                        patchMismatchNote
                     )
                 ]);
             } else

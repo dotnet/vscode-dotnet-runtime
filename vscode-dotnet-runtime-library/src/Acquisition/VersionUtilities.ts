@@ -265,6 +265,23 @@ export function isNonSpecificMajorOrMajorMinorVersion(version: string): boolean
 
 /**
  *
+ * @param version the requested version, which may be only a major (e.g. '8') or major.minor (e.g. '8.0').
+ * @returns the version normalized to the major.minor.1xx feature band (e.g. '8.0.1xx') when only a major or
+ * major.minor was given; otherwise the version is returned unchanged.
+ * @remarks Most Linux distro package managers only expose the .1xx (100) feature band, so a non-specific
+ * major / major.minor request must be normalized to that band before it is handed to the package manager.
+ */
+export function convertToLinuxPackageManagerSupportedVersion(version: string, eventStream: IEventStream, context: IAcquisitionWorkerContext): string
+{
+    if (isNonSpecificMajorOrMajorMinorVersion(version))
+    {
+        return `${getMajorMinor(version, eventStream, context)}.1xx`;
+    }
+    return version;
+}
+
+/**
+ *
  * @param value the string to check and see if it's a valid number.
  * @returns true if it's a valid number.
  */
