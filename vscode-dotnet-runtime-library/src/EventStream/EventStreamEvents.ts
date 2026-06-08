@@ -306,8 +306,7 @@ export class DotnetAcquisitionFinalError extends GenericModalEvent
  * This allows us to count all errors and analyze them into categories.
  * The event name for the failure cause is stored in the originalEventName property.
  */
-abstract class DotnetAcquisitionFinalErrorBase extends DotnetAcquisitionError
-{
+abstract class DotnetAcquisitionFinalErrorBase extends DotnetAcquisitionError{
 
     constructor(public readonly error: Error, public readonly originalEventName: string, public readonly install: DotnetInstall)
     {
@@ -344,6 +343,29 @@ export class DotnetASPNetRuntimeFinalAcquisitionError extends DotnetAcquisitionF
 {
     public eventName = 'DotnetASPNetRuntimeFinalAcquisitionError';
     public verboseOutputOnly = true;
+}
+
+/**
+ * @remarks Terminal error for an uninstall command. Distinct from DotnetAcquisitionFinalError so that a failure to
+ * REMOVE .NET is not mis-reported (in telemetry and the output channel) as a failure to ACQUIRE/install .NET.
+ */
+export class DotnetUninstallFinalError extends DotnetAcquisitionError
+{
+    public readonly type = EventType.DotnetUninstallFinalError;
+    public readonly eventName = 'DotnetUninstallFinalError';
+
+    constructor(error: Error, public readonly originalEventName: string, install: DotnetInstall)
+    {
+        super(error, install);
+    }
+
+    public getProperties(telemetry = false): { [id: string]: string } | undefined
+    {
+        return {
+            FailureMode: this.originalEventName,
+            ...super.getProperties(telemetry)
+        };
+    }
 }
 
 export abstract class DotnetNonAcquisitionError extends IEvent

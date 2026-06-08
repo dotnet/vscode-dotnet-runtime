@@ -112,7 +112,7 @@ suite('LanguageModelTools Tests', function ()
 
     suite('Tool Registration', function ()
     {
-        test('All seven Language Model Tools are registered after activation', async () =>
+        test('All eight Language Model Tools are registered after activation', async () =>
         {
             const tools = vscode.lm.tools;
 
@@ -123,7 +123,8 @@ suite('LanguageModelTools Tests', function ()
                 ToolNames.recommendedSdkVersion,
                 ToolNames.listInstalledVersions,
                 ToolNames.findPath,
-                ToolNames.uninstall,
+                ToolNames.uninstallSystemSdk,
+                ToolNames.uninstallVSCodeRuntime,
                 ToolNames.getSettingsInfo
             ];
 
@@ -133,18 +134,19 @@ suite('LanguageModelTools Tests', function ()
                 assert.exists(tool, `Tool ${toolName} should be registered`);
             }
 
-            // Verify we have exactly 7 tools matching our tool names
+            // Verify we have exactly 8 tools matching our tool names
             const expectedNames = [
                 ToolNames.installSdk,
                 ToolNames.listVersions,
                 ToolNames.recommendedSdkVersion,
                 ToolNames.listInstalledVersions,
                 ToolNames.findPath,
-                ToolNames.uninstall,
+                ToolNames.uninstallSystemSdk,
+                ToolNames.uninstallVSCodeRuntime,
                 ToolNames.getSettingsInfo
             ];
             const ourTools = tools.filter(t => expectedNames.some(name => t.name.endsWith(name)));
-            assert.equal(ourTools.length, 7, 'Should have exactly 7 .NET Install Tool tools registered');
+            assert.equal(ourTools.length, 8, 'Should have exactly 8 .NET Install Tool tools registered');
         }).timeout(standardTimeoutTime);
 
         test('Tool names match package.json definitions', async () =>
@@ -154,7 +156,8 @@ suite('LanguageModelTools Tests', function ()
             assert.equal(ToolNames.recommendedSdkVersion, 'recommended_dotnet_sdk_version');
             assert.equal(ToolNames.listInstalledVersions, 'list_installed_dotnet_versions');
             assert.equal(ToolNames.findPath, 'find_dotnet_executable_path');
-            assert.equal(ToolNames.uninstall, 'uninstall_dotnet');
+            assert.equal(ToolNames.uninstallSystemSdk, 'uninstall_system_dotnet_sdk');
+            assert.equal(ToolNames.uninstallVSCodeRuntime, 'uninstall_vscode_owned_dotnet_runtime');
             assert.equal(ToolNames.getSettingsInfo, 'get_settings_info_for_dotnet_installation_management');
         }).timeout(standardTimeoutTime);
 
@@ -166,7 +169,8 @@ suite('LanguageModelTools Tests', function ()
                 ToolNames.recommendedSdkVersion,
                 ToolNames.listInstalledVersions,
                 ToolNames.findPath,
-                ToolNames.uninstall,
+                ToolNames.uninstallSystemSdk,
+                ToolNames.uninstallVSCodeRuntime,
                 ToolNames.getSettingsInfo
             ];
             const tools = vscode.lm.tools.filter(t => expectedNames.some(name => t.name.endsWith(name)));
@@ -193,7 +197,8 @@ suite('LanguageModelTools Tests', function ()
                     ToolNames.recommendedSdkVersion,
                     ToolNames.listInstalledVersions,
                     ToolNames.findPath,
-                    ToolNames.uninstall,
+                    ToolNames.uninstallSystemSdk,
+                    ToolNames.uninstallVSCodeRuntime,
                     ToolNames.getSettingsInfo
                 ];
                 if (expectedNames.some(name => tool.name.endsWith(name)))
@@ -214,7 +219,8 @@ suite('LanguageModelTools Tests', function ()
                 ToolNames.recommendedSdkVersion,
                 ToolNames.listInstalledVersions,
                 ToolNames.findPath,
-                ToolNames.uninstall,
+                ToolNames.uninstallSystemSdk,
+                ToolNames.uninstallVSCodeRuntime,
                 ToolNames.getSettingsInfo
             ];
             const ourTools = tools.filter(t => expectedNames.some(name => t.name.endsWith(name)));
@@ -548,13 +554,13 @@ suite('LanguageModelTools Tests', function ()
         }).timeout(standardTimeoutTime);
     });
 
-    suite('Uninstall Tool', function ()
+    suite('Uninstall Tools', function ()
     {
-        test('Accepts version parameter', async () =>
+        test('System SDK tool accepts version parameter', async () =>
         {
             // This won't actually uninstall anything, but should accept the parameter
             const result = await vscode.lm.invokeTool(
-                ToolNames.uninstall,
+                ToolNames.uninstallSystemSdk,
                 { input: { version: '6.0.0' }, toolInvocationToken: undefined },
                 new vscode.CancellationTokenSource().token
             );
@@ -563,22 +569,34 @@ suite('LanguageModelTools Tests', function ()
             assert.exists(result.content, 'Result should have content');
         }).timeout(standardTimeoutTime);
 
-        test('Accepts mode parameter', async () =>
+        test('VS Code runtime tool accepts version parameter', async () =>
         {
             const result = await vscode.lm.invokeTool(
-                ToolNames.uninstall,
-                { input: { version: '6.0.0', mode: 'sdk' }, toolInvocationToken: undefined },
+                ToolNames.uninstallVSCodeRuntime,
+                { input: { version: '6.0.0' }, toolInvocationToken: undefined },
+                new vscode.CancellationTokenSource().token
+            );
+
+            assert.exists(result, 'Tool should return a result');
+            assert.exists(result.content, 'Result should have content');
+        }).timeout(standardTimeoutTime);
+
+        test('VS Code runtime tool accepts mode parameter', async () =>
+        {
+            const result = await vscode.lm.invokeTool(
+                ToolNames.uninstallVSCodeRuntime,
+                { input: { version: '6.0.0', mode: 'aspnetcore' }, toolInvocationToken: undefined },
                 new vscode.CancellationTokenSource().token
             );
 
             assert.exists(result, 'Tool should return a result');
         }).timeout(standardTimeoutTime);
 
-        test('Accepts global parameter', async () =>
+        test('System SDK tool accepts architecture parameter', async () =>
         {
             const result = await vscode.lm.invokeTool(
-                ToolNames.uninstall,
-                { input: { version: '6.0.0', global: true }, toolInvocationToken: undefined },
+                ToolNames.uninstallSystemSdk,
+                { input: { version: '6.0.0', architecture: normalizeArchitecture(os.arch()) }, toolInvocationToken: undefined },
                 new vscode.CancellationTokenSource().token
             );
 
@@ -631,10 +649,10 @@ suite('LanguageModelTools Tests', function ()
             assert.include(textContent.toLowerCase(), 'cross-architecture', 'Should mention cross-architecture is unsupported');
         }).timeout(standardTimeoutTime);
 
-        test('Uninstall tool with a non-native architecture provides instructions to uninstall another way', async () =>
+        test('System SDK uninstall tool with a non-native architecture provides instructions to uninstall another way', async () =>
         {
             const result = await vscode.lm.invokeTool(
-                ToolNames.uninstall,
+                ToolNames.uninstallSystemSdk,
                 { input: { version: '8.0.0', architecture: nonNativeArchitecture() }, toolInvocationToken: undefined },
                 new vscode.CancellationTokenSource().token
             );
@@ -720,7 +738,8 @@ suite('LanguageModelTools Tests', function ()
                 { name: ToolNames.getSettingsInfo, input: {} },
                 { name: ToolNames.findPath, input: { version: '8.0' } },
                 { name: ToolNames.listInstalledVersions, input: {} },
-                { name: ToolNames.uninstall, input: {} }
+                { name: ToolNames.uninstallSystemSdk, input: {} },
+                { name: ToolNames.uninstallVSCodeRuntime, input: {} }
             ];
 
             for (const toolTest of toolsToTest)
@@ -798,10 +817,10 @@ suite('LanguageModelTools Tests', function ()
 
         test('Uninstall tool surfaces errors when operation fails', async () =>
         {
-            // Try to uninstall a non-existent version
+            // Try to uninstall a non-existent system SDK version
             const result = await vscode.lm.invokeTool(
-                ToolNames.uninstall,
-                { input: { version: '1.0.0', mode: 'sdk', global: true }, toolInvocationToken: undefined },
+                ToolNames.uninstallSystemSdk,
+                { input: { version: '1.0.0' }, toolInvocationToken: undefined },
                 new vscode.CancellationTokenSource().token
             );
 
@@ -853,7 +872,8 @@ suite('LanguageModelTools Tests', function ()
                 ToolNames.recommendedSdkVersion,
                 ToolNames.listInstalledVersions,
                 ToolNames.findPath,
-                ToolNames.uninstall,
+                ToolNames.uninstallSystemSdk,
+                ToolNames.uninstallVSCodeRuntime,
                 ToolNames.getSettingsInfo
             ];
             const tools = vscode.lm.tools;

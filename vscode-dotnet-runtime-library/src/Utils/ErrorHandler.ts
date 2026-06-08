@@ -14,6 +14,7 @@ import
         DotnetCommandSucceeded,
         DotnetInstallExpectedAbort,
         DotnetNotInstallRelatedCommandFailed,
+        DotnetUninstallFinalError,
         EventCancellationError
     } from '../EventStream/EventStreamEvents';
 import { IIssueContext } from './IIssueContext';
@@ -83,13 +84,16 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
 
         if (acquireContext)
         {
+            const installInfo = GetDotnetInstallInfo(acquireContext.acquisitionContext.version, acquireContext.acquisitionContext.mode!,
+                acquireContext.acquisitionContext.installType ?? 'local', acquireContext.acquisitionContext.architecture ??
+                DotnetCoreAcquisitionWorker.defaultArchitecture());
             // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            context.eventStream.post(new DotnetAcquisitionFinalError(error, (caughtError?.eventType) ?? 'Unknown',
-                GetDotnetInstallInfo(acquireContext.acquisitionContext.version, acquireContext.acquisitionContext.mode!,
-                    acquireContext.acquisitionContext.installType ?? 'local', acquireContext.acquisitionContext.architecture ??
-                DotnetCoreAcquisitionWorker.defaultArchitecture()
-                )));
+            const originalEventName = (caughtError?.eventType) ?? 'Unknown';
+            // A failed uninstall must not be reported as a failed acquisition (install); surface a dedicated terminal event instead.
+            context.eventStream.post(context.commandName === 'uninstall'
+                ? new DotnetUninstallFinalError(error, originalEventName, installInfo)
+                : new DotnetAcquisitionFinalError(error, originalEventName, installInfo));
         }
 
         if (context.errorConfiguration === AcquireErrorConfiguration.DisplayAllErrorPopups)

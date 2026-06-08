@@ -12,6 +12,7 @@ export enum EventType
     DotnetAcquisitionCompleted,
     DotnetAcquisitionError,
     DotnetAcquisitionFinalError,
+    DotnetUninstallFinalError,
     DotnetAcquisitionSuccessEvent,
     DotnetAcquisitionMessage,
     DotnetAcquisitionTest,

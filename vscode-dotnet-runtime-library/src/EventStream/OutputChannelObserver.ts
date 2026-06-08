@@ -123,6 +123,7 @@ export class OutputChannelObserver implements IEventStreamObserver
                 }
                 break;
             case EventType.DotnetAcquisitionError, EventType.DotnetAcquisitionFinalError:
+            case EventType.DotnetUninstallFinalError:
                 const error = event as DotnetAcquisitionError;
                 this.appendOutputLine(`\nError : (${error?.eventName ?? ''})`);
 
