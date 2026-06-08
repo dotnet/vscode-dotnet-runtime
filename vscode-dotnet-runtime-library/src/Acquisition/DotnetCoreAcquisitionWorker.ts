@@ -600,6 +600,20 @@ Other dependents remain.`));
             install), GLOBAL_LOCK_PING_DURATION_MS, context.timeoutSeconds * 1000,
             async () =>
             {
+                // Only system-wide SDKs can be uninstalled through this path: the global installer/resolver stack is
+                // SDK-only (a runtime/aspnetcore version has no feature band, so GlobalInstallerResolver would crash
+                // while computing one). System-wide runtimes are owned by the OS package manager / installer, not this
+                // extension. Reject early with an honest error instead of surfacing a confusing feature-band failure.
+                if (install.installMode !== 'sdk')
+                {
+                    const unsupportedGlobalRuntimeError = new EventBasedError('UnsupportedGlobalRuntimeUninstall',
+                        `Cannot uninstall a system-wide .NET ${install.installMode} (${install.version}) through this extension. ` +
+                        `System-wide ${install.installMode} installs are managed by your OS package manager or the installer they came from; remove it there instead. ` +
+                        `This extension only uninstalls system-wide SDKs and VS Code-managed (local) runtimes.`);
+                    context.eventStream.post(new DotnetUninstallFailed(unsupportedGlobalRuntimeError.message));
+                    throw unsupportedGlobalRuntimeError;
+                }
+
                 let systemInstallPath = '';
 
                 try
