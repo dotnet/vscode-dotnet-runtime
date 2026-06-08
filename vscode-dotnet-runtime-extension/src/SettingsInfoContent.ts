@@ -121,12 +121,12 @@ For repo-local SDK resolution, use the \`paths\` property in global.json:
 
 ## Common Scenarios
 
-- **"I want to develop .NET applications"** \u2192 Install an SDK globally via "Install .NET SDK System-Wide." This provides the \`dotnet\` CLI for build, run, test, and publish.
-- **"C# extension won't start / can't find .NET"** → Check \`dotnet --info\` in terminal. If missing, install SDK globally. If installed but not detected, set existingDotnetPath or sharedExistingDotnetPath.
-- **"Extension installed .NET but I can't use it in terminal"** \u2192 Extension-managed runtimes are LOCAL and not on PATH. For terminal/CLI usage, install globally.
-- **"I want to use a different .NET version for my project"** \u2192 NOT existingDotnetPath. Create \`global.json\` in the project root or install the desired SDK globally.
-- **"I want a local/repo-specific SDK (not global)"** \u2192 NOT existingDotnetPath. Use the \`paths\` property in global.json (.NET 10+ required) — see section above.
-- **"Which dotnet does the C# extension use?"** \u2192 Use the findDotNetPath tool. It searches in order: existingDotnetPath setting \u2192 PATH \u2192 DOTNET_ROOT \u2192 extension-managed local installs.
+- **"I want to develop .NET applications"** - Install an SDK globally via "Install .NET SDK System-Wide." This provides the \`dotnet\` CLI for build, run, test, and publish.
+- **"I want a local/repo-specific SDK (not global)"** - Use the \`paths\` property in global.json (.NET 10+ required) — see section above. DO NOT use existingDotnetPath.
+- **"C# extension won't start / can't find .NET"** → Check \`dotnet --info\` in terminal. If missing, install SDK globally. If a RUNTIME is installed but not detected, set existingDotnetPath or sharedExistingDotnetPath.
+- **"Extension installed .NET but I can't use it in terminal"** - Extension-managed runtimes are LOCAL and not on PATH. For terminal/CLI usage, install globally.
+- **"I want to use a different .NET version for my project"** - NOT existingDotnetPath. Create \`global.json\` in the project root or install the desired SDK globally.
+- **"Which dotnet does the C# extension use?"** - Use the findDotNetPath tool. It searches in order: existingDotnetPath setting - PATH - DOTNET_ROOT - extension-managed local installs.
 
 ---
 
