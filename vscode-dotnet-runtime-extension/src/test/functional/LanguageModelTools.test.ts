@@ -3,6 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
+import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import
@@ -30,6 +31,23 @@ function extractTextContent(result: vscode.LanguageModelToolResult): string
         .filter((part: any) => part instanceof vscode.LanguageModelTextPart)
         .map((part: any) => part.value)
         .join('');
+}
+
+/**
+ * Mirrors normalizeArchitecture in LanguageModelTools.ts so the test can reason about the system architecture.
+ */
+function normalizeArchitecture(arch: string): string
+{
+    return arch === 'ia32' ? 'x86' : arch;
+}
+
+/**
+ * Returns an architecture name guaranteed to differ from this machine's architecture,
+ * so cross-architecture (non-native) scenarios can be exercised deterministically.
+ */
+function nonNativeArchitecture(): string
+{
+    return normalizeArchitecture(os.arch()) === 'arm64' ? 'x64' : 'arm64';
 }
 
 /**
@@ -589,6 +607,64 @@ suite('LanguageModelTools Tests', function ()
             const description = installTool?.description?.toLowerCase() || '';
             const mentionsGlobal = description.includes('global') || description.includes('system');
             assert.isTrue(mentionsGlobal, 'Description should mention global/system-wide installation');
+        }).timeout(standardTimeoutTime);
+    });
+
+    suite('Cross-Architecture Handling', function ()
+    {
+        test('InstallSdk tool with a non-native architecture provides instructions to install another way', async () =>
+        {
+            const result = await vscode.lm.invokeTool(
+                ToolNames.installSdk,
+                { input: { version: '8.0', architecture: nonNativeArchitecture() }, toolInvocationToken: undefined },
+                new vscode.CancellationTokenSource().token
+            );
+
+            assert.exists(result, 'Tool should return a result');
+            const textContent = extractTextContent(result);
+
+            // The requested (non-native) architecture should be named back to the model.
+            assert.include(textContent, nonNativeArchitecture(), 'Should mention the requested architecture');
+            // It should make clear cross-architecture installs are unsupported.
+            assert.include(textContent, 'does not match this machine', 'Should explain the architecture mismatch');
+            assert.include(textContent.toLowerCase(), 'cross-architecture', 'Should mention cross-architecture is unsupported');
+        }).timeout(standardTimeoutTime);
+
+        test('Uninstall tool with a non-native architecture provides instructions to uninstall another way', async () =>
+        {
+            const result = await vscode.lm.invokeTool(
+                ToolNames.uninstall,
+                { input: { version: '8.0.0', architecture: nonNativeArchitecture() }, toolInvocationToken: undefined },
+                new vscode.CancellationTokenSource().token
+            );
+
+            assert.exists(result, 'Tool should return a result');
+            const textContent = extractTextContent(result);
+
+            assert.include(textContent, nonNativeArchitecture(), 'Should mention the requested architecture');
+            assert.include(textContent, 'does not match this machine', 'Should explain the architecture mismatch');
+            assert.include(textContent.toLowerCase(), 'cross-architecture', 'Should mention cross-architecture is unsupported');
+            assert.include(textContent, 'Find your own way to uninstall', 'Should instruct the model to find another uninstall method');
+        }).timeout(standardTimeoutTime);
+
+        test('InstallSdk tool with the native architecture does not return the cross-architecture message', async () =>
+        {
+            const nativeArch = normalizeArchitecture(os.arch());
+            // Omit version on purpose: the cross-architecture guard runs before the version check,
+            // so a native architecture passes the guard and falls through to the version-required error
+            // without triggering a real (side-effecting) install.
+            const result = await vscode.lm.invokeTool(
+                ToolNames.installSdk,
+                { input: { architecture: nativeArch }, toolInvocationToken: undefined },
+                new vscode.CancellationTokenSource().token
+            );
+
+            assert.exists(result, 'Tool should return a result');
+            const textContent = extractTextContent(result);
+
+            // Native architecture must not be short-circuited by the cross-architecture guard.
+            assert.notInclude(textContent, 'cross-architecture',
+                'Native architecture should not trigger the cross-architecture message');
         }).timeout(standardTimeoutTime);
     });
 
