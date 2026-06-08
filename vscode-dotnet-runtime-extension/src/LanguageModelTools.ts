@@ -676,8 +676,8 @@ class RecommendedSdkVersionTool implements vscode.LanguageModelTool<{}>
                 (recommended.supportPhase ? ` — support phase: ${recommended.supportPhase}` : '') +
                 (process.platform === 'linux'
                     ? `\n\nNOTE: On Linux this is the feature band the distro's package manager actually packages ` +
-                      `(e.g. '${recommended.version}'), which may differ from the newest patch published on dotnet.microsoft.com. ` +
-                      `Install this recommended version; the distro package manager only offers the latest patch within that feature band.`
+                    `(e.g. '${recommended.version}'), which may differ from the newest patch published on dotnet.microsoft.com. ` +
+                    `Install this recommended version; the distro package manager only offers the latest patch within that feature band.`
                     : '')
             );
         }
