@@ -9,6 +9,7 @@ import
 {
     AcquireErrorConfiguration,
     checkForUnsupportedLinux,
+    convertToLinuxPackageManagerSupportedVersion,
     DotnetAcquisitionCompleted,
     DotnetAcquisitionStarted,
     DotnetBeginGlobalInstallerExecution,
@@ -18,6 +19,9 @@ import
     DotnetUninstallStarted,
     EventBasedError,
     EventStream,
+    getFeatureBandFromVersion,
+    getMajorMinor,
+    IAcquisitionWorkerContext,
     IDotnetAcquireContext,
     IDotnetAcquireResult,
     IDotnetFindPathContext,
@@ -27,6 +31,7 @@ import
     IDotnetSearchResult,
     IDotnetVersion,
     IEventStream,
+    isFullySpecifiedVersion,
     LanguageModelToolInvoked,
     LanguageModelToolPrepareInvocation,
     SuppressedAcquisitionError
@@ -106,6 +111,47 @@ function isFullySpecifiedSdkVersion(version: string | undefined, eventStream: IE
         return false;
     }
 }
+
+/**
+ * Queries the .NET installs of the given mode visible to the extension API, for the given dotnet executable
+ * (or the system PATH when no path is supplied). Returns the raw search results from the extension's
+ * `dotnet.availableInstalls` command. This is the single place that builds the search context and invokes that
+ * command so callers don't duplicate the context shape.
+ */
+async function queryAvailableInstalls(mode: DotnetInstallMode, dotnetExecutablePath?: string): Promise<IDotnetSearchResult[] | undefined>
+{
+    const searchContext: IDotnetSearchContext = {
+        mode,
+        requestingExtensionId: 'ms-dotnettools.vscode-dotnet-runtime'
+    };
+    if (dotnetExecutablePath)
+    {
+        searchContext.dotnetExecutablePath = dotnetExecutablePath;
+    }
+    return vscode.commands.executeCommand<IDotnetSearchResult[]>('dotnet.availableInstalls', searchContext);
+}
+
+/**
+ * Queries the SDK versions installed for the given dotnet executable via the extension API.
+ * Returns undefined if the query fails so callers can degrade gracefully.
+ */
+async function getInstalledSdkVersions(dotnetExecutablePath: string, eventStream: IEventStream): Promise<string[] | undefined>
+{
+    try
+    {
+        const results = await queryAvailableInstalls('sdk', dotnetExecutablePath);
+        return results?.map(r => r.version);
+    }
+    catch (error)
+    {
+        eventStream.post(new SuppressedAcquisitionError(
+            error instanceof Error ? error : new Error(String(error)),
+            'Failed to query installed SDK versions to verify the requested patch was installed.'
+        ));
+        return undefined;
+    }
+}
+
 /**
  * From a list of installed SDK versions, returns the highest fully-specified patch that shares the
  * same major.minor and feature band as the requested version, or undefined if none match.
@@ -262,18 +308,25 @@ class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string; arc
             return crossArchResult;
         }
 
-        const version = options.input?.version;
-
-        // Version is now required by the schema - if not provided, guide the model
+        // Version is required. The model should always supply one (from the user request, a .csproj TargetFramework,
+        // global.json, or the recommendedDotNetSdkVersion tool); we do not silently pick a version on its behalf.
+        let version = options.input?.version;
         if (!version)
         {
             return new vscode.LanguageModelToolResult([
                 new vscode.LanguageModelTextPart(
-                    'ERROR: version parameter is required.\n\n' +
+                    'ERROR: no version was provided.\n\n' +
                     'To determine version: (1) Check user request, (2) TargetFramework in .csproj (net8.0 -> "8"), ' +
                     '(3) global.json sdk.version, (4) Call recommendedDotNetSdkVersion'
                 )
             ]);
+        }
+
+        // Linux package managers only expose the .1xx feature band, so a bare major / major.minor request
+        // (e.g. "8" or "8.0") must be normalized to major.minor.1xx before the distro install is attempted.
+        if (process.platform === 'linux')
+        {
+            version = convertToLinuxPackageManagerSupportedVersion(version, this.eventStream, versionParseContext(this.eventStream, version));
         }
 
         try
@@ -979,24 +1032,9 @@ class ListInstalledVersionsTool implements vscode.LanguageModelTool<{ dotnetPath
             // If no mode specified, return BOTH SDKs and Runtimes (like dotnet --info)
             if (!mode)
             {
-                const sdkContext: IDotnetSearchContext = {
-                    mode: 'sdk',
-                    requestingExtensionId: 'ms-dotnettools.vscode-dotnet-runtime'
-                };
-                const runtimeContext: IDotnetSearchContext = {
-                    mode: 'runtime',
-                    requestingExtensionId: 'ms-dotnettools.vscode-dotnet-runtime'
-                };
-
-                if (dotnetPath)
-                {
-                    sdkContext.dotnetExecutablePath = dotnetPath;
-                    runtimeContext.dotnetExecutablePath = dotnetPath;
-                }
-
                 const [sdkResults, runtimeResults] = await Promise.all([
-                    vscode.commands.executeCommand<IDotnetSearchResult[]>('dotnet.availableInstalls', sdkContext),
-                    vscode.commands.executeCommand<IDotnetSearchResult[]>('dotnet.availableInstalls', runtimeContext)
+                    queryAvailableInstalls('sdk', dotnetPath),
+                    queryAvailableInstalls('runtime', dotnetPath)
                 ]);
 
                 let resultText = `# Installed .NET SDKs and Runtimes\n\n`;
@@ -1081,20 +1119,7 @@ class ListInstalledVersionsTool implements vscode.LanguageModelTool<{ dotnetPath
                 ? lowerMode as DotnetInstallMode
                 : 'sdk';
 
-            const searchContext: IDotnetSearchContext = {
-                mode: resolvedMode,
-                requestingExtensionId: 'ms-dotnettools.vscode-dotnet-runtime'
-            };
-
-            if (dotnetPath)
-            {
-                searchContext.dotnetExecutablePath = dotnetPath;
-            }
-
-            const results: IDotnetSearchResult[] = await vscode.commands.executeCommand(
-                'dotnet.availableInstalls',
-                searchContext
-            );
+            const results = await queryAvailableInstalls(resolvedMode, dotnetPath);
 
             if (!results || results.length === 0)
             {
