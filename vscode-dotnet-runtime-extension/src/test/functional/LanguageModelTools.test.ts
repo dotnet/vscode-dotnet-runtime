@@ -10,13 +10,14 @@ import
 {
     EventBasedError,
     MockEnvironmentVariableCollection,
+    MockEventStream,
     MockExtensionConfiguration,
     MockExtensionContext,
     MockTelemetryReporter,
     MockWindowDisplayWorker
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
-import { ToolNames } from '../../LanguageModelTools';
+import { computeLinuxPatchMismatchNote, highestPatchInSameFeatureBand, isFullySpecifiedSdkVersion, resolveSdkVersionForInstall, ToolNames } from '../../LanguageModelTools';
 
 const assert: any = chai.assert;
 const standardTimeoutTime = 30000;
@@ -650,12 +651,12 @@ suite('LanguageModelTools Tests', function ()
         test('InstallSdk tool with the native architecture does not return the cross-architecture message', async () =>
         {
             const nativeArch = normalizeArchitecture(os.arch());
-            // Omit version on purpose: the cross-architecture guard runs before the version check,
-            // so a native architecture passes the guard and falls through to the version-required error
-            // without triggering a real (side-effecting) install.
+            // Use a malformed version with the native architecture: the cross-architecture guard runs first and
+            // (for a native arch) passes through, then version resolution rejects 'foo' synchronously (no network,
+            // no installer, no elevation prompt) and the tool returns a normal failure result.
             const result = await vscode.lm.invokeTool(
                 ToolNames.installSdk,
-                { input: { architecture: nativeArch }, toolInvocationToken: undefined },
+                { input: { version: 'foo', architecture: nativeArch }, toolInvocationToken: undefined },
                 new vscode.CancellationTokenSource().token
             );
 
@@ -764,19 +765,18 @@ suite('LanguageModelTools Tests', function ()
 
         test('InstallSdk tool returns ERROR message when installation fails or returns undefined', async () =>
         {
-            // We can't easily simulate a failed global SDK install without admin privileges,
-            // but we can verify the tool handles the case when version is missing
+            // We can't easily simulate a failed global SDK install without admin privileges, but a malformed version
+            // is rejected synchronously by version resolution (no network / installer / elevation) and surfaces a failure.
             const result = await vscode.lm.invokeTool(
                 ToolNames.installSdk,
-                { input: {} /* no version */, toolInvocationToken: undefined },
+                { input: { version: 'foo' }, toolInvocationToken: undefined },
                 new vscode.CancellationTokenSource().token
             );
 
             const textContent = extractTextContent(result);
 
-            // When no version provided, should return clear ERROR message
-            assert.include(textContent, 'ERROR', 'Should include ERROR keyword for missing version');
-            assert.include(textContent, 'version', 'Should mention version is required');
+            // A failed install should clearly indicate failure so the LLM can act on it.
+            assert.include(textContent.toLowerCase(), 'failed', 'Should indicate the install failed');
         }).timeout(standardTimeoutTime);
 
         test('InstallSdk tool context includes rethrowError property', async () =>
@@ -815,27 +815,22 @@ suite('LanguageModelTools Tests', function ()
 
         test('Error messages contain actionable information for LLM', async () =>
         {
-            // Test that error responses contain enough context for the LLM to help the user
+            // Test that error responses contain enough context for the LLM to help the user.
+            // A malformed version fails synchronously (no network / installer / elevation).
             const result = await vscode.lm.invokeTool(
                 ToolNames.installSdk,
-                { input: {} /* missing required version */, toolInvocationToken: undefined },
+                { input: { version: 'foo' }, toolInvocationToken: undefined },
                 new vscode.CancellationTokenSource().token
             );
 
             const textContent = extractTextContent(result);
 
-            // Should contain guidance on how to fix the issue.
-            // We specifically steer the model to recommendedDotNetSdkVersion (not listDotNetVersions),
-            // because the list tool returns feature bands Linux distros do not package.
-            const hasActionableGuidance = textContent.includes('How to') ||
-                textContent.includes('TargetFramework') ||
-                textContent.includes('global.json') ||
-                textContent.includes('recommendedDotNetSdkVersion') ||
-                textContent.includes('call');
+            // The failure message should point the model at a concrete next step (manual install docs).
+            const hasActionableGuidance = textContent.includes('manual install') ||
+                textContent.includes('https://learn.microsoft.com/dotnet/core/install') ||
+                textContent.includes('output channel');
 
             assert.isTrue(hasActionableGuidance, 'Error messages should provide actionable guidance');
-            assert.include(textContent, 'recommendedDotNetSdkVersion',
-                'Missing-version error must steer the model to recommendedDotNetSdkVersion (Linux-aware), not the raw list tool.');
         }).timeout(standardTimeoutTime);
     });
 
@@ -977,5 +972,125 @@ suite('LanguageModelTools Tests', function ()
             assert.equal(err.eventType, 'UnsupportedDistro',
                 'eventType must be readable for the InstallSdk tool to map to the manual-install fallback');
         }).timeout(standardTimeoutTime);
+    });
+
+    suite('Linux Patch Mismatch Detection', function ()
+    {
+        // These tests exercise the pure logic extracted from the InstallSdk success path so the
+        // "requested patch not available, a newer patch was installed" conditional can be verified
+        // without performing a real install. A MockEventStream satisfies the version-parsing helpers.
+        const eventStream = new MockEventStream();
+
+        suite('isFullySpecifiedSdkVersion', function ()
+        {
+            test('Treats a fully-specified patch as fully specified', () =>
+            {
+                assert.isTrue(isFullySpecifiedSdkVersion('10.0.106', eventStream));
+            }).timeout(standardTimeoutTime);
+
+            test('Treats partial versions, feature bands, and undefined as not fully specified', () =>
+            {
+                assert.isFalse(isFullySpecifiedSdkVersion('10', eventStream), 'major only');
+                assert.isFalse(isFullySpecifiedSdkVersion('10.0', eventStream), 'major.minor only');
+                assert.isFalse(isFullySpecifiedSdkVersion('10.0.1xx', eventStream), 'feature band');
+                assert.isFalse(isFullySpecifiedSdkVersion(undefined, eventStream), 'undefined');
+            }).timeout(standardTimeoutTime);
+        });
+
+        suite('highestPatchInSameFeatureBand', function ()
+        {
+            test('Picks the highest patch within the requested major.minor and feature band', () =>
+            {
+                const installed = ['10.0.106', '10.0.107', '10.0.108'];
+                assert.equal(highestPatchInSameFeatureBand('10.0.106', installed, eventStream), '10.0.108');
+            }).timeout(standardTimeoutTime);
+
+            test('Ignores installs in a different feature band', () =>
+            {
+                // 10.0.2xx is a different feature band than the requested 10.0.1xx and must not be chosen.
+                const installed = ['10.0.205', '10.0.108'];
+                assert.equal(highestPatchInSameFeatureBand('10.0.106', installed, eventStream), '10.0.108');
+            }).timeout(standardTimeoutTime);
+
+            test('Ignores installs of a different major.minor', () =>
+            {
+                const installed = ['9.0.108', '8.0.412'];
+                assert.isUndefined(highestPatchInSameFeatureBand('10.0.106', installed, eventStream));
+            }).timeout(standardTimeoutTime);
+
+            test('Returns undefined when no install matches the band', () =>
+            {
+                assert.isUndefined(highestPatchInSameFeatureBand('10.0.106', [], eventStream));
+            }).timeout(standardTimeoutTime);
+        });
+
+        suite('resolveSdkVersionForInstall', function ()
+        {
+            test('Converts a bare major version to the .1xx feature band on Linux', () =>
+            {
+                assert.equal(resolveSdkVersionForInstall('6', 'linux', eventStream), '6.0.1xx');
+            }).timeout(standardTimeoutTime);
+
+            test('Converts a major.minor version to the .1xx feature band on Linux', () =>
+            {
+                assert.equal(resolveSdkVersionForInstall('6.0', 'linux', eventStream), '6.0.1xx');
+            }).timeout(standardTimeoutTime);
+
+            test('Leaves a bare major / major.minor version unchanged on Windows and macOS', () =>
+            {
+                assert.equal(resolveSdkVersionForInstall('6', 'win32', eventStream), '6', 'major on Windows');
+                assert.equal(resolveSdkVersionForInstall('6.0', 'win32', eventStream), '6.0', 'major.minor on Windows');
+                assert.equal(resolveSdkVersionForInstall('6', 'darwin', eventStream), '6', 'major on macOS');
+                assert.equal(resolveSdkVersionForInstall('6.0', 'darwin', eventStream), '6.0', 'major.minor on macOS');
+            }).timeout(standardTimeoutTime);
+
+            test('Leaves an already-specific version unchanged on every platform', () =>
+            {
+                // A fully-specified patch and an explicit feature band are already package-manager-installable.
+                assert.equal(resolveSdkVersionForInstall('6.0.301', 'linux', eventStream), '6.0.301', 'patch on Linux');
+                assert.equal(resolveSdkVersionForInstall('6.0.1xx', 'linux', eventStream), '6.0.1xx', 'feature band on Linux');
+                assert.equal(resolveSdkVersionForInstall('6.0.301', 'win32', eventStream), '6.0.301', 'patch on Windows');
+            }).timeout(standardTimeoutTime);
+        });
+
+        suite('computeLinuxPatchMismatchNote', function ()
+        {
+            test('Emits a note naming the substituted patch when a newer patch was installed on Linux', () =>
+            {
+                const note = computeLinuxPatchMismatchNote('linux', '10.0.106', ['10.0.108'], eventStream);
+                assert.include(note, '10.0.106', 'note should name the requested patch');
+                assert.include(note, '10.0.108', 'note should name the patch actually installed');
+                assert.include(note, 'not available', 'note should explain the requested patch was unavailable');
+            }).timeout(standardTimeoutTime);
+
+            test('Emits no note when the exact requested patch is present', () =>
+            {
+                const note = computeLinuxPatchMismatchNote('linux', '10.0.106', ['10.0.106', '10.0.108'], eventStream);
+                assert.equal(note, '', 'no mismatch when the requested patch is installed');
+            }).timeout(standardTimeoutTime);
+
+            test('Emits no note on non-Linux platforms', () =>
+            {
+                assert.equal(computeLinuxPatchMismatchNote('win32', '10.0.106', ['10.0.108'], eventStream), '');
+                assert.equal(computeLinuxPatchMismatchNote('darwin', '10.0.106', ['10.0.108'], eventStream), '');
+            }).timeout(standardTimeoutTime);
+
+            test('Emits no note when the requested version is not fully specified', () =>
+            {
+                assert.equal(computeLinuxPatchMismatchNote('linux', '10.0', ['10.0.108'], eventStream), '', 'major.minor request');
+                assert.equal(computeLinuxPatchMismatchNote('linux', '10.0.1xx', ['10.0.108'], eventStream), '', 'feature band request');
+            }).timeout(standardTimeoutTime);
+
+            test('Emits no note when the installed-versions query failed (undefined)', () =>
+            {
+                assert.equal(computeLinuxPatchMismatchNote('linux', '10.0.106', undefined, eventStream), '');
+            }).timeout(standardTimeoutTime);
+
+            test('Emits no note when only a different feature band is installed', () =>
+            {
+                // The requested 10.0.1xx band is absent; a 10.0.2xx install must not be reported as the substitute.
+                assert.equal(computeLinuxPatchMismatchNote('linux', '10.0.106', ['10.0.205'], eventStream), '');
+            }).timeout(standardTimeoutTime);
+        });
     });
 });

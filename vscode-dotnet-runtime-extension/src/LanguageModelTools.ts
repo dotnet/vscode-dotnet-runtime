@@ -95,7 +95,7 @@ function versionParseContext(eventStream: IEventStream, version: string): IAcqui
  * as opposed to a partial version ("10", "10.0"), a feature band ("10.0.1xx"), or a wildcard.
  * Only fully-specified versions can meaningfully mismatch the patch that actually gets installed.
  */
-function isFullySpecifiedSdkVersion(version: string | undefined, eventStream: IEventStream): version is string
+export function isFullySpecifiedSdkVersion(version: string | undefined, eventStream: IEventStream): version is string
 {
     if (!version)
     {
@@ -157,7 +157,7 @@ async function getInstalledSdkVersions(dotnetExecutablePath: string, eventStream
  * same major.minor and feature band as the requested version, or undefined if none match.
  * This identifies the patch the Linux package manager actually installed when the requested one was unavailable.
  */
-function highestPatchInSameFeatureBand(requestedVersion: string, installedVersions: string[], eventStream: IEventStream): string | undefined
+export function highestPatchInSameFeatureBand(requestedVersion: string, installedVersions: string[], eventStream: IEventStream): string | undefined
 {
     const reqMajorMinor = getMajorMinor(requestedVersion, eventStream, versionParseContext(eventStream, requestedVersion));
     const reqBand = getFeatureBandFromVersion(requestedVersion, eventStream, versionParseContext(eventStream, requestedVersion), false);
@@ -179,6 +179,72 @@ function highestPatchInSameFeatureBand(requestedVersion: string, installedVersio
     }
 
     return sameBand.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))[sameBand.length - 1];
+}
+
+/**
+ * Computes the note appended to a successful SDK install result when the Linux package manager installed a
+ * different patch than the one requested, or '' when no note is warranted.
+ *
+ * The note is emitted only when ALL of these hold:
+ * - the install happened on Linux (the distro package manager only offers the latest patch in a feature band),
+ * - the requested version fully specifies a patch (e.g. "10.0.106"),
+ * - the requested patch is NOT among the installed SDKs, and
+ * - a different, higher patch in the same feature band IS installed (the substitute the package manager chose).
+ *
+ * Extracted as a pure function (the only side effect is version-parse event posting) so the conditional logic
+ * can be unit-tested without performing a real install.
+ *
+ * @param installedSdkVersions The SDK versions visible after the install, or undefined when that query failed.
+ */
+export function computeLinuxPatchMismatchNote(
+    platform: NodeJS.Platform,
+    requestedVersion: string | undefined,
+    installedSdkVersions: string[] | undefined,
+    eventStream: IEventStream
+): string
+{
+    if (platform !== 'linux' || !isFullySpecifiedSdkVersion(requestedVersion, eventStream))
+    {
+        return '';
+    }
+
+    if (!installedSdkVersions || installedSdkVersions.includes(requestedVersion))
+    {
+        return '';
+    }
+
+    const actuallyInstalled = highestPatchInSameFeatureBand(requestedVersion, installedSdkVersions, eventStream);
+    if (!actuallyInstalled || actuallyInstalled === requestedVersion)
+    {
+        return '';
+    }
+
+    return `\n\nNOTE: The exact requested patch ${requestedVersion} was not available from the Linux package manager, ` +
+        `so .NET SDK ${actuallyInstalled} was installed.`;
+}
+
+/**
+ * Normalizes the requested SDK version for the install platform.
+ *
+ * Linux distro package managers only expose the .1xx feature band, so a bare major ("6") or major.minor ("6.0")
+ * request must be converted to the major.minor.1xx feature band (e.g. "6.0.1xx") before the distro install is
+ * attempted. On Windows and macOS the version is returned unchanged, because their installers can target an
+ * exact patch. Versions that already specify a patch or feature band are returned unchanged on every platform.
+ *
+ * Extracted as a pure function (taking `platform` explicitly rather than reading `process.platform`, and posting
+ * only version-parse events) so the platform-specific normalization can be unit-tested without performing a real
+ * install or stubbing the global platform.
+ *
+ * @param version The requested version (e.g. "6", "6.0", "6.0.301", "6.0.1xx").
+ * @param platform The target platform; only 'linux' triggers feature-band normalization.
+ */
+export function resolveSdkVersionForInstall(version: string, platform: NodeJS.Platform, eventStream: IEventStream): string
+{
+    if (platform === 'linux')
+    {
+        return convertToLinuxPackageManagerSupportedVersion(version, eventStream, versionParseContext(eventStream, version));
+    }
+    return version;
 }
 
 /**
@@ -324,10 +390,7 @@ class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string; arc
 
         // Linux package managers only expose the .1xx feature band, so a bare major / major.minor request
         // (e.g. "8" or "8.0") must be normalized to major.minor.1xx before the distro install is attempted.
-        if (process.platform === 'linux')
-        {
-            version = convertToLinuxPackageManagerSupportedVersion(version, this.eventStream, versionParseContext(this.eventStream, version));
-        }
+        version = resolveSdkVersionForInstall(version, process.platform, this.eventStream);
 
         try
         {
@@ -391,21 +454,10 @@ class InstallSdkTool implements vscode.LanguageModelTool<{ version?: string; arc
                 // On Linux the distro package manager installs the latest patch within the requested feature band
                 // (e.g. requesting 10.0.106 yields 10.0.108 when 106 is no longer offered, since lower patches cannot
                 // be installed once a newer one ships). Detect that and tell the model the exact requested patch is not present.
-                let patchMismatchNote = '';
-                if (platform === 'linux' && isFullySpecifiedSdkVersion(version, this.eventStream))
-                {
-                    const installedSdks = await getInstalledSdkVersions(result.dotnetPath, this.eventStream);
-                    if (installedSdks && !installedSdks.includes(version))
-                    {
-                        const actuallyInstalled = highestPatchInSameFeatureBand(version, installedSdks, this.eventStream);
-                        if (actuallyInstalled && actuallyInstalled !== version)
-                        {
-                            patchMismatchNote =
-                                `\n\nNOTE: The exact requested patch ${version} was not available from the Linux package manager, ` +
-                                `so .NET SDK ${actuallyInstalled} was installed.`;
-                        }
-                    }
-                }
+                const installedSdks = (platform === 'linux' && isFullySpecifiedSdkVersion(version, this.eventStream))
+                    ? await getInstalledSdkVersions(result.dotnetPath, this.eventStream)
+                    : undefined;
+                const patchMismatchNote = computeLinuxPatchMismatchNote(platform, version, installedSdks, this.eventStream);
 
                 return new vscode.LanguageModelToolResult([
                     new vscode.LanguageModelTextPart(
@@ -628,7 +680,12 @@ class RecommendedSdkVersionTool implements vscode.LanguageModelTool<{}>
                 new vscode.LanguageModelTextPart(
                     `Recommended .NET SDK version: ${recommended.version}` +
                     (recommended.channelVersion ? ` (channel ${recommended.channelVersion})` : '') +
-                    (recommended.supportPhase ? ` — support phase: ${recommended.supportPhase}` : '')
+                    (recommended.supportPhase ? ` — support phase: ${recommended.supportPhase}` : '') +
+                    (process.platform === 'linux'
+                        ? `\n\nNOTE: On Linux this is the feature band the distro's package manager actually packages ` +
+                          `(e.g. '${recommended.version}'), which may differ from the newest patch published on dotnet.microsoft.com. ` +
+                          `Install this recommended version; the distro package manager only offers the latest patch within that feature band.`
+                        : '')
                 )
             ]);
         }
