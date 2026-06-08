@@ -214,6 +214,59 @@ export async function isRunningUnderWSL(eventStream?: IEventStream): Promise<boo
 }
 
 /**
+ * Parses the contents of an os-release file into a key/value map.
+ *
+ * The os-release format (https://man7.org/linux/man-pages/man5/os-release.5.html) is a newline-separated list of
+ * `KEY=value` assignments where the value may be wrapped in double or single quotes. This parser is deliberately
+ * tolerant of real-world files: it strips trailing carriage returns (CRLF endings), trims surrounding whitespace,
+ * skips blank lines and `#` comments, splits on only the FIRST `=` (values may themselves contain `=`), and removes
+ * a single pair of surrounding matching quotes. This avoids the prior brittleness where a naive split on every `=`
+ * and a single `replace('"', '')` could mis-read NAME / VERSION_ID and make supported distros appear unsupported.
+ *
+ * @param osReleaseContents The raw text of /etc/os-release (or /usr/lib/os-release).
+ * @returns A map of keys (as written in the file) to their unquoted, trimmed values.
+ */
+export function parseOsRelease(osReleaseContents: string): Record<string, string>
+{
+    const keyValueMap: Record<string, string> = {};
+    for (const rawLine of osReleaseContents.split('\n'))
+    {
+        // Drop a trailing CR (CRLF files) and any surrounding whitespace.
+        const line = rawLine.trim();
+
+        // Skip blank lines and comments per the os-release spec.
+        if (line === '' || line.startsWith('#'))
+        {
+            continue;
+        }
+
+        // Split on the FIRST '=' only; a value may legitimately contain additional '=' characters.
+        const separatorIndex = line.indexOf('=');
+        if (separatorIndex === -1)
+        {
+            continue;
+        }
+
+        const key = line.substring(0, separatorIndex).trim();
+        if (key === '')
+        {
+            continue;
+        }
+
+        let value = line.substring(separatorIndex + 1).trim();
+        // Strip a single pair of surrounding matching quotes (double or single).
+        if (value.length >= 2 &&
+            ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))))
+        {
+            value = value.substring(1, value.length - 1);
+        }
+
+        keyValueMap[key] = value;
+    }
+    return keyValueMap;
+}
+
+/**
  * Detects the Linux distro and version from /etc/os-release.
  * @param eventStream Optional event stream for diagnostic logging.
  * @returns The distro name and version, or null if it can't be determined.
@@ -233,13 +286,10 @@ export async function getRunningDistro(eventStream?: IEventStream): Promise<Dist
 
     try
     {
-        const osInfo = (await fileUtils.read(osDeclarationFile)).split('\n');
-        const infoWithQuotesRemoved = osInfo.map(x => x.replace('"', ''));
-        const infoWithSeparatedKeyValues = infoWithQuotesRemoved.map(x => x.split('='));
-        const keyValueMap = Object.fromEntries(infoWithSeparatedKeyValues.map(x => [x[0], x[1]]));
+        const keyValueMap = parseOsRelease(await fileUtils.read(osDeclarationFile));
 
-        const distroName: string = keyValueMap.NAME?.replace('"', '') ?? '';
-        const distroVersion: string = keyValueMap.VERSION_ID?.replace('"', '') ?? '';
+        const distroName: string = keyValueMap.NAME ?? '';
+        const distroVersion: string = keyValueMap.VERSION_ID ?? '';
 
         if (distroName === '' || distroVersion === '')
         {

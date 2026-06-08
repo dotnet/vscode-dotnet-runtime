@@ -6,36 +6,36 @@
 import * as os from 'os';
 import * as vscode from 'vscode';
 import
-{
-    AcquireErrorConfiguration,
-    checkForUnsupportedLinux,
-    convertToLinuxPackageManagerSupportedVersion,
-    DotnetAcquisitionCompleted,
-    DotnetAcquisitionStarted,
-    DotnetBeginGlobalInstallerExecution,
-    DotnetInstallMode,
-    DotnetUninstallCompleted,
-    DotnetUninstallFailed,
-    DotnetUninstallStarted,
-    EventBasedError,
-    EventStream,
-    getFeatureBandFromVersion,
-    getMajorMinor,
-    IAcquisitionWorkerContext,
-    IDotnetAcquireContext,
-    IDotnetAcquireResult,
-    IDotnetFindPathContext,
-    IDotnetListVersionsContext,
-    IDotnetListVersionsResult,
-    IDotnetSearchContext,
-    IDotnetSearchResult,
-    IDotnetVersion,
-    IEventStream,
-    isFullySpecifiedVersion,
-    LanguageModelToolInvoked,
-    LanguageModelToolPrepareInvocation,
-    SuppressedAcquisitionError
-} from 'vscode-dotnet-runtime-library';
+    {
+        AcquireErrorConfiguration,
+        checkForUnsupportedLinux,
+        convertToLinuxPackageManagerSupportedVersion,
+        DotnetAcquisitionCompleted,
+        DotnetAcquisitionStarted,
+        DotnetBeginGlobalInstallerExecution,
+        DotnetInstallMode,
+        DotnetUninstallCompleted,
+        DotnetUninstallFailed,
+        DotnetUninstallStarted,
+        EventBasedError,
+        EventStream,
+        getFeatureBandFromVersion,
+        getMajorMinor,
+        IAcquisitionWorkerContext,
+        IDotnetAcquireContext,
+        IDotnetAcquireResult,
+        IDotnetFindPathContext,
+        IDotnetListVersionsContext,
+        IDotnetListVersionsResult,
+        IDotnetSearchContext,
+        IDotnetSearchResult,
+        IDotnetVersion,
+        IEventStream,
+        isFullySpecifiedVersion,
+        LanguageModelToolInvoked,
+        LanguageModelToolPrepareInvocation,
+        SuppressedAcquisitionError
+    } from 'vscode-dotnet-runtime-library';
 import { settingsInfoContent } from './SettingsInfoContent';
 
 /**
