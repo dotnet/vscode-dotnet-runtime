@@ -819,14 +819,17 @@ ${JSON.stringify(commandContext)}`));
                     const globalInstallerResolver = new GlobalInstallerResolver(ctx, commandContext.version);
                     result = await worker.uninstallGlobal(ctx, install, globalInstallerResolver, force);
                 }
+
+                // A non-zero (and non-empty) result code means the uninstall did not succeed. Throw from inside the
+                // callWithErrorHandling callback so the failure goes through the standard error handling path
+                // (failure event posting, telemetry, and popups) instead of being reported as a success, and is then
+                // rethrown consistently when rethrowError is requested (e.g. for the LLM tools).
+                if (result !== '0' && result !== '')
+                {
+                    throw new Error(`Uninstall of .NET ${commandContext.version} did not succeed (code ${result}). The uninstaller may have been cancelled, blocked by another install in progress, or require manual removal.`);
+                }
             }
         }, getIssueContext(existingPathConfigWorker)(commandContext?.errorConfiguration, 'uninstall'), commandContext?.requestingExtensionId, workerContext, commandContext?.rethrowError);
-
-        // If the result indicates failure and rethrowError is requested, throw so callers (like LLM tools) can catch it
-        if (result !== '0' && result !== '' && commandContext?.rethrowError)
-        {
-            throw new Error(`Uninstall of .NET ${commandContext?.version} did not succeed (code ${result}). The uninstaller may have been cancelled, blocked by another install in progress, or require manual removal.`);
-        }
 
         return result;
     }
