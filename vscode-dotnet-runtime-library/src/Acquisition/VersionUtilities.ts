@@ -62,13 +62,10 @@ export function getMajorMinor(fullySpecifiedVersion: string, eventStream: IEvent
 {
     if (fullySpecifiedVersion.split('.').length < 2)
     {
-        if (fullySpecifiedVersion.split('.').length === 0 && isNumber(fullySpecifiedVersion))
+        // A bare major version (e.g. '8') has a single segment; assume a '.0' minor per this function's contract.
+        if (fullySpecifiedVersion.split('.').length === 1 && isNumber(fullySpecifiedVersion))
         {
             return `${fullySpecifiedVersion}.0`;
-        }
-        else if (fullySpecifiedVersion.split('.').length === 1 && isNumber(fullySpecifiedVersion.split('.')[0]))
-        {
-            return fullySpecifiedVersion;
         }
 
         const event = new DotnetVersionResolutionError(new EventCancellationError('DotnetVersionResolutionError',
