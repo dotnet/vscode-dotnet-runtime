@@ -799,6 +799,56 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
         }
     }).timeout(standardTimeoutTime);
 
+    test('dotnet.availableInstalls only falls back to findPath when fallbackToFindPathInstalls is set', async () =>
+    {
+        // Install a runtime so there is a real host to discover, then arrange for that host to be off the PATH
+        // (as happens on macOS GUI launches) while still being discoverable via DOTNET_ROOT. This lets us prove
+        // that the findPath fallback is what recovers the install, and that it only runs when opted in.
+        const installPath = await installRuntime('6.0', 'runtime', os.arch());
+
+        const originalPath = process.env.PATH;
+        const originalDotnetRoot = process.env.DOTNET_ROOT;
+        const originalSkipHostfxr = process.env.DOTNET_INSTALL_TOOL_SKIP_HOSTFXR;
+        try
+        {
+            // Remove dotnet from the PATH so the default (PATH-based) search finds nothing on the first try.
+            process.env.PATH = process.env.PATH?.split(getPathSeparator())
+                .filter((x: string) => !(includesPathWithLikelyDotnet(x)))
+                .join(getPathSeparator());
+            extensionContext.environmentVariableCollection.replace('PATH', process.env.PATH ?? '');
+            // findPath can still locate the host independently of the PATH via DOTNET_ROOT.
+            process.env.DOTNET_ROOT = path.dirname(installPath);
+            // Avoid depending on machine-wide hostfxr records so the result is deterministic across environments.
+            process.env.DOTNET_INSTALL_TOOL_SKIP_HOSTFXR = 'true';
+
+            // Without opting in, the API must not fall back and therefore finds nothing (host is not on the PATH).
+            const withoutFallback = await vscode.commands.executeCommand<IDotnetSearchResult[]>('dotnet.availableInstalls', {
+                mode: 'runtime',
+                requestingExtensionId,
+                fallbackToFindPathInstalls: false
+            } as IDotnetSearchContext);
+            assert.isArray(withoutFallback, 'The availableInstalls API should return an array');
+            assert.equal(withoutFallback!.length, 0, 'Without the fallback, no installs should be found when the host is not on the PATH');
+
+            // With the opt-in, the API falls back to findPath (which locates the host via DOTNET_ROOT) and finds installs.
+            const withFallback = await vscode.commands.executeCommand<IDotnetSearchResult[]>('dotnet.availableInstalls', {
+                mode: 'runtime',
+                requestingExtensionId,
+                fallbackToFindPathInstalls: true
+            } as IDotnetSearchContext);
+            assert.isArray(withFallback, 'The availableInstalls API should return an array');
+            assert.isTrue(withFallback!.length > 0, 'With the fallback enabled, the findPath logic should recover the install');
+            assert.isTrue(withFallback!.some(install => install.version.includes('6')), 'The acquired 6.0 runtime should be listed via the fallback');
+        }
+        finally
+        {
+            process.env.PATH = originalPath;
+            extensionContext.environmentVariableCollection.replace('PATH', originalPath ?? '');
+            process.env.DOTNET_ROOT = originalDotnetRoot;
+            process.env.DOTNET_INSTALL_TOOL_SKIP_HOSTFXR = originalSkipHostfxr;
+        }
+    }).timeout(standardTimeoutTime);
+
     async function testAcquire(installMode: DotnetInstallMode)
     {
         // Runtime is not yet installed
@@ -934,19 +984,19 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
     test('Fully specified version installs specific version when forceUpdate is undefined', async () =>
     {
         // First install a .NET 9.0 runtime (will install the latest 9.0.x)
-        const result1 = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', { 
-            version: '9.0', 
-            requestingExtensionId, 
-            mode: 'runtime' as DotnetInstallMode 
+        const result1 = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', {
+            version: '9.0',
+            requestingExtensionId,
+            mode: 'runtime' as DotnetInstallMode
         });
         assert.exists(result1, 'First install should succeed');
         assert.exists(result1!.dotnetPath, 'First install should return a path');
 
         // Now try to install a fully specified version (e.g., 9.0.0) without setting forceUpdate
         // This should automatically set forceUpdate to true and install the specific version
-        const result2 = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', { 
-            version: '9.0.0', 
-            requestingExtensionId, 
+        const result2 = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', {
+            version: '9.0.0',
+            requestingExtensionId,
             mode: 'runtime' as DotnetInstallMode,
             // Note: forceUpdate is intentionally not set (undefined)
         });

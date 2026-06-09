@@ -148,12 +148,11 @@ export function isFullySpecifiedSdkVersion(version: string | undefined, eventStr
 }
 
 /**
- * Queries the .NET installs of the given mode visible to the extension API, for the given dotnet executable
- * (or the system PATH when no path is supplied). Returns the raw search results from the extension's
- * `dotnet.availableInstalls` command. This is the single place that builds the search context and invokes that
- * command so callers don't duplicate the context shape.
+ * Builds the `IDotnetSearchContext` the Language Model tools use to query `dotnet.availableInstalls`.
+ * Exported so tests can assert the tool opts in to the findPath fallback (see `fallbackToFindPathInstalls`)
+ * without having to drive the full command end to end.
  */
-async function queryAvailableInstalls(mode: DotnetInstallMode, dotnetExecutablePath?: string): Promise<IDotnetSearchResult[] | undefined>
+export function buildAvailableInstallsSearchContext(mode: DotnetInstallMode, dotnetExecutablePath?: string): IDotnetSearchContext
 {
     const searchContext: IDotnetSearchContext = {
         mode,
@@ -166,6 +165,18 @@ async function queryAvailableInstalls(mode: DotnetInstallMode, dotnetExecutableP
     {
         searchContext.dotnetExecutablePath = dotnetExecutablePath;
     }
+    return searchContext;
+}
+
+/**
+ * Queries the .NET installs of the given mode visible to the extension API, for the given dotnet executable
+ * (or the system PATH when no path is supplied). Returns the raw search results from the extension's
+ * `dotnet.availableInstalls` command. This is the single place that builds the search context and invokes that
+ * command so callers don't duplicate the context shape.
+ */
+async function queryAvailableInstalls(mode: DotnetInstallMode, dotnetExecutablePath?: string): Promise<IDotnetSearchResult[] | undefined>
+{
+    const searchContext = buildAvailableInstallsSearchContext(mode, dotnetExecutablePath);
     return vscode.commands.executeCommand<IDotnetSearchResult[]>('dotnet.availableInstalls', searchContext);
 }
 

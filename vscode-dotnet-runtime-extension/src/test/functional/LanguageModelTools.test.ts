@@ -17,7 +17,7 @@ import
     MockWindowDisplayWorker
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
-import { computeLinuxPatchMismatchNote, highestPatchInSameFeatureBand, isFullySpecifiedSdkVersion, resolveSdkVersionForInstall, ToolNames } from '../../LanguageModelTools';
+import { buildAvailableInstallsSearchContext, computeLinuxPatchMismatchNote, highestPatchInSameFeatureBand, isFullySpecifiedSdkVersion, resolveSdkVersionForInstall, ToolNames } from '../../LanguageModelTools';
 
 const assert: any = chai.assert;
 const standardTimeoutTime = 30000;
@@ -227,6 +227,32 @@ suite('LanguageModelTools Tests', function ()
 
             // All our tools should be retrievable
             assert.isAbove(ourTools.length, 0, 'Should find our tools in vscode.lm.tools');
+        }).timeout(standardTimeoutTime);
+    });
+
+    suite('AvailableInstalls Search Context', function ()
+    {
+        test('Opts in to the findPath fallback so the host can be found when it is not on the PATH', async () =>
+        {
+            // The LM tools query dotnet.availableInstalls with fallbackToFindPathInstalls enabled so that, on
+            // platforms where the host is not on the PATH (e.g. macOS GUI launches), the API still locates the
+            // install via the shared dotnet.findPath logic instead of returning nothing on the first query.
+            const context = buildAvailableInstallsSearchContext('sdk');
+            assert.strictEqual(context.fallbackToFindPathInstalls, true, 'The LM tool must opt in to the findPath fallback');
+            assert.strictEqual(context.mode, 'sdk', 'The requested mode should be carried through');
+            assert.exists(context.requestingExtensionId, 'A requestingExtensionId must be set');
+        }).timeout(standardTimeoutTime);
+
+        test('Only sets dotnetExecutablePath when one is provided', async () =>
+        {
+            const withoutPath = buildAvailableInstallsSearchContext('runtime');
+            assert.notExists(withoutPath.dotnetExecutablePath, 'No host path should be set when none is supplied');
+
+            const explicitPath = path.join('some', 'dir', 'dotnet');
+            const withPath = buildAvailableInstallsSearchContext('runtime', explicitPath);
+            assert.strictEqual(withPath.dotnetExecutablePath, explicitPath, 'The supplied host path should be carried through');
+            // The fallback should remain enabled regardless of whether a path was supplied.
+            assert.strictEqual(withPath.fallbackToFindPathInstalls, true, 'The findPath fallback should stay enabled');
         }).timeout(standardTimeoutTime);
     });
 
