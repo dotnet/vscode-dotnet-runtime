@@ -3,9 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
-import * as os from 'os';
 import * as path from 'path';
-import { IEventStream } from '../EventStream/EventStream';
 import
 {
     DotnetAcquisitionDistroUnknownError,
@@ -29,7 +27,7 @@ import { GenericDistroSDKProvider } from './GenericDistroSDKProvider';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
 import { RedHatDistroSDKProvider } from './RedHatDistroSDKProvider';
-import { DEBIAN_DISTRO_INFO_KEY, RED_HAT_DISTRO_INFO_KEY, UBUNTU_DISTRO_INFO_KEY } from './StringConstants';
+import { DEBIAN_DISTRO_INFO_KEY, RED_HAT_DISTRO_INFO_KEY } from './StringConstants';
 import { VersionResolver } from './VersionResolver';
 import * as versionUtils from './VersionUtilities';
 
