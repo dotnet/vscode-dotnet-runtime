@@ -7,11 +7,21 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
-- The `dotnet.availableInstalls` API now accepts an optional `fallbackToFindPathInstalls` property (default `false`). When `true` and no install is found for the resolved host, it falls back to the `dotnet.findPath` logic to locate a host independently of the PATH and retries the search. This is opt-in (and enabled by the Language Model tools) to avoid a breaking change, since `findPath` may return non system-level paths.
+
 
 ## [3.1.0] - 2026-5
 
-- Adds Language Model Tools for AI agents (GitHub Copilot) to install, uninstall, list, and find .NET SDKs/Runtimes.
+- Adds Language Model Tools for the AI chat in VS Code. These language model tools:
+1. Help the agent chat window resolve scenarios where C# or related extensions fail to load.
+2. Help agents deterministically install and uninstall the .NET SDK at the system-level, in a way that maintains updates, is visible to the user, persists across sessions, and provides a more secure and robust development environment. Prior agents often used one-off .NET installs that may have been discarded, undiscoverable, nondeterministic, or insecure.
+3. Provides tools to help discover what is installed and what is available for .NET runtimes and .NET SDKs.
+
+
+The language model tools may be disabled in the extension settings or in the settings JSON like so:
+```
+"dotnetAcquisitionExtension.enableLanguageModelTools": false
+```
+- The `dotnet.availableInstalls` API now accepts an optional `fallbackToFindPathInstalls` property (default `false`). When `true` and no install is found for the resolved host, it falls back to the `dotnet.findPath` logic to locate a host independently of the PATH and retries the search. This is opt-in (and enabled by the Language Model tools) to avoid a breaking change, since `findPath` may return non system-level paths depending on the environment.
 - Consolidate rimraf usage — thank you @Green00101!
 - Dependency updates.
 
