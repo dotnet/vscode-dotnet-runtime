@@ -7,6 +7,7 @@ import { ChildProcess, fork } from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import { DotnetInstall } from '../../Acquisition/DotnetInstall';
+import { IInstallationDirectoryProvider } from '../../Acquisition/IInstallationDirectoryProvider';
 import { InstallRecord } from '../../Acquisition/InstallRecord';
 import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
 import { getDotnetExecutable } from '../../Utils/TypescriptUtilities';
@@ -38,6 +39,25 @@ const secondInstall: DotnetInstall = {
 const defaultTimeoutTime = 5000;
 const eventStream = new MockEventStream();
 const fakeValidDir = path.join(__dirname, 'dotnetFakeDir');
+
+/**
+ * A directory provider that always returns a specific directory for local installs.
+ * Used by the stale install pruning test to control what path is checked on disk.
+ */
+class StubInstallationDirectoryProvider extends IInstallationDirectoryProvider
+{
+    constructor(private readonly validDir: string)
+    {
+        super('');
+    }
+
+    public getInstallDir(_installId: string): string
+    {
+        return this.validDir;
+    }
+}
+
+const fakeDirectoryProvider = new StubInstallationDirectoryProvider(fakeValidDir);
 const mockContext = getMockAcquisitionContext(defaultMode, defaultVersion, defaultTimeoutTime, eventStream);
 const mockContextFromOtherExtension = getMockAcquisitionContext(defaultMode, defaultVersion, defaultTimeoutTime, eventStream);
 (mockContextFromOtherExtension.acquisitionContext)!.requestingExtensionId = 'testOther';
@@ -498,6 +518,48 @@ suite('InstallTracker Unit Tests', function ()
         assert.deepStrictEqual(await tracker.getExistingInstalls(mockContext.installDirectoryProvider), expectedTwo, 'It removed the owner from the existing null install');
 
 
+    }).timeout(defaultTimeoutTime);
+
+    test('It Removes Stale Local Installs Whose Directories No Longer Exist on Disk', async () =>
+    {
+        resetExtensionState();
+
+        const staleInstallDir = path.join(os.tmpdir(), `dotnet-stale-${Date.now()}`);
+        const staleDirectoryProvider = new StubInstallationDirectoryProvider(staleInstallDir);
+
+        const tracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
+
+        // Manually inject a tracked install record without creating the directory
+        await mockContext.extensionState.update('installed', [
+            {
+                dotnetInstall: defaultInstall,
+                installingExtensions: ['test']
+            } as InstallRecord
+        ]);
+
+        // The install directory does not exist on disk
+        assert.isFalse(fs.existsSync(staleInstallDir), 'Stale install directory should not exist');
+
+        await tracker.pruneStaleInstalls(staleDirectoryProvider);
+
+        const installsAfterPrune = await tracker.getExistingInstalls(staleDirectoryProvider);
+        assert.deepStrictEqual(installsAfterPrune, [], 'Stale install should be removed from tracked installs when its directory is missing');
+
+        // Verify the state was also updated to remove the stale entry
+        const stateAfter = mockContext.extensionState.get<InstallRecord[]>('installed', []);
+        assert.deepStrictEqual(stateAfter, [], 'Extension state should no longer contain the stale install');
+
+        // Ensure that valid (existing) installs are NOT removed
+        await mockContext.extensionState.update('installed', [
+            {
+                dotnetInstall: defaultInstall,
+                installingExtensions: ['test']
+            } as InstallRecord
+        ]);
+
+        await tracker.pruneStaleInstalls(fakeDirectoryProvider);
+        const validInstalls = await tracker.getExistingInstalls(fakeDirectoryProvider);
+        assert.lengthOf(validInstalls, 1, 'Valid install whose directory exists should be retained');
     }).timeout(defaultTimeoutTime);
 });
 
