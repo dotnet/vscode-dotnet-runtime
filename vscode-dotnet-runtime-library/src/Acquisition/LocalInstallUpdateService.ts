@@ -3,7 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import { IEventStream } from '../EventStream/EventStream';
-import { AutomaticUpdateCheck, UninstallingOutdatedInstalls, UpdatingInstallGroups } from '../EventStream/EventStreamEvents';
+import { AutomaticUpdateCheck, SkippingIncompatibleArchitectureInstall, UninstallingOutdatedInstalls, UpdatingInstallGroups } from '../EventStream/EventStreamEvents';
 import { ILoggingObserver } from '../EventStream/ILoggingObserver';
 import { IDotnetAcquireContext } from '../IDotnetAcquireContext';
 import { IDotnetAcquireResult } from '../IDotnetAcquireResult';
@@ -86,12 +86,23 @@ export class LocalInstallUpdateService extends IInstallManagementService
     {
         const runtimeInstalls = (await this.installTrackerType.getInstance(this.eventStream, this.extensionState).getExistingInstalls(this.managementDirectoryProvider, false)).filter(i => i.dotnetInstall.installMode !== 'sdk' && i.dotnetInstall.isGlobal !== true);
         const installGroupsToInstalls = new Map<string, { key: InstallGroup; installs: InstallRecord[] }>();
+        const currentArchitecture = DotnetCoreAcquisitionWorker.defaultArchitecture();
 
         for (const install of runtimeInstalls)
         {
             const majorMinor = versionUtils.getMajorMinorFromValidVersion(install.dotnetInstall.version);
-            const architecture = install.dotnetInstall.architecture || DotnetCoreAcquisitionWorker.defaultArchitecture();
+            const architecture = install.dotnetInstall.architecture || currentArchitecture;
             const mode = install.dotnetInstall.installMode;
+
+            // Skip installs for architectures that do not match the current machine.
+            // Attempting to update an incompatible-architecture install would download and then try to
+            // execute a binary the current OS/process cannot run (e.g. arm64 .NET on an x64 machine).
+            if (architecture !== currentArchitecture)
+            {
+                this.eventStream.post(new SkippingIncompatibleArchitectureInstall(
+                    `Skipping auto-update for ${install.dotnetInstall.installId}: install architecture '${architecture}' does not match the current machine architecture '${currentArchitecture}'.`));
+                continue;
+            }
 
             if (majorMinor !== BAD_VERSION) // We never expect this to happen unless someone manually edited the data
             {

@@ -11,6 +11,7 @@ import { InstallRecord } from '../../Acquisition/InstallRecord';
 import { InstallTrackerSingleton } from '../../Acquisition/InstallTrackerSingleton';
 import { LocalInstallUpdateService } from '../../Acquisition/LocalInstallUpdateService';
 import { IEventStream } from '../../EventStream/EventStream';
+import { SkippingIncompatibleArchitectureInstall } from '../../EventStream/EventStreamEvents';
 import { IDotnetAcquireContext } from '../../IDotnetAcquireContext';
 import { IExtensionState } from '../../IExtensionState';
 import { getDotnetExecutable } from '../../Utils/TypescriptUtilities';
@@ -108,12 +109,13 @@ suite('LocalInstallUpdateService Unit Tests', function ()
 
         const directoryProvider = new TestInstallationDirectoryProvider('/tmp');
 
+        const currentArch = DotnetCoreAcquisitionWorker.defaultArchitecture();
         const owners = ['sample-owner'];
         const legacyInstall: InstallRecord = {
             dotnetInstall: {
                 version: '6.0.100',
-                architecture: 'x64',
-                installId: '6.0.100~x64',
+                architecture: currentArch,
+                installId: `6.0.100~${currentArch}`,
                 installMode: 'runtime',
                 isGlobal: false
             },
@@ -122,8 +124,8 @@ suite('LocalInstallUpdateService Unit Tests', function ()
         const updatedInstall: InstallRecord = {
             dotnetInstall: {
                 version: '6.0.120',
-                architecture: 'x64',
-                installId: '6.0.120~x64',
+                architecture: currentArch,
+                installId: `6.0.120~${currentArch}`,
                 installMode: 'runtime',
                 isGlobal: false
             },
@@ -180,8 +182,8 @@ suite('LocalInstallUpdateService Unit Tests', function ()
 
         const directoryProvider = new TestInstallationDirectoryProvider('/tmp');
 
-        const legacyInstall = createInstallRecord('6.0.100', 'x64', 'runtime', ['owner-real']);
-        const latestInstall = createInstallRecord('6.0.150', 'x64', 'runtime', []);
+        const legacyInstall = createInstallRecord('6.0.100', DotnetCoreAcquisitionWorker.defaultArchitecture(), 'runtime', ['owner-real']);
+        const latestInstall = createInstallRecord('6.0.150', DotnetCoreAcquisitionWorker.defaultArchitecture(), 'runtime', []);
 
         extensionState.update('installed', [legacyInstall]);
 
@@ -252,8 +254,8 @@ suite('LocalInstallUpdateService Unit Tests', function ()
 
         const directoryProvider = new TestInstallationDirectoryProvider('/tmp');
 
-        const legacyInstall = createInstallRecord('6.0.100', 'x64', 'runtime', ['owner-a']);
-        const latestInstall = createInstallRecord('6.0.150', 'x64', 'runtime', []);
+        const legacyInstall = createInstallRecord('6.0.100', DotnetCoreAcquisitionWorker.defaultArchitecture(), 'runtime', ['owner-a']);
+        const latestInstall = createInstallRecord('6.0.150', DotnetCoreAcquisitionWorker.defaultArchitecture(), 'runtime', []);
 
         const trackerInstance = LocalUpdateServiceTestTracker.getInstance(eventStream, extensionState);
         trackerInstance.setInstallSequences([[legacyInstall], [legacyInstall, latestInstall]]);
@@ -289,16 +291,19 @@ suite('LocalInstallUpdateService Unit Tests', function ()
 
         const directoryProvider = new TestInstallationDirectoryProvider('/tmp');
 
+        const currentArch = DotnetCoreAcquisitionWorker.defaultArchitecture();
         const group1OwnersA: (string | null)[] = ['owner-a', 'user'];
         const group1OwnersB: (string | null)[] = ['owner-b'];
         const group2Owners: (string | null)[] = ['owner-c', null, 'user'];
 
-        const legacyGroup1Oldest = createInstallRecord('6.0.100', 'x64', 'runtime', group1OwnersA);
-        const legacyGroup1Older = createInstallRecord('6.0.110', 'x64', 'runtime', group1OwnersB);
-        const latestGroup1 = createInstallRecord('6.0.150', 'x64', 'runtime', []);
+        // Both groups use the current architecture so that they are eligible for auto-update.
+        // Two different major.minor versions are used so they form distinct groups.
+        const legacyGroup1Oldest = createInstallRecord('6.0.100', currentArch, 'runtime', group1OwnersA);
+        const legacyGroup1Older = createInstallRecord('6.0.110', currentArch, 'runtime', group1OwnersB);
+        const latestGroup1 = createInstallRecord('6.0.150', currentArch, 'runtime', []);
 
-        const legacyGroup2 = createInstallRecord('7.0.150', 'arm64', 'runtime', group2Owners);
-        const latestGroup2 = createInstallRecord('7.0.180', 'arm64', 'runtime', []);
+        const legacyGroup2 = createInstallRecord('7.0.150', currentArch, 'runtime', group2Owners);
+        const latestGroup2 = createInstallRecord('7.0.180', currentArch, 'runtime', []);
 
         const trackerInstance = LocalUpdateServiceTestTracker.getInstance(eventStream, extensionState);
         trackerInstance.setInstallSequences([
@@ -356,7 +361,7 @@ suite('LocalInstallUpdateService Unit Tests', function ()
 
         const directoryProvider = new TestInstallationDirectoryProvider('/tmp');
 
-        const legacyInstall = createInstallRecord('6.0.100', 'x64', 'runtime', ['owner-a']);
+        const legacyInstall = createInstallRecord('6.0.100', DotnetCoreAcquisitionWorker.defaultArchitecture(), 'runtime', ['owner-a']);
 
         const trackerInstance = LocalUpdateServiceTestTracker.getInstance(eventStream, extensionState);
         trackerInstance.setInstallSequences([[legacyInstall], [legacyInstall]]);
@@ -395,7 +400,7 @@ suite('LocalInstallUpdateService Unit Tests', function ()
         assert.lengthOf(trackerInstance.getOwnersAdded(), 0, 'No owners should be transferred when acquisition fails');
     });
 
-    test('It treats installs with the same major.minor but different architecture as separate groups', async () =>
+    test('It skips installs with architectures incompatible with the current machine', async () =>
     {
         const onlineStub = {
             isOnline: async () => true
@@ -409,19 +414,21 @@ suite('LocalInstallUpdateService Unit Tests', function ()
 
         const directoryProvider = new TestInstallationDirectoryProvider('/tmp');
 
-        const x64Owners: (string | null)[] = ['owner-x64', 'user'];
-        const armOwners: (string | null)[] = ['owner-arm'];
+        // Use the current machine architecture as the "compatible" arch and a different one as "incompatible".
+        const currentArch = DotnetCoreAcquisitionWorker.defaultArchitecture();
+        const otherArch = currentArch === 'x64' ? 'arm64' : 'x64';
 
-        const legacyX64 = createInstallRecord('6.0.100', 'x64', 'runtime', x64Owners);
-        const latestX64 = createInstallRecord('6.0.140', 'x64', 'runtime', []);
-        const legacyArm = createInstallRecord('6.0.110', 'arm64', 'runtime', armOwners);
-        const latestArm = createInstallRecord('6.0.170', 'arm64', 'runtime', []);
+        const compatibleOwners: (string | null)[] = ['owner-compatible', 'user'];
+        const incompatibleOwners: (string | null)[] = ['owner-incompatible'];
+
+        const legacyCompatible = createInstallRecord('6.0.100', currentArch, 'runtime', compatibleOwners);
+        const latestCompatible = createInstallRecord('6.0.140', currentArch, 'runtime', []);
+        const legacyIncompatible = createInstallRecord('6.0.110', otherArch, 'runtime', incompatibleOwners);
 
         const trackerInstance = LocalUpdateServiceTestTracker.getInstance(eventStream, extensionState);
         trackerInstance.setInstallSequences([
-            [legacyX64, legacyArm],
-            [legacyX64, latestX64, legacyArm],
-            [latestX64, legacyArm, latestArm]
+            [legacyCompatible, legacyIncompatible],
+            [legacyCompatible, latestCompatible, legacyIncompatible]
         ]);
 
         const acquireContexts: IDotnetAcquireContext[] = [];
@@ -442,22 +449,17 @@ suite('LocalInstallUpdateService Unit Tests', function ()
 
         await updateService.ManageInstalls(0);
 
-        assert.lengthOf(acquireContexts, 2, 'Acquire should run for each architecture group');
-        assert.sameMembers(acquireContexts.map(c => `${c.version}|${c.architecture}`), ['6.0|x64', '6.0|arm64'], 'Contexts should reflect each architecture separately');
+        // Only the compatible architecture should be acquired/updated
+        assert.lengthOf(acquireContexts, 1, 'Acquire should only run for the compatible architecture group');
+        assert.strictEqual(acquireContexts[0].architecture, currentArch, 'Only the current architecture should be updated');
 
-        assert.lengthOf(uninstallContexts, 2, 'Each architecture group should have one outdated install removed');
-        assert.sameMembers(uninstallContexts.map(c => `${c.version}|${c.architecture}`), ['6.0.100|x64', '6.0.110|arm64']);
+        // Only the outdated compatible-arch install should be uninstalled
+        assert.lengthOf(uninstallContexts, 1, 'Only the outdated compatible-arch install should be scheduled for uninstall');
+        assert.strictEqual(uninstallContexts[0].architecture, currentArch, 'Uninstall should only target the current architecture');
 
-        const ownersAdded = trackerInstance.getOwnersAdded();
-        assert.lengthOf(ownersAdded, 2, 'Latest installs for each architecture should receive owners');
-
-        const x64OwnersAdded = ownersAdded.find(entry => entry.install.installId === latestX64.dotnetInstall.installId);
-        assert.isDefined(x64OwnersAdded, 'Latest x64 install should receive owners');
-        assert.sameMembers(x64OwnersAdded!.owners.filter((owner): owner is string => owner !== null), ['owner-x64'], 'Only non-user owners should be transferred for x64');
-
-        const armOwnersAdded = ownersAdded.find(entry => entry.install.installId === latestArm.dotnetInstall.installId);
-        assert.isDefined(armOwnersAdded, 'Latest arm64 install should receive owners');
-        assert.sameMembers(armOwnersAdded!.owners.filter((owner): owner is string => owner !== null), ['owner-arm'], 'Owners for arm64 should remain separate from x64');
+        // The incompatible-arch install should have triggered a skip event
+        const skipEvents = eventStream.events.filter(e => e instanceof SkippingIncompatibleArchitectureInstall);
+        assert.isAbove(skipEvents.length, 0, 'A skip event should be emitted for the incompatible architecture install');
     });
 
     test('It forces updates immediately when delay is zero and refreshes the last update timestamp', async () =>
@@ -476,8 +478,8 @@ suite('LocalInstallUpdateService Unit Tests', function ()
         const directoryProvider = new TestInstallationDirectoryProvider('/tmp');
 
         const owners: (string | null)[] = ['owner-force'];
-        const legacyInstall = createInstallRecord('8.0.120', 'x64', 'runtime', owners);
-        const latestInstall = createInstallRecord('8.0.180', 'x64', 'runtime', []);
+        const legacyInstall = createInstallRecord('8.0.120', DotnetCoreAcquisitionWorker.defaultArchitecture(), 'runtime', owners);
+        const latestInstall = createInstallRecord('8.0.180', DotnetCoreAcquisitionWorker.defaultArchitecture(), 'runtime', []);
 
         const trackerInstance = LocalUpdateServiceTestTracker.getInstance(eventStream, extensionState);
         trackerInstance.setInstallSequences([[legacyInstall], [legacyInstall, latestInstall]]);
@@ -530,10 +532,10 @@ suite('LocalInstallUpdateService Unit Tests', function ()
 
         const directoryProvider = new TestInstallationDirectoryProvider('/tmp');
 
-        const sdkInstall = createInstallRecord('8.0.302', 'x64', 'sdk', ['sdk-owner']);
-        const globalRuntime = createInstallRecord('8.0.180', 'x64', 'runtime', ['global-owner'], true);
-        const legacyRuntime = createInstallRecord('8.0.150', 'x64', 'runtime', ['runtime-owner']);
-        const latestRuntime = createInstallRecord('8.0.190', 'x64', 'runtime', []);
+        const sdkInstall = createInstallRecord('8.0.302', DotnetCoreAcquisitionWorker.defaultArchitecture(), 'sdk', ['sdk-owner']);
+        const globalRuntime = createInstallRecord('8.0.180', DotnetCoreAcquisitionWorker.defaultArchitecture(), 'runtime', ['global-owner'], true);
+        const legacyRuntime = createInstallRecord('8.0.150', DotnetCoreAcquisitionWorker.defaultArchitecture(), 'runtime', ['runtime-owner']);
+        const latestRuntime = createInstallRecord('8.0.190', DotnetCoreAcquisitionWorker.defaultArchitecture(), 'runtime', []);
 
         const trackerInstance = LocalUpdateServiceTestTracker.getInstance(eventStream, extensionState);
         trackerInstance.setInstallSequences([
@@ -586,8 +588,8 @@ suite('LocalInstallUpdateService Unit Tests', function ()
         const directoryProvider = new TestInstallationDirectoryProvider('/tmp');
 
         const owners: (string | null)[] = ['runtime-owner'];
-        const legacyInstall = createInstallRecord('8.0.99', 'x64', 'runtime', owners);
-        const latestInstall = createInstallRecord('8.0.100', 'x64', 'runtime', []);
+        const legacyInstall = createInstallRecord('8.0.99', DotnetCoreAcquisitionWorker.defaultArchitecture(), 'runtime', owners);
+        const latestInstall = createInstallRecord('8.0.100', DotnetCoreAcquisitionWorker.defaultArchitecture(), 'runtime', []);
 
         const trackerInstance = LocalUpdateServiceTestTracker.getInstance(eventStream, extensionState);
         trackerInstance.setInstallSequences([[legacyInstall], [legacyInstall, latestInstall]]);
@@ -635,8 +637,8 @@ suite('LocalInstallUpdateService Unit Tests', function ()
 
         const directoryProvider = new TestInstallationDirectoryProvider('/tmp');
 
-        const legacyInstall = createInstallRecord('10.0.1', 'x64', 'runtime', ['ms-dotnettools.sample-extension']);
-        const latestInstall = createInstallRecord('10.0.5', 'x64', 'runtime', []);
+        const legacyInstall = createInstallRecord('10.0.1', DotnetCoreAcquisitionWorker.defaultArchitecture(), 'runtime', ['ms-dotnettools.sample-extension']);
+        const latestInstall = createInstallRecord('10.0.5', DotnetCoreAcquisitionWorker.defaultArchitecture(), 'runtime', []);
 
         extensionState.update('installed', [legacyInstall]);
 
