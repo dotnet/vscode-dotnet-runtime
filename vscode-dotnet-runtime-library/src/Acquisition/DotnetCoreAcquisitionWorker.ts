@@ -438,7 +438,9 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         if (process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH && process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH === 'true')
         {
             context.eventStream.post(new DotnetFakeSDKEnvironmentVariableTriggered(`VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH has been set.`));
-            return 'fake-sdk';
+            // Return a realistic executable file path (directory + host executable) so callers that derive the
+            // install directory via path.dirname(...) (e.g. setPathEnvVar) behave as they would for a real install.
+            return path.join('fake-sdk', getDotnetExecutable());
         }
 
         let dotnetExePath: string = await installer.getExpectedGlobalSDKPath(installingVersion,

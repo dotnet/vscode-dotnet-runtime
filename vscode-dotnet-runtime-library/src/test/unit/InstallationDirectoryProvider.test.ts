@@ -19,7 +19,23 @@ suite('IInstallationDirectoryProvider Unit Tests', function ()
     {
         test('appends the default install folder name', function ()
         {
-            assert.equal(getVSCodeManagedDotnetRoot(storage), path.join(storage, '.dotnet'));
+            const original = process.env._VSCODE_DOTNET_INSTALL_FOLDER;
+            delete process.env._VSCODE_DOTNET_INSTALL_FOLDER;
+            try
+            {
+                assert.equal(getVSCodeManagedDotnetRoot(storage), path.join(storage, '.dotnet'));
+            }
+            finally
+            {
+                if (original === undefined)
+                {
+                    delete process.env._VSCODE_DOTNET_INSTALL_FOLDER;
+                }
+                else
+                {
+                    process.env._VSCODE_DOTNET_INSTALL_FOLDER = original;
+                }
+            }
         });
 
         test('honors the _VSCODE_DOTNET_INSTALL_FOLDER override', function ()

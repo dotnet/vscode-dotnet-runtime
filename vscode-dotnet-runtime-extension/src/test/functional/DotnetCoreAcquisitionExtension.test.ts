@@ -551,9 +551,9 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
 
             assert.exists(result, `The global acquisition command did not provide a result for version ${version}`);
             assert.exists(result!.dotnetPath);
-            assert.equal(result!.dotnetPath, 'fake-sdk');
+            assert.equal(result!.dotnetPath, path.join('fake-sdk', getDotnetExecutable()));
             assert.exists(pathAfterInstall, 'The environment variable PATH for DOTNET was not found?');
-            assert.include(pathAfterInstall!, result!.dotnetPath, 'Is the PATH correctly set by the global installer?');
+            assert.include(pathAfterInstall!, path.dirname(result!.dotnetPath), 'Is the install directory correctly added to the PATH by the global installer?');
         }
         else
         {
