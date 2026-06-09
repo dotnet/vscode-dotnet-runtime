@@ -554,6 +554,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
             assert.equal(result!.dotnetPath, path.join('fake-sdk', getDotnetExecutable()));
             assert.exists(pathAfterInstall, 'The environment variable PATH for DOTNET was not found?');
             assert.include(pathAfterInstall!, path.dirname(result!.dotnetPath), 'Is the install directory correctly added to the PATH by the global installer?');
+            assert.notInclude(pathAfterInstall!, result!.dotnetPath, 'The PATH should contain the install directory, not the dotnet executable file path itself.');
         }
         else
         {
