@@ -1114,7 +1114,7 @@ class GetSettingsInfoTool implements vscode.LanguageModelTool<Record<string, nev
 
         // Also include current settings values for context
         const config = vscode.workspace.getConfiguration('dotnetAcquisitionExtension');
-        const existingPath = config.get<string[]>('existingDotnetPath');
+        const existingPath = config.get<Array<{ extensionId: string; path: string }>>('existingDotnetPath');
         const sharedPath = config.get<string>('sharedExistingDotnetPath');
 
         let currentSettingsInfo = '\n\n---\n\n# Current Settings Values\n\n';
