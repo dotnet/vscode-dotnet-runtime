@@ -130,7 +130,7 @@ export async function getDistroInfo(context: IAcquisitionWorkerContext): Promise
     {
         return { distro: '', version: '' };
     }
-    return new LinuxVersionResolver(context, getMockUtilityContext()).getRunningDistro();
+    return new LinuxVersionResolver(context, getMockUtilityContext()).getRunningDistroInstance();
 }
 
 /**

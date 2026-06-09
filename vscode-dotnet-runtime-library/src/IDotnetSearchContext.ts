@@ -26,10 +26,18 @@ export interface IDotnetSearchContext
      *
      * @property mode - Whether the install should be of the sdk, runtime, or aspnetcore (runtime).
      * The 'runtime' modes will return both runtimes.
+     *
+     * @property fallbackToFindPathInstalls - Optional, defaults to false. When true and no install is found for the
+     * resolved host (e.g. because no dotnetExecutablePath was provided and the host is not on the PATH), the API will
+     * fall back to the 'dotnet.findPath' logic to locate a host independently of the PATH and retry the search.
+     * This is opt-in because 'dotnet.findPath' may return non system-level paths, so enabling it can change which
+     * installs are returned. AI agents / Language Model tools should set this to true so the search succeeds even
+     * when the host is not on the PATH (a common case on macOS GUI launches).
      */
     dotnetExecutablePath?: string;
     requestingExtensionId?: string;
     errorConfiguration?: AcquireErrorConfiguration;
     architecture?: string;
     mode: DotnetInstallMode;
+    fallbackToFindPathInstalls?: boolean;
 }

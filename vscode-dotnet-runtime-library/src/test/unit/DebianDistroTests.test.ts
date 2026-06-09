@@ -40,7 +40,7 @@ suite('Debian Distro Logic Unit Tests', () =>
             assert.equal(mockExecutor.attemptedCommand,
                 'apt-cache -o DPkg::Lock::Timeout=180 search --names-only ^dotnet-sdk-9.0$', 'Searched for the newest package last with regex'); // this may fail if test not exec'd first
             // the data is cached so --version may not be executed.
-            const distroVersion = await new LinuxVersionResolver(acquisitionContext, getMockUtilityContext()).getRunningDistro();
+            const distroVersion = await new LinuxVersionResolver(acquisitionContext, getMockUtilityContext()).getRunningDistroInstance();
             assert.equal(recVersion, '9.0.1xx', 'Resolved the most recent available version : will eventually break if the mock data is not updated');
         }
     }).timeout(standardTimeoutTime);

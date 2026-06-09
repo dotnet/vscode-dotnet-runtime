@@ -6,6 +6,7 @@
 import * as cp from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import
 {
@@ -71,6 +72,7 @@ import
     InvalidUninstallRequest,
     IUtilityContext,
     JsonInstaller,
+    LanguageModelToolsRegistrationError,
     LinuxVersionResolver,
     LocalInstallUpdateService,
     LocalMemoryCacheSingleton,
@@ -90,6 +92,7 @@ import
 import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
 import { EventStreamTaggingDecorator } from 'vscode-dotnet-runtime-library/dist/EventStream/EventStreamTaggingDecorator';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
+import { registerLanguageModelTools } from './LanguageModelTools';
 import open = require('open');
 
 const packageJson = require('../package.json');
@@ -108,6 +111,7 @@ namespace configKeys
     export const suppressOutput = 'suppressOutput';
     export const highVerbosity = 'highVerbosity';
     export const runtimeUpdateDelaySeconds = 'runtimeUpdateDelaySeconds';
+    export const enableLanguageModelTools = 'enableLanguageModelTools';
 }
 
 namespace commandKeys
@@ -351,9 +355,10 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
             outputChannelObserver.showOutput();
             const dotnetPath = await worker.acquireGlobalSDK(workerContext, globalInstallerResolver);
 
-            new CommandExecutor(workerContext, utilContext).setPathEnvVar(dotnetPath.dotnetPath, moreInfoUrl, displayWorker, vsCodeExtensionContext, true);
+            // setPathEnvVar expects the directory holding the dotnet executable, not the executable file itself.
+            new CommandExecutor(workerContext, utilContext).setPathEnvVar(path.dirname(dotnetPath.dotnetPath), moreInfoUrl, displayWorker, vsCodeExtensionContext, true);
             return dotnetPath;
-        }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, commandKeys.acquireGlobalSDK), commandContext.requestingExtensionId, workerContext);
+        }, getIssueContext(existingPathConfigWorker)(commandContext.errorConfiguration, commandKeys.acquireGlobalSDK), commandContext.requestingExtensionId, workerContext, commandContext.rethrowError);
 
         const installationId = getInstallIdCustomArchitecture(commandContext.version, commandContext.architecture, commandContext.mode, 'global');
         const install = {
@@ -432,8 +437,8 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
             const userCommandContext: IDotnetAcquireContext = { version: chosenVersion, requestingExtensionId: 'user', installType: 'global' };
-            const path: IDotnetAcquireResult = await vscode.commands.executeCommand('dotnet.acquireGlobalSDK', userCommandContext);
-            if (path && path?.dotnetPath)
+            const acquireResult: IDotnetAcquireResult = await vscode.commands.executeCommand('dotnet.acquireGlobalSDK', userCommandContext);
+            if (acquireResult && acquireResult?.dotnetPath)
             {
                 globalEventStream.post(new UserManualInstallSuccess(`The .NET SDK ${chosenVersion} was successfully installed.`));
             }
@@ -483,33 +488,68 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
                 throw new EventCancellationError('BadContextualAvailbleInstallsError', `The dotnet.availableInstalls API request was missing either a mode or requestingExtensionId. Please provide this.`);
             }
 
-            const dotnetExecutablePath = commandContext.dotnetExecutablePath ?? 'dotnet';
-            const installs = await callWithErrorHandling(async () =>
-            {
-                // Bad design: An acquire context is needed to setup the state, but don't want to untangle that in this change.
-                const fakeAcquireContext = {
-                    version: 'notApplicable',
-                    requestingExtensionId: commandContext.requestingExtensionId,
-                    architecture: commandContext.architecture,
-                    mode: commandContext.mode,
-                    installType: 'local' as DotnetInstallType, // does not matter as we search based on the host path
-                    errorConfiguration: commandContext.errorConfiguration
-                } as IDotnetAcquireContext;
-                const workerContext = getAcquisitionWorkerContext(commandContext.mode, fakeAcquireContext);
+            const pathWasProvided = (commandContext.dotnetExecutablePath ?? '') !== '';
+            let dotnetExecutablePath = pathWasProvided ? commandContext.dotnetExecutablePath! : 'dotnet';
 
-                const dotnetResolver = new DotnetResolver(workerContext, utilContext);
-                const installsInListForm: IDotnetListInfo[] = await dotnetResolver.getDotnetInstalls(dotnetExecutablePath, commandContext.mode, commandContext.architecture);
-
-                return installsInListForm.map((installInfo: IDotnetListInfo) =>
+            const searchForInstalls = async (hostPath: string): Promise<IDotnetSearchResult[] | undefined> =>
+                callWithErrorHandling(async () =>
                 {
-                    return {
-                        mode: installInfo.mode,
-                        version: installInfo.version,
-                        directory: installInfo.directory,
-                        architecture: installInfo.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(),
-                    } as IDotnetSearchResult;
-                });
-            }, getIssueContext(existingPathConfigWorker)(commandContext?.errorConfiguration, commandKeys.availableInstalls));
+                    // Bad design: An acquire context is needed to setup the state, but don't want to untangle that in this change.
+                    const fakeAcquireContext = {
+                        version: 'notApplicable',
+                        requestingExtensionId: commandContext.requestingExtensionId,
+                        architecture: commandContext.architecture,
+                        mode: commandContext.mode,
+                        installType: 'local' as DotnetInstallType, // does not matter as we search based on the host path
+                        errorConfiguration: commandContext.errorConfiguration
+                    } as IDotnetAcquireContext;
+                    const workerContext = getAcquisitionWorkerContext(commandContext.mode, fakeAcquireContext);
+
+                    const dotnetResolver = new DotnetResolver(workerContext, utilContext);
+                    const installsInListForm: IDotnetListInfo[] = await dotnetResolver.getDotnetInstalls(hostPath, commandContext.mode, commandContext.architecture);
+
+                    return installsInListForm.map((installInfo: IDotnetListInfo) =>
+                    {
+                        return {
+                            mode: installInfo.mode,
+                            version: installInfo.version,
+                            directory: installInfo.directory,
+                            architecture: installInfo.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(),
+                        } as IDotnetSearchResult;
+                    });
+                }, getIssueContext(existingPathConfigWorker)(commandContext?.errorConfiguration, commandKeys.availableInstalls));
+
+            let installs = await searchForInstalls(dotnetExecutablePath);
+
+            // When no host path is provided we default to a bare 'dotnet', which relies on the PATH. On some platforms
+            // (notably macOS GUI launches, where /etc/paths.d is not honored by the extension host process) the host is
+            // not on the PATH even though .NET is installed, so the search finds nothing on the first try. In that case,
+            // reuse the shared dotnet.findPath logic, which locates the host independently of the PATH (e.g. via the
+            // known install locations on disk), and retry the search with the discovered host path. This is opt-in via
+            // fallbackToFindPathInstalls because findPath may return non system-level paths, so enabling it can change
+            // which installs are returned; defaulting it off preserves the original behavior for existing callers.
+            if ((installs?.length ?? 0) === 0 && !pathWasProvided && commandContext.fallbackToFindPathInstalls === true)
+            {
+                const findPathContext: IDotnetFindPathContext = {
+                    acquireContext: {
+                        // We only need *a* host that has installs of the requested mode; accept any version it reports.
+                        version: '1.0',
+                        requestingExtensionId: commandContext.requestingExtensionId,
+                        architecture: commandContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(),
+                        mode: commandContext.mode,
+                        installType: 'global' as DotnetInstallType,
+                        errorConfiguration: commandContext.errorConfiguration,
+                    } as IDotnetAcquireContext,
+                    versionSpecRequirement: 'greater_than_or_equal',
+                };
+                const foundHost = await vscode.commands.executeCommand<IDotnetAcquireResult | undefined>(`${commandPrefix}.${commandKeys.findPath}`, findPathContext);
+
+                if (foundHost?.dotnetPath && foundHost.dotnetPath !== dotnetExecutablePath)
+                {
+                    dotnetExecutablePath = foundHost.dotnetPath;
+                    installs = await searchForInstalls(dotnetExecutablePath);
+                }
+            }
 
             if ((installs?.length ?? 0) > 0)
             {
@@ -744,16 +784,16 @@ ${JSON.stringify(commandContext)}`));
         return findPathResult;
     });
 
-    async function getPathIfValid(path: string | undefined, validator: IDotnetConditionValidator, commandContext: IDotnetFindPathContext): Promise<string | undefined>
+    async function getPathIfValid(candidatePath: string | undefined, validator: IDotnetConditionValidator, commandContext: IDotnetFindPathContext): Promise<string | undefined>
     {
-        if (path)
+        if (candidatePath)
         {
-            const validated = await validator.dotnetMeetsRequirement(path, commandContext);
+            const validated = await validator.dotnetMeetsRequirement(candidatePath, commandContext);
             if (validated)
             {
-                globalEventStream.post(new DotnetFindPathMetCondition(`${path} met the conditions.`));
-                await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).markInstallAsInUse(path);
-                return path;
+                globalEventStream.post(new DotnetFindPathMetCondition(`${candidatePath} met the conditions.`));
+                await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).markInstallAsInUse(candidatePath);
+                return candidatePath;
             }
         }
 
@@ -763,6 +803,22 @@ ${JSON.stringify(commandContext)}`));
     async function uninstall(commandContext: IDotnetAcquireContext | undefined, force = false, onlyCheckLiveDependents = false): Promise<string>
     {
         let result = '1';
+
+        // Create workerContext early if we have enough info (for error handling context)
+        // Wrapped in try-catch to avoid unhandled exceptions if context creation fails
+        let workerContext: IAcquisitionWorkerContext | undefined;
+        try
+        {
+            workerContext = commandContext?.mode && commandContext?.requestingExtensionId
+                ? getAcquisitionWorkerContext(commandContext.mode, commandContext)
+                : undefined;
+        }
+        catch
+        {
+            // If context creation fails, continue without it - errors will still be handled
+            workerContext = undefined;
+        }
+
         await callWithErrorHandling(async () =>
         {
             if (!commandContext?.version || !commandContext?.installType || !commandContext?.mode || !commandContext?.requestingExtensionId)
@@ -775,11 +831,12 @@ ${JSON.stringify(commandContext)}`));
             else
             {
                 const worker = getAcquisitionWorker();
-                const workerContext = getAcquisitionWorkerContext(commandContext.mode, commandContext);
+                // Use the pre-created workerContext if available, otherwise create it
+                const ctx = workerContext ?? getAcquisitionWorkerContext(commandContext.mode, commandContext);
 
                 if (commandContext.installType === 'local' && !force && !(onlyCheckLiveDependents && commandContext.version.split('.').length > 1)) // if using force mode, we are also using the UI, which passes the fully specified version to uninstall only
                 {
-                    const versionResolver = new VersionResolver(workerContext);
+                    const versionResolver = new VersionResolver(ctx);
                     const resolvedVersion = await versionResolver.getFullVersion(commandContext.version, commandContext.mode);
                     commandContext.version = resolvedVersion;
                 }
@@ -792,15 +849,24 @@ ${JSON.stringify(commandContext)}`));
 
                 if (commandContext.installType === 'local')
                 {
-                    result = await worker.uninstallLocal(workerContext, install, force, false, onlyCheckLiveDependents);
+                    result = await worker.uninstallLocal(ctx, install, force, false, onlyCheckLiveDependents);
                 }
                 else
                 {
-                    const globalInstallerResolver = new GlobalInstallerResolver(workerContext, commandContext.version);
-                    result = await worker.uninstallGlobal(workerContext, install, globalInstallerResolver, force);
+                    const globalInstallerResolver = new GlobalInstallerResolver(ctx, commandContext.version);
+                    result = await worker.uninstallGlobal(ctx, install, globalInstallerResolver, force);
+                }
+
+                // A non-zero (and non-empty) result code means the uninstall did not succeed. Throw from inside the
+                // callWithErrorHandling callback so the failure goes through the standard error handling path
+                // (failure event posting, telemetry, and popups) instead of being reported as a success, and is then
+                // rethrown consistently when rethrowError is requested (e.g. for the LLM tools).
+                if (result !== '0' && result !== '')
+                {
+                    throw new Error(`Uninstall of .NET ${commandContext.version} did not succeed (code ${result}). The uninstaller may have been cancelled, blocked by another install in progress, or require manual removal.`);
                 }
             }
-        }, getIssueContext(existingPathConfigWorker)(commandContext?.errorConfiguration, 'uninstall'));
+        }, getIssueContext(existingPathConfigWorker)(commandContext?.errorConfiguration, 'uninstall'), commandContext?.requestingExtensionId, workerContext, commandContext?.rethrowError);
 
         return result;
     }
@@ -1022,6 +1088,23 @@ Installation will timeout in ${timeoutValue} seconds.`))
     // Store references for deactivate()
     extensionEventStream = globalEventStream;
     extensionGlobalState = vsCodeContext.globalState;
+
+    // Register Language Model Tools for AI agent integration (GitHub Copilot, etc.)
+    const enableLanguageModelTools = extensionConfiguration.get<boolean>(configKeys.enableLanguageModelTools) ?? true;
+
+    if (enableLanguageModelTools)
+    {
+        try
+        {
+            registerLanguageModelTools(vsCodeContext, globalEventStream);
+        } catch (e)
+        {
+            // Language Model Tools API may not be available in older VS Code versions
+            // Log telemetry for the failure but continue - extension works without AI tool integration
+            const error = e instanceof Error ? e : new Error(String(e));
+            globalEventStream.post(new LanguageModelToolsRegistrationError(error));
+        }
+    }
 
     // Exposing API Endpoints
     vsCodeContext.subscriptions.push(

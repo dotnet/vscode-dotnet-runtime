@@ -66,6 +66,8 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
         return false;
     }
 
+    // Determines if a given available version meets the requirements specified in the context.
+    // Ideally, this can be converted to a comparator in the future and extracted out of the class.
     public stringVersionMeetsRequirement(availableVersion: string, requestedVersion: string, requirement: IDotnetFindPathContext): boolean
     {
         const availableMajor = Number(versionUtils.getMajor(availableVersion, this.workerContext.eventStream, this.workerContext));
