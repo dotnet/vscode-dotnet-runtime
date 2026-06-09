@@ -122,7 +122,9 @@ export class OutputChannelObserver implements IEventStreamObserver
                         } but that install had already been requested. No downloads or changes were made.\n`);
                 }
                 break;
-            case EventType.DotnetAcquisitionError, EventType.DotnetAcquisitionFinalError:
+            case EventType.DotnetAcquisitionError:
+            case EventType.DotnetAcquisitionFinalError:
+            case EventType.DotnetUninstallFinalError:
                 const error = event as DotnetAcquisitionError;
                 this.appendOutputLine(`\nError : (${error?.eventName ?? ''})`);
 

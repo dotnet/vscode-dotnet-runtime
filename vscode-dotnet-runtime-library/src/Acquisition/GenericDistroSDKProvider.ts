@@ -219,7 +219,7 @@ Please refer to https://learn.microsoft.com/en-us/dotnet/core/install/linux if y
         }
 
         // Most distros support only 100 band .NET versions, so we default to that here.
-        return `${this.JsonDotnetVersion(maxVersion)}.1xx`;
+        return versionUtils.convertToLinuxPackageManagerSupportedVersion(maxVersion, this.context.eventStream, this.context);
     }
 
     public JsonDotnetVersion(fullySpecifiedDotnetVersion: string): string

@@ -169,7 +169,8 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
                 const globalInstallerResolver = new GlobalInstallerResolver(acquisitionContext, commandContext.version);
                 const dotnetPath = await acquisitionWorker.acquireGlobalSDK(acquisitionContext, globalInstallerResolver);
 
-                new CommandExecutor(acquisitionContext, utilContext).setPathEnvVar(dotnetPath.dotnetPath, troubleshootingUrl, displayWorker, vsCodeExtensionContext, true);
+                // setPathEnvVar expects the directory holding the dotnet executable, not the executable file itself.
+                new CommandExecutor(acquisitionContext, utilContext).setPathEnvVar(path.dirname(dotnetPath.dotnetPath), troubleshootingUrl, displayWorker, vsCodeExtensionContext, true);
                 return dotnetPath;
             }
             else

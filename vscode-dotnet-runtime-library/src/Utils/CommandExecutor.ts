@@ -117,7 +117,7 @@ export class CommandExecutor extends ICommandExecutor
             }
         }
 
-        if (await isRunningUnderWSL(this.context, this.utilityContext, this))
+        if (await isRunningUnderWSL(this.context?.eventStream))
         {
             // For WSL, vscode/sudo-prompt does not work.
             // This is because it relies on pkexec or a GUI app to popup and request sudo privilege.
@@ -673,6 +673,12 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
         }
     }
 
+    /**
+     * @param pathAddition The directory that contains the dotnet executable (e.g. `/usr/local/share/dotnet`), NOT the
+     * executable file itself (e.g. `/usr/local/share/dotnet/dotnet`). This value is prepended to PATH verbatim, so passing
+     * the executable path would add a non-directory entry that the shell cannot resolve `dotnet` against.
+     * Callers that have the executable path (e.g. `IDotnetAcquireResult.dotnetPath`) must use `path.dirname(...)` first.
+     */
     public setPathEnvVar(pathAddition: string, troubleshootingUrl: string, displayWorker: IWindowDisplayWorker, vscodeContext: IVSCodeExtensionContext, isGlobal: boolean)
     {
         if (!isGlobal || os.platform() === 'linux')

@@ -62,13 +62,10 @@ export function getMajorMinor(fullySpecifiedVersion: string, eventStream: IEvent
 {
     if (fullySpecifiedVersion.split('.').length < 2)
     {
-        if (fullySpecifiedVersion.split('.').length === 0 && isNumber(fullySpecifiedVersion))
+        // A bare major version (e.g. '8') has a single segment; assume a '.0' minor per this function's contract.
+        if (fullySpecifiedVersion.split('.').length === 1 && isNumber(fullySpecifiedVersion))
         {
             return `${fullySpecifiedVersion}.0`;
-        }
-        else if (fullySpecifiedVersion.split('.').length === 1 && isNumber(fullySpecifiedVersion.split('.')[0]))
-        {
-            return fullySpecifiedVersion;
         }
 
         const event = new DotnetVersionResolutionError(new EventCancellationError('DotnetVersionResolutionError',
@@ -261,6 +258,23 @@ export function isNonSpecificMajorOrMajorMinorVersion(version: string): boolean
 {
     const numberOfPeriods = version.split('.').length - 1;
     return isNumber(version) && numberOfPeriods >= 0 && numberOfPeriods < 2;
+}
+
+/**
+ *
+ * @param version the requested version, which may be only a major (e.g. '8') or major.minor (e.g. '8.0').
+ * @returns the version normalized to the major.minor.1xx feature band (e.g. '8.0.1xx') when only a major or
+ * major.minor was given; otherwise the version is returned unchanged.
+ * @remarks Most Linux distro package managers only expose the .1xx (100) feature band, so a non-specific
+ * major / major.minor request must be normalized to that band before it is handed to the package manager.
+ */
+export function convertToLinuxPackageManagerSupportedVersion(version: string, eventStream: IEventStream, context: IAcquisitionWorkerContext): string
+{
+    if (isNonSpecificMajorOrMajorMinorVersion(version))
+    {
+        return `${getMajorMinor(version, eventStream, context)}.1xx`;
+    }
+    return version;
 }
 
 /**

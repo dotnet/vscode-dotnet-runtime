@@ -107,17 +107,17 @@ ${stderr}`);
         }
     }
 
-    const sampleAcquireRegistration = vscode.commands.registerCommand('sample.dotnet.acquire', async (version) =>
+    const sampleAcquireRegistration = vscode.commands.registerCommand('sample.dotnet.acquire', async (version: string | undefined) =>
     {
         await callAcquireAPI(version, undefined);
     });
 
-    const sampleAcquireASPNETRegistration = vscode.commands.registerCommand('sample.dotnet.acquireASPNET', async (version) =>
+    const sampleAcquireASPNETRegistration = vscode.commands.registerCommand('sample.dotnet.acquireASPNET', async (version: string | undefined) =>
     {
         await callAcquireAPI(version, 'aspnetcore');
     });
 
-    const sampleAcquireNoForceRegistration = vscode.commands.registerCommand('sample.dotnet.acquireNoForce', async (version) =>
+    const sampleAcquireNoForceRegistration = vscode.commands.registerCommand('sample.dotnet.acquireNoForce', async (version: string | undefined) =>
     {
         const mode = await vscode.window.showInputBox({
             placeHolder: 'runtime',
@@ -128,7 +128,7 @@ ${stderr}`);
         await callAcquireAPI(undefined, mode as DotnetInstallMode, false);
     });
 
-    const sampleAcquireStatusRegistration = vscode.commands.registerCommand('sample.dotnet.acquireStatus', async (version) =>
+    const sampleAcquireStatusRegistration = vscode.commands.registerCommand('sample.dotnet.acquireStatus', async (version: string | undefined) =>
     {
         if (!version)
         {
@@ -236,7 +236,7 @@ ${stderr}`);
         }
     });
 
-    const sampleGlobalSDKFromRuntimeRegistration = vscode.commands.registerCommand('sample.dotnet.acquireGlobalSDK', async (version) =>
+    const sampleGlobalSDKFromRuntimeRegistration = vscode.commands.registerCommand('sample.dotnet.acquireGlobalSDK', async (version: string | undefined) =>
     {
         if (!version)
         {
@@ -245,6 +245,11 @@ ${stderr}`);
                 value: '7.0.103',
                 prompt: 'The .NET SDK version. You can use different formats: 5, 3.1, 7.0.3xx, 6.0.201, etc.',
             });
+        }
+
+        if (!version)
+        {
+            return;
         }
 
         try
@@ -303,7 +308,7 @@ ${stderr}`);
 ${JSON.stringify(result) ?? 'undefined'}`);
     });
 
-    const sampleAvailableInstallsRegistration = vscode.commands.registerCommand('sample.dotnet.availableInstalls', async (version) =>
+    const sampleAvailableInstallsRegistration = vscode.commands.registerCommand('sample.dotnet.availableInstalls', async (version: string | undefined) =>
     {
         let dotnetPath = await vscode.window.showInputBox({
             placeHolder: 'undefined',
@@ -357,7 +362,7 @@ ${JSON.stringify(result) ?? 'undefined'}`);
 
     // ---------------------sdk extension registrations--------------------------
 
-    const sampleSDKAcquireRegistration = vscode.commands.registerCommand('sample.dotnet-sdk.acquire', async (version) =>
+    const sampleSDKAcquireRegistration = vscode.commands.registerCommand('sample.dotnet-sdk.acquire', async (version: string | undefined) =>
     {
         if (!version)
         {
@@ -379,7 +384,7 @@ ${JSON.stringify(result) ?? 'undefined'}`);
         }
     });
 
-    const sampleSDKGlobalAcquireRegistration = vscode.commands.registerCommand('sample.dotnet-sdk.acquireGlobal', async (version) =>
+    const sampleSDKGlobalAcquireRegistration = vscode.commands.registerCommand('sample.dotnet-sdk.acquireGlobal', async (version: string | undefined) =>
     {
         if (!version)
         {
@@ -388,6 +393,11 @@ ${JSON.stringify(result) ?? 'undefined'}`);
                 value: '7.0.103',
                 prompt: 'The .NET SDK version. You can use different formats: 5, 3.1, 7.0.3xx, 6.0.201, etc.',
             });
+        }
+
+        if (!version)
+        {
+            return;
         }
 
         try
@@ -402,7 +412,7 @@ ${JSON.stringify(result) ?? 'undefined'}`);
         }
     });
 
-    const sampleSDKAcquireStatusRegistration = vscode.commands.registerCommand('sample.dotnet-sdk.acquireStatus', async (version) =>
+    const sampleSDKAcquireStatusRegistration = vscode.commands.registerCommand('sample.dotnet-sdk.acquireStatus', async (version: string | undefined) =>
     {
         if (!version)
         {
