@@ -69,7 +69,7 @@ checkNetCoreDeps(){
 }
 
 checkAdditionalDeps(){
-    if [ "$ADDITIONAL_DEPS" -ne "" ]; then
+    if [ "$ADDITIONAL_DEPS" != "" ]; then
         # Install additional dependencies
         if ! "$1" "$2 $ADDITIONAL_DEPS"; then
             echo "(!) Failed to install additional dependencies!"
@@ -125,7 +125,7 @@ fi
 #openSUSE - Has to be first since apt-get is available but package names different
 if [ "$DISTRO" = "SUSE" ]; then
     echo "(*) Detected SUSE (unoffically/community supported)"
-    installAdditionalDeps sudoIf "zypper -n in"
+    checkAdditionalDeps sudoIf "zypper -n in"
     checkNetCoreDeps sudoIf "zypper -n in libopenssl1_0_0 libicu krb5 libz1"
 
 # Debian / Ubuntu
@@ -139,8 +139,8 @@ elif [ "$DISTRO" = "Debian" ]; then
         exitScript 1
     fi
 
-    installAdditionalDeps aptSudoIf "install -yq"
-    checkNetCoreDeps aptSudoIf "install -yq libicu[0-9][0-9] libkrb5-3 zlib1g $ADDITIONAL_DEPS"
+    checkAdditionalDeps aptSudoIf "install -yq"
+    checkNetCoreDeps aptSudoIf "install -yq ^libicu[0-9][0-9]*$ libkrb5-3 zlib1g $ADDITIONAL_DEPS"
     if [ $SKIPDOTNETCORE -eq 0 ]; then    
         # Determine which version of libssl to install
         # dpkg-query can return "1" in some distros if the package is not found. "2" is an unexpected error
@@ -180,7 +180,7 @@ elif [ "$DISTRO" = "RedHat" ]; then
         exitScript 1
     fi
 
-    installAdditionalDeps sudoIf "yum -y install"
+    checkAdditionalDeps sudoIf "yum -y install"
     checkNetCoreDeps sudoIf "yum -y install openssl-libs krb5-libs libicu zlib"  
     # Install openssl-compat10 for Fedora 29. Does not exist in 
     # CentOS, so validate package exists first.
@@ -198,13 +198,13 @@ elif [ "$DISTRO" = "RedHat" ]; then
 #ArchLinux
 elif [ "$DISTRO" = "ArchLinux" ]; then
     echo "(*) Detected Arch Linux (unoffically/community supported)"
-    installAdditionalDeps sudoIf "pacman -Sq --noconfirm --needed"
+    checkAdditionalDeps sudoIf "pacman -Sq --noconfirm --needed"
     checkNetCoreDeps sudoIf "pacman -Sq --noconfirm --needed gcr liburcu openssl-1.0 krb5 icu zlib"
 
 #Solus
 elif [ "$DISTRO" = "Solus" ]; then
     echo "(*) Detected Solus (unoffically/community supported)"
-    installAdditionalDeps sudoIf "eopkg -y it"
+    checkAdditionalDeps sudoIf "eopkg -y it"
     checkNetCoreDeps sudoIf "eopkg -y it libicu openssl zlib kerberos"
 
 #Alpine Linux
@@ -223,7 +223,7 @@ elif [ "$DISTRO" = "Alpine" ]; then
         exitScript 1
     fi
 
-    installAdditionalDeps sudoIf "apk add --no-cache"
+    checkAdditionalDeps sudoIf "apk add --no-cache"
     sudoIf "apk add --no-cache libssl1.0 icu krb5 zlib"
 
 # Unknown distro

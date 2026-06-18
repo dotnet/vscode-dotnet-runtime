@@ -3,6 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
+import * as cp from 'child_process';
 import { warn } from 'console';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -13,6 +14,7 @@ import
     DotnetInstallMode,
     DotnetInstallType,
     DotnetVersionSpecRequirement,
+    DotnetCoreDependencyInstaller,
     EnvironmentVariableIsDefined,
     FileUtilities,
     getDistroInfo,
@@ -58,6 +60,7 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
     const requestingExtensionId = 'fake.extension';
     const mockDisplayWorker = new MockWindowDisplayWorker();
     let extensionContext: vscode.ExtensionContext;
+    let skipInstallCleanupAfterTest = false;
     const environmentVariableCollection = new MockEnvironmentVariableCollection();
 
     const existingPathVersionToFake = '5.0.1~x64'
@@ -116,7 +119,11 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
         process.env.PATH = originalPATH;
         LocalMemoryCacheSingleton.getInstance().invalidate();
 
-        await vscode.commands.executeCommand<string>('dotnet.uninstallAll');
+        if (!skipInstallCleanupAfterTest)
+        {
+            await vscode.commands.executeCommand<string>('dotnet.uninstallAll');
+        }
+        skipInstallCleanupAfterTest = false;
         mockState.clear();
         MockTelemetryReporter.telemetryEvents = [];
         await new FileUtilities().wipeDirectory(storagePath);
@@ -158,6 +165,94 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
         assert.isTrue(fs.existsSync(result!.logPath), 'Log file exists on disk');
         const logContents = fs.readFileSync(result!.logPath, 'utf8');
         assert.isTrue(logContents.length > 0, 'Log file is non-empty after activation');
+    }).timeout(standardTimeoutTime);
+
+    test('dotnet.ensureDotnetDependencies prompts when dotnet --info fails with a Linux dependency signal', async () =>
+    {
+        const originalPlatform = os.platform;
+        const originalProcessPlatform = process.platform;
+        const originalSpawnSync = cp.spawnSync;
+        const originalPromptLinuxDependencyInstall = DotnetCoreDependencyInstaller.prototype.promptLinuxDependencyInstall;
+        let promptCount = 0;
+
+        try
+        {
+            skipInstallCleanupAfterTest = true;
+            Object.defineProperty(os, 'platform', { value: () => 'linux', configurable: true, writable: true });
+            Object.defineProperty(process, 'platform', { value: 'linux', configurable: true, writable: true });
+            Object.defineProperty(cp, 'spawnSync', {
+                configurable: true,
+                writable: true,
+                value: (command: string, args?: string[]) =>
+                {
+                    assert.equal(command, 'dotnet');
+                    assert.deepEqual(args, ['--info']);
+                    return { signal: 'SIGABRT', stderr: Buffer.from('Couldn\'t find a valid ICU package installed on the system.') };
+                }
+            });
+            DotnetCoreDependencyInstaller.prototype.promptLinuxDependencyInstall = async (message: string) =>
+            {
+                assert.equal(message, 'Failed to run .NET runtime.');
+                promptCount++;
+                return false;
+            };
+
+            await vscode.commands.executeCommand('dotnet.ensureDotnetDependencies', { command: 'dotnet', arguments: ['--info'] });
+
+            assert.equal(promptCount, 1, 'Missing Linux dependency prompt should be shown when dotnet --info aborts.');
+        }
+        finally
+        {
+            Object.defineProperty(os, 'platform', { value: originalPlatform, configurable: true, writable: true });
+            Object.defineProperty(process, 'platform', { value: originalProcessPlatform, configurable: true, writable: true });
+            Object.defineProperty(cp, 'spawnSync', { value: originalSpawnSync, configurable: true, writable: true });
+            DotnetCoreDependencyInstaller.prototype.promptLinuxDependencyInstall = originalPromptLinuxDependencyInstall;
+        }
+    }).timeout(standardTimeoutTime);
+
+    test('dotnet.ensureDotnetDependencies does not prompt when a dotnet dll payload starts successfully', async () =>
+    {
+        const originalPlatform = os.platform;
+        const originalProcessPlatform = process.platform;
+        const originalSpawnSync = cp.spawnSync;
+        const originalPromptLinuxDependencyInstall = DotnetCoreDependencyInstaller.prototype.promptLinuxDependencyInstall;
+        let promptCount = 0;
+
+        try
+        {
+            skipInstallCleanupAfterTest = true;
+            Object.defineProperty(os, 'platform', { value: () => 'linux', configurable: true, writable: true });
+            Object.defineProperty(process, 'platform', { value: 'linux', configurable: true, writable: true });
+            Object.defineProperty(cp, 'spawnSync', {
+                configurable: true,
+                writable: true,
+                value: (command: string, args?: string[]) =>
+                {
+                    assert.equal(command, 'dotnet');
+                    assert.deepEqual(args, [path.join('server', 'Microsoft.CodeAnalysis.LanguageServer.dll')]);
+                    return { signal: null };
+                }
+            });
+            DotnetCoreDependencyInstaller.prototype.promptLinuxDependencyInstall = async () =>
+            {
+                promptCount++;
+                return false;
+            };
+
+            await vscode.commands.executeCommand('dotnet.ensureDotnetDependencies', {
+                command: 'dotnet',
+                arguments: [path.join('server', 'Microsoft.CodeAnalysis.LanguageServer.dll')]
+            });
+
+            assert.equal(promptCount, 0, 'Missing Linux dependency prompt should not be shown when the dotnet dll payload starts.');
+        }
+        finally
+        {
+            Object.defineProperty(os, 'platform', { value: originalPlatform, configurable: true, writable: true });
+            Object.defineProperty(process, 'platform', { value: originalProcessPlatform, configurable: true, writable: true });
+            Object.defineProperty(cp, 'spawnSync', { value: originalSpawnSync, configurable: true, writable: true });
+            DotnetCoreDependencyInstaller.prototype.promptLinuxDependencyInstall = originalPromptLinuxDependencyInstall;
+        }
     }).timeout(standardTimeoutTime);
 
     async function installRuntime(dotnetVersion: string, installMode: DotnetInstallMode, arch?: string)

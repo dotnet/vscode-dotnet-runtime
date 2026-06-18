@@ -911,7 +911,9 @@ ${JSON.stringify(commandContext)}`));
                 return;
             }
 
-            const result = cp.spawnSync(commandContext.command, commandContext.arguments);
+            const result = Array.isArray(commandContext.arguments)
+                ? cp.spawnSync(commandContext.command, commandContext.arguments)
+                : cp.spawnSync(commandContext.command, commandContext.arguments);
             const installer = new DotnetCoreDependencyInstaller();
             if (installer.signalIndicatesMissingLinuxDependencies(result.signal!))
             {

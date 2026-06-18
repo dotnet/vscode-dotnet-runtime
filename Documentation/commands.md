@@ -136,6 +136,12 @@ Note: Each VS Code window gets its own extension host log folder, so the returne
 
 This command is only applicable to Linux machines. It attempts to ensure that .NET dependencies are present and, if they are not, installs them or prompts the user to do so. It accepts a [IDotnetEnsureDependenciesContext](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/vscode-dotnet-runtime-library/src/IDotnetEnsureDependenciesContext.ts) object and has a void return type. It is no longer supported but remains to support legacy behavior.
 
+The intended probe shape is `command: <dotnet executable>` with `arguments` set to a `string[]` containing the .NET DLL payload to load and run. For example, the C# extension calls this command with the acquired `dotnet` path and an argument array containing its language server DLL. This lets the command test whether the specific .NET payload needed by the caller can start, and if it fails with a Linux dependency signal, the user is prompted to install missing dependencies.
+
+Passing CLI-only arguments such as `['--info']` runs the .NET CLI information path instead of the caller's payload and can exercise different runtime dependencies. That can be useful for diagnosis, but it is not the intended contract for this legacy command.
+
+The TypeScript type for `arguments` includes both `string[]` and `child_process.SpawnSyncOptionsWithStringEncoding`. The `string[]` member reflects the runtime behavior that existing callers already use today, so adding it to the published type is not a breaking change. The older options-object shape remains accepted for compatibility with the previously published definition.
+
 ### dotnet.reportIssue
 
 This is a **user-facing** command that opens a pre-populated GitHub issue in the browser and copies the issue body to the clipboard. It does not accept parameters and has a void return type.
