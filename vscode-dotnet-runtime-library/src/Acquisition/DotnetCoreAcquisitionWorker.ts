@@ -617,6 +617,7 @@ Other dependents remain.`));
                 }
 
                 let systemInstallPath = '';
+                let uninstallResult = '';
 
                 try
                 {
@@ -632,18 +633,23 @@ Other dependents remain.`));
                             new WinMacGlobalInstaller(context, this.utilityContext, installingVersion, await globalInstallerResolver.getInstallerUrl(), await globalInstallerResolver.getInstallerHash());
 
                         systemInstallPath = await installer.getExpectedGlobalSDKPath(installingVersion, install.architecture);
-                        const ok = await installer.uninstallSDK(install);
+                        uninstallResult = await installer.uninstallSDK(install);
                         LocalMemoryCacheSingleton.getInstance().invalidateEntriesContaining('dotnet', context);
                         await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream);
-                        if (ok === '0')
+                        if (uninstallResult === '0')
                         {
                             await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).reportSuccessfulUninstall(context, install, force);
                             context.eventStream.post(new DotnetUninstallCompleted(`Uninstalled .NET ${install.installId}.`));
                             return '0';
                         }
                     }
-                    context.eventStream.post(new DotnetUninstallFailed(`Failed to uninstall .NET ${install.installId}. Another install may be in progress? Uninstall manually or delete the folder.`));
-                    return '117778'; // arbitrary error code to indicate uninstall failed without error.
+
+                    // When command execution is non-terminal, the status may contain a useful error from the elevation
+                    // provider (for example, "User did not grant permission.") instead of only a numeric exit code.
+                    const failureReason = uninstallResult.trim();
+                    const failureDetails = failureReason ? ` ${failureReason}` : '';
+                    context.eventStream.post(new DotnetUninstallFailed(`Failed to uninstall .NET ${install.installId}.${failureDetails}`));
+                    return failureReason || '1';
                 }
                 catch (error: any)
                 {
