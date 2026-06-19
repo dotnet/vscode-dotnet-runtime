@@ -17,7 +17,7 @@ import
     MockWindowDisplayWorker
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
-import { buildAvailableInstallsSearchContext, computeLinuxPatchMismatchNote, highestPatchInSameFeatureBand, isFullySpecifiedSdkVersion, resolveSdkVersionForInstall, ToolNames } from '../../LanguageModelTools';
+import { buildAvailableInstallsSearchContext, buildUninstallFailureMessage, computeLinuxPatchMismatchNote, highestPatchInSameFeatureBand, isFullySpecifiedSdkVersion, resolveSdkVersionForInstall, ToolNames } from '../../LanguageModelTools';
 
 const assert: any = chai.assert;
 const standardTimeoutTime = 30000;
@@ -876,6 +876,17 @@ suite('LanguageModelTools Tests', function ()
                 textContent.includes('output channel');
 
             assert.isTrue(hasActionableGuidance, 'Error messages should provide actionable guidance');
+        }).timeout(standardTimeoutTime);
+
+        test('Reports a dismissed elevation prompt as a cancelled uninstall', () =>
+        {
+            const message = buildUninstallFailureMessage('9.0.314', 'User did not grant permission.');
+
+            assert.include(message, 'was cancelled');
+            assert.include(message, 'Retry and accept the prompt');
+            assert.include(message, 'User did not grant permission.');
+            assert.notInclude(message, 'Another install may be in progress');
+            assert.notInclude(message, 'code User did not grant permission.');
         }).timeout(standardTimeoutTime);
     });
 

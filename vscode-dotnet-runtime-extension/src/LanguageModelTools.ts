@@ -108,6 +108,14 @@ export function isUserCancellationMessage(message: string): boolean
     return /cancel|user rejected|user denied|password request|did not grant permission/i.test(message);
 }
 
+export function buildUninstallFailureMessage(version: string, result: string): string
+{
+    const detail = /^-?\d+$/.test(result) ? `code ${result}` : result;
+    return isUserCancellationMessage(result)
+        ? `Uninstall of .NET ${version} was cancelled — the admin/elevation prompt was dismissed. Retry and accept the prompt to continue. (${detail})`
+        : `Uninstall of .NET ${version} did not succeed (${detail}). The uninstaller may be blocked by another install in progress, or require manual removal.`;
+}
+
 /**
  * Builds the minimal IAcquisitionWorkerContext that the stateless VersionUtilities parsing helpers require.
  * Those helpers only read `acquisitionContext` (and only when constructing error events for malformed input,
