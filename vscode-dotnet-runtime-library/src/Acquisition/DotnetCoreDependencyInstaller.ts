@@ -110,10 +110,6 @@ export class DotnetCoreDependencyInstaller
         {
             lines.push(`stdout: ${stdout}`);
         }
-        if (result.status === 127)
-        {
-            lines.push('Exit code 127 means a command was not found — usually the shell or the install script path does not exist at runtime.');
-        }
         return lines.join('\n');
     }
 
