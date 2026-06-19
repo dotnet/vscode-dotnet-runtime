@@ -156,11 +156,13 @@ elif [ "$DISTRO" = "Debian" ]; then
                     echo "(!) libssl1.0.2 installation failed!"
                     exitScript 1
                 fi
-            else    
+            elif [[ ! -z $(apt-cache --names-only search ^libssl1.0.0$) ]]; then
                 if ! aptSudoIf "install -yq libssl1.0.0"; then
                     echo "(!) libssl1.0.0 installation failed!"
                     exitScript 1
                 fi
+            else
+                echo "(*) libssl1.0.x is not available. Skipping legacy dependency."
             fi
         else 
             echo "(*) libssl1.0.x already installed."

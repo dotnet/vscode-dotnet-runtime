@@ -35,8 +35,9 @@ suite('Linux Prereqs Installer Script Unit Tests', function ()
         {
             writeExecutable(path.join(fakeBin, 'id'), '#!/usr/bin/env bash\nif [ "$1" = "-u" ]; then echo 0; exit 0; fi\nexit 0\n');
             writeExecutable(path.join(fakeBin, 'fuser'), '#!/usr/bin/env bash\nexit 1\n');
-            writeExecutable(path.join(fakeBin, 'apt-get'), '#!/usr/bin/env bash\necho "$*" >> "$APT_GET_LOG"\nexit 0\n');
-            writeExecutable(path.join(fakeBin, 'dpkg-query'), '#!/usr/bin/env bash\nprintf "ii\\tlibssl1.0.0:amd64\\n"\nexit 0\n');
+            writeExecutable(path.join(fakeBin, 'apt-get'), '#!/usr/bin/env bash\necho "$*" >> "$APT_GET_LOG"\nif [[ "$*" == *libssl1.0* ]]; then exit 1; fi\nexit 0\n');
+            writeExecutable(path.join(fakeBin, 'apt-cache'), '#!/usr/bin/env bash\nexit 0\n');
+            writeExecutable(path.join(fakeBin, 'dpkg-query'), '#!/usr/bin/env bash\necho "dpkg-query: no packages found matching libssl1.0.?"\nexit 1\n');
 
             const result = cp.spawnSync('bash', [scriptPath, 'Debian', '', 'false', ''], {
                 encoding: 'utf8',
@@ -54,6 +55,7 @@ suite('Linux Prereqs Installer Script Unit Tests', function ()
             const aptGetCalls = fs.readFileSync(aptGetLog, 'utf8');
             assert.include(aptGetCalls, 'update');
             assert.include(aptGetCalls, 'install -yq ^libicu[0-9][0-9]*$ libkrb5-3 zlib1g');
+            assert.notInclude(aptGetCalls, 'libssl1.0');
         }
         finally
         {
