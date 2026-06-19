@@ -21,6 +21,8 @@ export interface IAdditionalLibs
 export class DotnetCoreDependencyInstaller
 {
     private readonly platform = process.platform;
+    private lastTerminalCommandOutput = '';
+    private lastTerminalCommandOutputFile = '';
 
     public signalIndicatesMissingLinuxDependencies(signal: string): boolean
     {
@@ -94,10 +96,11 @@ export class DotnetCoreDependencyInstaller
                 {
                     const msg = (exitCode === 4 ?
                         'Your Linux distribution is not supported by the automated installer' :
-                        'The dependency installer failed.');
+                        `The dependency installer failed with exit code ${exitCode}.`);
+                    const outputDetails = this.getLastTerminalCommandOutputDetails();
                     // Terminal will pause for input on error so this is just an info message with a more info button
                     const failResponse = await vscode.window.showErrorMessage(
-                        `${msg} Try installing dependencies manually.`,
+                        `${msg} Try installing dependencies manually.${outputDetails}`,
                         'More Info');
                     if (failResponse === 'More Info')
                     {
@@ -130,6 +133,7 @@ export class DotnetCoreDependencyInstaller
         {
             const fullCommand = `"${command}" ${((args?.length ?? 0) > 0 ? ` "${args.join('" "')}"` : '')}`;
             const exitCodeFile = path.join(__dirname, '..', `terminal-exit-code-${Math.floor(Math.random() * 1000000)}`);
+            const outputFile = path.join(__dirname, '..', `terminal-output-${Math.floor(Math.random() * 1000000)}`);
             const commandList = new Array<string>();
             if (this.platform === 'win32')
             {
@@ -152,7 +156,7 @@ export class DotnetCoreDependencyInstaller
                 commandList.push(
                     'clear',
                     `echo 0 > "${exitCodeFile}"`,
-                    `${fullCommand} || echo $? > "${exitCodeFile}"`,
+                    `(${fullCommand}; echo $? > "${exitCodeFile}") 2>&1 | tee "${outputFile}"`,
                 );
                 if (promptAfterRun)
                 {
@@ -177,6 +181,14 @@ export class DotnetCoreDependencyInstaller
                     // Hack to get exit code - VS Code terminal does not return it
                     try
                     {
+                        this.lastTerminalCommandOutput = '';
+                        this.lastTerminalCommandOutputFile = outputFile;
+                        if (fs.existsSync(outputFile))
+                        {
+                            this.lastTerminalCommandOutput = fs.readFileSync(outputFile).toString().trim();
+                            fs.unlinkSync(outputFile);
+                        }
+
                         if (fs.existsSync(exitCodeFile))
                         {
                             const exitFile = fs.readFileSync(exitCodeFile).toString().trim();
@@ -226,5 +238,22 @@ export class DotnetCoreDependencyInstaller
         const shellCommand = which('bash');
         // shellCommand will be null if bash is not found
         return shellCommand ? shellCommand.toString() : which('sh')?.toString() ?? 'sh';
+    }
+
+    private getLastTerminalCommandOutputDetails(): string
+    {
+        if (!this.lastTerminalCommandOutput)
+        {
+            return this.lastTerminalCommandOutputFile
+                ? ` No installer output was captured. Check the Linux dependency installer terminal for details.`
+                : '';
+        }
+
+        const maxOutputLength = 1200;
+        const output = this.lastTerminalCommandOutput.length > maxOutputLength
+            ? `...${this.lastTerminalCommandOutput.slice(-maxOutputLength)}`
+            : this.lastTerminalCommandOutput;
+
+        return `\n\nInstaller output:\n${output}`;
     }
 }

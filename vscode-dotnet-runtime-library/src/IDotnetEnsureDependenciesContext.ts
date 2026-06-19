@@ -5,7 +5,8 @@
 import * as cp from 'child_process';
 import { EnsureDependenciesErrorConfiguration } from './Utils/ErrorHandler';
 
-export interface IDotnetEnsureDependenciesContext {
+export interface IDotnetEnsureDependenciesContext
+{
     command: string;
     arguments: string[] | cp.SpawnSyncOptionsWithStringEncoding;
     errorConfiguration?: EnsureDependenciesErrorConfiguration;

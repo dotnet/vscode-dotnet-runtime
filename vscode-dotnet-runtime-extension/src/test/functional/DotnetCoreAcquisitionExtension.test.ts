@@ -11,10 +11,10 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import
 {
+    DotnetCoreDependencyInstaller,
     DotnetInstallMode,
     DotnetInstallType,
     DotnetVersionSpecRequirement,
-    DotnetCoreDependencyInstaller,
     EnvironmentVariableIsDefined,
     FileUtilities,
     getDistroInfo,

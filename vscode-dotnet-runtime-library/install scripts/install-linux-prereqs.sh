@@ -44,7 +44,7 @@ sudoIf()
 
 # Utility function that waits for any existing installation operations to complete
 # on Debian/Ubuntu based distributions and then calls apt-get
-aptSudoIf() 
+aptSudoIf()
 {
     while sudoIf fuser /var/lib/dpkg/lock >/dev/null 2>&1; do
         echo -ne "(*) Waiting for other package operations to complete.\r"
@@ -131,7 +131,7 @@ if [ "$DISTRO" = "SUSE" ]; then
 # Debian / Ubuntu
 elif [ "$DISTRO" = "Debian" ]; then
     echo "(*) Detected Debian / Ubuntu"
-   
+
     # Get latest package data
     echo -e "\n(*) Updating package lists..."
     if ! aptSudoIf "update"; then
@@ -141,7 +141,7 @@ elif [ "$DISTRO" = "Debian" ]; then
 
     checkAdditionalDeps aptSudoIf "install -yq"
     checkNetCoreDeps aptSudoIf "install -yq ^libicu[0-9][0-9]*$ libkrb5-3 zlib1g $ADDITIONAL_DEPS"
-    if [ $SKIPDOTNETCORE -eq 0 ]; then    
+    if [ $SKIPDOTNETCORE -eq 0 ]; then
         # Determine which version of libssl to install
         # dpkg-query can return "1" in some distros if the package is not found. "2" is an unexpected error
         LIBSSL=$(dpkg-query -f '${db:Status-Abbrev}\t${binary:Package}\n' -W 'libssl1\.0\.?' 2>&1)
@@ -164,7 +164,7 @@ elif [ "$DISTRO" = "Debian" ]; then
             else
                 echo "(*) libssl1.0.x is not available. Skipping legacy dependency."
             fi
-        else 
+        else
             echo "(*) libssl1.0.x already installed."
         fi
     fi
@@ -183,8 +183,8 @@ elif [ "$DISTRO" = "RedHat" ]; then
     fi
 
     checkAdditionalDeps sudoIf "yum -y install"
-    checkNetCoreDeps sudoIf "yum -y install openssl-libs krb5-libs libicu zlib"  
-    # Install openssl-compat10 for Fedora 29. Does not exist in 
+    checkNetCoreDeps sudoIf "yum -y install openssl-libs krb5-libs libicu zlib"
+    # Install openssl-compat10 for Fedora 29. Does not exist in
     # CentOS, so validate package exists first.
     if [ $SKIPDOTNETCORE -eq 0 ]; then
         if ! sudoIf "yum -q list compat-openssl10" >/dev/null 2>&1; then
@@ -212,8 +212,8 @@ elif [ "$DISTRO" = "Solus" ]; then
 #Alpine Linux
 elif [ "$DISTRO" = "Alpine" ]; then
     echo "(*) Detected Alpine Linux"
-    
-    # Update package repo indexes    
+
+    # Update package repo indexes
     echo -e "\n(*) Updating and upgrading..."
     if ! sudoIf "apk update --wait 30"; then
         echo "(!) Failed to update package lists."
