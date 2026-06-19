@@ -170,8 +170,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
     test('dotnet.ensureDotnetDependencies prompts when dotnet --info fails with a Linux dependency signal', async () =>
     {
         const originalPlatform = os.platform;
-        const originalProcessPlatform = process.platform;
         const originalSpawnSync = cp.spawnSync;
+        const originalSignalCheck = DotnetCoreDependencyInstaller.prototype.signalIndicatesMissingLinuxDependencies;
         const originalPromptLinuxDependencyInstall = DotnetCoreDependencyInstaller.prototype.promptLinuxDependencyInstall;
         let promptCount = 0;
 
@@ -179,7 +179,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
         {
             skipInstallCleanupAfterTest = true;
             Object.defineProperty(os, 'platform', { value: () => 'linux', configurable: true, writable: true });
-            Object.defineProperty(process, 'platform', { value: 'linux', configurable: true, writable: true });
+            // Stub the platform-gated signal check rather than mutating the read-only process.platform, so this runs on any OS.
+            DotnetCoreDependencyInstaller.prototype.signalIndicatesMissingLinuxDependencies = (signal: string) => signal === 'SIGABRT';
             Object.defineProperty(cp, 'spawnSync', {
                 configurable: true,
                 writable: true,
@@ -204,8 +205,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
         finally
         {
             Object.defineProperty(os, 'platform', { value: originalPlatform, configurable: true, writable: true });
-            Object.defineProperty(process, 'platform', { value: originalProcessPlatform, configurable: true, writable: true });
             Object.defineProperty(cp, 'spawnSync', { value: originalSpawnSync, configurable: true, writable: true });
+            DotnetCoreDependencyInstaller.prototype.signalIndicatesMissingLinuxDependencies = originalSignalCheck;
             DotnetCoreDependencyInstaller.prototype.promptLinuxDependencyInstall = originalPromptLinuxDependencyInstall;
         }
     }).timeout(standardTimeoutTime);
@@ -213,8 +214,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
     test('dotnet.ensureDotnetDependencies does not prompt when a dotnet dll payload starts successfully', async () =>
     {
         const originalPlatform = os.platform;
-        const originalProcessPlatform = process.platform;
         const originalSpawnSync = cp.spawnSync;
+        const originalSignalCheck = DotnetCoreDependencyInstaller.prototype.signalIndicatesMissingLinuxDependencies;
         const originalPromptLinuxDependencyInstall = DotnetCoreDependencyInstaller.prototype.promptLinuxDependencyInstall;
         let promptCount = 0;
 
@@ -222,7 +223,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
         {
             skipInstallCleanupAfterTest = true;
             Object.defineProperty(os, 'platform', { value: () => 'linux', configurable: true, writable: true });
-            Object.defineProperty(process, 'platform', { value: 'linux', configurable: true, writable: true });
+            // Stub the platform-gated signal check rather than mutating the read-only process.platform, so this runs on any OS.
+            DotnetCoreDependencyInstaller.prototype.signalIndicatesMissingLinuxDependencies = (signal: string) => signal === 'SIGABRT';
             Object.defineProperty(cp, 'spawnSync', {
                 configurable: true,
                 writable: true,
@@ -249,8 +251,8 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
         finally
         {
             Object.defineProperty(os, 'platform', { value: originalPlatform, configurable: true, writable: true });
-            Object.defineProperty(process, 'platform', { value: originalProcessPlatform, configurable: true, writable: true });
             Object.defineProperty(cp, 'spawnSync', { value: originalSpawnSync, configurable: true, writable: true });
+            DotnetCoreDependencyInstaller.prototype.signalIndicatesMissingLinuxDependencies = originalSignalCheck;
             DotnetCoreDependencyInstaller.prototype.promptLinuxDependencyInstall = originalPromptLinuxDependencyInstall;
         }
     }).timeout(standardTimeoutTime);
