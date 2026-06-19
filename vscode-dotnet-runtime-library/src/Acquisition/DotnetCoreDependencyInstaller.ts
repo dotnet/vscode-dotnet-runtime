@@ -193,10 +193,13 @@ export class DotnetCoreDependencyInstaller
             {
                 // Note that "|| echo $? >" in this command sequence is a hack to get the exit code from the
                 // executed command given VS Code terminal does not return it.
+                // The exit code is captured inside the subshell before the pipe, so appending "|| true" to the
+                // tee step keeps a missing/failing tee from breaking the "&&" chain before the final "exit 0"
+                // (which lets the terminal auto-close). If tee is unavailable, output capture is simply skipped.
                 commandList.push(
                     'clear',
                     `echo 0 > "${exitCodeFile}"`,
-                    `(${fullCommand}; echo $? > "${exitCodeFile}") 2>&1 | tee "${outputFile}"`,
+                    `(${fullCommand}; echo $? > "${exitCodeFile}") 2>&1 | tee "${outputFile}" || true`,
                 );
                 if (promptAfterRun)
                 {

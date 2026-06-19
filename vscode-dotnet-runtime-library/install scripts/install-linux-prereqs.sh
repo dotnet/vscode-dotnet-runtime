@@ -151,12 +151,12 @@ elif [ "$DISTRO" = "Debian" ]; then
         fi
         if [ "$(echo "$LIBSSL" | grep -o 'libssl1\.0\.[0-9]:' | uniq | sort | wc -l)" -eq 0 ]; then
             # No libssl install 1.0.2 for Debian, 1.0.0 for Ubuntu
-            if [[ ! -z $(apt-cache --names-only search ^libssl1.0.2$) ]]; then
+            if [[ ! -z $(apt-cache --names-only search '^libssl1\.0\.2$') ]]; then
                 if ! aptSudoIf "install -yq libssl1.0.2"; then
                     echo "(!) libssl1.0.2 installation failed!"
                     exitScript 1
                 fi
-            elif [[ ! -z $(apt-cache --names-only search ^libssl1.0.0$) ]]; then
+            elif [[ ! -z $(apt-cache --names-only search '^libssl1\.0\.0$') ]]; then
                 if ! aptSudoIf "install -yq libssl1.0.0"; then
                     echo "(!) libssl1.0.0 installation failed!"
                     exitScript 1
