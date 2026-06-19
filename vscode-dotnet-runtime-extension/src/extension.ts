@@ -92,7 +92,7 @@ import
 import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
 import { EventStreamTaggingDecorator } from 'vscode-dotnet-runtime-library/dist/EventStream/EventStreamTaggingDecorator';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
-import { registerLanguageModelTools } from './LanguageModelTools';
+import { isUserCancellationMessage, registerLanguageModelTools } from './LanguageModelTools';
 import open = require('open');
 
 const packageJson = require('../package.json');
@@ -863,7 +863,16 @@ ${JSON.stringify(commandContext)}`));
                 // rethrown consistently when rethrowError is requested (e.g. for the LLM tools).
                 if (result !== '0' && result !== '')
                 {
-                    throw new Error(`Uninstall of .NET ${commandContext.version} did not succeed (code ${result}). The uninstaller may have been cancelled, blocked by another install in progress, or require manual removal.`);
+                    // uninstallGlobal may now return a human-readable failure reason from the elevation provider
+                    // (e.g. "User did not grant permission.") instead of only a numeric exit code. Avoid the
+                    // misleading "(code <reason>)" wrapping in that case, and tailor the message when the reason
+                    // indicates the user dismissed the admin/credential prompt.
+                    const looksNumeric = /^-?\d+$/.test(result);
+                    const detail = looksNumeric ? `code ${result}` : result;
+                    const message = isUserCancellationMessage(result)
+                        ? `Uninstall of .NET ${commandContext.version} was cancelled — the admin/elevation prompt was dismissed. Retry and accept the prompt to continue. (${detail})`
+                        : `Uninstall of .NET ${commandContext.version} did not succeed (${detail}). The uninstaller may be blocked by another install in progress, or require manual removal.`;
+                    throw new Error(message);
                 }
             }
         }, getIssueContext(existingPathConfigWorker)(commandContext?.errorConfiguration, 'uninstall'), commandContext?.requestingExtensionId, workerContext, commandContext?.rethrowError);
