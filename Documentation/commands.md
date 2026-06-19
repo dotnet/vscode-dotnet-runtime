@@ -140,7 +140,6 @@ The intended probe shape is `command: <dotnet executable>` with `arguments` set 
 
 Passing CLI-only arguments such as `['--info']` runs the .NET CLI information path instead of the caller's payload and can exercise different runtime dependencies. That can be useful for diagnosis, but it is not the intended contract for this legacy command.
 
-The TypeScript type for `arguments` includes both `string[]` and `child_process.SpawnSyncOptionsWithStringEncoding`. The `string[]` member reflects the runtime behavior that existing callers already use today, so adding it to the published type is not a breaking change. The older options-object shape remains accepted for compatibility with the previously published definition.
 
 ### dotnet.reportIssue
 
