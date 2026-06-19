@@ -140,7 +140,6 @@ The intended probe shape is `command: <dotnet executable>` with `arguments` set 
 
 Passing CLI-only arguments such as `['--info']` runs the .NET CLI information path instead of the caller's payload and can exercise different runtime dependencies. That can be useful for diagnosis, but it is not the intended contract for this legacy command.
 
-
 ### dotnet.reportIssue
 
 This is a **user-facing** command that opens a pre-populated GitHub issue in the browser and copies the issue body to the clipboard. It does not accept parameters and has a void return type.
