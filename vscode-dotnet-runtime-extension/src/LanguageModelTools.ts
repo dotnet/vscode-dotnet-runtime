@@ -101,10 +101,11 @@ function textResult(text: string): vscode.LanguageModelToolResult
 /**
  * Heuristically detects whether an error/installer message indicates the user cancelled or declined an
  * elevation/credential prompt, so install and uninstall can surface a consistent "retry and accept prompts" hint.
+ * "did not grant permission" comes from @vscode/sudo-prompt when the UAC dialog is dismissed on Windows.
  */
-function isUserCancellationMessage(message: string): boolean
+export function isUserCancellationMessage(message: string): boolean
 {
-    return /cancel|user rejected|user denied|password request/i.test(message);
+    return /cancel|user rejected|user denied|password request|did not grant permission/i.test(message);
 }
 
 /**
