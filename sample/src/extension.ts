@@ -19,22 +19,6 @@ import
     IDotnetLogResult,
 } from 'vscode-dotnet-runtime-library';
 
-function parseEnsureDependenciesArguments(input: string): string[]
-{
-    const trimmed = input.trim();
-    if (trimmed.startsWith('['))
-    {
-        const parsed = JSON.parse(trimmed);
-        if (!Array.isArray(parsed) || parsed.some(arg => typeof arg !== 'string'))
-        {
-            throw new Error('Custom arguments JSON must be an array of strings.');
-        }
-        return parsed;
-    }
-
-    return trimmed.length === 0 ? [] : trimmed.split(/\s+/);
-}
-
 export function activate(context: vscode.ExtensionContext)
 {
 
@@ -253,6 +237,23 @@ ${stderr}`);
         }
     });
 
+    // Accept either whitespace-separated args (e.g. "--info") or a JSON string array for values that contain spaces.
+    function parseEnsureDependenciesArguments(input: string): string[]
+    {
+        const trimmed = input.trim();
+        if (trimmed.startsWith('['))
+        {
+            const parsed = JSON.parse(trimmed);
+            if (!Array.isArray(parsed) || parsed.some((arg: unknown) => typeof arg !== 'string'))
+            {
+                throw new Error('Custom arguments JSON must be an array of strings.');
+            }
+            return parsed;
+        }
+
+        return trimmed.length === 0 ? [] : trimmed.split(/\s+/);
+    }
+
     const sampleEnsureDependenciesRegistration = vscode.commands.registerCommand('sample.dotnet.ensureDependencies', async () =>
     {
         const dotnetPath = await vscode.window.showInputBox({
@@ -301,7 +302,16 @@ ${stderr}`);
             {
                 return;
             }
-            args = parseEnsureDependenciesArguments(customArgs);
+
+            try
+            {
+                args = parseEnsureDependenciesArguments(customArgs);
+            }
+            catch (error)
+            {
+                vscode.window.showErrorMessage(`Invalid custom arguments: ${(error as Error).message}`);
+                return;
+            }
         }
 
         try

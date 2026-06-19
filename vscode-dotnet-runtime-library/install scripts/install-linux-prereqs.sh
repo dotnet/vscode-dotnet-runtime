@@ -140,7 +140,7 @@ elif [ "$DISTRO" = "Debian" ]; then
     fi
 
     checkAdditionalDeps aptSudoIf "install -yq"
-    checkNetCoreDeps aptSudoIf "install -yq ^libicu[0-9][0-9]*$ libkrb5-3 zlib1g $ADDITIONAL_DEPS"
+    checkNetCoreDeps aptSudoIf "install -yq ^libicu[0-9][0-9]*$ libkrb5-3 zlib1g"
     if [ $SKIPDOTNETCORE -eq 0 ]; then
         # Determine which version of libssl to install
         # dpkg-query can return "1" in some distros if the package is not found. "2" is an unexpected error
