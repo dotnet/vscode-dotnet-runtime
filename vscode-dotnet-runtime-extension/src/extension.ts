@@ -92,7 +92,8 @@ import
 import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
 import { EventStreamTaggingDecorator } from 'vscode-dotnet-runtime-library/dist/EventStream/EventStreamTaggingDecorator';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
-import { buildUninstallFailureMessage, registerLanguageModelTools } from './LanguageModelTools';
+import { buildUninstallFailureMessage } from './ErrorMessageUtilities';
+import { registerLanguageModelTools } from './LanguageModelTools';
 import open = require('open');
 
 const packageJson = require('../package.json');

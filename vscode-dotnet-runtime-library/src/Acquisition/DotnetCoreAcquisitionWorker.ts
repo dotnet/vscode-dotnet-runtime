@@ -621,34 +621,37 @@ Other dependents remain.`));
 
                 try
                 {
-                    context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install.installId}.`));
                     await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).untrackInstalledVersion(context, install, force);
 
                     // Note: it's ok not to check live dependents here (though we could) since this will require UAC and extensions do not depend on us to auto-manage admin installs
-                    if (force || await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).installHasNoRegisteredDependentsBesidesId(install, context.installDirectoryProvider, false, context.acquisitionContext.requestingExtensionId ?? ''))
+                    if (!force && !(await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).installHasNoRegisteredDependentsBesidesId(install, context.installDirectoryProvider, false, context.acquisitionContext.requestingExtensionId ?? '')))
                     {
-                        const installingVersion = await globalInstallerResolver.getFullySpecifiedVersion();
-                        const installer: IGlobalInstaller = os.platform() === 'linux' ?
-                            new LinuxGlobalInstaller(context, this.utilityContext, installingVersion) :
-                            new WinMacGlobalInstaller(context, this.utilityContext, installingVersion, await globalInstallerResolver.getInstallerUrl(), await globalInstallerResolver.getInstallerHash());
+                        context.eventStream.post(new DotnetUninstallSkipped(`Removed reference of ${JSON.stringify(install)}, but did not uninstall .NET ${install.installId}.
+Other dependents remain.`));
+                        return '0';
+                    }
 
-                        systemInstallPath = await installer.getExpectedGlobalSDKPath(installingVersion, install.architecture);
-                        uninstallResult = await installer.uninstallSDK(install);
-                        LocalMemoryCacheSingleton.getInstance().invalidateEntriesContaining('dotnet', context);
-                        await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream);
-                        if (uninstallResult === '0')
-                        {
-                            await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).reportSuccessfulUninstall(context, install, force);
-                            context.eventStream.post(new DotnetUninstallCompleted(`Uninstalled .NET ${install.installId}.`));
-                            return '0';
-                        }
+                    context.eventStream.post(new DotnetUninstallStarted(`Attempting to remove .NET ${install.installId}.`));
+                    const installingVersion = await globalInstallerResolver.getFullySpecifiedVersion();
+                    const installer: IGlobalInstaller = os.platform() === 'linux' ?
+                        new LinuxGlobalInstaller(context, this.utilityContext, installingVersion) :
+                        new WinMacGlobalInstaller(context, this.utilityContext, installingVersion, await globalInstallerResolver.getInstallerUrl(), await globalInstallerResolver.getInstallerHash());
+
+                    systemInstallPath = await installer.getExpectedGlobalSDKPath(installingVersion, install.architecture);
+                    uninstallResult = await installer.uninstallSDK(install);
+                    LocalMemoryCacheSingleton.getInstance().invalidateEntriesContaining('dotnet', context);
+                    await new CommandExecutor(context, this.utilityContext).endSudoProcessMaster(context.eventStream);
+                    if (uninstallResult === '0')
+                    {
+                        await InstallTrackerSingleton.getInstance(context.eventStream, context.extensionState).reportSuccessfulUninstall(context, install, force);
+                        context.eventStream.post(new DotnetUninstallCompleted(`Uninstalled .NET ${install.installId}.`));
+                        return '0';
                     }
 
                     // When command execution is non-terminal, the status may contain a useful error from the elevation
                     // provider (for example, "User did not grant permission.") instead of only a numeric exit code.
                     const failureReason = uninstallResult.trim();
-                    const failureDetails = failureReason ? ` ${failureReason}` : '';
-                    context.eventStream.post(new DotnetUninstallFailed(`Failed to uninstall .NET ${install.installId}.${failureDetails}`));
+                    context.eventStream.post(new DotnetUninstallFailed(`Failed to uninstall .NET ${install.installId}.${failureReason ? ` ${failureReason}` : ''}`));
                     return failureReason || '1';
                 }
                 catch (error: any)

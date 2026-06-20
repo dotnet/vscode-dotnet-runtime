@@ -17,7 +17,8 @@ import
     MockWindowDisplayWorker
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
-import { buildAvailableInstallsSearchContext, buildUninstallFailureMessage, computeLinuxPatchMismatchNote, highestPatchInSameFeatureBand, isFullySpecifiedSdkVersion, resolveSdkVersionForInstall, ToolNames } from '../../LanguageModelTools';
+import { buildUninstallFailureMessage } from '../../ErrorMessageUtilities';
+import { buildAvailableInstallsSearchContext, computeLinuxPatchMismatchNote, highestPatchInSameFeatureBand, isFullySpecifiedSdkVersion, resolveSdkVersionForInstall, ToolNames } from '../../LanguageModelTools';
 
 const assert: any = chai.assert;
 const standardTimeoutTime = 30000;

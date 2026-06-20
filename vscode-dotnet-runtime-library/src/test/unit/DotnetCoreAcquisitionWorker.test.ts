@@ -356,17 +356,23 @@ ${eventStream.events.map(event => event.eventName).join(', ')}`);
             getInstallerUrl: async () => 'https://example.invalid/dotnet-sdk.exe',
             getInstallerHash: async () => ''
         } as GlobalInstallerResolver;
-        const originalLinuxGetExpectedGlobalSDKPath = LinuxGlobalInstaller.prototype.getExpectedGlobalSDKPath;
-        const originalLinuxUninstallSDK = LinuxGlobalInstaller.prototype.uninstallSDK;
-        const originalGetExpectedGlobalSDKPath = WinMacGlobalInstaller.prototype.getExpectedGlobalSDKPath;
-        const originalUninstallSDK = WinMacGlobalInstaller.prototype.uninstallSDK;
-        const originalDisableMutex = process.env.VSCODE_DOTNET_RUNTIME_DISABLE_MUTEX;
 
-        process.env.VSCODE_DOTNET_RUNTIME_DISABLE_MUTEX = 'true';
-        LinuxGlobalInstaller.prototype.getExpectedGlobalSDKPath = async () => `/usr/share/dotnet/sdk/${version}`;
-        LinuxGlobalInstaller.prototype.uninstallSDK = async () => failureReason;
-        WinMacGlobalInstaller.prototype.getExpectedGlobalSDKPath = async () => `C:\\Program Files\\dotnet\\sdk\\${version}`;
-        WinMacGlobalInstaller.prototype.uninstallSDK = async () => failureReason;
+        const installerPrototypes: Array<{ prototype: { getExpectedGlobalSDKPath: any; uninstallSDK: any }; expectedSdkPath: string }> = [
+            { prototype: LinuxGlobalInstaller.prototype, expectedSdkPath: `/usr/share/dotnet/sdk/${version}` },
+            { prototype: WinMacGlobalInstaller.prototype, expectedSdkPath: `C:\\Program Files\\dotnet\\sdk\\${version}` }
+        ];
+        const restorers = installerPrototypes.map(({ prototype, expectedSdkPath }) =>
+        {
+            const originalGetPath = prototype.getExpectedGlobalSDKPath;
+            const originalUninstall = prototype.uninstallSDK;
+            prototype.getExpectedGlobalSDKPath = async () => expectedSdkPath;
+            prototype.uninstallSDK = async () => failureReason;
+            return () =>
+            {
+                prototype.getExpectedGlobalSDKPath = originalGetPath;
+                prototype.uninstallSDK = originalUninstall;
+            };
+        });
 
         try
         {
@@ -380,18 +386,7 @@ ${eventStream.events.map(event => event.eventName).join(', ')}`);
         }
         finally
         {
-            LinuxGlobalInstaller.prototype.getExpectedGlobalSDKPath = originalLinuxGetExpectedGlobalSDKPath;
-            LinuxGlobalInstaller.prototype.uninstallSDK = originalLinuxUninstallSDK;
-            WinMacGlobalInstaller.prototype.getExpectedGlobalSDKPath = originalGetExpectedGlobalSDKPath;
-            WinMacGlobalInstaller.prototype.uninstallSDK = originalUninstallSDK;
-            if (originalDisableMutex === undefined)
-            {
-                delete process.env.VSCODE_DOTNET_RUNTIME_DISABLE_MUTEX;
-            }
-            else
-            {
-                process.env.VSCODE_DOTNET_RUNTIME_DISABLE_MUTEX = originalDisableMutex;
-            }
+            restorers.forEach(restore => restore());
         }
     }).timeout(expectedTimeoutTime);
 

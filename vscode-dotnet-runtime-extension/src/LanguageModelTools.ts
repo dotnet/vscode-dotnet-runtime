@@ -101,19 +101,13 @@ function textResult(text: string): vscode.LanguageModelToolResult
 /**
  * Heuristically detects whether an error/installer message indicates the user cancelled or declined an
  * elevation/credential prompt, so install and uninstall can surface a consistent "retry and accept prompts" hint.
+ * Kept private to this module: it does not consider exit code 126, so callers outside the LM tool path should
+ * prefer the more robust check in CommandExecutor.parseVSCodeSudoExecError instead.
  * "did not grant permission" comes from @vscode/sudo-prompt when the UAC dialog is dismissed on Windows.
  */
-export function isUserCancellationMessage(message: string): boolean
+function isUserCancellationMessage(message: string): boolean
 {
     return /cancel|user rejected|user denied|password request|did not grant permission/i.test(message);
-}
-
-export function buildUninstallFailureMessage(version: string, result: string): string
-{
-    const detail = /^-?\d+$/.test(result) ? `code ${result}` : result;
-    return isUserCancellationMessage(result)
-        ? `Uninstall of .NET ${version} was cancelled — the admin/elevation prompt was dismissed. Retry and accept the prompt to continue. (${detail})`
-        : `Uninstall of .NET ${version} did not succeed (${detail}). The uninstaller may be blocked by another install in progress, or require manual removal.`;
 }
 
 /**
