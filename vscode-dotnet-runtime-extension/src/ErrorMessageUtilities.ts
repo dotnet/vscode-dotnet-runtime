@@ -22,8 +22,9 @@ export function buildUninstallFailureMessage(version: string, result: string): s
 {
     const normalized = result.trim();
     const asNumber = Number(normalized);
-    const detail = normalized !== '' && Number.isInteger(asNumber) ? `code ${normalized}` : normalized;
+    const detailText = normalized !== '' && Number.isInteger(asNumber) ? `code ${normalized}` : normalized;
+    const detailSuffix = detailText ? ` (${detailText})` : '';
     return isUserCancellationMessage(normalized)
-        ? `Uninstall of .NET ${version} was cancelled. The elevation prompt was dismissed. Retry and accept the prompt to continue. (${detail})`
-        : `Uninstall of .NET ${version} did not succeed (${detail}). The uninstaller may be blocked by another install in progress or require manual removal.`;
+        ? `Uninstall of .NET ${version} was cancelled. A permission/elevation prompt was dismissed or rejected. Retry and accept the prompt to continue.${detailSuffix}`
+        : `Uninstall of .NET ${version} did not succeed${detailSuffix}. The uninstaller may be blocked by another install in progress or require manual removal.`;
 }
