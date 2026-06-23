@@ -39,6 +39,7 @@ import
         SuppressedAcquisitionError
     } from 'vscode-dotnet-runtime-library';
 import { settingsInfoContent } from './SettingsInfoContent';
+import { isUserCancellationMessage } from './ErrorMessageUtilities';
 
 /**
  * Tool name constants matching those in package.json
@@ -98,17 +99,6 @@ function textResult(text: string): vscode.LanguageModelToolResult
     return new vscode.LanguageModelToolResult([new vscode.LanguageModelTextPart(text)]);
 }
 
-/**
- * Heuristically detects whether an error/installer message indicates the user cancelled or declined an
- * elevation/credential prompt, so install and uninstall can surface a consistent "retry and accept prompts" hint.
- * Kept private to this module: it does not consider exit code 126, so callers outside the LM tool path should
- * prefer the more robust check in CommandExecutor.parseVSCodeSudoExecError instead.
- * "did not grant permission" comes from @vscode/sudo-prompt when the UAC dialog is dismissed on Windows.
- */
-function isUserCancellationMessage(message: string): boolean
-{
-    return /cancel|user rejected|user denied|password request|did not grant permission/i.test(message);
-}
 
 /**
  * Builds the minimal IAcquisitionWorkerContext that the stateless VersionUtilities parsing helpers require.

@@ -9,7 +9,7 @@
  * parseVSCodeSudoExecError is preferred everywhere else, and this heuristic does not consider exit code 126.
  * "did not grant permission" comes from @vscode/sudo-prompt when the UAC dialog is dismissed on Windows.
  */
-function isUserCancellationMessage(message: string): boolean
+export function isUserCancellationMessage(message: string): boolean
 {
     return /cancel|user rejected|user denied|password request|did not grant permission/i.test(message);
 }
