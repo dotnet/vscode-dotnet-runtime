@@ -10,8 +10,8 @@ Supported versions:
 
 ## Reporting a Vulnerability
 
-Use this section to tell people how to report a vulnerability.
+Please report security vulnerabilities **privately** via GitHub Security Advisories.
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+Go to this repository’s **Security** tab and click **Report a vulnerability**. Do not open public issues for security reports.
+
+You can expect an initial response within 3 business days. If accepted, we will work with you on a fix and coordinate disclosure; if declined, we will provide a brief explanation.
