@@ -2,15 +2,11 @@
 
 ## Supported Versions
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+Security updates are provided through new releases of the VS Code extensions and library in this repository.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+Supported versions:
+- The latest published releases are supported.
+- Older releases may not receive security fixes; please upgrade to the latest version.
 
 ## Reporting a Vulnerability
 
