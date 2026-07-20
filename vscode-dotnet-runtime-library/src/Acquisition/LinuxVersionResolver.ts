@@ -291,8 +291,10 @@ If you experience issues, please reach out on https://github.com/dotnet/vscode-d
             if (existingGlobalInstallSDKVersion && Number(versionUtils.getMajorMinor(existingGlobalInstallSDKVersion, this.workerContext.eventStream, this.workerContext)) ===
                 Number(versionUtils.getMajorMinor(fullySpecifiedDotnetVersion, this.workerContext.eventStream, this.workerContext)))
             {
-                const isPatchUpgrade = Number(versionUtils.getFeatureBandPatchVersion(existingGlobalInstallSDKVersion, this.workerContext.eventStream, this.workerContext)) <
-                    Number(versionUtils.getFeatureBandPatchVersion(fullySpecifiedDotnetVersion, this.workerContext.eventStream, this.workerContext));
+                // compareSDKPatchOrPreRelease is pre-release aware, so an existing pre-release SDK that is older than
+                // the requested one (e.g. installed 11.0.100-preview.5 vs requested 11.0.100-preview.6, which share a
+                // feature-band patch) is still recognized as an upgrade rather than an already-satisfied install.
+                const isPatchUpgrade = versionUtils.compareSDKPatchOrPreRelease(existingGlobalInstallSDKVersion, fullySpecifiedDotnetVersion, this.workerContext.eventStream, this.workerContext) < 0;
 
                 if (Number(versionUtils.getMajorMinor(existingGlobalInstallSDKVersion, this.workerContext.eventStream, this.workerContext)) >
                     Number(versionUtils.getMajorMinor(fullySpecifiedDotnetVersion, this.workerContext.eventStream, this.workerContext))
