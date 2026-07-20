@@ -233,7 +233,9 @@ export class GlobalInstallerResolver
         for (const sdk of sdks)
         {
             const thisSDKVersion: string = sdk[this.releasesSdkVersionKey];
-            if (thisSDKVersion === specificVersion) // NOTE that this will not catch things like -preview or build number suffixed versions.
+            // Exact string match, so a fully specified pre-release build (e.g. 11.0.100-preview.6.26352.110) matches
+            // the corresponding releases.json entry verbatim.
+            if (thisSDKVersion === specificVersion)
             {
                 const thisSDKFiles = sdk[this.releasesSdkFileKey];
                 for (const installer of thisSDKFiles)
@@ -286,8 +288,7 @@ Please report this issue so it can be remedied or investigated.`), getInstallFro
 
         const fileErr = new DotnetNoInstallerFileExistsError(new EventBasedError('DotnetNoInstallerFileExistsError',
             `The SDK installation files for version ${specificVersion} running on ${desiredRidPackage} couldn't be found.
-Is the version in support? Note that -preview versions or versions with build numbers aren't yet supported.
-Visit https://dotnet.microsoft.com/platform/support/policy/dotnet-core for support information.`), getInstallFromContext(this.context));
+Is the version in support? Visit https://dotnet.microsoft.com/platform/support/policy/dotnet-core for support information.`), getInstallFromContext(this.context));
         this.context.eventStream.post(fileErr);
         throw fileErr.error;
     }
