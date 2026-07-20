@@ -557,12 +557,14 @@ Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.m
                 ( // Side by side installs of the same major.minor and band can cause issues in some cases. So we decided to just not allow it unless upgrading to a newer patch version.
                 // The installer can catch this but we can avoid unnecessary work this way,
                 // and for windows the installer may never appear to the user. With this approach, we don't need to handle installer error codes.
+                // compareSDKPatchOrPreRelease is pre-release aware, so a request for a newer pre-release of the same
+                // feature-band patch (e.g. 11.0.100-preview.6 when 11.0.100-preview.5 is installed) is treated as an
+                // upgrade rather than an existing conflicting install.
                 Number(versionUtils.getMajorMinor(requestedVersion, this.acquisitionContext.eventStream, this.acquisitionContext)) ===
                 Number(versionUtils.getMajorMinor(sdk, this.acquisitionContext.eventStream, this.acquisitionContext)) &&
                 Number(versionUtils.getFeatureBandFromVersion(requestedVersion, this.acquisitionContext.eventStream, this.acquisitionContext)) ===
                 Number(versionUtils.getFeatureBandFromVersion(sdk, this.acquisitionContext.eventStream, this.acquisitionContext)) &&
-                Number(versionUtils.getFeatureBandPatchVersion(requestedVersion, this.acquisitionContext.eventStream, this.acquisitionContext)) <=
-                Number(versionUtils.getFeatureBandPatchVersion(sdk, this.acquisitionContext.eventStream, this.acquisitionContext))
+                versionUtils.compareSDKPatchOrPreRelease(requestedVersion, sdk, this.acquisitionContext.eventStream, this.acquisitionContext) <= 0
             )
             {
                 return sdk;

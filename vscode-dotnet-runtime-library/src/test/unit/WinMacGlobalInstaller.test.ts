@@ -99,6 +99,42 @@ suite('Windows & Mac Global Installer Tests', function ()
         }
     });
 
+    test('It treats a newer preview of the same feature-band patch as an upgrade, not a conflict', async () =>
+    {
+        if (os.platform() === 'win32')
+        {
+            const installedPreview = '11.0.100-preview.5.26352.110';
+            const requestedNewerPreview = '11.0.100-preview.6.26352.110';
+
+            mockExecutor.fakeReturnValue = {
+                stdout: `
+        ${installedPreview}    REG_DWORD    0x1
+       `,
+                status: '0',
+                stderr: ''
+            };
+
+            // preview.6 is newer than the installed preview.5 (same numeric feature-band patch), so it should upgrade.
+            let conflictExists = await installer.GlobalWindowsInstallWithConflictingVersionAlreadyExists(requestedNewerPreview);
+            assert.deepStrictEqual(conflictExists, '', 'A newer preview of the same patch is not a conflict');
+
+            // Requesting the exact installed preview is an existing install (conflict).
+            conflictExists = await installer.GlobalWindowsInstallWithConflictingVersionAlreadyExists(installedPreview);
+            assert.deepStrictEqual(conflictExists, installedPreview, 'The exact same preview is treated as already installed');
+
+            // Requesting an older preview when a newer one is installed is a conflict (do not downgrade).
+            mockExecutor.fakeReturnValue = {
+                stdout: `
+        ${requestedNewerPreview}    REG_DWORD    0x1
+       `,
+                status: '0',
+                stderr: ''
+            };
+            conflictExists = await installer.GlobalWindowsInstallWithConflictingVersionAlreadyExists(installedPreview);
+            assert.deepStrictEqual(conflictExists, requestedNewerPreview, 'An older preview conflicts with a newer installed preview');
+        }
+    });
+
     test('It runs the correct install command', async () =>
     {
         mockExecutor.fakeReturnValue = { stdout: `0`, status: '0', stderr: '' };
