@@ -17,6 +17,8 @@ const twoDigitMajorVersion = '10.0.102';
 const featureBandVersion = '7.0.2xx';
 const majorOnly = '7';
 const majorMinorOnly = '7.0';
+const previewVersion = '11.0.100-preview.6.26352.110';
+const rcVersion = '9.0.100-rc.2.24473.5';
 
 const badSDKVersionPeriods = '10.10';
 const badSDKVersionPatch = '7.1.10';
@@ -121,6 +123,43 @@ suite('Version Utilities Unit Tests', function ()
         assert.equal(resolver.isFullySpecifiedVersion(majorOnly, mockEventStream, mockCtx), false, 'It detects major only versions are not fully specified');
         assert.equal(resolver.isFullySpecifiedVersion(featureBandVersion, mockEventStream, mockCtx), false, 'It counts feature band only with xxx as not fully specified');
         assert.equal(resolver.isFullySpecifiedVersion(majorMinorOnly, mockEventStream, mockCtx), false, 'It detects major.minor as not fully specified');
+        assert.equal(resolver.isFullySpecifiedVersion(previewVersion, mockEventStream, mockCtx), true, 'It counts a fully specified preview build as fully specified');
+        assert.equal(resolver.isFullySpecifiedVersion(rcVersion, mockEventStream, mockCtx), true, 'It counts a fully specified rc build as fully specified');
+    });
+
+    test('Detects if Fully Specified Preview Version', async () =>
+    {
+        assert.equal(resolver.isFullySpecifiedPreviewVersion(previewVersion, mockEventStream, mockCtx), true, 'It detects a fully specified preview build');
+        assert.equal(resolver.isFullySpecifiedPreviewVersion(rcVersion, mockEventStream, mockCtx), true, 'It detects a fully specified rc build');
+        assert.equal(resolver.isFullySpecifiedPreviewVersion('8.0.400-preview.0.24324.5', mockEventStream, mockCtx), true);
+        assert.equal(resolver.isFullySpecifiedPreviewVersion(fullySpecifiedVersion, mockEventStream, mockCtx), false, 'A stable fully specified version is not a preview');
+        assert.equal(resolver.isFullySpecifiedPreviewVersion(featureBandVersion, mockEventStream, mockCtx), false, 'A feature band is not a fully specified preview');
+        assert.equal(resolver.isFullySpecifiedPreviewVersion(majorMinorOnly, mockEventStream, mockCtx), false, 'A major.minor is not a fully specified preview');
+        assert.equal(resolver.isFullySpecifiedPreviewVersion('11.0-preview.6', mockEventStream, mockCtx), false, 'A partial version with a suffix is not fully specified');
+    });
+
+    test('Strips Pre-Release Suffix From Version', async () =>
+    {
+        assert.equal(resolver.getVersionWithoutPreReleaseSuffix(previewVersion), '11.0.100');
+        assert.equal(resolver.getVersionWithoutPreReleaseSuffix(rcVersion), '9.0.100');
+        assert.equal(resolver.getVersionWithoutPreReleaseSuffix(fullySpecifiedVersion), fullySpecifiedVersion, 'It leaves a stable version unchanged');
+    });
+
+    test('Compares SDK Patch Or Pre-Release', async () =>
+    {
+        // Different feature-band patch numbers compare numerically.
+        assert.isBelow(resolver.compareSDKPatchOrPreRelease('7.0.301', '7.0.311', mockEventStream, mockCtx), 0, '301 is older than 311');
+        assert.isAbove(resolver.compareSDKPatchOrPreRelease('7.0.311', '7.0.301', mockEventStream, mockCtx), 0, '311 is newer than 301');
+        assert.equal(resolver.compareSDKPatchOrPreRelease('7.0.301', '7.0.301', mockEventStream, mockCtx), 0, 'Identical stable versions are equal');
+
+        // Same feature-band patch, differing pre-release identity.
+        assert.isBelow(resolver.compareSDKPatchOrPreRelease('11.0.100-preview.5.26352.110', '11.0.100-preview.6.26352.110', mockEventStream, mockCtx), 0, 'preview.5 is older than preview.6');
+        assert.isAbove(resolver.compareSDKPatchOrPreRelease('11.0.100-preview.6.26352.110', '11.0.100-preview.5.26352.110', mockEventStream, mockCtx), 0, 'preview.6 is newer than preview.5');
+        assert.equal(resolver.compareSDKPatchOrPreRelease('11.0.100-preview.6.26352.110', '11.0.100-preview.6.26352.110', mockEventStream, mockCtx), 0, 'Identical preview builds are equal');
+
+        // A stable release outranks a pre-release with the same numeric patch.
+        assert.isAbove(resolver.compareSDKPatchOrPreRelease('11.0.100', '11.0.100-preview.6.26352.110', mockEventStream, mockCtx), 0, 'A stable release is newer than its preview');
+        assert.isBelow(resolver.compareSDKPatchOrPreRelease('11.0.100-preview.6.26352.110', '11.0.100', mockEventStream, mockCtx), 0, 'A preview is older than its stable release');
     });
 
     test('Detects if Only Major or Minor Given', async () =>

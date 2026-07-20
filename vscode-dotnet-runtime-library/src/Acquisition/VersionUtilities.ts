@@ -3,6 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 
+import * as semver from 'semver';
 import { IEventStream } from '../EventStream/EventStream';
 import
 {
@@ -241,12 +242,83 @@ export function isNonSpecificFeatureBandedVersion(version: string): boolean
 
 /**
  *
+ * @param version a version string that may carry a pre-release suffix, e.g. 11.0.100-preview.6.26352.110.
+ * @returns the portion of the version before any pre-release suffix, e.g. 11.0.100. Returns the input unchanged
+ * when no pre-release suffix is present.
+ */
+export function getVersionWithoutPreReleaseSuffix(version: string): string
+{
+    const dashIndex = version.indexOf('-');
+    return dashIndex === -1 ? version : version.substring(0, dashIndex);
+}
+
+/**
+ *
  * @param version the requested version to analyze.
- * @returns true IFF version is a specific version e.g. 7.0.301.
+ * @returns true IFF version is a fully specified SDK version that also carries a pre-release suffix, e.g.
+ * 11.0.100-preview.6.26352.110 or 8.0.100-rc.2.24473.5. The portion before the '-' must itself be a fully
+ * specified version (e.g. 11.0.100) and there must be a non-empty suffix after it.
+ */
+export function isFullySpecifiedPreviewVersion(version: string, eventStream: IEventStream, context: IAcquisitionWorkerContext): boolean
+{
+    const dashIndex = version.indexOf('-');
+    if (dashIndex === -1)
+    {
+        return false;
+    }
+
+    const baseVersion = version.substring(0, dashIndex);
+    const preReleaseSuffix = version.substring(dashIndex + 1);
+    return preReleaseSuffix.length > 0 && isFullySpecifiedVersion(baseVersion, eventStream, context);
+}
+
+/**
+ *
+ * @param version the requested version to analyze.
+ * @returns true IFF version is a specific version e.g. 7.0.301, including fully specified pre-release builds such
+ * as 11.0.100-preview.6.26352.110.
  */
 export function isFullySpecifiedVersion(version: string, eventStream: IEventStream, context: IAcquisitionWorkerContext): boolean
 {
+    // A fully specified pre-release build (e.g. 11.0.100-preview.6.26352.110) is also fully specified; validate its
+    // numeric base (11.0.100) and short-circuit before the strictly-numeric checks below, which reject the suffix.
+    if (isFullySpecifiedPreviewVersion(version, eventStream, context))
+    {
+        return true;
+    }
     return version.split('.').every(x => isNumber(x)) && isValidLongFormVersionFormat(version, eventStream, context) && !isNonSpecificFeatureBandedVersion(version);
+}
+
+/**
+ *
+ * @remarks Compares two fully specified SDK versions that share the same major.minor and feature band, ordering them
+ * by feature-band patch and then by any pre-release suffix. Returns a negative number if versionA is older than
+ * versionB, 0 if they are equivalent, and a positive number if versionA is newer. Pre-release builds (e.g.
+ * -preview.6) sort older than the corresponding stable release and older than higher-numbered pre-releases, matching
+ * semver ordering. This lets callers distinguish e.g. 11.0.100-preview.5 from 11.0.100-preview.6, which have the same
+ * numeric feature-band patch.
+ */
+export function compareSDKPatchOrPreRelease(versionA: string, versionB: string, eventStream: IEventStream, context: IAcquisitionWorkerContext): number
+{
+    const patchA = Number(getFeatureBandPatchVersion(versionA, eventStream, context));
+    const patchB = Number(getFeatureBandPatchVersion(versionB, eventStream, context));
+    if (patchA !== patchB)
+    {
+        return patchA - patchB;
+    }
+
+    // Feature-band patches are equal; disambiguate using any pre-release suffix. A stable release outranks a
+    // pre-release, and higher-numbered pre-releases outrank lower ones (semver ordering).
+    const semverA = semver.parse(versionA) ?? semver.coerce(versionA);
+    const semverB = semver.parse(versionB) ?? semver.coerce(versionB);
+    if (semverA && semverB)
+    {
+        return semver.compare(semverA, semverB);
+    }
+
+    // If semver cannot parse either version (e.g. an unusual internal build string), treat them as equivalent so
+    // callers fall back to their prior "already installed" behavior rather than performing an unnecessary reinstall.
+    return 0;
 }
 
 /**
