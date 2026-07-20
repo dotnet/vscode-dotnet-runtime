@@ -225,6 +225,18 @@
                 "aspnetcore": [
                     "aspnetcore-runtime-10.0"
                 ]
+            },
+            {
+                "version": "11.0",
+                "sdk": [
+                    "dotnet-sdk-11.0"
+                ],
+                "runtime": [
+                    "dotnet-runtime-11.0"
+                ],
+                "aspnetcore": [
+                    "aspnetcore-runtime-11.0"
+                ]
             }
         ],
         "versions": [
@@ -791,6 +803,18 @@
                 "aspnetcore": [
                     "aspnetcore-runtime-10.0"
                 ]
+            },
+            {
+                "version": "11.0",
+                "sdk": [
+                    "dotnet-sdk-11.0"
+                ],
+                "runtime": [
+                    "dotnet-runtime-11.0"
+                ],
+                "aspnetcore": [
+                    "aspnetcore-runtime-11.0"
+                ]
             }
         ],
         "versions": [
@@ -1069,6 +1093,18 @@
                 ],
                 "aspnetcore": [
                     "aspnetcore-runtime-10.0"
+                ]
+            },
+            {
+                "version": "11.0",
+                "sdk": [
+                    "dotnet-sdk-11.0"
+                ],
+                "runtime": [
+                    "dotnet-runtime-11.0"
+                ],
+                "aspnetcore": [
+                    "aspnetcore-runtime-11.0"
                 ]
             }
         ],
