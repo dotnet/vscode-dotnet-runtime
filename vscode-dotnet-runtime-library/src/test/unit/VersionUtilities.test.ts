@@ -145,6 +145,13 @@ suite('Version Utilities Unit Tests', function ()
         assert.equal(resolver.getVersionWithoutPreReleaseSuffix(fullySpecifiedVersion), fullySpecifiedVersion, 'It leaves a stable version unchanged');
     });
 
+    test('Extracts Pre-Release Suffix From Version', async () =>
+    {
+        assert.equal(resolver.getPreReleaseSuffix(previewVersion), 'preview.6.26352.110');
+        assert.equal(resolver.getPreReleaseSuffix(rcVersion), 'rc.2.24473.5');
+        assert.equal(resolver.getPreReleaseSuffix(fullySpecifiedVersion), '', 'A stable version has no pre-release suffix');
+    });
+
     test('Compares SDK Patch Or Pre-Release', async () =>
     {
         // Different feature-band patch numbers compare numerically.

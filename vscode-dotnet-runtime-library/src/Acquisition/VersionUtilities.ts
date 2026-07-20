@@ -254,6 +254,19 @@ export function getVersionWithoutPreReleaseSuffix(version: string): string
 
 /**
  *
+ * @param version a version string that may carry a pre-release suffix, e.g. 11.0.100-preview.6.26352.110.
+ * @returns the pre-release suffix (the portion after the first '-'), e.g. preview.6.26352.110, or '' when the
+ * version has no pre-release suffix. Two versions represent the exact same release iff their numeric parts and
+ * this suffix both match.
+ */
+export function getPreReleaseSuffix(version: string): string
+{
+    const dashIndex = version.indexOf('-');
+    return dashIndex === -1 ? '' : version.substring(dashIndex + 1);
+}
+
+/**
+ *
  * @param version the requested version to analyze.
  * @returns true IFF version is a fully specified SDK version that also carries a pre-release suffix, e.g.
  * 11.0.100-preview.6.26352.110 or 8.0.100-rc.2.24473.5. The portion before the '-' must itself be a fully
