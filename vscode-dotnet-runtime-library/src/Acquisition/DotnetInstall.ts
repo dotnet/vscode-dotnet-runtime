@@ -74,7 +74,11 @@ export function InstallToStrings(install: DotnetInstall)
 
 export function looksLikeRuntimeVersion(version: string): boolean
 {
-    const band: string | undefined = version.split('.')?.[2];
+    // Strip any pre-release suffix (e.g. -rc.2.24473.5 or -preview.6.26352.110) before measuring the third segment,
+    // otherwise a pre-release runtime version like 9.0.0-rc.2 would have its third segment ('0-rc') counted as longer
+    // than 2 characters and be misclassified as an SDK. A runtime's third segment is a bare patch (<= 2 digits) while
+    // an SDK's is a 3-digit feature band + patch (e.g. 100).
+    const band: string | undefined = version.split('.')?.[2]?.split('-')?.[0];
     return (band?.length ?? 0) <= 2; // assumption : there exists no runtime version at this point over 99 sub versions
 }
 
