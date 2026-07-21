@@ -95,17 +95,17 @@ suite('Version Utilities Unit Tests', function ()
         assert.equal(resolver.getFeatureBandPatchVersion('8.0.400-preview.0.24324.5', mockEventStream, mockCtx), '0');
     });
 
-    test('Detects IsPreview Version', async () =>
+    test('Detects Pre-Release Suffix', async () =>
     {
-        assert.equal(resolver.isPreviewVersion('8.0.400-preview.0.24324.5', mockEventStream, mockCtx), true);
-        assert.equal(resolver.isPreviewVersion('9.0.0-rc.2', mockEventStream, mockCtx), true);
-        assert.equal(resolver.isPreviewVersion('9.0.0-rc.2.24473.5', mockEventStream, mockCtx), true);
-        assert.equal(resolver.isPreviewVersion('9.0.0-rc.2.24473.5', mockEventStream, mockCtx), true);
-        assert.equal(resolver.isPreviewVersion('8.0.0-preview.7', mockEventStream, mockCtx), true);
-        assert.equal(resolver.isPreviewVersion('10.0.0-alpha.2.24522.8', mockEventStream, mockCtx), true);
-        assert.equal(resolver.isPreviewVersion(featureBandVersion, mockEventStream, mockCtx), false);
-        assert.equal(resolver.isPreviewVersion(majorMinorOnly, mockEventStream, mockCtx), false);
-        assert.equal(resolver.isPreviewVersion(badSDKVersionPatch, mockEventStream, mockCtx), false);
+        assert.equal(resolver.hasPreReleaseSuffix('8.0.400-preview.0.24324.5'), true);
+        assert.equal(resolver.hasPreReleaseSuffix('9.0.0-rc.2'), true);
+        assert.equal(resolver.hasPreReleaseSuffix('9.0.0-rc.2.24473.5'), true);
+        assert.equal(resolver.hasPreReleaseSuffix('8.0.0-preview.7'), true);
+        assert.equal(resolver.hasPreReleaseSuffix('10.0.0-alpha.2.24522.8'), true);
+        assert.equal(resolver.hasPreReleaseSuffix(featureBandVersion), false);
+        assert.equal(resolver.hasPreReleaseSuffix(majorMinorOnly), false);
+        assert.equal(resolver.hasPreReleaseSuffix(badSDKVersionPatch), false);
+        assert.equal(resolver.hasPreReleaseSuffix('8.0.100-'), false, 'A delimiter without content is not a suffix');
     });
 
     test('Detects Unspecified Patch Version', async () =>
@@ -125,6 +125,7 @@ suite('Version Utilities Unit Tests', function ()
         assert.equal(resolver.isFullySpecifiedVersion(majorMinorOnly, mockEventStream, mockCtx), false, 'It detects major.minor as not fully specified');
         assert.equal(resolver.isFullySpecifiedVersion(previewVersion, mockEventStream, mockCtx), true, 'It counts a fully specified preview build as fully specified');
         assert.equal(resolver.isFullySpecifiedVersion(rcVersion, mockEventStream, mockCtx), true, 'It counts a fully specified rc build as fully specified');
+        assert.equal(resolver.isFullySpecifiedVersion('-foo', mockEventStream, mockCtx), false, 'A suffix without a numeric version is not fully specified');
     });
 
     test('Detects if Fully Specified Preview Version', async () =>
@@ -136,6 +137,7 @@ suite('Version Utilities Unit Tests', function ()
         assert.equal(resolver.isFullySpecifiedPreviewVersion(featureBandVersion, mockEventStream, mockCtx), false, 'A feature band is not a fully specified preview');
         assert.equal(resolver.isFullySpecifiedPreviewVersion(majorMinorOnly, mockEventStream, mockCtx), false, 'A major.minor is not a fully specified preview');
         assert.equal(resolver.isFullySpecifiedPreviewVersion('11.0-preview.6', mockEventStream, mockCtx), false, 'A partial version with a suffix is not fully specified');
+        assert.equal(resolver.isFullySpecifiedPreviewVersion('-foo', mockEventStream, mockCtx), false, 'A suffix without a numeric version is not fully specified');
     });
 
     test('Strips Pre-Release Suffix From Version', async () =>

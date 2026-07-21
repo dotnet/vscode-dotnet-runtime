@@ -67,10 +67,7 @@ export function getVersionFromLegacyInstallId(installId: string): string
 {
     if (isGlobalLegacyInstallId(installId))
     {
-        // Global install ids are encoded as `${version}-global~${arch}...` (see getInstallIdCustomArchitecture).
-        // The version itself may contain dashes (e.g. a pre-release build like 11.0.100-preview.6.26352.110), so we
-        // must split on the `-global` marker rather than the first dash, otherwise the version would be truncated
-        // (e.g. to 11.0.100) and no longer match the tracked install record.
+        // Global install ids are encoded as `${version}-global~${arch}...` but the version may contain dashes
         const globalMarkerIndex = installId.indexOf('-global');
         if (globalMarkerIndex !== -1)
         {

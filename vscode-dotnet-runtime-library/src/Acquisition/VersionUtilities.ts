@@ -221,12 +221,12 @@ export function isValidLongFormVersionFormat(fullySpecifiedVersion: string, even
 
 /**
  *
- * @param fullySpecifiedVersion the requested version to analyze.
- * @returns true IFF version is of an rc, preview, internal build, etc.
+ * @param version the version string to analyze.
+ * @returns true IFF the version has a non-empty pre-release suffix. This function does not validate the version.
  */
-export function isPreviewVersion(fullySpecifiedVersion: string, eventStream: IEventStream, context: IAcquisitionWorkerContext): boolean
+export function hasPreReleaseSuffix(version: string): boolean
 {
-    return fullySpecifiedVersion.includes('-');
+    return getPreReleaseSuffix(version).length > 0;
 }
 
 /**
@@ -248,7 +248,7 @@ export function isNonSpecificFeatureBandedVersion(version: string): boolean
  */
 export function getVersionWithoutPreReleaseSuffix(version: string): string
 {
-    const dashIndex = version.indexOf('-');
+    const dashIndex = getPreReleaseSuffixStartIndex(version);
     return dashIndex === -1 ? version : version.substring(0, dashIndex);
 }
 
@@ -261,8 +261,13 @@ export function getVersionWithoutPreReleaseSuffix(version: string): string
  */
 export function getPreReleaseSuffix(version: string): string
 {
-    const dashIndex = version.indexOf('-');
+    const dashIndex = getPreReleaseSuffixStartIndex(version);
     return dashIndex === -1 ? '' : version.substring(dashIndex + 1);
+}
+
+function getPreReleaseSuffixStartIndex(version: string): number
+{
+    return version.indexOf('-');
 }
 
 /**
@@ -274,15 +279,8 @@ export function getPreReleaseSuffix(version: string): string
  */
 export function isFullySpecifiedPreviewVersion(version: string, eventStream: IEventStream, context: IAcquisitionWorkerContext): boolean
 {
-    const dashIndex = version.indexOf('-');
-    if (dashIndex === -1)
-    {
-        return false;
-    }
-
-    const baseVersion = version.substring(0, dashIndex);
-    const preReleaseSuffix = version.substring(dashIndex + 1);
-    return preReleaseSuffix.length > 0 && isFullySpecifiedVersion(baseVersion, eventStream, context);
+    return getPreReleaseSuffix(version).length > 0 &&
+        isFullySpecifiedVersion(getVersionWithoutPreReleaseSuffix(version), eventStream, context);
 }
 
 /**

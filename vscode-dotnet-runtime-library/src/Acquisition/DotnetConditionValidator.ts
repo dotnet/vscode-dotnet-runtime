@@ -206,7 +206,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
     {
         if (requirement.rejectPreviews === true)
         {
-            return !versionUtils.isPreviewVersion(availableVersion, this.workerContext.eventStream, this.workerContext);
+            return !versionUtils.hasPreReleaseSuffix(availableVersion);
         }
         return true;
     }
