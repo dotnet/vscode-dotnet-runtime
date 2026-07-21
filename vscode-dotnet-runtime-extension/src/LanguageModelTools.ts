@@ -9,6 +9,7 @@ import
     {
         AcquireErrorConfiguration,
         checkForUnsupportedLinux,
+        compareSDKPatchOrPreRelease,
         convertToLinuxPackageManagerSupportedVersion,
         DotnetAcquisitionCompleted,
         DotnetAcquisitionStarted,
@@ -227,7 +228,9 @@ export function highestPatchInSameFeatureBand(requestedVersion: string, installe
         return undefined;
     }
 
-    return sameBand.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))[sameBand.length - 1];
+    // Order by feature-band patch and then pre-release identity so a stable release outranks its preview and
+    // higher-numbered previews outrank lower ones (localeCompare would mis-rank e.g. RTM below -preview).
+    return sameBand.sort((a, b) => compareSDKPatchOrPreRelease(a, b, eventStream, versionParseContext(eventStream, a)))[sameBand.length - 1];
 }
 
 /**

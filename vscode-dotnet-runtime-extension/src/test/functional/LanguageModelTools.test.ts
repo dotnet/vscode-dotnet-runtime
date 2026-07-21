@@ -1068,6 +1068,18 @@ suite('LanguageModelTools Tests', function ()
             {
                 assert.isUndefined(highestPatchInSameFeatureBand('10.0.106', [], eventStream));
             }).timeout(standardTimeoutTime);
+
+            test('Ranks a stable release above its preview of the same patch', () =>
+            {
+                const installed = ['11.0.100-preview.5.26352.110', '11.0.100-preview.6.26352.110', '11.0.100'];
+                assert.equal(highestPatchInSameFeatureBand('11.0.100', installed, eventStream), '11.0.100', 'The RTM outranks its previews');
+            }).timeout(standardTimeoutTime);
+
+            test('Ranks higher-numbered previews above lower ones', () =>
+            {
+                const installed = ['11.0.100-preview.5.26352.110', '11.0.100-preview.6.26352.110'];
+                assert.equal(highestPatchInSameFeatureBand('11.0.100-preview.5.26352.110', installed, eventStream), '11.0.100-preview.6.26352.110', 'preview.6 outranks preview.5');
+            }).timeout(standardTimeoutTime);
         });
 
         suite('resolveSdkVersionForInstall', function ()
