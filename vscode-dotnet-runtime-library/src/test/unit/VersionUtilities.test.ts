@@ -169,6 +169,26 @@ suite('Version Utilities Unit Tests', function ()
         assert.isBelow(resolver.compareSDKPatchOrPreRelease('11.0.100-preview.6.26352.110', '11.0.100', mockEventStream, mockCtx), 0, 'A preview is older than its stable release');
     });
 
+    test('Compares Versions Including Pre-Release (runtime + sdk)', async () =>
+    {
+        // Runtime patch ordering.
+        assert.isBelow(resolver.compareVersionsIncludingPreRelease('8.0.5', '8.0.19'), 0, '8.0.5 is older than 8.0.19');
+        assert.isAbove(resolver.compareVersionsIncludingPreRelease('8.0.19', '8.0.5'), 0, '8.0.19 is newer than 8.0.5');
+
+        // SDK feature-band patch ordering.
+        assert.isBelow(resolver.compareVersionsIncludingPreRelease('8.0.301', '8.0.311'), 0, '8.0.301 is older than 8.0.311');
+
+        // Pre-release ordering for both runtime and SDK.
+        assert.isBelow(resolver.compareVersionsIncludingPreRelease('9.0.0-rc.1.24431.7', '9.0.0-rc.2.24473.5'), 0, 'rc.1 is older than rc.2');
+        assert.isAbove(resolver.compareVersionsIncludingPreRelease('9.0.0', '9.0.0-rc.2.24473.5'), 0, 'A stable runtime release is newer than its rc');
+        assert.isBelow(resolver.compareVersionsIncludingPreRelease('11.0.100-preview.5.26352.110', '11.0.100-preview.6.26352.110'), 0, 'sdk preview.5 is older than preview.6');
+        assert.equal(resolver.compareVersionsIncludingPreRelease('8.0.19', '8.0.19'), 0, 'Identical versions are equivalent');
+
+        // .NET releases order preview < rc < GA within a base version; semver identifier ordering matches this.
+        assert.isBelow(resolver.compareVersionsIncludingPreRelease('9.0.0-preview.7.24405.7', '9.0.0-rc.1.24431.7'), 0, 'preview is older than rc');
+        assert.isBelow(resolver.compareVersionsIncludingPreRelease('9.0.0-rc.2.24473.5', '9.0.0'), 0, 'rc is older than GA');
+    });
+
     test('Detects if Only Major or Minor Given', async () =>
     {
         assert.equal(resolver.isNonSpecificMajorOrMajorMinorVersion(fullySpecifiedVersion), false, 'It does not think a fully specified version is major.minor only');

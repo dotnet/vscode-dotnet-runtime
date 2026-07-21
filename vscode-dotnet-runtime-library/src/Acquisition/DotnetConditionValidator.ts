@@ -94,7 +94,10 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
             const availableMinor = Number(versionUtils.getMinor(availableVersion, this.workerContext.eventStream, this.workerContext));
             const requestedMinor = Number(versionUtils.getMinor(requestedVersion, this.workerContext.eventStream, this.workerContext));
 
-            if (availableMinor === requestedMinor && requestedPatch)
+            // Use `!== null` rather than a truthy check so a fully specified x.y.0 request (patch 0, which is falsy)
+            // still enters the patch comparison branch. Otherwise x.y.0 would fall through to the minor-only 'else'
+            // branch and, under 'disable'/equal, incorrectly match any x.y.* (and could not distinguish x.y.0 previews).
+            if (availableMinor === requestedMinor && requestedPatch !== null)
             {
                 const availablePatch = this.getPatchOrFeatureBandWithPatch(availableVersion, requirement);
 
@@ -102,7 +105,11 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
                 {
                     // the 'availablePatch' must exist, since the version is from --list-runtimes or --list-sdks, or our internal tracking of installs.
                     case 'equal':
-                        return availablePatch === requestedPatch;
+                        // For an exact match (rollForward: 'disable'), a pre-release build must match exactly: a preview
+                        // is not its RTM, and two different previews of the same patch (e.g. -preview.5 vs -preview.6)
+                        // are not equal. This is a no-op for stable-vs-stable (both suffixes are '').
+                        return availablePatch === requestedPatch &&
+                            versionUtils.getPreReleaseSuffix(availableVersion) === versionUtils.getPreReleaseSuffix(requestedVersion);
                     case 'greater_than_or_equal':
                     case 'latestFeature':
                         return availablePatch! >= requestedPatch;

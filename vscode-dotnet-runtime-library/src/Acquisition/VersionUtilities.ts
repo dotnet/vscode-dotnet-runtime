@@ -336,6 +336,26 @@ export function compareSDKPatchOrPreRelease(versionA: string, versionB: string, 
 
 /**
  *
+ * @remarks Compares two versions that share the same major.minor, ordering by their remaining components (a runtime
+ * patch like 8.0.19 or an SDK feature-band patch like 8.0.301) and then by any pre-release suffix, using semver
+ * semantics (a stable release outranks its pre-release; higher-numbered pre-releases outrank lower ones). Unlike
+ * compareSDKPatchOrPreRelease this works for BOTH runtime and SDK versions because both are valid semver. Returns a
+ * negative number if versionA is older than versionB, 0 if equivalent, and a positive number if versionA is newer.
+ * Falls back to 0 when neither version can be parsed by semver.
+ */
+export function compareVersionsIncludingPreRelease(versionA: string, versionB: string): number
+{
+    const semverA = semver.parse(versionA) ?? semver.coerce(versionA);
+    const semverB = semver.parse(versionB) ?? semver.coerce(versionB);
+    if (semverA && semverB)
+    {
+        return semver.compare(semverA, semverB);
+    }
+    return 0;
+}
+
+/**
+ *
  * @param version the requested version to analyze.
  * @returns true IFF a major release represented as an integer was given. e.g. 6, which we convert to 6.0, OR a major minor was given, e.g. 6.1.
  */

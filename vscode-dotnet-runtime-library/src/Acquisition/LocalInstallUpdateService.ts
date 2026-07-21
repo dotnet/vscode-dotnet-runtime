@@ -189,13 +189,12 @@ export class LocalInstallUpdateService extends IInstallManagementService
                     const parts = install.dotnetInstall.version.split('.');
                     const latestParts = latestInstall.dotnetInstall.version.split('.');
 
-                    // Compare full third component if it exists
+                    // Compare full third component if it exists. compareVersionsIncludingPreRelease is pre-release
+                    // aware, so among installs sharing a patch (e.g. two previews like -preview.5 vs -preview.6, or a
+                    // preview vs its RTM) the genuinely newer one is selected instead of the first encountered.
                     if (parts.length > 2 && latestParts.length > 2)
                     {
-                        const currentPatch = Number(parts[2].split('-')?.[0] ?? 0); // Remove any suffix like -rc
-                        const latestPatch = Number(latestParts[2].split('-')?.[0] ?? 0);
-
-                        if (currentPatch > latestPatch)
+                        if (versionUtils.compareVersionsIncludingPreRelease(install.dotnetInstall.version, latestInstall.dotnetInstall.version) > 0)
                         {
                             latestInstall = install;
                         }
