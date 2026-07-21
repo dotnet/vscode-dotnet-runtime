@@ -4,7 +4,7 @@
 *--------------------------------------------------------------------------------------------*/
 import * as fs from 'fs';
 import open = require('open');
-import { DotnetCoreAcquisitionWorker } from '../Acquisition/DotnetCoreAcquisitionWorker';
+import { getDefaultArchitecture } from '../Acquisition/ArchitectureUtilities';
 import { GetDotnetInstallInfo } from '../Acquisition/DotnetInstall';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import
@@ -86,7 +86,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
         {
             const installInfo = GetDotnetInstallInfo(acquireContext.acquisitionContext.version, acquireContext.acquisitionContext.mode!,
                 acquireContext.acquisitionContext.installType ?? 'local', acquireContext.acquisitionContext.architecture ??
-                DotnetCoreAcquisitionWorker.defaultArchitecture());
+                getDefaultArchitecture());
             // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             const originalEventName = (caughtError?.eventType) ?? 'Unknown';

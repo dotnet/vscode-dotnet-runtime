@@ -8,9 +8,9 @@ import * as path from 'path';
 import { DistroPackagesSearch, DistroSupport, DotnetVersionResolutionError, EventBasedError } from '../EventStream/EventStreamEvents';
 import { CommandExecutor } from '../Utils/CommandExecutor';
 import { READ_SYMLINK_CACHE_DURATION_MS } from './CacheTimeConstants';
+import { DotnetDistroSupportStatus } from './DistroTypes';
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { IDistroDotnetSDKProvider } from './IDistroDotnetSDKProvider';
-import { DotnetDistroSupportStatus } from './LinuxVersionResolver';
 import * as versionUtils from './VersionUtilities';
 
 export class GenericDistroSDKProvider extends IDistroDotnetSDKProvider

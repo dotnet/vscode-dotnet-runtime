@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-import { DotnetCoreAcquisitionWorker } from '../Acquisition/DotnetCoreAcquisitionWorker';
+import { getDefaultArchitecture } from '../Acquisition/ArchitectureUtilities';
 import { DotnetInstall, looksLikeRuntimeVersion } from '../Acquisition/DotnetInstall';
 import { DOTNET_INSTALL_MODE_LIST, DotnetInstallMode } from '../Acquisition/DotnetInstallMode';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
@@ -19,7 +19,7 @@ export function getInstallIdCustomArchitecture(version: string, architecture: st
     }
     else if (architecture === undefined)
     {
-        architecture = DotnetCoreAcquisitionWorker.defaultArchitecture();
+        architecture = getDefaultArchitecture();
     }
 
     return installType === 'global' ? `${version}-global~${architecture}${mode === 'aspnetcore' ? '~aspnetcore' : ''}` :
@@ -97,7 +97,7 @@ export function getAssumedInstallInfo(id: string, mode: DotnetInstallMode | null
     return {
         installId: id,
         version: getVersionFromLegacyInstallId(id),
-        architecture: getArchFromLegacyInstallId(id) ?? DotnetCoreAcquisitionWorker.defaultArchitecture(),
+        architecture: getArchFromLegacyInstallId(id) ?? getDefaultArchitecture(),
         isGlobal: isGlobalLegacyInstallId(id),
 
         // This code is for legacy install strings where the info was not recorded.

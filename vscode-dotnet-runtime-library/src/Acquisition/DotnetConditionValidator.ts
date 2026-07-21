@@ -8,7 +8,7 @@ import { CommandExecutor } from '../Utils/CommandExecutor';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
+import { getDefaultArchitecture } from './ArchitectureUtilities';
 import { DotnetResolver } from './DotnetResolver';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetConditionValidator } from './IDotnetConditionValidator';
@@ -33,7 +33,7 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
     {
         const availableInstalls = await this.resolver.getDotnetInstalls(dotnetExecutablePath, requirement.acquireContext.mode ?? 'runtime', requirement.acquireContext.architecture);
         // Assumption : All APIs we call return only one architecture in the group of installs we get (currently a true assumption)
-        const determinedInstallArchitecture = availableInstalls.at(0)?.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture();
+        const determinedInstallArchitecture = availableInstalls.at(0)?.architecture ?? getDefaultArchitecture();
 
         if (requirement.acquireContext.mode === 'sdk')
         {

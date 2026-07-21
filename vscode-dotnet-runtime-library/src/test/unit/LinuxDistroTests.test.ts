@@ -49,7 +49,7 @@ suite('Linux Distro Logic Unit Tests', function ()
         if (shouldRun)
         {
             const recVersion = await provider.getRecommendedDotnetVersion(installType);
-            const correctVersion = await getLinuxSupportedDotnetSDKVersion(acquisitionContext);
+            const correctVersion = await getLinuxSupportedDotnetSDKVersion(acquisitionContext, pair);
             const correctXXVersion = `${versionUtils.getMajorMinor(correctVersion, acquisitionContext.eventStream, acquisitionContext)}.1xx`;
             assert.equal(mockExecutor.attemptedCommand,
                 `apt-cache -o DPkg::Lock::Timeout=180 search --names-only ^dotnet-sdk-${versionUtils.getMajorMinor(getLatestLinuxDotnet(), acquisitionContext.eventStream, acquisitionContext)}$`, 'Searched for the newest package last with regex'); // this may fail if test not exec'd first

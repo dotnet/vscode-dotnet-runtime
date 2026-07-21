@@ -34,8 +34,8 @@ import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { getDotnetExecutable } from '../Utils/TypescriptUtilities';
 import { WebRequestWorkerSingleton } from '../Utils/WebRequestWorkerSingleton';
+import { getDefaultArchitecture } from './ArchitectureUtilities';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
-import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { DotnetInstall } from './DotnetInstall';
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { IAcquisitionInvoker } from './IAcquisitionInvoker';
@@ -244,7 +244,7 @@ At dotnet-install.ps1:1189 char:5
 
     private async getInstallCommand(version: string, dotnetInstallDir: string, installMode?: DotnetInstallMode, architecture?: string | null): Promise<string>
     {
-        const arch = this.fileUtilities.nodeArchToDotnetArch(architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture(), this.eventStream);
+        const arch = this.fileUtilities.nodeArchToDotnetArch(architecture ?? getDefaultArchitecture(), this.eventStream);
         let args = [
             '-InstallDir', this.escapeFilePath(dotnetInstallDir),
             '-Version', version,

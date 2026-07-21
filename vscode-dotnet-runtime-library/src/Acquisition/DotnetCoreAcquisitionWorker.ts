@@ -52,6 +52,7 @@ import { executeWithLock, getDotnetExecutable, isRunningUnderWSL } from '../Util
 import { DOTNET_INFORMATION_CACHE_DURATION_MS, GLOBAL_LOCK_PING_DURATION_MS, LOCAL_LOCK_PING_DURATION_MS } from './CacheTimeConstants';
 import { directoryProviderFactory } from './DirectoryProviderFactory';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
+import { getDefaultArchitecture } from './ArchitectureUtilities';
 import
 {
     DotnetInstall,
@@ -385,12 +386,12 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
         {
             return 'null';
         }
-        return DotnetCoreAcquisitionWorker.defaultArchitecture();
+        return getDefaultArchitecture();
     }
 
     public static defaultArchitecture(): string
     {
-        return os.arch();
+        return getDefaultArchitecture();
     }
 
     private getErrorOrStringAsEventError(error: any)

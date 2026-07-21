@@ -13,10 +13,10 @@ import { CommandExecutorCommand } from '../Utils/CommandExecutorCommand';
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
+import { DistroVersionPair, DotnetDistroSupportStatus } from './DistroTypes';
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { LinuxPackageCollection } from './LinuxPackageCollection';
-import { DistroVersionPair, DotnetDistroSupportStatus } from './LinuxVersionResolver';
 import { VersionResolver } from './VersionResolver';
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 

@@ -12,8 +12,8 @@ import { ExecutableArchitectureDetector } from '../Utils/ExecutableArchitectureD
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { getDotnetExecutable } from '../Utils/TypescriptUtilities';
+import { getDefaultArchitecture } from './ArchitectureUtilities';
 import { DOTNET_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
-import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetListInfo } from './IDotnetListInfo';
@@ -43,7 +43,7 @@ export class DotnetResolver implements IDotnetResolver
         {
             if (mode === 'sdk')
             {
-                const availableSDKs = await this.getSDKs(dotnetExecutablePath, requestedArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
+                const availableSDKs = await this.getSDKs(dotnetExecutablePath, requestedArchitecture ?? getDefaultArchitecture());
                 if (availableSDKs.length === 0)
                 {
                     return [];
@@ -68,7 +68,7 @@ export class DotnetResolver implements IDotnetResolver
             else
             {
                 // No need to consider SDKs when looking for runtimes as all the runtimes installed with the SDKs will be included in the runtimes list.
-                const availableRuntimes = await this.getRuntimes(dotnetExecutablePath, requestedArchitecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
+                const availableRuntimes = await this.getRuntimes(dotnetExecutablePath, requestedArchitecture ?? getDefaultArchitecture());
 
                 if (availableRuntimes.length === 0)
                 {
@@ -168,7 +168,7 @@ export class DotnetResolver implements IDotnetResolver
         try
         {
             const truePaths = [];
-            suggestedArchitecture ??= DotnetCoreAcquisitionWorker.defaultArchitecture()
+            suggestedArchitecture ??= getDefaultArchitecture()
 
             for (const tentativePath of tentativePaths)
             {
@@ -341,7 +341,7 @@ Please set the PATH to a dotnet host that matches the architecture. An incorrect
             return [];
         }
 
-        requestedArchitecture ??= DotnetCoreAcquisitionWorker.defaultArchitecture()
+        requestedArchitecture ??= getDefaultArchitecture()
 
         const windowsDesktopString = 'Microsoft.WindowsDesktop.App';
         const aspnetCoreString = 'Microsoft.AspNetCore.App';

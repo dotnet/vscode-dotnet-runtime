@@ -5,10 +5,10 @@
  * ------------------------------------------------------------------------------------------ */
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
+import { DistroVersionPair } from './DistroTypes';
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { GenericDistroSDKProvider } from './GenericDistroSDKProvider';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
-import { DistroVersionPair } from './LinuxVersionResolver';
 
 export class DebianDistroSDKProvider extends GenericDistroSDKProvider
 {

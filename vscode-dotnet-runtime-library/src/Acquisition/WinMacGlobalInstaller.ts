@@ -38,8 +38,8 @@ import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IFileUtilities } from '../Utils/IFileUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { executeWithLock, getOSArch } from '../Utils/TypescriptUtilities';
+import { getDefaultArchitecture } from './ArchitectureUtilities';
 import { GLOBAL_LOCK_PING_DURATION_MS, SYSTEM_INFORMATION_CACHE_DURATION_MS } from './CacheTimeConstants';
-import { DotnetCoreAcquisitionWorker } from './DotnetCoreAcquisitionWorker';
 import { DotnetInstall } from './DotnetInstall';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IGlobalInstaller } from './IGlobalInstaller';
@@ -479,7 +479,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
                 this.acquisitionContext.eventStream.post(new MacInstallerFailure(`The installer failed.`, installerResult.status, installerResult.stderr, installerResult.stdout));
                 await this.darwinInstallBackup(installerPath);
 
-                const expectedDotnetHostPath = await this.getExpectedGlobalSDKPath(this.acquisitionContext.acquisitionContext.version, this.acquisitionContext.acquisitionContext.architecture ?? DotnetCoreAcquisitionWorker.defaultArchitecture());
+                const expectedDotnetHostPath = await this.getExpectedGlobalSDKPath(this.acquisitionContext.acquisitionContext.version, this.acquisitionContext.acquisitionContext.architecture ?? getDefaultArchitecture());
                 const expectedInstall = getInstallFromContext(this.acquisitionContext);
                 const validatedInstall = this.acquisitionContext.installationValidator.validateDotnetInstall(expectedInstall, expectedDotnetHostPath, false, false);
                 if (validatedInstall)

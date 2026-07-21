@@ -5,9 +5,9 @@
  * ------------------------------------------------------------------------------------------ */
 import { ICommandExecutor } from '../Utils/ICommandExecutor';
 import { IUtilityContext } from '../Utils/IUtilityContext';
+import { DistroVersionPair } from './DistroTypes';
 import { GenericDistroSDKProvider } from './GenericDistroSDKProvider';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
-import { DistroVersionPair } from './LinuxVersionResolver';
 
 export class RedHatDistroSDKProvider extends GenericDistroSDKProvider
 {

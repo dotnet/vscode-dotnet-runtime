@@ -22,6 +22,7 @@ import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
 import { getRunningDistro, microsoftSupportedDistroIds } from '../Utils/TypescriptUtilities';
 import { DebianDistroSDKProvider } from './DebianDistroSDKProvider';
+import { DistroVersionPair, DotnetDistroSupportStatus } from './DistroTypes';
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { GenericDistroSDKProvider } from './GenericDistroSDKProvider';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
@@ -31,40 +32,7 @@ import { DEBIAN_DISTRO_INFO_KEY, RED_HAT_DISTRO_INFO_KEY } from './StringConstan
 import { VersionResolver } from './VersionResolver';
 import * as versionUtils from './VersionUtilities';
 
-
-/**
- * An enumeration type representing all distros with their versions that we recognize.
- * @remarks
- * Each . in a semver should be represented with _.
- * The string representation of the enum should contain exactly one space that separates the distro, then the version.
- */
-export interface DistroVersionPair
-{
-    distro: string,
-    version: string
-}
-
-/**
- * @remarks
- * Distro support means that the distro provides a dotnet sdk package by default without intervention.
- *
- * Microsoft support means that Microsoft provides packages for the distro but it's not in the distro maintained feed.
- * For Microsoft support, we currently don't support installs of these feeds yet.
- *
- * Partial support does not have any change in behavior from unsupported currently and can mean whatever the distro maintainer wants.
- * But it generally means that the distro and microsoft both do not officially support that version of dotnet.
- *
- * Unknown is a placeholder for development testing and future potential implementation and should not be used by contributors.
- */
-export const enum DotnetDistroSupportStatus
-{
-    Unsupported = 'UNSUPPORTED',
-    Distro = 'DISTRO',
-    Microsoft = 'MICROSOFT',
-    Partial = 'PARTIAL',
-    Unknown = 'UNKNOWN'
-}
-
+export { DistroVersionPair, DotnetDistroSupportStatus } from './DistroTypes';
 
 /**
  * This class is responsible for detecting the distro and version of the Linux OS.
