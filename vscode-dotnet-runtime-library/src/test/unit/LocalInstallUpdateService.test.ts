@@ -168,6 +168,44 @@ suite('LocalInstallUpdateService Unit Tests', function ()
         assert.strictEqual(ownersAdded[0].install.installId, updatedInstall.dotnetInstall.installId, 'Latest install should receive owners');
     });
 
+    test('It selects the RTM over previews with the same runtime patch', async () =>
+    {
+        const onlineStub = {
+            isOnline: async () => true
+        } as unknown as WebRequestWorkerSingleton;
+        (WebRequestWorkerSingleton as unknown as { getInstance: () => WebRequestWorkerSingleton }).getInstance = () => onlineStub;
+
+        const eventStream = new MockEventStream();
+        const extensionState = new MockExtensionContext();
+        extensionState.update('dotnet.latestUpdateDate', new Date(0));
+        const directoryProvider = new TestInstallationDirectoryProvider('/tmp');
+        const currentArch = DotnetCoreAcquisitionWorker.defaultArchitecture();
+        const previewFive = createInstallRecord('11.0.0-preview.5.26352.110', currentArch, 'runtime', ['preview-owner']);
+        const previewSix = createInstallRecord('11.0.0-preview.6.26352.110', currentArch, 'runtime', []);
+        const stable = createInstallRecord('11.0.0', currentArch, 'runtime', []);
+
+        const trackerInstance = LocalUpdateServiceTestTracker.getInstance(eventStream, extensionState);
+        trackerInstance.setInstallSequences([[previewFive, previewSix], [previewFive, previewSix, stable]]);
+
+        const uninstallContexts: IDotnetAcquireContext[] = [];
+        const updateService = new LocalInstallUpdateService(eventStream, extensionState, directoryProvider,
+            async () => undefined,
+            async (uninstallContext: IDotnetAcquireContext) =>
+            {
+                uninstallContexts.push(uninstallContext);
+                return '0';
+            },
+            new MockLoggingObserver(), LocalUpdateServiceTestTracker);
+
+        await updateService.ManageInstalls(0);
+
+        const ownersAdded = trackerInstance.getOwnersAdded();
+        assert.lengthOf(ownersAdded, 1, 'Owners should transfer to the newest install');
+        assert.strictEqual(ownersAdded[0].install.installId, stable.dotnetInstall.installId, 'RTM should be selected over equal-patch previews');
+        assert.sameMembers(uninstallContexts.map(context => context.version), [previewFive.dotnetInstall.version, previewSix.dotnetInstall.version],
+            'Both preview installs should be removed after RTM is selected');
+    });
+
     test('It removes outdated installs when using the real tracker implementation', async () =>
     {
         const onlineStub = {

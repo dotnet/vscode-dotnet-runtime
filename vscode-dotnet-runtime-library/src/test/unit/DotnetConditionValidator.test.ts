@@ -282,4 +282,34 @@ suite('DotnetConditionValidator Unit Tests', function ()
         isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.0', '9.0.0', { acquireContext: runtimeContext, versionSpecRequirement: 'disable' });
         assert.isTrue(isAccepted, 'disable takes the exact matching x.y.0 runtime');
     });
+
+    test('rollForward compares pre-release suffixes when feature-band patches are equal', async () =>
+    {
+        const conditionValidator = new DotnetConditionValidator(acquisitionContext, utilityContext, mockExecutor);
+        const sdkContext = lodash.cloneDeep(acquisitionContext.acquisitionContext);
+        sdkContext.mode = 'sdk';
+        const requirement = { acquireContext: sdkContext, versionSpecRequirement: 'greater_than_or_equal' as const };
+
+        let isAccepted = conditionValidator.stringVersionMeetsRequirement('11.0.100-preview.6.26352.110', '11.0.100-preview.5.26352.110', requirement);
+        assert.isTrue(isAccepted, 'a later preview satisfies an earlier preview request');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('11.0.100-preview.5.26352.110', '11.0.100-preview.6.26352.110', requirement);
+        assert.isFalse(isAccepted, 'an earlier preview does not satisfy a later preview request');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('11.0.100', '11.0.100-preview.6.26352.110', requirement);
+        assert.isTrue(isAccepted, 'the RTM satisfies a preview request for the same feature-band patch');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('11.0.100-preview.6.26352.110', '11.0.100', requirement);
+        assert.isFalse(isAccepted, 'a preview does not satisfy an RTM request for the same feature-band patch');
+
+        const latestPatchRequirement = { acquireContext: sdkContext, versionSpecRequirement: 'latestPatch' as const };
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('11.0.100-preview.5.26352.110', '11.0.100-preview.6.26352.110', latestPatchRequirement);
+        assert.isFalse(isAccepted, 'latestPatch does not roll forward to an earlier preview in the same feature band');
+
+        const runtimeContext = lodash.cloneDeep(acquisitionContext.acquisitionContext);
+        runtimeContext.mode = 'runtime';
+        const runtimeRequirement = { acquireContext: runtimeContext, versionSpecRequirement: 'greater_than_or_equal' as const };
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.0-rc.1.24431.7', '9.0.0-rc.2.24473.5', runtimeRequirement);
+        assert.isFalse(isAccepted, 'an earlier runtime release candidate does not satisfy a later release candidate request');
+    });
 });

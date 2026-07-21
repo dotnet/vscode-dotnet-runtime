@@ -456,6 +456,28 @@ suite('InstallTracker Unit Tests', function ()
 
     }).timeout(defaultTimeoutTime);
 
+    test('It Preserves Pre-Release Suffixes When Converting Legacy Global Install Ids', async () =>
+    {
+        resetExtensionState();
+
+        const tracker = new MockInstallTracker(mockContext.eventStream, mockContext.extensionState);
+        const previewFive = '11.0.100-preview.5.26352.110';
+        const previewSix = '11.0.100-preview.6.26352.110';
+        const previewFiveId = `${previewFive}-global~${os.arch()}`;
+        const previewSixId = `${previewSix}-global~${os.arch()}`;
+        const extensionStateWithLegacyStrings = new MockExtensionContext();
+        extensionStateWithLegacyStrings.update('installed', [previewFiveId, previewSixId]);
+        tracker.setExtensionState(extensionStateWithLegacyStrings);
+
+        const installs = await tracker.getExistingInstalls(mockContext.installDirectoryProvider);
+
+        assert.lengthOf(installs, 2, 'Distinct preview install IDs should remain distinct after migration');
+        assert.sameMembers(installs.map(install => install.dotnetInstall.version), [previewFive, previewSix],
+            'Legacy global preview IDs should retain their complete versions');
+        assert.isTrue(installs.every(install => install.dotnetInstall.isGlobal), 'Migrated records should remain global installs');
+        assert.isTrue(installs.every(install => install.dotnetInstall.installMode === 'sdk'), 'Preview feature-band installs should remain SDK installs');
+    }).timeout(defaultTimeoutTime);
+
     test('It Handles Null Owner Gracefully on Duplicate Install and Removal', async () =>
     {
         resetExtensionState();

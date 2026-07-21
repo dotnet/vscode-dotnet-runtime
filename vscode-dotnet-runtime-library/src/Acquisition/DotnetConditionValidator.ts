@@ -97,6 +97,9 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
             if (availableMinor === requestedMinor && requestedPatch !== null)
             {
                 const availablePatch = this.getPatchOrFeatureBandWithPatch(availableVersion, requirement);
+                const patchComparison = availablePatch === requestedPatch ?
+                    versionUtils.compareVersionsIncludingPreRelease(availableVersion, requestedVersion) :
+                    availablePatch! - requestedPatch;
 
                 switch (adjustedVersionSpec)
                 {
@@ -107,14 +110,14 @@ export class DotnetConditionValidator implements IDotnetConditionValidator
                             versionUtils.getPreReleaseSuffix(availableVersion) === versionUtils.getPreReleaseSuffix(requestedVersion);
                     case 'greater_than_or_equal':
                     case 'latestFeature':
-                        return availablePatch! >= requestedPatch;
+                        return patchComparison >= 0;
                     case 'less_than_or_equal':
-                        return availablePatch! <= requestedPatch;
+                        return patchComparison <= 0;
                     case 'latestPatch':
                         const availableBand = this.getFeatureBand(availableVersion, requirement);
                         const requestedBandStr = requirement.acquireContext.mode === 'sdk' ? versionUtils.getFeatureBandFromVersion(requestedVersion, this.workerContext.eventStream, this.workerContext, false) ?? null : null;
                         const requestedBand = requestedBandStr ? Number(requestedBandStr) : null;
-                        return availablePatch! >= requestedPatch && (availableBand ? availableBand === requestedBand : true);
+                        return patchComparison >= 0 && (availableBand ? availableBand === requestedBand : true);
                 }
             }
             else
