@@ -23,6 +23,9 @@ suite('Install Id Utilities Unit Tests', function ()
 
         const rcId = getInstallIdCustomArchitecture(rcVersion, os.arch(), 'sdk', 'global');
         assert.equal(getVersionFromLegacyInstallId(rcId), rcVersion, 'The full rc version is recovered from the global install id');
+
+        const mixedCaseMarkerId = previewId.replace('-global', '-GLOBAL');
+        assert.equal(getVersionFromLegacyInstallId(mixedCaseMarkerId), previewVersion, 'The full preview version is recovered from a mixed-case global marker');
     });
 
     test('It extracts the version from a stable global install id', async () =>

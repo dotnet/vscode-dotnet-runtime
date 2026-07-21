@@ -126,6 +126,8 @@ suite('Version Utilities Unit Tests', function ()
         assert.equal(resolver.isFullySpecifiedVersion(previewVersion, mockEventStream, mockCtx), true, 'It counts a fully specified preview build as fully specified');
         assert.equal(resolver.isFullySpecifiedVersion(rcVersion, mockEventStream, mockCtx), true, 'It counts a fully specified rc build as fully specified');
         assert.equal(resolver.isFullySpecifiedVersion('-foo', mockEventStream, mockCtx), false, 'A suffix without a numeric version is not fully specified');
+        assert.equal(resolver.isFullySpecifiedVersion('10.0.100-foo', mockEventStream, mockCtx), false, 'An unknown pre-release suffix is not fully specified');
+        assert.equal(resolver.isFullySpecifiedVersion('10.0.100-bar-1.3', mockEventStream, mockCtx), false, 'An unknown compound pre-release suffix is not fully specified');
     });
 
     test('Detects if Fully Specified Preview Version', async () =>
@@ -133,11 +135,16 @@ suite('Version Utilities Unit Tests', function ()
         assert.equal(resolver.isFullySpecifiedPreviewVersion(previewVersion, mockEventStream, mockCtx), true, 'It detects a fully specified preview build');
         assert.equal(resolver.isFullySpecifiedPreviewVersion(rcVersion, mockEventStream, mockCtx), true, 'It detects a fully specified rc build');
         assert.equal(resolver.isFullySpecifiedPreviewVersion('8.0.400-preview.0.24324.5', mockEventStream, mockCtx), true);
+        assert.equal(resolver.isFullySpecifiedPreviewVersion('1.0.100-preview2.1-003177', mockEventStream, mockCtx), true, 'It supports the historical .NET Core preview format');
         assert.equal(resolver.isFullySpecifiedPreviewVersion(fullySpecifiedVersion, mockEventStream, mockCtx), false, 'A stable fully specified version is not a preview');
         assert.equal(resolver.isFullySpecifiedPreviewVersion(featureBandVersion, mockEventStream, mockCtx), false, 'A feature band is not a fully specified preview');
         assert.equal(resolver.isFullySpecifiedPreviewVersion(majorMinorOnly, mockEventStream, mockCtx), false, 'A major.minor is not a fully specified preview');
         assert.equal(resolver.isFullySpecifiedPreviewVersion('11.0-preview.6', mockEventStream, mockCtx), false, 'A partial version with a suffix is not fully specified');
         assert.equal(resolver.isFullySpecifiedPreviewVersion('-foo', mockEventStream, mockCtx), false, 'A suffix without a numeric version is not fully specified');
+        assert.equal(resolver.isFullySpecifiedPreviewVersion('10.0.100-foo', mockEventStream, mockCtx), false, 'An unknown pre-release suffix is not fully specified');
+        assert.equal(resolver.isFullySpecifiedPreviewVersion('10.0.100-bar-1.3', mockEventStream, mockCtx), false, 'An unknown compound pre-release suffix is not fully specified');
+        assert.equal(resolver.isFullySpecifiedPreviewVersion('2.2.100-rel-33220-00', mockEventStream, mockCtx), false, 'A package-only Native suffix is not supported without release metadata');
+        assert.equal(resolver.isFullySpecifiedPreviewVersion('4.8.100-arm64rel-26502-00', mockEventStream, mockCtx), false, 'A package-only Native ARM64 suffix is not supported without release metadata');
     });
 
     test('Strips Pre-Release Suffix From Version', async () =>

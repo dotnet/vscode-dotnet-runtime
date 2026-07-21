@@ -19,6 +19,8 @@ import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { BAD_VERSION } from './StringConstants';
 
 const invalidFeatureBandErrorString = `A feature band couldn't be determined for the requested version: `;
+// Historical evidence for each accepted suffix family is documented in Documentation/version-suffixes.md.
+const historicalDotnetPreReleaseSuffixPattern = /^(?:preview|rc)(?:(?:\.\d+)+|\d+(?:\.\d+)*(?:-(?:\d+(?:-\d+)*|final))?|-\d+(?:-\d+)*)?$/i;
 
 /**
  *
@@ -144,6 +146,10 @@ export function getSDKPatchVersionString(fullySpecifiedVersion: string, eventStr
 }
 
 
+/**
+ *
+ * FullySpecifiedVersion is expected to be a fully specified version, but may be a preview version.
+ */
 export function getSDKFeatureBandOrPatchFromFullySpecifiedVersion(fullySpecifiedVersion: string): string
 {
     const patch: string | undefined = fullySpecifiedVersion.split('.')?.[2]?.substring(1)?.split('-')?.[0];
@@ -275,12 +281,17 @@ function getPreReleaseSuffixStartIndex(version: string): number
  * @param version the requested version to analyze.
  * @returns true IFF version is a fully specified SDK version that also carries a pre-release suffix, e.g.
  * 11.0.100-preview.6.26352.110 or 8.0.100-rc.2.24473.5. The portion before the '-' must itself be a fully
- * specified version (e.g. 11.0.100) and there must be a non-empty suffix after it.
+ * specified version (e.g. 11.0.100) and the suffix must match a historically published .NET format.
  */
 export function isFullySpecifiedPreviewVersion(version: string, eventStream: IEventStream, context: IAcquisitionWorkerContext): boolean
 {
-    return getPreReleaseSuffix(version).length > 0 &&
+    return isHistoricalDotnetPreReleaseSuffix(getPreReleaseSuffix(version)) &&
         isFullySpecifiedVersion(getVersionWithoutPreReleaseSuffix(version), eventStream, context);
+}
+
+function isHistoricalDotnetPreReleaseSuffix(suffix: string): boolean
+{
+    return historicalDotnetPreReleaseSuffixPattern.test(suffix);
 }
 
 /**
@@ -308,6 +319,8 @@ export function isFullySpecifiedVersion(version: string, eventStream: IEventStre
  * -preview.6) sort older than the corresponding stable release and older than higher-numbered pre-releases, matching
  * semver ordering. This lets callers distinguish e.g. 11.0.100-preview.5 from 11.0.100-preview.6, which have the same
  * numeric feature-band patch.
+ * @remarks These comparison functions do not validate supported .NET suffixes. Do not use their result to infer
+ * support for arbitrary SemVer suffixes such as -ci; validate versions with isFullySpecifiedVersion first.
  */
 export function compareSDKPatchOrPreRelease(versionA: string, versionB: string, eventStream: IEventStream, context: IAcquisitionWorkerContext): number
 {
@@ -339,7 +352,8 @@ export function compareSDKPatchOrPreRelease(versionA: string, versionB: string, 
  * semantics (a stable release outranks its pre-release; higher-numbered pre-releases outrank lower ones). Unlike
  * compareSDKPatchOrPreRelease this works for BOTH runtime and SDK versions because both are valid semver. Returns a
  * negative number if versionA is older than versionB, 0 if equivalent, and a positive number if versionA is newer.
- * Falls back to 0 when neither version can be parsed by semver.
+ * Falls back to 0 when neither version can be parsed by semver. This does not make arbitrary SemVer suffixes (for
+ * example, -ci) supported .NET versions; validate versions with isFullySpecifiedVersion before comparing them.
  */
 export function compareVersionsIncludingPreRelease(versionA: string, versionB: string): number
 {

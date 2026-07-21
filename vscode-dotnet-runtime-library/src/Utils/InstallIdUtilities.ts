@@ -68,7 +68,7 @@ export function getVersionFromLegacyInstallId(installId: string): string
     if (isGlobalLegacyInstallId(installId))
     {
         // Global install ids are encoded as `${version}-global~${arch}...` but the version may contain dashes
-        const globalMarkerIndex = installId.indexOf('-global');
+        const globalMarkerIndex = installId.toLowerCase().indexOf('-global');
         if (globalMarkerIndex !== -1)
         {
             return installId.substring(0, globalMarkerIndex);
