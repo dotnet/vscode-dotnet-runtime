@@ -27,6 +27,7 @@ import
 import { DotnetInstallMode } from './DotnetInstallMode';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IVersionResolver } from './IVersionResolver';
+import * as versionUtils from './VersionUtilities';
 
 export class VersionResolver implements IVersionResolver
 {
@@ -169,7 +170,7 @@ export class VersionResolver implements IVersionResolver
             parsedVer = null;
         }
 
-        if (!parsedVer || (version.split('.').length !== 2 && version.split('.').length !== 3))
+        if (!parsedVer || (versionUtils.getVersionWithoutPreReleaseSuffix(version).split('.').length !== 2 && versionUtils.getVersionWithoutPreReleaseSuffix(version).split('.').length !== 3))
         {
             const err = new DotnetVersionResolutionError(new EventCancellationError('DotnetVersionResolutionError',
                 `An invalid version was requested. Version: ${version}`),
