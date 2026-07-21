@@ -16,6 +16,7 @@ import
     DotnetInstallCancelledByUserError,
     DotnetNoInstallerResponseError,
     DotnetUnexpectedInstallerOSError,
+    DotnetUninstallCancelledByUserError,
     EventBasedError,
     EventCancellationError,
     MacInstallerBackupFailure,
@@ -185,6 +186,8 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         const validInstallerStatusCodes = ['0', '1641', '3010']; // Ok, Pending Reboot, + Reboot Starting Now
         const noPermissionStatusCodes = ['1', '5', '1260', '2147942405'];
 
+        this.throwIfUserCancelled(installerResult, install, 'install');
+
         if (validInstallerStatusCodes.includes(installerResult))
         {
             if (this.cleanupInstallFiles)
@@ -192,14 +195,6 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
                 await this.file.wipeDirectory(path.dirname(installerFile), this.acquisitionContext.eventStream);
             }
             return '0'; // These statuses are a success, we don't want to throw.
-        }
-        else if (installerResult === '1602')
-        {
-            // Special code for when user cancels the install
-            const err = new DotnetInstallCancelledByUserError(new EventCancellationError('DotnetInstallCancelledByUserError',
-                `The install of .NET was cancelled by the user. Aborting.`), install);
-            this.acquisitionContext.eventStream.post(err);
-            throw err.error;
         }
         else if (noPermissionStatusCodes.includes(installerResult) && allowRetry)
         {
@@ -209,6 +204,26 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         else
         {
             return installerResult;
+        }
+    }
+
+    /**
+     * Throws a user-cancellation error when the (un)installer reports exit code 1602 (user cancelled),
+     * e.g. by dismissing the elevation prompt. Install and uninstall raise distinct event types so
+     * telemetry can tell them apart; both extend DotnetInstallExpectedAbort, so all observers treat them
+     * identically and there is no behavioral difference from the previous install-only handling.
+     */
+    private throwIfUserCancelled(status: string, install: DotnetInstall, operation: 'install' | 'uninstall'): void
+    {
+        if (status === '1602')
+        {
+            const eventName = operation === 'install' ? 'DotnetInstallCancelledByUserError' : 'DotnetUninstallCancelledByUserError';
+            const cancellation = new EventCancellationError(eventName, `The ${operation} of .NET was cancelled by the user. Aborting.`);
+            const err = operation === 'install'
+                ? new DotnetInstallCancelledByUserError(cancellation, install)
+                : new DotnetUninstallCancelledByUserError(cancellation, install);
+            this.acquisitionContext.eventStream.post(err);
+            throw err.error;
         }
     }
 
@@ -230,6 +245,8 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
             const uninstallArgs = ['/uninstall', '/passive', '/norestart'];
             const commandResult = await this.commandRunner.execute(CommandExecutor.makeCommand(command, uninstallArgs), { timeout: this.acquisitionContext.timeoutSeconds * 1000 }, false);
             this.handleTimeout(commandResult);
+
+            this.throwIfUserCancelled(commandResult.status, installation, 'uninstall');
 
             return commandResult.status;
         }

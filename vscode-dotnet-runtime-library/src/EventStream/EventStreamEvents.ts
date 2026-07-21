@@ -647,7 +647,10 @@ export class DotnetInstallCancelledByUserError extends DotnetInstallExpectedAbor
     public readonly eventName = 'DotnetInstallCancelledByUserError';
 }
 
-
+export class DotnetUninstallCancelledByUserError extends DotnetInstallExpectedAbort
+{
+    public readonly eventName = 'DotnetUninstallCancelledByUserError';
+}
 
 export class DotnetNonZeroInstallerExitCodeError extends DotnetAcquisitionError
 {
