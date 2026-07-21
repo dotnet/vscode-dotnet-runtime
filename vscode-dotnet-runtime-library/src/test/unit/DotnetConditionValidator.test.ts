@@ -236,4 +236,50 @@ suite('DotnetConditionValidator Unit Tests', function ()
         isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.1', '9.0.1', { acquireContext: contextThatCanBeIgnoredExceptMode, versionSpecRequirement: 'disable' });
         assert.isTrue(isAccepted, 'disable only takes the exact match sdk');
     });
+
+    test('rollForward disable distinguishes preview identity', async () =>
+    {
+        const conditionValidator = new DotnetConditionValidator(acquisitionContext, utilityContext, mockExecutor);
+
+        const sdkContext = lodash.cloneDeep(acquisitionContext.acquisitionContext);
+        sdkContext.mode = 'sdk';
+
+        // A different preview of the same feature-band patch must not satisfy an exact request.
+        let isAccepted = conditionValidator.stringVersionMeetsRequirement('11.0.100-preview.5.26352.110', '11.0.100-preview.6.26352.110', { acquireContext: sdkContext, versionSpecRequirement: 'disable' });
+        assert.isNotTrue(isAccepted, 'disable rejects a different preview of the same sdk patch');
+
+        // A stable release must not satisfy an exact preview request (and vice-versa).
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('11.0.100', '11.0.100-preview.6.26352.110', { acquireContext: sdkContext, versionSpecRequirement: 'disable' });
+        assert.isNotTrue(isAccepted, 'disable rejects the RTM when an exact preview is requested');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('11.0.100-preview.6.26352.110', '11.0.100', { acquireContext: sdkContext, versionSpecRequirement: 'disable' });
+        assert.isNotTrue(isAccepted, 'disable rejects a preview when the RTM is requested');
+
+        // The exact same preview satisfies the request.
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('11.0.100-preview.6.26352.110', '11.0.100-preview.6.26352.110', { acquireContext: sdkContext, versionSpecRequirement: 'disable' });
+        assert.isTrue(isAccepted, 'disable takes the exact matching preview sdk');
+
+        // A stable-vs-stable exact match is unaffected by the pre-release identity check.
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('11.0.100', '11.0.100', { acquireContext: sdkContext, versionSpecRequirement: 'disable' });
+        assert.isTrue(isAccepted, 'disable still takes the exact matching stable sdk');
+
+        // Runtime pre-release identity is likewise exact, including for x.y.0 previews (patch 0).
+        const runtimeContext = lodash.cloneDeep(acquisitionContext.acquisitionContext);
+        runtimeContext.mode = 'runtime';
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.0-rc.1.24431.7', '9.0.0-rc.2.24473.5', { acquireContext: runtimeContext, versionSpecRequirement: 'disable' });
+        assert.isNotTrue(isAccepted, 'disable rejects a different preview of the same runtime patch');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.0', '9.0.0-rc.2.24473.5', { acquireContext: runtimeContext, versionSpecRequirement: 'disable' });
+        assert.isNotTrue(isAccepted, 'disable rejects the RTM when an exact runtime preview is requested');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.0-rc.2.24473.5', '9.0.0-rc.2.24473.5', { acquireContext: runtimeContext, versionSpecRequirement: 'disable' });
+        assert.isTrue(isAccepted, 'disable takes the exact matching preview runtime');
+
+        // The x.y.0 guard fix also makes exact stable runtime matching correct (no longer matches any x.y.*).
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.5', '9.0.0', { acquireContext: runtimeContext, versionSpecRequirement: 'disable' });
+        assert.isNotTrue(isAccepted, 'disable does not match a higher patch when x.y.0 is requested');
+
+        isAccepted = conditionValidator.stringVersionMeetsRequirement('9.0.0', '9.0.0', { acquireContext: runtimeContext, versionSpecRequirement: 'disable' });
+        assert.isTrue(isAccepted, 'disable takes the exact matching x.y.0 runtime');
+    });
 });
