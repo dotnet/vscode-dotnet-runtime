@@ -174,5 +174,5 @@ export async function getLinuxSupportedDotnetSDKVersion(context: IAcquisitionWor
 
 export function getLatestLinuxDotnet()
 {
-    return '10.0.100';
+    return '11.0.100';
 }
