@@ -5,7 +5,7 @@
 import * as chai from 'chai';
 import * as os from 'os';
 import { looksLikeRuntimeVersion } from '../../Acquisition/DotnetInstall';
-import { getInstallIdCustomArchitecture, getVersionFromLegacyInstallId } from '../../Utils/InstallIdUtilities';
+import { getAssumedInstallInfo, getInstallIdCustomArchitecture, getVersionFromLegacyInstallId } from '../../Utils/InstallIdUtilities';
 
 const assert = chai.assert;
 
@@ -52,5 +52,10 @@ suite('Install Id Utilities Unit Tests', function ()
         assert.equal(looksLikeRuntimeVersion(stableVersion), false, 'A stable SDK feature-band version is not a runtime version');
         assert.equal(looksLikeRuntimeVersion('8.0.19'), true, 'A stable runtime patch version is a runtime version');
         assert.equal(looksLikeRuntimeVersion('9.0.0-rc.2.24473.5'), true, 'A preview runtime patch version is a runtime version');
+    });
+
+    test('It preserves an explicit install mode when assuming legacy install info', async () =>
+    {
+        assert.equal(getAssumedInstallInfo('8.0.19', 'sdk').installMode, 'sdk');
     });
 });

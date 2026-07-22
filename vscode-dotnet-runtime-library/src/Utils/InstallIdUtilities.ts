@@ -103,7 +103,7 @@ export function getAssumedInstallInfo(id: string, mode: DotnetInstallMode | null
         // This code is for legacy install strings where the info was not recorded.
         // At the time only runtime or sdk was permitted and there were no outlier edge case versions that would be wrong.
         // So this assumption can hold true below. Do not utilize this going forward for new code.
-        installMode: mode ?? isRuntimeInstallId(id) ? 'runtime' : 'sdk'
+        installMode: mode ?? (isRuntimeInstallId(id) ? 'runtime' : 'sdk')
     };
 }
 
