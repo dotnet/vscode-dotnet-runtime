@@ -18,11 +18,13 @@ const featureBandVersion = '7.0.1xx';
 const newestFeatureBandedVersion = '7.0.109';
 const majorOnly = '7';
 const majorMinorOnly = '7.0';
+const previewVersion = '11.0.100-preview.6.26352.110';
 
 const context = new MockExtensionContext();
 const eventStream = new MockEventStream();
 const filePath = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-channel-7-index.json');
 const otherUrlFilePath = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-channel-6-index.json');
+const previewFilePath = path.join(__dirname, '../../..', 'src', 'test', 'mocks', 'mock-channel-11-preview-index.json');
 const timeoutTime = 10000;
 
 suite('Global Installer Resolver Tests', function ()
@@ -83,6 +85,17 @@ suite('Global Installer Resolver Tests', function ()
         {
             assert.include(installerUrl, 'pkg');
         }
+    });
+
+    test('It resolves a fully specified preview SDK', async () =>
+    {
+        const acquisitionContext = getMockAcquisitionContext('sdk', previewVersion);
+        const provider = new GlobalInstallerResolver(acquisitionContext, previewVersion);
+        provider.customWebRequestWorker = new FileWebRequestWorker(previewFilePath);
+
+        assert.equal(await provider.getFullySpecifiedVersion(), previewVersion);
+        assert.include(await provider.getInstallerUrl(), previewVersion);
+        assert.equal(await provider.getInstallerHash(), 'preview-hash');
     });
 
     test('It parses the major format', async () =>

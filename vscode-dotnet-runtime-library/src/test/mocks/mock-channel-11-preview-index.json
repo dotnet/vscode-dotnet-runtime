@@ -1,0 +1,57 @@
+{
+    "channel-version": "11.0",
+    "latest-sdk": "11.0.100-preview.6.26352.110",
+    "releases": [
+        {
+            "sdks": [
+                {
+                    "version": "11.0.100-preview.6.26352.110",
+                    "files": [
+                        {
+                            "name": "dotnet-sdk-11.0.100-preview.6.26352.110-win-x64.exe",
+                            "rid": "win-x64",
+                            "url": "https://download.visualstudio.microsoft.com/dotnet-sdk-11.0.100-preview.6.26352.110-win-x64.exe",
+                            "hash": "preview-hash"
+                        },
+                        {
+                            "name": "dotnet-sdk-11.0.100-preview.6.26352.110-win-x86.exe",
+                            "rid": "win-x86",
+                            "url": "https://download.visualstudio.microsoft.com/dotnet-sdk-11.0.100-preview.6.26352.110-win-x86.exe",
+                            "hash": "preview-hash"
+                        },
+                        {
+                            "name": "dotnet-sdk-11.0.100-preview.6.26352.110-win-arm64.exe",
+                            "rid": "win-arm64",
+                            "url": "https://download.visualstudio.microsoft.com/dotnet-sdk-11.0.100-preview.6.26352.110-win-arm64.exe",
+                            "hash": "preview-hash"
+                        },
+                        {
+                            "name": "dotnet-sdk-11.0.100-preview.6.26352.110-osx-x64.pkg",
+                            "rid": "osx-x64",
+                            "url": "https://download.visualstudio.microsoft.com/dotnet-sdk-11.0.100-preview.6.26352.110-osx-x64.pkg",
+                            "hash": "preview-hash"
+                        },
+                        {
+                            "name": "dotnet-sdk-11.0.100-preview.6.26352.110-osx-arm64.pkg",
+                            "rid": "osx-arm64",
+                            "url": "https://download.visualstudio.microsoft.com/dotnet-sdk-11.0.100-preview.6.26352.110-osx-arm64.pkg",
+                            "hash": "preview-hash"
+                        },
+                        {
+                            "name": "dotnet-sdk-11.0.100-preview.6.26352.110-linux-x64.tar.gz",
+                            "rid": "linux-x64",
+                            "url": "https://download.visualstudio.microsoft.com/dotnet-sdk-11.0.100-preview.6.26352.110-linux-x64.tar.gz",
+                            "hash": "preview-hash"
+                        },
+                        {
+                            "name": "dotnet-sdk-11.0.100-preview.6.26352.110-linux-arm64.tar.gz",
+                            "rid": "linux-arm64",
+                            "url": "https://download.visualstudio.microsoft.com/dotnet-sdk-11.0.100-preview.6.26352.110-linux-arm64.tar.gz",
+                            "hash": "preview-hash"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
