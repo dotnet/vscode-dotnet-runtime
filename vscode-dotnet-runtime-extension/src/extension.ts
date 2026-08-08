@@ -576,27 +576,35 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
     const dotnetUninstallPublicRegistration = vscode.commands.registerCommand(`${commandPrefix}.${commandKeys.uninstallPublic}`, async () =>
     {
+        const compareVersions = (x: InstallRecord, y: InstallRecord): number =>
+        {
+            const xParts = x.dotnetInstall.version.split('.').map(part => Number(part.split('-')[0]));
+            const yParts = y.dotnetInstall.version.split('.').map(part => Number(part.split('-')[0]));
+            const length = Math.max(xParts.length, yParts.length);
+            for (let index = 0; index < length; index++)
+            {
+                const difference = (xParts[index] ?? 0) - (yParts[index] ?? 0);
+                if (difference !== 0)
+                {
+                    return difference;
+                }
+            }
+            return 0;
+        };
+
         const existingInstalls: InstallRecord[] = await InstallTrackerSingleton.getInstance(globalEventStream, vsCodeContext.globalState).getExistingInstalls(directoryProviderFactory(
             'runtime', vsCodeContext.globalStoragePath));
 
-        const menuItems = existingInstalls?.sort(
-            function (x: InstallRecord, y: InstallRecord): number
-            {
-                if (x.dotnetInstall.installMode === y.dotnetInstall.installMode)
-                {
-                    return x.dotnetInstall.version.localeCompare(y.dotnetInstall.version);
-                }
-                return x.dotnetInstall.installMode.localeCompare(y.dotnetInstall.installMode);
-            })?.map(install =>
-            {
-                return {
-                    label: `.NET ${(install.dotnetInstall.installMode === 'sdk' ? 'SDK' : install.dotnetInstall.installMode === 'runtime' ? 'Runtime' : 'ASP.NET Core Runtime')} ${install.dotnetInstall.version}`,
-                    description: `${install.dotnetInstall.architecture ?? ''} | ${install.dotnetInstall.isGlobal ? 'machine-wide' : 'vscode-local'}`,
-                    detail: install.installingExtensions.some(x => x !== null) ? `Used by ${install.installingExtensions.join(', ')}` : ``,
-                    iconPath: install.dotnetInstall.isGlobal ? new vscode.ThemeIcon('shield') : new vscode.ThemeIcon('trash'),
-                    internalId: install.dotnetInstall.installId
-                }
-            });
+        const menuItems = existingInstalls?.sort(compareVersions)?.map(install =>
+        {
+            return {
+                label: `.NET ${(install.dotnetInstall.installMode === 'sdk' ? 'SDK' : install.dotnetInstall.installMode === 'runtime' ? 'Runtime' : 'ASP.NET Core Runtime')} ${install.dotnetInstall.version}`,
+                description: `${install.dotnetInstall.architecture ?? ''} | ${install.dotnetInstall.isGlobal ? 'machine-wide' : 'vscode-local'}`,
+                detail: install.installingExtensions.some(x => x !== null) ? `Used by ${install.installingExtensions.join(', ')}` : ``,
+                iconPath: install.dotnetInstall.isGlobal ? new vscode.ThemeIcon('shield') : new vscode.ThemeIcon('trash'),
+                internalId: install.dotnetInstall.installId
+            }
+        });
 
         if ((menuItems?.length ?? 0) < 1)
         {
