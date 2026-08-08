@@ -912,7 +912,11 @@ ${JSON.stringify(commandContext)}`));
                 return;
             }
 
-            const result = cp.spawnSync(commandContext.command, commandContext.arguments);
+            // commandContext.arguments is either the dotnet process args (string[]) or a SpawnSync options object.
+            // Use the 3-arg overload (empty args + options) for the options case so the two paths are distinct.
+            const result = Array.isArray(commandContext.arguments)
+                ? cp.spawnSync(commandContext.command, commandContext.arguments)
+                : cp.spawnSync(commandContext.command, [], commandContext.arguments);
             const installer = new DotnetCoreDependencyInstaller();
             if (installer.signalIndicatesMissingLinuxDependencies(result.signal!))
             {
