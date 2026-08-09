@@ -214,6 +214,50 @@ export async function isRunningUnderWSL(eventStream?: IEventStream): Promise<boo
 }
 
 /**
+ * Checks if the system is running under Flatpak (including SteamDeck Flatpak).
+ * Checks multiple indicators: env vars, filesystem paths, and /proc/self/cgroup.
+ * @param eventStream Optional event stream for diagnostic logging.
+ */
+export async function isRunningUnderFlatpak(eventStream?: IEventStream): Promise<boolean>
+{
+    if (os.platform() !== 'linux')
+    {
+        return false;
+    }
+
+    // Check environment variables first (fastest)
+    if (process.env.FLATPAK_ID || process.env.FLATPAK_VERSION)
+    {
+        return true;
+    }
+
+    const fileUtils = new FileUtilities();
+
+    // Check for filesystem indicators
+    if (await fileUtils.exists('/run/flatpak'))
+    {
+        return true;
+    }
+
+    if (await fileUtils.exists('/.flatpak-info'))
+    {
+        return true;
+    }
+
+    // Check /proc/self/cgroup as last resort
+    try
+    {
+        const cgroup = await fileUtils.read('/proc/self/cgroup');
+        return cgroup.toLowerCase().includes('flatpak');
+    }
+    catch
+    {
+        // File doesn't exist or can't be read in this environment
+        return false;
+    }
+}
+
+/**
  * Parses the contents of an os-release file into a key/value map.
  *
  * The os-release format (https://man7.org/linux/man-pages/man5/os-release.5.html) is a newline-separated list of

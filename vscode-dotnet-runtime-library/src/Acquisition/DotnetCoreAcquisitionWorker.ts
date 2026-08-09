@@ -48,7 +48,7 @@ import { FileUtilities } from '../Utils/FileUtilities';
 import { IFileUtilities } from '../Utils/IFileUtilities';
 import { getInstallFromContext, getInstallIdCustomArchitecture } from '../Utils/InstallIdUtilities';
 import { IUtilityContext } from '../Utils/IUtilityContext';
-import { executeWithLock, getDotnetExecutable, isRunningUnderWSL } from '../Utils/TypescriptUtilities';
+import { executeWithLock, getDotnetExecutable, isRunningUnderWSL, isRunningUnderFlatpak } from '../Utils/TypescriptUtilities';
 import { DOTNET_INFORMATION_CACHE_DURATION_MS, GLOBAL_LOCK_PING_DURATION_MS, LOCAL_LOCK_PING_DURATION_MS } from './CacheTimeConstants';
 import { directoryProviderFactory } from './DirectoryProviderFactory';
 import { DotnetConditionValidator } from './DotnetConditionValidator';
@@ -416,7 +416,11 @@ export class DotnetCoreAcquisitionWorker implements IDotnetCoreAcquisitionWorker
 
     private async acquireGlobalCore(context: IAcquisitionWorkerContext, globalInstallerResolver: GlobalInstallerResolver, install: DotnetInstall): Promise<string>
     {
-        if (await isRunningUnderWSL(context.eventStream))
+        // WSL is not supported for global SDK installation (but Flatpak may be)
+        const isWSL = await isRunningUnderWSL(context.eventStream);
+        const isFlatpak = await isRunningUnderFlatpak(context.eventStream);
+
+        if (isWSL && !isFlatpak)
         {
             const err = new DotnetWSLSecurityError(new EventCancellationError('DotnetWSLSecurityError',
                 `Automatic .NET SDK Installation is not yet supported in WSL due to VS Code & WSL limitations.

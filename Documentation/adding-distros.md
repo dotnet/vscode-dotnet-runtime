@@ -1,6 +1,13 @@
 # Adding Custom Distros
 
+## Flatpak and Container Support
+
+The extension now supports running within Flatpak containers (including SteamDeck) by detecting container environments and falling back to os-release parsing when package managers are not accessible. If you are adding support for a new distro, please ensure that your changes work in both native and containerized environments.
+
+## Officially Supported Distros
+
 Our initial support for automated .NET installs on Linux includes Ubuntu and Red Hat Enterprise Linux distros. Microsoft has first-party support for these distros as well as a few others, which you can learn more about at our [compatibility documentation](https://github.com/dotnet/core/blob/main/release-notes/8.0/supported-os.md#linux).
+
 
 
 
