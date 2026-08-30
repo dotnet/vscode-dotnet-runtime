@@ -247,13 +247,13 @@ export class MockTrackingWebRequestWorker extends WebRequestWorkerSingleton
     {
         this.requestCount++;
     }
-    protected async makeWebRequest(url: string, ctx: IAcquisitionWorkerContext, shouldThrow = false, retries = 2): Promise<string | undefined>
+    protected async makeWebRequest(url: string, ctx: IAcquisitionWorkerContext, shouldThrow = false, retries = 2, requestOptions?: object): Promise<string | undefined>
     {
         if (!(await this.isUrlCached(url, ctx)))
         {
             this.incrementRequestCount();
         }
-        return super.makeWebRequest(url, ctx, shouldThrow, retries);
+        return super.makeWebRequest(url, ctx, shouldThrow, retries, requestOptions);
     }
 }
 

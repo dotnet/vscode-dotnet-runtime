@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+### Fixed
+
+- Improved offline detection (shared library) so SDK installs no longer fail with a misleading "may be offline" error when DNS resolution fails but the machine is online.
+
 ### Added
 
 - A new error type for when the user tries to install via the Powershell install script on a system where powershell cannot be found [#1212]

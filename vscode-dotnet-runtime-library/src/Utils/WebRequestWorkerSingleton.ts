@@ -153,22 +153,24 @@ export class WebRequestWorkerSingleton
             throw new EventBasedError('AxiosGetFailedWithInvalidURL', `Request to the url ${url} failed, as the URL is invalid.`);
         }
         const timeoutCancelTokenHook = new AbortController();
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        const attemptTimeoutMs = this.attemptTimeoutMs(ctx, (options as any)?.responseType === 'stream');
         // eslint-disable-next-line @typescript-eslint/no-misused-promises
         const timeout = setTimeout(async () =>
         {
             timeoutCancelTokenHook.abort();
-            ctx.eventStream.post(new WebRequestTime(`Timer for request:`, String(this.timeoutMsFromCtx(ctx)), 'false', url, '777')); // 777 for custom abort status. arbitrary
+            ctx.eventStream.post(new WebRequestTime(`Timer for request:`, String(attemptTimeoutMs), 'false', url, '777')); // 777 for custom abort status. arbitrary
             if (!(await this.isOnline(ctx.timeoutSeconds, ctx.eventStream)))
             {
                 const offlineError = new EventBasedError('DotnetOfflineFailure', 'No internet connection detected: Cannot install .NET');
                 ctx.eventStream.post(new DotnetOfflineFailure(offlineError, null));
                 throw offlineError;
             }
-            const formattedError = new Error(`TIMEOUT: The request to ${url} timed out at ${ctx.timeoutSeconds} s. This only occurs if your internet
+            const formattedError = new Error(`TIMEOUT: The request to ${url} timed out at ${attemptTimeoutMs} ms. This only occurs if your internet
  or the url are experiencing connection difficulties; not if the server is being slow to respond. Check your connection, the url, and or increase the timeout value here: https://github.com/dotnet/vscode-dotnet-runtime/blob/main/Documentation/troubleshooting-runtime.md#install-script-timeouts`);
             ctx.eventStream.post(new WebRequestError(new EventBasedError('WebRequestError', formattedError.message, formattedError.stack), null));
             throw formattedError;
-        }, this.timeoutMsFromCtx(ctx));
+        }, attemptTimeoutMs);
 
         // Make the web request
         let response;
@@ -194,7 +196,7 @@ export class WebRequestWorkerSingleton
         ctx.eventStream.post(new WebRequestUsingAltClient(url, `Using fetch over axios, as axios failed. Axios failure: ${this.clientCreationError ? JSON.stringify(this.clientCreationError) : ''}`));
         try
         {
-            const response = await fetch(url, { signal: AbortSignal.timeout(ctx.timeoutSeconds * 1000) });
+            const response = await fetch(url, { signal: AbortSignal.timeout(this.attemptTimeoutMs(ctx, returnDownloadStream)) });
             if (url.includes('json'))
             {
                 const responseJson = await response.json();
@@ -220,11 +222,12 @@ export class WebRequestWorkerSingleton
 
     /**
      * @returns The data from a web request that was hopefully cached. Even if it wasn't cached, we will make an attempt to get the data.
+     * @param requestOptions Optional per-request axios options (e.g. cache settings) merged into the request.
      * @remarks This function is no longer needed as the data is cached either way if you call makeWebRequest, but it was kept to prevent breaking APIs.
      */
-    public async getCachedData(url: string, ctx: IAcquisitionWorkerContext, retriesCount = 2): Promise<string | undefined>
+    public async getCachedData(url: string, ctx: IAcquisitionWorkerContext, retriesCount = 2, requestOptions?: object): Promise<string | undefined>
     {
-        return this.makeWebRequest(url, ctx, true, retriesCount);
+        return this.makeWebRequest(url, ctx, true, retriesCount, requestOptions);
     }
 
     private reportTimeAnalytics(response: any, options: any, url: string, ctx: IAcquisitionWorkerContext, manualFinalTime: bigint | null = null): void
@@ -269,6 +272,34 @@ export class WebRequestWorkerSingleton
         }
     }
 
+    /**
+     * Resolve a hostname to a single address using the system resolver (dns.lookup).
+     * dns.lookup uses the same resolution path as real socket connections (hosts file,
+     * VPN adapters, system DNS), unlike a c-ares Resolver which reads a static DNS server
+     * list and can report a false "offline" (e.g. ECONNREFUSED on Windows) even when the
+     * machine has full connectivity.
+     * @returns the resolved address, or undefined if it could not be resolved within timeoutMs.
+     * @remarks Protected so tests can substitute a fake resolver.
+     */
+    protected async resolveHostnameForOnlineCheck(hostName: string, timeoutMs: number): Promise<string | undefined>
+    {
+        let timer: NodeJS.Timeout | undefined;
+        try
+        {
+            return await Promise.race([
+                dns.promises.lookup(hostName).then(({ address }) => address),
+                new Promise<string | undefined>(resolve => { timer = setTimeout(() => resolve(undefined), timeoutMs); })
+            ]);
+        }
+        finally
+        {
+            if (timer)
+            {
+                clearTimeout(timer);
+            }
+        }
+    }
+
     public async isOnline(timeoutSec: number, eventStream: IEventStream): Promise<boolean>
     {
         if (process.env.DOTNET_INSTALL_TOOL_OFFLINE === '1')
@@ -276,21 +307,27 @@ export class WebRequestWorkerSingleton
             return false;
         }
 
-        const microsoftServerHostName = 'www.microsoft.com';
-        const expectedDNSResolutionTimeMs = Math.max(timeoutSec * 2, 100); // Assumption: DNS resolution should take less than 1/50th of the time it'd take to download .NET.
-        // ... 100 ms is there as a default to prevent the dns resolver from throwing a runtime error if the user sets timeoutSeconds to 0.
-
-        const dnsResolver = new dns.promises.Resolver({ timeout: expectedDNSResolutionTimeMs });
-        const couldConnect = await dnsResolver.resolve(microsoftServerHostName).then(() =>
+        let address: string | undefined;
+        try
         {
-            return true;
-        }).catch((error: any) =>
+            // ~1/50th of the download budget, with a 5s floor. Previously the budget was timeoutSec*2
+            // (1.2s at the default 600s) — far below the 1/50th the original comment described — and used
+            // a c-ares Resolver that can misdetect "offline" on networks where dns.lookup works fine.
+            address = await this.resolveHostnameForOnlineCheck('www.microsoft.com', Math.max(timeoutSec * 20, 5000));
+        }
+        catch (error: any)
         {
             eventStream.post(new OfflineDetectionLogicTriggered((error as EventCancellationError), `DNS resolution failed at microsoft.com, ${JSON.stringify(error)}.`));
             return false;
-        });
+        }
 
-        return couldConnect;
+        if (!address)
+        {
+            eventStream.post(new OfflineDetectionLogicTriggered(new EventCancellationError('OfflineDetectionLogicTriggered', 'DNS resolution timed out at microsoft.com.'), `DNS resolution timed out at microsoft.com.`));
+            return false;
+        }
+
+        return true;
     }
     /**
      *
@@ -416,9 +453,9 @@ export class WebRequestWorkerSingleton
     private async getAxiosOptions(ctx: IAcquisitionWorkerContext, numRetries: number, furtherOptions?: object, keepAlive = true): Promise<object>
     {
         const proxyAgent = await this.GetProxyAgentIfNeeded(ctx);
-
         const options: object = {
-            timeout: this.timeoutMsFromCtx(ctx),
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            timeout: this.attemptTimeoutMs(ctx, ((furtherOptions as any)?.responseType === 'stream')),
             'axios-retry': { retries: numRetries },
             ...(keepAlive && { headers: { 'Connection': 'keep-alive' } }),
             ...(proxyAgent !== null && { proxy: false }),
@@ -433,13 +470,14 @@ export class WebRequestWorkerSingleton
      *
      * @param throwOnError Should we throw if the connection fails, there's a bad URL passed in, or something else goes wrong?
      * @param numRetries The number of retry attempts if the url is not giving a good response.
+     * @param requestOptions Optional per-request axios options (e.g. cache settings) merged into the request.
      * @returns The data returned from a get request to the url. It may be of string type, but it may also be of another type if the return result is convert-able (e.g. JSON.)
      * @remarks protected for ease of testing.
      */
-    protected async makeWebRequest(url: string, ctx: IAcquisitionWorkerContext, throwOnError: boolean, numRetries: number): Promise<string | undefined>
+    protected async makeWebRequest(url: string, ctx: IAcquisitionWorkerContext, throwOnError: boolean, numRetries: number, requestOptions?: object): Promise<string | undefined>
     {
         ctx.eventStream.post(new WebRequestInitiated(`Making Web Request For ${url}`));
-        const options = await this.getAxiosOptions(ctx, numRetries);
+        const options = { ...await this.getAxiosOptions(ctx, numRetries), ...requestOptions };
 
         try
         {
@@ -493,5 +531,25 @@ If you're on a proxy and disable registry access, you must set the proxy in our 
     private timeoutMsFromCtx(ctx: IAcquisitionWorkerContext): number
     {
         return ctx?.timeoutSeconds * 1000;
+    }
+
+    /**
+     * The timeout to use for a single request attempt. Downloads (streamed responses) keep the
+     * full user-configured budget so large installers aren't cut off on slow connections, while
+     * non-download requests use a bounded per-attempt timeout so a hung connection (e.g. one
+     * routed through a broken proxy) fails quickly and falls back to the native fetch client.
+     */
+    private attemptTimeoutMs(ctx: IAcquisitionWorkerContext, isStreaming: boolean): number
+    {
+        if (isStreaming)
+        {
+            return this.timeoutMsFromCtx(ctx);
+        }
+        // 30_000 ms (30s) is the max time to wait on a single non-download request attempt before
+        // giving up on that attempt (it is then retried via the native fetch fallback). This prevents
+        // a hung connection — e.g. one routed through a broken/partial proxy — from blocking for the
+        // full user-configured timeout (default 600s). Streaming downloads keep the full budget so
+        // large installers aren't cut off.
+        return Math.min(this.timeoutMsFromCtx(ctx), 30_000);
     }
 }

@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+### Fixed
 
+- Improved offline detection so .NET installs no longer fail with a misleading "may be offline" error on machines where the c-ares DNS resolver fails but the system is online (e.g. VPN / proxy / hosts-file setups). Hung network requests now also fall back to the native fetch client quickly instead of waiting for the full install timeout.
 
 ## [3.1.0] - 2026-5
 
