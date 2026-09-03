@@ -373,7 +373,6 @@
     "devDependencies": {
         "@types/chai": "^4.3.5",
         "@types/chai-as-promised": "^7.1.8",
-        "@types/glob": "^7.2.0",
         "@types/mocha": "^9.0.0",
         "@types/node": "^22.19.9",
         "@types/source-map-support": "^0.5.10",
@@ -382,7 +381,7 @@
         "@vscode/vsce": "^3.7.1",
         "chai": "4.3.4",
         "copy-webpack-plugin": "^14.0.0",
-        "glob": "^7.2.0",
+        "glob": "^13.0.6",
         "mocha": "^11.7.5",
         "rimraf": "^6.1.3",
         "ts-loader": "^9.5.1",
