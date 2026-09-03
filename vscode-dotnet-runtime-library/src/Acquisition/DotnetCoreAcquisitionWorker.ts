@@ -684,7 +684,7 @@ Other dependents remain.`));
             const subDirectoryPaths = (await fs.promises.readdir(folderPath, { withFileTypes: true })).filter(entry => entry.isDirectory()).map(entry => { return path.join(folderPath, entry.name) });
             for (const fullSubDirectoryPath of subDirectoryPaths)
             {
-                if (await FileUtilities.fileIsOpen(path.join(fullSubDirectoryPath, getDotnetExecutable()), eventStream))
+                if (await FileUtilities.fileIsOpen(path.join(fullSubDirectoryPath, getDotnetExecutable()), eventStream)) // CodeQL [SM03609] the path combines an enumerated child of the install root with a constant executable name.
                 {
                     eventStream.post(new DotnetUninstallSkipped(`Not uninstalling .NET, as it's in use, at ${folderPath}.`));
                     continue;

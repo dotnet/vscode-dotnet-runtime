@@ -71,7 +71,7 @@ You will need to restart VS Code after these changes. If PowerShell is still not
             try
             {
                 let powershellReference = 'powershell.exe';
-                let windowsFullCommand = `${powershellReference} -NoProfile -NonInteractive -NoLogo -ExecutionPolicy bypass -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; & ${installCommand} }"`;
+                let windowsFullCommand = `${powershellReference} -NoProfile -NonInteractive -NoLogo -ExecutionPolicy bypass -Command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; & ${installCommand} }"`; // CodeQL [SM03609] powershellReference is discovered locally and installCommand contains only validated options and escaped paths.
                 if (winOS)
                 {
                     powershellReference = await this.verifyPowershellCanRun(install);
@@ -246,8 +246,8 @@ At dotnet-install.ps1:1189 char:5
     {
         const arch = this.fileUtilities.nodeArchToDotnetArch(architecture ?? getDefaultArchitecture(), this.eventStream);
         let args = [
-            '-InstallDir', this.escapeFilePath(dotnetInstallDir),
-            '-Version', version,
+            '-InstallDir', this.escapeFilePath(dotnetInstallDir), // CodeQL [SM03609] the install directory is selected by the extension and escaped for the target shell.
+            '-Version', version, // CodeQL [SM03609] VersionResolver restricts this value to a version published in the .NET releases manifest.
             '-Verbose'
         ];
         if (installMode === 'runtime' || !installMode)
@@ -264,7 +264,7 @@ At dotnet-install.ps1:1189 char:5
         }
 
         const scriptPath = await this.scriptWorker.getDotnetInstallScriptPath();
-        return `${this.escapeFilePath(scriptPath)} ${args.join(' ')}`;
+        return `${this.escapeFilePath(scriptPath)} ${args.join(' ')}`; // CodeQL [SM03609] paths are shell-escaped and all remaining arguments are validated enums or manifest versions.
     }
 
     private escapeFilePath(pathToEsc: string): string
@@ -272,7 +272,7 @@ At dotnet-install.ps1:1189 char:5
         if (os.platform() === 'win32')
         {
             // Need to escape apostrophes with two apostrophes
-            const dotnetInstallDirEscaped = pathToEsc.replace(/'/g, `''`);
+            const dotnetInstallDirEscaped = pathToEsc.replace(/'/g, `''`); // CodeQL [SM03609] embedded apostrophes are escaped before the path is enclosed in PowerShell single quotes.
             // Surround with single quotes instead of double quotes (see https://github.com/dotnet/cli/issues/11521)
             return `'${dotnetInstallDirEscaped}'`;
         }

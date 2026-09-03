@@ -3,7 +3,9 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
+import * as fs from 'fs';
 import * as os from 'os';
+import * as path from 'path';
 import { FileUtilities } from '../../Utils/FileUtilities';
 import { MockEventStream } from '../mocks/MockObjects';
 
@@ -57,6 +59,32 @@ suite('FileUtilities Unit Tests', function ()
             // platform-agnostic fs.promises.access guard at the top.
             const result = await FileUtilities.fileIsOpen('C:\\nonexistent\\dotnet-test-abc123.exe');
             assert.isFalse(result, 'fileIsOpen should return false for a non-existent file on Windows');
+        });
+
+        test('passes Unix file paths to lsof without shell interpretation', async function ()
+        {
+            if (os.platform() === 'win32')
+            {
+                this.skip();
+            }
+
+            const uniqueName = `dotnet-file-open-${process.pid}-${Date.now()}`;
+            const markerPath = path.resolve(`${uniqueName}-marker`);
+            const filePath = path.join(os.tmpdir(), `${uniqueName};touch ${path.basename(markerPath)}`);
+
+            try
+            {
+                await fs.promises.writeFile(filePath, '');
+                const result = await FileUtilities.fileIsOpen(filePath);
+
+                assert.isFalse(result, 'A closed file should not be reported as busy');
+                assert.isFalse(fs.existsSync(markerPath), 'The file path must not be interpreted by a shell');
+            }
+            finally
+            {
+                await fs.promises.rm(filePath, { force: true });
+                await fs.promises.rm(markerPath, { force: true });
+            }
         });
     });
 });

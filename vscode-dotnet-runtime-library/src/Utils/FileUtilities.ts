@@ -3,7 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 * Licensed under the MIT License. See License.txt in the project root for license information.
 * ------------------------------------------------------------------------------------------ */
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import * as crypto from 'crypto';
 import * as eol from 'eol';
 import * as fs from 'fs';
@@ -78,7 +78,8 @@ export class FileUtilities extends IFileUtilities
             eventStream?.post(new EmptyDirectoryToWipe(`The directory ${directoryToWipe} did not exist, so it was not wiped.`))
             return;
         }
-        else if (verifyDotnetNotInUse && await FileUtilities.fileIsOpen(path.join(directoryToWipe, getDotnetExecutable()), eventStream))
+        else if (verifyDotnetNotInUse &&
+            await FileUtilities.fileIsOpen(path.join(directoryToWipe, getDotnetExecutable()), eventStream)) // CodeQL [SM03609] directoryToWipe is an extension-owned installation directory and the executable name is constant.
         {
             return;
         }
@@ -285,7 +286,7 @@ export class FileUtilities extends IFileUtilities
                 // 10s timeout: targeted lsof queries complete in <1s on normal systems.
                 // Timeout acts as a safety net for heavily loaded systems (300+ processes).
                 // If killed, we assume file is busy to prevent deleting in-use runtimes.
-                return promisify(exec)(`lsof -n ${filePath}`, { timeout: 10000 }).then(
+                return promisify(execFile)('lsof', ['-n', filePath], { timeout: 10000 }).then(
                     fulfilled =>
                     {
                         const lines = fulfilled?.stdout?.toString().split('\n');
