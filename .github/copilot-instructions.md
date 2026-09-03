@@ -96,24 +96,22 @@ When asked to update dependencies, follow this process:
 ```bash
 # Update all components in order
 cd <repo-root>
-npm update && yarn install && yarn upgrade
+npm update && npx rimraf node_modules && yarn install && yarn upgrade
 
 cd vscode-dotnet-runtime-library
-npm update && yarn install && yarn upgrade
+npm update && npx rimraf node_modules && yarn install && yarn upgrade
 
 cd ../vscode-dotnet-runtime-extension
-npm update && yarn install && yarn upgrade
-
-cd ../vscode-dotnet-runtime-library
-npm update && yarn upgrade
+npm update && npx rimraf node_modules && yarn install && yarn upgrade
 
 cd ../sample
-npm update && yarn upgrade
+npm update && npx rimraf node_modules && yarn install && yarn upgrade
 
 cd ../vscode-dotnet-sdk-extension
-npm update && yarn upgrade
+npm update && npx rimraf node_modules && yarn install && yarn upgrade
 
 cd ..
+
 ./build.sh  # or build.cmd on Windows
 ```
 

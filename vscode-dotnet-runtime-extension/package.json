@@ -362,7 +362,7 @@
         "webpack": "webpack --mode development"
     },
     "dependencies": {
-        "axios": "^1.13.6",
+        "axios": "^1.15.1",
         "axios-cache-interceptor": "^1.11.4",
         "axios-retry": "^3.9.1",
         "https-proxy-agent": "^7.0.2",
@@ -389,6 +389,14 @@
         "webpack": "^5.88.2",
         "webpack-cli": "^4.9.1",
         "webpack-permissions-plugin": "^1.0.9"
+    },
+    "overrides": {
+        "fast-uri": "^3.1.2",
+        "serialize-javascript": "^7.0.3"
+    },
+    "resolutions": {
+        "fast-uri": "^3.1.2",
+        "serialize-javascript": "^7.0.3"
     },
     "__metadata": {
         "id": "1aab81a1-b3d9-4aef-976b-577d5d90fe3f",
