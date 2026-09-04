@@ -4,7 +4,7 @@
 
 "@babel/runtime@^7.15.4":
   version "7.29.7"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@babel/runtime/-/runtime-7.29.7.tgz#12022450c45a4da6d8d8287b18a4ff2ddb23f768"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@babel/runtime/-/runtime-7.29.7.tgz"
   integrity sha1-EgIkUMRaTabY2Ch7GKT/Ldsj92g=
 
 "@discoveryjs/json-ext@^0.5.0":
@@ -23,11 +23,6 @@
     strip-ansi-cjs "npm:strip-ansi@^6.0.1"
     wrap-ansi "^8.1.0"
     wrap-ansi-cjs "npm:wrap-ansi@^7.0.0"
-
-"@isaacs/cliui@^9.0.0":
-  version "9.0.0"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@isaacs/cliui/-/cliui-9.0.0.tgz#4d0a3f127058043bf2e7ee169eaf30ed901302f3"
-  integrity sha1-TQo/EnBYBDvy5+4Wnq8w7ZATAvM=
 
 "@jridgewell/gen-mapping@^0.3.5":
   version "0.3.13"
@@ -62,97 +57,6 @@
   dependencies:
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
-
-"@microsoft/1ds-core-js@^4.4.1":
-  version "4.4.3"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@microsoft/1ds-core-js/-/1ds-core-js-4.4.3.tgz#e2e540c672e2dd5f06f47f626138ab560e40d73e"
-  integrity sha1-4uVAxnLi3V8G9H9iYTirVg5A1z4=
-  dependencies:
-    "@microsoft/applicationinsights-core-js" "3.4.3"
-    "@microsoft/applicationinsights-shims" "3.0.1"
-    "@microsoft/dynamicproto-js" "^2.0.3"
-    "@nevware21/ts-async" ">= 0.5.5 < 0.6.0"
-    "@nevware21/ts-utils" ">= 0.14.0 < 2.x"
-
-"@microsoft/1ds-post-js@^4.4.1":
-  version "4.4.3"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@microsoft/1ds-post-js/-/1ds-post-js-4.4.3.tgz#ff72c3e74e4d8c4910dfeab40da98e5341fd4873"
-  integrity sha1-/3LD505NjEkQ3+q0DamOU0H9SHM=
-  dependencies:
-    "@microsoft/applicationinsights-core-js" "3.4.3"
-    "@microsoft/applicationinsights-shims" "3.0.1"
-    "@microsoft/dynamicproto-js" "^2.0.3"
-    "@nevware21/ts-async" ">= 0.5.5 < 0.6.0"
-    "@nevware21/ts-utils" ">= 0.14.0 < 2.x"
-
-"@microsoft/applicationinsights-channel-js@3.4.3":
-  version "3.4.3"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@microsoft/applicationinsights-channel-js/-/applicationinsights-channel-js-3.4.3.tgz#96fe9a13f5c63331f68c03fe61fca8d273fced7f"
-  integrity sha1-lv6aE/XGMzH2jAP+Yfyo0nP87X8=
-  dependencies:
-    "@microsoft/applicationinsights-core-js" "3.4.3"
-    "@microsoft/applicationinsights-shims" "3.0.1"
-    "@microsoft/dynamicproto-js" "^2.0.3"
-    "@nevware21/ts-async" ">= 0.5.5 < 0.6.0"
-    "@nevware21/ts-utils" ">= 0.14.0 < 2.x"
-
-"@microsoft/applicationinsights-common@^3.4.1":
-  version "3.4.3"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@microsoft/applicationinsights-common/-/applicationinsights-common-3.4.3.tgz#820ec1c8e3705fb350b8974531cea53bff8a856b"
-  integrity sha1-gg7ByONwX7NQuJdFMc6lO/+KhWs=
-  dependencies:
-    "@microsoft/applicationinsights-core-js" "3.4.3"
-    "@microsoft/applicationinsights-shims" "3.0.1"
-    "@microsoft/dynamicproto-js" "^2.0.3"
-    "@nevware21/ts-utils" ">= 0.14.0 < 2.x"
-
-"@microsoft/applicationinsights-core-js@3.4.3", "@microsoft/applicationinsights-core-js@^3.4.1":
-  version "3.4.3"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@microsoft/applicationinsights-core-js/-/applicationinsights-core-js-3.4.3.tgz#dad24a7f957881fb9bab9643876afa5b0b39e0ba"
-  integrity sha1-2tJKf5V4gfubq5ZDh2r6Wws54Lo=
-  dependencies:
-    "@microsoft/applicationinsights-shims" "3.0.1"
-    "@microsoft/dynamicproto-js" "^2.0.3"
-    "@nevware21/ts-async" ">= 0.5.5 < 0.6.0"
-    "@nevware21/ts-utils" ">= 0.14.0 < 2.x"
-
-"@microsoft/applicationinsights-shims@3.0.1":
-  version "3.0.1"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@microsoft/applicationinsights-shims/-/applicationinsights-shims-3.0.1.tgz#3865b73ace8405b9c4618cc5c571f2fe3876f06f"
-  integrity sha1-OGW3Os6EBbnEYYzFxXHy/jh28G8=
-  dependencies:
-    "@nevware21/ts-utils" ">= 0.9.4 < 2.x"
-
-"@microsoft/applicationinsights-web-basic@^3.4.1":
-  version "3.4.3"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@microsoft/applicationinsights-web-basic/-/applicationinsights-web-basic-3.4.3.tgz#26ad69ae1cd054c8d430709001e2552936fa754d"
-  integrity sha1-Jq1prhzQVMjUMHCQAeJVKTb6dU0=
-  dependencies:
-    "@microsoft/applicationinsights-channel-js" "3.4.3"
-    "@microsoft/applicationinsights-core-js" "3.4.3"
-    "@microsoft/applicationinsights-shims" "3.0.1"
-    "@microsoft/dynamicproto-js" "^2.0.3"
-    "@nevware21/ts-async" ">= 0.5.5 < 0.6.0"
-    "@nevware21/ts-utils" ">= 0.14.0 < 2.x"
-
-"@microsoft/dynamicproto-js@^2.0.3":
-  version "2.0.5"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@microsoft/dynamicproto-js/-/dynamicproto-js-2.0.5.tgz#f4d08b0b06c570d69ead7cd2abaf414025084c67"
-  integrity sha1-9NCLCwbFcNaerXzSq69BQCUITGc=
-  dependencies:
-    "@nevware21/ts-utils" ">= 0.14.0 < 2.x"
-
-"@nevware21/ts-async@>= 0.5.5 < 0.6.0":
-  version "0.5.5"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@nevware21/ts-async/-/ts-async-0.5.5.tgz#509648e3c3c3aa9ab613c00c71eee4fe9bd8a3c3"
-  integrity sha1-UJZI48PDqpq2E8AMce7k/pvYo8M=
-  dependencies:
-    "@nevware21/ts-utils" ">= 0.12.2 < 2.x"
-
-"@nevware21/ts-utils@>= 0.12.2 < 2.x", "@nevware21/ts-utils@>= 0.14.0 < 2.x", "@nevware21/ts-utils@>= 0.9.4 < 2.x":
-  version "0.16.0"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@nevware21/ts-utils/-/ts-utils-0.16.0.tgz#e4a39c8eb122e78112315c79a00916238b7f3c4c"
-  integrity sha1-5KOcjrEi54ESMVx5oAkWI4t/PEw=
 
 "@pkgjs/parseargs@^0.11.0":
   version "0.11.0"
@@ -193,19 +97,6 @@
   dependencies:
     undici-types "~6.21.0"
 
-"@types/semver@^7.5.0":
-  version "7.8.0"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/semver/-/semver-7.8.0.tgz#0bfe3ec51f5e9615bc317174cd5b88ea08b7fc2f"
-  integrity sha1-C/4+xR9elhW8MXF0zVuI6gi3/C8=
-
-"@types/shelljs@^0.8.9":
-  version "0.8.17"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/shelljs/-/shelljs-0.8.17.tgz#8b21b8f77015af263a7e3e5093ff2b77320e45d2"
-  integrity sha1-iyG493AVryY6fj5Qk/8rdzIORdI=
-  dependencies:
-    "@types/node" "*"
-    glob "^11.0.3"
-
 "@types/source-map-support@^0.5.10":
   version "0.5.10"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/source-map-support/-/source-map-support-0.5.10.tgz"
@@ -218,23 +109,7 @@
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@types/vscode/-/vscode-1.134.0.tgz"
   integrity sha1-RSX79couK+qY5gp2jFw2dRJYzL8=
 
-"@vscode/extension-telemetry@^1.5.1":
-  version "1.5.2"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/extension-telemetry/-/extension-telemetry-1.5.2.tgz#2ac2f6de455658e260180fe5eabf73bcd6da5146"
-  integrity sha1-KsL23kVWWOJgGA/l6r9zvNbaUUY=
-  dependencies:
-    "@microsoft/1ds-core-js" "^4.4.1"
-    "@microsoft/1ds-post-js" "^4.4.1"
-    "@microsoft/applicationinsights-common" "^3.4.1"
-    "@microsoft/applicationinsights-core-js" "^3.4.1"
-    "@microsoft/applicationinsights-web-basic" "^3.4.1"
-
-"@vscode/sudo-prompt@^9.3.2":
-  version "9.3.2"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/sudo-prompt/-/sudo-prompt-9.3.2.tgz#692ba38df40bd3502ccc4e9f099fbbaedbd5f04e"
-  integrity sha1-aSujjfQL01AszE6fCZ+7rtvV8E4=
-
-"@vscode/test-electron@^2.3.9", "@vscode/test-electron@^2.4.1":
+"@vscode/test-electron@^2.3.9":
   version "2.5.2"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@vscode/test-electron/-/test-electron-2.5.2.tgz"
   integrity sha1-99QHjoIwzpyUMi8qKcwWwXlUCF0=
@@ -245,7 +120,7 @@
     ora "^8.1.0"
     semver "^7.6.2"
 
-"@webassemblyjs/ast@1.14.1", "@webassemblyjs/ast@^1.14.1":
+"@webassemblyjs/ast@^1.14.1", "@webassemblyjs/ast@1.14.1":
   version "1.14.1"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@webassemblyjs/ast/-/ast-1.14.1.tgz"
   integrity sha1-qfagfysDyVyNOMRTah/ftSH/VbY=
@@ -346,7 +221,7 @@
     "@webassemblyjs/wasm-gen" "1.14.1"
     "@webassemblyjs/wasm-parser" "1.14.1"
 
-"@webassemblyjs/wasm-parser@1.14.1", "@webassemblyjs/wasm-parser@^1.14.1":
+"@webassemblyjs/wasm-parser@^1.14.1", "@webassemblyjs/wasm-parser@1.14.1":
   version "1.14.1"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/@webassemblyjs/wasm-parser/-/wasm-parser-1.14.1.tgz"
   integrity sha1-s+E/GJNgXKeLUsaOVM9qhl+Qufs=
@@ -398,17 +273,17 @@ acorn@^8.15.0, acorn@^8.16.0:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/acorn/-/acorn-8.18.0.tgz"
   integrity sha1-T68BstbTJr/u2XrqH1IiC19MGUA=
 
+agent-base@^7.1.0, agent-base@^7.1.2:
+  version "7.1.4"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/agent-base/-/agent-base-7.1.4.tgz"
+  integrity sha1-48121MVI7oldPD/Y3B9sW5Ay56g=
+
 agent-base@6:
   version "6.0.2"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/agent-base/-/agent-base-6.0.2.tgz"
   integrity sha1-Sf/1hXfP7j83F2/qtMIuAPhtf3c=
   dependencies:
     debug "4"
-
-agent-base@^7.1.0, agent-base@^7.1.2:
-  version "7.1.4"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/agent-base/-/agent-base-7.1.4.tgz"
-  integrity sha1-48121MVI7oldPD/Y3B9sW5Ay56g=
 
 ajv-formats@^2.1.1:
   version "2.1.1"
@@ -424,7 +299,7 @@ ajv-keywords@^5.1.0:
   dependencies:
     fast-deep-equal "^3.1.3"
 
-ajv@^8.0.0, ajv@^8.9.0:
+ajv@^8.0.0, ajv@^8.8.2, ajv@^8.9.0:
   version "8.20.0"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/ajv/-/ajv-8.20.0.tgz"
   integrity sha1-MEs2Nq3Yi6fZNnYN1Q7OAG3qlfk=
@@ -473,7 +348,7 @@ asynckit@^0.4.0:
 
 axios-cache-interceptor@^1.11.4:
   version "1.12.3"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/axios-cache-interceptor/-/axios-cache-interceptor-1.12.3.tgz#44fe33a20ea015ba84b0af7f66ee5b2b2746f30c"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/axios-cache-interceptor/-/axios-cache-interceptor-1.12.3.tgz"
   integrity sha1-RP4zog6gFbqEsK9/Zu5bKydG8ww=
   dependencies:
     cache-parser "^1.2.6"
@@ -484,13 +359,13 @@ axios-cache-interceptor@^1.11.4:
 
 axios-retry@^3.9.1:
   version "3.9.1"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/axios-retry/-/axios-retry-3.9.1.tgz#c8924a8781c8e0a2c5244abf773deb7566b3830d"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/axios-retry/-/axios-retry-3.9.1.tgz"
   integrity sha1-yJJKh4HI4KLFJEq/dz3rdWazgw0=
   dependencies:
     "@babel/runtime" "^7.15.4"
     is-retry-allowed "^2.2.0"
 
-axios@^1.15.1:
+axios@^1.15.1, axios@^1.19.0:
   version "1.20.0"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/axios/-/axios-1.20.0.tgz"
   integrity sha1-UVUTRFqmDnHQS2UhymIQgpzLR4Y=
@@ -542,7 +417,7 @@ browser-stdout@^1.3.1:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/browser-stdout/-/browser-stdout-1.3.1.tgz"
   integrity sha1-uqVZ7hTO1zRSIputcyZGfGH6vWA=
 
-browserslist@^4.28.1:
+browserslist@^4.28.1, "browserslist@>= 4.21.0":
   version "4.28.8"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/browserslist/-/browserslist-4.28.8.tgz"
   integrity sha1-o8ec63AChSfl2n2vyIfzIAtRaMA=
@@ -560,7 +435,7 @@ buffer-from@^1.0.0:
 
 cache-parser@^1.2.6:
   version "1.2.6"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/cache-parser/-/cache-parser-1.2.6.tgz#481e47f4d763d6cc9f742a5892196ea1c80a3f9c"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/cache-parser/-/cache-parser-1.2.6.tgz"
   integrity sha1-SB5H9Ndj1syfdCpYkhluocgKP5w=
 
 call-bind-apply-helpers@^1.0.1, call-bind-apply-helpers@^1.0.2:
@@ -588,7 +463,7 @@ chai-as-promised@^7.1.1:
   dependencies:
     check-error "^1.0.2"
 
-chai@4.3.4:
+"chai@>= 2.1.2 < 6", chai@4.3.4:
   version "4.3.4"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/chai/-/chai-4.3.4.tgz"
   integrity sha1-tV5lWzHh6scJm+TAjCGWT84ubEk=
@@ -662,11 +537,6 @@ clone-deep@^4.0.1:
     kind-of "^6.0.2"
     shallow-clone "^3.0.0"
 
-clone@2.x:
-  version "2.1.2"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/clone/-/clone-2.1.2.tgz#1b7f4b9f591f1e8f83670401600345a02887435f"
-  integrity sha1-G39Ln1kfHo+DZwQBYANFoCiHQ18=
-
 color-convert@^2.0.1:
   version "2.0.1"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/color-convert/-/color-convert-2.0.1.tgz"
@@ -706,14 +576,6 @@ concat-map@0.0.1:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/concat-map/-/concat-map-0.0.1.tgz"
   integrity sha1-2Klr13/Wjfd5OnMDajug1UBdR3s=
 
-config-chain@^1.1.11:
-  version "1.1.13"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/config-chain/-/config-chain-1.1.13.tgz#fad0795aa6a6cdaff9ed1b68e9dff94372c232f4"
-  integrity sha1-+tB5Wqamza/57Rto6d/5Q3LCMvQ=
-  dependencies:
-    ini "^1.3.4"
-    proto-list "~1.2.1"
-
 copy-webpack-plugin@^14.0.0:
   version "14.0.0"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/copy-webpack-plugin/-/copy-webpack-plugin-14.0.0.tgz"
@@ -739,7 +601,7 @@ cross-spawn@^7.0.3, cross-spawn@^7.0.6:
     shebang-command "^2.0.0"
     which "^2.0.1"
 
-debug@4, debug@^4.3.4, debug@^4.3.5:
+debug@^4.3.4, debug@^4.3.5, debug@4:
   version "4.4.3"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/debug/-/debug-4.4.3.tgz"
   integrity sha1-xq5DLZvZZiWC/OCHCbA4xY6ePWo=
@@ -820,11 +682,6 @@ envinfo@^7.7.3:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/envinfo/-/envinfo-7.21.0.tgz"
   integrity sha1-BKJRvnn5JUhUHzfRPItvIpQMO64=
 
-eol@^0.9.1:
-  version "0.9.1"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/eol/-/eol-0.9.1.tgz#f701912f504074be35c6117a5c4ade49cd547acd"
-  integrity sha1-9wGRL1BAdL41xhF6XEreSc1Ues0=
-
 es-define-property@^1.0.1:
   version "1.0.1"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/es-define-property/-/es-define-property-1.0.1.tgz"
@@ -879,10 +736,10 @@ fast-deep-equal@^3.1.3:
 
 fast-defer@^1.1.9:
   version "1.1.9"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/fast-defer/-/fast-defer-1.1.9.tgz#d30e74f67b923a410ec27b47393fa4704e4f3bb5"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/fast-defer/-/fast-defer-1.1.9.tgz"
   integrity sha1-0w509nuSOkEOwntHOT+kcE5PO7U=
 
-fast-uri@^3.0.1, fast-uri@^3.1.2:
+fast-uri@^3.1.2:
   version "3.1.6"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/fast-uri/-/fast-uri-3.1.6.tgz"
   integrity sha1-v90wjvdj+DX+0Fnzxskl9wjjPjo=
@@ -923,7 +780,7 @@ follow-redirects@^1.16.0:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/follow-redirects/-/follow-redirects-1.16.0.tgz"
   integrity sha1-KEdKFZ07nRHvYgUKFO1g5N9tYbw=
 
-foreground-child@^3.1.0, foreground-child@^3.3.1:
+foreground-child@^3.1.0:
   version "3.3.1"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/foreground-child/-/foreground-child-3.3.1.tgz"
   integrity sha1-Mujp7Rtoo0l777msK2rfkqY4V28=
@@ -946,11 +803,6 @@ fs.realpath@^1.0.0:
   version "1.0.0"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/fs.realpath/-/fs.realpath-1.0.0.tgz"
   integrity sha1-FQStJSMVjKpA20onh8sBQRmU6k8=
-
-fsevents@^2.3.3:
-  version "2.3.3"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/fsevents/-/fsevents-2.3.3.tgz#cac6407785d03675a2a5e1a5305c697b347d90d6"
-  integrity sha1-ysZAd4XQNnWipeGlMFxpezR9kNY=
 
 function-bind@^1.1.2:
   version "1.1.2"
@@ -996,13 +848,6 @@ get-proto@^1.0.1:
     dunder-proto "^1.0.1"
     es-object-atoms "^1.0.0"
 
-get-proxy-settings@^0.1.13:
-  version "0.1.13"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/get-proxy-settings/-/get-proxy-settings-0.1.13.tgz#ca4b79bc63a178c907f754a6c3e0f6a54ed1becb"
-  integrity sha1-ykt5vGOheMkH91Smw+D2pU7Rvss=
-  dependencies:
-    npm-conf "~1.1.3"
-
 glob-parent@^6.0.1:
   version "6.0.2"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/glob-parent/-/glob-parent-6.0.2.tgz"
@@ -1021,18 +866,6 @@ glob@^10.4.5:
     minipass "^7.1.2"
     package-json-from-dist "^1.0.0"
     path-scurry "^1.11.1"
-
-glob@^11.0.3:
-  version "11.1.0"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/glob/-/glob-11.1.0.tgz#4f826576e4eb99c7dad383793d2f9f08f67e50a6"
-  integrity sha1-T4JlduTrmcfa04N5PS+fCPZ+UKY=
-  dependencies:
-    foreground-child "^3.3.1"
-    jackspeak "^4.1.1"
-    minimatch "^10.1.1"
-    minipass "^7.1.2"
-    package-json-from-dist "^1.0.0"
-    path-scurry "^2.0.0"
 
 glob@^13.0.3, glob@^13.0.6:
   version "13.0.6"
@@ -1104,7 +937,7 @@ http-proxy-agent@^7.0.2:
 
 http-vary@^1.0.3:
   version "1.0.3"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/http-vary/-/http-vary-1.0.3.tgz#bacf8fccf31294577c1dc97d6cec479dde1e7741"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/http-vary/-/http-vary-1.0.3.tgz"
   integrity sha1-us+PzPMSlFd8Hcl9bOxHnd4ed0E=
 
 https-proxy-agent@^5.0.1:
@@ -1115,7 +948,7 @@ https-proxy-agent@^5.0.1:
     agent-base "6"
     debug "4"
 
-https-proxy-agent@^7.0.4, https-proxy-agent@^7.0.5:
+https-proxy-agent@^7.0.5:
   version "7.0.6"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/https-proxy-agent/-/https-proxy-agent-7.0.6.tgz"
   integrity sha1-2o3+rH2hMLBcK6S1nJts1mYRprk=
@@ -1144,15 +977,10 @@ inflight@^1.0.4:
     once "^1.3.0"
     wrappy "1"
 
-inherits@2, inherits@~2.0.3:
+inherits@~2.0.3, inherits@2:
   version "2.0.4"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/inherits/-/inherits-2.0.4.tgz"
   integrity sha1-D6LGT5MpF8NDOg3tVTY6rjdBa3w=
-
-ini@^1.3.4:
-  version "1.3.8"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/ini/-/ini-1.3.8.tgz#a29da425b48806f34767a4efce397269af28432c"
-  integrity sha1-op2kJbSIBvNHZ6Tvzjlyaa8oQyw=
 
 interpret@^1.0.0:
   version "1.4.0"
@@ -1217,7 +1045,7 @@ is-plain-object@^2.0.4:
 
 is-retry-allowed@^2.2.0:
   version "2.2.0"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/is-retry-allowed/-/is-retry-allowed-2.2.0.tgz#88f34cbd236e043e71b6932d09b0c65fb7b4d71d"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/is-retry-allowed/-/is-retry-allowed-2.2.0.tgz"
   integrity sha1-iPNMvSNuBD5xtpMtCbDGX7e01x0=
 
 is-unicode-supported@^0.1.0:
@@ -1265,13 +1093,6 @@ jackspeak@^3.1.2:
     "@isaacs/cliui" "^8.0.2"
   optionalDependencies:
     "@pkgjs/parseargs" "^0.11.0"
-
-jackspeak@^4.1.1:
-  version "4.2.3"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/jackspeak/-/jackspeak-4.2.3.tgz#27ef80f33b93412037c3bea4f8eddf80e1931483"
-  integrity sha1-J++A8zuTQSA3w76k+O3fgOGTFIM=
-  dependencies:
-    "@isaacs/cliui" "^9.0.0"
 
 jest-worker@^27.4.5:
   version "27.5.1"
@@ -1330,11 +1151,6 @@ locate-path@^6.0.0:
   dependencies:
     p-locate "^5.0.0"
 
-lodash@^4.17.21:
-  version "4.18.1"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/lodash/-/lodash-4.18.1.tgz#ff2b66c1f6326d59513de2407bf881439812771c"
-  integrity sha1-/ytmwfYybVlRPeJAe/iBQ5gSdxw=
-
 log-symbols@^4.1.0:
   version "4.1.0"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/log-symbols/-/log-symbols-4.1.0.tgz"
@@ -1371,15 +1187,15 @@ merge-stream@^2.0.0:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/merge-stream/-/merge-stream-2.0.0.tgz"
   integrity sha1-UoI2KaFN0AyXcPtq1H3GMQ8sH2A=
 
-mime-db@1.52.0:
-  version "1.52.0"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/mime-db/-/mime-db-1.52.0.tgz"
-  integrity sha1-u6vNwChZ9JhzAchW4zh85exDv3A=
-
 mime-db@^1.54.0:
   version "1.54.0"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/mime-db/-/mime-db-1.54.0.tgz"
   integrity sha1-zds+5PnGRTDf9kAjZmHULLajFPU=
+
+mime-db@1.52.0:
+  version "1.52.0"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/mime-db/-/mime-db-1.52.0.tgz"
+  integrity sha1-u6vNwChZ9JhzAchW4zh85exDv3A=
 
 mime-types@^2.1.35:
   version "2.1.35"
@@ -1393,7 +1209,7 @@ mimic-function@^5.0.0:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/mimic-function/-/mimic-function-5.0.1.tgz"
   integrity sha1-rL4rM0n5m53qyn+3Dki4PpTmcHY=
 
-minimatch@^10.1.1, minimatch@^10.2.2:
+minimatch@^10.2.2:
   version "10.2.6"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/minimatch/-/minimatch-10.2.6.tgz"
   integrity sha1-/ZVrvgt3JB6fFaxdzLHGOAYJaO8=
@@ -1466,13 +1282,6 @@ neo-async@^2.6.2:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/neo-async/-/neo-async-2.6.2.tgz"
   integrity sha1-tKr7k+OustgXTKU88WOrfXMIMF8=
 
-node-cache@^5.1.2:
-  version "5.1.2"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/node-cache/-/node-cache-5.1.2.tgz#f264dc2ccad0a780e76253a694e9fd0ed19c398d"
-  integrity sha1-8mTcLMrQp4DnYlOmlOn9DtGcOY0=
-  dependencies:
-    clone "2.x"
-
 node-releases@^2.0.53:
   version "2.0.54"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/node-releases/-/node-releases-2.0.54.tgz"
@@ -1483,17 +1292,9 @@ normalize-path@^3.0.0:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/normalize-path/-/normalize-path-3.0.0.tgz"
   integrity sha1-Dc1p/yOhybEf0JeDFmRKA4ghamU=
 
-npm-conf@~1.1.3:
-  version "1.1.3"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/npm-conf/-/npm-conf-1.1.3.tgz#256cc47bd0e218c259c4e9550bf413bc2192aff9"
-  integrity sha1-JWzEe9DiGMJZxOlVC/QTvCGSr/k=
-  dependencies:
-    config-chain "^1.1.11"
-    pify "^3.0.0"
-
 object-code@^2.0.0:
   version "2.0.0"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/object-code/-/object-code-2.0.0.tgz#251754cb38abca927e0844f50e8184e3ed45c386"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/object-code/-/object-code-2.0.0.tgz"
   integrity sha1-JRdUyzirypJ+CET1DoGE4+1Fw4Y=
 
 once@^1.3.0:
@@ -1605,7 +1406,7 @@ path-scurry@^1.11.1:
     lru-cache "^10.2.0"
     minipass "^5.0.0 || ^6.0.2 || ^7.0.0"
 
-path-scurry@^2.0.0, path-scurry@^2.0.2:
+path-scurry@^2.0.2:
   version "2.0.2"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/path-scurry/-/path-scurry-2.0.2.tgz"
   integrity sha1-a+DQ7gKhDZ4N56mLrmXhgskGH4U=
@@ -1623,15 +1424,10 @@ picocolors@^1.1.1:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/picocolors/-/picocolors-1.1.1.tgz"
   integrity sha1-PTIa8+q5ObCDyPkpodEs2oHCa2s=
 
-picomatch@^4.0.0, picomatch@^4.0.4:
+"picomatch@^3 || ^4", picomatch@^4.0.0, picomatch@^4.0.4:
   version "4.0.7"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/picomatch/-/picomatch-4.0.7.tgz"
   integrity sha1-YxM2ADTMs2s9xh7L3/eBIfkP4h8=
-
-pify@^3.0.0:
-  version "3.0.0"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/pify/-/pify-3.0.0.tgz#e5a4acd2c101fdf3d9a4d07f0dbc4db49dd28176"
-  integrity sha1-5aSs0sEB/fPZpNB/DbxNtJ3SgXY=
 
 pkg-dir@^4.2.0:
   version "4.2.0"
@@ -1644,11 +1440,6 @@ process-nextick-args@~2.0.0:
   version "2.0.1"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/process-nextick-args/-/process-nextick-args-2.0.1.tgz"
   integrity sha1-eCDZsWEgzFXKmud5JoCufbptf+I=
-
-proto-list@~1.2.1:
-  version "1.2.4"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/proto-list/-/proto-list-1.2.4.tgz#212d5bfe1318306a420f6402b8e26ff39647a849"
-  integrity sha1-IS1b/hMYMGpCD2QCuOJv85ZHqEk=
 
 proxy-from-env@^2.1.0:
   version "2.1.0"
@@ -1760,7 +1551,7 @@ semver@^7.6.2:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/semver/-/semver-7.8.5.tgz"
   integrity sha1-ObZGA33VDBT7RR5+TKxY7YuGP2k=
 
-serialize-javascript@^6.0.2, serialize-javascript@^7.0.3:
+serialize-javascript@^7.0.3:
   version "7.1.0"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/serialize-javascript/-/serialize-javascript-7.1.0.tgz"
   integrity sha1-nkYsXG3sXbyLVdkMUqStav+YW58=
@@ -1826,6 +1617,13 @@ stdin-discarder@^0.2.2:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/stdin-discarder/-/stdin-discarder-0.2.2.tgz"
   integrity sha1-OQA39ExK4aGuU1xf443Dq6jZl74=
 
+string_decoder@~1.1.1:
+  version "1.1.1"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/string_decoder/-/string_decoder-1.1.1.tgz"
+  integrity sha1-nPFhG6YmhdcDCunkujQUnDrwP8g=
+  dependencies:
+    safe-buffer "~5.1.0"
+
 "string-width-cjs@npm:string-width@^4.2.0":
   version "4.2.3"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/string-width/-/string-width-4.2.3.tgz"
@@ -1835,7 +1633,25 @@ stdin-discarder@^0.2.2:
     is-fullwidth-code-point "^3.0.0"
     strip-ansi "^6.0.1"
 
-string-width@^4.1.0, string-width@^4.2.0, string-width@^4.2.3:
+string-width@^4.1.0:
+  version "4.2.3"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/string-width/-/string-width-4.2.3.tgz"
+  integrity sha1-JpxxF9J7Ba0uU2gwqOyJXvnG0BA=
+  dependencies:
+    emoji-regex "^8.0.0"
+    is-fullwidth-code-point "^3.0.0"
+    strip-ansi "^6.0.1"
+
+string-width@^4.2.0:
+  version "4.2.3"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/string-width/-/string-width-4.2.3.tgz"
+  integrity sha1-JpxxF9J7Ba0uU2gwqOyJXvnG0BA=
+  dependencies:
+    emoji-regex "^8.0.0"
+    is-fullwidth-code-point "^3.0.0"
+    strip-ansi "^6.0.1"
+
+string-width@^4.2.3:
   version "4.2.3"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/string-width/-/string-width-4.2.3.tgz"
   integrity sha1-JpxxF9J7Ba0uU2gwqOyJXvnG0BA=
@@ -1861,13 +1677,6 @@ string-width@^7.2.0:
     emoji-regex "^10.3.0"
     get-east-asian-width "^1.0.0"
     strip-ansi "^7.1.0"
-
-string_decoder@~1.1.1:
-  version "1.1.1"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/string_decoder/-/string_decoder-1.1.1.tgz"
-  integrity sha1-nPFhG6YmhdcDCunkujQUnDrwP8g=
-  dependencies:
-    safe-buffer "~5.1.0"
 
 "strip-ansi-cjs@npm:strip-ansi@^6.0.1":
   version "6.0.1"
@@ -1939,7 +1748,7 @@ tinyglobby@^0.2.12:
 
 try@^1.0.3:
   version "1.0.3"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/try/-/try-1.0.3.tgz#337a26a7f0d1821df6d3a90d45fdcdf492666723"
+  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/try/-/try-1.0.3.tgz"
   integrity sha1-M3omp/DRgh3206kNRf3N9JJmZyM=
 
 ts-loader@^9.5.1:
@@ -1951,17 +1760,12 @@ ts-loader@^9.5.1:
     picomatch "^4.0.0"
     source-map "^0.7.4"
 
-tslib@^2.8.1:
-  version "2.8.1"
-  resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/tslib/-/tslib-2.8.1.tgz#612efe4ed235d567e8aba5f2a5fab70280ade83f"
-  integrity sha1-YS7+TtI11Wfoq6Xypfq3AoCt6D8=
-
 type-detect@^4.0.0, type-detect@^4.0.5:
   version "4.1.0"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/type-detect/-/type-detect-4.1.0.tgz"
   integrity sha1-3rJFPo8I3K566YxiaxPd2wFVkGw=
 
-typescript@^5.5.4:
+typescript@*, typescript@^5.5.4:
   version "5.9.3"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/typescript/-/typescript-5.9.3.tgz"
   integrity sha1-W09Z4VMQqxeiFvXWz1PuR27eZw8=
@@ -1986,6 +1790,7 @@ util-deprecate@~1.0.1:
 
 "vscode-dotnet-runtime-library@file:../vscode-dotnet-runtime-library":
   version "3.1.0"
+  resolved "file:../vscode-dotnet-runtime-library"
   dependencies:
     "@microsoft/applicationinsights-common" "^3.4.1"
     "@types/chai-as-promised" "^7.1.4"
@@ -2024,7 +1829,7 @@ watchpack@^2.5.2:
   dependencies:
     graceful-fs "^4.1.2"
 
-webpack-cli@^4.9.1:
+webpack-cli@^4.9.1, webpack-cli@4.x.x:
   version "4.10.0"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/webpack-cli/-/webpack-cli-4.10.0.tgz"
   integrity sha1-N8HWnI2FIUxaZeWJN49TrsZNqzE=
@@ -2056,7 +1861,7 @@ webpack-sources@^3.5.1:
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/webpack-sources/-/webpack-sources-3.5.1.tgz"
   integrity sha1-dsJBhIbcwCsqoGlMEEF2woWP6Eo=
 
-webpack@^5.76.0:
+"webpack@^4.0.0 || ^5.0.0", webpack@^5.1.0, webpack@^5.76.0, "webpack@4.x.x || 5.x.x":
   version "5.110.1"
   resolved "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/webpack/-/webpack-5.110.1.tgz"
   integrity sha1-1mLY/xhm/LWKa4rwnIa8bxucXB0=
