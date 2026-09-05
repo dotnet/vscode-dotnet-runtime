@@ -20,7 +20,7 @@ export async function run(): Promise<void>
 
     // Support filtering test files via environment variable (e.g., "LanguageModelTools" to only run that file)
     const testFilePattern = process.env.TEST_FILE_PATTERN || '**/functional/**.test.js';
-    const files = await glob(testFilePattern, { cwd: testsRoot });
+    const files = (await glob(testFilePattern, { cwd: testsRoot })).sort();
 
     return new Promise((c, e) =>
     {
