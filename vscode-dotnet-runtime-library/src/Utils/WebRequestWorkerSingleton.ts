@@ -54,8 +54,8 @@ export class WebRequestWorkerSingleton
 {
     /**
      * @remarks
-        * An interface for sending get requests to APIS.
-        * The responses from GET requests are cached with a 'time-to-live' of 2 minutes by default.
+     * An interface for sending get requests to APIS.
+     * The responses from GET requests are cached with a 'time-to-live' of 2 minutes by default.
      */
     private client: AxiosCacheInstance | null;
     protected static instance: WebRequestWorkerSingleton;
