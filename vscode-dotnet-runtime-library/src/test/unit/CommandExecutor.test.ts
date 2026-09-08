@@ -100,8 +100,12 @@ suite('CommandExecutor Shell Behavior', function ()
     {
         const result = await promisify(execFile)(process.execPath,
             ['-p', 'JSON.stringify({startup:process.env.PROBE_ENV || "unset",inherited:process.env.PROBE_INHERITED})'],
-            { cwd: root, shell: false, timeout: 10000, env: { ...process.env, ...environment,
-                PROBE_ENV: '', PROBE_INHERITED: 'retained', ELECTRON_RUN_AS_NODE: '1' } });
+            {
+                cwd: root, shell: false, timeout: 10000, env: {
+                    ...process.env, ...environment,
+                    PROBE_ENV: '', PROBE_INHERITED: 'retained', ELECTRON_RUN_AS_NODE: '1'
+                }
+            });
         assert.deepEqual(JSON.parse(result.stdout), { startup: 'unset', inherited: 'retained' });
     });
 
