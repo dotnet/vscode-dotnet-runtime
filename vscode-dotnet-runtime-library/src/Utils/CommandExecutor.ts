@@ -430,7 +430,7 @@ ${stderr}`));
      */
     public async execute(command: CommandExecutorCommand, options: any = null, terminalFailure = true): Promise<CommandExecutorResult>
     {
-        const fullCommandString = `${command.commandRoot} ${command.commandParts.join(' ')}`; // CodeQL [SM03609] callers construct commands from constants and separately validated or escaped values.
+        const fullCommandString = `${command.commandRoot} ${command.commandParts.join(' ')}`; // CodeQL [SM03609] callers construct commands from constants and separately validated / workspace trusted values
         let useCache = false;
         // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
 
