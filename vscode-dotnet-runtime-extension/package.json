@@ -31,10 +31,12 @@
     "capabilities": {
         "untrustedWorkspaces": {
             "supported": "limited",
-            "description": "Workspace and folder values of existingDotnetPath and sharedExistingDotnetPath are ignored until the workspace is trusted. User-level values and automatic .NET acquisition remain available.",
+            "description": "Workspace and folder values that select existing .NET executables, bypass path validation, or configure a proxy are ignored until the workspace is trusted. User-level values and automatic .NET acquisition remain available.",
             "restrictedConfigurations": [
                 "dotnetAcquisitionExtension.existingDotnetPath",
-                "dotnetAcquisitionExtension.sharedExistingDotnetPath"
+                "dotnetAcquisitionExtension.sharedExistingDotnetPath",
+                "dotnetAcquisitionExtension.proxyUrl",
+                "dotnetAcquisitionExtension.allowInvalidPaths"
             ]
         },
         "virtualWorkspaces": true
