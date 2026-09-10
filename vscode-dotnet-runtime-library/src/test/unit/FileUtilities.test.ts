@@ -56,13 +56,13 @@ suite('FileUtilities Unit Tests', function ()
                 return execution;
             }
 
-            test('passes a literal filename after the option delimiter and keeps warnings enabled', async () =>
+            test('passes a literal filename after the option delimiter and suppresses unrelated filesystem warnings', async () =>
             {
                 const execution = mockLsof(Object.assign(new Error('no matches'), { code: 1 }));
                 assert.isFalse(await FileUtilities.fileIsOpen(filePath, eventStream));
                 assert.strictEqual(execution.mock.calls.length, 1);
                 assert.strictEqual(execution.mock.calls[0].arguments[0], 'lsof');
-                assert.deepEqual(execution.mock.calls[0].arguments[1], ['-n', '+w', '--', filePath]);
+                assert.deepEqual(execution.mock.calls[0].arguments[1], ['-n', '-w', '--', filePath]);
                 assert.deepEqual(execution.mock.calls[0].arguments[2], { timeout: 10000, shell: false });
             });
 

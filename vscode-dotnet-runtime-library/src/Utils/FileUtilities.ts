@@ -293,7 +293,7 @@ export class FileUtilities extends IFileUtilities
         {
             try
             {
-                const result = await promisify(execFile)('lsof', ['-n', '+w', '--', filePath], { timeout: 10000, shell: false });
+                const result = await promisify(execFile)('lsof', ['-n', '-w', '--', filePath], { timeout: 10000, shell: false });
                 if (result.stderr.toString().trim())
                 {
                     eventStream?.post(new FileIsBusy(`The file ${filePath} is presumed busy because lsof reported diagnostics: ${result.stderr.toString()}`));
