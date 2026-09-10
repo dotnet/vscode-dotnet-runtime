@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning].
 ## [3.2.0] - 2026-09
 
 - **Breaking change:** In untrusted workspaces (Restricted Mode), workspace and folder values of `dotnetAcquisitionExtension.existingDotnetPath` and `dotnetAcquisitionExtension.sharedExistingDotnetPath` are now ignored. This prevents an untrusted workspace from selecting the .NET executable used by extensions. User-level values continue to apply, and automatic .NET acquisition remains available. Trust a workspace only after reviewing its contents; reload VS Code after granting trust to apply its existing-path settings.
+
+3.1.1 preview features are converted into full release features.
+
+## [3.1.1] - 2026-09-15
+
 - Support preview .NET versions.
 - Report cancelled SDK uninstalls accurately. Thank you, **[GaTTGeng](https://github.com/GaTTGeng)**!
 - Dependency updates.
