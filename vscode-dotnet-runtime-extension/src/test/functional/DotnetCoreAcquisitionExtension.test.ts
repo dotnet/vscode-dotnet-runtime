@@ -1006,6 +1006,20 @@ Paths: 'acquire returned: ${resultForAcquiringPathSettingRuntime.dotnetPath} whi
         assert.include(result2!.dotnetPath, '9.0.0', 'Path should include the fully specified version 9.0.0');
     }).timeout(standardTimeoutTime);
 
+    test('Malformed fully specified version is resolved instead of passed directly to the installer', async () =>
+    {
+        const context: IDotnetAcquireContext = {
+            version: '9.0.0;invalid',
+            requestingExtensionId,
+            mode: 'runtime' as DotnetInstallMode
+        };
+
+        const result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', context);
+
+        assert.isUndefined(result, 'Malformed versions should not produce an acquisition result');
+        assert.isUndefined(context.forceUpdate, 'Malformed versions should not be treated as exact versions');
+    }).timeout(standardTimeoutTime / 2);
+
     test('Deactivate cleans up current session and prunes stale sessions from state', async () =>
     {
         const sessionStateKey = 'dotnet.returnedInstallDirectories';

@@ -247,7 +247,7 @@ At dotnet-install.ps1:1189 char:5
         const arch = this.fileUtilities.nodeArchToDotnetArch(architecture ?? getDefaultArchitecture(), this.eventStream);
         let args = [
             '-InstallDir', this.escapeFilePath(dotnetInstallDir), // CodeQL [SM03609] the install directory is selected by the extension and escaped for the target shell.
-            '-Version', version, // CodeQL [SM03609] VersionResolver restricts this value to a version published in the .NET releases manifest.
+            '-Version', version, // CodeQL [SM03609] VersionResolver restricts partial versions to the releases manifest; exact versions are validated by VersionUtilities.
             '-Verbose'
         ];
         if (installMode === 'runtime' || !installMode)

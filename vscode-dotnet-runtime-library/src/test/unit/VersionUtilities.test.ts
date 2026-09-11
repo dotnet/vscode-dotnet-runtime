@@ -128,6 +128,23 @@ suite('Version Utilities Unit Tests', function ()
         assert.equal(resolver.isFullySpecifiedVersion('-foo', mockEventStream, mockCtx), false, 'A suffix without a numeric version is not fully specified');
         assert.equal(resolver.isFullySpecifiedVersion('10.0.100-foo', mockEventStream, mockCtx), false, 'An unknown pre-release suffix is not fully specified');
         assert.equal(resolver.isFullySpecifiedVersion('10.0.100-bar-1.3', mockEventStream, mockCtx), false, 'An unknown compound pre-release suffix is not fully specified');
+        assert.equal(resolver.isFullySpecifiedVersion('7 .0.201', mockEventStream, mockCtx), false, 'Whitespace is not valid in an exact version');
+        assert.equal(resolver.isFullySpecifiedVersion('v7.0.201', mockEventStream, mockCtx), false, 'A version prefix is not valid in an exact version');
+        assert.equal(resolver.isFullySpecifiedVersion('7.0.201;invalid', mockEventStream, mockCtx), false, 'Shell metacharacters are not valid in an exact version');
+        assert.equal(resolver.isFullySpecifiedVersion('7.0.201+metadata', mockEventStream, mockCtx), false, 'Build metadata is not a supported .NET version suffix');
+    });
+
+    test('Detects if Fully Specified Runtime Version', async () =>
+    {
+        assert.equal(resolver.isFullySpecifiedRuntimeVersion('9.0.0'), true);
+        assert.equal(resolver.isFullySpecifiedRuntimeVersion('8.0.19'), true);
+        assert.equal(resolver.isFullySpecifiedRuntimeVersion('9.0.0-rc.2.24473.5'), true);
+        assert.equal(resolver.isFullySpecifiedRuntimeVersion('9'), false, 'A major version is not fully specified');
+        assert.equal(resolver.isFullySpecifiedRuntimeVersion('9.0'), false, 'A major.minor version is not fully specified');
+        assert.equal(resolver.isFullySpecifiedRuntimeVersion('9.0.0-foo'), false, 'An unknown pre-release suffix is not supported');
+        assert.equal(resolver.isFullySpecifiedRuntimeVersion('v9.0.0'), false, 'A version prefix is not valid in an exact version');
+        assert.equal(resolver.isFullySpecifiedRuntimeVersion('9.0.0;invalid'), false, 'Shell metacharacters are not valid in an exact version');
+        assert.equal(resolver.isFullySpecifiedRuntimeVersion('9.0.0+metadata'), false, 'Build metadata is not a supported .NET version suffix');
     });
 
     test('Detects if Fully Specified Preview Version', async () =>
