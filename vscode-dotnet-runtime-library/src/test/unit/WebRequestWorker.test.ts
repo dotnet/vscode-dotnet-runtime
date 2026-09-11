@@ -115,21 +115,12 @@ suite('WebRequestWorker Unit Tests', function ()
 
         const webWorker = new MockTrackingWebRequestWorker(true);
         const uncachedResult = await webWorker.getCachedData(uri, ctx);
-        const originalDateNow = Date.now;
-
-        try
-        {
-            const oneDayInMilliseconds = 24 * 60 * 60 * 1000;
-            Date.now = () => originalDateNow() + oneDayInMilliseconds;
-            await webWorker.getCachedData(uri, ctx);
-            assert.exists(uncachedResult);
-            assert.isAtLeast(webWorker.getRequestCount(), 2);
-        }
-        finally
-        {
-            Date.now = originalDateNow;
-        }
-    }).timeout(maxTimeoutTime);
+        await new Promise(resolve => setTimeout(resolve, 120000));
+        const cachedResult = await webWorker.getCachedData(uri, ctx);
+        assert.exists(uncachedResult);
+        const requestCount = webWorker.getRequestCount();
+        assert.isAtLeast(requestCount, 2);
+    }).timeout((maxTimeoutTime * 7) + 120000);
 
     test('It actually times requests', async () =>
     {

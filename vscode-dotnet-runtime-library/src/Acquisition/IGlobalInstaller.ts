@@ -20,11 +20,26 @@ export abstract class IGlobalInstaller {
         this.utilityContext = utilContext;
     }
 
-    public abstract installGlobal(install : DotnetInstall) : Promise<string>
+    public abstract installSDK(install : DotnetInstall) : Promise<string>
 
-    public abstract uninstallGlobal(install : DotnetInstall) : Promise<string>
+    public abstract uninstallSDK(install : DotnetInstall) : Promise<string>
 
-    public abstract getExpectedGlobalDotnetPath(specificVersionInstalled : string, installedArch : string, macPathShouldExist? : boolean) : Promise<string>
+    public abstract getExpectedGlobalSDKPath(specificSDKVersionInstalled : string, installedArch : string, macPathShouldExist? : boolean) : Promise<string>
+
+    public installGlobal(install : DotnetInstall) : Promise<string>
+    {
+        return this.installSDK(install);
+    }
+
+    public uninstallGlobal(install : DotnetInstall) : Promise<string>
+    {
+        return this.uninstallSDK(install);
+    }
+
+    public getExpectedGlobalDotnetPath(specificVersionInstalled : string, installedArch : string, macPathShouldExist? : boolean) : Promise<string>
+    {
+        return this.getExpectedGlobalSDKPath(specificVersionInstalled, installedArch, macPathShouldExist);
+    }
 
     /**
      *

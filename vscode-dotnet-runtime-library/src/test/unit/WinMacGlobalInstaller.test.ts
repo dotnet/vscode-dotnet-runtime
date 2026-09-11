@@ -91,7 +91,7 @@ suite('Windows & Mac Global Installer Tests', function ()
             };
 
             const install = GetDotnetInstallInfo(mockVersion, 'sdk', 'global', os.arch());
-            const result = await installer.installGlobal(install);
+            const result = await installer.installSDK(install);
             assert.exists(result);
             assert.equal(result, '0');
 
@@ -143,9 +143,9 @@ suite('Windows & Mac Global Installer Tests', function ()
             const runtimeInstaller = new WinMacGlobalInstaller(getMockAcquisitionContext(mode, '10.0.3'), getMockUtilityContext(), '10.0.3', mockUrl, mockHash,
                 mockExecutor, reader, mode);
 
-            assert.equal((runtimeInstaller as any).findConflictingVersion('10.0.3', ['10.0.11']), '10.0.11');
-            assert.equal((runtimeInstaller as any).findConflictingVersion('10.0.11', ['10.0.3']), '');
-            assert.equal((runtimeInstaller as any).findConflictingVersion('10.0.3', ['9.0.19']), '');
+            assert.equal((runtimeInstaller as any).findConflictingRuntimeVersion('10.0.3', ['10.0.11']), '10.0.11');
+            assert.equal((runtimeInstaller as any).findConflictingRuntimeVersion('10.0.11', ['10.0.3']), '');
+            assert.equal((runtimeInstaller as any).findConflictingRuntimeVersion('10.0.3', ['9.0.19']), '');
         }
     });
 
@@ -186,7 +186,7 @@ suite('Windows & Mac Global Installer Tests', function ()
         mockExecutor.fakeReturnValue = { stdout: `0`, status: '0', stderr: '' };
         installer.cleanupInstallFiles = false;
         const install = GetDotnetInstallInfo(mockVersion, 'sdk', 'global', os.arch());
-        const result = await installer.installGlobal(install);
+        const result = await installer.installSDK(install);
         assert.exists(result);
         assert.equal(result, '0');
 
@@ -209,7 +209,7 @@ suite('Windows & Mac Global Installer Tests', function ()
         mockSdkContext
         // Rerun install to clean it up.
         installer.cleanupInstallFiles = true;
-        await installer.installGlobal(install);
+        await installer.installSDK(install);
         mockExecutor.resetReturnValues();
     }).timeout(600000);
 
@@ -218,7 +218,7 @@ suite('Windows & Mac Global Installer Tests', function ()
         mockExecutor.fakeReturnValue = { status: '0', stderr: '', stdout: '' };
         installer.cleanupInstallFiles = false;
         const install = GetDotnetInstallInfo(mockVersion, 'sdk', 'global', os.arch());
-        const result = await installer.installGlobal(install);
+        const result = await installer.installSDK(install);
         assert.exists(result, 'The installation on test was successful');
         assert.equal(result, '0', 'No errors were reported by the fake install');
 
@@ -230,7 +230,7 @@ suite('Windows & Mac Global Installer Tests', function ()
 
 
         installer.cleanupInstallFiles = true;
-        await installer.installGlobal(install);
+        await installer.installSDK(install);
         // The installer files should be removed. Note this doesn't really check the default as we changed it manually
 
         if (await new FileUtilities().isElevated(mockSdkContext, utilContext))
@@ -250,7 +250,7 @@ ${fs.readdirSync(installerDownloadFolder).join(', ')}`);
         mockExecutor.fakeReturnValue = { stdout: `0`, status: '0', stderr: '' };
         installer.cleanupInstallFiles = false;
         const install = GetDotnetInstallInfo(mockVersion, 'sdk', 'global', os.arch());
-        const result = await installer.uninstallGlobal(install);
+        const result = await installer.uninstallSDK(install);
         assert.exists(result);
         assert.equal(result, '0');
 
@@ -274,7 +274,7 @@ ${fs.readdirSync(installerDownloadFolder).join(', ')}`);
 
         // Rerun install to clean it up.
         installer.cleanupInstallFiles = true;
-        await installer.installGlobal(install);
+        await installer.installSDK(install);
         mockExecutor.resetReturnValues();
     }).timeout(600000);
 
@@ -287,13 +287,13 @@ ${fs.readdirSync(installerDownloadFolder).join(', ')}`);
             const arm64EmulationHostPath = path.resolve(`/usr/local/share/dotnet/x64/dotnet`);
 
             let cleanUpPath = false;
-            const defaultPath = await installer.getExpectedGlobalDotnetPath(sdkVersionThatShouldNotExist, os.arch(), false);
+            const defaultPath = await installer.getExpectedGlobalSDKPath(sdkVersionThatShouldNotExist, os.arch(), false);
             if (!fs.existsSync(arm64EmulationHostPath))
             {
                 fs.mkdirSync(arm64EmulationHostPath, { recursive: true });
                 cleanUpPath = true;
             }
-            let shouldNotExistOptionPath = await installer.getExpectedGlobalDotnetPath(sdkVersionThatShouldNotExist, os.arch());
+            let shouldNotExistOptionPath = await installer.getExpectedGlobalSDKPath(sdkVersionThatShouldNotExist, os.arch());
 
             assert.equal(defaultPath, standardHostPath, 'It uses the standard path if false is set and path dne');
             assert.equal(shouldNotExistOptionPath, arm64EmulationHostPath, 'It uses the emu path if the std path does not exist and option is set');
@@ -302,7 +302,7 @@ ${fs.readdirSync(installerDownloadFolder).join(', ')}`);
             {
                 fs.rmdirSync(arm64EmulationHostPath, { recursive: true });
 
-                shouldNotExistOptionPath = await installer.getExpectedGlobalDotnetPath(sdkVersionThatShouldNotExist, os.arch());
+                shouldNotExistOptionPath = await installer.getExpectedGlobalSDKPath(sdkVersionThatShouldNotExist, os.arch());
                 assert.equal(shouldNotExistOptionPath, standardHostPath, 'It wont use the emu path if it does not exist');
             }
         }

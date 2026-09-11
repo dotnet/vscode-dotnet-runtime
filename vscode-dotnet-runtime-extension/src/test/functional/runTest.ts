@@ -37,7 +37,6 @@ async function main()
         // Download VS Code, unzip it and run the integration test
         await runTests(
             {
-                ...(os.platform() === 'darwin' && { version: '1.130.0' }),
                 ...(platformValue !== '' && { platform: platformValue }),
                 extensionDevelopmentPath,
                 extensionTestsPath,
