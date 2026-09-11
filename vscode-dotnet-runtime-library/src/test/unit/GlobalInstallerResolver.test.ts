@@ -14,6 +14,7 @@ import path = require('path');
 const assert = chai.assert;
 
 const mockVersion = '7.0.306';
+const mockRuntimeVersion = '7.0.9';
 const featureBandVersion = '7.0.1xx';
 const newestFeatureBandedVersion = '7.0.109';
 const majorOnly = '7';
@@ -66,6 +67,54 @@ suite('Global Installer Resolver Tests', function ()
         }
         // The architecture in the installer file will match unless its x32, in which case it'll be called x86.
         assert.include(installerUrl, (os.arch() === 'ia32' ? 'x86' : os.arch()));
+    });
+
+    test('It resolves a global runtime installer', async () =>
+    {
+        const acquisitionContext = getMockAcquisitionContext('runtime', majorMinorOnly);
+        const provider = new GlobalInstallerResolver(acquisitionContext, majorMinorOnly, 'runtime');
+        provider.customWebRequestWorker = new FileWebRequestWorker(filePath);
+
+        assert.equal(await provider.getFullySpecifiedVersion(), mockRuntimeVersion);
+        assert.include(await provider.getInstallerUrl(), 'dotnet-runtime');
+    });
+
+    test('It resolves a fully specified global runtime installer without SDK feature-band validation', async () =>
+    {
+        const acquisitionContext = getMockAcquisitionContext('runtime', mockRuntimeVersion);
+        const provider = new GlobalInstallerResolver(acquisitionContext, mockRuntimeVersion, 'runtime');
+        provider.customWebRequestWorker = new FileWebRequestWorker(filePath);
+
+        assert.equal(await provider.getFullySpecifiedVersion(), mockRuntimeVersion);
+        assert.include(await provider.getInstallerUrl(), 'dotnet-runtime');
+    });
+
+    test('It resolves a global ASP.NET Core runtime installer', async () =>
+    {
+        const acquisitionContext = getMockAcquisitionContext('aspnetcore', majorMinorOnly);
+        const provider = new GlobalInstallerResolver(acquisitionContext, majorMinorOnly, 'aspnetcore');
+        provider.customWebRequestWorker = new FileWebRequestWorker(filePath);
+        (provider as any).fileUtilities = {
+            nodeOSToDotnetOS: () => 'win',
+            nodeArchToDotnetArch: () => 'x64',
+        };
+
+        assert.equal(await provider.getFullySpecifiedVersion(), mockRuntimeVersion);
+        assert.include(await provider.getInstallerUrl(), 'aspnetcore-runtime');
+    });
+
+    test('It resolves a fully specified global ASP.NET Core runtime installer without SDK feature-band validation', async () =>
+    {
+        const acquisitionContext = getMockAcquisitionContext('aspnetcore', mockRuntimeVersion);
+        const provider = new GlobalInstallerResolver(acquisitionContext, mockRuntimeVersion, 'aspnetcore');
+        provider.customWebRequestWorker = new FileWebRequestWorker(filePath);
+        (provider as any).fileUtilities = {
+            nodeOSToDotnetOS: () => 'win',
+            nodeArchToDotnetArch: () => 'x64',
+        };
+
+        assert.equal(await provider.getFullySpecifiedVersion(), mockRuntimeVersion);
+        assert.include(await provider.getInstallerUrl(), 'aspnetcore-runtime');
     });
 
     test('It works with other URLs', async () =>

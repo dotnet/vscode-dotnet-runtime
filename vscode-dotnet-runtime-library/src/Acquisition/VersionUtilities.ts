@@ -311,6 +311,19 @@ export function isFullySpecifiedVersion(version: string, eventStream: IEventStre
     return version.split('.').every(x => isNumber(x)) && isValidLongFormVersionFormat(version, eventStream, context) && !isNonSpecificFeatureBandedVersion(version);
 }
 
+export function isFullySpecifiedRuntimeVersion(version: string): boolean
+{
+    const numericVersion = getVersionWithoutPreReleaseSuffix(version);
+    const numericParts = numericVersion.split('.');
+    if (numericParts.length !== 3 || !numericParts.every(x => isNumber(x)))
+    {
+        return false;
+    }
+
+    const suffix = getPreReleaseSuffix(version);
+    return suffix === '' || isHistoricalDotnetPreReleaseSuffix(suffix);
+}
+
 /**
  *
  * @remarks Compares two fully specified SDK versions that share the same major.minor and feature band, ordering them

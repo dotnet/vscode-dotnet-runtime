@@ -15,6 +15,7 @@ import { IAcquisitionInvoker } from '../../Acquisition/IAcquisitionInvoker';
 import { IAcquisitionWorkerContext } from '../../Acquisition/IAcquisitionWorkerContext';
 import { InstallRecord } from '../../Acquisition/InstallRecord';
 import { LinuxGlobalInstaller } from '../../Acquisition/LinuxGlobalInstaller';
+import { DotnetResolver } from '../../Acquisition/DotnetResolver';
 import { WinMacGlobalInstaller } from '../../Acquisition/WinMacGlobalInstaller';
 import { IEventStream } from '../../EventStream/EventStream';
 import
@@ -259,6 +260,111 @@ suite('DotnetCoreAcquisitionWorker Unit Tests', function ()
         await acquireWithVersion('1.0', 'aspnetcore');
     }).timeout(expectedTimeoutTime);
 
+    test('Global runtime worker methods reject outside Windows', async () =>
+    {
+        if (os.platform() !== 'win32')
+        {
+            const runtimeContext = getMockAcquisitionContext('runtime', '10.0.1');
+            const runtimeWorker = getMockAcquisitionWorker(runtimeContext);
+            const runtimeResolver = new GlobalInstallerResolver(runtimeContext, '10.0.1', 'runtime');
+            await assert.isRejected(runtimeWorker.acquireGlobalRuntime(runtimeContext, runtimeResolver), Error, 'only supported on Windows');
+
+            const aspNetContext = getMockAcquisitionContext('aspnetcore', '10.0.1');
+            const aspNetWorker = getMockAcquisitionWorker(aspNetContext);
+            const aspNetResolver = new GlobalInstallerResolver(aspNetContext, '10.0.1', 'aspnetcore');
+            await assert.isRejected(aspNetWorker.acquireGlobalASPNET(aspNetContext, aspNetResolver), Error, 'only supported on Windows');
+        }
+    });
+
+    test('Global install detection requires the exact product and version', () =>
+    {
+        const workerContext = getMockAcquisitionContext('runtime', '10.0.1');
+        const acquisitionWorker = getMockAcquisitionWorker(workerContext);
+        const installs = [
+            { mode: 'runtime', version: '10.0.1', directory: 'runtime', architecture: 'x64' },
+            { mode: 'aspnetcore', version: '10.0.10', directory: 'aspnetcore', architecture: 'x64' },
+        ];
+
+        assert.isTrue((acquisitionWorker as any).isInstallListed(workerContext, installs, 'runtime', '10.0.1'));
+        assert.isFalse((acquisitionWorker as any).isInstallListed(workerContext, installs, 'aspnetcore', '10.0.1'));
+        assert.isTrue((acquisitionWorker as any).isInstallListed(workerContext, installs, 'aspnetcore', '10.0.10'));
+        assert.isFalse((acquisitionWorker as any).isInstallListed(workerContext, installs, 'aspnetcore', '10.0.0'));
+    });
+
+    test('Global SDK detection requires an exact version unless Linux major-minor matching is requested', () =>
+    {
+        const workerContext = getMockAcquisitionContext('sdk', '10.0.100');
+        const acquisitionWorker = getMockAcquisitionWorker(workerContext);
+        const installs = [{ mode: 'sdk', version: '10.0.100', directory: 'sdk', architecture: 'x64' }];
+
+        assert.isTrue((acquisitionWorker as any).isInstallListed(workerContext, installs, 'sdk', '10.0.100'));
+        assert.isFalse((acquisitionWorker as any).isInstallListed(workerContext, installs, 'sdk', '10.0.10'));
+        assert.isTrue((acquisitionWorker as any).isInstallListed(workerContext, installs, 'sdk', '10.0', true));
+        assert.isTrue((acquisitionWorker as any).isInstallListed(workerContext, installs, 'sdk', '10.0.101', true));
+    });
+
+    test('Global install detection queries the tracked dotnet host', async () =>
+    {
+        const workerContext = getMockAcquisitionContext('runtime', '10.0.1');
+        workerContext.acquisitionContext.installType = 'global';
+        const acquisitionWorker = getMockAcquisitionWorker(workerContext);
+        const trackedDotnetPath = path.join('global-dotnet', getDotnetExecutable());
+        const originalGetDotnetInstalls = DotnetResolver.prototype.getDotnetInstalls;
+        let queriedDotnetPath: string | undefined;
+
+        DotnetResolver.prototype.getDotnetInstalls = async (dotnetPath) =>
+        {
+            queriedDotnetPath = dotnetPath;
+            return [{ mode: 'runtime', version: '10.0.1', directory: 'runtime', architecture: 'x64' }];
+        };
+
+        try
+        {
+            assert.isTrue(await (acquisitionWorker as any).dotnetInstallIsFound(workerContext, '10.0.1', trackedDotnetPath));
+            assert.equal(queriedDotnetPath, trackedDotnetPath);
+        }
+        finally
+        {
+            DotnetResolver.prototype.getDotnetInstalls = originalGetDotnetInstalls;
+        }
+    });
+
+    test('Similar global install lookup preserves the tracked runtime mode', async () =>
+    {
+        if (os.platform() === 'win32')
+        {
+            const [eventStream, extensionContext] = setupStates();
+            const workerContext = getMockAcquisitionContext('runtime', '10.0.1', expectedTimeoutTime, eventStream, extensionContext);
+            workerContext.acquisitionContext.installType = 'global';
+            const acquisitionWorker = getMockAcquisitionWorker(workerContext);
+            acquisitionWorker.enableNoInstallInvoker();
+            const install = getInstallFromContext(workerContext);
+            await extensionContext.update(installedVersionsKey, [{ dotnetInstall: install, installingExtensions: ['test'] }]);
+
+            const originalLinuxGetPath = LinuxGlobalInstaller.prototype.getExpectedGlobalDotnetPath;
+            const originalWinMacGetPath = WinMacGlobalInstaller.prototype.getExpectedGlobalDotnetPath;
+            let installerMode: DotnetInstallMode | undefined;
+            const getExpectedPath = async function (this: LinuxGlobalInstaller | WinMacGlobalInstaller): Promise<string>
+            {
+                installerMode = (this as any).mode;
+                return path.join('global-dotnet', getDotnetExecutable());
+            };
+            LinuxGlobalInstaller.prototype.getExpectedGlobalDotnetPath = getExpectedPath;
+            WinMacGlobalInstaller.prototype.getExpectedGlobalDotnetPath = getExpectedPath;
+
+            try
+            {
+                assert.exists(await acquisitionWorker.getSimilarExistingInstall(workerContext));
+                assert.equal(installerMode, 'runtime');
+            }
+            finally
+            {
+                LinuxGlobalInstaller.prototype.getExpectedGlobalDotnetPath = originalLinuxGetPath;
+                WinMacGlobalInstaller.prototype.getExpectedGlobalDotnetPath = originalWinMacGetPath;
+            }
+        }
+    });
+
     test('Acquire SDK Status', async () =>
     {
         await acquireStatus('5.0', 'sdk', 'local');
@@ -357,20 +463,20 @@ ${eventStream.events.map(event => event.eventName).join(', ')}`);
             getInstallerHash: async () => ''
         } as GlobalInstallerResolver;
 
-        const installerPrototypes: Array<{ prototype: { getExpectedGlobalSDKPath: any; uninstallSDK: any }; expectedSdkPath: string }> = [
+        const installerPrototypes: Array<{ prototype: { getExpectedGlobalDotnetPath: any; uninstallGlobal: any }; expectedSdkPath: string }> = [
             { prototype: LinuxGlobalInstaller.prototype, expectedSdkPath: `/usr/share/dotnet/sdk/${version}` },
             { prototype: WinMacGlobalInstaller.prototype, expectedSdkPath: `C:\\Program Files\\dotnet\\sdk\\${version}` }
         ];
         const restorers = installerPrototypes.map(({ prototype, expectedSdkPath }) =>
         {
-            const originalGetPath = prototype.getExpectedGlobalSDKPath;
-            const originalUninstall = prototype.uninstallSDK;
-            prototype.getExpectedGlobalSDKPath = async () => expectedSdkPath;
-            prototype.uninstallSDK = async () => failureReason;
+            const originalGetPath = prototype.getExpectedGlobalDotnetPath;
+            const originalUninstall = prototype.uninstallGlobal;
+            prototype.getExpectedGlobalDotnetPath = async () => expectedSdkPath;
+            prototype.uninstallGlobal = async () => failureReason;
             return () =>
             {
-                prototype.getExpectedGlobalSDKPath = originalGetPath;
-                prototype.uninstallSDK = originalUninstall;
+                prototype.getExpectedGlobalDotnetPath = originalGetPath;
+                prototype.uninstallGlobal = originalUninstall;
             };
         });
 
