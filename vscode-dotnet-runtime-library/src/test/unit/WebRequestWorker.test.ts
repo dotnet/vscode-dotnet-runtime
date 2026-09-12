@@ -115,12 +115,14 @@ suite('WebRequestWorker Unit Tests', function ()
 
         const webWorker = new MockTrackingWebRequestWorker(true);
         const uncachedResult = await webWorker.getCachedData(uri, ctx);
-        await new Promise(resolve => setTimeout(resolve, 120000));
+        // Wait slightly longer than the 2-minute cache TTL so the assertion is not
+        // dependent on whether the timer fires exactly at the expiration boundary.
+        await new Promise(resolve => setTimeout(resolve, 125000));
         const cachedResult = await webWorker.getCachedData(uri, ctx);
         assert.exists(uncachedResult);
         const requestCount = webWorker.getRequestCount();
         assert.isAtLeast(requestCount, 2);
-    }).timeout((maxTimeoutTime * 7) + 120000);
+    }).timeout((maxTimeoutTime * 7) + 125000);
 
     test('It actually times requests', async () =>
     {
@@ -136,4 +138,3 @@ suite('WebRequestWorker Unit Tests', function ()
         assert.isTrue(String(timerEvents?.status).startsWith('2'), 'The timed event has a status 2XX');
     });
 });
-
