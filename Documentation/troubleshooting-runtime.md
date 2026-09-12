@@ -1,6 +1,27 @@
 # Troubleshooting Issues with the .NET Install Tool
 
+## Flatpak and SteamDeck Support
+
+If you are running VS Code as a Flatpak (such as on SteamDeck), the .NET Install Tool now supports version listing and may support installation depending on your Flatpak permissions and configuration.
+
+### Known Limitations in Flatpak
+
+- Package manager access may be restricted in the Flatpak sandbox
+- Installation may require elevated permissions or additional configuration
+- Some distro-specific features may not work as expected
+
+### Workaround for Flatpak
+
+If you encounter issues with automatic installation in Flatpak:
+
+1. Try manually configuring an existing .NET installation using the `dotnetAcquisitionExtension.existingDotnetPath` setting (see below)
+2. Check your Flatpak permissions - you may need to allow access to the host filesystem
+3. Alternatively, manually install .NET Runtime on the host system and configure VS Code to use the host's .NET installation
+
+For more details on Flatpak permissions and access, see [Flatpak Documentation](https://docs.flatpak.org/).
+
 ## Install Script Timeouts
+
 
 Please note that, depending on your network speed, installing the .NET Core runtime might take some time. By default, the installation terminates unsuccessfully if it takes longer than 10 minutes to finish. If you believe this is too little (or too much) time to allow for the download, you can change the timeout value by setting `dotnetAcquisitionExtension.installTimeoutValue` to a custom value.
 

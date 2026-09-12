@@ -232,9 +232,9 @@ export class MockTrackingWebRequestWorker extends WebRequestWorkerSingleton
     private requestCount = 0;
     public response = 'Mock Web Request Result';
 
-    constructor(protected readonly succeed = true)
+    constructor(protected readonly succeed = true, cacheTtl?: number)
     {
-        super();
+        super(cacheTtl);
         const _ = WebRequestWorkerSingleton.getInstance(); // cause super to exist
     }
 

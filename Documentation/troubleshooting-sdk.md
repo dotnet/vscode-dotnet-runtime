@@ -1,6 +1,27 @@
 # Troubleshooting Issues with .NET SDK Install Tool
 
+## Flatpak and SteamDeck Support
+
+If you are running VS Code as a Flatpak (such as on SteamDeck), the .NET SDK Install Tool now supports version listing and may support installation depending on your Flatpak permissions and configuration. 
+
+### Known Limitations in Flatpak
+
+- Package manager access may be restricted in the Flatpak sandbox
+- Installation may require elevated permissions or additional configuration
+- Some distro-specific features may not work as expected
+
+### Workaround for Flatpak
+
+If you encounter issues with automatic installation in Flatpak:
+
+1. Try using the system's native package manager to install .NET SDK if available
+2. Check your Flatpak permissions - you may need to allow access to the host filesystem
+3. Alternatively, manually install .NET SDK on the host system and configure VS Code to use the host's .NET installation
+
+For more details on Flatpak permissions and access, see [Flatpak Documentation](https://docs.flatpak.org/).
+
 ## Unable to add to PATH
+
 
 To manually configure the `PATH`, see instructions by OS below. If you are still unable to add to the PATH environment variable you can still use the SDK by specifying the entire path to the executable. That is, instead of simply typing `dotnet` on the command line you can specify the full path that is outputted upon install.
 

@@ -61,7 +61,7 @@ export class WebRequestWorkerSingleton
     protected static instance: WebRequestWorkerSingleton;
     private clientCreationError: any;
 
-    protected constructor()
+    protected constructor(cacheTtl = 120000)
     {
         try
         {
@@ -109,7 +109,8 @@ export class WebRequestWorkerSingleton
             this.client = setupCache(uncachedAxiosClient,
                 {
                     storage: buildMemoryStorage(),
-                    ttl: 120000 // 2 Minute TTL
+                    ttl: cacheTtl,
+                    interpretHeader: false
                 }
             );
         }
