@@ -3,7 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 * Licensed under the MIT License. See License.txt in the project root for license information.
 * ------------------------------------------------------------------------------------------ */
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import * as crypto from 'crypto';
 import * as eol from 'eol';
 import * as fs from 'fs';
@@ -78,7 +78,8 @@ export class FileUtilities extends IFileUtilities
             eventStream?.post(new EmptyDirectoryToWipe(`The directory ${directoryToWipe} did not exist, so it was not wiped.`))
             return;
         }
-        else if (verifyDotnetNotInUse && await FileUtilities.fileIsOpen(path.join(directoryToWipe, getDotnetExecutable()), eventStream))
+        else if (verifyDotnetNotInUse &&
+            await FileUtilities.fileIsOpen(path.join(directoryToWipe, getDotnetExecutable()), eventStream)) // CodeQL [SM03609] directoryToWipe is an extension-owned installation directory and the executable name is constant.
         {
             return;
         }
@@ -242,16 +243,26 @@ export class FileUtilities extends IFileUtilities
         }
     }
 
+    /**
+     * A best-effort check before cleanup. On Unix, true also means lsof could not
+     * establish that the file is unused; false is not a race-free guarantee.
+     */
     public static async fileIsOpen(filePath: string, eventStream?: IEventStream): Promise<boolean>
     {
         try
         {
             await fs.promises.access(filePath, fs.constants.F_OK);
         }
-        catch
+        catch (error)
         {
-            eventStream?.post(new FileIsNotBusy(`The file ${filePath} does not exist, so it is not busy.`));
-            return false;
+            const code = (error as NodeJS.ErrnoException)?.code;
+            if (code === 'ENOENT' || code === 'ENOTDIR')
+            {
+                eventStream?.post(new FileIsNotBusy(`The file ${filePath} does not exist, so it is not busy.`));
+                return false;
+            }
+            eventStream?.post(new FileIsBusy(`The file ${filePath} is presumed busy because access could not be checked: ${code ?? 'unknown error'}.`));
+            return true;
         }
 
         let fileHandle: fs.promises.FileHandle | null = null;
@@ -282,49 +293,38 @@ export class FileUtilities extends IFileUtilities
         {
             try
             {
-                // 10s timeout: targeted lsof queries complete in <1s on normal systems.
-                // Timeout acts as a safety net for heavily loaded systems (300+ processes).
-                // If killed, we assume file is busy to prevent deleting in-use runtimes.
-                return promisify(exec)(`lsof -n ${filePath}`, { timeout: 10000 }).then(
-                    fulfilled =>
-                    {
-                        const lines = fulfilled?.stdout?.toString().split('\n');
-                        if (lines.length > 1) // lsof returns a header line and then the lines of open files
-                        {
-                            eventStream?.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle as lsof shows`));
-                            return Promise.resolve(true);
-                        }
-                        else
-                        {
-                            eventStream?.post(new FileIsNotBusy(`The file ${filePath} is not busy as lsof output is empty`));
-                            return Promise.resolve(false);
-                        }
-                    },
-                    rejected =>
-                    {
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                        if (rejected?.killed || rejected?.signal)
-                        {
-                            // lsof was killed by timeout — cannot determine file status.
-                            // Err on the side of caution: assume file is busy to prevent
-                            // deleting a potentially in-use .NET runtime.
-                            eventStream?.post(new FileIsBusy(`The file ${filePath} is presumed busy because lsof timed out`));
-                            return Promise.resolve(true);
-                        }
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                        if (rejected?.code?.toString() === 'EACCES')
-                        {
-                            eventStream?.post(new FileIsBusy(`The file ${filePath} is presumed busy due to EACCES`));
-                            return Promise.resolve(true);
-                        }
-                        return Promise.resolve(false); // lsof returns a non-zero exit code if the file is not open by any process.
-                        // ENOENT or others may be thrown if the file DNE, but we only care if its open.
-                    }).finally(() => { return false; });
-            }
-            catch (error: any)
-            {
-                eventStream?.post(new SuppressedAcquisitionError(error, `Failed to check if file ${filePath} is open.`));
+                const result = await promisify(execFile)('lsof', ['-n', '-w', '--', filePath], { timeout: 10000, shell: false });
+                if (result.stderr.toString().trim())
+                {
+                    eventStream?.post(new FileIsBusy(`The file ${filePath} is presumed busy because lsof reported diagnostics: ${result.stderr.toString()}`));
+                    return true;
+                }
+                if (result.stdout.toString().trim())
+                {
+                    eventStream?.post(new FileIsBusy(`The file ${filePath} is busy due to another file handle as lsof shows`));
+                    return true;
+                }
+                eventStream?.post(new FileIsNotBusy(`The file ${filePath} is not busy as lsof output is empty`));
                 return false;
+            }
+            catch (error)
+            {
+                const failure = error as {
+                    code?: string | number;
+                    killed?: boolean;
+                    signal?: string;
+                    stdout?: string | Buffer;
+                    stderr?: string | Buffer;
+                };
+                if (failure?.code === 1 && !failure.killed && !failure.signal &&
+                    !failure.stdout?.toString().trim() && !failure.stderr?.toString().trim())
+                {
+                    eventStream?.post(new FileIsNotBusy(`The file ${filePath} is not busy as lsof found no matching open handles.`));
+                    return false;
+                }
+                const reason = failure?.killed ? 'timeout or termination' : failure?.signal ?? failure?.code ?? 'unknown error';
+                eventStream?.post(new FileIsBusy(`The file ${filePath} is presumed busy because lsof could not complete the check: ${reason}. ${failure?.stderr?.toString() ?? ''}`));
+                return true;
             }
         }
     }

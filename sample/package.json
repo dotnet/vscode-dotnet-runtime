@@ -145,7 +145,7 @@
 		"clean": "npx rimraf out"
 	},
 	"dependencies": {
-		"@vscode/vsce": "^2.19.0",
+		"@vscode/vsce": "^3.9.2",
 		"open": "^8.4.2",
 		"vscode-dotnet-runtime": "file:../vscode-dotnet-runtime-extension",
 		"vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library",

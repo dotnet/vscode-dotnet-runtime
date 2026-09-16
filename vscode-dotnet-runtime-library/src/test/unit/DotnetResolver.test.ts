@@ -3,6 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
+import * as path from 'path';
 import { DotnetResolver } from '../../Acquisition/DotnetResolver';
 import { CommandExecutionEvent, DotnetUnableToCheckPATHArchitecture } from '../../EventStream/EventStreamEvents';
 import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
@@ -38,6 +39,33 @@ suite('DotnetResolver Unit Tests', function ()
         const resolver = new DotnetResolver(acquisitionContextWithEventStream, utilityContext, mockExecutorWithEventStream);
         return { validator: resolver, mockEventStream, mockExecutorWithEventStream };
     }
+
+    test('host queries leave shell selection to CommandExecutor', async () =>
+    {
+        const { validator, mockExecutorWithEventStream } = makeResolverWithMockExecutorAndEventStream();
+        const queries = new Set<string>();
+        const hostRoot = path.join(__dirname, 'nonexistent-shell-selection-host');
+        mockExecutorWithEventStream.execute = async (command, options) =>
+        {
+            const query = command.commandParts.join(' ');
+            queries.add(query);
+            assert.notProperty(options ?? {}, 'shell', `${query} must leave shell selection to the executor`);
+            const stdout = command.commandParts[0] === '--info' ? 'Architecture: x64' :
+                command.commandParts[0] === '--list-sdks' ? `10.0.100 [${path.join(hostRoot, 'sdk')}]` :
+                    `Microsoft.NETCore.App 10.0.1 [${path.join(hostRoot, 'shared', 'Microsoft.NETCore.App')}]`;
+            return { status: '0', stdout, stderr: '' };
+        };
+
+        await validator.getDotnetInstalls(path.join(hostRoot, 'dotnet'), 'sdk', 'x64');
+        await validator.getDotnetInstalls(path.join(hostRoot, 'dotnet'), 'runtime', 'x64');
+
+        assert.sameMembers([...queries], [
+            '--list-sdks --arch x64',
+            '--list-runtimes --arch x64',
+            '--list-runtimes --arch invalid-arch',
+            '--info'
+        ]);
+    });
 
     test('getSDKs and getRuntimes do not call dotnet --info if --arch is supported', async () =>
     {
