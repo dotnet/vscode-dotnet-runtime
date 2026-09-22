@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+## [3.1.1] - 2026-09-03 (Prerelease)
 
+- Support preview .NET versions.
+- Report cancelled SDK uninstalls accurately. Thank you, **[GaTTGeng](https://github.com/GaTTGeng)**!
+- Dependency updates.
 
-## [3.1.0] - 2026-5
+## [3.1.0] - 2026-06-11
 
 - Adds Language Model Tools for the AI chat in VS Code. These language model tools:
 1. Help the agent chat window resolve scenarios where C# or related extensions fail to load.

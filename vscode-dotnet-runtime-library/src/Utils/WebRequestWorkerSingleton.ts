@@ -55,13 +55,13 @@ export class WebRequestWorkerSingleton
     /**
      * @remarks
      * An interface for sending get requests to APIS.
-     * The responses from GET requests are cached with a 'time-to-live' of 5 minutes by default.
+     * The responses from GET requests are cached with a 'time-to-live' of 2 minutes by default.
      */
     private client: AxiosCacheInstance | null;
     protected static instance: WebRequestWorkerSingleton;
     private clientCreationError: any;
 
-    protected constructor()
+    protected constructor(cacheTtlMs = 120000)
     {
         try
         {
@@ -109,7 +109,8 @@ export class WebRequestWorkerSingleton
             this.client = setupCache(uncachedAxiosClient,
                 {
                     storage: buildMemoryStorage(),
-                    ttl: 120000 // 2 Minute TTL
+                    interpretHeader: false,
+                    ttl: cacheTtlMs
                 }
             );
         }

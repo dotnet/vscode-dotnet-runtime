@@ -5,6 +5,7 @@
 import * as chai from 'chai';
 
 import * as chaiAsPromised from 'chai-as-promised';
+import * as http from 'http';
 import * as path from 'path';
 import { DotnetCoreAcquisitionWorker } from '../../Acquisition/DotnetCoreAcquisitionWorker';
 import { IInstallScriptAcquisitionWorker } from '../../Acquisition/IInstallScriptAcquisitionWorker';
@@ -111,16 +112,31 @@ suite('WebRequestWorker Unit Tests', function ()
     test('Web Requests Cached Does Not Live Forever', async () =>
     {
         const ctx = getMockAcquisitionContext('runtime', '');
-        const uri = 'https://microsoft.com';
+        const server = http.createServer((_request, response) =>
+        {
+            response.writeHead(200, { 'Content-Type': 'text/plain' });
+            response.end('ok');
+        });
+        await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+        const address = server.address();
+        assert.isObject(address);
+        const uri = `http://127.0.0.1:${(address as import('net').AddressInfo).port}`;
 
-        const webWorker = new MockTrackingWebRequestWorker(true);
-        const uncachedResult = await webWorker.getCachedData(uri, ctx);
-        await new Promise(resolve => setTimeout(resolve, 120000));
-        const cachedResult = await webWorker.getCachedData(uri, ctx);
-        assert.exists(uncachedResult);
-        const requestCount = webWorker.getRequestCount();
-        assert.isAtLeast(requestCount, 2);
-    }).timeout((maxTimeoutTime * 7) + 120000);
+        try
+        {
+            const cacheTtlMs = 50;
+            const webWorker = new MockTrackingWebRequestWorker(true, cacheTtlMs);
+            const uncachedResult = await webWorker.getCachedData(uri, ctx);
+            await new Promise(resolve => setTimeout(resolve, cacheTtlMs * 2));
+            await webWorker.getCachedData(uri, ctx);
+            assert.exists(uncachedResult);
+            assert.isAtLeast(webWorker.getRequestCount(), 2);
+        }
+        finally
+        {
+            await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+        }
+    }).timeout(maxTimeoutTime);
 
     test('It actually times requests', async () =>
     {
