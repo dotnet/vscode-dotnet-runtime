@@ -302,6 +302,12 @@ function isHistoricalDotnetPreReleaseSuffix(suffix: string): boolean
  */
 export function isFullySpecifiedVersion(version: string, eventStream: IEventStream, context: IAcquisitionWorkerContext): boolean
 {
+    const parsedVersion = semver.parse(version);
+    if (!parsedVersion || parsedVersion.version !== version || parsedVersion.build.length > 0)
+    {
+        return false;
+    }
+
     // A fully specified pre-release build (e.g. 11.0.100-preview.6.26352.110) is also fully specified; validate its
     // numeric base (11.0.100) and short-circuit before the strictly-numeric checks below, which reject the suffix.
     if (isFullySpecifiedPreviewVersion(version, eventStream, context))
@@ -309,6 +315,22 @@ export function isFullySpecifiedVersion(version: string, eventStream: IEventStre
         return true;
     }
     return version.split('.').every(x => isNumber(x)) && isValidLongFormVersionFormat(version, eventStream, context) && !isNonSpecificFeatureBandedVersion(version);
+}
+
+/**
+ * @param version the requested runtime version to analyze.
+ * @returns true IFF version is a fully specified runtime version, including supported pre-release formats.
+ */
+export function isFullySpecifiedRuntimeVersion(version: string): boolean
+{
+    const parsedVersion = semver.parse(version);
+    if (!parsedVersion || parsedVersion.version !== version || parsedVersion.build.length > 0)
+    {
+        return false;
+    }
+
+    const suffix = getPreReleaseSuffix(version);
+    return suffix.length === 0 || isHistoricalDotnetPreReleaseSuffix(suffix);
 }
 
 /**
