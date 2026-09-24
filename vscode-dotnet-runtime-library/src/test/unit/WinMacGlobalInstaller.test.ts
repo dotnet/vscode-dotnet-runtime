@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { GetDotnetInstallInfo } from '../../Acquisition/DotnetInstall';
+import { DotnetResolver } from '../../Acquisition/DotnetResolver';
 import { RegistryReader } from '../../Acquisition/RegistryReader';
 import { WinMacGlobalInstaller } from '../../Acquisition/WinMacGlobalInstaller';
 import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
@@ -133,6 +134,51 @@ suite('Windows & Mac Global Installer Tests', function ()
             conflictExists = await installer.GlobalWindowsInstallWithConflictingVersionAlreadyExists(installedPreview);
             assert.deepStrictEqual(conflictExists, requestedNewerPreview, 'An older preview conflicts with a newer installed preview');
         }
+    });
+
+    test('It rejects runtime downgrades without applying SDK feature-band rules', () =>
+    {
+        for (const mode of ['runtime', 'aspnetcore'] as const)
+        {
+            const runtimeInstaller = new WinMacGlobalInstaller(getMockAcquisitionContext(mode, '10.0.3'), getMockUtilityContext(), '10.0.3', mockUrl, mockHash,
+                mockExecutor, reader, mode);
+
+            assert.equal((runtimeInstaller as any).findConflictingRuntimeVersion('10.0.3', ['10.0.11']), '10.0.11');
+            assert.equal((runtimeInstaller as any).findConflictingRuntimeVersion('10.0.11', ['10.0.3']), '');
+            assert.equal((runtimeInstaller as any).findConflictingRuntimeVersion('10.0.3', ['9.0.19']), '');
+        }
+    });
+
+    test('It ignores other runtime products when checking for downgrade conflicts', async () =>
+    {
+        const runtimeInstaller = new WinMacGlobalInstaller(getMockAcquisitionContext('runtime', '10.0.3'), getMockUtilityContext(), '10.0.3', mockUrl, mockHash,
+            mockExecutor, reader, 'runtime');
+        const originalGetDotnetInstalls = DotnetResolver.prototype.getDotnetInstalls;
+        const originalGetExpectedGlobalDotnetPath = runtimeInstaller.getExpectedGlobalDotnetPath;
+        runtimeInstaller.getExpectedGlobalDotnetPath = async () => 'dotnet';
+        DotnetResolver.prototype.getDotnetInstalls = async () => [
+            { mode: 'runtime', version: '10.0.2', directory: 'runtime', architecture: 'x64' },
+            { mode: 'aspnetcore', version: '10.0.11', directory: 'aspnetcore', architecture: 'x64' },
+        ];
+
+        try
+        {
+            assert.equal(await runtimeInstaller.GlobalWindowsInstallWithConflictingVersionAlreadyExists('10.0.3'), '');
+        }
+        finally
+        {
+            DotnetResolver.prototype.getDotnetInstalls = originalGetDotnetInstalls;
+            runtimeInstaller.getExpectedGlobalDotnetPath = originalGetExpectedGlobalDotnetPath;
+        }
+    });
+
+    test('Integrity failure guidance is product neutral', () =>
+    {
+        const runtimeInstaller = new WinMacGlobalInstaller(getMockAcquisitionContext('runtime', '10.0.3'), getMockUtilityContext(), '10.0.3', mockUrl, mockHash,
+            mockExecutor, reader, 'runtime');
+
+        assert.notInclude((runtimeInstaller as any).invalidIntegrityError, 'SDK');
+        assert.include((runtimeInstaller as any).invalidIntegrityError, 'install .NET manually');
     });
 
     test('It runs the correct install command', async () =>

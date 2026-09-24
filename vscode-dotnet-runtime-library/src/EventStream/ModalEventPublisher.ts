@@ -12,6 +12,14 @@ import
   DotnetASPNetRuntimeAcquisitionStarted,
   DotnetASPNetRuntimeAcquisitionTotalSuccessEvent,
   DotnetASPNetRuntimeFinalAcquisitionError,
+  DotnetGlobalASPNetRuntimeAcquisitionError,
+  DotnetGlobalASPNetRuntimeAcquisitionRequested,
+  DotnetGlobalASPNetRuntimeAcquisitionStarted,
+  DotnetGlobalASPNetRuntimeAcquisitionTotalSuccessEvent,
+  DotnetGlobalRuntimeAcquisitionError,
+  DotnetGlobalRuntimeAcquisitionRequested,
+  DotnetGlobalRuntimeAcquisitionStarted,
+  DotnetGlobalRuntimeAcquisitionTotalSuccessEvent,
   DotnetGlobalSDKAcquisitionError,
   DotnetGlobalSDKAcquisitionRequested,
   DotnetGlobalSDKAcquisitionStarted,
@@ -41,9 +49,9 @@ export class ModalEventRepublisher implements IModalEventRepublisher
         case 'sdk':
           return event.installType === 'global' ? new DotnetGlobalSDKAcquisitionStarted(event.requestingExtensionId) : null;
         case 'runtime':
-          return new DotnetRuntimeAcquisitionStarted(event.requestingExtensionId);
+          return event.installType === 'global' ? new DotnetGlobalRuntimeAcquisitionStarted(event.requestingExtensionId) : new DotnetRuntimeAcquisitionStarted(event.requestingExtensionId);
         case 'aspnetcore':
-          return new DotnetASPNetRuntimeAcquisitionStarted(event.requestingExtensionId);
+          return event.installType === 'global' ? new DotnetGlobalASPNetRuntimeAcquisitionStarted(event.requestingExtensionId) : new DotnetASPNetRuntimeAcquisitionStarted(event.requestingExtensionId);
         default:
           break;
       }
@@ -55,9 +63,9 @@ export class ModalEventRepublisher implements IModalEventRepublisher
         case 'sdk':
           return event.installType === 'global' ? new DotnetGlobalSDKAcquisitionTotalSuccessEvent(event.install) : null;
         case 'runtime':
-          return new DotnetRuntimeAcquisitionTotalSuccessEvent(event.install);
+          return event.installType === 'global' ? new DotnetGlobalRuntimeAcquisitionTotalSuccessEvent(event.install) : new DotnetRuntimeAcquisitionTotalSuccessEvent(event.install);
         case 'aspnetcore':
-          return new DotnetASPNetRuntimeAcquisitionTotalSuccessEvent(event.install);
+          return event.installType === 'global' ? new DotnetGlobalASPNetRuntimeAcquisitionTotalSuccessEvent(event.install) : new DotnetASPNetRuntimeAcquisitionTotalSuccessEvent(event.install);
         default:
           break;
       }
@@ -69,9 +77,9 @@ export class ModalEventRepublisher implements IModalEventRepublisher
         case 'sdk':
           return event.installType === 'global' ? new DotnetGlobalSDKAcquisitionError(event.error, event.originalEventName, event.install) : null;
         case 'runtime':
-          return new DotnetRuntimeFinalAcquisitionError(event.error, event.originalEventName, event.install);
+          return event.installType === 'global' ? new DotnetGlobalRuntimeAcquisitionError(event.error, event.originalEventName, event.install) : new DotnetRuntimeFinalAcquisitionError(event.error, event.originalEventName, event.install);
         case 'aspnetcore':
-          return new DotnetASPNetRuntimeFinalAcquisitionError(event.error, event.originalEventName, event.install);
+          return event.installType === 'global' ? new DotnetGlobalASPNetRuntimeAcquisitionError(event.error, event.originalEventName, event.install) : new DotnetASPNetRuntimeFinalAcquisitionError(event.error, event.originalEventName, event.install);
         default:
           break;
       }
@@ -83,9 +91,9 @@ export class ModalEventRepublisher implements IModalEventRepublisher
         case 'sdk':
           return event.installType === 'global' ? new DotnetGlobalSDKAcquisitionRequested(event.startingVersion, event.requestingId, event.mode) : null;
         case 'runtime':
-          return new DotnetRuntimeAcquisitionRequested(event.startingVersion, event.requestingId, event.mode);
+          return event.installType === 'global' ? new DotnetGlobalRuntimeAcquisitionRequested(event.startingVersion, event.requestingId, event.mode) : new DotnetRuntimeAcquisitionRequested(event.startingVersion, event.requestingId, event.mode);
         case 'aspnetcore':
-          return new DotnetASPNetRuntimeAcquisitionRequested(event.startingVersion, event.requestingId, event.mode);
+          return event.installType === 'global' ? new DotnetGlobalASPNetRuntimeAcquisitionRequested(event.startingVersion, event.requestingId, event.mode) : new DotnetASPNetRuntimeAcquisitionRequested(event.startingVersion, event.requestingId, event.mode);
         default:
           break;
       }

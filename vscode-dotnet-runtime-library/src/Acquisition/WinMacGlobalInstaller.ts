@@ -31,6 +31,8 @@ import { CommandExecutor } from '../Utils/CommandExecutor';
 import { FileUtilities } from '../Utils/FileUtilities';
 import { getInstallFromContext } from '../Utils/InstallIdUtilities';
 import { WebRequestWorkerSingleton } from '../Utils/WebRequestWorkerSingleton';
+import { DotnetInstallMode } from './DotnetInstallMode';
+import { DotnetResolver } from './DotnetResolver';
 import { VersionResolver } from './VersionResolver';
 import * as versionUtils from './VersionUtilities';
 
@@ -67,6 +69,7 @@ export class WinMacGlobalInstaller extends IGlobalInstaller
     private installerUrl: string;
     private installingVersion: string;
     private installerHash: string;
+    private mode: DotnetInstallMode;
     protected commandRunner: ICommandExecutor;
     protected registry: IRegistryReader;
     public cleanupInstallFiles = true;
@@ -74,15 +77,17 @@ export class WinMacGlobalInstaller extends IGlobalInstaller
     public file: IFileUtilities;
     protected webWorker: WebRequestWorkerSingleton;
     private invalidIntegrityError = `The integrity of the .NET install file is invalid, or there was no integrity to check and you denied the request to continue with those risks.
-We cannot verify our .NET file host at this time. Please try again later or install the SDK manually.`;
+We cannot verify our .NET file host at this time. Please try again later or install .NET manually.`;
 
     constructor(context: IAcquisitionWorkerContext, utilContext: IUtilityContext, installingVersion: string, installerUrl: string,
-        installerHash: string, executor: ICommandExecutor | null = null, registryReader: IRegistryReader | null = null)
+        installerHash: string, executor: ICommandExecutor | null = null, registryReader: IRegistryReader | null = null,
+        mode: DotnetInstallMode = 'sdk')
     {
         super(context, utilContext);
         this.installerUrl = installerUrl;
         this.installingVersion = installingVersion;
         this.installerHash = installerHash;
+        this.mode = mode;
         this.commandRunner = executor ?? new CommandExecutor(context, utilContext);
         this.versionResolver = new VersionResolver(context);
         this.file = new FileUtilities();
@@ -137,12 +142,12 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         return '';
     }
 
-    public async installSDK(installation: DotnetInstall): Promise<string>
+    public override async installSDK(installation: DotnetInstall): Promise<string>
     {
         return executeWithLock(this.acquisitionContext.eventStream, false, GLOBAL_INSTALL_STATE_MODIFIER_LOCK(this.acquisitionContext.installDirectoryProvider, installation), GLOBAL_LOCK_PING_DURATION_MS, this.acquisitionContext.timeoutSeconds * 1000,
             async (install: DotnetInstall) =>
             {
-                // Check for conflicting windows installs
+                // Check for Windows installs that the product installer would reject as a downgrade.
                 if (os.platform() === 'win32')
                 {
                     const conflictingVersion = await this.GlobalWindowsInstallWithConflictingVersionAlreadyExists(this.installingVersion);
@@ -227,7 +232,7 @@ This report should be made at https://github.com/dotnet/vscode-dotnet-runtime/is
         }
     }
 
-    public async uninstallSDK(installation: DotnetInstall): Promise<string>
+    public override async uninstallSDK(installation: DotnetInstall): Promise<string>
     {
         if (os.platform() === 'win32')
         {
@@ -372,7 +377,7 @@ Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.m
 
     // async is needed to match the interface even if we don't use await.
 
-    public async getExpectedGlobalSDKPath(specificSDKVersionInstalled: string, installedArch: string, macPathShouldExist = true): Promise<string>
+    public override async getExpectedGlobalSDKPath(specificSDKVersionInstalled: string, installedArch: string, macPathShouldExist = true): Promise<string>
     {
         if (os.platform() === 'win32')
         {
@@ -496,7 +501,7 @@ Please correct your PATH variable or make sure the 'open' utility is installed s
                 this.acquisitionContext.eventStream.post(new MacInstallerFailure(`The installer failed.`, installerResult.status, installerResult.stderr, installerResult.stdout));
                 await this.darwinInstallBackup(installerPath);
 
-                const expectedDotnetHostPath = await this.getExpectedGlobalSDKPath(this.acquisitionContext.acquisitionContext.version, this.acquisitionContext.acquisitionContext.architecture ?? getDefaultArchitecture());
+                const expectedDotnetHostPath = await this.getExpectedGlobalDotnetPath(this.acquisitionContext.acquisitionContext.version, this.acquisitionContext.acquisitionContext.architecture ?? getDefaultArchitecture());
                 const expectedInstall = getInstallFromContext(this.acquisitionContext);
                 const validatedInstall = this.acquisitionContext.installationValidator.validateDotnetInstall(expectedInstall, expectedDotnetHostPath, false, false);
                 if (validatedInstall)
@@ -566,25 +571,57 @@ Permissions: ${JSON.stringify(await this.commandRunner.execute(CommandExecutor.m
      */
     public async GlobalWindowsInstallWithConflictingVersionAlreadyExists(requestedVersion: string): Promise<string>
     {
-        // Note that we could be more intelligent here and consider only if the SDKs conflict within an architecture, but for now we won't do this.
-        const sdks: Array<string> = await this.registry.getGlobalSdkVersionsInstalledOnMachine();
-        for (const sdk of sdks)
+        if (this.mode === 'sdk')
+        {
+            // Note that we could be more intelligent here and consider only if the SDKs conflict within an architecture, but for now we won't do this.
+            const sdks = await this.registry.getGlobalSdkVersionsInstalledOnMachine();
+            for (const sdk of sdks)
+            {
+                if
+                    ( // Side by side installs of the same major.minor and band can cause issues in some cases. So we decided to just not allow it unless upgrading to a newer patch version.
+                    // The installer can catch this but we can avoid unnecessary work this way,
+                    // and for windows the installer may never appear to the user. With this approach, we don't need to handle installer error codes.
+                    // compareSDKPatchOrPreRelease is pre-release aware, so a request for a newer pre-release of the same
+                    // feature-band patch (e.g. 11.0.100-preview.6 when 11.0.100-preview.5 is installed) is treated as an
+                    // upgrade rather than an existing conflicting install.
+                    Number(versionUtils.getMajorMinor(requestedVersion, this.acquisitionContext.eventStream, this.acquisitionContext)) ===
+                    Number(versionUtils.getMajorMinor(sdk, this.acquisitionContext.eventStream, this.acquisitionContext)) &&
+                    Number(versionUtils.getFeatureBandFromVersion(requestedVersion, this.acquisitionContext.eventStream, this.acquisitionContext)) ===
+                    Number(versionUtils.getFeatureBandFromVersion(sdk, this.acquisitionContext.eventStream, this.acquisitionContext)) &&
+                    versionUtils.compareSDKPatchOrPreRelease(requestedVersion, sdk, this.acquisitionContext.eventStream, this.acquisitionContext) <= 0
+                )
+                {
+                    return sdk;
+                }
+            }
+
+            return '';
+        }
+
+        const installedVersions = (await new DotnetResolver(this.acquisitionContext, this.utilityContext, this.commandRunner).getDotnetInstalls(
+            await this.getExpectedGlobalDotnetPath(requestedVersion, this.acquisitionContext.acquisitionContext.architecture ?? getDefaultArchitecture(), false),
+            this.mode,
+            this.acquisitionContext.acquisitionContext.architecture))
+            .filter(install => install.mode === this.mode)
+            .map(install => install.version);
+
+        return this.findConflictingRuntimeVersion(requestedVersion, installedVersions);
+    }
+
+    private findConflictingRuntimeVersion(requestedVersion: string, installedVersions: string[]): string
+    {
+        for (const installedVersion of installedVersions)
         {
             if
-                ( // Side by side installs of the same major.minor and band can cause issues in some cases. So we decided to just not allow it unless upgrading to a newer patch version.
+                ( // The runtime installer rejects same-major/minor downgrades and duplicate versions.
                 // The installer can catch this but we can avoid unnecessary work this way,
                 // and for windows the installer may never appear to the user. With this approach, we don't need to handle installer error codes.
-                // compareSDKPatchOrPreRelease is pre-release aware, so a request for a newer pre-release of the same
-                // feature-band patch (e.g. 11.0.100-preview.6 when 11.0.100-preview.5 is installed) is treated as an
-                // upgrade rather than an existing conflicting install.
                 Number(versionUtils.getMajorMinor(requestedVersion, this.acquisitionContext.eventStream, this.acquisitionContext)) ===
-                Number(versionUtils.getMajorMinor(sdk, this.acquisitionContext.eventStream, this.acquisitionContext)) &&
-                Number(versionUtils.getFeatureBandFromVersion(requestedVersion, this.acquisitionContext.eventStream, this.acquisitionContext)) ===
-                Number(versionUtils.getFeatureBandFromVersion(sdk, this.acquisitionContext.eventStream, this.acquisitionContext)) &&
-                versionUtils.compareSDKPatchOrPreRelease(requestedVersion, sdk, this.acquisitionContext.eventStream, this.acquisitionContext) <= 0
+                Number(versionUtils.getMajorMinor(installedVersion, this.acquisitionContext.eventStream, this.acquisitionContext)) &&
+                versionUtils.compareVersionsIncludingPreRelease(requestedVersion, installedVersion) <= 0
             )
             {
-                return sdk;
+                return installedVersion;
             }
         }
 
