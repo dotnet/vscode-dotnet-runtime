@@ -27,7 +27,7 @@ parameters:
   type: object
   default:
   - name: NetCore-Public
-    demands: ImageOverride -equals windows.vs2026.amd64.open
+    demands: ImageOverride -equals windows.vs2022.amd64.open
     os: windows
     emoji: 🪟
   - name: NetCore-Public
@@ -64,14 +64,14 @@ stages:
     parameters:
       pool:
         name: NetCore-Public
-        demands: ImageOverride -equals windows.vs2026.amd64.open
+        demands: ImageOverride -equals windows.vs2022.amd64.open
         os: windows
       useOneEngineeringPool: false
   - template: pipeline-templates/package-vsix.yaml
     parameters:
       pool:
         name: NetCore-Public
-        demands: ImageOverride -equals windows.vs2026.amd64.open
+        demands: ImageOverride -equals windows.vs2022.amd64.open
         os: windows
       useOneEngineeringPool: false
       SignType: Test
