@@ -47,7 +47,7 @@ parameters:
   type: object
   default:
   - name: NetCore1ESPool-Internal
-    image: 1es-windows-2022
+    image: windows.vs2022.amd64
     os: windows
     emoji: 🪟
   - name: NetCore1ESPool-Internal
@@ -65,7 +65,7 @@ extends:
     sdl:
       sourceAnalysisPool:
         name: NetCore1ESPool-Internal
-        image: 1es-windows-2022
+        image: windows.vs2022.amd64
         os: windows
       policheck:
         enabled: true
@@ -99,14 +99,14 @@ extends:
         parameters:
           pool:
             name: NetCore1ESPool-Internal
-            image: 1es-windows-2022
+            image: windows.vs2022.amd64
             os: windows
           useOneEngineeringPool: true
       - template: pipeline-templates/package-vsix.yaml@self
         parameters:
           pool:
             name: NetCore1ESPool-Internal
-            image: 1es-windows-2022
+            image: windows.vs2022.amd64
             os: windows
           useOneEngineeringPool: true
           SignType: Real
@@ -115,6 +115,6 @@ extends:
         parameters:
           pool:
             name: NetCore1ESPool-Internal
-            image: 1es-windows-2022
+            image: windows.vs2022.amd64
             os: windows
           useOneEngineeringPool: true
