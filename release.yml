@@ -25,7 +25,7 @@ extends:
   parameters:
     pool:
       name: NetCore1ESPool-Internal
-      image: 1es-windows-2022
+      image: windows.vs2026.amd64
       os: windows
     customBuildTags:
     - ES365AIMigrationTooling
@@ -37,7 +37,7 @@ extends:
         environment: vscode-dotnetcore-extension-releases
         pool:
           name: NetCore1ESPool-Internal
-          image: 1es-windows-2022
+          image: windows.vs2026.amd64
           os: windows
         templateContext:
           type: releaseJob
