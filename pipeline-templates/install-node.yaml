@@ -3,3 +3,13 @@ steps:
   inputs:
     version: '22.x'
   displayName: '⚛️ Install Node.js'
+- script: corepack enable && corepack install --global yarn@1.22.22
+  displayName: '🧶 Install Yarn'
+- pwsh: |
+    $gitBashDirectory = Join-Path $env:ProgramFiles 'Git\bin'
+    if (-not (Test-Path (Join-Path $gitBashDirectory 'bash.exe'))) {
+      throw "Unable to locate Git Bash in $gitBashDirectory."
+    }
+    Write-Host "##vso[task.prependpath]$gitBashDirectory"
+  displayName: '🐚 Add Git Bash to PATH'
+  condition: eq(variables['Agent.OS'], 'Windows_NT')
