@@ -10,5 +10,6 @@ export interface IWindowDisplayWorker
     getModalWarningResponse(message: string, no: string, yes: string): Promise<any>;
     showInformationMessage(message: string, callback: (response: string | undefined) => void, ...items: string[]): void;
     copyToUserClipboard(text: string): Promise<void>;
+    openExternalUrl(url: string): Thenable<boolean>;
     displayPathConfigPopUp(): Thenable<string | undefined>;
 }

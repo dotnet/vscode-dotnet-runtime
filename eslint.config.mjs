@@ -2,7 +2,6 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 import eslintConfigPrettier from "eslint-config-prettier";
 import jsdoc from "eslint-plugin-jsdoc";
-import preferArrow from "eslint-plugin-prefer-arrow";
 import header from "eslint-plugin-header";
 import { fixupPluginRules } from "@eslint/compat";
 
@@ -58,7 +57,6 @@ export default tseslint.config(
         },
         plugins: {
             jsdoc,
-            "prefer-arrow": preferArrow,
             header: patchedHeader,
         },
         rules: {
@@ -175,7 +173,6 @@ export default tseslint.config(
                 "error",
                 "never"
             ],
-            "prefer-arrow/prefer-arrow-functions": "off",
             "prefer-const": "error",
             "prefer-template": "error",
             "quotes": "off",
