@@ -7,7 +7,6 @@ import * as proc from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import { promisify } from 'util';
-import open = require('open');
 import path = require('path');
 
 import { exec as execElevated } from '@vscode/sudo-prompt';
@@ -750,7 +749,7 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
             {
                 if (response === this.pathTroubleshootingOption)
                 {
-                    open(`${troubleshootingUrl}#unable-to-add-to-path`).catch(() => {});
+                    displayWorker.openExternalUrl(`${troubleshootingUrl}#unable-to-add-to-path`);
                 }
             }, this.pathTroubleshootingOption);
         }

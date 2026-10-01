@@ -9,7 +9,6 @@ import { IUtilityContext } from '../Utils/IUtilityContext';
 import { IAcquisitionWorkerContext } from './IAcquisitionWorkerContext';
 import { IDotnetPathFinder } from './IDotnetPathFinder';
 
-import * as lodash from 'lodash';
 import * as os from 'os';
 import * as path from 'path';
 import
@@ -283,7 +282,7 @@ export class DotnetHostPathFinder implements IDotnetPathFinder
             {
                 this.workerContext.eventStream.post(new DotnetFindPathNoHostOnRegistry(`The host could not be found in the registry`));
             }
-            return this.resolver?.resolveTruePaths(lodash.uniq(paths), requestedArchitecture);
+            return this.resolver?.resolveTruePaths([...new Set(paths)], requestedArchitecture);
         }
         else
         {
@@ -308,7 +307,7 @@ export class DotnetHostPathFinder implements IDotnetPathFinder
                 this.workerContext.eventStream.post(new DotnetFindPathNoHostOnFileSystem(`The host could not be found in the file system.`));
             }
 
-            return this.resolver?.resolveTruePaths(lodash.uniq(paths), requestedArchitecture);
+            return this.resolver?.resolveTruePaths([...new Set(paths)], requestedArchitecture);
         }
     }
 

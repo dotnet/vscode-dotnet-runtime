@@ -2,7 +2,7 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
-import { glob } from 'glob';
+import { glob } from 'node:fs/promises';
 import * as Mocha from 'mocha';
 import * as path from 'path';
 import * as sourceMapSupport from 'source-map-support';
@@ -16,12 +16,11 @@ export async function run(): Promise<void> {
   });
 
   const testsRoot = path.resolve(__dirname, '..');
-  const files = await glob('**/functional/**.test.js', { cwd: testsRoot });
+  for await (const file of glob('**/functional/**.test.js', { cwd: testsRoot })) {
+    mocha.addFile(path.resolve(testsRoot, file));
+  }
 
   return new Promise((c, e) => {
-    // Add files to the test suite
-    files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)));
-
     try {
       // Run the mocha test
       mocha.run(failures => {

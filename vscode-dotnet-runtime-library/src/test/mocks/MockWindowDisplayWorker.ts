@@ -35,6 +35,10 @@ export class MockWindowDisplayWorker implements IWindowDisplayWorker {
         this.clipboardText = text;
     }
 
+    public openExternalUrl(_url: string): Thenable<boolean> {
+        return Promise.resolve(true);
+    }
+
     public async getModalWarningResponse(message: string, no: string, yes: string): Promise<any> {
         return true;
     }
