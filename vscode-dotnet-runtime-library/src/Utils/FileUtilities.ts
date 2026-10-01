@@ -49,7 +49,7 @@ export class FileUtilities extends IFileUtilities
 
     private async innerWriteFile(scriptContent: string, filePath: string, eventStream?: IEventStream)
     {
-        scriptContent = scriptContent.replace(/\r\n|\r|\n/g, os.EOL);
+        scriptContent = this.normalizeLineEndings(scriptContent);
         const existingScriptContent = await this.read(filePath);
         // fs.writeFile will replace the file if it exists.
         // https://nodejs.org/api/fs.html#fswritefilefile-data-options-callback
@@ -64,6 +64,10 @@ export class FileUtilities extends IFileUtilities
         }
 
         await fs.promises.chmod(filePath, 0o744);
+    }
+
+    public normalizeLineEndings(text: string) {
+        return text.replace(/\r\n|\r|\n/g, os.EOL);
     }
 
     /**
