@@ -930,10 +930,7 @@ ${JSON.stringify(commandContext)}`));
     {
         const [url, issueBody] = formatIssueUrl(undefined, getIssueContext(existingPathConfigWorker)(AcquireErrorConfiguration.DisableErrorPopups, 'reportIssue'));
         await vscode.env.clipboard.writeText(issueBody);
-        if (!await vscode.env.openExternal(vscode.Uri.parse(url)))
-        {
-            throw new Error(`Unable to open ${url}`);
-        }
+        vscode.env.openExternal(vscode.Uri.parse(url));
     });
 
     // Helper Functions
