@@ -131,7 +131,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
                         else if (response === errorConstants.reportOption)
                         {
                             const [url, issueBody] = formatIssueUrl(error, context);
-                            context.displayWorker.copyToUserClipboard(issueBody).catch(() => { });
+                            context.displayWorker.copyToUserClipboard(issueBody).catch(() => {});
                             context.displayWorker.openExternalUrl(url).catch(() => {});
                         }
                         else if (response === errorConstants.configureManuallyOption && requestingExtensionId)
