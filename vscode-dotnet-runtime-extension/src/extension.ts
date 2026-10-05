@@ -930,7 +930,14 @@ ${JSON.stringify(commandContext)}`));
     {
         const [url, issueBody] = formatIssueUrl(undefined, getIssueContext(existingPathConfigWorker)(AcquireErrorConfiguration.DisableErrorPopups, 'reportIssue'));
         await vscode.env.clipboard.writeText(issueBody);
-        vscode.env.openExternal(vscode.Uri.parse(url));
+        try
+        {
+            await vscode.env.openExternal(vscode.Uri.parse(url));
+        }
+        catch (error)
+        {
+            console.error(`Failed to open issue URL: ${String(error)}`);
+        }
     });
 
     // Helper Functions
