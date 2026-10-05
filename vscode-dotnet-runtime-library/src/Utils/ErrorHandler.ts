@@ -16,7 +16,6 @@ import
         DotnetUninstallFinalError,
         EventCancellationError
     } from '../EventStream/EventStreamEvents';
-import { openExternalUrlSafely } from '../EventStream/IWindowDisplayWorker';
 import { IIssueContext } from './IIssueContext';
 import { getInstallFromContext } from './InstallIdUtilities';
 import { formatIssueUrl } from './IssueReporter';
@@ -105,8 +104,9 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
                     {
                         if (response === timeoutConstants.moreInfoOption)
                         {
-                            await openExternalUrlSafely(context.displayWorker, context.timeoutInfoUrl);
+                           context.displayWorker.openExternalUrl(context.timeoutInfoUrl).catch(() => {});
                         }
+                        return Promise.resolve();
                     }, timeoutConstants.moreInfoOption);
             }
             else if (showMessage)
@@ -122,7 +122,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
                     {
                         if (response === errorConstants.moreInfoOption)
                         {
-                            await openExternalUrlSafely(context.displayWorker, context.moreInfoUrl);
+                            context.displayWorker.openExternalUrl(context.moreInfoUrl).catch(() => {});
                         }
                         else if (response === errorConstants.hideOption)
                         {
@@ -131,10 +131,8 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
                         else if (response === errorConstants.reportOption)
                         {
                             const [url, issueBody] = formatIssueUrl(error, context);
-                            await Promise.all([
-                                context.displayWorker.copyToUserClipboard(issueBody).catch(() => { }),
-                                openExternalUrlSafely(context.displayWorker, url),
-                            ]);
+                            context.displayWorker.copyToUserClipboard(issueBody).catch(() => { });
+                            context.displayWorker.openExternalUrl(url).catch(() => {});
                         }
                         else if (response === errorConstants.configureManuallyOption && requestingExtensionId)
                         {

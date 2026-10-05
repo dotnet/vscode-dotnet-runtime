@@ -146,19 +146,6 @@ suite('ErrorHandler Unit Tests', function ()
         assert.equal(displayWorker.externalUrl, context.moreInfoUrl);
     });
 
-    test('Display workers without URL opening support remain compatible', async () =>
-    {
-        const displayWorker = new MockWindowDisplayWorker();
-        const context = issueContext(displayWorker, new MockEventStream());
-        (displayWorker as IWindowDisplayWorker).openExternalUrl = undefined;
-        await callWithErrorHandling<string>(() =>
-        {
-            throw new Error('errorString');
-        }, context);
-
-        await displayWorker.callback!(errorConstants.moreInfoOption);
-    });
-
     test('Report issue URL failures are ignored', async () =>
     {
         const displayWorker = new MockWindowDisplayWorker();

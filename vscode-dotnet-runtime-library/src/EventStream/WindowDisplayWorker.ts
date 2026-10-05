@@ -33,8 +33,8 @@ export class WindowDisplayWorker implements IWindowDisplayWorker {
         await env.clipboard.writeText(text);
     }
 
-    public openExternalUrl(url: string): Thenable<boolean> {
-        return env.openExternal(Uri.parse(url));
+    public async openExternalUrl(url: string): Promise<boolean> {
+        return await env.openExternal(Uri.parse(url));
     }
 
     public displayPathConfigPopUp(): Thenable<string| undefined> {
