@@ -96,7 +96,6 @@ import { EventStreamTaggingDecorator } from 'vscode-dotnet-runtime-library/dist/
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
 import { buildUninstallFailureMessage } from './ErrorMessageUtilities';
 import { registerLanguageModelTools } from './LanguageModelTools';
-import open = require('open');
 
 const packageJson = require('../package.json');
 
@@ -931,7 +930,7 @@ ${JSON.stringify(commandContext)}`));
     {
         const [url, issueBody] = formatIssueUrl(undefined, getIssueContext(existingPathConfigWorker)(AcquireErrorConfiguration.DisableErrorPopups, 'reportIssue'));
         await vscode.env.clipboard.writeText(issueBody);
-        open(url).catch(() => {});
+        vscode.env.openExternal(vscode.Uri.parse(url)).then(undefined, () => {});
     });
 
     // Helper Functions

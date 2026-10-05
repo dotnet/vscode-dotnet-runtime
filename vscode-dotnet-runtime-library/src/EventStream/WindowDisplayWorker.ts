@@ -3,7 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as os from 'os';
-import { env, window } from 'vscode';
+import { env, Uri, window } from 'vscode';
 import { IWindowDisplayWorker } from './IWindowDisplayWorker';
 /* eslint-disable */ // When editing this file, please remove this and fix the linting concerns.
 
@@ -31,6 +31,10 @@ export class WindowDisplayWorker implements IWindowDisplayWorker {
 
     public async copyToUserClipboard(text: string): Promise<void> {
         await env.clipboard.writeText(text);
+    }
+
+    public async openExternalUrl(url: string): Promise<boolean> {
+        return await env.openExternal(Uri.parse(url));
     }
 
     public displayPathConfigPopUp(): Thenable<string| undefined> {

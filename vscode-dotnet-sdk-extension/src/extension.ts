@@ -36,7 +36,6 @@ import
     VSCodeExtensionContext,
     WindowDisplayWorker
 } from 'vscode-dotnet-runtime-library';
-import open = require('open');
 
 import { GlobalInstallerResolver } from 'vscode-dotnet-runtime-library/dist/Acquisition/GlobalInstallerResolver';
 import { IAcquisitionWorkerContext } from 'vscode-dotnet-runtime-library/dist/Acquisition/IAcquisitionWorkerContext';
@@ -218,7 +217,7 @@ export function activate(context: vscode.ExtensionContext, extensionContext?: IE
     {
         const [url, issueBody] = formatIssueUrl(undefined, issueContext(AcquireErrorConfiguration.DisableErrorPopups, 'reportIssue'));
         await vscode.env.clipboard.writeText(issueBody);
-        open(url);
+        await vscode.env.openExternal(vscode.Uri.parse(url));
     });
 
     function getContext(commandContext: IDotnetAcquireContext | null): IAcquisitionWorkerContext

@@ -2,7 +2,7 @@
 *  Licensed to the .NET Foundation under one or more agreements.
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
-import { glob } from 'glob';
+import { glob } from 'node:fs/promises';
 import * as Mocha from 'mocha';
 import * as path from 'path';
 
@@ -20,7 +20,12 @@ export async function run(): Promise<void>
 
     // Support filtering test files via environment variable (e.g., "LanguageModelTools" to only run that file)
     const testFilePattern = process.env.TEST_FILE_PATTERN || '**/functional/**.test.js';
-    const files = (await glob(testFilePattern, { cwd: testsRoot })).sort();
+    const files: string[] = [];
+    for await (const file of glob(testFilePattern, { cwd: testsRoot }))
+    {
+        files.push(file);
+    }
+    files.sort();
 
     return new Promise((c, e) =>
     {

@@ -15,7 +15,6 @@ module.exports = {
     },
     "plugins": [
         "eslint-plugin-jsdoc",
-        "eslint-plugin-prefer-arrow",
         "@typescript-eslint",
         "header",
     ],
@@ -165,7 +164,6 @@ module.exports = {
             "error",
             "never"
         ],
-        "prefer-arrow/prefer-arrow-functions": "off",
         "prefer-const": "error",
         "prefer-template": "error",
         "quotes": "off",

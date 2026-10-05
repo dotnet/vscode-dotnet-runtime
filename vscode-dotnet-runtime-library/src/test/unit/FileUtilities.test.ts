@@ -19,6 +19,22 @@ suite('FileUtilities Unit Tests', function ()
 {
     this.timeout(15000);
 
+    test('normalizes mixed line endings to the host platform', async () =>
+    {
+        const directory = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'dotnet-eol-test-'));
+        const filePath = path.join(directory, 'script.txt');
+        try
+        {
+            const fileUtilities = new FileUtilities();
+            await fileUtilities.writeFileOntoDisk('first\r\nsecond\rthird\nfourth', filePath);
+            assert.strictEqual(await fs.promises.readFile(filePath, 'utf8'), ['first', 'second', 'third', 'fourth'].join(os.EOL));
+        }
+        finally
+        {
+            await fs.promises.rm(directory, { recursive: true, force: true });
+        }
+    });
+
     suite('fileIsOpen', function ()
     {
         suite('lsof results', function ()

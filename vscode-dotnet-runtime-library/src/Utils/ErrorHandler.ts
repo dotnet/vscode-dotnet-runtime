@@ -3,7 +3,6 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as fs from 'fs';
-import open = require('open');
 import { getDefaultArchitecture } from '../Acquisition/ArchitectureUtilities';
 import { GetDotnetInstallInfo } from '../Acquisition/DotnetInstall';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
@@ -105,7 +104,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
                     {
                         if (response === timeoutConstants.moreInfoOption)
                         {
-                            open(context.timeoutInfoUrl).catch(() => {});
+                           context.displayWorker.openExternalUrl(context.timeoutInfoUrl).catch(() => {});
                         }
                         return Promise.resolve();
                     }, timeoutConstants.moreInfoOption);
@@ -123,7 +122,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
                     {
                         if (response === errorConstants.moreInfoOption)
                         {
-                            open(context.moreInfoUrl).catch(() => {});
+                            context.displayWorker.openExternalUrl(context.moreInfoUrl).catch(() => {});
                         }
                         else if (response === errorConstants.hideOption)
                         {
@@ -133,7 +132,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
                         {
                             const [url, issueBody] = formatIssueUrl(error, context);
                             context.displayWorker.copyToUserClipboard(issueBody).catch(() => {});
-                            open(url).catch(() => {});
+                            context.displayWorker.openExternalUrl(url).catch(() => {});
                         }
                         else if (response === errorConstants.configureManuallyOption && requestingExtensionId)
                         {
