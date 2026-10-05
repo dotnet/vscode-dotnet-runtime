@@ -10,6 +10,13 @@ export interface IWindowDisplayWorker
     getModalWarningResponse(message: string, no: string, yes: string): Promise<any>;
     showInformationMessage(message: string, callback: (response: string | undefined) => void, ...items: string[]): void;
     copyToUserClipboard(text: string): Promise<void>;
-    openExternalUrl(url: string): Thenable<boolean>;
+    openExternalUrl?(url: string): Thenable<boolean>;
     displayPathConfigPopUp(): Thenable<string | undefined>;
+}
+
+export function openExternalUrlSafely(displayWorker: IWindowDisplayWorker, url: string): Promise<void>
+{
+    return Promise.resolve()
+        .then(() => displayWorker.openExternalUrl?.(url))
+        .then(() => undefined, () => undefined);
 }

@@ -16,6 +16,7 @@ import
         DotnetUninstallFinalError,
         EventCancellationError
     } from '../EventStream/EventStreamEvents';
+import { openExternalUrlSafely } from '../EventStream/IWindowDisplayWorker';
 import { IIssueContext } from './IIssueContext';
 import { getInstallFromContext } from './InstallIdUtilities';
 import { formatIssueUrl } from './IssueReporter';
@@ -104,9 +105,8 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
                     {
                         if (response === timeoutConstants.moreInfoOption)
                         {
-                            context.displayWorker.openExternalUrl(context.timeoutInfoUrl);
+                            await openExternalUrlSafely(context.displayWorker, context.timeoutInfoUrl);
                         }
-                        return Promise.resolve();
                     }, timeoutConstants.moreInfoOption);
             }
             else if (showMessage)
@@ -122,7 +122,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
                     {
                         if (response === errorConstants.moreInfoOption)
                         {
-                            context.displayWorker.openExternalUrl(context.moreInfoUrl);
+                            await openExternalUrlSafely(context.displayWorker, context.moreInfoUrl);
                         }
                         else if (response === errorConstants.hideOption)
                         {
@@ -133,7 +133,7 @@ export async function callWithErrorHandling<T>(callback: () => T, context: IIssu
                             const [url, issueBody] = formatIssueUrl(error, context);
                             await Promise.all([
                                 context.displayWorker.copyToUserClipboard(issueBody).catch(() => { }),
-                                context.displayWorker.openExternalUrl(url),
+                                openExternalUrlSafely(context.displayWorker, url),
                             ]);
                         }
                         else if (response === errorConstants.configureManuallyOption && requestingExtensionId)

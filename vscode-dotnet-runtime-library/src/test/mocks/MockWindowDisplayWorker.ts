@@ -10,6 +10,8 @@ export class MockWindowDisplayWorker implements IWindowDisplayWorker {
     public warningMessage = '';
     public infoMessage = '';
     public clipboardText = '';
+    public externalUrl = '';
+    public externalUrlError: Error | undefined;
     public options: string[] = [];
     public callback: ((response: string| undefined) => void | Promise<void>) | undefined = undefined;
     constructor(private readonly mockPath = 'MockPath') { }
@@ -35,8 +37,13 @@ export class MockWindowDisplayWorker implements IWindowDisplayWorker {
         this.clipboardText = text;
     }
 
-    public openExternalUrl(_url: string): Thenable<boolean> {
-        return Promise.resolve(true);
+    public async openExternalUrl(url: string): Promise<boolean> {
+        this.externalUrl = url;
+        if (this.externalUrlError)
+        {
+            throw this.externalUrlError;
+        }
+        return true;
     }
 
     public async getModalWarningResponse(message: string, no: string, yes: string): Promise<any> {

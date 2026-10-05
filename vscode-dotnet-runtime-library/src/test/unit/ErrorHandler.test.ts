@@ -4,6 +4,7 @@
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
 import { DotnetCommandSucceeded, DotnetNotInstallRelatedCommandFailed } from '../../EventStream/EventStreamEvents';
+import { IWindowDisplayWorker } from '../../EventStream/IWindowDisplayWorker';
 import { ExistingPathKeys, IExistingPaths } from '../../IExtensionContext';
 import { LocalMemoryCacheSingleton } from '../../LocalMemoryCacheSingleton';
 import
@@ -113,15 +114,64 @@ suite('ErrorHandler Unit Tests', function ()
     test('Timeout popup appears on timeout', async () =>
     {
         const displayWorker = new MockWindowDisplayWorker();
+        const context = issueContext(displayWorker, new MockEventStream());
+        context.timeoutInfoUrl = 'https://example.test/timeout';
         const res = await callWithErrorHandling<string>(() =>
         {
             throw new Error(timeoutConstants.timeoutMessage);
-        }, issueContext(displayWorker, new MockEventStream()));
+        }, context);
 
         assert.include(displayWorker.errorMessage, timeoutConstants.timeoutMessage);
         assert.include(displayWorker.errorMessage, 'testVersion');
         assert.equal(displayWorker.clipboardText, '');
         assert.includeMembers(displayWorker.options, [timeoutConstants.moreInfoOption]);
+
+        displayWorker.externalUrlError = new Error('Failed to open URL');
+        await displayWorker.callback!(timeoutConstants.moreInfoOption);
+        assert.equal(displayWorker.externalUrl, context.timeoutInfoUrl);
+    });
+
+    test('More info URL failures are ignored', async () =>
+    {
+        const displayWorker = new MockWindowDisplayWorker();
+        const context = issueContext(displayWorker, new MockEventStream());
+        context.moreInfoUrl = 'https://example.test/more-info';
+        await callWithErrorHandling<string>(() =>
+        {
+            throw new Error('errorString');
+        }, context);
+
+        displayWorker.externalUrlError = new Error('Failed to open URL');
+        await displayWorker.callback!(errorConstants.moreInfoOption);
+        assert.equal(displayWorker.externalUrl, context.moreInfoUrl);
+    });
+
+    test('Display workers without URL opening support remain compatible', async () =>
+    {
+        const displayWorker = new MockWindowDisplayWorker();
+        const context = issueContext(displayWorker, new MockEventStream());
+        (displayWorker as IWindowDisplayWorker).openExternalUrl = undefined;
+        await callWithErrorHandling<string>(() =>
+        {
+            throw new Error('errorString');
+        }, context);
+
+        await displayWorker.callback!(errorConstants.moreInfoOption);
+    });
+
+    test('Report issue URL failures are ignored', async () =>
+    {
+        const displayWorker = new MockWindowDisplayWorker();
+        const context = issueContext(displayWorker, new MockEventStream());
+        await callWithErrorHandling<string>(() =>
+        {
+            throw new Error('errorString');
+        }, context);
+
+        displayWorker.externalUrlError = new Error('Failed to open URL');
+        await displayWorker.callback!(errorConstants.reportOption);
+        assert.include(displayWorker.externalUrl, 'github.com/dotnet/vscode-dotnet-runtime/issues/new');
+        assert.include(displayWorker.clipboardText, 'errorString');
     });
 
     test('Successful command events are reported', async () =>

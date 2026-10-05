@@ -50,7 +50,7 @@ import { SUDO_LOCK_PING_DURATION_MS } from '../Acquisition/CacheTimeConstants';
 import { IAcquisitionWorkerContext } from '../Acquisition/IAcquisitionWorkerContext';
 import { RUN_UNDER_SUDO_LOCK } from '../Acquisition/StringConstants';
 import { IEventStream } from '../EventStream/EventStream';
-import { IWindowDisplayWorker } from '../EventStream/IWindowDisplayWorker';
+import { IWindowDisplayWorker, openExternalUrlSafely } from '../EventStream/IWindowDisplayWorker';
 import { IVSCodeExtensionContext } from '../IVSCodeExtensionContext';
 import { LocalMemoryCacheSingleton } from '../LocalMemoryCacheSingleton';
 import { CommandExecutorResult } from './CommandExecutorResult';
@@ -749,7 +749,7 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
             {
                 if (response === this.pathTroubleshootingOption)
                 {
-                    displayWorker.openExternalUrl(`${troubleshootingUrl}#unable-to-add-to-path`);
+                    void openExternalUrlSafely(displayWorker, `${troubleshootingUrl}#unable-to-add-to-path`);
                 }
             }, this.pathTroubleshootingOption);
         }
