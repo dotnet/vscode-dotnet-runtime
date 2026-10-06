@@ -13,8 +13,7 @@
             "release-date": "2023-07-11",
             "release-version": "7.0.9",
             "security": true,
-            "cve-list": [
-            ],
+            "cve-list": [],
             "release-notes": "https://github.com/dotnet/core/blob/main/release-notes/7.0/7.0.9/7.0.9.md",
             "runtime": {
                 "version": "7.0.9",
@@ -430,9 +429,17 @@
                 }
             ],
             "aspnetcore-runtime": {
+                "version": "7.0.9",
+                "files": [
+                    {
+                        "name": "aspnetcore-runtime-win-x64.exe",
+                        "rid": "win-x64",
+                        "url": "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/7.0.9/aspnetcore-runtime-7.0.9-win-x64.exe",
+                        "hash": "fdd469c95fc21f6398c3ff1aa54e5c7cea3a2c6a1434382f4a4d5e2255f507239defb99d0f7840d1eff1b97075a61d05885d1541fda8fbbcce49b0c3bd86af7b"
+                    }
+                ]
             },
-            "windowsdesktop": {
-            }
+            "windowsdesktop": {}
         },
         {
             "release-date": "2023-06-22",
@@ -848,10 +855,8 @@
                     ]
                 }
             ],
-            "aspnetcore-runtime": {
-            },
-            "windowsdesktop": {
-            }
+            "aspnetcore-runtime": {},
+            "windowsdesktop": {}
         }
     ]
 }

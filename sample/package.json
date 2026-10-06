@@ -76,6 +76,16 @@
 				"category": "Sample"
 			},
 			{
+				"command": "sample.dotnet.acquireGlobalRuntime",
+				"title": "Install .NET Runtime Globally",
+				"category": "Sample"
+			},
+			{
+				"command": "sample.dotnet.acquireGlobalASPNETRuntime",
+				"title": "Install ASP.NET Core Runtime Globally",
+				"category": "Sample"
+			},
+			{
 				"command": "sample.dotnet.findPath",
 				"title": "Find the .NET on the PATH",
 				"category": "Sample"

@@ -317,6 +317,19 @@ export function isFullySpecifiedVersion(version: string, eventStream: IEventStre
     return version.split('.').every(x => isNumber(x)) && isValidLongFormVersionFormat(version, eventStream, context) && !isNonSpecificFeatureBandedVersion(version);
 }
 
+export function isFullySpecifiedRuntimeVersion(version: string): boolean
+{
+    const numericVersion = getVersionWithoutPreReleaseSuffix(version);
+    const numericParts = numericVersion.split('.');
+    if (numericParts.length !== 3 || !numericParts.every(x => isNumber(x)))
+    {
+        return false;
+    }
+
+    const suffix = getPreReleaseSuffix(version);
+    return suffix === '' || isHistoricalDotnetPreReleaseSuffix(suffix);
+}
+
 /**
  * @param version the requested runtime version to analyze.
  * @returns true IFF version is a fully specified runtime version, including supported pre-release formats.

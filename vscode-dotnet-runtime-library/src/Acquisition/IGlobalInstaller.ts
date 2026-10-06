@@ -26,9 +26,24 @@ export abstract class IGlobalInstaller {
 
     public abstract getExpectedGlobalSDKPath(specificSDKVersionInstalled : string, installedArch : string, macPathShouldExist? : boolean) : Promise<string>
 
+    public installGlobal(install : DotnetInstall) : Promise<string>
+    {
+        return this.installSDK(install);
+    }
+
+    public uninstallGlobal(install : DotnetInstall) : Promise<string>
+    {
+        return this.uninstallSDK(install);
+    }
+
+    public getExpectedGlobalDotnetPath(specificVersionInstalled : string, installedArch : string, macPathShouldExist? : boolean) : Promise<string>
+    {
+        return this.getExpectedGlobalSDKPath(specificVersionInstalled, installedArch, macPathShouldExist);
+    }
+
     /**
      *
-     * @returns The folder where global sdk installers will be downloaded onto the disk.
+     * @returns The folder where global installers will be downloaded onto the disk.
      */
     public static getDownloadedInstallFilesFolder(uniqueInstallerId : string) : string
     {
