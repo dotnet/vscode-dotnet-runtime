@@ -1553,6 +1553,11 @@ export class NoMatchingInstallToStopTracking extends DotnetCustomMessageEvent
     public readonly eventName = 'NoMatchingInstallToStopTracking';
 }
 
+export class StaleDotnetInstallRemovedEvent extends DotnetCustomMessageEvent
+{
+    public readonly eventName = 'StaleDotnetInstallRemovedEvent';
+}
+
 export class CommandExecutionStdError extends DotnetCustomMessageEvent
 {
     public readonly eventName = 'CommandExecutionStdError';
