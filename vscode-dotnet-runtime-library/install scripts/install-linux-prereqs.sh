@@ -44,7 +44,7 @@ sudoIf()
 
 # Utility function that waits for any existing installation operations to complete
 # on Debian/Ubuntu based distributions and then calls apt-get
-aptSudoIf() 
+aptSudoIf()
 {
     while sudoIf fuser /var/lib/dpkg/lock >/dev/null 2>&1; do
         echo -ne "(*) Waiting for other package operations to complete.\r"
@@ -69,7 +69,7 @@ checkNetCoreDeps(){
 }
 
 checkAdditionalDeps(){
-    if [ "$ADDITIONAL_DEPS" -ne "" ]; then
+    if [ "$ADDITIONAL_DEPS" != "" ]; then
         # Install additional dependencies
         if ! "$1" "$2 $ADDITIONAL_DEPS"; then
             echo "(!) Failed to install additional dependencies!"
@@ -125,13 +125,13 @@ fi
 #openSUSE - Has to be first since apt-get is available but package names different
 if [ "$DISTRO" = "SUSE" ]; then
     echo "(*) Detected SUSE (unoffically/community supported)"
-    installAdditionalDeps sudoIf "zypper -n in"
+    checkAdditionalDeps sudoIf "zypper -n in"
     checkNetCoreDeps sudoIf "zypper -n in libopenssl1_0_0 libicu krb5 libz1"
 
 # Debian / Ubuntu
 elif [ "$DISTRO" = "Debian" ]; then
     echo "(*) Detected Debian / Ubuntu"
-   
+
     # Get latest package data
     echo -e "\n(*) Updating package lists..."
     if ! aptSudoIf "update"; then
@@ -139,9 +139,9 @@ elif [ "$DISTRO" = "Debian" ]; then
         exitScript 1
     fi
 
-    installAdditionalDeps aptSudoIf "install -yq"
-    checkNetCoreDeps aptSudoIf "install -yq libicu[0-9][0-9] libkrb5-3 zlib1g $ADDITIONAL_DEPS"
-    if [ $SKIPDOTNETCORE -eq 0 ]; then    
+    checkAdditionalDeps aptSudoIf "install -yq"
+    checkNetCoreDeps aptSudoIf "install -yq ^libicu[0-9][0-9]*$ libkrb5-3 zlib1g"
+    if [ $SKIPDOTNETCORE -eq 0 ]; then
         # Determine which version of libssl to install
         # dpkg-query can return "1" in some distros if the package is not found. "2" is an unexpected error
         LIBSSL=$(dpkg-query -f '${db:Status-Abbrev}\t${binary:Package}\n' -W 'libssl1\.0\.?' 2>&1)
@@ -151,18 +151,20 @@ elif [ "$DISTRO" = "Debian" ]; then
         fi
         if [ "$(echo "$LIBSSL" | grep -o 'libssl1\.0\.[0-9]:' | uniq | sort | wc -l)" -eq 0 ]; then
             # No libssl install 1.0.2 for Debian, 1.0.0 for Ubuntu
-            if [[ ! -z $(apt-cache --names-only search ^libssl1.0.2$) ]]; then
+            if [[ ! -z $(apt-cache --names-only search '^libssl1\.0\.2$') ]]; then
                 if ! aptSudoIf "install -yq libssl1.0.2"; then
                     echo "(!) libssl1.0.2 installation failed!"
                     exitScript 1
                 fi
-            else    
+            elif [[ ! -z $(apt-cache --names-only search '^libssl1\.0\.0$') ]]; then
                 if ! aptSudoIf "install -yq libssl1.0.0"; then
                     echo "(!) libssl1.0.0 installation failed!"
                     exitScript 1
                 fi
+            else
+                echo "(*) libssl1.0.x is not available. Skipping legacy dependency."
             fi
-        else 
+        else
             echo "(*) libssl1.0.x already installed."
         fi
     fi
@@ -180,9 +182,9 @@ elif [ "$DISTRO" = "RedHat" ]; then
         exitScript 1
     fi
 
-    installAdditionalDeps sudoIf "yum -y install"
-    checkNetCoreDeps sudoIf "yum -y install openssl-libs krb5-libs libicu zlib"  
-    # Install openssl-compat10 for Fedora 29. Does not exist in 
+    checkAdditionalDeps sudoIf "yum -y install"
+    checkNetCoreDeps sudoIf "yum -y install openssl-libs krb5-libs libicu zlib"
+    # Install openssl-compat10 for Fedora 29. Does not exist in
     # CentOS, so validate package exists first.
     if [ $SKIPDOTNETCORE -eq 0 ]; then
         if ! sudoIf "yum -q list compat-openssl10" >/dev/null 2>&1; then
@@ -198,20 +200,20 @@ elif [ "$DISTRO" = "RedHat" ]; then
 #ArchLinux
 elif [ "$DISTRO" = "ArchLinux" ]; then
     echo "(*) Detected Arch Linux (unoffically/community supported)"
-    installAdditionalDeps sudoIf "pacman -Sq --noconfirm --needed"
+    checkAdditionalDeps sudoIf "pacman -Sq --noconfirm --needed"
     checkNetCoreDeps sudoIf "pacman -Sq --noconfirm --needed gcr liburcu openssl-1.0 krb5 icu zlib"
 
 #Solus
 elif [ "$DISTRO" = "Solus" ]; then
     echo "(*) Detected Solus (unoffically/community supported)"
-    installAdditionalDeps sudoIf "eopkg -y it"
+    checkAdditionalDeps sudoIf "eopkg -y it"
     checkNetCoreDeps sudoIf "eopkg -y it libicu openssl zlib kerberos"
 
 #Alpine Linux
 elif [ "$DISTRO" = "Alpine" ]; then
     echo "(*) Detected Alpine Linux"
-    
-    # Update package repo indexes    
+
+    # Update package repo indexes
     echo -e "\n(*) Updating and upgrading..."
     if ! sudoIf "apk update --wait 30"; then
         echo "(!) Failed to update package lists."
@@ -223,7 +225,7 @@ elif [ "$DISTRO" = "Alpine" ]; then
         exitScript 1
     fi
 
-    installAdditionalDeps sudoIf "apk add --no-cache"
+    checkAdditionalDeps sudoIf "apk add --no-cache"
     sudoIf "apk add --no-cache libssl1.0 icu krb5 zlib"
 
 # Unknown distro

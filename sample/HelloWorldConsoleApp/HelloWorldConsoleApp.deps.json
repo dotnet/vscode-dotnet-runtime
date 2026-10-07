@@ -1,11 +1,11 @@
 {
   "runtimeTarget": {
-    "name": ".NETCoreApp,Version=v2.2",
-    "signature": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
   },
   "compilationOptions": {},
   "targets": {
-    ".NETCoreApp,Version=v2.2": {
+    ".NETCoreApp,Version=v10.0": {
       "HelloWorldConsoleApp/1.0.0": {
         "runtime": {
           "HelloWorldConsoleApp.dll": {}
