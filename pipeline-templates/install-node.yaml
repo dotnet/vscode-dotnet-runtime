@@ -3,7 +3,7 @@ steps:
   inputs:
     version: '22.x'
   displayName: '⚛️ Install Node.js'
-- script: corepack enable && corepack install --global yarn@1.22.22
+- script: npm install --global yarn@1.22.22
   displayName: '🧶 Install Yarn'
 - pwsh: |
     $gitBashDirectory = Join-Path $env:ProgramFiles 'Git\bin'
