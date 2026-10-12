@@ -43,6 +43,7 @@ async function main()
                 launchArgs: [
                     // This disables all extensions except the one being testing
                     '--disable-extensions',
+                    '--disable-spell-checking',
                 ],
                 extensionTestsEnv: { DOTNET_INSTALL_TOOL_UNDER_TEST: 'true' }
             }

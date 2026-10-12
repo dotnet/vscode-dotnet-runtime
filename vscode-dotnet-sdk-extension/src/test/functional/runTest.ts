@@ -39,6 +39,7 @@ async function main() {
       launchArgs: [
         // This disables all extensions except the one being testing
         '--disable-extensions',
+        '--disable-spell-checking',
       ]});
   } catch (err) {
     console.error('Failed to run tests');
