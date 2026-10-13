@@ -5,13 +5,19 @@
 
 import * as os from 'os';
 import * as path from 'path';
+import { mkdtemp, rm, writeFile } from 'fs/promises';
 
 import { runTests } from '@vscode/test-electron';
 
 async function main()
 {
+    const userDataDir = await mkdtemp(path.join(os.tmpdir(), 'vscode-dotnet-runtime-tests-'));
     try
     {
+        await writeFile(path.join(userDataDir, 'Preferences'), JSON.stringify({
+            browser: { enable_spellchecking: false }
+        }));
+
         // The folder containing the Extension Manifest package.json
         // Passed to `--extensionDevelopmentPath`
         const extensionDevelopmentPath = path.resolve(__dirname, '../../../');
@@ -43,17 +49,19 @@ async function main()
                 launchArgs: [
                     // This disables all extensions except the one being testing
                     '--disable-extensions',
-                    '--disable-spell-checking',
+                    `--user-data-dir=${userDataDir}`,
                 ],
                 extensionTestsEnv: { DOTNET_INSTALL_TOOL_UNDER_TEST: 'true' }
             }
         );
     }
-    catch (err)
+    finally
     {
-        console.error('Failed to run tests');
-        process.exit(1);
+        await rm(userDataDir, { recursive: true, force: true, maxRetries: 3 });
     }
 }
 
-main();
+main().catch(err => {
+    console.error('Failed to run tests', err);
+    process.exitCode = 1;
+});
