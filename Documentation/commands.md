@@ -34,6 +34,14 @@ The `version` accepts multiple formats:
 
 **Offline behavior:** If the machine is offline, the extension will attempt to find a compatible existing installation that it previously managed. In practice this rarely helps for global SDK installs, since externally installed SDKs are not tracked by the extension. If no compatible managed install is found while offline, a warning is posted and the install will time out.
 
+### dotnet.acquireGlobalRuntime
+
+This *preview* command installs a .NET runtime in a system-level location on Windows. It accepts an [IDotnetAcquireContext](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/vscode-dotnet-runtime-library/src/IDotnetAcquireContext.ts) object and returns an [IDotnetAcquireResult](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/vscode-dotnet-runtime-library/src/IDotnetAcquireResult.ts). The command rejects requests on other operating systems.
+
+Set `mode` to `runtime` for `Microsoft.NETCore.App` or `aspnetcore` for `Microsoft.AspNetCore.App`; it defaults to `runtime` when omitted. The `version` may be a major version, major.minor version, or fully specified runtime version. The command may require elevation because it uses the operating system's global installer.
+
+**Offline behavior:** If the machine is offline, the extension attempts to find a compatible global installation it previously managed. If none is available, acquisition fails without downloading an installer.
+
 ### dotnet.acquireStatus
 
 > **Sample:** See [`sample.dotnet.acquireStatus`](https://github.com/dotnet/vscode-dotnet-runtime/blob/main/sample/src/extension.ts) for a usage example.

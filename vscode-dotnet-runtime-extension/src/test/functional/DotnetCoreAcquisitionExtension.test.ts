@@ -582,6 +582,91 @@ suite('DotnetCoreAcquisitionExtension End to End', function ()
         await runGlobalSdkInstallTest('10.0.1xx');
     }).timeout(standardTimeoutTime * 1000);
 
+    async function runGlobalRuntimeInstallTest(mode: 'runtime' | 'aspnetcore' | undefined)
+    {
+        const version = '10.0.1';
+        const expectedMode = mode ?? 'runtime';
+        const context: IDotnetAcquireContext = { version, requestingExtensionId, installType: expectedMode === 'aspnetcore' ? 'local' : undefined, mode };
+        const originalPath = process.env.PATH;
+        let result: IDotnetAcquireResult | undefined;
+        let error: unknown;
+        let pathAfterInstall: string | undefined;
+
+        process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH = 'true';
+        try
+        {
+            result = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquireGlobalRuntime', context);
+        }
+        catch (err)
+        {
+            error = err;
+        }
+        finally
+        {
+            pathAfterInstall = process.env.PATH;
+            process.env.VSCODE_DOTNET_GLOBAL_INSTALL_FAKE_PATH = undefined;
+            process.env.PATH = originalPath;
+        }
+
+        if (error)
+        {
+            throw new Error(`The global ${expectedMode} acquisition failed for version ${version}. Error: ${error}`);
+        }
+
+        assert.exists(result, `The global ${expectedMode} acquisition command returned a result`);
+        assert.equal(result!.dotnetPath, path.join('fake-sdk', getDotnetExecutable()));
+        assert.equal(context.mode, expectedMode, `Global ${expectedMode} acquisition should normalize the mode`);
+        assert.equal(context.installType, 'global', `Global ${expectedMode} acquisition should normalize the install type`);
+        assert.equal(pathAfterInstall, originalPath, `Global ${expectedMode} acquisition should not update PATH`);
+    }
+
+    if (os.platform() === 'win32')
+    {
+        test('Install Runtime Globally E2E', async () =>
+        {
+            await runGlobalRuntimeInstallTest(undefined);
+        }).timeout(standardTimeoutTime);
+
+        test('Install ASP.NET Core Runtime Globally E2E', async () =>
+        {
+            await runGlobalRuntimeInstallTest('aspnetcore');
+        }).timeout(standardTimeoutTime);
+
+        test('Global runtime acquisition rejects SDK mode', async () =>
+        {
+            let error: unknown;
+            try
+            {
+                await vscode.commands.executeCommand('dotnet.acquireGlobalRuntime', {
+                    version: '10.0.1', requestingExtensionId, mode: 'sdk'
+                });
+            }
+            catch (err)
+            {
+                error = err;
+            }
+
+            assert.include((error as Error)?.message, "Global runtime acquisition does not support mode 'sdk'.");
+        }).timeout(standardTimeoutTime);
+    }
+    else
+    {
+        test('Global runtime acquisition is rejected outside Windows', async () =>
+        {
+            let error: unknown;
+            try
+            {
+                await vscode.commands.executeCommand('dotnet.acquireGlobalRuntime', { version: '10.0.1', requestingExtensionId, mode: 'runtime', installType: 'global' });
+            }
+            catch (err)
+            {
+                error = err;
+            }
+
+            assert.include((error as Error)?.message, 'only supported on Windows');
+        }).timeout(standardTimeoutTime);
+    }
+
     test('Telemetry Sent During Install and Uninstall', async () =>
     {
         if (!vscode.env.isTelemetryEnabled)
