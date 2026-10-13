@@ -6,53 +6,48 @@
 import * as os from 'os';
 import * as path from 'path';
 
-import { runTests } from '@vscode/test-electron';
+import { runTestsWithProfile } from './runTestsWithProfile';
 
 async function main()
 {
-    try
+    // The folder containing the Extension Manifest package.json
+    // Passed to `--extensionDevelopmentPath`
+    const extensionDevelopmentPath = path.resolve(__dirname, '../../../');
+
+    // The path to the extension test runner script
+    // Passed to --extensionTestsPath
+    const extensionTestsPath = path.resolve(__dirname, './index');
+
+    let platformValue = '';
+    switch (os.platform())
     {
-        // The folder containing the Extension Manifest package.json
-        // Passed to `--extensionDevelopmentPath`
-        const extensionDevelopmentPath = path.resolve(__dirname, '../../../');
+        case 'win32':
+            platformValue = 'win32-x64-archive';
+            break;
+        case 'darwin':
+            platformValue = 'darwin';
+            break;
+        case 'linux':
+            platformValue = 'linux-x64';
+            break;
+    }
 
-        // The path to the extension test runner script
-        // Passed to --extensionTestsPath
-        const extensionTestsPath = path.resolve(__dirname, './index');
-
-        let platformValue = '';
-        switch (os.platform())
+    // Download VS Code, unzip it and run the integration test
+    await runTestsWithProfile(
         {
-            case 'win32':
-                platformValue = 'win32-x64-archive';
-                break;
-            case 'darwin':
-                platformValue = 'darwin';
-                break;
-            case 'linux':
-                platformValue = 'linux-x64';
-                break;
+            ...(platformValue !== '' && { platform: platformValue }),
+            extensionDevelopmentPath,
+            extensionTestsPath,
+            launchArgs: [
+                // This disables all extensions except the one being testing
+                '--disable-extensions',
+            ],
+            extensionTestsEnv: { DOTNET_INSTALL_TOOL_UNDER_TEST: 'true' }
         }
-
-        // Download VS Code, unzip it and run the integration test
-        await runTests(
-            {
-                ...(platformValue !== '' && { platform: platformValue }),
-                extensionDevelopmentPath,
-                extensionTestsPath,
-                launchArgs: [
-                    // This disables all extensions except the one being testing
-                    '--disable-extensions',
-                ],
-                extensionTestsEnv: { DOTNET_INSTALL_TOOL_UNDER_TEST: 'true' }
-            }
-        );
-    }
-    catch (err)
-    {
-        console.error('Failed to run tests');
-        process.exit(1);
-    }
+    );
 }
 
-main();
+main().catch(err => {
+    console.error('Failed to run tests', err);
+    process.exitCode = 1;
+});

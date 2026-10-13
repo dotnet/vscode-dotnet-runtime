@@ -15,47 +15,41 @@
 import * as os from 'os';
 import * as path from 'path';
 
-import { runTests } from '@vscode/test-electron';
+import { runTestsWithProfile } from './runTestsWithProfile';
 
 async function main()
 {
-    try
-    {
-        const extensionDevelopmentPath = path.resolve(__dirname, '../../../');
-        const extensionTestsPath = path.resolve(__dirname, './indexLmTools');
+    const extensionDevelopmentPath = path.resolve(__dirname, '../../../');
+    const extensionTestsPath = path.resolve(__dirname, './indexLmTools');
 
-        let platformValue = '';
-        switch (os.platform())
+    let platformValue = '';
+    switch (os.platform())
+    {
+        case 'win32':
+            platformValue = 'win32-x64-archive';
+            break;
+        case 'darwin':
+            platformValue = 'darwin';
+            break;
+        case 'linux':
+            platformValue = 'linux-x64';
+            break;
+    }
+
+    await runTestsWithProfile(
         {
-            case 'win32':
-                platformValue = 'win32-x64-archive';
-                break;
-            case 'darwin':
-                platformValue = 'darwin';
-                break;
-            case 'linux':
-                platformValue = 'linux-x64';
-                break;
+            ...(platformValue !== '' && { platform: platformValue }),
+            extensionDevelopmentPath,
+            extensionTestsPath,
+            launchArgs: [
+                '--disable-extensions',
+            ],
+            extensionTestsEnv: { DOTNET_INSTALL_TOOL_UNDER_TEST: 'true' }
         }
-
-        await runTests(
-            {
-                ...(platformValue !== '' && { platform: platformValue }),
-                extensionDevelopmentPath,
-                extensionTestsPath,
-                launchArgs: [
-                    '--disable-extensions',
-                ],
-                extensionTestsEnv: { DOTNET_INSTALL_TOOL_UNDER_TEST: 'true' }
-            }
-        );
-    }
-    catch (err)
-    {
-        console.error(err);
-        console.error('Failed to run Language Model Tools tests');
-        process.exit(1);
-    }
+    );
 }
 
-main();
+main().catch(err => {
+    console.error('Failed to run Language Model Tools tests', err);
+    process.exitCode = 1;
+});
