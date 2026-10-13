@@ -3,7 +3,7 @@ steps:
   inputs:
     version: '22.x'
   displayName: '⚛️ Install Node.js'
-- script: npm install --global yarn@1.22.22
+- script: npm install --global yarn@1.22.22 --registry=https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/
   displayName: '🧶 Install Yarn'
 - pwsh: |
     $gitBashDirectory = Join-Path $env:ProgramFiles 'Git\bin'
