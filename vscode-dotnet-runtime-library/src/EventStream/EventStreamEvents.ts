@@ -102,6 +102,18 @@ export class DotnetGlobalSDKAcquisitionStarted extends DotnetAcquisitionStartedB
     public readonly type = EventType.DotnetModalChildEvent;
 }
 
+export class DotnetGlobalRuntimeAcquisitionStarted extends DotnetAcquisitionStartedBase
+{
+    public readonly eventName = 'DotnetGlobalRuntimeAcquisitionStarted';
+    public readonly type = EventType.DotnetModalChildEvent;
+}
+
+export class DotnetGlobalASPNetRuntimeAcquisitionStarted extends DotnetAcquisitionStartedBase
+{
+    public readonly eventName = 'DotnetGlobalASPNetRuntimeAcquisitionStarted';
+    public readonly type = EventType.DotnetModalChildEvent;
+}
+
 export class DotnetASPNetRuntimeAcquisitionStarted extends DotnetAcquisitionStartedBase
 {
     public readonly eventName = 'DotnetASPNetRuntimeAcquisitionStarted';
@@ -161,6 +173,16 @@ export class DotnetGlobalSDKAcquisitionTotalSuccessEvent extends DotnetAcquisiti
     public readonly eventName = 'DotnetGlobalSDKAcquisitionTotalSuccessEvent';
 }
 
+export class DotnetGlobalRuntimeAcquisitionTotalSuccessEvent extends DotnetAcquisitionTotalSuccessEventBase
+{
+    public readonly eventName = 'DotnetGlobalRuntimeAcquisitionTotalSuccessEvent';
+}
+
+export class DotnetGlobalASPNetRuntimeAcquisitionTotalSuccessEvent extends DotnetAcquisitionTotalSuccessEventBase
+{
+    public readonly eventName = 'DotnetGlobalASPNetRuntimeAcquisitionTotalSuccessEvent';
+}
+
 export class DotnetASPNetRuntimeAcquisitionTotalSuccessEvent extends DotnetAcquisitionTotalSuccessEventBase
 {
     public readonly eventName = 'DotnetASPNetRuntimeAcquisitionTotalSuccessEvent';
@@ -218,6 +240,16 @@ export class DotnetRuntimeAcquisitionRequested extends DotnetAcquisitionRequeste
 export class DotnetGlobalSDKAcquisitionRequested extends DotnetAcquisitionRequestedEventBase
 {
     public readonly eventName = 'DotnetGlobalSDKAcquisitionRequested';
+}
+
+export class DotnetGlobalRuntimeAcquisitionRequested extends DotnetAcquisitionRequestedEventBase
+{
+    public readonly eventName = 'DotnetGlobalRuntimeAcquisitionRequested';
+}
+
+export class DotnetGlobalASPNetRuntimeAcquisitionRequested extends DotnetAcquisitionRequestedEventBase
+{
+    public readonly eventName = 'DotnetGlobalASPNetRuntimeAcquisitionRequested';
 }
 
 export class DotnetASPNetRuntimeAcquisitionRequested extends DotnetAcquisitionRequestedEventBase
@@ -341,6 +373,18 @@ abstract class DotnetAcquisitionFinalErrorBase extends DotnetAcquisitionError{
 export class DotnetGlobalSDKAcquisitionError extends DotnetAcquisitionFinalErrorBase
 {
     public eventName = 'DotnetGlobalSDKAcquisitionError';
+    public verboseOutputOnly = true;
+}
+
+export class DotnetGlobalRuntimeAcquisitionError extends DotnetAcquisitionFinalErrorBase
+{
+    public eventName = 'DotnetGlobalRuntimeAcquisitionError';
+    public verboseOutputOnly = true;
+}
+
+export class DotnetGlobalASPNetRuntimeAcquisitionError extends DotnetAcquisitionFinalErrorBase
+{
+    public eventName = 'DotnetGlobalASPNetRuntimeAcquisitionError';
     public verboseOutputOnly = true;
 }
 

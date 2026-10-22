@@ -264,6 +264,44 @@ ${stderr}`);
         }
     });
 
+    async function acquireGlobalRuntime(version: string | undefined, mode: 'runtime' | 'aspnetcore'): Promise<IDotnetAcquireResult | undefined>
+    {
+        if (!version)
+        {
+            version = await vscode.window.showInputBox({
+                placeHolder: '8.0',
+                value: '8.0',
+                prompt: mode === 'runtime' ? 'The .NET runtime version.' : 'The ASP.NET Core runtime version.',
+            });
+        }
+
+        if (!version)
+        {
+            return;
+        }
+
+        try
+        {
+            await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
+            const commandContext: IDotnetAcquireContext = { version, requestingExtensionId, installType: 'global', mode };
+            return await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquireGlobalRuntime', commandContext);
+        }
+        catch (error)
+        {
+            vscode.window.showErrorMessage((error as Error).toString());
+        }
+    }
+
+    const sampleGlobalRuntimeRegistration = vscode.commands.registerCommand('sample.dotnet.acquireGlobalRuntime', async (version: string | undefined) =>
+    {
+        return await acquireGlobalRuntime(version, 'runtime');
+    });
+
+    const sampleGlobalASPNETRuntimeRegistration = vscode.commands.registerCommand('sample.dotnet.acquireGlobalASPNETRuntime', async (version: string | undefined) =>
+    {
+        return await acquireGlobalRuntime(version, 'aspnetcore');
+    });
+
     const sampleFindPathRegistration = vscode.commands.registerCommand('sample.dotnet.findPath', async () =>
     {
         const version = await vscode.window.showInputBox(
@@ -354,6 +392,9 @@ ${JSON.stringify(result) ?? 'undefined'}`);
         sampleConcurrentASPNETTest,
         sampleShowAcquisitionLogRegistration,
         sampleGetAcquisitionLogRegistration,
+        sampleGlobalSDKFromRuntimeRegistration,
+        sampleGlobalRuntimeRegistration,
+        sampleGlobalASPNETRuntimeRegistration,
         sampleFindPathRegistration,
         sampleAvailableInstallsRegistration
     );
@@ -517,7 +558,6 @@ ${JSON.stringify(result) ?? 'undefined'}`);
         sampleSDKDotnetUninstallAllRegistration,
         sampleSDKShowAcquisitionLogRegistration,
         sampleForceUpdateRegistration,
-        sampleGlobalSDKFromRuntimeRegistration,
         sampleResetUpdateSuccessTime,
         sampleAcquireNoForceRegistration);
 }

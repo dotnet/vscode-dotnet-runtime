@@ -21,4 +21,8 @@ export interface IDotnetCoreAcquisitionWorker
     acquireLocalSDK(context: IAcquisitionWorkerContext, invoker: IAcquisitionInvoker): Promise<IDotnetAcquireResult>;
 
     acquireGlobalSDK(context: IAcquisitionWorkerContext, installerResolver: GlobalInstallerResolver): Promise<IDotnetAcquireResult>;
+
+    acquireGlobalRuntime(context: IAcquisitionWorkerContext, installerResolver: GlobalInstallerResolver): Promise<IDotnetAcquireResult>;
+
+    acquireGlobalASPNET(context: IAcquisitionWorkerContext, installerResolver: GlobalInstallerResolver): Promise<IDotnetAcquireResult>;
 }
