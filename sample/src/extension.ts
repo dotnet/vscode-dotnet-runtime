@@ -13,6 +13,7 @@ import
     DotnetVersionSpecRequirement,
     IDotnetAcquireContext,
     IDotnetAcquireResult,
+    IDotnetEnsureDependenciesContext,
     IDotnetFindPathContext,
     IDotnetListVersionsResult,
     IDotnetLogResult,
@@ -48,8 +49,8 @@ export function activate(context: vscode.ExtensionContext)
         {
             await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
 
-            // Console app requires .NET Core 2.2.0
-            const commandRes = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', { version: '2.2', requestingExtensionId });
+            // Console app requires .NET 10.
+            const commandRes = await vscode.commands.executeCommand<IDotnetAcquireResult>('dotnet.acquire', { version: '10.0', requestingExtensionId });
             const dotnetPath = commandRes!.dotnetPath;
             if (!dotnetPath)
             {
@@ -236,6 +237,96 @@ ${stderr}`);
         }
     });
 
+    // Accept either whitespace-separated args (e.g. "--info") or a JSON string array for values that contain spaces.
+    function parseEnsureDependenciesArguments(input: string): string[]
+    {
+        const trimmed = input.trim();
+        if (trimmed.startsWith('['))
+        {
+            const parsed = JSON.parse(trimmed);
+            if (!Array.isArray(parsed) || parsed.some((arg: unknown) => typeof arg !== 'string'))
+            {
+                throw new Error('Custom arguments JSON must be an array of strings.');
+            }
+            return parsed;
+        }
+
+        return trimmed.length === 0 ? [] : trimmed.split(/\s+/);
+    }
+
+    const sampleEnsureDependenciesRegistration = vscode.commands.registerCommand('sample.dotnet.ensureDependencies', async () =>
+    {
+        const dotnetPath = await vscode.window.showInputBox({
+            placeHolder: process.platform === 'win32' ? 'C:\\Program Files\\dotnet\\dotnet.exe' : '/usr/bin/dotnet',
+            value: 'dotnet',
+            prompt: 'The dotnet command or executable path to run.',
+        });
+
+        if (!dotnetPath)
+        {
+            return;
+        }
+
+        const argumentMode = await vscode.window.showQuickPick(['DLL path', 'Custom arguments'], {
+            placeHolder: 'Choose the argument shape to pass to dotnet.ensureDotnetDependencies.'
+        });
+
+        if (!argumentMode)
+        {
+            return;
+        }
+
+        let args: string[];
+        if (argumentMode === 'DLL path')
+        {
+            const dllPath = await vscode.window.showInputBox({
+                placeHolder: '/path/to/LanguageServer.dll',
+                prompt: 'The DLL path to pass as the single dotnet argument.',
+            });
+
+            if (!dllPath)
+            {
+                return;
+            }
+            args = [dllPath];
+        }
+        else
+        {
+            const customArgs = await vscode.window.showInputBox({
+                placeHolder: '--info or ["/path/to/app.dll", "--flag"]',
+                value: '--info',
+                prompt: 'Arguments to pass to dotnet. Use JSON array syntax if an argument contains spaces.',
+            });
+
+            if (customArgs === undefined)
+            {
+                return;
+            }
+
+            try
+            {
+                args = parseEnsureDependenciesArguments(customArgs);
+            }
+            catch (error)
+            {
+                vscode.window.showErrorMessage(`Invalid custom arguments: ${(error as Error).message}`);
+                return;
+            }
+        }
+
+        try
+        {
+            await vscode.commands.executeCommand('dotnet.showAcquisitionLog');
+            const commandContext: IDotnetEnsureDependenciesContext = { command: dotnetPath, arguments: args };
+            await vscode.commands.executeCommand('dotnet.ensureDotnetDependencies', commandContext);
+            vscode.window.showInformationMessage(`dotnet.ensureDotnetDependencies completed for: ${dotnetPath} ${args.join(' ')}`);
+        }
+        catch (error)
+        {
+            vscode.window.showErrorMessage((error as Error).toString());
+        }
+    });
+
     const sampleGlobalSDKFromRuntimeRegistration = vscode.commands.registerCommand('sample.dotnet.acquireGlobalSDK', async (version: string | undefined) =>
     {
         if (!version)
@@ -354,6 +445,7 @@ ${JSON.stringify(result) ?? 'undefined'}`);
         sampleConcurrentASPNETTest,
         sampleShowAcquisitionLogRegistration,
         sampleGetAcquisitionLogRegistration,
+        sampleEnsureDependenciesRegistration,
         sampleFindPathRegistration,
         sampleAvailableInstallsRegistration
     );

@@ -71,6 +71,11 @@
 				"category": "Sample"
 			},
 			{
+				"command": "sample.dotnet.ensureDependencies",
+				"title": "Call ensureDotnetDependencies with custom dotnet arguments",
+				"category": "Sample"
+			},
+			{
 				"command": "sample.dotnet.acquireGlobalSDK",
 				"title": "Install .NET SDK Globally via .NET Install Tool (Former Runtime Extension)",
 				"category": "Sample"
