@@ -59,6 +59,7 @@ import { ICommandExecutor } from './ICommandExecutor';
 import { IFileUtilities } from './IFileUtilities';
 import { IUtilityContext } from './IUtilityContext';
 import { LockUsedByThisInstanceSingleton } from './LockUsedByThisInstanceSingleton';
+import { quoteForPosixShell } from './PosixShellQuoting';
 import { executeWithLock, filterEnvVars, isRunningUnderWSL, loopWithTimeoutOnCond, minimizeEnvironment } from './TypescriptUtilities';
 
 export class CommandExecutor extends ICommandExecutor
@@ -683,18 +684,17 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
         if (!isGlobal || os.platform() === 'linux')
         {
             // Set user PATH variable. The .NET SDK Installer does this for us on Win/Mac.
-            let pathCommand: string | undefined;
             if (os.platform() === 'win32')
             {
-                pathCommand = this.getWindowsPathCommand(pathAddition);
-            } else
-            {
-                pathCommand = this.getLinuxPathCommand(pathAddition);
+                const pathCommand = this.getWindowsPathCommand(pathAddition);
+                if (pathCommand !== undefined)
+                {
+                    this.runPathCommand(pathCommand, troubleshootingUrl, displayWorker);
+                }
             }
-
-            if (pathCommand !== undefined)
+            else
             {
-                this.runPathCommand(pathCommand, troubleshootingUrl, displayWorker);
+                this.appendPathToUserProfile(pathAddition, this.getUserProfileFile(), troubleshootingUrl, displayWorker);
             }
         }
 
@@ -714,15 +714,47 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
         return sanitizedCallerName ?? 'NET Install Tool';
     }
 
-    protected getLinuxPathCommand(pathAddition: string): string | undefined
+    protected getUserProfileFile(): string
     {
-        const profileFile = os.platform() === 'darwin' ? path.join(os.homedir(), '.zshrc') : path.join(os.homedir(), '.profile');
-        if (fs.existsSync(profileFile) && fs.readFileSync(profileFile).toString().includes(pathAddition))
+        return os.platform() === 'darwin' ? path.join(os.homedir(), '.zshrc') : path.join(os.homedir(), '.profile');
+    }
+
+    /**
+     * Persists the PATH update by appending an export line to the user's shell profile.
+     * The line is written with the Node filesystem API rather than by piping a command through a shell,
+     * so neither the profile path nor the installation path is ever parsed as shell command text.
+     * The exported value still has to be quoted, because it is parsed later when the profile is sourced:
+     * unquoted, a path containing an apostrophe (e.g. a user name such as `o'brien`) ends the string early.
+     * @param pathAddition The directory that is prepended to PATH.
+     * @param profileFile The shell profile that is appended to. It is created when missing.
+     * @param troubleshootingUrl The URL offered to the user when the profile cannot be written.
+     * @param displayWorker The window that shows the warning.
+     */
+    protected appendPathToUserProfile(pathAddition: string, profileFile: string, troubleshootingUrl: string, displayWorker: IWindowDisplayWorker)
+    {
+        const quotedAddition = quoteForPosixShell(pathAddition);
+
+        if (fs.existsSync(profileFile))
         {
-            // No need to add to PATH again
-            return undefined;
+            const profileContent = fs.readFileSync(profileFile).toString();
+
+            // The quoted form covers additions written by this version; the raw form covers profiles
+            // that an older version wrote before the value was quoted.
+            if (profileContent.includes(quotedAddition) || profileContent.includes(pathAddition))
+            {
+                // No need to add to PATH again
+                return;
+            }
         }
-        return `echo 'export PATH="${pathAddition}:$PATH"' >> ${profileFile}`; // CodeQL [SM03609] both values are locally derived installation and user-profile paths, not request-controlled command text.
+
+        try
+        {
+            fs.appendFileSync(profileFile, `export PATH=${quotedAddition}:"$PATH"\n`);
+        }
+        catch (error: any)
+        {
+            this.reportPathUpdateFailure(error, troubleshootingUrl, displayWorker);
+        }
     }
 
     protected getWindowsPathCommand(pathAddition: string): string | undefined
@@ -745,13 +777,18 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
         }
         catch (error: any)
         {
-            displayWorker.showWarningMessage(`Unable to add SDK to the PATH: ${JSON.stringify(error)}`, (response: string | undefined) =>
-            {
-                if (response === this.pathTroubleshootingOption)
-                {
-                    displayWorker.openExternalUrl(`${troubleshootingUrl}#unable-to-add-to-path`).catch(() => {});
-                }
-            }, this.pathTroubleshootingOption);
+            this.reportPathUpdateFailure(error, troubleshootingUrl, displayWorker);
         }
+    }
+
+    private reportPathUpdateFailure(error: any, troubleshootingUrl: string, displayWorker: IWindowDisplayWorker)
+    {
+        displayWorker.showWarningMessage(`Unable to add SDK to the PATH: ${JSON.stringify(error)}`, (response: string | undefined) =>
+        {
+            if (response === this.pathTroubleshootingOption)
+            {
+                displayWorker.openExternalUrl(`${troubleshootingUrl}#unable-to-add-to-path`).catch(() => {});
+            }
+        }, this.pathTroubleshootingOption);
     }
 }
