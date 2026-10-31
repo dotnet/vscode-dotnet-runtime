@@ -5,6 +5,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { promisify } from 'util';
 import { CommandExecutor } from '../../Utils/CommandExecutor';
+import { quoteForPosixShell } from '../../Utils/PosixShellQuoting';
 import { getMockAcquisitionContext, getMockUtilityContext } from './TestUtility';
 
 const assert = chai.assert;
@@ -109,4 +110,115 @@ suite('CommandExecutor Shell Behavior', function ()
         assert.deepEqual(JSON.parse(result.stdout), { startup: 'unset', inherited: 'retained' });
     });
 
+});
+
+suite('POSIX shell quoting', () =>
+{
+    test('quotes a plain value', () =>
+    {
+        assert.strictEqual(quoteForPosixShell('/usr/local/share/dotnet'), `'/usr/local/share/dotnet'`);
+    });
+
+    test('keeps spaces inside a single word', () =>
+    {
+        assert.strictEqual(quoteForPosixShell('/Program Files/dotnet'), `'/Program Files/dotnet'`);
+    });
+
+    test('escapes embedded apostrophes', () =>
+    {
+        assert.strictEqual(quoteForPosixShell(`/home/o'brien/dotnet`), `'/home/o'\\''brien/dotnet'`);
+    });
+
+    test('neutralizes expansion, substitution and quote characters', () =>
+    {
+        const value = '/opt/$HOME/`id`/a"b\\c';
+
+        assert.strictEqual(quoteForPosixShell(value), `'${value}'`);
+    });
+});
+
+class TestableCommandExecutor extends CommandExecutor
+{
+    public appendPathToProfileForTest(pathAddition: string, profileFile: string): void
+    {
+        this.appendPathToUserProfile(pathAddition, profileFile, 'https://aka.ms/dotnet-troubleshoot', getMockUtilityContext().ui);
+    }
+}
+
+suite('CommandExecutor PATH persistence', function ()
+{
+    this.timeout(15000);
+    let root: string;
+    let profile: string;
+    let executor: TestableCommandExecutor;
+
+    setup(async () =>
+    {
+        root = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'dotnet-path-test-'));
+        profile = path.join(root, '.profile');
+        executor = new TestableCommandExecutor(getMockAcquisitionContext('runtime', '10.0'), getMockUtilityContext());
+    });
+
+    teardown(async () =>
+    {
+        await fs.promises.rm(root, { recursive: true, force: true });
+    });
+
+    test('creates the profile and exports the install directory', async () =>
+    {
+        executor.appendPathToProfileForTest('/usr/local/share/dotnet', profile);
+
+        assert.strictEqual(await fs.promises.readFile(profile, 'utf8'), `export PATH='/usr/local/share/dotnet':"$PATH"\n`);
+    });
+
+    test('quotes an install directory that contains an apostrophe', async () =>
+    {
+        executor.appendPathToProfileForTest(`/home/o'brien/my dotnet`, profile);
+
+        assert.strictEqual(await fs.promises.readFile(profile, 'utf8'), `export PATH='/home/o'\\''brien/my dotnet':"$PATH"\n`);
+    });
+
+    test('preserves the existing profile content', async () =>
+    {
+        await fs.promises.writeFile(profile, '# user settings\nalias ll="ls -l"\n');
+
+        executor.appendPathToProfileForTest('/usr/local/share/dotnet', profile);
+
+        assert.strictEqual(await fs.promises.readFile(profile, 'utf8'),
+            `# user settings\nalias ll="ls -l"\nexport PATH='/usr/local/share/dotnet':"$PATH"\n`);
+    });
+
+    test('does not append the same directory twice', async () =>
+    {
+        executor.appendPathToProfileForTest(`/home/o'brien/my dotnet`, profile);
+        executor.appendPathToProfileForTest(`/home/o'brien/my dotnet`, profile);
+
+        assert.strictEqual(await fs.promises.readFile(profile, 'utf8'), `export PATH='/home/o'\\''brien/my dotnet':"$PATH"\n`);
+    });
+
+    test('does not append a directory that an older version already added unquoted', async () =>
+    {
+        await fs.promises.writeFile(profile, 'export PATH=/usr/local/share/dotnet:$PATH\n');
+
+        executor.appendPathToProfileForTest('/usr/local/share/dotnet', profile);
+
+        assert.strictEqual(await fs.promises.readFile(profile, 'utf8'), 'export PATH=/usr/local/share/dotnet:$PATH\n');
+    });
+
+    test('the appended line is valid POSIX shell and prepends the directory to PATH', async function ()
+    {
+        if (os.platform() === 'win32' || !fs.existsSync('/bin/sh'))
+        {
+            this.skip();
+        }
+
+        const installDirectory = path.join(root, `dotnet for o'brien`);
+        executor.appendPathToProfileForTest(installDirectory, profile);
+
+        const result = await promisify(execFile)('/bin/sh',
+            ['-c', `PATH=/usr/bin:/bin; . ${quoteForPosixShell(profile)}; printf '%s' "$PATH"`],
+            { cwd: root, shell: false, timeout: 10000 });
+
+        assert.strictEqual(result.stdout, `${installDirectory}:/usr/bin:/bin`);
+    });
 });
