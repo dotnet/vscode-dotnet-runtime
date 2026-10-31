@@ -369,6 +369,30 @@ export function filterEnvVars(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv
 }
 
 /*
+* @remarks The extension parses the output of the commands it runs, so variables that make tools decorate or
+* colorize that output break the parsing. A variable reaches every process we start and every process those
+* processes start, which means an install script and the tools it invokes can both be affected.
+* GREP_OPTIONS is the known offender: a color option such as '--color=always' puts escape sequences in the middle
+* of output that is parsed later.
+* See https://github.com/dotnet/vscode-dotnet-runtime/issues/2269 and https://github.com/dotnet/install-scripts/issues/602.
+*/
+const outputFormattingEnvVars = new Set([
+    'GREP_OPTIONS',
+]);
+
+export function removeOutputFormattingEnvVars(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv
+{
+    const sanitized: NodeJS.ProcessEnv = { ...env };
+
+    for (const name of outputFormattingEnvVars)
+    {
+        delete sanitized[name];
+    }
+
+    return sanitized;
+}
+
+/*
 * @remarks Matches the POSIX validation enforced by @vscode/sudo-prompt.
 */
 export function isValidEnvironmentVariableName(name: string): boolean

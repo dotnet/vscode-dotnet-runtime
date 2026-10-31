@@ -59,7 +59,7 @@ import { ICommandExecutor } from './ICommandExecutor';
 import { IFileUtilities } from './IFileUtilities';
 import { IUtilityContext } from './IUtilityContext';
 import { LockUsedByThisInstanceSingleton } from './LockUsedByThisInstanceSingleton';
-import { executeWithLock, filterEnvVars, isRunningUnderWSL, loopWithTimeoutOnCond, minimizeEnvironment } from './TypescriptUtilities';
+import { executeWithLock, filterEnvVars, isRunningUnderWSL, loopWithTimeoutOnCond, minimizeEnvironment, removeOutputFormattingEnvVars } from './TypescriptUtilities';
 
 export class CommandExecutor extends ICommandExecutor
 {
@@ -445,7 +445,7 @@ ${stderr}`));
             options.encoding = 'utf8';
 
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            options.env ??= filterEnvVars({ ...process.env });
+            options.env = removeOutputFormattingEnvVars(options.env ?? filterEnvVars({ ...process.env }));
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             options.env.DOTNET_CLI_UI_LANGUAGE ??= 'en-US';
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -455,7 +455,7 @@ ${stderr}`));
         {
             options = {
                 cwd: path.resolve(__dirname), shell: true, encoding: 'utf8', env:
-                    { ...filterEnvVars(process.env), DOTNET_CLI_UI_LANGUAGE: 'en-US', DOTNET_NOLOGO: 'true' }
+                    removeOutputFormattingEnvVars({ ...filterEnvVars(process.env), DOTNET_CLI_UI_LANGUAGE: 'en-US', DOTNET_NOLOGO: 'true' })
             };
         }
 
