@@ -3,7 +3,7 @@
 *  The .NET Foundation licenses this file to you under the MIT license.
 *--------------------------------------------------------------------------------------------*/
 import * as chai from 'chai';
-import { filterEnvVars, isValidEnvironmentVariableName, parseOsRelease } from '../../Utils/TypescriptUtilities';
+import { filterEnvVars, isValidEnvironmentVariableName, parseOsRelease, removeOutputFormattingEnvVars } from '../../Utils/TypescriptUtilities';
 
 const assert = chai.assert;
 
@@ -84,6 +84,48 @@ suite('TypescriptUtilities Unit Tests', function ()
         {
             const filtered = filterEnvVars({});
             assert.deepEqual(filtered, {}, 'Empty env should produce empty result');
+        });
+    });
+
+    suite('removeOutputFormattingEnvVars', function ()
+    {
+        test('removes GREP_OPTIONS', function ()
+        {
+            // GREP_OPTIONS=--color=always puts escape sequences in the output that the extension parses.
+            const env: NodeJS.ProcessEnv = {
+                PATH: '/usr/bin:/bin',
+                GREP_OPTIONS: '--color=always',
+            };
+
+            const sanitized = removeOutputFormattingEnvVars(env);
+
+            assert.deepEqual(sanitized, { PATH: '/usr/bin:/bin' });
+        });
+
+        test('retains every other variable', function ()
+        {
+            const env: NodeJS.ProcessEnv = {
+                PATH: '/usr/bin:/bin',
+                DOTNET_ROOT: '/usr/share/dotnet',
+                TERM: 'xterm-256color',
+                NO_COLOR: '1',
+            };
+
+            assert.deepEqual(removeOutputFormattingEnvVars(env), env);
+        });
+
+        test('does not modify the input', function ()
+        {
+            const env: NodeJS.ProcessEnv = { GREP_OPTIONS: '--color=always' };
+
+            removeOutputFormattingEnvVars(env);
+
+            assert.deepEqual(env, { GREP_OPTIONS: '--color=always' });
+        });
+
+        test('handles empty env object', function ()
+        {
+            assert.deepEqual(removeOutputFormattingEnvVars({}), {});
         });
     });
 

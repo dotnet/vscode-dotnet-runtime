@@ -109,4 +109,30 @@ suite('CommandExecutor Shell Behavior', function ()
         assert.deepEqual(JSON.parse(result.stdout), { startup: 'unset', inherited: 'retained' });
     });
 
+    test('does not pass output-formatting variables to the child process', async () =>
+    {
+        const previousGrepOptions = process.env.GREP_OPTIONS;
+        process.env.GREP_OPTIONS = '--color=always';
+
+        try
+        {
+            const command = CommandExecutor.makeCommand('node',
+                ['-e', `"console.log(process.env.GREP_OPTIONS === undefined ? 'unset' : 'set:' + process.env.GREP_OPTIONS)"`]);
+            const result = await executor.execute(command, { cwd: root, timeout: 10000 }, false);
+
+            assert.strictEqual(result.stdout.trim(), 'unset');
+        }
+        finally
+        {
+            if (previousGrepOptions === undefined)
+            {
+                delete process.env.GREP_OPTIONS;
+            }
+            else
+            {
+                process.env.GREP_OPTIONS = previousGrepOptions;
+            }
+        }
+    });
+
 });
