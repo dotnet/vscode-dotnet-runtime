@@ -1,0 +1,143 @@
+{
+	"folders": [
+		{
+			"path": "New folder"
+		}
+	],
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			"LogicalID": {
+			  "Type": "AWS::AccessAnalyzer::Analyzer",
+			  "Properties": {
+				"AnalyzerConfiguration": {
+				  "InternalAccessConfiguration": {
+					"InternalAccessAnalysisRule": {
+					  "Inclusions": [
+						{
+						  "AccountIds": [
+							"String"
+						  ],
+						  "ResourceArns": [
+							"String"
+						  ],
+						  "ResourceTypes": [
+							"String"
+						  ]
+						}
+					  ]
+					}
+				  },
+				  "UnusedAccessConfiguration": {
+					"AnalysisRule": {
+					  "Exclusions": [
+						{
+						  "AccountIds": [
+							"String"
+						  ],
+						  "ResourceTags": {}
+						}
+					  ]
+					},
+					"UnusedAccessAge": 0
+				  }
+				},
+				"AnalyzerName": "String",
+				"ArchiveRules": [
+				  {
+					"Filter": [
+					  {
+						"Contains": [
+						  "String"
+						],
+						"Eq": [
+						  "String"
+						],
+						"Exists": false,
+						"Neq": [
+						  "String"
+						],
+						"Property": "String"
+					  }
+					],
+					"RuleName": "String"
+				  }
+				],
+				"Tags": [
+				  {
+					"Key": "String",
+					"Value": "String"
+				  }
+				],
+				"Type": "String"
+			  }
+			}
+			"LogicalID": {
+			  "Type": "AWS::AccessAnalyzer::Analyzer",
+			  "Properties": {
+				"AnalyzerConfiguration": {
+				  "InternalAccessConfiguration": {
+					"InternalAccessAnalysisRule": {
+					  "Inclusions": [
+						{
+						  "AccountIds": [
+							"String"
+						  ],
+						  "ResourceArns": [
+							"String"
+						  ],
+						  "ResourceTypes": [
+							"String"
+						  ]
+						}
+					  ]
+					}
+				  },
+				  "UnusedAccessConfiguration": {
+					"AnalysisRule": {
+					  "Exclusions": [
+						{
+						  "AccountIds": [
+							"String"
+						  ],
+						  "ResourceTags": {}
+						}
+					  ]
+					},
+					"UnusedAccessAge": 0
+				  }
+				},
+				"AnalyzerName": "String",
+				"ArchiveRules": [
+				  {
+					"Filter": [
+					  {
+						"Contains": [
+						  "String"
+						],
+						"Eq": [
+						  "String"
+						],
+						"Exists": false,
+						"Neq": [
+						  "String"
+						],
+						"Property": "String"
+					  }
+					],
+					"RuleName": "String"
+				  }
+				],
+				"Tags": [
+				  {
+					"Key": "String",
+					"Value": "String"
+				  }
+				],
+				"Type": "String"
+			  }
+			}
+
+		]
+	}
+}
